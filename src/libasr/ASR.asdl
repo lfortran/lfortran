@@ -208,7 +208,7 @@ ttype
     | Tuple(ttype* type)
     | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
     | EnumType(symbol enum_type)
-    | UnionType(symbol union_type)
+    | UnionType(ttype* data_member_types)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)
@@ -250,7 +250,7 @@ arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
 
-omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Atomic | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | Target | TargetData
+omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Atomic | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | TeamsDistribute | DistributeParallelDo | Target | TargetData
 omp_clause
   = OMPPrivate(expr* vars)
   | OMPShared(expr* vars)
@@ -264,8 +264,13 @@ omp_clause
   | OMPNowait()
   | OMPNumTeams(expr num_teams)
   | OMPThreadLimit(expr thread_limit)
+  | OMPDevice(expr device)
+  | OMPMap(map_type type, expr* vars)
 
+map_type 
+    = To | From | ToFrom | Alloc | Release | Delete
+    
 schedule_type
-  = Static | Dynamic | Guided | Auto | Runtime
+    = Static | Dynamic | Guided | Auto | Runtime
 
 }

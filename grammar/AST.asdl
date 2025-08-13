@@ -319,6 +319,7 @@ simple_attribute
     | AttrPublic
     | AttrPure
     | AttrRecursive
+    | AttrNonRecursive
     | AttrSave
     | AttrSequence
     | AttrTarget
@@ -338,10 +339,10 @@ decl_type
     | TypeProcedure
     | TypeReal
     | TypeType
-    | TypeLF_List
-    | TypeLF_Set
-    | TypeLF_Dict
-    | TypeLF_Tuple
+    | TypeList
+    | TypeSet
+    | TypeDict
+    | TypeTuple
 
 event_attribute
     = AttrStat(identifier variable)

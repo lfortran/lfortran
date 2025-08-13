@@ -700,8 +700,14 @@
                                         (Var 10 tmp)
                                         (FunctionCall
                                             10 1_omap_i_at_rc
-                                            7 at
-                                            [((StructInstanceMember
+                                            ()
+                                            [((Var 10 key))
+                                            ((Var 10 status))]
+                                            (Pointer
+                                                (Complex 4)
+                                            )
+                                            ()
+                                            (StructInstanceMember
                                                 (Var 10 this)
                                                 10 1_integer32complex32orderedmap_map
                                                 (StructType
@@ -717,14 +723,7 @@
                                                     .false.
                                                 )
                                                 ()
-                                            ))
-                                            ((Var 10 key))
-                                            ((Var 10 status))]
-                                            (Pointer
-                                                (Complex 4)
                                             )
-                                            ()
-                                            ()
                                         )
                                     )
                                     (If

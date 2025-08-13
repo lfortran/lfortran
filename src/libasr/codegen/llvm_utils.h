@@ -70,8 +70,16 @@ namespace LCompilers {
     {
         llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
         if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
+            llvm::FunctionType* function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                {
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
+                    llvm::Type::getInt32Ty(context),                               // str_len
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
+                    llvm::Type::getInt32Ty(context)                                // end_len
+                },
+                false);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
         }
@@ -269,6 +277,46 @@ namespace LCompilers {
             llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
                                                                llvm::Module* module);
 
+            template<typename... Args>
+            void generate_runtime_error(llvm::Value* cond, std::string message, Args... args)
+            {
+                llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
+                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                builder->CreateCondBr(cond, thenBB, mergeBB);
+                builder->SetInsertPoint(thenBB); {
+                        llvm::Value* formatted_msg = builder->CreateGlobalStringPtr(message);
+                        llvm::Function* print_error_fn = module->getFunction("_lcompilers_print_error");
+                        if (!print_error_fn) {
+                            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context),
+                                {llvm::Type::getInt8Ty(context)->getPointerTo()},
+                                true);
+                            print_error_fn = llvm::Function::Create(error_fn_type,
+                                llvm::Function::ExternalLinkage, "_lcompilers_print_error", module);
+                        }
+
+                        std::vector<llvm::Value*> vec = {formatted_msg, args...};
+                        builder->CreateCall(print_error_fn, vec);
+
+                        llvm::Function* exit_fn = module->getFunction("exit");
+                        if (!exit_fn) {
+                            llvm::FunctionType* exit_fn_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context),
+                                {llvm::Type::getInt32Ty(context)},
+                                false);
+                            exit_fn = llvm::Function::Create(exit_fn_type,
+                                llvm::Function::ExternalLinkage, "exit", module);
+                        }
+
+                        builder->CreateCall(exit_fn, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
+                        builder->CreateUnreachable();
+                }
+                start_new_block(mergeBB);
+            }
+
             /*
              * Initialize string with empty characters.
             */
@@ -292,6 +340,7 @@ namespace LCompilers {
 
             /*
              * Allocate heap memory for string.
+             * Notice : It doesn't set the length.
             */
             void set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
 
@@ -440,6 +489,10 @@ namespace LCompilers {
             llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
                 ASR::ArrayConstant_t* arrayConst_t, std::string name);
 
+            llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
+
+            llvm::Value* is_equal_descriptor_string(llvm::Value* left, llvm::Value* right, ASR::String_t* type);
+
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);
 
@@ -457,9 +510,6 @@ namespace LCompilers {
             llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getUnion(ASR::Union_t* union_type,
-                llvm::Module* module, bool is_pointer=false);
-
-            llvm::Type* getUnion(ASR::ttype_t* _type,
                 llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);

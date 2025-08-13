@@ -60,7 +60,29 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 
 #ifdef HAVE_LFORTRAN_UNWIND
 // For _Unwind_Backtrace() function
-#  include <unwind.h>
+// This header file does not always contain _Unwind_Backtrace()
+//#  include <unwind.h>
+// So we define these defines manually
+typedef enum {
+    _URC_NO_REASON = 0,
+    _URC_FOREIGN_EXCEPTION_CAUGHT = 1,
+    _URC_FATAL_PHASE2_ERROR = 2,
+    _URC_FATAL_PHASE1_ERROR = 3,
+    _URC_NORMAL_STOP = 4,
+    _URC_END_OF_STACK = 5,
+    _URC_HANDLER_FOUND = 6,
+    _URC_INSTALL_CONTEXT = 7,
+    _URC_CONTINUE_UNWIND = 8,
+    _URC_FAILURE = 9
+} _Unwind_Reason_Code;
+
+struct _Unwind_Context;  // Opaque type, no need for full definition
+
+typedef _Unwind_Reason_Code (*_Unwind_Trace_Fn)(struct _Unwind_Context *, void *);
+
+extern _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn callback, void *data);
+
+extern uintptr_t _Unwind_GetIP(struct _Unwind_Context *context);
 #endif
 
 #ifdef HAVE_LFORTRAN_MACHO
@@ -169,24 +191,25 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
-LFORTRAN_API void _lfortran_printf(const char* format, ...)
+LFORTRAN_API void _lfortran_printf(const char* format, const char* str, uint32_t str_len, const char* end, uint32_t end_len)
 {
-    va_list args;
-    va_start(args, format);
-    char* str = va_arg(args, char*);
-    char* end = va_arg(args, char*);
-    if(str == NULL){
+    if (str == NULL) {
         str = " "; // dummy output
+        str_len = 1; // length of dummy output
     }
-    // Detect "\b" to raise error
-    if(str[0] == '\b'){
-        str = str+1;
-        fprintf(stderr, "%s", str);
+    // Detect "\b" to raise error (only if still null-terminated)
+    if (str_len > 0 && str[0] == '\b') {
+        str++;
+        str_len--;
+        fwrite(str, 1, str_len, stderr);
+        fputc('\n', stderr);
         exit(1);
     }
-    fprintf(stdout, format, str, end);
+
+    // Printing without depending on null termination:
+    fprintf(stdout, "%.*s", (int) str_len, str);
+    fprintf(stdout, "%.*s", (int) end_len, end);
     fflush(stdout);
-    va_end(args);
 }
 
 char* substring(const char* str, int start, int end) {
@@ -708,17 +731,16 @@ within character string edit descriptor
 
 E.g.; "('Number : ', I 2, 5 X, A)" becomes '('Number : ', I2, 5X, A)'
 */
-char* remove_spaces_except_quotes(const char* format) {
-    int len = strlen(format);
-    char* cleaned_format = malloc(len + 1);
+char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* cleaned_format_len) {
+    char* cleaned_format = malloc(len + 1);   // +1 for optional '\0' at end
 
-    int i = 0, j = 0;
+    int j = 0;
     // don't remove blank spaces from within character
     // string editor descriptor
     bool in_quotes = false;
     char current_quote = '\0';
 
-    while (format[i] != '\0') {
+    for (int i = 0; i < len; i++) {
         char c = format[i];
         if (c == '"' || c == '\'') {
             if (i == 0 || format[i - 1] != '\\') {
@@ -735,17 +757,16 @@ char* remove_spaces_except_quotes(const char* format) {
         if (!isspace(c) || in_quotes) {
             cleaned_format[j++] = c; // copy non-space characters or any character within quotes
         }
-
-        i++;
     }
 
-    cleaned_format[j] = '\0';
+    cleaned_format[j] = '\0';       // optional for printing or debugging
+    *cleaned_format_len = j;
     return cleaned_format;
 }
 
-int find_matching_parentheses(const char* format, int index){
+int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
     int parenCount = 0;
-    while (format[index] != '\0') {
+    while (index < format_len) {
         if (format[index] == '(') {
             parenCount++;
         } else if (format[index] == ')'){
@@ -766,18 +787,20 @@ int find_matching_parentheses(const char* format, int index){
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
  *
- * `char* format`: the string we need to split into format specifiers
+ * `fchar* format`: the fortran string we need to split into format specifiers (it should be null-independant)
  * `int* count`  : store count of format specifiers (passed by reference from caller)
  * `item_start`  :
  *
  * e.g. "(I5, F5.2, T10)" is split separately into "I5", "F5.2", "T10" as
  * format specifiers
 */
-char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
+char** parse_fortran_format(const fchar* format, const int64_t format_len, int64_t *count, int64_t *item_start) {
+    const char* cformat = (const char*)format;
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
-    while (index < strlen(format) && format[index] != '\0') {
+
+    while (index < format_len) {
         char** ptr = (char**)realloc(format_values_2, (format_values_count + 1) * sizeof(char*));
         if (ptr == NULL) {
             perror("Memory allocation failed.\n");
@@ -785,58 +808,58 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
         } else {
             format_values_2 = ptr;
         }
-        switch (tolower(format[index])) {
+        switch (tolower(cformat[index])) {
             case ',' :
                 break;
             case '/' :
             case ':' :
-                format_values_2[format_values_count++] = substring(format, index, index+1);
+                format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 break;
             case '*' :
-                format_values_2[format_values_count++] = substring(format, index, index+1);
+                format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 break;
             case '"' :
                 start = index++;
-                while (format[index] != '"') {
+                while (cformat[index] != '"') {
                     index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index+1);
+                format_values_2[format_values_count++] = substring(cformat, start, index+1);
 
                 break;
             case '\'' :
                 start = index++;
-                while (format[index] != '\'') {
+                while (cformat[index] != '\'') {
                     index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index+1);
+                format_values_2[format_values_count++] = substring(cformat, start, index+1);
                 break;
             case 'a' :
                 start = index++;
-                while (isdigit(format[index])) {
+                while (isdigit(cformat[index])) {
                     index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index);
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
                 break;
             case 'e' :
                 start = index++;
                 bool edot = false;
-                if (tolower(format[index]) == 'n') index++;
-                if (tolower(format[index]) == 's') index++;
-                while (isdigit(format[index])) index++;
-                if (format[index] == '.') {
+                if (tolower(cformat[index]) == 'n') index++;
+                if (tolower(cformat[index]) == 's') index++;
+                while (isdigit(cformat[index])) index++;
+                if (cformat[index] == '.') {
                     edot = true;
                     index++;
                 } else {
                     printf("Error: Period required in format specifier\n");
                     exit(1);
                 }
-                while (isdigit(format[index])) index++;
-                if (edot && (tolower(format[index]) == 'e' || tolower(format[index]) == 'n')) {
+                while (isdigit(cformat[index])) index++;
+                if (edot && (tolower(cformat[index]) == 'e' || tolower(cformat[index]) == 'n')) {
                     index++;
-                    while (isdigit(format[index])) index++;
+                    while (isdigit(cformat[index])) index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index);
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
                 break;
             case 'i' :
@@ -847,28 +870,28 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'g' :
                 start = index++;
                 bool dot = false;
-                if(tolower(format[index]) == 's') index++;
-                while (isdigit(format[index])) index++;
-                if (format[index] == '.') {
+                if(tolower(cformat[index]) == 's') index++;
+                while (isdigit(cformat[index])) index++;
+                if (cformat[index] == '.') {
                     dot = true;
                     index++;
                 }
-                while (isdigit(format[index])) index++;
-                if (dot && tolower(format[index]) == 'e') {
+                while (isdigit(cformat[index])) index++;
+                if (dot && tolower(cformat[index]) == 'e') {
                     index++;
-                    while (isdigit(format[index])) index++;
+                    while (isdigit(cformat[index])) index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index);
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
                 break;
             case 's': 
                 start = index++;
-                if( format[index] == ','          || // 'S'  (default sign)
-                    tolower(format[index]) == 'p' || // 'SP' (sign plus)
-                    tolower(format[index]) == 's'    // 'SS' (sign suppress)
+                if( cformat[index] == ','          || // 'S'  (default sign)
+                    tolower(cformat[index]) == 'p' || // 'SP' (sign plus)
+                    tolower(cformat[index]) == 's'    // 'SS' (sign suppress)
                     ){
-                    if(format[index] == ',') --index; // Don't consume
-                    format_values_2[format_values_count++] = substring(format, start, index+1);
+                    if(cformat[index] == ',') --index; // Don't consume
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
                 } else {
                     fprintf(stderr, "Error: Invalid format specifier. After 's' specifier\n");
                     exit(1);
@@ -876,68 +899,68 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 break;
             case '(' :
                 start = index;
-                index = find_matching_parentheses(format, index);
-                format_values_2[format_values_count++] = substring(format, start, index);
+                index = find_matching_parentheses(format, format_len, index);
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 *item_start = format_values_count;
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
                 start = index++;
-                if (tolower(format[index]) == 'l' || tolower(format[index]) == 'r') {
+                if (tolower(cformat[index]) == 'l' || tolower(cformat[index]) == 'r') {
                      index++;  // move past 'L' or 'R'
                 }
                 // raise error when "T/TL/TR" is specified itself or with
                 // non-positive width
-                if (!isdigit(format[index])) {
+                if (!isdigit(cformat[index])) {
                     // TODO: if just 'T' is specified the error message will print 'T,', fix it
                     printf("Error: Positive width required with '%c%c' descriptor in format string\n",
-                        format[start], format[start + 1]);
+                        cformat[start], cformat[start + 1]);
                     exit(1);
                 }
-                while (isdigit(format[index])) {
+                while (isdigit(cformat[index])) {
                     index++;
                 }
-                format_values_2[format_values_count++] = substring(format, start, index);
+                format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
                 break;
             default :
                 if (
-                    (format[index] == '-' && isdigit(format[index + 1]) && tolower(format[index + 2]) == 'p')
-                    || ((isdigit(format[index])) && tolower(format[index + 1]) == 'p')) {
+                    (cformat[index] == '-' && isdigit(cformat[index + 1]) && tolower(cformat[index + 2]) == 'p')
+                    || ((isdigit(cformat[index])) && tolower(cformat[index + 1]) == 'p')) {
                     start = index;
-                    index = index + 1 + (format[index] == '-');
-                    format_values_2[format_values_count++] = substring(format, start, index + 1);
-                } else if (isdigit(format[index])) {
+                    index = index + 1 + (cformat[index] == '-');
+                    format_values_2[format_values_count++] = substring(cformat, start, index + 1);
+                } else if (isdigit(cformat[index])) {
                     start = index;
-                    while (isdigit(format[index])) index++;
-                    char* repeat_str = substring(format, start, index);
+                    while (isdigit(cformat[index])) index++;
+                    char* repeat_str = substring(cformat, start, index);
                     int repeat = atoi(repeat_str);
                     free(repeat_str);
                     format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
-                    if (format[index] == '(') {
+                    if (cformat[index] == '(') {
                         start = index;
-                        index = find_matching_parentheses(format, index);
+                        index = find_matching_parentheses(format, format_len, index);
                         *item_start = format_values_count+1;
                         for (int i = 0; i < repeat; i++) {
-                            format_values_2[format_values_count++] = substring(format, start, index);
+                            format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
                     } else {
                         start = index;
-                        while (isalpha(format[index])) index++; 
-                        if (isdigit(format[index])) {
-                            while (isdigit(format[index])) index++;
-                            if (format[index] == '.') index++;
-                            while (isdigit(format[index])) index++;
-                            if (format[index] == 'e' || format[index] == 'E') index++;
-                            while (isdigit(format[index])) index++;
+                        while (isalpha(cformat[index])) index++; 
+                        if (isdigit(cformat[index])) {
+                            while (isdigit(cformat[index])) index++;
+                            if (cformat[index] == '.') index++;
+                            while (isdigit(cformat[index])) index++;
+                            if (cformat[index] == 'e' || cformat[index] == 'E') index++;
+                            while (isdigit(cformat[index])) index++;
                         }
                         for (int i = 0; i < repeat; i++) {
-                            format_values_2[format_values_count++] = substring(format, start, index);
+                            format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
                         index--;
                     }
-                } else if (format[index] != ' ') {
-                    fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", format[index]);
+                } else if (cformat[index] != ' ') {
+                    fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", cformat[index]);
                     break;
                 }
         }
@@ -1553,17 +1576,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     int64_t format_values_count = 0,item_start_idx=0;
     char** format_values;
     char* modified_input_string;
-    char* cleaned_format = remove_spaces_except_quotes(format);
+    int len = 0;
+    char* cleaned_format = remove_spaces_except_quotes((const fchar*)format, format_len, &len);
     if (!cleaned_format) {
         free_serialization_info(&s_info);
         return NULL;
     }
-    int len = strlen(cleaned_format);
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
-    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
+    format_values = parse_fortran_format((const fchar*)modified_input_string, strlen(modified_input_string), &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1580,10 +1603,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             char* value;
             if(format_values[i] == NULL) continue;
             value = format_values[i];
-            if (value[0] == '(' && value[strlen(value)-1] == ')') {
-                value[strlen(value)-1] = '\0';
+            int64_t value_len = strlen(value);
+            if (value_len >= 2 && value[0] == '(' && value[value_len - 1] == ')') {
+                value[value_len - 1] = '\0';
                 int64_t new_fmt_val_count = 0;
-                char** new_fmt_val = parse_fortran_format(++value, &new_fmt_val_count, &item_start_idx);
+                value += 1;
+                char** new_fmt_val = parse_fortran_format((const fchar*)value, value_len - 2, &new_fmt_val_count, &item_start_idx);
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
@@ -3550,85 +3575,118 @@ void get_unique_ID(char buffer[ID_LEN + 1]) {
     buffer[ID_LEN] = '\0';
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
-    char* f_name, int64_t f_name_len,
-    char* status, int64_t status_len,
-    char* form, int64_t form_len,
-    char* access, int64_t access_len,
-    char* iomsg, int64_t iomsg_len,
-    int32_t *iostat,
-    char* action, int64_t action_len){
+static void
+trim_trailing_spaces(char** str, int64_t* len, bool init)
+{
+    if (!init)
+        return;  // If the string is initialized manually, we do not trim it
+    int64_t i = 0;
+    int64_t last_non_space = -1;
+    while (i < *len && (*str)[i] != '\0') {
+        if (!isspace((unsigned char) (*str)[i])) {
+            last_non_space = i;
+        }
+        i++;
+    }
+    *len = last_non_space + 1;
+    // Null terminate if there's room
+    if (*len < i) {
+        (*str)[*len] = '\0';
+    }
+}
+
+
+static char* to_c_string(const fchar* src, int64_t len)
+{
+    char* buf = (char*) malloc(len + 1);
+    if (!buf)
+        return NULL;
+    memcpy(buf, src, len);
+    buf[len] = '\0';
+    return buf;
+}
+
+static void
+pad_with_spaces(char* dest, int64_t orig_len, int64_t total_len)
+{
+    for (int64_t i = orig_len; i < total_len; i++) {
+        dest[i] = ' ';
+    }
+    dest[total_len] = '\0';
+}
+
+LFORTRAN_API int64_t
+_lfortran_open(int32_t unit_num,
+               char* f_name,
+               int64_t f_name_len,
+               char* status,
+               int64_t status_len,
+               char* form,
+               int64_t form_len,
+               char* access,
+               int64_t access_len,
+               char* iomsg,
+               int64_t iomsg_len,
+               int32_t* iostat,
+               char* action,
+               int64_t action_len)
+{
     if (iostat != NULL) {
         *iostat = 0;
     }
-    if (f_name == NULL) { // Not Provided
+    bool ini_file = true;
+    if (f_name == NULL) {  // Not Provided
         char *prefix = "_lfortran_generated_file", *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
         int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
-        f_name = (char *)malloc(length);
+        f_name = (char*) malloc(length);
         snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        f_name_len = strlen(f_name);
+        ini_file = false;
     }
-
+    bool ini_status = true;
     if (status == NULL) {
         status = "unknown";
+        status_len = 7;
+        ini_status = false;
     }
-
+    bool ini_form = true;
     if (form == NULL) {
         form = "formatted";
+        form_len = 9;
+        ini_form = false;
     }
-
+    bool ini_access = true;
     if (access == NULL) {
         access = "sequential";
-
-    } if (action == NULL) {
+        access_len = 10;
+        ini_access = false;
+    }
+    bool ini_action = true;
+    if (action == NULL) {
         action = "readwrite";
+        action_len = 9;
+        ini_action = false;
     }
-    bool file_exists[1] = {false};
-    FILE *already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL);
+    bool file_exists[1] = { false };
+    FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL);
 
-    size_t len = strlen(f_name);
-    if (*(f_name + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = f_name + len - 1;
-        while (end > f_name && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
+    trim_trailing_spaces(&f_name, &f_name_len, ini_file);
+    trim_trailing_spaces(&status, &status_len, ini_status);
+    trim_trailing_spaces(&form, &form_len, ini_form);
+    trim_trailing_spaces(&action, &action_len, ini_action);
 
-    len = strlen(status);
-    if (*(status + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = status + len - 1;
-        while (end > status && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
+    // Prepare null-terminated names for C APIs
+    char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
+    char* status_c = to_c_string((const fchar*)status, status_len);
+    char* form_c = to_c_string((const fchar*)form, form_len);
+    char* access_c = to_c_string((const fchar*)access, access_len);
+    char* action_c = to_c_string((const fchar*)action, action_len);
 
-    len = strlen(form);
-    if (*(form + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = form + len - 1;
-        while (end > form && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
-
-    len = strlen(action);
-    if (*(action + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = action + len - 1;
-        while (end > action && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
-
-    _lfortran_inquire(f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
-    char *access_mode = NULL;
+    _lfortran_inquire(
+        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+    char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
      The following are the available specifiers:
@@ -3638,49 +3696,46 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
      * "replace" (file will be created, replacing any existing file)
      * "unknown" (it is not known whether the file exists)
      */
-    if (streql(status, "old")) {
+    if (streql(status_c, "old")) {
         if (!*file_exists) {
             if (iostat != NULL) {
                 *iostat = 2;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
-                    char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
-                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
-                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                        (iomsg)[i] = ' ';
-                    }
-                    (iomsg)[iomsg_len] = '\0';
+                    char* temp
+                        = "File `%s` does not exists! Cannot open a file with the `status=old`";
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name_c);
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` does not exists!\nCannot open a "
-                    "file with the `status=old`\n", f_name);
+                       "file with the `status=old`\n",
+                       f_name_c);
                 exit(1);
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "new")) {
+    } else if (streql(status_c, "new")) {
         if (*file_exists) {
             if (iostat != NULL) {
                 *iostat = 17;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
-                    char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
-                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
-                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                        (iomsg)[i] = ' ';
-                    }
-                    (iomsg)[iomsg_len] = '\0';
+                    char* temp = "File `%s` exists! Cannot open a file with the `status=new`";
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name_c);
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` exists!\nCannot open a file with "
-                    "the `status=new`\n", f_name);
+                       "the `status=new`\n",
+                       f_name_c);
                 exit(1);
             }
         }
         access_mode = "w+";
-    } else if (streql(status, "replace") || streql(status, "scratch")) {
+    } else if (streql(status_c, "replace") || streql(status_c, "scratch")) {
         access_mode = "w+";
-    } else if (streql(status, "unknown")) {
+    } else if (streql(status_c, "unknown")) {
         if (!*file_exists && !already_open) {
-            FILE *fd = fopen(f_name, "w");
+            FILE* fd = fopen(f_name_c, "w");
             if (fd) {
                 fclose(fd);
             }
@@ -3690,16 +3745,14 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "STATUS specifier in OPEN statement has invalid value.";
+                char* temp = "STATUS specifier in OPEN statement has invalid value.";
                 snprintf(iomsg, iomsg_len + 1, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: STATUS specifier in OPEN statement has "
-                "invalid value '%s'\n", status);
+                   "invalid value '%s'\n",
+                   status_c);
             exit(1);
         }
     }
@@ -3708,99 +3761,91 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     int access_id;
     bool read_access = true;
     bool write_access = true;
-    if (streql(form, "formatted")) {
+    if (streql(form_c, "formatted")) {
         unit_file_bin = false;
-    } else if (streql(form, "unformatted")) {
+    } else if (streql(form_c, "unformatted")) {
         unit_file_bin = true;
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "FORM specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                char* temp = "FORM specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: FORM specifier in OPEN statement has "
-                "invalid value '%s'\n", form);
+                   "invalid value '%s'\n",
+                   form_c);
             exit(1);
         }
     }
 
-    if (streql(access, "stream")) {
+    if (streql(access_c, "stream")) {
         access_id = 1;
-    } else if (streql(access, "sequential")) {
+    } else if (streql(access_c, "sequential")) {
         access_id = 0;
-    } else if (streql(access, "direct")) { //TODO: Handle 'direct' as access while reading or writing
+    } else if (streql(access_c,
+                      "direct")) {  // TODO: Handle 'direct' as access while reading or writing
         access_id = 2;
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
-            if ((iomsg != NULL)&& (iomsg_len > 0)) {
-                char *temp = "ACCESS specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
+                char* temp = "ACCESS specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACCESS specifier in OPEN statement has "
-                "invalid value '%s'\n", access);
+                   "invalid value '%s'\n",
+                   access_c);
             exit(1);
         }
     }
-    if (streql(action, "readwrite")) {
-
-    } else if (streql(action, "write")) {
+    if (streql(action_c, "readwrite")) {
+    } else if (streql(action_c, "write")) {
         read_access = false;
-    } else if (streql(action, "read")) {
+    } else if (streql(action_c, "read")) {
         write_access = false;
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                char* temp = "ACTION specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
-                "invalid value '%s'\n", action);
+                   "invalid value '%s'\n",
+                   action_c);
             exit(1);
         }
     }
-    if (streql(action, "readwrite")) {
-
-    } else if (streql(action, "write")) {
+    if (streql(action_c, "readwrite")) {
+    } else if (streql(action_c, "write")) {
         read_access = false;
-    } else if (streql(action, "read")) {
+    } else if (streql(action_c, "read")) {
         write_access = false;
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) {
-                    iomsg[i] = ' ';
-                }
-                iomsg[iomsg_len] = '\0';
+                char* temp = "ACTION specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
-                "invalid value '%s'\n", action);
+                   "invalid value '%s'\n",
+                   action_c);
             exit(1);
         }
     }
 
-    if (access_mode == NULL && iostat != NULL) {     // Case: when iostat is present we don't want to terminate
+    if (access_mode == NULL
+        && iostat != NULL) {  // Case: when iostat is present we don't want to terminate
         access_mode = "r";
     }
 
@@ -3808,16 +3853,20 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (already_open) {
             return (int64_t) already_open;
         }
-        FILE *fd = fopen(f_name, access_mode);
-        if (!fd && iostat == NULL)
-        {
+        FILE* fd = fopen(f_name_c, access_mode);
+        if (!fd && iostat == NULL) {
             printf("Runtime error: Error in opening the file!\n");
-            perror(f_name);
+            perror(f_name_c);
             exit(1);
         }
-        store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id, read_access, write_access);
-        return (int64_t)fd;
+        store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access);
+        return (int64_t) fd;
     }
+    free(f_name_c);
+    free(status_c);
+    free(form_c);
+    free(access_c);
+    free(action_c);
     return 0;
 }
 
@@ -3854,7 +3903,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
@@ -3864,7 +3913,10 @@ LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool 
         exit(1);
     }
     if (f_name_data != NULL) {
-        FILE *fp = fopen(f_name_data, "r");
+        char *c_f_name_data = to_c_string(f_name_data, f_name_len);
+        FILE *fp = fopen(c_f_name_data, "r");
+        free(c_f_name_data);
+
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
@@ -5080,35 +5132,62 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    sscanf(str, format, i);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    free(buf);
 }
 
+
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
-    sscanf(str, format, i);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return; // allocation failure
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
-    sscanf(str, format, f);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, f);
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
-    sscanf(str, format, f);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, f);
+    free(buf);
 }
 
-char *remove_whitespace(char *str) {
-    if (str == NULL || str[0] == '\0') {
-        return "(null)";
+char* remove_whitespace(char* str, int64_t* len) {
+    if (!str || *len <= 0) return str;
+    char* start = str;
+    char* end = str + (*len - 1);
+    // Trim leading spaces
+    while (*len > 0 && isspace((unsigned char) *start)) {
+        start++;
+        (*len)--;
     }
-    char *end;
-    // remove leading space
-    while(isspace((unsigned char)*str)) str++;
-    if(*str == 0) // All spaces?
-        return str;
-    // remove trailing space
-    end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-    // Write new null terminator character
-    end[1] = '\0';
+    // Trim trailing spaces
+    while (*len > 0 && isspace((unsigned char) *end)) {
+        end--;
+        (*len)--;
+    }
+    // Shift if we trimmed from the front
+    if (start != str && *len > 0) {
+        memmove(str, start, *len);
+    }
+    // Null terminate for now, but length is already known
+    str[*len] = '\0';
     return str;
 }
 
@@ -5119,8 +5198,13 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i) {
-    sscanf(str, format, i);
-    printf("%s\n", str);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    printf("%s\n", buf);
+    free(buf);
 }
 
 void lfortran_error(const char *message) {
@@ -5172,15 +5256,33 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
         exit(1);
     }
     // TODO: Support other `status` specifiers
-    char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
-    char* scratch_file = "_lfortran_generated_file";
-    bool is_temp_file = strncmp(file_name, scratch_file, strlen(scratch_file)) == 0;
-    if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
+    char *file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
+
+    const char *scratch_file = "_lfortran_generated_file";
+    const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
+
+    bool is_temp_file =
+        (strncmp(file_name, scratch_file, scratch_file_len) == 0);
+
+    bool delete_requested = false;
+    if (status && status_len > 0) {
+        // Compare to "delete" without assuming null-termination
+        const char delete_str[] = "delete";
+        const int64_t delete_len = sizeof(delete_str) - 1;
+
+        if (status_len == delete_len &&
+            strncmp(status, delete_str, delete_len) == 0) {
+            delete_requested = true;
+        }
+    }
+
+    if (delete_requested || is_temp_file) {
         if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }
     }
+
     if (is_temp_file) free(file_name);
     remove_from_unit_to_file(unit_num);
 }
@@ -5508,17 +5610,25 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     }
 }
 
-char *read_line_from_file(char *filename, uint32_t line_number) {
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0, n = 0;
+char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) exit(1);
 
-    fp = fopen(filename, "r");
-    if (fp == NULL) exit(1);
-    while (n < line_number && (getline(&line, &len, fp) != -1)) n++;
+    char *line = NULL;
+    size_t cap = 0;
+    ssize_t read_len;
+    uint32_t n = 0;
+    while (n < line_number && (read_len = getline(&line, &cap, fp)) != -1) n++;
     fclose(fp);
 
-    return line;
+    if (read_len == -1) {
+        free(line);
+        *out_len = 0;
+        return NULL;
+    }
+
+    *out_len = read_len; // length includes '\n' if present
+    return line;         // caller knows length; can ignore '\0'
 }
 
 static inline uint64_t bisection(const uint64_t vec[],
@@ -5552,6 +5662,9 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     for (int32_t i = d.local_pc_size-2; i >= 0; i--) {
 #endif
         uint64_t index = bisection(d.addresses, d.stack_size, d.local_pc[i]);
+        int64_t line_len;
+        char* line = read_line_from_file(source_filename, d.line_numbers[index], &line_len);
+        char* trimmed = remove_whitespace(line, &line_len);  // updated to be len-aware
         if(use_colors) {
             fprintf(stderr, DIM "  File " S_RESET
                 BOLD MAGENTA "\"%s\"" C_RESET S_RESET
@@ -5560,20 +5673,19 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #else
                 DIM ", line %" PRIu64 "\n" S_RESET
 #endif
-                "    %s\n", source_filename, d.line_numbers[index],
-                remove_whitespace(read_line_from_file(source_filename,
-                d.line_numbers[index])));
+                "    %.*s\n", source_filename, d.line_numbers[index],
+                (int)line_len, trimmed);
         } else {
             fprintf(stderr, "  File \"%s\", "
 #ifdef HAVE_LFORTRAN_MACHO
-                "line %lld\n    %s\n",
+                "line %lld\n    %.*s\n",
 #else
-                "line %" PRIu64 "\n    %s\n",
+                "line %" PRIu64 "\n    %.*s\n",
 #endif
                 source_filename, d.line_numbers[index],
-                remove_whitespace(read_line_from_file(source_filename,
-                d.line_numbers[index])));
+                (int)line_len, trimmed);
         }
+        free(line);
 #ifdef HAVE_LFORTRAN_MACHO
     }
 #else

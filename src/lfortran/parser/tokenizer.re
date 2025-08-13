@@ -527,13 +527,13 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'where' { KW(WHERE) }
             'while' { KW(WHILE) }
             'write' { KW(WRITE) }
-            '_lfortran_list' { KW(LF_LIST) }
-            '_lfortran_set' { KW(LF_SET) }
-            '_lfortran_dict' { KW(LF_DICT) }
-            '_lfortran_tuple' { KW(LF_TUPLE) }
-            '_lfortran_union_type' { KW(LF_UNION_TYPE) }
+            '_lfortran_list' { KW(LIST) }
+            '_lfortran_set' { KW(SET) }
+            '_lfortran_dict' { KW(DICT) }
+            '_lfortran_tuple' { KW(TUPLE) }
+            '_lfortran_union_type' { KW(UNION_TYPE) }
 
-            'end' whitespace '_lfortran_union_type' { KW(LF_END_UNION_TYPE) }
+            'end' whitespace '_lfortran_union_type' { KW(END_UNION_TYPE) }
 
             // Tokens
             newline {

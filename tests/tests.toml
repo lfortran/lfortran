@@ -189,6 +189,18 @@ filename = "../integration_tests/openmp_46.f90"
 asr_openmp = true
 
 [[test]]
+filename = "../integration_tests/openmp_70.f90"
+c_target_omp = true
+
+[[test]]
+filename = "../integration_tests/openmp_71.f90"
+c_target_cuda = true
+
+[[test]]
+filename = "../integration_tests/openmp_72.f90"
+c_target_cuda = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -3845,6 +3857,26 @@ filename = "errors/intrinsics2.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_bounds_check_01.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_02.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_03.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_04.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_05.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -4723,3 +4755,7 @@ run = true
 [[test]]
 filename = "../integration_tests/call_subroutine_without_type_01.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/functions_41.f90"
+ast = true

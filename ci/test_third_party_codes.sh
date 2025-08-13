@@ -52,13 +52,11 @@ time_section "🧪 Testing assert" '
   micromamba install -c conda-forge fpm
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
-  set -x
   which fpm
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
   fpm --version
-  set +x
 
   git checkout -t origin/fix-test
   git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
@@ -82,13 +80,11 @@ time_section "🧪 Testing splpak" '
   micromamba install -c conda-forge fpm
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
-  set -x
   which fpm
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
   fpm --version
-  set +x
 
   git checkout lf-2
   git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
@@ -235,8 +231,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
 
   git clean -dfx
   git restore .
-  git checkout sc-lf-9
-  git checkout ac269856afa1a623b5a0d9a1968c6a70d43d69ea
+  git checkout sc-lf-11
+  git checkout 76e15075b73b5bab39adf24b70fe15973069dee2
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
@@ -256,9 +252,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-5
+  git checkout lf-7
   micromamba install -c conda-forge fpm
-  git checkout c51c581242ae260efd710721945326bea6d8dad3
+  git checkout 0495209655831f5a13f643feaa790e08851adf8a
   fpm --compiler=$FC build
   print_success "Done with FPM"
   cd ..

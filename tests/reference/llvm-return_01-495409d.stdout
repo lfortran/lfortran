@@ -24,7 +24,7 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = call i32 @main1()
   store i32 %2, i32* %main_out1, align 4
   %3 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %3, i32 12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -45,7 +45,7 @@ then:                                             ; preds = %.entry
   %2 = load i32, i32* %i, align 4
   store i32 %2, i32* %main1, align 4
   %3 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %3, i32 12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
@@ -56,7 +56,7 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %unreachable_after_return
   %4 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %4, i32 13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   %5 = load i32, i32* %i, align 4
   store i32 %5, i32* %main1, align 4
   br label %return
@@ -66,7 +66,7 @@ return:                                           ; preds = %ifcont, %then
   ret i32 %6
 }
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

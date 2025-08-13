@@ -260,6 +260,18 @@ semantic error: Cannot assign to an intent(in) variable `y`
 41 |         y = 99  
    |         ^ 
 
+semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/errors/continue_compilation_2.f90:63:20
+   |
+63 |         call sub_b(val_a)
+   |                    ^^^^^ 
+
+semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/errors/continue_compilation_2.f90:73:26
+   |
+73 |         res = inner_func(val_a)
+   |                          ^^^^^ 
+
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
    --> tests/errors/continue_compilation_2.f90:238:38
     |
@@ -832,3 +844,15 @@ semantic error: Arguments to min0 must be of real, integer or character type
     |
 458 |     print *, max(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_2.f90:463:19
+    |
+463 |     print *, size(ichar_runtime)
+    |                   ^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:464:5
+    |
+464 |     lhs = rhs
+    |     ^^^   ^^^ type mismatch (string and string[:])

@@ -392,7 +392,8 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 
     ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
     ASR::ttype_t* output_type = x.m_type;
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, x.m_args[0],
+         const_cast<ASR::expr_t*>(&x.base), true),
         "The input and output type of elemental intrinsic, " +
         std::to_string(static_cast<int64_t>(x.m_intrinsic_id)) +
         " must exactly match, input type: " +
@@ -766,7 +767,8 @@ namespace Abs {
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
         } else {
-            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type,
+                 x.m_args[0], const_cast<ASR::expr_t*>(&x.base), true),
                 "The input and output type of Abs intrinsic must exactly match, input type: " +
                 input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
@@ -5790,7 +5792,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASR::ttype_t* arg0_type = ASRUtils::expr_type(x.m_args[0]);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*arg0_type) &&
-        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]), ASRUtils::get_contained_type(arg0_type)),
+        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]), ASRUtils::get_contained_type(arg0_type), nullptr, nullptr),
         "First argument to list.index must be of list type and "
         "second argument must be of same type as list elemental type",
         x.base.base.loc, diagnostics);
@@ -5826,7 +5828,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
     ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(type)->m_type;
     ASR::ttype_t *ele_type = ASRUtils::expr_type(args[1]);
-    if (!ASRUtils::check_equal_type(ele_type, list_type)) {
+    if (!ASRUtils::check_equal_type(ele_type, list_type, nullptr, nullptr)) {
         std::string fnd = ASRUtils::get_type_code(ele_type);
         std::string org = ASRUtils::get_type_code(list_type);
         append_error(diag,
@@ -5890,7 +5892,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
             break;
     }
     ASRUtils::require_impl(ASRUtils::check_equal_type(x.m_type,
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Return type of list.pop must be of same type as list's element type",
         x.base.base.loc, diagnostics);
 }
@@ -5953,7 +5955,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
         ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 0)),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 0), nullptr, nullptr),
         "Return type of dict.keys must be of list of dict key element type",
         x.base.base.loc, diagnostics);
 }
@@ -6000,7 +6002,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
         ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 1)),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 1), nullptr, nullptr),
         "Return type of dict.values must be of list of dict value element type",
         x.base.base.loc, diagnostics);
 }
@@ -6046,7 +6048,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         "First argument to set.add must be of set type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Second argument to set.add must be of same type as set's element type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(x.m_type == nullptr,
@@ -6068,7 +6070,7 @@ static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
         return nullptr;
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr, nullptr)) {
         append_error(diag, "Argument to set.add must be of same type as set's "
             "element type", loc);
         return nullptr;
@@ -6097,7 +6099,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         "First argument to set.remove must be of set type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Second argument to set.remove must be of same type as set's element type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(x.m_type == nullptr,
@@ -6119,7 +6121,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
         return nullptr;
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr, nullptr)) {
         append_error(diag, "Argument to set.remove must be of same type as set's "
             "element type", loc);
         return nullptr;

@@ -14,8 +14,6 @@ MODULE passing_array_02_mod
     FUNCTION test_01 (len,value) result(res)
         implicit none
         INTEGER, intent(in) :: len 
-        ! Passed integer `len` is set to 10, which should result to an error (12/30)
-        ! but as len isn't known at compile time, it just accepts it.
         INTEGER, DIMENSION(3,len),intent(in) :: value 
         INTEGER :: res
         res = size(value)
@@ -23,8 +21,8 @@ MODULE passing_array_02_mod
 
     FUNCTION test_02 (value) result(res)
         implicit none
-        ! Passed array has dimension = 12 while the array in this function has dimension = 3
-        ! Slicing is premesible (3 <= 12), so accept it.  
+        ! Passed array has dimension = 30 while the array in this function has dimension = 3
+        ! Slicing is premesible (3 <= 30), so accept it.  
         INTEGER, DIMENSION(3,1),intent(in) :: value 
         INTEGER :: res
         res = size(value)
@@ -32,7 +30,7 @@ MODULE passing_array_02_mod
 
     subroutine test_entry
         integer:: len
-        INTEGER, DIMENSION(6,2) :: arr
+        INTEGER, DIMENSION(3, 10) :: arr
         INTEGER :: ret
         len = 10
         ret =  test_01_interface (len,arr)

@@ -1840,7 +1840,9 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
         if (omp_stmt[i] == "do" ||
             omp_stmt[i] == "sections" ||
             omp_stmt[i] == "workshare" ||
-            omp_stmt[i] == "section" ) {
+            omp_stmt[i] == "section" ||
+                omp_stmt[i] == "parallel" ||
+                omp_stmt[i] == "distribute") {
             construct_name += " " + omp_stmt[i];
         } else {
             m_clauses.push_back(al, EXPR(make_String_t(al, loc,
@@ -2535,7 +2537,7 @@ return make_Submodule_t(al, a_loc,
         TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
 
 
-#define LF_UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
+#define UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
         name2char(name), \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(), \

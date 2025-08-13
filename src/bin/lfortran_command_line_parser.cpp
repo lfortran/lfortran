@@ -40,6 +40,7 @@ namespace LCompilers::CommandLineInterface {
         std::string group_mangling_options = "Mangling Options";
         std::string group_miscellaneous_options = "Miscellaneous Options";
         std::string group_lsp_options = "LSP Options";
+        bool disable_bounds_checking = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -121,6 +122,7 @@ namespace LCompilers::CommandLineInterface {
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
+        app.add_flag("--target-offload", compiler_options.target_offload_enabled, "Enable Target Offloading")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
@@ -161,6 +163,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
+        app.add_flag("--array-bounds-checking", compiler_options.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
+        app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
 
         // LSP specific options
         app.add_flag("--show-errors", opts.show_errors, "Show errors when LSP is running in the background")->group(group_lsp_options);
@@ -236,6 +240,10 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException(
                 "The option `--std=" + opts.arg_standard + "` is not supported"
             );
+        }
+
+        if (disable_bounds_checking || compiler_options.po.fast) {
+            compiler_options.bounds_checking = false;
         }
 
         compiler_options.use_colors = !opts.arg_no_color;

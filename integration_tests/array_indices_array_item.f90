@@ -52,8 +52,8 @@ program array_indices_array_item
     print *, rank_val
     if (rank_val /= 1) error stop
 
-    allocate(arr(1, 3))
-    arr = reshape([1, 2, 3], shape(arr))
+    allocate(arr(2, 3))
+    arr = reshape([1, 2, 3, 4, 5, 6], shape(arr))
     rank_val = rank(arr(arr_idx, 1))
     print *, rank_val
     if (rank_val /= 1) error stop

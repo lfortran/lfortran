@@ -89,6 +89,7 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
+    bool target_offload_enabled = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -114,7 +115,7 @@ struct CompilerOptions {
     bool disable_style = false;
     bool logical_casting = false;
     bool no_error_banner = false;
-    bool enable_bounds_checking = false;
+    bool bounds_checking = true;
     std::string error_format = "human";
     bool new_parser = false;
     bool implicit_typing = false;

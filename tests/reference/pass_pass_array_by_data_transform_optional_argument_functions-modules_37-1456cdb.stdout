@@ -116,7 +116,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(Assignment
+                                                    [(Associate
                                                         (Var 14 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
@@ -153,8 +153,6 @@
                                                             )
                                                             ()
                                                         )
-                                                        ()
-                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember

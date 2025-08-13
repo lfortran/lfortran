@@ -7,11 +7,11 @@ contains
         integer, intent(inout) :: x
         logical :: keep(x)
         integer :: result(x)
-        keep = [.false., .true.]
+        keep = [.true., .true.]
         x = 1
         result = trueloc(keep)
         print * , result
-        if (result(1) /= 2) error stop
+        if (any(result /= [1, 2])) error stop
    end subroutine
    function trueloc(x) result(loc)
         logical, intent(in) :: x(:)

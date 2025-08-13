@@ -271,11 +271,11 @@ semantic error: Kind of all the arguments of Mergebits must be the same
 177 |     print *, merge_bits(merge_i,merge_j,merge_k)
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Argument of `size` must be an array
-   --> tests/errors/continue_compilation_3.f90:181:18
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_3.f90:181:23
     |
 181 |         print *, size(bpe)
-    |                  ^^^^^^^^^ 
+    |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
    --> tests/errors/continue_compilation_3.f90:182:15

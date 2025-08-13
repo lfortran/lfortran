@@ -60,7 +60,7 @@ namespace LCompilers::CastingUtil {
         ASR::ttype_t* right_type = ASRUtils::expr_type(right_expr);
         left_type = ASRUtils::type_get_past_pointer(left_type);
         right_type = ASRUtils::type_get_past_pointer(right_type);
-        if( ASRUtils::check_equal_type(left_type, right_type) ||
+        if( ASRUtils::check_equal_type(left_type, right_type, left_expr, right_expr) ||
             ASRUtils::is_character(*left_type) || ASRUtils::is_character(*right_type) ) {
             return 2;
         }
@@ -133,7 +133,16 @@ namespace LCompilers::CastingUtil {
             }
             cast_kind = type_rules.at(cast_key);
         }
-        if( ASRUtils::check_equal_type(src, dest, true) ) {
+        if ((ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(src))
+             || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest)))
+            || ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(src))
+                 || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest))))) {
+            // No casting supported currently for `StructType` and `FunctionType`
+            return expr;
+        }
+        // We do not cast from `StructTypeToStructType`, so no expression will be used in the
+        // below comparison, hence pass `nullptr`.
+        if (ASRUtils::check_equal_type(src, dest, nullptr, nullptr, true)) {
             return expr;
         }
         // TODO: Fix loc
