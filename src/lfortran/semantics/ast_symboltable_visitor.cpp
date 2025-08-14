@@ -266,7 +266,7 @@ public:
         std::cout << "Implicit Dictionary: " << std::endl;
         for (auto it: implicit_dictionary) {
             if (it.second) {
-                std::cout << it.first << " " << ASRUtils::type_to_str_fortran(it.second, nullptr) << std::endl;
+                std::cout << it.first << " " << ASRUtils::type_to_str_fortran(it.second, (ASR::expr_t*)nullptr) << std::endl;
             } else {
                 std::cout << it.first << " " << "NULL" << std::endl;
             }

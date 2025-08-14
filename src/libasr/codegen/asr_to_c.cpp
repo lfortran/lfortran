@@ -398,7 +398,7 @@ public:
                 sub = format_type_c("", "void**", v.m_name, false, false);
             } else {
                 diag.codegen_error_label("Type '"
-                    + ASRUtils::type_to_str_python(t2)
+                    + ASRUtils::type_to_str_python(t2, v.m_type_declaration)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -568,7 +568,7 @@ public:
                 return "";
             } else {
                 diag.codegen_error_label("Type '"
-                    + ASRUtils::type_to_str_python(v_m_type)
+                    + ASRUtils::type_to_str_python(v_m_type, v.m_type_declaration)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }

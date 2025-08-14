@@ -355,7 +355,7 @@ public:
                 break;
             }
             default : throw LCompilersException("Debug information for the type: `"
-                + ASRUtils::type_to_str_python(t) + "` is not yet implemented");
+                + std::to_string(t->type) + "` is not yet implemented");
         }
     }
 
@@ -1651,7 +1651,7 @@ public:
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr)),
+                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
             ASR::ttype_t *cur_type = ASRUtils::expr_type(tmp_expr);
@@ -3799,7 +3799,7 @@ public:
             ptr_type[ptr] = type;
 #endif
         } else {
-            throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type), x.base.base.loc);
+            throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
     }
 
@@ -9731,7 +9731,7 @@ public:
                 break;
             }
             default: {
-                std::string s_type = ASRUtils::type_to_str_fortran(type, nullptr);
+                std::string s_type = ASRUtils::type_to_str_fortran(type, (ASR::expr_t*)nullptr);
                 throw CodeGenError("Read function not implemented for: " + s_type);
             }
         }
@@ -9851,7 +9851,7 @@ public:
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read_" +
-                                            ASRUtils::type_to_str_python(ASRUtils::extract_type(type));
+                                            ASRUtils::type_to_str_python(ASRUtils::extract_type(type), x.m_values[i]);
                     if (ASRUtils::is_array(type)) {
                         runtime_func_name += "_array";
                     }
@@ -10548,7 +10548,7 @@ public:
             res += "CPtr";
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran(type, nullptr) + "` type.");
+                ASRUtils::type_to_str_fortran(type, (ASR::expr_t*)nullptr) + "` type.");
         }
         return res;
     }
@@ -11951,8 +11951,8 @@ public:
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
                         if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python(expected_arg_type)
-                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type) + "`", x.m_args[i].m_value->base.loc);
+                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python(expected_arg_type, expected_arg)
+                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                         }
                     }
                 }

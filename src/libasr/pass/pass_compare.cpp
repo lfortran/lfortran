@@ -71,7 +71,7 @@ public:
 
     ASR::symbol_t* get_tuple_compare_func(Location& loc,
                 SymbolTable*& scope, ASR::ttype_t *t) {
-        std::string type_name = ASRUtils::type_to_str_python(t);
+        std::string type_name = ASRUtils::type_to_str_python(t, (ASR::expr_t*)nullptr);
         if (compare_func_map.find(type_name) == compare_func_map.end()) {
             create_tuple_compare(loc, scope, t);
         }
@@ -80,7 +80,7 @@ public:
 
     ASR::symbol_t* get_list_compare_func(Location& loc,
                 SymbolTable*& scope, ASR::ttype_t *t) {
-        std::string type_name = ASRUtils::type_to_str_python(t);
+        std::string type_name = ASRUtils::type_to_str_python(t, (ASR::expr_t*)nullptr);
         if (compare_func_map.find(type_name) == compare_func_map.end()) {
             create_list_compare(loc, scope, t);
         }
@@ -162,7 +162,7 @@ public:
                 return res
         */
         SymbolTable* tup_compare_symtab = al.make_new<SymbolTable>(global_scope);
-        std::string tuple_type_name = ASRUtils::type_to_str_python(type);
+        std::string tuple_type_name = ASRUtils::type_to_str_python(type, (ASR::expr_t*)nullptr);
         ASR::Tuple_t *tuple_type = ASR::down_cast<ASR::Tuple_t>(type);
 
         std::string fn_name = global_scope->get_unique_name("_lcompilers_tuple_compare_" + tuple_type_name, false);
@@ -329,7 +329,7 @@ public:
                 return res
         */
         SymbolTable* list_compare_symtab = al.make_new<SymbolTable>(global_scope);
-        std::string list_type_name = ASRUtils::type_to_str_python(type);
+        std::string list_type_name = ASRUtils::type_to_str_python(type, (ASR::expr_t*)nullptr);
         ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(type);
 
         std::string fn_name = global_scope->get_unique_name("_lcompilers_list_compare_" + list_type_name, false);

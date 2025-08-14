@@ -72,7 +72,9 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
 
 inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions=false);
 
-static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
+static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::expr_t* expr);
+
+static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::symbol_t* sym);
 
 const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
@@ -530,8 +532,9 @@ static std::string intent_to_str(ASR::intentType intent) {
     }
 }
 
-template <typename T>
-static inline std::string type_to_str_fortran(const ASR::ttype_t *t, T expr);
+static inline std::string type_to_str_fortran(const ASR::ttype_t *t, ASR::expr_t* expr);
+
+static inline std::string type_to_str_fortran(const ASR::ttype_t *t, ASR::symbol_t* sym);
 
 static inline char *symbol_name(const ASR::symbol_t *f);
 
@@ -752,7 +755,7 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
         }
         default:
             throw LCompilersException("Cannot extract the physical type of " +
-                    ASRUtils::type_to_str_python(e) + " type.");
+                    std::to_string(e->type) + " type.");
     }
 }
 
@@ -880,10 +883,7 @@ static inline void encode_dimensions(size_t n_dims, std::string& res,
     }
 }
 
-// Templated argument `struct_type_name_helper` should be either an `ASR::expr_t*` or
-// `ASR::symbol_t*`.
-template <typename T>
-static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_type_name_helper)
+static inline std::string type_to_str_fortran(const ASR::ttype_t* t, ASR::expr_t* expr)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
@@ -914,11 +914,8 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_ty
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
-            if (ASR::is_a<ASR::expr_t>(*struct_type_name_helper)) {
-                return ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(struct_type_name_helper));
-            } else if (ASR::is_a<ASR::symbol_t>(*struct_type_name_helper)) {
-                return ASRUtils::symbol_name(struct_type_name_helper);
-            }
+            return ASRUtils::symbol_name(
+                ASRUtils::get_struct_sym_from_struct_expr(expr));
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
@@ -932,11 +929,11 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_ty
         }
         case ASR::ttypeType::Pointer: {
             return type_to_str_fortran(ASRUtils::type_get_past_pointer(
-                        const_cast<ASR::ttype_t*>(t)), struct_type_name_helper) + " pointer";
+                        const_cast<ASR::ttype_t*>(t)), expr) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
             return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
-                        const_cast<ASR::ttype_t*>(t)), struct_type_name_helper) + " allocatable";
+                        const_cast<ASR::ttype_t*>(t)), expr) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
             return "type(c_ptr)";
@@ -950,7 +947,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_ty
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_fortran(array_t->m_type, struct_type_name_helper);
+            std::string res = type_to_str_fortran(array_t->m_type, expr);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -958,11 +955,11 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_ty
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "FunctionType(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str_fortran(ftp->m_arg_types[i], nullptr) + ", ";
+                result += type_to_str_fortran(ftp->m_arg_types[i], (ASR::expr_t*)nullptr) + ", ";
             }
             if( ftp->m_return_var_type ) {
                 result += "return_type: ";
-                result += type_to_str_fortran(ftp->m_return_var_type, nullptr);
+                result += type_to_str_fortran(ftp->m_return_var_type, (ASR::expr_t*)nullptr);
             }
             result += ")";
             return result;
@@ -972,7 +969,92 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t* t, T struct_ty
     }
 }
 
-static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
+static inline std::string type_to_str_fortran(const ASR::ttype_t* t, ASR::symbol_t* sym)
+{
+    switch (t->type) {
+        case ASR::ttypeType::Integer: {
+            return "integer";
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            return "type(unsigned)";
+        }
+        case ASR::ttypeType::Real: {
+            return "real";
+        }
+        case ASR::ttypeType::Complex: {
+            return "complex";
+        }
+        case ASR::ttypeType::String: {
+            return "string";
+        }
+        case ASR::ttypeType::Logical: {
+            return "logical";
+        }
+        case ASR::ttypeType::Set: {
+            return "set";
+        }
+        case ASR::ttypeType::List: {
+            return "list";
+        }
+        case ASR::ttypeType::Tuple: {
+            return "tuple";
+        }
+        case ASR::ttypeType::StructType: {
+            return ASRUtils::symbol_name(sym);
+        }
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
+            return ASRUtils::symbol_name(enum_type->m_enum_type);
+        }
+        case ASR::ttypeType::UnionType: {
+            return "union";
+        }
+        case ASR::ttypeType::Dict: {
+            return "dict";
+        }
+        case ASR::ttypeType::Pointer: {
+            return type_to_str_fortran(ASRUtils::type_get_past_pointer(
+                        const_cast<ASR::ttype_t*>(t)), sym) + " pointer";
+        }
+        case ASR::ttypeType::Allocatable: {
+            return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
+                        const_cast<ASR::ttype_t*>(t)), sym) + " allocatable";
+        }
+        case ASR::ttypeType::CPtr: {
+            return "type(c_ptr)";
+        }
+        case ASR::ttypeType::SymbolicExpression: {
+            return "type(symbolic)";
+        }
+        case ASR::ttypeType::TypeParameter: {
+            ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
+            return tp->m_param;
+        }
+        case ASR::ttypeType::Array: {
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+            std::string res = type_to_str_fortran(array_t->m_type, sym);
+            encode_dimensions(array_t->n_dims, res, false);
+            return res;
+        }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string result = "FunctionType(";
+            for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
+                result += type_to_str_fortran(ftp->m_arg_types[i], (ASR::symbol_t*)nullptr) + ", ";
+            }
+            if( ftp->m_return_var_type ) {
+                result += "return_type: ";
+                result += type_to_str_fortran(ftp->m_return_var_type, (ASR::symbol_t*)nullptr);
+            }
+            result += ")";
+            return result;
+        }
+        default : throw LCompilersException("Type number " +
+              std::to_string(t->type) + " not implemented.");
+    }
+}
+
+static inline std::string type_to_str_with_substitution(ASR::expr_t* expr, const ASR::ttype_t *t,
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs)
 {
     if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
@@ -981,16 +1063,16 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
     }
     switch (t->type) {
         case ASR::ttypeType::Pointer: {
-            return type_to_str_with_substitution(ASRUtils::type_get_past_pointer(
+            return type_to_str_with_substitution(expr, ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), subs) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
-            return type_to_str_with_substitution(ASRUtils::type_get_past_allocatable(
+            return type_to_str_with_substitution(expr, ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t)), subs) + " allocatable";
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_with_substitution(array_t->m_type, subs);
+            std::string res = type_to_str_with_substitution(expr, array_t->m_type, subs);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -998,18 +1080,18 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str_with_substitution(ftp->m_arg_types[i], subs) + ", ";
+                result += type_to_str_with_substitution(nullptr, ftp->m_arg_types[i], subs) + ", ";
             }
             result += "return_type: ";
             if( ftp->m_return_var_type ) {
-                result += type_to_str_with_substitution(ftp->m_return_var_type, subs);
+                result += type_to_str_with_substitution(nullptr, ftp->m_return_var_type, subs);
             } else {
                 result += "void";
             }
             result += ")";
             return result;
         }
-        default : return type_to_str_fortran(t);    // TODO type_to_str: Check how to handle `StructType` here.
+        default : return type_to_str_fortran(t, expr);
     }
 }
 
@@ -2047,7 +2129,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         default: {
             throw LCompilersException("Type encoding not implemented for "
-                                      + ASRUtils::type_to_str_python(t));
+                                      + ASRUtils::type_to_str_python(t, expr));
         }
     }
     if( is_dimensional && set_dimensional_hint ) {
@@ -2070,7 +2152,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::expr_t*
     switch (t->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_python(array_t->m_type);
+            std::string res = type_to_str_python(array_t->m_type, expr);
             std::string dim_info = type_encode_dims(array_t->n_dims, array_t->m_dims);
             res += dim_info;
             return res;
@@ -2127,7 +2209,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::expr_t*
             ASR::Tuple_t *tup = ASR::down_cast<ASR::Tuple_t>(t);
             std::string result = "tuple[";
             for (size_t i=0; i<tup->n_type; i++) {
-                result += type_to_str_python(tup->m_type[i]);
+                result += type_to_str_python(tup->m_type[i], (ASR::expr_t*)nullptr);
                 if (i+1 != tup->n_type) {
                     result += ", ";
                 }
@@ -2137,15 +2219,17 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::expr_t*
         }
         case ASR::ttypeType::Set: {
             ASR::Set_t *s = (ASR::Set_t *)t;
-            return "set[" + type_to_str_python(s->m_type) + "]";
+            return "set[" + type_to_str_python(s->m_type, (ASR::expr_t*)nullptr) + "]";
         }
         case ASR::ttypeType::Dict: {
             ASR::Dict_t *d = (ASR::Dict_t *)t;
-            return "dict[" + type_to_str_python(d->m_key_type) + ", " + type_to_str_python(d->m_value_type) + "]";
+            std::string key = type_to_str_python(d->m_key_type, (ASR::expr_t*)nullptr);
+            std::string value = type_to_str_python(d->m_value_type, (ASR::expr_t*)nullptr);
+            return "dict[" + key + ", " + value + "]";
         }
         case ASR::ttypeType::List: {
             ASR::List_t *l = (ASR::List_t *)t;
-            return "list[" + type_to_str_python(l->m_type) + "]";
+            return "list[" + type_to_str_python(l->m_type, (ASR::expr_t*)nullptr) + "]";
         }
         case ASR::ttypeType::CPtr: {
             return "CPtr";
@@ -2163,11 +2247,128 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::expr_t*
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
-            return "Pointer[" + type_to_str_python(p->m_type) + "]";
+            return "Pointer[" + type_to_str_python(p->m_type, expr) + "]";
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* p = ASR::down_cast<ASR::Allocatable_t>(t);
-            return "Allocatable[" + type_to_str_python(p->m_type) + "]";
+            return "Allocatable[" + type_to_str_python(p->m_type, expr) + "]";
+        }
+        case ASR::ttypeType::TypeParameter: {
+            ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
+            return p->m_param;
+        }
+        case ASR::ttypeType::SymbolicExpression: {
+            return "S";
+        }
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
+    }
+}
+
+static inline std::string type_to_str_python(const ASR::ttype_t *t, ASR::symbol_t* sym)
+{
+    switch (t->type) {
+        case ASR::ttypeType::Array: {
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+            std::string res = type_to_str_python(array_t->m_type, sym);
+            std::string dim_info = type_encode_dims(array_t->n_dims, array_t->m_dims);
+            res += dim_info;
+            return res;
+        }
+        case ASR::ttypeType::Integer: {
+            ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(t);
+            std::string res = "";
+            switch (i->m_kind) {
+                case 1: { res = "i8"; break; }
+                case 2: { res = "i16"; break; }
+                case 4: { res = "i32"; break; }
+                case 8: { res = "i64"; break; }
+                default: { throw LCompilersException("Integer kind not supported"); }
+            }
+            return res;
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            ASR::UnsignedInteger_t *i = ASR::down_cast<ASR::UnsignedInteger_t>(t);
+            std::string res = "";
+            switch (i->m_kind) {
+                case 1: { res = "u8"; break; }
+                case 2: { res = "u16"; break; }
+                case 4: { res = "u32"; break; }
+                case 8: { res = "u64"; break; }
+                default: { throw LCompilersException("UnsignedInteger kind not supported"); }
+            }
+            return res;
+        }
+        case ASR::ttypeType::Real: {
+            ASR::Real_t *r = (ASR::Real_t*)t;
+            std::string res = "";
+            switch (r->m_kind) {
+                case 4: { res = "f32"; break; }
+                case 8: { res = "f64"; break; }
+                default: { throw LCompilersException("Float kind not supported"); }
+            }
+            return res;
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::Complex_t *c = (ASR::Complex_t*)t;
+            switch (c->m_kind) {
+                case 4: { return "c32"; }
+                case 8: { return "c64"; }
+                default: { throw LCompilersException("Complex kind not supported"); }
+            }
+        }
+        case ASR::ttypeType::Logical: {
+            return "bool";
+        }
+        case ASR::ttypeType::String: {
+            return "str";
+        }
+        case ASR::ttypeType::Tuple: {
+            ASR::Tuple_t *tup = ASR::down_cast<ASR::Tuple_t>(t);
+            std::string result = "tuple[";
+            for (size_t i=0; i<tup->n_type; i++) {
+                result += type_to_str_python(tup->m_type[i], (ASR::symbol_t*)nullptr);
+                if (i+1 != tup->n_type) {
+                    result += ", ";
+                }
+            }
+            result += "]";
+            return result;
+        }
+        case ASR::ttypeType::Set: {
+            ASR::Set_t *s = (ASR::Set_t *)t;
+            return "set[" + type_to_str_python(s->m_type, (ASR::symbol_t*)nullptr) + "]";
+        }
+        case ASR::ttypeType::Dict: {
+            ASR::Dict_t *d = (ASR::Dict_t *)t;
+            std::string key = type_to_str_python(d->m_key_type, (ASR::symbol_t*)nullptr);
+            std::string value = type_to_str_python(d->m_value_type, (ASR::symbol_t*)nullptr);
+            return "dict[" + key + ", " + value + "]";
+        }
+        case ASR::ttypeType::List: {
+            ASR::List_t *l = (ASR::List_t *)t;
+            return "list[" + type_to_str_python(l->m_type, (ASR::symbol_t*)nullptr) + "]";
+        }
+        case ASR::ttypeType::CPtr: {
+            return "CPtr";
+        }
+        case ASR::ttypeType::StructType: {
+            return ASRUtils::symbol_name(sym);
+        }
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
+            return "enum " + std::string(symbol_name(d->m_enum_type));
+        }
+        case ASR::ttypeType::UnionType: {
+            /*ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);*/
+            return "UnionType";
+        }
+        case ASR::ttypeType::Pointer: {
+            ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
+            return "Pointer[" + type_to_str_python(p->m_type, sym) + "]";
+        }
+        case ASR::ttypeType::Allocatable: {
+            ASR::Allocatable_t* p = ASR::down_cast<ASR::Allocatable_t>(t);
+            return "Allocatable[" + type_to_str_python(p->m_type, sym) + "]";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -2268,7 +2469,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, false, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2291,7 +2492,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, true, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2326,7 +2527,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2359,7 +2560,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2733,7 +2934,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
             break;
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(x) + ".");
+            throw LCompilersException("Not implemented " + std::to_string(x->type) + ".");
     }
     return n_dims;
 }
@@ -3314,7 +3515,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Tuple_t(al, tup->base.base.loc,
                 types.p, types.size()));
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
     LCOMPILERS_ASSERT(t_ != nullptr);
     return ASRUtils::make_Array_t_util(
@@ -3501,7 +3702,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::CPtr: {
             return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
 }
 
@@ -3727,7 +3928,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
         }
         default: {
             diag.add(diag::Diagnostic(
-                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
+                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr), len_expr),
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {loc})}));
             throw SemanticAbort();
@@ -4376,7 +4577,7 @@ static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
         }
         default: {
             throw LCompilersException("Cannot extract intent of ASR::exprType::" +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(expr)));
+                ASRUtils::type_to_str_python(ASRUtils::expr_type(expr), expr));
         }
     }
     return ASR::intentType::Unspecified;

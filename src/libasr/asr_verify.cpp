@@ -382,7 +382,7 @@ public:
                 std::string variable_name = ASRUtils::symbol_name(target_Var->m_v);
                 require(const_assigned.find(std::make_pair(current_symtab->counter,
                     variable_name)) == const_assigned.end(),
-                    "Assignment target with " + ASRUtils::type_to_str_python(target_type)
+                    "Assignment target with " + ASRUtils::type_to_str_python(target_type, target)
                     + " cannot be re-assigned.");
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }

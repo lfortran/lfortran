@@ -1115,7 +1115,7 @@ namespace CpuTime {
         } else {
             c_func_name = "_lfortran_d_cpu_time";
         }
-        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python(arg_types[0]);
+        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
         fill_func_arg_sub("time", arg_types[0], InOut);
 
