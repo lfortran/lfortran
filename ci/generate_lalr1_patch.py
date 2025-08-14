@@ -26,16 +26,6 @@ patch_path = 'ci/parser.yy.patch'
 with open(file_path, 'r') as f:
     lines = f.readlines()
 
-# Modify common_block_list section
-for i in range(len(lines) - 4):
-    if lines[i].strip() == 'common_block_list' and \
-       'common_block_list TK_COMMA common_block' in lines[i+1]:
-        # Delete the first two alternative lines
-        del lines[i+1:i+3]
-        # Replace '| ' with ': ' in the now-next line
-        lines[i+1] = lines[i+1].replace('| ', ': ', 1)
-        break
-
 # Modify id section
 for j in range(len(lines) - 1):
     if lines[j].strip() == 'id' and \
