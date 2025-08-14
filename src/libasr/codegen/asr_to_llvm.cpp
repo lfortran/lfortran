@@ -10494,6 +10494,13 @@ public:
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
+
+            // Push the length of the string to args
+            ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+            if (x.m_is_formatted && ASRUtils::is_character(*t)) {
+                llvm::Value *str_len = get_string_length(m_values[i]);
+                args.push_back(str_len);
+            }
         }
         if (!x.m_is_formatted) {  // give -1 argument for end of arguments
             llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
