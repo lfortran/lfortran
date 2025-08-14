@@ -1075,7 +1075,7 @@ namespace LCompilers {
             const int num_args = 6;
             std::string vector_copy_name = prefix;
             for( size_t i = 0; i < types.size(); i++ ) {
-                vector_copy_name += ASRUtils::type_to_str_python(types[i], arrays[i]);
+                vector_copy_name += ASRUtils::type_to_str_python_expr(types[i], arrays[i]);
             }
             vector_copy_name += "@IntrinsicOptimization";
             if( global_scope->resolve_symbol(vector_copy_name) ) {

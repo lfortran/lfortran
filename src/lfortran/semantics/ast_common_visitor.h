@@ -784,8 +784,8 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                 default:
                     LCOMPILERS_ASSERT(false);
             }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type, left)
-                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
     }
@@ -1188,7 +1188,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         else {
             diag.add(diag::Diagnostic(
                 "Operand of .not. operator is "+
-                std::string(ASRUtils::type_to_str_fortran(operand_type, operand)),
+                std::string(ASRUtils::type_to_str_fortran_expr(operand_type, operand)),
                 Level::Error, Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -5879,9 +5879,9 @@ public:
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
-                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran(extracted_type, expr) 
+                    diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_fortran_expr(extracted_type, expr) 
                     + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_type))) + ")" +
-                        "` array constructor is `" + ASRUtils::type_to_str_fortran(extracted_new_type, expr) 
+                        "` array constructor is `" + ASRUtils::type_to_str_fortran_expr(extracted_new_type, expr) 
                         + "(" + std::string(std::to_string(ASRUtils::extract_kind_from_ttype_t(extracted_new_type))) + ")" + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
@@ -6596,8 +6596,8 @@ public:
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type, arg, func->m_args[i]) &&
                     !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
-                    std::string arg_str = ASRUtils::type_to_str_fortran(arg_type, arg);
-                    std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type, func->m_args[i]);
+                    std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
+                    std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                         "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
                                         Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
@@ -7491,20 +7491,20 @@ public:
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(array)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `source` argument, found " +
-                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array), array) +
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             diag.add(Diagnostic("reshape accepts arrays for `shape` argument, found " +
-                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(newshape), newshape) +
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(newshape), newshape) +
                 " instead.", Level::Error, Stage::Semantic, {Label("", {shape->base.loc})}));
             throw SemanticAbort();
         }
         if (order_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(order_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `order` argument, found " +
-                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(order_expr), order_expr) +
+                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(order_expr), order_expr) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
                 throw SemanticAbort();
             }
@@ -7512,14 +7512,14 @@ public:
         if (pad_expr) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(pad_expr))){
                 diag.add(Diagnostic("reshape accepts arrays for `pad` argument, found " +
-                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr), pad_expr) +
+                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } else if ( (ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr), pad_expr) != ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array), array))||
+            } else if ( (ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) != ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array))||
             (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str_fortran(ASRUtils::expr_type(pad_expr), pad_expr) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
-                     + " source type " + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array), array) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
+                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)))
+                     + " source type " + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array) + " and kind " + std::to_string(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             }
@@ -7723,7 +7723,7 @@ public:
         ASR::expr_t* array = ASRUtils::EXPR(tmp);
         if (!ASRUtils::is_array(ASRUtils::expr_type(array))) {
             diag.add(Diagnostic("is_contiguous expects an array argument, found " +
-                                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(array), array) + " instead.",
+                                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array) + " instead.",
                                 Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
             throw SemanticAbort();
         }
@@ -7754,7 +7754,7 @@ public:
         } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
             return (ASR::asr_t*) arg;
         } else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg), arg);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(arg), arg);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_unsigned is not supported yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -7785,7 +7785,7 @@ public:
             return ASR::make_DictLen_t(al, x.base.base.loc, arg, 
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
         else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg), arg);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(arg), arg);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_len has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -7813,7 +7813,7 @@ public:
         if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
 
             if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), args[1]);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[1]), args[1]);
                 diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
 
@@ -7840,8 +7840,8 @@ public:
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
             ASR::ttype_t* key_type = dict_type->m_key_type;
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type, nullptr, nullptr)) {
-                std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type, (ASR::expr_t*)nullptr);
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), (ASR::expr_t*)nullptr);
+                std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(key_type, nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[1]), nullptr);
                 diag.add(Diagnostic(
                     "Type mismatch in '_lfortran_get_item', the key types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -7859,7 +7859,7 @@ public:
             int index;
 
             if (!value) {
-                std::string type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), (ASR::expr_t*)nullptr);
+                std::string type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[0]), nullptr);
                 diag.add(Diagnostic("Runtime indexing with type '" + type_str + "' is not possible",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
 
@@ -7893,7 +7893,7 @@ public:
 
             return ASR::make_TupleItem_t(al, x.base.base.loc, args[0], index_expr, tuple_type->m_type[index], nullptr);
         } else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), (ASR::expr_t*)nullptr);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[0]), nullptr);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -7921,7 +7921,7 @@ public:
         if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
 
             if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), (ASR::expr_t*)nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[1]), nullptr);
                 diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
 
@@ -7950,8 +7950,8 @@ public:
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
             ASR::ttype_t* key_type = dict_type->m_key_type;
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type, nullptr, nullptr)) {
-                std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type, (ASR::expr_t*)nullptr);
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), (ASR::expr_t*)nullptr);
+                std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(key_type, nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[1]), nullptr);
                 diag.add(Diagnostic(
                     "Type mismatch in '_lfortran_get_item', the key types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -7963,7 +7963,7 @@ public:
 
             return ASR::make_DictPop_t(al, x.base.base.loc, args[0], args[1], dict_type->m_value_type, nullptr);
         } else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), (ASR::expr_t*)nullptr);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(args[0]), nullptr);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_pop has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -7999,8 +7999,8 @@ public:
                 right_type = ASRUtils::get_contained_type(ASRUtils::expr_type(right));
 
                 if (!ASRUtils::check_equal_type(list_el_type, right_type, nullptr, nullptr)) {
-                    std::string contained_type_str = ASRUtils::type_to_str_fortran(list_el_type, (ASR::expr_t*)nullptr);
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(right_type, (ASR::expr_t*)nullptr);
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(list_el_type, nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(right_type, nullptr);
                     diag.add(Diagnostic(
                         "Type mismatch in _lfortran_concat, the list types must be compatible",
                         Level::Error, Stage::Semantic, {
@@ -8042,7 +8042,7 @@ public:
 
             return (ASR::asr_t*)left;
         } else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left), (ASR::expr_t*)nullptr);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(left), nullptr);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -8074,8 +8074,8 @@ public:
 
 
         if (!ASRUtils::check_equal_type(left_type, right_type, left, right)) {
-                std::string left_type_str = ASRUtils::type_to_str_python(left_type, left);
-                std::string right_type_str = ASRUtils::type_to_str_python(right_type, right);
+                std::string left_type_str = ASRUtils::type_to_str_python_expr(left_type, left);
+                std::string right_type_str = ASRUtils::type_to_str_python_expr(right_type, right);
                 diag.add(Diagnostic(
                     "Type mismatch in _lfortran_eq, the types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -8089,7 +8089,7 @@ public:
             return ASR::make_TupleCompare_t(al, x.base.base.loc, left, ASR::cmpopType::Eq, right,
                                             ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr);
         else {
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(left_type, (ASR::expr_t*)nullptr);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(left_type, nullptr);
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -8126,8 +8126,8 @@ public:
 
 
             if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
+                std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(contained_type, nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type, nullptr);
                 diag.add(Diagnostic(
                     "Type mismatch in _lfortran_list_constant, the types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -8172,8 +8172,8 @@ public:
 
 
         if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-            std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
-            std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
+            std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(contained_type, nullptr);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type, nullptr);
             diag.add(Diagnostic(
                 "Type mismatch in _lfortran_list_constant, the types must be compatible",
                 Level::Error, Stage::Semantic, {
@@ -8217,8 +8217,8 @@ public:
 
 
             if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
+                std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(contained_type, nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type, nullptr);
                 diag.add(Diagnostic(
                     "Type mismatch in _lfortran_set_constant, the types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -8279,8 +8279,8 @@ public:
 
 
             if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
-                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
+                std::string contained_type_str = ASRUtils::type_to_str_fortran_expr(contained_type, nullptr);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type, nullptr);
                 diag.add(Diagnostic(
                     "Type mismatch in _lfortran_list_constant, the types must be compatible",
                     Level::Error, Stage::Semantic, {
@@ -9273,7 +9273,7 @@ public:
                     al, loc, arg, ASR::cast_kindType::ComplexToReal,
                     to_type, value));
         } else {
-            std::string stype = ASRUtils::type_to_str_fortran(type, arg);
+            std::string stype = ASRUtils::type_to_str_fortran_expr(type, arg);
             diag.add(Diagnostic("Conversion of '" + stype + "' to float is not Implemented",
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
@@ -10084,8 +10084,8 @@ public:
                         ASR::ttype_t *source_type = ASRUtils::expr_type(source);
 
                         if (!ASRUtils::check_equal_type(dest_type, source_type, dest, source)) {
-                            std::string dtype = ASRUtils::type_to_str_fortran(dest_type, dest);
-                            std::string stype = ASRUtils::type_to_str_fortran(source_type, source);
+                            std::string dtype = ASRUtils::type_to_str_fortran_expr(dest_type, dest);
+                            std::string stype = ASRUtils::type_to_str_fortran_expr(source_type, source);
                             diag.add(Diagnostic(
                                 "Type mismatch in function call, the function expects '" + dtype + "' but '" + stype + "' was provided",
                                 Level::Error, Stage::Semantic, {
@@ -10422,8 +10422,8 @@ public:
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right), left, right) && overloaded == nullptr) {
-            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left), left);
-            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(right), right);
+            std::string ltype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(left), left);
+            std::string rtype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(right), right);
             diag.add(Diagnostic(
                 "Type mismatch in binary operator, the types must be compatible",
                 Level::Error, Stage::Semantic, {
@@ -10504,8 +10504,8 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran(left_type, left)
-                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
+                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
@@ -10560,7 +10560,7 @@ public:
                     args[i], false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
-                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran(arg_type, type_declaration) +
+                    diag.add(Diagnostic("The type " + ASRUtils::type_to_str_fortran_symbol(arg_type, type_declaration) +
                         " cannot be applied to non-type parameter " + param, Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }

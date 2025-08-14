@@ -612,7 +612,7 @@ public:
             }
             ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
         } else {
-            LCompilersException("Type : " +ASRUtils::type_to_str_fortran(x.m_return_var_type, func->m_return_var) + " isn't a supproted case\n");
+            LCompilersException("Type : " +ASRUtils::type_to_str_fortran_expr(x.m_return_var_type, func->m_return_var) + " isn't a supproted case\n");
         }
     }
 

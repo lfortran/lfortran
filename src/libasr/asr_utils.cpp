@@ -1564,12 +1564,12 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 }
                 if( (arg0_name == pass_arg_str && target != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str_fortran(target_type, target),
+                        ASRUtils::type_to_str_fortran_expr(target_type, target),
                         loc);
                 }
                 if( (arg1_name == pass_arg_str && value != expr_dt) ) {
                     err(std::string(subrout->m_name) + " is not a procedure of " +
-                        ASRUtils::type_to_str_fortran(value_type, value),
+                        ASRUtils::type_to_str_fortran_expr(value_type, value),
                         loc);
                 }
             }
@@ -1670,7 +1670,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
             std::string pass_arg_str = std::string(pass_arg);
             if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
                 err(std::string(subrout->m_name) + " is not a procedure of " +
-                    ASRUtils::type_to_str_fortran(arg_type, args[0]),
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
                     loc);
             }
         }
@@ -2489,7 +2489,7 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
                 ASRUtils::duplicate_type(al, ttype), nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype, lexpr));
+            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python_expr(ttype, lexpr));
     }
 }
 
@@ -2510,7 +2510,7 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
             return ASR::make_StringCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype, lexpr));
+            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python_expr(ttype, lexpr));
     }
 }
 

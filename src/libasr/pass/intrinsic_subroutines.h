@@ -1115,7 +1115,7 @@ namespace CpuTime {
         } else {
             c_func_name = "_lfortran_d_cpu_time";
         }
-        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python(arg_types[0], new_args[0].m_value);
+        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
         fill_func_arg_sub("time", arg_types[0], InOut);
 
@@ -1153,7 +1153,7 @@ namespace MoveAlloc {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
-        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran(arg_types[0], new_args[0].m_value);
+        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran_expr(arg_types[0], new_args[0].m_value);
         bool is_struct_type_from = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
         bool is_struct_type_to = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[1]));
         declare_basic_variables(new_name);
@@ -1225,7 +1225,7 @@ namespace Mvbits {
         } else {
             c_func_name = "_lfortran_mvbits64";
         }
-        std::string new_name = "_lcompilers_mvbits_" + type_to_str_fortran(arg_types[0], new_args[0].m_value);
+        std::string new_name = "_lcompilers_mvbits_" + type_to_str_fortran_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
         fill_func_arg_sub("from", arg_types[0], In);
         fill_func_arg_sub("frompos", arg_types[1], In);
