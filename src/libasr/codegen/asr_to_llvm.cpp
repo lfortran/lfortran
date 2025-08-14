@@ -3548,8 +3548,6 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
-            llvm::StructType* innerType;
-            std::vector<llvm::Constant*> field_values;
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             bool is_class = !struct_t->m_is_cstruct;
             if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
@@ -3573,11 +3571,12 @@ public:
                 }
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
-                // llvm_struct_type = %toml_lexer_polymorphic
                 if (is_class) {
-                    llvm::Type* secondFieldTy = llvm_struct_type->getElementType(1); // %toml_lexer*
+                    // llvm_struct_type = %toml_lexer_polymorphic {i64, %toml_lexer*}
+                    llvm::Type* secondFieldTy = llvm_struct_type->getElementType(1);
                     llvm::PointerType* ptrTy = llvm::cast<llvm::PointerType>(secondFieldTy);
-                    innerType = llvm::cast<llvm::StructType>(ptrTy->getElementType());
+                    llvm::StructType* innerType = llvm::cast<llvm::StructType>(ptrTy->getElementType());
+                    // innerType = %toml_lexer*
                     init_value = llvm::ConstantStruct::get(innerType, field_values);
                     std::string inner_type_name = "_inner" + llvm_var_name; 
                     llvm::Constant *inner_ptr = module->getOrInsertGlobal(inner_type_name, innerType);
@@ -3586,6 +3585,7 @@ public:
                     field_values.clear();
                     llvm::Constant* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), 
                                             llvm::APInt(64, class_hash)); 
+                    // push type_hash and type pointer to %toml_lexer_polymorphic
                     field_values.push_back(struct_hash);
                     field_values.push_back(inner_ptr);
                 }
