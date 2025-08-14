@@ -130,10 +130,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
                 if( std::find(indices.begin(), indices.end(), i) != indices.end() ) {
                     if( arg_func ) {
-                        suffix += "_" + ASRUtils::type_to_str_fortran(arg_func->m_function_signature, 
+                        suffix += "_" + ASRUtils::type_to_str_fortran_expr(arg_func->m_function_signature, 
                             ASRUtils::get_expr_from_sym(al, &arg_func->base));
                     } else {
-                        suffix += "_" + ASRUtils::type_to_str_fortran(arg->m_type, 
+                        suffix += "_" + ASRUtils::type_to_str_fortran_symbol(arg->m_type, 
                             arg->m_type_declaration);
                     }
                     suffix += "_" + std::to_string(i);

@@ -310,7 +310,7 @@ public:
                     sub = format_type(type_name, v.m_name, use_ref);
                 }
             } else {
-                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python(v.m_type, v.m_type_declaration)
+                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python_symbol(v.m_type, v.m_type_declaration)
                                              + "' not supported",
                                          { v.base.base.loc },
                                          "");
@@ -406,7 +406,7 @@ public:
                     sub = format_type(der_type_name, v.m_name, use_ref);
                 }
             } else {
-                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python(v_m_type, v.m_type_declaration)
+                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python_symbol(v_m_type, v.m_type_declaration)
                                              + "' not supported",
                                          { v.base.base.loc },
                                          "");
@@ -940,7 +940,7 @@ public:
                 tmp_sym = tmp_var->m_v;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr), tmp_expr),
+                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
             const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
@@ -986,7 +986,7 @@ public:
                 generate_array_decl(
                     out, std::string(v->m_name), der_type_name, _dims, nullptr, n_dims, true, true);
             } else {
-                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python(v->m_type, v->m_type_declaration)
+                diag.codegen_error_label("Type '" + ASRUtils::type_to_str_python_symbol(v->m_type, v->m_type_declaration)
                                              + "' not supported",
                                          { v->base.base.loc },
                                          "");
