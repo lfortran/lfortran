@@ -3183,8 +3183,13 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
-                tmp = llvm_utils->CreateLoad2(
-                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+                if ( compiler_options.new_classes ) {
+                    tmp = llvm_utils->CreateLoad2(name2dertype[current_der_type_name]->getPointerTo(), tmp);
+                } else {
+                    tmp = llvm_utils->CreateLoad2(
+                        name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+                }
+
             }
             if( current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                 (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name) ) {
