@@ -40,6 +40,7 @@ public:
     bool is_interface = false;
     bool in_program = false;
     std::string interface_name = "";
+    bool is_module_procedure = false;
     ASR::symbol_t *current_module_sym;
 
     ASR::ttype_t *tmp_type;
@@ -1170,8 +1171,11 @@ public:
                 throw SemanticAbort();
             }
         }
-        if( sym_name == interface_name ) {
+        
+        if (interface_name == to_lower(sym_name) && (is_module_procedure || deftype == ASR::deftypeType::Interface)) {
             sym_name = sym_name + "~genericprocedure";
+            // we are done handling same name conflict for the subroutine, so reset the name
+            interface_name.clear();
         }
 
         SetChar func_deps;
@@ -1676,9 +1680,10 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
+        if (interface_name == to_lower(sym_name) && (is_module_procedure || deftype == ASR::deftypeType::Interface)) {
             sym_name = sym_name + "~genericprocedure";
+            // we are done handling same name conflict for the subroutine, so reset the name
+            interface_name.clear();
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
@@ -2194,6 +2199,7 @@ public:
         for (size_t i = 0; i < x.n_items; i++) {
             AST::interface_item_t *item = x.m_items[i];
             if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
+                is_module_procedure = true;
                 AST::InterfaceModuleProcedure_t *proc
                     = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
                 std::set<std::string> items_set;
@@ -2216,6 +2222,7 @@ public:
                     }
                 }
             } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
+                is_module_procedure = false;
                 visit_interface_item(*item);
                 AST::InterfaceProc_t *proc
                     = AST::down_cast<AST::InterfaceProc_t>(item);
@@ -2259,7 +2266,6 @@ public:
             } else {
                 generic_procedures[generic_name] = proc_names;
             }
-            interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
             std::vector<std::string> proc_names;
