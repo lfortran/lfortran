@@ -178,4 +178,5 @@ asr/asr_nodes/kinds_nodes/kinds.md
 asr/asr_nodes/statement_nodes/statement_nodes.md
 asr/asr_nodes/symbol_nodes/symbol_nodes.md
 asr/asr_nodes/type_nodes/ttype.md
+asr/asr_nodes/omp_nodes/omp_nodes.md
 ```
