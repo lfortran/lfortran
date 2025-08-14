@@ -2729,6 +2729,7 @@ public:
 		// Add all the block variables
 		for (auto const &s : blk.second) {
 		    AST::expr_t* expr = s.m_initializer;
+            LCOMPILERS_ASSERT(expr != nullptr)
 		    this->visit_expr(*expr);
 		    ASR::Variable_t* var_ = get_symtab_var_for_common(s);
 		    uint64_t hash = get_hash((ASR::asr_t*) var_);

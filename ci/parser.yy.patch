@@ -1,19 +1,8 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index 65e2c2b0e..6a153d2d4 100644
+index 300dbffdb..79dbf0b14 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -1405,9 +1405,7 @@ common_block_list_top
-     ;
- 
- common_block_list
--    : common_block_list TK_COMMA common_block { $$ = $1; PLIST_ADD($$, $3); }
--    | common_block_list common_block { $$ = $1; PLIST_ADD($$, $2); }
--    | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
-+    : common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
-     ;
- 
- common_block
-@@ -2572,177 +2570,4 @@ id_opt
+@@ -2550,177 +2550,4 @@ id_opt
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }

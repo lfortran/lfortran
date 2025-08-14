@@ -476,7 +476,20 @@ static inline common_block_t *make_common_block(Allocator &al, Location const &l
     r->m_objects = varsym.p;
     r->n_objects = varsym.n;
     for (size_t i = 0; i < varsym.n; ++i) {
-	r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
+        r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
+    }
+    return r;
+}
+
+static inline common_block_t *make_common_block2(Allocator &al, Location const &loc,
+        char *name, Vec<var_sym_t> const & varsym) {
+    common_block_t * r = al.allocate<common_block_t>(1);
+    r->loc = loc;
+	r->m_name = name;
+    r->m_objects = varsym.p;
+    r->n_objects = varsym.n;
+    for (size_t i = 0; i < varsym.n; ++i) {
+        r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
     }
     return r;
 }
@@ -484,19 +497,52 @@ static inline common_block_t *make_common_block(Allocator &al, Location const &l
 #define COMMON_BLOCK(name, varsym, l) \
     make_common_block(p.m_a, l, name, varsym)
 
+#define COMMON_BLOCK2(name, varsym, l) \
+    make_common_block2(p.m_a, l, name, varsym)
+
+#define COMMON_BLOCK_1(out, one, l) \
+        LIST_NEW(out); \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        LIST_NEW(v); PLIST_ADD(v, one); \
+        PLIST_ADD(out, COMMON_BLOCK(nullptr, v, l));
+
+#define COMMON_BLOCK_2(out, one, two, l) \
+        LIST_NEW(out); \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        LIST_NEW(v); PLIST_ADD(v, two); \
+        PLIST_ADD(out, COMMON_BLOCK2(one->m_name, v, l));
+
+#define COMMON_BLOCK_3(out, one, three, l) \
+        out = one; \
+        LCompilers::LFortran::AST::common_block_t last = out.back(); \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        v.from_pointer_n(last.m_objects, last.n_objects); \
+        PLIST_ADD(v, three); \
+        v.back().m_initializer = dims2expr(p.m_a, v.back()); \
+        out.back().m_objects = v.data(); \
+        out.back().n_objects = v.size();
+
+#define COMMON_BLOCK_5(out, one, three, four, l) \
+        out = one; \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        LIST_NEW(v); PLIST_ADD(v, four); \
+        PLIST_ADD(out, COMMON_BLOCK2(three->m_name, v, l)); \
+
 /* Add (name,varsym) to curr_list, then append other_list */
-static inline void  merge_common_block_lists(Allocator &al, Location const &loc,
-        Vec<common_block_t> &curr_list, ast_t const *name, Vec<var_sym_t> const & varsym,
-	Vec<common_block_t> const &other_list) {
+static inline void  merge_common_block_lists(Allocator &al,
+            Location const &loc,
+            Vec<common_block_t> &curr_list, ast_t const *name,
+            Vec<var_sym_t> const & varsym,
+            Vec<common_block_t> const &other_list) {
     curr_list.reserve(al, 1+other_list.size());
     curr_list.push_back(al, *make_common_block(al, loc, name, varsym));
     for(common_block_t const & o : other_list) {
-	curr_list.push_back(al, o);
+        curr_list.push_back(al, o);
     }
 }
 
-#define COMMON_BLOCK_MERGE(list, name, varsym, other_list, loc) \
-    merge_common_block_lists(p.m_a, loc, list, name, varsym, other_list)
+#define COMMON_BLOCK_MERGE(curr_list, name, varsym, other_list, loc) \
+    merge_common_block_lists(p.m_a, loc, curr_list, name, varsym, other_list)
 
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
@@ -608,6 +654,8 @@ static inline var_sym_t* VARSYM(Allocator &al, Location &l,
 
 #define VAR_SYM_NAME(name, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), nullptr, 0, nullptr, 0, nullptr, nullptr, sym, nullptr)
+#define VAR_SYM_EMPTY(loc) VARSYM(p.m_a, loc, \
+        nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, None, nullptr)
 #define VAR_SYM_DIM_EXPR(exp, sym, loc) VARSYM(p.m_a, loc, nullptr, \
         nullptr, 0, nullptr, 0, nullptr, down_cast<expr_t>(exp), sym, nullptr)
 #define VAR_SYM_DIM_INIT(name, dim, n_dim, init, sym, loc) VARSYM(p.m_a, loc, \
