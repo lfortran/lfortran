@@ -1883,7 +1883,7 @@ public:
             } else {
                 diag.add(Diagnostic(
                     "Cannot deallocate variables in expression " +
-                    ASRUtils::type_to_str_python(ASRUtils::expr_type((tmp_expr))),
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type((tmp_expr)), tmp_expr),
                     Level::Error, Stage::Semantic, {
                         Label("",{tmp_expr->base.loc})
                     }));
@@ -3700,8 +3700,8 @@ public:
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
                 if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, nullptr);
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, nullptr);
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "Type mismatch in " + var_name + ", the types must be compatible",
                         Level::Error, Stage::Semantic, {
@@ -3726,8 +3726,8 @@ public:
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
 
                 if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[2]), nullptr, nullptr)) {
-                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, nullptr);
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]), nullptr);
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]), (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "Type mismatch in " + var_name + ", the types must be compatible",
                         Level::Error, Stage::Semantic, {
@@ -3738,7 +3738,7 @@ public:
                 }
                 
                 if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]), (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
@@ -3758,8 +3758,8 @@ public:
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
 
                 if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[1]), nullptr, nullptr)) {
-                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, nullptr);
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]), nullptr);
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]), (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "Type mismatch in " + var_name + ", the types must be compatible",
                         Level::Error, Stage::Semantic, {
@@ -3797,8 +3797,8 @@ public:
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)set_type);
                 if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, nullptr);
-                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, nullptr);
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "Type mismatch in " + var_name + ", the types must be compatible",
                         Level::Error, Stage::Semantic, {
@@ -3819,8 +3819,8 @@ public:
                     ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
 
                     if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
-                        std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, nullptr);
-                        std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, nullptr);
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type, (ASR::expr_t*)nullptr);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type, (ASR::expr_t*)nullptr);
                         diag.add(Diagnostic(
                             "Type mismatch in " + var_name + ", the types must be compatible",
                             Level::Error, Stage::Semantic, {
@@ -3831,7 +3831,7 @@ public:
                     }
 
                     if (!ASR::is_a<ASR::Integer_t>(*index_type)) {
-                        std::string index_type_str = ASRUtils::type_to_str_fortran(index_type, nullptr);
+                        std::string index_type_str = ASRUtils::type_to_str_fortran(index_type, (ASR::expr_t*)nullptr);
                         diag.add(Diagnostic("Index of a list must be an integer not '" + index_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                         throw SemanticAbort();
@@ -3849,8 +3849,8 @@ public:
                     ASR::ttype_t *dict_key_type = dict_type->m_key_type;
                     ASR::ttype_t *dict_value_type = dict_type->m_value_type;
                     if (!ASRUtils::check_equal_type(dict_key_type, key_type, nullptr, nullptr)) {
-                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_key_type, nullptr);
-                        std::string arg_type_str = ASRUtils::type_to_str_fortran(key_type, nullptr);
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_key_type, (ASR::expr_t*)nullptr);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(key_type, (ASR::expr_t*)nullptr);
                         diag.add(Diagnostic(
                             "Type mismatch in " + var_name + ", the key types must be compatible",
                             Level::Error, Stage::Semantic, {
@@ -3861,8 +3861,8 @@ public:
                     }
 
                     if (!ASRUtils::check_equal_type(dict_value_type, value_type, nullptr, nullptr)) {
-                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_value_type, nullptr);
-                        std::string arg_type_str = ASRUtils::type_to_str_fortran(value_type, nullptr);
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_value_type, (ASR::expr_t*)nullptr);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(value_type, (ASR::expr_t*)nullptr);
                         diag.add(Diagnostic(
                             "Type mismatch in " + var_name + ", the value types must be compatible",
                             Level::Error, Stage::Semantic, {
@@ -3874,7 +3874,7 @@ public:
 
                     return ASR::make_DictInsert_t(al, x.base.base.loc, args[0], args[1], args[2]);
                 } else {
-                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), nullptr);
+                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
                         Level::Error, Stage::Semantic, {
@@ -3892,7 +3892,7 @@ public:
                     return ASR::make_SetClear_t(al, x.base.base.loc, args[0]);
                 } */ 
                 else {
-                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), nullptr);
+                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]), (ASR::expr_t*)nullptr);
                     diag.add(Diagnostic(
                         "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
                         Level::Error, Stage::Semantic, {

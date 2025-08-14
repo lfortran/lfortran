@@ -2489,7 +2489,7 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
                 ASRUtils::duplicate_type(al, ttype), nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype));
+            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype, lexpr));
     }
 }
 
@@ -2510,7 +2510,7 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
             return ASR::make_StringCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype));
+            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(ttype, lexpr));
     }
 }
 
