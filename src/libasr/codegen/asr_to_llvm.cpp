@@ -3573,10 +3573,11 @@ public:
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
                 if (is_class) {
                     // llvm_struct_type = %toml_lexer_polymorphic {i64, %toml_lexer*}
-                    llvm::Type* secondFieldTy = llvm_struct_type->getElementType(1);
-                    llvm::PointerType* ptrTy = llvm::cast<llvm::PointerType>(secondFieldTy);
-                    llvm::StructType* innerType = llvm::cast<llvm::StructType>(ptrTy->getElementType());
+                    ASR::ttype_t* inner_struct_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                            ASRUtils::symbol_get_past_external(x.m_type_declaration), true);
                     // innerType = %toml_lexer*
+                    llvm::StructType* innerType = llvm::cast<llvm::StructType>(
+                        llvm_utils->get_type_from_ttype_t_util(inner_struct_type, x.m_type_declaration, module.get()));
                     init_value = llvm::ConstantStruct::get(innerType, field_values);
                     std::string inner_type_name = "_inner" + llvm_var_name; 
                     llvm::Constant *inner_ptr = module->getOrInsertGlobal(inner_type_name, innerType);
