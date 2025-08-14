@@ -7,7 +7,7 @@ module nested_16_mod
 contains
 
     subroutine temp2(lex)
-        class(toml_lexer), intent(in) :: lex
+        class(toml_lexer), intent(inout) :: lex
         lex%dummy = 400
     end subroutine temp2
 

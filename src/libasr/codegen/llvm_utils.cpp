@@ -1332,6 +1332,18 @@ namespace LCompilers {
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
 
+    llvm::Type* LLVMUtils::get_type_from_ttype_t_util(ASR::ttype_t* asr_type, ASR::symbol_t* type_decl, 
+        llvm::Module* module, ASR::abiType asr_abi) {
+        ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
+        bool is_array_type_local, is_malloc_array_type_local;
+        bool is_list_local;
+        ASR::dimension_t* m_dims_local;
+        int n_dims_local = 0, a_kind_local = 0;
+        return get_type_from_ttype_t(nullptr, asr_type, type_decl, m_storage_local, is_array_type_local,
+                                     is_malloc_array_type_local, is_list_local,
+                                     m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
+    }
+
     llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
