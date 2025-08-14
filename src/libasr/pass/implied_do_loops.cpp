@@ -291,8 +291,19 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
         ASR::ttype_t* result_type_ = nullptr;
+        ASR::expr_t* non_const_len_expr = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
+
+        // Case: `keywords = [character(len=ii) :: value]`
+        // we need to allocate at runtime at string length (Here `ii`) is runtime
+        if (ASRUtils::is_character(*x->m_type)) {
+            ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(x->m_type));
+            if (!ASRUtils::is_value_constant(string_type->m_len)) {
+                non_const_len_expr = string_type->m_len;
+                is_allocatable = true;
+            }
+        }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
         ASR::dimension_t dim;
@@ -312,6 +323,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, x->m_type))));
+                if (non_const_len_expr) {
+                    // If non_const_len_expr present we have to make Variable
+                    // with deffered length and then we will allocate its length
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(result_type_))->m_len = nullptr;
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(result_type_))->m_len_kind = ASR::string_length_kindType::DeferredLength;
+                }
             } else {
                 result_type_ = ASRUtils::duplicate_type(al,
                     ASRUtils::type_get_past_allocatable(x->m_type), &dims);
@@ -325,7 +342,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t arg;
-        arg.m_len_expr = nullptr;
+        arg.m_len_expr = non_const_len_expr;
         arg.m_type = nullptr;
         arg.m_sym_subclass = nullptr;
         arg.m_dims = dims.p;
