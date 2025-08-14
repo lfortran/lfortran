@@ -2,12 +2,12 @@
     "basename": "asr_no_warnings-style1-3d16af1",
     "cmd": "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
     "infile": "tests/style1.f90",
-    "infile_hash": "8ffd34f6aefc2b579f69c70946a0df6e4d979386f5e618bd6911cffc",
+    "infile_hash": "b37bbb3e24a2bceae58e25b574ccb9dea7fbe05441c08c9e4fa5add6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_no_warnings-style1-3d16af1.stdout",
-    "stdout_hash": "c353e9ff70de6d5c5cf74afb3b053ab785c4228d28176cbe7623786f",
+    "stdout_hash": "a3eb4caf18d259ea43790a9a498e716a8714031f6a17875cae6bcf2b",
     "stderr": "asr_no_warnings-style1-3d16af1.stderr",
-    "stderr_hash": "58767d8c022dbff59b88b112a18b1d29ede9c8234b07815228831a1b",
+    "stderr_hash": "7e4725fb2dcc881cc51b72f969ee1447e25fc88c5da229c04b2ed016",
     "returncode": 0
 }
