@@ -41,6 +41,7 @@ namespace LCompilers::CommandLineInterface {
         std::string group_miscellaneous_options = "Miscellaneous Options";
         std::string group_lsp_options = "LSP Options";
         bool disable_bounds_checking = false;
+        bool style_warnings = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -67,6 +68,7 @@ namespace LCompilers::CommandLineInterface {
         // Warning-related flags
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings")->group(group_warning_options);
         app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions")->group(group_warning_options);
+        app.add_flag("--style-warnings", style_warnings, "Enable style suggestions")->group(group_warning_options);
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
 
@@ -111,6 +113,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
+        app.add_flag("--new-classes", compiler_options.new_classes, "Uses the new design for OOPs")->group(group_output_debugging_options);
+
 
         // Pass and transformation-related flags
         app.add_option("--pass", opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
@@ -216,6 +220,9 @@ namespace LCompilers::CommandLineInterface {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
             compiler_options.disable_style = true;
+            if (style_warnings) {
+                compiler_options.disable_style = false;
+            }
             compiler_options.implicit_typing = true;
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
@@ -278,6 +285,10 @@ namespace LCompilers::CommandLineInterface {
                     break;
                 }
             }
+        }
+
+        if (compiler_options.disable_style && style_warnings) {
+            throw lc::LCompilersException("Cannot use --no-style-warnings and --style-warnings at the same time");
         }
 
         // Decide if a file is fixed format based on the extension

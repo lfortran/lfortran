@@ -705,7 +705,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 diag.codegen_warning_label("Declare Global: Type "
-                 + ASRUtils::type_to_str_fortran(v_m_type) + " not yet supported", {v->base.base.loc}, "");
+                 + ASRUtils::type_to_str_fortran_symbol(v_m_type, v->m_type_declaration) + " not yet supported", {v->base.base.loc}, "");
                 global_var_idx = m_wa.declare_global_var(i32, 0);
             }
         }
@@ -871,7 +871,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else {
                 diag.codegen_error_label("Type '" +
-                                             ASRUtils::type_to_str_python(v->m_type) +
+                                             ASRUtils::type_to_str_python_symbol(v->m_type, v->m_type_declaration) +
                                              "' not supported",
                                          {v->base.base.loc}, "");
                 throw CodeGenAbort();
@@ -963,7 +963,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else {
                 diag.codegen_warning_label("Unsupported variable type: " +
-                        ASRUtils::type_to_str_fortran(v->m_type), {v->base.base.loc},
+                        ASRUtils::type_to_str_fortran_symbol(v->m_type, v->m_type_declaration), {v->base.base.loc},
                         "Only integer, floats, logical and complex supported currently");
                 type_vec.push_back(i32);
             }
@@ -1202,7 +1202,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    uint32_t emit_memory_store(ASR::ttype_t* type) {
+    uint32_t emit_memory_store(ASR::ttype_t* type, ASR::expr_t* expr) {
         auto ttype = ASRUtils::type_get_past_array(type);
         auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         switch (ttype->type) {
@@ -1296,7 +1296,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str_fortran(ttype) +
+                                   ASRUtils::type_to_str_fortran_expr(ttype, expr) +
                                    " not yet supported");
             }
         }
@@ -1397,7 +1397,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
-                                   ASRUtils::type_to_str_fortran(ttype) +
+                                   ASRUtils::type_to_str_fortran_expr(ttype, v) +
                                    " not yet supported");
             }
         }
@@ -1485,7 +1485,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("MemoryLoad: Type " +
-                                   ASRUtils::type_to_str_fortran(ttype) +
+                                   ASRUtils::type_to_str_fortran_expr(ttype, v) +
                                    " not yet supported");
             }
         }
@@ -2611,7 +2611,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             m_wa.emit_i32_const(avail_mem_loc);
 
             process_ArrayConstant_value(x.m_data, x.m_type, i);
-            int element_size_in_bytes = emit_memory_store(x.m_type);
+            int element_size_in_bytes = emit_memory_store(x.m_type, const_cast<ASR::expr_t*>(&x.base));
             avail_mem_loc += element_size_in_bytes;
         }
         // leave array location in memory on the stack
@@ -2692,7 +2692,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_set: Type " +
-                                   ASRUtils::type_to_str_fortran(ttype) +
+                                   ASRUtils::type_to_str_fortran_expr(ttype, expr) +
                                    " not yet supported");
             }
         }
@@ -2741,7 +2741,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("temp_value_get: Type " +
-                                   ASRUtils::type_to_str_fortran(ttype) +
+                                   ASRUtils::type_to_str_fortran_expr(ttype, expr) +
                                    " not yet supported");
             }
         }

@@ -58,32 +58,14 @@
                                                 (Variable
                                                     3
                                                     __libasr__created__var__0__array_constructor_
-                                                    [strings]
+                                                    []
                                                     Local
                                                     ()
                                                     ()
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 (StringLen
-                                                                (ArrayItem
-                                                                    (Var 3 strings)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 3 strings)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
-                                                                    )
-                                                                    ())]
-                                                                    (String 1 () AssumedLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -104,32 +86,14 @@
                                                 (Variable
                                                     3
                                                     __libasr__created__var__1__array_constructor_
-                                                    [strings]
+                                                    []
                                                     Local
                                                     ()
                                                     ()
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 (StringLen
-                                                                (ArrayItem
-                                                                    (Var 3 strings)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 3 strings)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
-                                                                    )
-                                                                    ())]
-                                                                    (String 1 () AssumedLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -326,7 +290,25 @@
                                                 [((Var 3 __libasr__created__var__0__array_constructor_)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 0 (Integer 4) Decimal))]
-                                                ()
+                                                (StringLen
+                                                    (ArrayItem
+                                                        (Var 3 strings)
+                                                        [(()
+                                                        (ArrayBound
+                                                            (Var 3 strings)
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            LBound
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                )
                                                 ()
                                                 ())]
                                                 ()
@@ -370,7 +352,25 @@
                                             [((Var 3 __libasr__created__var__1__array_constructor_)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 0 (Integer 4) Decimal))]
-                                            ()
+                                            (StringLen
+                                                (ArrayItem
+                                                    (Var 3 strings)
+                                                    [(()
+                                                    (ArrayBound
+                                                        (Var 3 strings)
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        LBound
+                                                        ()
+                                                    )
+                                                    ())]
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )
                                             ()
                                             ())]
                                             ()

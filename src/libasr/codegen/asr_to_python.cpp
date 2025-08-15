@@ -152,7 +152,7 @@ public:
                 break;
             } default : {
                 throw LCompilersException("The type `"
-                    + ASRUtils::type_to_str_python(t) + "` is not handled yet");
+                    + std::to_string(t->type) + "` is not handled yet");
             }
         }
         return r;

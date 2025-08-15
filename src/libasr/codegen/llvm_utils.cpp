@@ -1058,7 +1058,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python_expr(return_var_type0, x.m_return_var));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -1315,7 +1315,7 @@ namespace LCompilers {
                 break;
             }
             default :
-                throw CodeGenError("Support for type " + ASRUtils::type_to_str_fortran(asr_type) +
+                throw CodeGenError("Support for type " + ASRUtils::type_to_str_fortran_expr(asr_type, arg_expr) +
                                    " not yet implemented.");
         }
         return llvm_type;
@@ -1329,6 +1329,18 @@ namespace LCompilers {
         ASR::dimension_t* m_dims_local;
         int n_dims_local = 0, a_kind_local = 0;
         return get_type_from_ttype_t(expr, asr_type, nullptr, m_storage_local, is_array_type_local,
+                                     is_malloc_array_type_local, is_list_local,
+                                     m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
+    }
+
+    llvm::Type* LLVMUtils::get_type_from_ttype_t_util(ASR::ttype_t* asr_type, ASR::symbol_t* type_decl, 
+        llvm::Module* module, ASR::abiType asr_abi) {
+        ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
+        bool is_array_type_local, is_malloc_array_type_local;
+        bool is_list_local;
+        ASR::dimension_t* m_dims_local;
+        int n_dims_local = 0, a_kind_local = 0;
+        return get_type_from_ttype_t(nullptr, asr_type, type_decl, m_storage_local, is_array_type_local,
                                      is_malloc_array_type_local, is_list_local,
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
@@ -2568,11 +2580,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     return is_equal_by_value(left, right, module, contained_type);
                 
                 throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for Allocatable " +
-                                          ASRUtils::type_to_str_python(contained_type));
+                                          ASRUtils::type_to_str_python_expr(contained_type, nullptr));
             }
             default: {
                 throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for " +
-                                          ASRUtils::type_to_str_python(asr_type));
+                                          ASRUtils::type_to_str_python_expr(asr_type, nullptr));
             }
         }
     }
@@ -2725,7 +2737,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
             default: {
                 throw LCompilersException("LLVMUtils::is_ineq_by_value isn't implemented for " +
-                                          ASRUtils::type_to_str_python(asr_type));
+                                          ASRUtils::type_to_str_python_expr(asr_type, nullptr));
             }
         }
     }
@@ -2890,7 +2902,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
             default: {
                 throw LCompilersException("LLVMUtils::deepcopy isn't implemented for " +
-                                          ASRUtils::type_to_str_fortran(asr_src_type));
+                                          ASRUtils::type_to_str_fortran_expr(asr_src_type, src_expr));
             }
         }
     }
@@ -4833,7 +4845,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 return get_key_hash(capacity, key, ASRUtils::type_get_past_allocatable(key_asr_type), module);
             }
             default: {
-                throw LCompilersException("Hashing " + ASRUtils::type_to_str_python(key_asr_type) +
+                throw LCompilersException("Hashing " + ASRUtils::type_to_str_python_expr(key_asr_type, nullptr) +
                                           " isn't implemented yet.");
             }
         }
@@ -6919,7 +6931,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 return builder->CreateZExt(el, llvm::Type::getInt32Ty(context));
             }
             default: {
-                throw LCompilersException("Hashing " + ASRUtils::type_to_str_python(el_asr_type) +
+                throw LCompilersException("Hashing " + ASRUtils::type_to_str_python_expr(el_asr_type, nullptr) +
                                           " isn't implemented yet.");
             }
         }

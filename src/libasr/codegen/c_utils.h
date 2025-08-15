@@ -334,7 +334,7 @@ namespace CUtils {
                 break;
             }
             default: {
-                throw CodeGenError("Type " + ASRUtils::type_to_str_python(t) + " not supported yet.");
+                throw CodeGenError("Type " + std::to_string(t->type) + " not supported yet.");
             }
         }
         return type_src;
@@ -1775,7 +1775,7 @@ namespace BindPyUtils {
                 break;
             }
             default: {
-                throw CodeGenError("get_numpy_c_obj_type_conv_func_from_ttype_t: Type " + ASRUtils::type_to_str_python(t) + " not supported yet.");
+                throw CodeGenError("get_numpy_c_obj_type_conv_func_from_ttype_t: Type " + std::to_string(t->type) + " not supported yet.");
             }
         }
         return type_src;
@@ -1822,7 +1822,7 @@ namespace BindPyUtils {
                 break;
             }
             default: {
-                throw CodeGenError("get_py_obj_type_conv_func_from_ttype_t: Type " + ASRUtils::type_to_str_python(t) + " not supported yet.");
+                throw CodeGenError("get_py_obj_type_conv_func_from_ttype_t: Type " + std::to_string(t->type) + " not supported yet.");
             }
         }
         return type_src;
@@ -1872,7 +1872,7 @@ namespace BindPyUtils {
                 break;
             }
             default: {
-                throw CodeGenError("get_py_obj_ret_type_conv_fn_from_ttype: Type " + ASRUtils::type_to_str_python(t) + " not supported yet.");
+                throw CodeGenError("get_py_obj_ret_type_conv_fn_from_ttype: Type " + std::to_string(t->type) + " not supported yet.");
             }
         }
         return type_src;

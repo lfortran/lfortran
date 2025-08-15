@@ -1782,6 +1782,7 @@ RUN(NAME string_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_68 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1798,6 +1799,7 @@ RUN(NAME nested_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME nested_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
@@ -2054,6 +2056,7 @@ RUN(NAME implied_do_loops7 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
 RUN(NAME implied_do_loops8 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops9 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME implied_do_loops11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES

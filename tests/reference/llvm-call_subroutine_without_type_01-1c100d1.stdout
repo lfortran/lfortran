@@ -1,12 +1,13 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%mytype_polymorphic = type { i64, %mytype* }
 %mytype = type <{ float }>
+%mytype_polymorphic = type { i64, %mytype* }
 %string_descriptor = type <{ i8*, i64 }>
 %__vtab_mytype = type { i64 }
 
-@__lcompilers_created__nested_context__get_i_self = global %mytype_polymorphic zeroinitializer
+@_inner__lcompilers_created__nested_context__get_i_self = global %mytype zeroinitializer
+@__lcompilers_created__nested_context__get_i_self = global %mytype_polymorphic { i64 0, %mytype* @_inner__lcompilers_created__nested_context__get_i_self }
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1
 @string_const_data = private constant [5 x i8] c"r = \00"
