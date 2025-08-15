@@ -3681,12 +3681,12 @@ asr = true
 
 [[test]]
 filename = "save4.f90"
-asr_no_warnings = true
+asr_disable_warnings = true
 asr_disable_style_suggestion_and_warnings = true
 
 [[test]]
 filename = "style1.f90"
-asr_no_warnings = true
+asr_disable_warnings = true
 asr_enable_style_suggestion = true
 
 [[test]]
