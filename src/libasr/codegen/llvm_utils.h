@@ -833,6 +833,12 @@ namespace LCompilers {
                                                   llvm::Value* dict) = 0;
 
             virtual
+            llvm::Value* get_string_hash(llvm::Value* capacity, llvm::Value* key);
+
+            virtual
+            llvm::Value* get_descriptor_string_hash(llvm::Value* capacity, llvm::Value* key, ASR::String_t* type);
+
+            virtual
             llvm::Value* get_key_hash(llvm::Value* capacity, llvm::Value* key,
                 ASR::ttype_t* key_asr_type, llvm::Module* module);
 

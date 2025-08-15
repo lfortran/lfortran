@@ -4760,8 +4760,18 @@ public:
 
                 ASR::ttype_t *key_type = determine_type(loc, sym, sym_type->m_attr[0], is_pointer,
                                                        is_allocatable, dims, var_sym, type_declaration, abi);
+
+                // Implicitly consider deferred length descriptor string as allocatable
+                if (ASRUtils::is_deferredLength_string(key_type) && ASRUtils::is_descriptorString(key_type))
+                    key_type = determine_type(loc, sym, sym_type->m_attr[0],
+                                    is_pointer, true, dims, var_sym, type_declaration, abi);
+
                 ASR::ttype_t *value_type = determine_type(loc, sym, sym_type->m_attr[1], is_pointer, 
                                                        is_allocatable, dims, var_sym, type_declaration, abi);
+
+                if (ASRUtils::is_deferredLength_string(value_type) && ASRUtils::is_descriptorString(value_type))
+                    value_type = determine_type(loc, sym, sym_type->m_attr[1],
+                                    is_pointer, true, dims, var_sym, type_declaration, abi);
 
                 return ASRUtils::TYPE(ASR::make_Dict_t(al, sym_type->base.base.loc, key_type, value_type));
             } else if (sym_type->m_type == AST::decl_typeType::TypeTuple) {
@@ -8217,6 +8227,19 @@ public:
             }
         }
 
+        if (ASRUtils::is_descriptorString(type.first) && !ASRUtils::is_deferredLength_string(type.first)) {
+            type.first = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                                ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength,
+                                                        ASR::string_physical_typeType::DescriptorString))));
+        }
+
+        if (ASRUtils::is_descriptorString(type.second) && !ASRUtils::is_deferredLength_string(type.second)) {
+            type.second = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                                ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength,
+                                                        ASR::string_physical_typeType::DescriptorString))));
+        }
 
         return ASR::make_DictConstant_t(al, x.base.base.loc, keys.p, keys.n, values.p, values.n, ASRUtils::TYPE(
             ASR::make_Dict_t(al, x.base.base.loc, type.first, type.second)));

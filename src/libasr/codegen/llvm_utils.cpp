@@ -443,6 +443,7 @@ namespace LCompilers {
                           int32_t a_kind, llvm::Module* module) {
         if( LLVM::is_llvm_struct(asr_type) ||
             ASR::is_a<ASR::String_t>(*asr_type) ||
+            ASRUtils::is_allocatable_descriptor_string(asr_type) || 
             ASR::is_a<ASR::Complex_t>(*asr_type) ) {
             llvm::DataLayout data_layout(module->getDataLayout());
             return data_layout.getTypeAllocSize(llvm_type);
@@ -809,7 +810,7 @@ namespace LCompilers {
     }
 
     void LLVMUtils::set_dict_api(ASR::Dict_t* dict_type) {
-        if( ASR::is_a<ASR::String_t>(*dict_type->m_key_type) ) {
+        if( ASRUtils::is_allocatable_descriptor_string(dict_type->m_key_type) ) {
             dict_api = dict_api_sc;
         } else {
             dict_api = dict_api_lp;
@@ -3383,10 +3384,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* src_key_ptr = llvm_utils->create_gep2(key_value_pair, curr_src, 0);
             llvm::Value* src_value_ptr = llvm_utils->create_gep2(key_value_pair, curr_src, 1);
             llvm::Value *src_key = src_key_ptr, *src_value = src_value_ptr;
-            if( !LLVM::is_llvm_struct(dict_type->m_key_type) ) {
+            if( !(LLVM::is_llvm_struct(dict_type->m_key_type) ||
+                    ASRUtils::is_allocatable_descriptor_string(dict_type->m_key_type)) ) {
                 src_key = llvm_utils->CreateLoad2(key_type, src_key_ptr);
             }
-            if( !LLVM::is_llvm_struct(dict_type->m_value_type) ) {
+            if( !(LLVM::is_llvm_struct(dict_type->m_value_type) ||
+                    ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type)) ) {
                 src_value = llvm_utils->CreateLoad2(value_type, src_value_ptr);
             }
             llvm::Value* dest_key_ptr = llvm_utils->create_gep2(key_value_pair, curr_dest, 0);
@@ -3475,10 +3478,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* src_key_ptr = llvm_utils->create_gep2(key_value_pair, curr_src, 0);
             llvm::Value* src_value_ptr = llvm_utils->create_gep2(key_value_pair, curr_src, 1);
             llvm::Value *src_key = src_key_ptr, *src_value = src_value_ptr;
-            if( !LLVM::is_llvm_struct(m_key_type) ) {
+            if( !(LLVM::is_llvm_struct(m_key_type) || ASRUtils::is_allocatable_descriptor_string(m_key_type)) ) {
                 src_key = llvm_utils->CreateLoad2(key_type, src_key_ptr);
             }
-            if( !LLVM::is_llvm_struct(m_value_type) ) {
+            if( !(LLVM::is_llvm_struct(m_value_type) || ASRUtils::is_allocatable_descriptor_string(m_value_type)) ) {
                 src_value = llvm_utils->CreateLoad2(value_type, src_value_ptr);
             }
             llvm::Value* key_hash = get_key_hash(capacity, src_key, m_key_type, module);
@@ -3701,7 +3704,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                             builder->CreateNot(is_key_skip));
             llvm_utils->create_if_else(compare_keys, [&]() {
                 llvm::Value* original_key = llvm_utils->list_api->read_item_using_ttype(key_asr_type, key_list, pos,
-                                    false, module, LLVM::is_llvm_struct(key_asr_type));
+                                    false, module, LLVM::is_llvm_struct(key_asr_type) || ASRUtils::is_allocatable_descriptor_string(key_asr_type));
                 is_key_matching = llvm_utils->is_equal_by_value(key, original_key, module,
                                                                 key_asr_type);
                 LLVM::CreateStore(*builder, is_key_matching, is_key_matching_var);
@@ -3950,7 +3953,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_pair_type->getPointerTo());
             llvm::Type* llvm_key_type = llvm_utils->get_type_from_ttype_t_util(dict_expr, key_asr_type, module);
             llvm::Value* kv_struct_key = llvm_utils->create_gep2(kv_pair_type, kv_struct, 0);
-            if( !LLVM::is_llvm_struct(key_asr_type) ) {
+            if( !(LLVM::is_llvm_struct(key_asr_type) || ASRUtils::is_allocatable_descriptor_string(key_asr_type)) ) {
                 kv_struct_key = llvm_utils->CreateLoad2(llvm_key_type, kv_struct_key);
             }
             LLVM::CreateStore(*builder, llvm_utils->is_equal_by_value(key, kv_struct_key,
@@ -4168,7 +4171,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     kv_pair_type, kv_struct_prev, 2));
             }, [&]() {
                 llvm_utils->deepcopy(dict_expr, key, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 0), key_asr_type, key_asr_type,module, name2memidx);
-                llvm_utils->deepcopy(dict_expr, value, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 1), value_asr_type, key_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(dict_expr, value, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 1), value_asr_type, value_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep2(
@@ -4245,7 +4248,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
             llvm_utils->list_api->read_item_using_ttype(key_asr_type, key_list, pos, false, module,
-                LLVM::is_llvm_struct(key_asr_type)), module, key_asr_type);
+                LLVM::is_llvm_struct(key_asr_type) || ASRUtils::is_allocatable_descriptor_string(key_asr_type)), module, key_asr_type);
 
         llvm_utils->create_if_else(is_key_matching, [&]() {
         }, [&]() {
@@ -4270,7 +4273,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
             llvm_utils->list_api->read_item_using_ttype(key_asr_type, key_list, pos, false, module,
-                LLVM::is_llvm_struct(key_asr_type)), module, key_asr_type);
+                LLVM::is_llvm_struct(key_asr_type) || ASRUtils::is_allocatable_descriptor_string(key_asr_type)), module, key_asr_type);
         llvm_utils->create_if_else(is_key_matching, [&]() {
             llvm::Value* item = llvm_utils->list_api->read_item_using_ttype(value_asr_type, value_list, pos,
                                                 false, module, false);
@@ -4639,6 +4642,143 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return tmp_value_ptr;
     }
 
+    llvm::Value* LLVMDictInterface::get_string_hash(llvm::Value* capacity, llvm::Value* key) {
+        // Polynomial rolling hash function for strings
+        // Should be removable 
+        llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
+                                                        llvm::APInt(8, '\0'));
+        llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
+        llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
+        hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
+        hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
+        polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
+            hash_value);
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)),
+            polynomial_powers);
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
+            hash_iter);
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+        // head
+        llvm_utils->start_new_block(loophead);
+        {
+            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key, i));
+            llvm::Value *cond = builder->CreateICmpNE(c, null_char);
+            builder->CreateCondBr(cond, loopbody, loopend);
+        }
+
+        // body
+        llvm_utils->start_new_block(loopbody);
+        {
+            // for c in key:
+            //     hash_value = (hash_value + (ord(c) + 1) * p_pow) % m
+            //     p_pow = (p_pow * p) % m
+            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key, i));
+            llvm::Value* p_pow = llvm_utils->CreateLoad(polynomial_powers);
+            llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+            c = builder->CreateZExt(c, llvm::Type::getInt64Ty(context));
+            c = builder->CreateAdd(c, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
+            c = builder->CreateMul(c, p_pow);
+            c = builder->CreateSRem(c, m);
+            hash = builder->CreateAdd(hash, c);
+            hash = builder->CreateSRem(hash, m);
+            LLVM::CreateStore(*builder, hash, hash_value);
+            p_pow = builder->CreateMul(p_pow, p);
+            p_pow = builder->CreateSRem(p_pow, m);
+            LLVM::CreateStore(*builder, p_pow, polynomial_powers);
+            i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
+            LLVM::CreateStore(*builder, i, hash_iter);
+        }
+
+        builder->CreateBr(loophead);
+
+        // end
+        llvm_utils->start_new_block(loopend);
+        llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+        hash = builder->CreateTrunc(hash, llvm::Type::getInt32Ty(context));
+        return builder->CreateSRem(hash, capacity);
+    }
+
+    llvm::Value* LLVMDictInterface::get_descriptor_string_hash(llvm::Value* capacity, llvm::Value* key, ASR::String_t* type) {
+        // Polynomial rolling hash function for strings
+        llvm::Value* str_data, *str_len;
+
+        if (key->getType() == llvm_utils->string_descriptor) {
+            llvm::Value* tmp = llvm_utils->CreateAlloca(llvm_utils->string_descriptor);
+            builder->CreateStore(key, tmp);
+            key = tmp;
+        }
+
+        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(type, key);
+
+        llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
+        llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
+        hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
+        hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
+        polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
+            hash_value);
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)),
+            polynomial_powers);
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
+            hash_iter);
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+        // head
+        llvm_utils->start_new_block(loophead);
+        {
+            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value *cond = builder->CreateICmpSLE(i, str_len);
+            builder->CreateCondBr(cond, loopbody, loopend);
+        }
+
+        // body
+        llvm_utils->start_new_block(loopbody);
+        {
+            // for c in key:
+            //     hash_value = (hash_value + (ord(c) + 1) * p_pow) % m
+            //     p_pow = (p_pow * p) % m
+            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), 
+                                                    llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_data, i));
+            llvm::Value* p_pow = llvm_utils->CreateLoad(polynomial_powers);
+            llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+            c = builder->CreateZExt(c, llvm::Type::getInt64Ty(context));
+            c = builder->CreateAdd(c, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
+            c = builder->CreateMul(c, p_pow);
+            c = builder->CreateSRem(c, m);
+            hash = builder->CreateAdd(hash, c);
+            hash = builder->CreateSRem(hash, m);
+            LLVM::CreateStore(*builder, hash, hash_value);
+            p_pow = builder->CreateMul(p_pow, p);
+            p_pow = builder->CreateSRem(p_pow, m);
+            LLVM::CreateStore(*builder, p_pow, polynomial_powers);
+            i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
+            LLVM::CreateStore(*builder, i, hash_iter);
+        }
+
+        builder->CreateBr(loophead);
+
+        // end
+        llvm_utils->start_new_block(loopend);
+        llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+        hash = builder->CreateTrunc(hash, llvm::Type::getInt32Ty(context));
+        return builder->CreateSRem(hash, capacity);
+    }
+
     llvm::Value* LLVMDictInterface::get_key_hash(llvm::Value* capacity, llvm::Value* key,
         ASR::ttype_t* key_asr_type, llvm::Module* module) {
         // Write specialised hash functions for intrinsic types
@@ -4658,67 +4798,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 return int_hash;
             }
             case ASR::ttypeType::String: {
-                // Polynomial rolling hash function for strings
-                llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
-                                                                llvm::APInt(8, '\0'));
-                llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
-                llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
-                hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
-                hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
-                polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
-                LLVM::CreateStore(*builder,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
-                    hash_value);
-                LLVM::CreateStore(*builder,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)),
-                    polynomial_powers);
-                LLVM::CreateStore(*builder,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
-                    hash_iter);
-                llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-                llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-                llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-
-                // head
-                llvm_utils->start_new_block(loophead);
-                {
-                    llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
-                    llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key, i));
-                    llvm::Value *cond = builder->CreateICmpNE(c, null_char);
-                    builder->CreateCondBr(cond, loopbody, loopend);
-                }
-
-                // body
-                llvm_utils->start_new_block(loopbody);
-                {
-                    // for c in key:
-                    //     hash_value = (hash_value + (ord(c) + 1) * p_pow) % m
-                    //     p_pow = (p_pow * p) % m
-                    llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
-                    llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key, i));
-                    llvm::Value* p_pow = llvm_utils->CreateLoad(polynomial_powers);
-                    llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
-                    c = builder->CreateZExt(c, llvm::Type::getInt64Ty(context));
-                    c = builder->CreateAdd(c, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
-                    c = builder->CreateMul(c, p_pow);
-                    c = builder->CreateSRem(c, m);
-                    hash = builder->CreateAdd(hash, c);
-                    hash = builder->CreateSRem(hash, m);
-                    LLVM::CreateStore(*builder, hash, hash_value);
-                    p_pow = builder->CreateMul(p_pow, p);
-                    p_pow = builder->CreateSRem(p_pow, m);
-                    LLVM::CreateStore(*builder, p_pow, polynomial_powers);
-                    i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
-                    LLVM::CreateStore(*builder, i, hash_iter);
-                }
-
-                builder->CreateBr(loophead);
-
-                // end
-                llvm_utils->start_new_block(loopend);
-                llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
-                hash = builder->CreateTrunc(hash, llvm::Type::getInt32Ty(context));
-                return builder->CreateSRem(hash, capacity);
+                if (ASR::down_cast<ASR::String_t>(key_asr_type)->m_len_kind == ASR::string_length_kindType::DeferredLength)
+                    return get_descriptor_string_hash(capacity, key, ASR::down_cast<ASR::String_t>(key_asr_type));
+                else 
+                    return get_string_hash(capacity, key);
             }
             case ASR::ttypeType::Tuple: {
                 llvm::Value* tuple_hash = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
@@ -4742,6 +4825,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     capacity->getType()
                 );
                 return logical_hash;
+            }
+            case ASR::ttypeType::Allocatable: {
+                if (!ASRUtils::is_allocatable_descriptor_string(key_asr_type))
+                    throw LCompilersException("Hashing non-string allocatables are not supported yet.");
+
+                return get_key_hash(capacity, key, ASRUtils::type_get_past_allocatable(key_asr_type), module);
             }
             default: {
                 throw LCompilersException("Hashing " + ASRUtils::type_to_str_python(key_asr_type) +
@@ -4826,9 +4915,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             builder->SetInsertPoint(thenBB);
             {
                 llvm::Value* key = llvm_utils->list_api->read_item_using_ttype(key_asr_type, key_list, idx,
-                        false, module, LLVM::is_llvm_struct(key_asr_type));
+                        false, module, LLVM::is_llvm_struct(key_asr_type) || 
+                                       ASRUtils::is_allocatable_descriptor_string(key_asr_type));
                 llvm::Value* value = llvm_utils->list_api->read_item_using_ttype(value_asr_type, value_list,
-                    idx, false, module, LLVM::is_llvm_struct(value_asr_type));
+                    idx, false, module, LLVM::is_llvm_struct(value_asr_type) || 
+                                       ASRUtils::is_allocatable_descriptor_string(value_asr_type));
+
                 llvm::Value* key_hash = get_key_hash(current_capacity, key, key_asr_type, module);
                 this->resolve_collision(dict_expr, current_capacity, key_hash, key, new_key_list,
                                new_key_mask, module, key_asr_type);
@@ -5369,7 +5461,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                             builder->CreateNot(is_key_skip));
             llvm_utils->create_if_else(add_el, [&]() {
                 llvm::Value* el = llvm_utils->list_api->read_item_using_ttype(el_asr_type, el_list, idx,
-                        false, module, LLVM::is_llvm_struct(el_asr_type));
+                        false, module, LLVM::is_llvm_struct(el_asr_type) || ASRUtils::is_allocatable_descriptor_string(el_asr_type));
                 llvm_utils->list_api->append(expr, elements_list, el,
                                              el_asr_type, module, name2memidx);
             }, [=]() {
@@ -5448,7 +5540,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad(chain_itr);
                     llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_pair_type->getPointerTo());
                     llvm::Value* kv_el = llvm_utils->create_gep(kv_struct, key_or_value);
-                    if( !LLVM::is_llvm_struct(el_asr_type) ) {
+                    if( !(LLVM::is_llvm_struct(el_asr_type) || ASRUtils::is_allocatable_descriptor_string(el_asr_type)) ) {
                         kv_el = llvm_utils->CreateLoad(kv_el);
                     }
                     llvm_utils->list_api->append(expr, elements_list, kv_el,
