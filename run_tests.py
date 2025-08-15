@@ -52,7 +52,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
-    asr_no_warnings = is_included("asr_no_warnings")
+    asr_disable_warnings = is_included("asr_disable_warnings")
     asr_disable_style_suggestion_and_warnings = is_included("asr_disable_style_suggestion_and_warnings")
     asr_enable_style_suggestion = is_included("asr_enable_style_suggestion")
     continue_compilation = is_included("continue_compilation")
@@ -241,10 +241,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
-    if asr_no_warnings:
+    if asr_disable_warnings:
         run_test(
             filename,
-            "asr_no_warnings",
+            "asr_disable_warnings",
             "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
