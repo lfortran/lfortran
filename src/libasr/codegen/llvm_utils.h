@@ -470,6 +470,11 @@ namespace LCompilers {
                 ASR::String_t* dest_str_type, ASR::String_t* src_str_type,
                 bool is_dest_allocatable);
 
+            llvm::Value* lfortran_str_copy_with_known_data(
+                llvm::Value* lhs_data, llvm::Value *lhs_len,
+                llvm::Value* rhs_data, llvm::Value *rhs_len,
+                bool is_dest_deferred, bool is_dest_allocatable);
+
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
             llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
 
