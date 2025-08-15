@@ -382,7 +382,7 @@ public:
                 std::string variable_name = ASRUtils::symbol_name(target_Var->m_v);
                 require(const_assigned.find(std::make_pair(current_symtab->counter,
                     variable_name)) == const_assigned.end(),
-                    "Assignment target with " + ASRUtils::type_to_str_python(target_type)
+                    "Assignment target with " + ASRUtils::type_to_str_python_expr(target_type, target)
                     + " cannot be re-assigned.");
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
@@ -1295,7 +1295,7 @@ public:
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
                 "String length must be of type INTEGER,"
                 "found " + 
-                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len)));
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
         if(x.m_len && ASRUtils::is_value_constant(x.m_len)){

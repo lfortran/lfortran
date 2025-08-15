@@ -1070,12 +1070,12 @@ namespace LCompilers {
         }
 
         ASR::symbol_t* insert_fallback_vector_copy(Allocator& al, ASR::TranslationUnit_t& unit,
-            SymbolTable*& global_scope, std::vector<ASR::ttype_t*>& types,
+            SymbolTable*& global_scope, std::vector<ASR::expr_t*>& arrays, std::vector<ASR::ttype_t*>& types,
             std::string prefix) {
             const int num_args = 6;
             std::string vector_copy_name = prefix;
-            for( ASR::ttype_t*& type: types ) {
-                vector_copy_name += ASRUtils::type_to_str_python(type, false);
+            for( size_t i = 0; i < types.size(); i++ ) {
+                vector_copy_name += ASRUtils::type_to_str_python_expr(types[i], arrays[i]);
             }
             vector_copy_name += "@IntrinsicOptimization";
             if( global_scope->resolve_symbol(vector_copy_name) ) {
@@ -1140,8 +1140,9 @@ namespace LCompilers {
             ASR::ttype_t* array1_type = ASRUtils::expr_type(array1);
             ASR::ttype_t* index_type = ASRUtils::expr_type(start);
             std::vector<ASR::ttype_t*> types = {array0_type, array1_type, index_type};
+            std::vector<ASR::expr_t*> arrays = {array0, array1, start};
             ASR::symbol_t *v = insert_fallback_vector_copy(al, unit, global_scope,
-                                                           types,
+                                                           arrays, types,
                                                            "vector_copy_");
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 6);
