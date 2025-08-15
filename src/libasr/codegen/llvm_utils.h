@@ -819,8 +819,7 @@ namespace LCompilers {
                 llvm::Type* key_type, llvm::Type* value_type) = 0;
 
             virtual
-            void dict_init(std::string key_type_code, std::string value_type_code,
-                llvm::Value* dict, llvm::Module* module, size_t initial_capacity) = 0;
+            void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity) = 0;
 
             virtual
             llvm::Value* get_key_list(llvm::Value* dict) = 0;
@@ -834,6 +833,9 @@ namespace LCompilers {
             virtual
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, 
                                                   llvm::Value* dict) = 0;
+
+            virtual
+            llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) = 0;
 
             virtual
             llvm::Value* get_string_hash(llvm::Value* capacity, llvm::Value* key);
@@ -938,8 +940,7 @@ namespace LCompilers {
                 int32_t key_type_size, int32_t value_type_size,
                 llvm::Type* key_type, llvm::Type* value_type);
 
-            void dict_init(std::string key_type_code, std::string value_type_code,
-                llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
+            void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
             llvm::Value* get_key_list(llvm::Value* dict);
 
@@ -948,8 +949,10 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
-            
-            llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* dict_type, llvm::Value* dict);
+
+            llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
+
+            llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
             virtual
             void resolve_collision(ASR::expr_t* dict_expr, llvm::Value* capacity, llvm::Value* key_hash,
@@ -1003,7 +1006,7 @@ namespace LCompilers {
                                    bool get_pointer=false);
 
             virtual
-            llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
+            llvm::Value* get_pointer_to_keymask(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
@@ -1063,10 +1066,17 @@ namespace LCompilers {
             std::map<std::pair<std::string, std::string>, llvm::Type*> typecode2kvstruct;
 
             llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Value* dict);
+    
+            llvm::Value* get_pointer_to_number_of_filled_buckets_using_type(ASR::ttype_t* key_type, 
+                ASR::ttype_t* value_type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_key_value_pairs(llvm::Value* dict);
+            llvm::Value* get_pointer_to_key_value_pairs_using_type(ASR::ttype_t* key_type, 
+                ASR::ttype_t* value_type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_rehash_flag(llvm::Value* dict);
+
+            llvm::Value* get_pointer_to_rehash_flag_using_type(ASR::ttype_t* key_type, 
+                ASR::ttype_t* value_type, llvm::Value* dict);
 
             void deepcopy_key_value_pair_linked_list(ASR::expr_t* src_expr, llvm::Value* srci, llvm::Value* desti,
                 llvm::Value* dest_key_value_pairs, ASR::Dict_t* dict_type,
@@ -1085,8 +1095,8 @@ namespace LCompilers {
 
             llvm::Type* get_key_value_pair_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_pair_type);
 
-            void dict_init_given_initial_capacity(std::string key_type_code, std::string value_type_code,
-                llvm::Value* dict, llvm::Module* module, llvm::Value* initial_capacity);
+            void dict_init_given_initial_capacity(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict, 
+                llvm::Module* module, llvm::Value* initial_capacity);
 
         public:
 
@@ -1099,8 +1109,7 @@ namespace LCompilers {
                 int32_t key_type_size, int32_t value_type_size,
                 llvm::Type* key_type, llvm::Type* value_type);
 
-            void dict_init(std::string key_type_code, std::string value_type_code,
-                llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
+            void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
             llvm::Value* get_key_list(llvm::Value* dict);
 
@@ -1108,10 +1117,13 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
 
+            llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
+
             llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
 
+            llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
             void resolve_collision_for_write(
                 ASR::expr_t* dict_expr,
@@ -1159,7 +1171,7 @@ namespace LCompilers {
                 llvm::Module* module, ASR::Dict_t* dict_type,
                 bool get_pointer=false);
 
-            llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
+            llvm::Value* get_pointer_to_keymask(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,

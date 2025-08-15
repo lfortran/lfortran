@@ -1786,9 +1786,7 @@ public:
         llvm::Value* const_dict = llvm_utils->CreateAlloca(*builder, const_dict_type, nullptr, "const_dict");
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
         llvm_utils->set_dict_api(x_dict);
-        std::string key_type_code = ASRUtils::get_type_code(x_dict->m_key_type);
-        std::string value_type_code = ASRUtils::get_type_code(x_dict->m_value_type);
-        llvm_utils->dict_api->dict_init(key_type_code, value_type_code, const_dict, module.get(), x.n_keys);
+        llvm_utils->dict_api->dict_init(x_dict, const_dict, module.get(), x.n_keys);
         int64_t ptr_loads_key = !LLVM::is_llvm_struct(x_dict->m_key_type);
         int64_t ptr_loads_value = !LLVM::is_llvm_struct(x_dict->m_value_type);
         int64_t ptr_loads_copy = ptr_loads;
@@ -4866,9 +4864,9 @@ public:
                     llvm_utils->get_type_from_ttype_t_util(nullptr, v->m_type, module.get());
 
                     if (ASRUtils::is_character(*asr_dict->m_key_type))
-                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_sc->dict_init(asr_dict, ptr, module.get(), 0);
                     else
-                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_lp->dict_init(asr_dict, ptr, module.get(), 0);
                 }
             }
         }
