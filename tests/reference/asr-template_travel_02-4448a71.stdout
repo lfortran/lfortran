@@ -571,8 +571,7 @@
                     template_travel_02_m
                     ()
                     [template_travel_02_math
-                    template_travel_02_travel
-                    template_travel_02_m]
+                    template_travel_02_travel]
                     .false.
                     .false.
                     .false.
@@ -2912,8 +2911,7 @@
                         })
                     template_travel_02_travel
                     ()
-                    [template_travel_02_math
-                    template_travel_02_travel]
+                    [template_travel_02_math]
                     .false.
                     .false.
                     .false.

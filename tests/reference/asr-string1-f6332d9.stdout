@@ -458,8 +458,7 @@
                         })
                     fpm_strings
                     ()
-                    [iso_c_binding
-                    fpm_strings]
+                    [iso_c_binding]
                     .false.
                     .false.
                     .false.

@@ -4724,8 +4724,7 @@
                         })
                     modules_15b
                     ()
-                    [iso_c_binding
-                    modules_15b]
+                    [iso_c_binding]
                     .false.
                     .false.
                     .false.

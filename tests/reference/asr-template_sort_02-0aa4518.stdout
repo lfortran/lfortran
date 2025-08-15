@@ -3804,8 +3804,7 @@
                         })
                     template_sort_02_m
                     ()
-                    [template_sort_02_type
-                    template_sort_02_m]
+                    [template_sort_02_type]
                     .false.
                     .false.
                     .false.
