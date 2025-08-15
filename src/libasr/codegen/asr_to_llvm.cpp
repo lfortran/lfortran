@@ -3384,6 +3384,53 @@ public:
         }
     }
 
+    static bool isStringDescriptorTy(llvm::Type* T) {
+        llvm::StructType* ST = llvm::dyn_cast<llvm::StructType>(T);
+        if (!ST)
+            return false;
+        if (ST->getNumElements() != 2)
+            return false;
+        return ST->getElementType(0)->isPointerTy() && ST->getElementType(1)->isIntegerTy(64);
+    }
+
+    static llvm::Constant* make_string_descriptor_const(llvm::Module* M, llvm::StructType* descTy, llvm::StringRef s, int declared_len = -1) {
+        auto& ctx = M->getContext();
+        std::string val = s.str();
+        if (declared_len != -1) {
+            if ((int)val.size() < declared_len)
+                val.append(declared_len - val.size(), ' ');
+            else if ((int)val.size() > declared_len)
+                val.resize(declared_len);
+        }
+        // Fortran CHARACTER doesn’t require NUL; pad/truncate happens at the semantic level
+        auto bytes = llvm::ConstantDataArray::getString(ctx, val, /*AddNull=*/false);
+
+        auto* g = new llvm::GlobalVariable(*M,
+                                           bytes->getType(),
+                                           /*isConstant=*/true,
+                                           llvm::GlobalValue::PrivateLinkage,
+                                           bytes,
+                                           ".str");
+        g->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        g->setAlignment(M->getDataLayout().getPointerABIAlignment(0));  // important for macOS
+
+        llvm::Constant* zero32 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0);
+        llvm::Constant* indices[] = { zero32, zero32 };
+        llvm::Constant* ptr
+            = llvm::ConstantExpr::getInBoundsGetElementPtr(bytes->getType(), g, indices);
+
+        llvm::Type* lenTy = descTy->getElementType(1);
+        llvm::Constant* len = llvm::ConstantInt::get(lenTy, s.size());
+
+        // Cast pointer if needed to match descTy field 0:
+        llvm::Type* ptrTy = descTy->getElementType(0);
+        if (ptr->getType() != ptrTy) {
+            ptr = llvm::ConstantExpr::getPointerCast(ptr, ptrTy);
+        }
+
+        return llvm::ConstantStruct::get(descTy, { ptr, len });
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -3565,7 +3612,54 @@ public:
                         continue;
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                     if (var->m_value != nullptr) {
-                        llvm::Constant* c = llvm_utils->create_llvm_constant_from_asr_expr(var->m_value, module.get());
+                        ASR::expr_t* value_expr = var->m_value;
+                        ASR::ttype_t* var_type = var->m_type;
+                        int declared_len{};
+                        if (ASR::is_a<ASR::String_t>(*var_type)) {
+                            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(var_type);
+                            ASR::expr_t* len_expr = str_type->m_len;
+                            if (len_expr && ASR::is_a<ASR::IntegerConstant_t>(*len_expr)) {
+                                ASR::IntegerConstant_t* int_len
+                                    = ASR::down_cast<ASR::IntegerConstant_t>(len_expr);
+                                declared_len = int_len->m_n;
+                            }
+                        }
+                        llvm::Constant* c = nullptr;
+                        if (ASR::is_a<ASR::StringConstant_t>(*value_expr)) {
+                            ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+                            std::string s(str_const->m_s);
+                            llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
+                                ASRUtils::EXPR(
+                                    ASR::make_Var_t(al,
+                                                    var->base.base.loc,
+                                                    const_cast<ASR::symbol_t*>(&var->base))),
+                                var->m_type,
+                                module.get());
+
+                            if (auto* struct_ty = llvm::dyn_cast<llvm::StructType>(member_type)) {
+                                if (isStringDescriptorTy(struct_ty)) {
+                                    c = make_string_descriptor_const(module.get(), struct_ty, s, declared_len);
+                                }
+                            } else if (member_type->isArrayTy() && member_type->getArrayElementType()->isIntegerTy(8)) {
+                                uint64_t elem_len = member_type->getArrayNumElements();
+                                if (s.size() < elem_len)
+                                    s.resize(elem_len, ' ');
+                                else if (s.size() > elem_len)
+                                    s.resize((size_t) elem_len);
+                                c = llvm::ConstantDataArray::getString(context, s, /*AddNull=*/false);
+                            }
+                        } else if (ASR::is_a<ASR::ArrayConstant_t>(*value_expr)) {
+                            llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
+                                ASRUtils::EXPR(
+                                    ASR::make_Var_t(al,
+                                                    var->base.base.loc,
+                                                    const_cast<ASR::symbol_t*>(&var->base))),
+                                var->m_type,
+                                module.get());
+                            c = get_const_array(value_expr, member_type);
+                        } else {
+                            c = llvm_utils->create_llvm_constant_from_asr_expr(value_expr, module.get());
+                        }
                         field_values.push_back(c);
                     } else {
                         llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
