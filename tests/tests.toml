@@ -4764,3 +4764,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/functions_41.f90"
 ast = true
+
+[[test]]
+filename = "classes1.f90"
+llvm_new_classes = true

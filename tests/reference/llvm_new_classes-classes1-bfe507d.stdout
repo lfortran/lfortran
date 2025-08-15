@@ -1,0 +1,19 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%base = type <{ i32 }>
+%__vtab_base = type { i64 }
+
+define void @__module_xx_show_x(%base* %this) {
+.entry:
+  %0 = alloca %__vtab_base, align 8
+  %1 = getelementptr %__vtab_base, %__vtab_base* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
+  %2 = load %base*, %base* %this, align 8
+  %3 = getelementptr %base, %base* %2, i32 0, i32 0
+  store i32 12, i32* %3, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
