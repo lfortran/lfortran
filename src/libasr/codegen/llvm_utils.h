@@ -831,10 +831,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, 
-                                                  llvm::Value* dict) = 0;
-
-            virtual
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) = 0;
 
             virtual
@@ -947,8 +943,6 @@ namespace LCompilers {
             llvm::Value* get_value_list(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
-
-            llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
@@ -1120,8 +1114,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
-
-            llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
