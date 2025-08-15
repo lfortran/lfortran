@@ -2630,6 +2630,8 @@ RUN(NAME dict_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME dict_test_02_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME dict_test_03_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME dict_test_04_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME dict_test_07_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME dict_test_13_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 
 # LFortran extensions (union)
 RUN(NAME union_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
