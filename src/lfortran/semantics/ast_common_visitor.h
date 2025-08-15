@@ -214,6 +214,81 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         }
     }
 
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        std::vector<int64_t> indices;
+        for (size_t k = 0; k < x.n_args; k++) {
+            this->visit_expr(*x.m_args[k].m_right);
+            LCOMPILERS_ASSERT(this->value != nullptr);
+            auto idx_c = ASR::down_cast<ASR::IntegerConstant_t>(this->value);
+            indices.push_back(idx_c->m_n);
+        }
+
+        ASR::expr_t* arr_val = ASRUtils::expr_value(x.m_v);
+        if (!(arr_val && ASR::is_a<ASR::ArrayConstant_t>(*arr_val))) {
+            this->value = nullptr;
+            return;
+        }
+        const ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_val);
+        LCOMPILERS_ASSERT(indices.size() == 1);
+        int64_t idx0 = indices[0] - 1;
+        if (idx0 < 0 || idx0 >= arr_const->m_n_data) {
+            this->value = nullptr;
+            return;
+        }
+    
+        ASR::ttype_t* array_type = arr_const->m_type;
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(array_type);
+        if (ASR::is_a<ASR::Integer_t>(*el_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(el_type)->m_kind;
+            if (kind == 4) {
+                int32_t* data = (int32_t*)arr_const->m_data;
+                int32_t val = data[idx0];
+                this->value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_const->base.base.loc, val, el_type));
+                return;
+            } else if (kind == 8) {
+                int64_t* data = (int64_t*)arr_const->m_data;
+                int64_t val = data[idx0];
+                this->value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_const->base.base.loc, val, el_type));
+                return;
+            } else {
+                this->value = nullptr;
+                return;
+            }
+        } else if (ASR::is_a<ASR::Real_t>(*el_type)) {
+            int kind = ASR::down_cast<ASR::Real_t>(el_type)->m_kind;
+            if (kind == 4) {
+                float* data = (float*)arr_const->m_data;
+                float val = data[idx0];
+                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, (double)val, el_type));
+                return;
+            } else if (kind == 8) {
+                double* data = (double*)arr_const->m_data;
+                double val = data[idx0];
+                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, val, el_type));
+                return;
+            } else {
+                this->value = nullptr;
+                return;
+            }
+        } else if (ASR::is_a<ASR::Logical_t>(*el_type)) {
+            int kind = ASR::down_cast<ASR::Logical_t>(el_type)->m_kind;
+            if (kind == 1) {
+                int8_t* data = (int8_t*)arr_const->m_data;
+                bool val = data[idx0] != 0;
+                this->value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, arr_const->base.base.loc, val, el_type));
+                return;
+            } else {
+                int32_t* data = (int32_t*)arr_const->m_data;
+                bool val = data[idx0] != 0;
+                this->value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, arr_const->base.base.loc, val, el_type));
+                return;
+            }
+        } else {
+            this->value = nullptr;
+            return;
+        }
+    }
+
     void visit_IntegerCompare( const ASR::IntegerCompare_t &x ) {
         int left_val, right_val;
         this->visit_expr(*x.m_left);
@@ -9604,7 +9679,10 @@ public:
 
         // fetch loop variables
         std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
-
+        if (is_body_visitor) {
+            idl_nesting_level--;
+            return;
+        }
         // check compiletime evaluation possibility
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
 
