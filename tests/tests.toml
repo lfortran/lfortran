@@ -3562,7 +3562,7 @@ asr_implicit_typing = true
 filename = "implicit10.f90"
 asr = true
 asr_implicit_typing = true
-ast_disable_style = true
+ast_disable_style_suggestion = true
 
 [[test]]
 filename = "implicit11.f90"
@@ -3682,7 +3682,7 @@ asr = true
 [[test]]
 filename = "save4.f90"
 asr_no_warnings = true
-asr_disable_style_and_warnings = true
+asr_disable_style_suggestion_and_warnings = true
 
 [[test]]
 filename = "style1.f90"

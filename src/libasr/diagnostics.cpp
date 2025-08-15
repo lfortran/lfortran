@@ -81,7 +81,7 @@ std::string Diagnostics::render(LocationManager &lm,
     std::string out;
     for (auto &d : this->diagnostics) {
         if (compiler_options.error_format == "human") {
-            if ((compiler_options.disable_style && d.level == Level::Style) || (compiler_options.no_warnings && d.level == Level::Warning)) {
+            if ((!compiler_options.show_style_suggestions && d.level == Level::Style) || (compiler_options.no_warnings && d.level == Level::Warning)) {
                 out += "";
             } else {
                 out += render_diagnostic_human(d, lm, compiler_options.use_colors,
@@ -96,7 +96,7 @@ std::string Diagnostics::render(LocationManager &lm,
     }
     if (compiler_options.error_format == "human") {
         if (this->diagnostics.size() > 0 && !compiler_options.no_error_banner) {
-            if ((!compiler_options.disable_style && has_style()) || (!compiler_options.no_warnings && has_warning()) || has_error()) {
+            if ((compiler_options.show_style_suggestions && has_style()) || (!compiler_options.no_warnings && has_warning()) || has_error()) {
                 std::string bold  = ColorsANSI::BOLD;
                 std::string reset = ColorsANSI::RESET;
                 if (!compiler_options.use_colors) {

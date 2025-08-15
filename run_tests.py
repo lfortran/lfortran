@@ -31,7 +31,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     tokens = is_included("tokens")
     ast = is_included("ast")
     ast_indent = is_included("ast_indent")
-    ast_disable_style = is_included("ast_disable_style")
+    ast_disable_style_suggestion = is_included("ast_disable_style_suggestion")
     ast_json = is_included("ast_json")
     ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
@@ -53,7 +53,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_no_warnings = is_included("asr_no_warnings")
-    asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
+    asr_disable_style_suggestion_and_warnings = is_included("asr_disable_style_suggestion_and_warnings")
     asr_enable_style_suggestion = is_included("asr_enable_style_suggestion")
     continue_compilation = is_included("continue_compilation")
     fixed_form_cc_asr = is_included("fixed_form_cc_asr")
@@ -179,10 +179,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
-    if ast_disable_style:
+    if ast_disable_style_suggestion:
         run_test(
             filename,
-            "ast_disable_style",
+            "ast_disable_style_suggestion",
             "lfortran --show-ast --no-style-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -251,10 +251,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
-    if asr_disable_style_and_warnings:
+    if asr_disable_style_suggestion_and_warnings:
         run_test(
             filename,
-            "asr_disable_style_and_warnings",
+            "asr_disable_style_suggestion_and_warnings",
             "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
