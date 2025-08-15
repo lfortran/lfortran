@@ -6883,6 +6883,39 @@ public:
         }
     }
 
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
+        LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))
+        LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_value)))
+        if (compiler_options.bounds_checking) {
+            ASR::ArraySize_t* value_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
+                x.m_value, nullptr, ASRUtils::expr_type(x.m_value), nullptr));
+            visit_ArraySize(*value_array_size);
+            llvm::Value* value_size = tmp;
+
+            ASR::ArraySize_t* target_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
+                x.m_target, nullptr, ASRUtils::expr_type(x.m_target), nullptr));
+            visit_ArraySize(*target_array_size);
+            llvm::Value* target_size = tmp;
+
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+            if (target_variable) {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                    "Runtime Error: Size mismatch in assignment to '%s'\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                    target_size,
+                                                    value_size);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                    "Runtime Error: Size mismatch in assignment\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    target_size,
+                                                    value_size);
+            }
+        }
+
+    }
+
     // Checks if target_expr is allocated and if not then allocate
     // Used for compiler_options.po.realloc_lhs
     void check_and_allocate(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr, ASR::ttype_t *value_struct_type = nullptr) {
@@ -12697,6 +12730,85 @@ public:
         }
     }
 
+    template<typename T>
+    ASR::expr_t* get_binop_size_var(ASR::expr_t* x) {
+        ASR::expr_t* left = get_expr_size_var(ASR::down_cast<T>(x)->m_left);
+        ASR::expr_t* right = get_expr_size_var(ASR::down_cast<T>(x)->m_right);
+        if (ASRUtils::is_array(ASRUtils::expr_type(left))) {
+            return get_expr_size_var(left);
+        } else if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
+            return get_expr_size_var(right);
+        }
+        return x;
+    }
+
+    // Get past expressions to get the Var which will be used to calculate ArraySize
+    ASR::expr_t* get_expr_size_var(ASR::expr_t* x) {
+        if (ASR::is_a<ASR::Var_t>(*x)) {
+            return x;
+        }
+
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+            return get_binop_size_var<ASR::IntegerBinOp_t>(x);
+        } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
+            return get_binop_size_var<ASR::RealBinOp_t>(x);
+        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
+            return get_binop_size_var<ASR::ComplexBinOp_t>(x);
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
+            return get_binop_size_var<ASR::LogicalBinOp_t>(x);
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
+            return get_binop_size_var<ASR::IntegerCompare_t>(x);
+        } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
+            return get_binop_size_var<ASR::RealCompare_t>(x);
+        } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
+            return get_binop_size_var<ASR::ComplexCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
+            return get_binop_size_var<ASR::StringCompare_t>(x);
+        } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
+            return get_binop_size_var<ASR::OverloadedCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
+            return get_binop_size_var<ASR::StringConcat_t>(x);
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*x)) {
+            return get_expr_size_var(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+        } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*x)) {
+            return get_expr_size_var(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
+        } else if (ASR::is_a<ASR::Cast_t>(*x)) {
+            return get_expr_size_var(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+        } else if (ASR::is_a<ASR::LogicalNot_t>(*x)) {
+            return get_expr_size_var(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
+        } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x)) {
+            ASR::IntrinsicElementalFunction_t* elemental_f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+
+            // If any argument is an array other arguments must be the same shape
+            for (size_t i = 0; i < elemental_f->n_args; i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(elemental_f->m_args[i]))) {
+                    return get_expr_size_var(elemental_f->m_args[i]);
+                }
+            }
+        } else if (ASR::is_a<ASR::FunctionCall_t>(*x)) {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(x);
+            if (ASRUtils::is_elemental(func_call->m_name)) {
+                // If any argument is an array other arguments must be the same shape
+                for (size_t i = 0; i < func_call->n_args; i++) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_args[i].m_value))) {
+                        return get_expr_size_var(func_call->m_args[i].m_value);
+                    }
+                }
+                // m_dt is also an argument
+                if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
+                    return get_expr_size_var(func_call->m_dt);
+                }
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x);
+            if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+                return get_expr_size_var(sim->m_v);
+            }
+        }
+
+        return x;
+    }
+
     void visit_ArraySizeUtil(ASR::expr_t* m_v, ASR::ttype_t* m_type,
         ASR::expr_t* m_dim=nullptr, ASR::expr_t* m_value=nullptr) {
         if( m_value ) {
@@ -12704,6 +12816,7 @@ public:
             return ;
         }
 
+        m_v = get_expr_size_var(m_v);
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;
@@ -12744,6 +12857,7 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::PointerToDataArray:
+            case ASR::array_physical_typeType::SIMDArray:
             case ASR::array_physical_typeType::FixedSizeArray: {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_v,
                         ASRUtils::type_get_past_allocatable(
@@ -12767,7 +12881,7 @@ public:
                         builder->CreateCondBr(cond, thenBB, elseBB);
                         builder->SetInsertPoint(thenBB);
                         {
-                            this->visit_expr_wrapper(m_dims[i].m_length, true);
+                            load_array_size_deep_copy(m_dims[i].m_length);
                             builder->CreateStore(tmp, target);
                         }
                         builder->CreateBr(mergeBB);

@@ -139,6 +139,11 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
             replacer(al_, global_scope_, func2intrinsicid_) {}
 
+        // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
+        void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+            (void)x;
+        }
+
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.replace_expr(*current_expr);
