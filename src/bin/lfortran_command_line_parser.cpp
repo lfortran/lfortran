@@ -67,7 +67,7 @@ namespace LCompilers::CommandLineInterface {
         // LFortran specific options
         // Warning-related flags
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings")->group(group_warning_options);
-        app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions")->group(group_warning_options);
+        app.add_flag("--no-style-warnings", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
         app.add_flag("--style-warnings", style_warnings, "Enable style suggestions")->group(group_warning_options);
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
@@ -216,12 +216,16 @@ namespace LCompilers::CommandLineInterface {
             app.parse(args);
         }
 
+        if (opts.disable_style_suggestions) {
+            compiler_options.show_style_suggestions = false;
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
-            compiler_options.disable_style = true;
+            compiler_options.show_style_suggestions = false;
             if (style_warnings) {
-                compiler_options.disable_style = false;
+                compiler_options.show_style_suggestions = true;
             }
             compiler_options.implicit_typing = true;
             compiler_options.implicit_argument_casting = true;
@@ -231,7 +235,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.realloc_lhs = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
-            compiler_options.disable_style = true;
+            compiler_options.show_style_suggestions = false;
             compiler_options.implicit_typing = true;
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
@@ -287,7 +291,7 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
-        if (compiler_options.disable_style && style_warnings) {
+        if (opts.disable_style_suggestions && style_warnings) {
             throw lc::LCompilersException("Cannot use --no-style-warnings and --style-warnings at the same time");
         }
 
