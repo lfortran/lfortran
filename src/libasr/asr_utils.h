@@ -330,6 +330,9 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         case ASR::ttypeType::Allocatable: {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
         }
+        case ASR::ttypeType::StructType: {
+            return 4;
+        }
         default : {
             return -1;
         }

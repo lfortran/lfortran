@@ -956,6 +956,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    // Don't visit inside DebugCheckArrayBounds, it may contain ArrayConstant and result_expr will be nullptr
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        (void)x;
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         if (ASRUtils::is_simd_array(x.m_target)) {
             if( !(ASRUtils::is_allocatable(x.m_value) ||
@@ -1024,6 +1029,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
             insert_realloc_for_target(xx.m_target, xx.m_value, vars);
+        }
+
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) && ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
+            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, d_value)));
         }
 
         Vec<ASR::expr_t**> fix_type_args;
