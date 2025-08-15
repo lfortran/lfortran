@@ -2171,7 +2171,7 @@ public:
 
         ptr_loads = !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type));
         visit_expr_load_wrapper(x.m_key, 
-                                 (LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type)));
+            !(LLVM::is_llvm_struct(dict_type->m_key_type) || ASRUtils::is_character(*dict_type->m_key_type)));
         llvm::Value *key = tmp;
         visit_expr_load_wrapper(x.m_value,
             !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type)) ? 1 : 0,
