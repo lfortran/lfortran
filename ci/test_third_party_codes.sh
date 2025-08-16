@@ -118,6 +118,7 @@ time_section "🧪 Testing fortran-shlex" '
   micromamba install -c conda-forge fpm
   git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
   fpm --compiler=$FC build
+  fpm --compiler=$FC test
   print_success "Done with fortran-shlex"
   cd ..
 '
