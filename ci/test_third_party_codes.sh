@@ -150,10 +150,11 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-2
+  git checkout lf-6
   micromamba install -c conda-forge fpm
-  git checkout c34cfdde5e1f82918668c5d06c3faa315489b1c0
-  fpm --compiler=$FC build
+  git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
+  fpm --compiler=$FC build --flag "--realloc-lhs"
+  fpm --compiler=$FC test --flag "--realloc-lhs"
   print_success "Done with M_CLI2"
   cd ..
 '
