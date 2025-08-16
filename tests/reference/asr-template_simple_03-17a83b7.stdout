@@ -3235,7 +3235,7 @@
                         })
                     template_simple_03_m
                     ()
-                    [template_simple_03_m]
+                    []
                     .false.
                     .false.
                     .false.

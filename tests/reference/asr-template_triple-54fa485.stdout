@@ -1927,7 +1927,7 @@
                         })
                     triple_m
                     ()
-                    [triple_m]
+                    []
                     .false.
                     .false.
                     .false.
@@ -3013,8 +3013,7 @@
                     ()
                     [math_integer_m
                     math_real_m
-                    triple_m
-                    use_triple_m]
+                    triple_m]
                     .false.
                     .false.
                     .false.

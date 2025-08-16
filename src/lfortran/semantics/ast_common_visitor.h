@@ -6780,10 +6780,6 @@ public:
             !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         }
-        ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
-        if( v_module ) {
-            current_module_dependencies.push_back(al, v_module->m_name);
-        }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         if (args.size() > func->n_args) {
             const Location args_loc { ASRUtils::get_vec_loc(args) };

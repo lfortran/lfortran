@@ -340,8 +340,7 @@
                         })
                     array12
                     ()
-                    [iso_c_binding
-                    array12]
+                    [iso_c_binding]
                     .false.
                     .false.
                     .false.
