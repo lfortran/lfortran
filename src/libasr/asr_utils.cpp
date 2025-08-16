@@ -1041,6 +1041,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 
 void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                ASR::Module_t* mod, const Location &loc,
+                               std::set<std::string> &loaded_submodules,
                                LCompilers::PassOptions& pass_options,
                                bool run_verify,
                                const std::function<void (const std::string &, const Location &)> err,
@@ -1049,10 +1050,15 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         return ;
     }
 
+    if (loaded_submodules.count(std::string(mod->m_name))) {
+        return ;
+    }
+    loaded_submodules.insert(std::string(mod->m_name));
+
     for (size_t i=0;i<mod->n_dependencies;i++) {
         ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
         load_dependent_submodules(al, symtab, dep_mod, loc,
-                                  pass_options, 
+                                  loaded_submodules, pass_options,
                                   run_verify, err, lm);
     }
 
