@@ -115,7 +115,7 @@ struct CompilerOptions {
     bool show_warnings = true;
     bool show_style_suggestions = true;
     bool logical_casting = false;
-    bool no_error_banner = false;
+    bool show_error_banner = true;
     bool bounds_checking = true;
     std::string error_format = "human";
     bool new_parser = false;
