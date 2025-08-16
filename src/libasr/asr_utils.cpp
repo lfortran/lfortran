@@ -1039,6 +1039,63 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     return mod2;
 }
 
+void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
+                               ASR::Module_t* mod, const Location &loc,
+                               LCompilers::PassOptions& pass_options,
+                               bool run_verify,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               LCompilers::LocationManager &lm) {
+    if (startswith(std::string(mod->m_name), "lfortran_intrinsic")) {
+        return ;
+    }
+
+    for (size_t i=0;i<mod->n_dependencies;i++) {
+        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
+        load_dependent_submodules(al, symtab, dep_mod, loc,
+                                  pass_options, 
+                                  run_verify, err, lm);
+    }
+
+    if (mod->m_has_submodules) {
+        std::vector<ASR::TranslationUnit_t*> submods;
+        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
+            = ASRUtils::find_and_load_submodules(al, std::string(mod->m_name), *symtab, pass_options, lm);
+        if (res.ok) {
+            submods = res.result;
+        } else {
+            std::string error_message = res.error.message;
+            err(error_message, loc);
+        }
+        for (size_t i=0;i<submods.size();i++) {
+            ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
+            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+            submod->m_symtab->parent = symtab;
+            submod->m_loaded_from_mod = true;
+        }
+    }
+
+    // Create a temporary TranslationUnit just for fixing the symbols
+    ASR::asr_t *orig_asr_owner = symtab->asr_owner;
+    ASR::TranslationUnit_t *tu
+        = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
+            symtab, nullptr, 0));
+
+    // Fix all external symbols
+    fix_external_symbols(*tu, *symtab);
+    PassUtils::UpdateDependenciesVisitor v(al);
+    v.visit_TranslationUnit(*tu);
+    if (run_verify) {
+#if defined(WITH_LFORTRAN_ASSERT)
+        diag::Diagnostics diagnostics;
+        if (!asr_verify(*tu, true, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed");
+        };
+#endif
+    }
+    symtab->asr_owner = orig_asr_owner;
+}
+
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
     ASR::stmt_t* a_overloaded, bool a_realloc_lhs) {
