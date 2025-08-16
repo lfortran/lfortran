@@ -2598,6 +2598,7 @@ RUN(NAME separate_compilation_20 LABELS gfortran llvm_submodule EXTRAFILES separ
 RUN(NAME separate_compilation_21 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_21a.f90 separate_compilation_21b.f90)
 RUN(NAME separate_compilation_22 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_22a.f90 separate_compilation_22b.f90)
 RUN(NAME separate_compilation_23 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_23a.f90 separate_compilation_23b.f90)
+RUN(NAME separate_compilation_24 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_24a.f90 separate_compilation_24b.f90)
 
 
 
