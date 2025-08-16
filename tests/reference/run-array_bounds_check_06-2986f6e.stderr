@@ -1,0 +1,3 @@
+Runtime Error: Size mismatch in assignment to 'x'
+
+LHS size is 3 and RHS size is 4

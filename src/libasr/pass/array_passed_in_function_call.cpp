@@ -916,6 +916,10 @@ public:
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_FunctionCall(x);
     }
 
+    // Don't visit DebugCheckArrayBounds, m_dt in FunctionCall might be an array
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        (void)x;
+    }
 };
 
 void pass_replace_array_passed_in_function_call(Allocator &al, ASR::TranslationUnit_t &unit,
