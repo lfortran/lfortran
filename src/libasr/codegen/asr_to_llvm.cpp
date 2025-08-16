@@ -6887,13 +6887,14 @@ public:
         if (compiler_options.po.bounds_checking) {
             LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))
             LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_value)))
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
             ASR::ArraySize_t* value_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_value, nullptr, ASRUtils::expr_type(x.m_value), nullptr));
+                x.m_value, nullptr, type32, nullptr));
             visit_ArraySize(*value_array_size);
             llvm::Value* value_size = tmp;
 
             ASR::ArraySize_t* target_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_target, nullptr, ASRUtils::expr_type(x.m_target), nullptr));
+                x.m_target, nullptr, type32, nullptr));
             visit_ArraySize(*target_array_size);
             llvm::Value* target_size = tmp;
 

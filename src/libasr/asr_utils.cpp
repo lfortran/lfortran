@@ -3343,7 +3343,7 @@ ASR::expr_t* get_expr_size_var(ASR::expr_t* x) {
                 }
             }
             // m_dt is also an argument
-            if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
+            if (func_call->m_dt && ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
                 return get_expr_size_var(func_call->m_dt);
             }
         }
