@@ -4768,3 +4768,7 @@ ast = true
 [[test]]
 filename = "classes1.f90"
 llvm_new_classes = true
+
+[[test]]
+filename = "classes2.f90"
+llvm_new_classes = true
