@@ -3278,6 +3278,86 @@ ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type
     return nullptr;
 }
 
+template<typename T>
+ASR::expr_t* get_binop_size_var(ASR::expr_t* x) {
+    ASR::expr_t* left = get_expr_size_var(ASR::down_cast<T>(x)->m_left);
+    ASR::expr_t* right = get_expr_size_var(ASR::down_cast<T>(x)->m_right);
+    if (ASRUtils::is_array(ASRUtils::expr_type(left))) {
+        return get_expr_size_var(left);
+    } else if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
+        return get_expr_size_var(right);
+    }
+    return x;
+}
+
+// Get past expressions to get the Var which will be used to calculate ArraySize
+ASR::expr_t* get_expr_size_var(ASR::expr_t* x) {
+    if (ASR::is_a<ASR::Var_t>(*x)) {
+        return x;
+    }
+
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::IntegerBinOp_t>(x);
+    } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::RealBinOp_t>(x);
+    } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::ComplexBinOp_t>(x);
+    } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::LogicalBinOp_t>(x);
+    } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
+        return get_binop_size_var<ASR::IntegerCompare_t>(x);
+    } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
+        return get_binop_size_var<ASR::RealCompare_t>(x);
+    } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
+        return get_binop_size_var<ASR::ComplexCompare_t>(x);
+    } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
+        return get_binop_size_var<ASR::StringCompare_t>(x);
+    } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
+        return get_binop_size_var<ASR::OverloadedCompare_t>(x);
+    } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
+        return get_binop_size_var<ASR::StringConcat_t>(x);
+    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*x)) {
+        return get_expr_size_var(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*x)) {
+        return get_expr_size_var(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
+    } else if (ASR::is_a<ASR::Cast_t>(*x)) {
+        return get_expr_size_var(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+    } else if (ASR::is_a<ASR::LogicalNot_t>(*x)) {
+        return get_expr_size_var(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
+    } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x)) {
+        ASR::IntrinsicElementalFunction_t* elemental_f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+
+        // If any argument is an array other arguments must be the same shape
+        for (size_t i = 0; i < elemental_f->n_args; i++) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(elemental_f->m_args[i]))) {
+                return get_expr_size_var(elemental_f->m_args[i]);
+            }
+        }
+    } else if (ASR::is_a<ASR::FunctionCall_t>(*x)) {
+        ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(x);
+        if (ASRUtils::is_elemental(func_call->m_name)) {
+            // If any argument is an array other arguments must be the same shape
+            for (size_t i = 0; i < func_call->n_args; i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_args[i].m_value))) {
+                    return get_expr_size_var(func_call->m_args[i].m_value);
+                }
+            }
+            // m_dt is also an argument
+            if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
+                return get_expr_size_var(func_call->m_dt);
+            }
+        }
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x);
+        if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+            return get_expr_size_var(sim->m_v);
+        }
+    }
+
+    return x;
+}
+
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
