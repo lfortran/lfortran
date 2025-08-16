@@ -8,18 +8,21 @@ source_filename = "LFortran"
 @string_const_data = private constant [5 x i8] c"(g0)\00"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
 @serialization_info = private unnamed_addr constant [3 x i8] c"R8\00", align 1
+@string_const_data.1 = private constant [5 x i8] c"(g0)\00"
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.1, i32 0, i32 0), i64 4 }>
+@serialization_info.3 = private unnamed_addr constant [3 x i8] c"R8\00", align 1
 @2 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
-@string_const_data.1 = private constant [2 x i8] c" \00"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.1, i32 0, i32 0), i64 1 }>
+@string_const_data.4 = private constant [2 x i8] c" \00"
+@string_const.5 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.4, i32 0, i32 0), i64 1 }>
 @3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.3 = private unnamed_addr constant [7 x i8] c"S-DESC\00", align 1
+@serialization_info.6 = private unnamed_addr constant [7 x i8] c"S-DESC\00", align 1
 @4 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@string_const_data.4 = private constant [19 x i8] c"10.000000000000000\00"
-@string_const.5 = private global %string_descriptor <{ i8* getelementptr inbounds ([19 x i8], [19 x i8]* @string_const_data.4, i32 0, i32 0), i64 18 }>
-@string_const_data.6 = private constant [11 x i8] c"ERROR STOP\00"
-@string_const.7 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.6, i32 0, i32 0), i64 10 }>
-@string_const_data.8 = private constant [2 x i8] c"\0A\00"
-@string_const.9 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.8, i32 0, i32 0), i64 1 }>
+@string_const_data.7 = private constant [19 x i8] c"10.000000000000000\00"
+@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([19 x i8], [19 x i8]* @string_const_data.7, i32 0, i32 0), i64 18 }>
+@string_const_data.9 = private constant [11 x i8] c"ERROR STOP\00"
+@string_const.10 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.9, i32 0, i32 0), i64 10 }>
+@string_const_data.11 = private constant [2 x i8] c"\0A\00"
+@string_const.12 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.11, i32 0, i32 0), i64 1 }>
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @_lcompilers_len_trim_str(%string_descriptor* %str) {
@@ -52,7 +55,7 @@ loop.head:                                        ; preds = %ifcont, %then
   store i64 1, i64* %14, align 4
   %15 = getelementptr %string_descriptor, %string_descriptor* %stringItem_desc, i32 0, i32 0
   %16 = load i8*, i8** %15, align 8
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.5, i32 0, i32 0), align 8
   %18 = load i8, i8* %16, align 1
   %19 = load i8, i8* %17, align 1
   %20 = icmp eq i8 %18, %19
@@ -167,16 +170,27 @@ define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val,
   store i64 %10, i64* %13, align 4
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %15 = load i8*, i8** %14, align 8
-  call void (i8**, i8, i8, i64*, i32*, i8*, i64, ...) @_lfortran_string_write(i8** %4, i8 0, i8 0, i64* %5, i32* %7, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i64 2, i8* %15)
-  %16 = call %string_descriptor @_lcompilers_trim_str(%string_descriptor* %buffer)
-  store %string_descriptor %16, %string_descriptor* %string_ret_const, align 1
-  %17 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
-  %18 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 1
-  %19 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 0
-  %20 = load i8*, i8** %19, align 8
-  %21 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 1
-  %22 = load i64, i64* %21, align 4
-  call void @_lfortran_strcpy(i8** %17, i64* %18, i8 1, i8 1, i8* %20, i64 %22)
+  %16 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  %17 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %16, i64 4, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i32 0, i32 0, double* %val)
+  %18 = call i64 @_lfortran_str_len(i8* %17)
+  %19 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc1 = bitcast i8* %19 to %string_descriptor*
+  %20 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
+  store i8* %17, i8** %20, align 8
+  %21 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
+  store i64 %18, i64* %21, align 4
+  %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
+  %23 = load i64, i64* %22, align 4
+  call void (i8**, i8, i8, i64*, i32*, i8*, i64, ...) @_lfortran_string_write(i8** %4, i8 0, i8 0, i64* %5, i32* %7, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i64 2, i8* %15, i64 %23)
+  %24 = call %string_descriptor @_lcompilers_trim_str(%string_descriptor* %buffer)
+  store %string_descriptor %24, %string_descriptor* %string_ret_const, align 1
+  %25 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
+  %26 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 1
+  %27 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 0
+  %28 = load i8*, i8** %27, align 8
+  %29 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 1
+  %30 = load i64, i64* %29, align 4
+  call void @_lfortran_strcpy(i8** %25, i64* %26, i8 1, i8 1, i8* %28, i64 %30)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -222,7 +236,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = load %string_descriptor, %string_descriptor* %__libasr__created__var__0__func_call_res, align 1
   %10 = alloca %string_descriptor, align 8
   store %string_descriptor %9, %string_descriptor* %10, align 1
-  %11 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info.3, i32 0, i32 0), i32 0, i32 1, i64 %8, %string_descriptor* %10)
+  %11 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info.6, i32 0, i32 0), i32 0, i32 1, i64 %8, %string_descriptor* %10)
   %12 = call i64 @_lfortran_str_len(i8* %11)
   %13 = call i8* @_lfortran_malloc(i64 16)
   %stringFormat_desc = bitcast i8* %13 to %string_descriptor*
@@ -247,14 +261,14 @@ define i32 @main(i32 %0, i8** %1) {
   %25 = load i8*, i8** %24, align 8
   %26 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1__func_call_res, i32 0, i32 1
   %27 = load i64, i64* %26, align 4
-  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.5, i32 0, i32 0), align 8
+  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
   %29 = call i32 @str_compare(i8* %25, i64 %27, i8* %28, i64 18)
   %30 = icmp ne i32 %29, 0
   br i1 %30, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.7, i32 0, i32 0), align 8
-  %32 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.9, i32 0, i32 0), align 8
+  %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  %32 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %31, i8* %32)
   call void @exit(i32 1)
   br label %ifcont
