@@ -2,11 +2,11 @@
     "basename": "llvm_new_classes-classes1-bfe507d",
     "cmd": "lfortran --no-color --show-llvm --new-classes {infile} -o {outfile}",
     "infile": "tests/classes1.f90",
-    "infile_hash": "712e3733ac6410b356de5c026ff89120253b94ddcc395c197ef2ffa9",
+    "infile_hash": "2854104a42f1abb2d3573afedab08ac340e19b7d5151166ce3291182",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm_new_classes-classes1-bfe507d.stdout",
-    "stdout_hash": "e682661af93e13bf21284b8ecb7d0d693c0da18e49545eb6c53d3b8a",
+    "stdout_hash": "6b8e0a6e806921fd90332efce574e689f9382e73badefcd2e9e4edaf",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
