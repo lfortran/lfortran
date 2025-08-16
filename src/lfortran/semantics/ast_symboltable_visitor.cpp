@@ -3352,12 +3352,9 @@ public:
         current_module_dependencies.push_back(al, msym_cc);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
+        SymbolTable *tu_symtab = current_scope->get_global_scope();
+        bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
-            SymbolTable *tu_symtab = current_scope;
-            while (tu_symtab->parent != nullptr) {
-                tu_symtab = tu_symtab->parent;
-            }
-            bool load_submodules = (!compiler_options.separate_compilation && in_program);
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
@@ -3366,13 +3363,25 @@ public:
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
             }, lm, compiler_options.separate_compilation, load_submodules));
-        }
-        if (!ASR::is_a<ASR::Module_t>(*t)) {
-            diag.add(diag::Diagnostic(
-                "The symbol '" + msym + "' must be a module",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+        } else {
+            if (!ASR::is_a<ASR::Module_t>(*t)) {
+                diag.add(diag::Diagnostic(
+                    "The symbol '" + msym + "' must be a module",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(t);
+            if (load_submodules) {
+                ASRUtils::load_dependent_submodules(al, tu_symtab, mod, x.base.base.loc,
+                                                    compiler_options.po, true,
+                                                    [&](const std::string &msg, const Location &loc) { 
+                                                        diag.add(diag::Diagnostic(
+                                                            msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                                diag::Label("", {loc})}));
+                                                        throw SemanticAbort();
+                                                    }, lm);
+            }
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         if (x.n_symbols == 0) {
