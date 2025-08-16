@@ -3183,13 +3183,10 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
-                if ( compiler_options.new_classes ) {
-                    tmp = llvm_utils->CreateLoad2(name2dertype[current_der_type_name]->getPointerTo(), tmp);
-                } else {
+                if ( !compiler_options.new_classes ) {
                     tmp = llvm_utils->CreateLoad2(
                         name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
                 }
-
             }
             if( current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                 (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name) ) {
@@ -11527,22 +11524,28 @@ public:
                     ASRUtils::extract_physical_type(s_m_args0_type) == ASR::array_physical_typeType::DescriptorArray) {
                     // TODO: Handle convert of descriptor arrays
                 }
-                llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
-                    llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))),
-                            LLVM::is_llvm_pointer(*s_m_args0_type)));
-                llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0,
-                    ASRUtils::type_get_past_array(s_m_args0_type), module.get());
+                if ( compiler_options.new_classes ) {
+                    return builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true));
+                } else {
+                    llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                        llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))),
+                                LLVM::is_llvm_pointer(*s_m_args0_type)));
 
-                llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
-                llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
-                builder->CreateStore(hash, hash_ptr);
-                llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
+                    llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0,
+                        ASRUtils::type_get_past_array(s_m_args0_type), module.get());
 
-                builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true)), class_ptr);
+                    llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+                    builder->CreateStore(hash, hash_ptr);
+                    llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
 
-                return dt_polymorphic;
+                    builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true)), class_ptr);
+
+                    return dt_polymorphic;
+                }
             } else {
                 // No need to convert if types are same
                 if (llvm_utils->getClassType(
