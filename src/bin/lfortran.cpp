@@ -115,22 +115,10 @@ std::string get_system_temp_dir()
 std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
 
 
-std::string get_unique_ID() {
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
-    std::uniform_int_distribution<int> dist(0, 61);
-    const std::string v =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    std::string res;
-    for (int i = 0; i < 22; i++) {
-        res += v[dist(rng)];
-    }
-    return res;
-}
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
-const std::string LCOMPILERS_UNIQUE_ID = get_unique_ID();
+const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
