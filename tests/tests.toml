@@ -3252,6 +3252,8 @@ asr = true
 [[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
+asr_disable_implicit_typing = true
+enable_and_disable_implicit_typing = true
 
 [[test]]
 filename = "implicit_typing2.f90"
