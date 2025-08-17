@@ -7,16 +7,6 @@
                     (SymbolTable
                         5
                         {
-                            1_t_1:
-                                (ExternalSymbol
-                                    5
-                                    1_t_1
-                                    2 t_1
-                                    derived_types_18_module_1
-                                    []
-                                    t_1
-                                    Public
-                                ),
                             1_t_1_i:
                                 (ExternalSymbol
                                     5
@@ -25,6 +15,16 @@
                                     t_1
                                     []
                                     i
+                                    Public
+                                ),
+                            1_t_1_t_1:
+                                (ExternalSymbol
+                                    5
+                                    1_t_1_t_1
+                                    2 t_1
+                                    derived_types_18_module_1
+                                    []
+                                    t_1
                                     Public
                                 ),
                             1_t_2_r:
@@ -126,7 +126,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 5 type_2)
-                            5 1_t_1
+                            5 1_t_1_t_1
                             (StructType
                                 [(Integer 4)]
                                 []

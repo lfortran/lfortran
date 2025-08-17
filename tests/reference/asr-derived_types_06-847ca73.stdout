@@ -183,22 +183,12 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_date_to_string:
+                                            1_toml_date_date_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_date_to_string
+                                                    1_toml_date_date_to_string
                                                     8 to_string
                                                     toml_date
-                                                    []
-                                                    to_string
-                                                    Public
-                                                ),
-                                            1_time_to_string:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_time_to_string
-                                                    10 to_string
-                                                    toml_time
                                                     []
                                                     to_string
                                                     Public
@@ -221,6 +211,16 @@
                                                     toml_datetime
                                                     []
                                                     time
+                                                    Public
+                                                ),
+                                            1_toml_time_time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_time_time_to_string
+                                                    10 to_string
+                                                    toml_time
+                                                    []
+                                                    to_string
                                                     Public
                                                 ),
                                             lhs:
@@ -396,7 +396,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            12 1_date_to_string
+                                            12 1_toml_date_date_to_string
                                             ()
                                             [((Var 12 lhs))]
                                             (StructInstanceMember
@@ -445,7 +445,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                12 1_time_to_string
+                                                12 1_toml_time_time_to_string
                                                 ()
                                                 [((Var 12 temporary))]
                                                 (StructInstanceMember
