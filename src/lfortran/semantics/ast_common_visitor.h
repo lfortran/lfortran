@@ -982,21 +982,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         }) ) {
         overloaded = ASRUtils::EXPR(asr);
     }
+
     // the original fails when I try for int .and. logical type
     // and there can be logical variable, or logical pointer
-    // thus, the following fuction will unwrap it
-    auto unwrap_type = [&](ASR::ttype_t *t) -> ASR::ttype_t* {
-        // remove allocatable and pointer wrappers
-        while (ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)) {
-            t = ASRUtils::type_get_past_allocatable(t);
-            t = ASRUtils::type_get_past_pointer(t);
-        }
-        return t;
-    };
-
-
-    ASR::ttype_t *left_type  = unwrap_type(ASRUtils::expr_type(left));
-    ASR::ttype_t *right_type = unwrap_type(ASRUtils::expr_type(right));
+    // using the below type_get_past_allocatable_pointer to unwrap the type of left and right variable
+    ASR::ttype_t *left_type  = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
+    ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
 
     auto check_logical_type = [&](ASR::ttype_t *t, ASR::expr_t *expr, const std::string &side) {
         if (ASR::is_a<ASR::Array_t>(*t)) {
@@ -1019,23 +1010,10 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         }
     };
 
-    bool is_intrinsic_and = (ASRUtils::is_logical(*left_type) || ASRUtils::is_logical(*right_type));
-
-    // came across a case where there could be int .and. int
-    // this is correct. Thus, if its an intrinsic and, only then, we go for that
-    if (is_intrinsic_and) {
+    if (!overloaded && !ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right)) {
         check_logical_type(left_type, left, "Left");
         check_logical_type(right_type, right, "Right");
     }
-
-    // this ensures both operands have the same type
-    LCOMPILERS_ASSERT(
-        ASRUtils::check_equal_type(
-            ASRUtils::expr_type(left),
-            ASRUtils::expr_type(right),
-            left, right
-        )
-    );
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
     ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);

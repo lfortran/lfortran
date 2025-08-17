@@ -176,6 +176,16 @@ program continue_compilation_3
     print *, merge_bits(1, 2, 3_8)
     print *, merge_bits(merge_i,merge_j,merge_k)
 
+    ! adding the new test for performing logical .and. between int-logical type.
+    !and_mismatch_int_logical
+    5 .and. .true.
+
+    !and_mismatch_real_logical
+    3.14 .and. .false.
+
+    !and_okay_int_int
+    print *, 5 .and. 6
+
     contains 
     subroutine bpe()
         print *, size(bpe)

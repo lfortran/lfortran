@@ -1,0 +1,287 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            module_operator_overloading_12:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            and:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            diagnosis:
+                                                (Variable
+                                                    4
+                                                    diagnosis
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    4
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    4
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    and
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 lhs)
+                                    (Var 4 rhs)]
+                                    [(Assignment
+                                        (Var 4 diagnosis)
+                                        (IntegerBinOp
+                                            (Var 4 lhs)
+                                            Add
+                                            (Var 4 rhs)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 4 diagnosis)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ~and:
+                                (CustomOperator
+                                    2
+                                    ~and
+                                    [2 and]
+                                    Public
+                                )
+                        })
+                    module_operator_overloading_12
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .true.
+                ),
+            operator_overloading_12:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            a:
+                                (Variable
+                                    5
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            and@~and:
+                                (ExternalSymbol
+                                    5
+                                    and@~and
+                                    2 and
+                                    module_operator_overloading_12
+                                    []
+                                    and
+                                    Public
+                                ),
+                            b:
+                                (Variable
+                                    5
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    5
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            ~and:
+                                (ExternalSymbol
+                                    5
+                                    ~and
+                                    2 ~and
+                                    module_operator_overloading_12
+                                    []
+                                    ~and
+                                    Public
+                                )
+                        })
+                    operator_overloading_12
+                    [module_operator_overloading_12]
+                    [(Assignment
+                        (Var 5 a)
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 b)
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 c)
+                        (OverloadedBoolOp
+                            (Var 5 a)
+                            And
+                            (Var 5 b)
+                            (Integer 4)
+                            ()
+                            (FunctionCall
+                                5 and@~and
+                                5 ~and
+                                [((Var 5 a))
+                                ((Var 5 b))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "The result of a .and. b is:"
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 5 c)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 5 c)
+                            NotEq
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)
