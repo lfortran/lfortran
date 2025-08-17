@@ -78,6 +78,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
+        app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
@@ -220,7 +221,7 @@ namespace LCompilers::CommandLineInterface {
         if (opts.disable_style_suggestions) {
             compiler_options.show_style_suggestions = false;
         }
-
+        
         if (disable_warnings) {
             compiler_options.show_warnings = false;
         }
@@ -233,6 +234,9 @@ namespace LCompilers::CommandLineInterface {
                 compiler_options.show_style_suggestions = true;
             }
             compiler_options.implicit_typing = true;
+            if (opts.disable_implicit_typing) {
+                compiler_options.implicit_typing = false;
+            }
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
@@ -241,7 +245,13 @@ namespace LCompilers::CommandLineInterface {
         } else if (opts.arg_standard == "legacy") {
             // f23
             compiler_options.show_style_suggestions = false;
+            if (style_suggestions) {
+                compiler_options.show_style_suggestions = true;
+            }
             compiler_options.implicit_typing = true;
+            if (opts.disable_implicit_typing) {
+                compiler_options.implicit_typing = false;
+            }
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
@@ -300,10 +310,18 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --no-style-warnings and --style-warnings at the same time");
         }
 
+        if (opts.disable_implicit_typing && compiler_options.implicit_typing) {
+            throw lc::LCompilersException("Cannot use --disable-implicit-typing and --implicit-typing at the same time");
+        }
+
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
         if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
             compiler_options.fixed_form = true;
+        }
+
+        if (opts.disable_implicit_typing) {
+            compiler_options.implicit_typing = false;
         }
 
         if (opts.cpp && opts.no_cpp) {

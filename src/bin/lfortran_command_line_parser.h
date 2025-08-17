@@ -66,6 +66,9 @@ namespace LCompilers::CommandLineInterface {
         bool show_errors = false;
         bool show_document_symbols = false;
 
+        //no flags
+        bool disable_implicit_typing = false;
+
         // Style suggestions and warnings
         bool disable_style_suggestions = false;
 
