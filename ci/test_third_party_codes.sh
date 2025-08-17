@@ -219,8 +219,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-20
-  git checkout 8cbc69ca553b5c1b3d5bd882263e108feb75fa7a
+  git checkout n-lf-21
+  git checkout ec78a3c86c7f3971bcee7ca0241c4abb85b26749
   micromamba install -c conda-forge fypp
 
   git clean -fdx
@@ -233,8 +233,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
 
   git clean -dfx
   git restore .
-  git checkout sc-lf-11
-  git checkout 76e15075b73b5bab39adf24b70fe15973069dee2
+  git checkout sc-lf-12
+  git checkout 4d832ce2f4c6629d5273651af20736e121d7abe0
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
