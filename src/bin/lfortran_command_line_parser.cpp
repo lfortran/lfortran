@@ -218,6 +218,14 @@ namespace LCompilers::CommandLineInterface {
             app.parse(args);
         }
 
+        if (opts.disable_style_suggestions) {
+            compiler_options.show_style_suggestions = false;
+        }
+        
+        if (disable_warnings) {
+            compiler_options.show_warnings = false;
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -314,14 +322,6 @@ namespace LCompilers::CommandLineInterface {
 
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
-        }
-
-        if (opts.disable_style_suggestions) {
-            compiler_options.show_style_suggestions = false;
-        }
-
-        if (disable_warnings) {
-            compiler_options.show_warnings = false;
         }
 
         if (opts.cpp && opts.no_cpp) {
