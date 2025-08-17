@@ -141,7 +141,7 @@ public:
     std::map<std::string, std::map<std::string, int>> name2memidx;
 
     std::map<uint64_t, llvm::Value*> llvm_symtab; // llvm_symtab_value
-    std::map<uint64_t, llvm::Value*> llvm_symtab_deep_copy;
+    std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
@@ -4675,7 +4675,7 @@ public:
                             builder->CreateStore(tmp, deep, v->m_is_volatile);
                             llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
                             tmp = llvm_utils->CreateLoad2(m_dims_length_llvm_type,deep, v->m_is_volatile);
-                            llvm_symtab_deep_copy[m_length_variable_h] = deep;
+                            llvm_symtab_deep_copy[{m_length_variable_h, current_scope}] = deep;
                         }
                     }
 
@@ -7193,6 +7193,9 @@ public:
         fn->getBasicBlockList().push_back(blockend);
 #endif
         builder->SetInsertPoint(blockstart);
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = block->m_symtab;
+
         declare_vars(*block);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
@@ -7213,6 +7216,8 @@ public:
             builder->CreateBr(blockend);
         }
         builder->SetInsertPoint(blockend);
+
+        current_scope = current_scope_copy;
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
@@ -11049,8 +11054,8 @@ public:
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                        if (llvm_symtab_deep_copy.find(h) != llvm_symtab_deep_copy.end()) {
-                            tmp = llvm_symtab_deep_copy[h];
+                        if (llvm_symtab_deep_copy.find({h, current_scope}) != llvm_symtab_deep_copy.end()) {
+                            tmp = llvm_symtab_deep_copy[{h, current_scope}];
                         } else {
                             tmp = llvm_symtab[h];
                         }
@@ -12714,9 +12719,9 @@ public:
             if (x_sym != nullptr && ASR::is_a<ASR::Variable_t>(*x_sym)) {
                 ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
                 uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
-                if (llvm_symtab_deep_copy.find(x_sym_variable_h) != llvm_symtab_deep_copy.end()) {
+                if (llvm_symtab_deep_copy.find({x_sym_variable_h, current_scope}) != llvm_symtab_deep_copy.end()) {
                     tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get()),
-                        llvm_symtab_deep_copy[x_sym_variable_h]);
+                        llvm_symtab_deep_copy[{x_sym_variable_h, current_scope}]);
                 } else {
                     this->visit_expr_wrapper(x, true);
                 }
