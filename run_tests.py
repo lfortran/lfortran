@@ -48,6 +48,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr = is_included("asr")
     asr_ignore_pragma = is_included("asr_ignore_pragma")
     asr_implicit_typing = is_included("asr_implicit_typing")
+    asr_disable_implicit_typing = is_included("asr_disable_implicit_typing")
+    enable_and_disable_implicit_typing = is_included("enable_and_disable_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
@@ -168,6 +170,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
+        
+    if enable_and_disable_implicit_typing:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --implicit-typing --disable-implicit-typing --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if ast_json:
         run_test(
@@ -455,6 +467,18 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr",
             "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+    
+    if asr_disable_implicit_typing:
+        if no_llvm:
+            log.info(f"{filename} * llvm   SKIPPED as requested")
+        run_test(
+            filename,
+            "asr",
+            "lfortran --std=f23 --show-asr --disable-implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
