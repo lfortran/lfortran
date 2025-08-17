@@ -9,7 +9,7 @@
 #include<unordered_set>
 
 
-extern std::string lcompilers_unique_ID;
+extern std::string lcompilers_unique_ID_separate_compilation;
 
 /*
 ASR pass for replacing symbol names with some new name, mostly because
@@ -81,16 +81,16 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
             // mangle intrinsic functions
             uint64_t hash = get_hash(current_scope->asr_owner);
-            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID;
+            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";
             for (auto &a: parent_function_name) {
                 name += a + "_";
             }
-            return name + lcompilers_unique_ID;
+            return name + lcompilers_unique_ID_separate_compilation;
         }
-        return module_name + curr_name + "_" + lcompilers_unique_ID;
+        return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -545,13 +545,13 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
                     pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling ||
                     pass_options.bindc_mangling || pass_options.fortran_mangling);
     if (pass_options.mangle_underscore) {
-        lcompilers_unique_ID = "";
+        lcompilers_unique_ID_separate_compilation = "";
     }
     if ((!any_present || (!(pass_options.mangle_underscore ||
-            pass_options.fortran_mangling) && lcompilers_unique_ID.empty())) &&
+            pass_options.fortran_mangling) && lcompilers_unique_ID_separate_compilation.empty())) &&
                 !pass_options.c_mangling) {
-        // `--mangle-underscore` doesn't require `lcompilers_unique_ID`
-        // `lcompilers_unique_ID` is not mandatory for `--apply-fortran-mangling`
+        // `--mangle-underscore` doesn't require `lcompilers_unique_ID_separate_compilation`
+        // `lcompilers_unique_ID_separate_compilation` is not mandatory for `--apply-fortran-mangling`
         return;
     }
     SymbolRenameVisitor v(pass_options.intrinsic_module_name_mangling,
