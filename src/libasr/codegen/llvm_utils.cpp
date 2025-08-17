@@ -1679,6 +1679,25 @@ namespace LCompilers {
         builder->CreateCall(fn, args);
     }
 
+    void LLVMUtils::get_type_default_field_values(ASR::symbol_t* struct_sym,
+            llvm::Module* module, std::vector<llvm::Constant*>& field_values) {
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
+        for (size_t i = 0; i < struct_t->n_members; i++) {
+            std::string member_name = struct_t->m_members[i];
+            ASR::symbol_t* sym = struct_t->m_symtab->get_symbol(member_name);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
+                continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_value != nullptr) {
+                llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, module);
+                field_values.push_back(c);
+            } else {
+                llvm::Type* member_type = get_type_from_ttype_t_util(var->m_type, struct_sym, module);
+                field_values.push_back(llvm::Constant::getNullValue(member_type));
+            }
+        }
+    }
+    
     llvm::Constant* LLVMUtils::create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
                                                         llvm::Module* module) {
         switch (expr->type) {
@@ -1701,6 +1720,14 @@ namespace LCompilers {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
                 }
                 break;
+            }
+            case ASR::exprType::StructConstant: {
+                std::vector<llvm::Constant*> field_values;
+                ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+                get_type_default_field_values(struct_sym, module, field_values);
+                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                    get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module));
+                return llvm::ConstantStruct::get(llvm_struct_type, field_values);
             }
             default:
                 throw LCompilersException( "Unsupported constant expression in struct default initializer.");
