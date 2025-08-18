@@ -17,4 +17,4 @@ cmake \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS} -fdiagnostics-color=always" \
 -G Ninja \
     .
-cmake --build .
+cmake --build . -j4
