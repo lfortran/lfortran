@@ -1942,6 +1942,7 @@ RUN(NAME class_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --rea
 RUN(NAME class_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -c --cpp EXTRAFILES class_63_module_1.f90 class_63_module_2.f90)
 RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)

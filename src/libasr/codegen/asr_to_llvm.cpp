@@ -12099,6 +12099,9 @@ public:
                 (a_dt == dt_sym_type ||
                 ASRUtils::is_parent(a_dt, dt_sym_type) ||
                 ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
+                // if extended type vtab is not present in current scope
+                // We need to add its vtab (Eg. class_65.f90)
+                create_vtab_for_struct_type(&a_dt->base, current_scope);
                 for( auto& item2: item.second ) {
                     if( item2.first == current_scope ) {
                         // Find the Struct symbol to which the StructMethodDeclaration belongs
