@@ -1786,18 +1786,16 @@ public:
         llvm::Value* const_dict = llvm_utils->CreateAlloca(*builder, const_dict_type, nullptr, "const_dict");
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
         llvm_utils->set_dict_api(x_dict);
-        std::string key_type_code = ASRUtils::get_type_code(x_dict->m_key_type);
-        std::string value_type_code = ASRUtils::get_type_code(x_dict->m_value_type);
-        llvm_utils->dict_api->dict_init(key_type_code, value_type_code, const_dict, module.get(), x.n_keys);
+        llvm_utils->dict_api->dict_init(x_dict, const_dict, module.get(), x.n_keys);
         int64_t ptr_loads_key = !LLVM::is_llvm_struct(x_dict->m_key_type);
         int64_t ptr_loads_value = !LLVM::is_llvm_struct(x_dict->m_value_type);
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_keys; i++ ) {
             ptr_loads = ptr_loads_key;
-            visit_expr_wrapper(x.m_keys[i], true);
+            visit_expr_wrapper(x.m_keys[i], ASRUtils::is_character(*expr_type(x.m_keys[i])) ? 0 : 1);
             llvm::Value* key = tmp;
             ptr_loads = ptr_loads_value;
-            visit_expr_wrapper(x.m_values[i], true);
+            visit_expr_wrapper(x.m_values[i], ASRUtils::is_character(*expr_type(x.m_values[i])) ? 0 : 1);
             llvm::Value* value = tmp;
             llvm_utils->dict_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_dict, key, value, module.get(),
                                  x_dict->m_key_type, x_dict->m_value_type, name2memidx);
@@ -2029,12 +2027,14 @@ public:
             builder->CreateStore(tmp, def_value_ptr);
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->get_item(x.m_a, pdict, key, module.get(), dict_type, def_value_ptr,
-                                  LLVM::is_llvm_struct(dict_type->m_value_type));
+                                  LLVM::is_llvm_struct(dict_type->m_value_type) || 
+                                  ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type));
         } else {
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->read_item(x.m_a, pdict, key, module.get(), dict_type,
                                     compiler_options.bounds_checking,
-                                    LLVM::is_llvm_struct(dict_type->m_value_type));
+                                    LLVM::is_llvm_struct(dict_type->m_value_type) || 
+                                    ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type));
         }
     }
 
@@ -2167,8 +2167,9 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
-        this->visit_expr_wrapper(x.m_key, true);
+        ptr_loads = !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type));
+        visit_expr_load_wrapper(x.m_key, 
+            !(LLVM::is_llvm_struct(dict_type->m_key_type) || ASRUtils::is_character(*dict_type->m_key_type)));
         llvm::Value *key = tmp;
         visit_expr_load_wrapper(x.m_value,
             !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type)) ? 1 : 0,
@@ -4856,9 +4857,9 @@ public:
                     llvm_utils->get_type_from_ttype_t_util(nullptr, v->m_type, module.get());
 
                     if (ASRUtils::is_character(*asr_dict->m_key_type))
-                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_sc->dict_init(asr_dict, ptr, module.get(), 0);
                     else
-                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_lp->dict_init(asr_dict, ptr, module.get(), 0);
                 }
             }
         }
