@@ -983,9 +983,10 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         overloaded = ASRUtils::EXPR(asr);
     }
 
-    // the original fails when I try for int .and. logical type
-    // and there can be logical variable, or logical pointer
-    // using the below type_get_past_allocatable_pointer to unwrap the type of left and right variable
+    // Earlier, `.and.` between int and logical (incl. pointers) caused failures.
+    // The types were not being fully unwrapped before semantic checks.
+    // By applying `type_get_past_allocatable_pointer` on both operands,
+    // we correctly resolve to base types and catch invalid mixes.
     ASR::ttype_t *left_type  = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
     ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
 
@@ -1010,10 +1011,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         }
     };
 
-    if (!overloaded && !ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right)) {
-        check_logical_type(left_type, left, "Left");
-        check_logical_type(right_type, right, "Right");
-    }
+    if (!overloaded) {
+         check_logical_type(left_type, left, "Left");
+         check_logical_type(right_type, right, "Right");
+         LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
+            ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
+     }
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
     ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
