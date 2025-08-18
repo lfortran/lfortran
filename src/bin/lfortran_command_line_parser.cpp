@@ -41,7 +41,8 @@ namespace LCompilers::CommandLineInterface {
         std::string group_miscellaneous_options = "Miscellaneous Options";
         std::string group_lsp_options = "LSP Options";
         bool disable_bounds_checking = false;
-        bool style_warnings = false;
+        bool style_suggestions = false;
+        bool disable_warnings = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -66,9 +67,9 @@ namespace LCompilers::CommandLineInterface {
 
         // LFortran specific options
         // Warning-related flags
-        app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings")->group(group_warning_options);
-        app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions")->group(group_warning_options);
-        app.add_flag("--style-warnings", style_warnings, "Enable style suggestions")->group(group_warning_options);
+        app.add_flag("--no-warnings", disable_warnings, "Turn off all warnings")->group(group_warning_options);
+        app.add_flag("--no-style-warnings", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
+        app.add_flag("--style-warnings", style_suggestions, "Enable style suggestions")->group(group_warning_options);
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
 
@@ -77,6 +78,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
+        app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
@@ -216,14 +218,25 @@ namespace LCompilers::CommandLineInterface {
             app.parse(args);
         }
 
+        if (opts.disable_style_suggestions) {
+            compiler_options.show_style_suggestions = false;
+        }
+        
+        if (disable_warnings) {
+            compiler_options.show_warnings = false;
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
-            compiler_options.disable_style = true;
-            if (style_warnings) {
-                compiler_options.disable_style = false;
+            compiler_options.show_style_suggestions = false;
+            if (style_suggestions) {
+                compiler_options.show_style_suggestions = true;
             }
             compiler_options.implicit_typing = true;
+            if (opts.disable_implicit_typing) {
+                compiler_options.implicit_typing = false;
+            }
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
@@ -231,8 +244,14 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.realloc_lhs = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
-            compiler_options.disable_style = true;
+            compiler_options.show_style_suggestions = false;
+            if (style_suggestions) {
+                compiler_options.show_style_suggestions = true;
+            }
             compiler_options.implicit_typing = true;
+            if (opts.disable_implicit_typing) {
+                compiler_options.implicit_typing = false;
+            }
             compiler_options.implicit_argument_casting = true;
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
@@ -287,14 +306,22 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
-        if (compiler_options.disable_style && style_warnings) {
+        if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-warnings and --style-warnings at the same time");
+        }
+
+        if (opts.disable_implicit_typing && compiler_options.implicit_typing) {
+            throw lc::LCompilersException("Cannot use --disable-implicit-typing and --implicit-typing at the same time");
         }
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
         if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
             compiler_options.fixed_form = true;
+        }
+
+        if (opts.disable_implicit_typing) {
+            compiler_options.implicit_typing = false;
         }
 
         if (opts.cpp && opts.no_cpp) {

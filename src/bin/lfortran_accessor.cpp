@@ -40,7 +40,7 @@ namespace LCompilers::LLanguageServer {
         diag_lists.reserve(diagnostics.diagnostics.size());
         LCompilers::error_highlight h;
         for (auto &d : diagnostics.diagnostics) {
-            if (compiler_options.no_warnings && d.level != LCompilers::diag::Level::Error) {
+            if (!compiler_options.show_warnings && d.level != LCompilers::diag::Level::Error) {
                 continue;
             }
             h.message = d.message;

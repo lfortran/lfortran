@@ -5000,25 +5000,38 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         va_list args;
         va_start(args, format_len);
         char* str = va_arg(args, char*);
-        // int64_t str_len = va_arg(args, int64_t); >>>>> TODO : pass length
+        int64_t str_len = va_arg(args, int64_t);
+
+        char *c_str = to_c_string((const fchar*)str, str_len);
+        char *c_format_data = to_c_string((const fchar*)format_data, format_len);
+
         // Detect "\b" to raise error
-        if(str[0] == '\b'){
+        if(str_len > 0 && c_str[0] == '\b'){
             if(iostat == NULL){
-                str = str+1;
-                fprintf(stderr, "%s",str);
+                c_str = c_str + 1;
+                fprintf(stderr, "%s", c_str);
                 exit(1);
             } else { // Delegate error handling to the user.
                 *iostat = 11;
                 return;
             }
         }
-        if(strcmp(format_data, "%s%s") == 0){
+
+        if(strcmp(c_format_data, "%s%s") == 0){
             char* end = va_arg(args, char*);
             int64_t end_len = va_arg(args, int64_t);
-            fprintf(filep, format_data, str, end);
+            char *c_end = to_c_string((const fchar*)end, end_len);
+
+            fprintf(filep, c_format_data, c_str, c_end);
+
+            free(c_end);
         } else {
-            fprintf(filep, format_data, str);
+            fprintf(filep, c_format_data, c_str);
         }
+
+        free(c_format_data);
+        free(c_str);
+
         if(iostat != NULL) *iostat = 0;
         va_end(args);
     }
@@ -5029,26 +5042,34 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
     int64_t format_len, ...) {
     va_list args;
     va_start(args, format_len);
-    char* str;
-    // int64_t str_len; >> TODO: Pass length
-    char* end_data = ""; int64_t end_len;
-    if(strcmp(format, "%s%s") == 0){
+    char* str = "";
+    int64_t str_len = 0;
+    char* end_data = "";
+    int64_t end_len = 0;
+
+    char *c_format = to_c_string((const fchar*)format, format_len);
+
+    if(strcmp(c_format, "%s%s") == 0){
         str = va_arg(args, char*);
-        // str_len >> Should pass rhs_len
+        str_len = va_arg(args, int64_t);
         end_data = va_arg(args, char*);
         end_len = va_arg(args, int64_t); 
-    } else if(strcmp(format, "%s") == 0){
+    } else if(strcmp(c_format, "%s") == 0){
         str = va_arg(args, char*);
+        str_len = va_arg(args, int64_t);
     } else {
         fprintf(stderr,"Compiler Error : Undefined Format");
         exit(1);
     }
 
+    char *c_str = to_c_string((const fchar*)str, str_len);
+    char *c_end_data = to_c_string((const fchar*)end_data, end_len);
+
     // Detect "\b" to raise error
-    if(str[0] == '\b'){
+    if(str_len > 0 && c_str[0] == '\b'){
         if(iostat == NULL){
-            str = str+1;
-            fprintf(stderr, "%s",str);
+            c_str = c_str + 1;
+            fprintf(stderr, "%s", c_str);
             exit(1);
         } else { // Delegate error handling to the user.
             *iostat = 11;
@@ -5056,11 +5077,16 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
         }
     }
 
-    char *s = (char *) malloc(strlen(str)*sizeof(char) + strlen(end_data)*sizeof(char) + 1);
-    sprintf(s, format, str, end_data);
+    char *s = (char *) malloc(str_len * sizeof(char) + end_len * sizeof(char) + 1);
+    sprintf(s, c_format, c_str, c_end_data);
 
-    _lfortran_strcpy(str_holder, len, is_allocatable, is_deferred, str, strlen(str));
+    _lfortran_strcpy(str_holder, len, is_allocatable, is_deferred, c_str, str_len);
+
     free(s);
+    free(c_end_data);
+    free(c_str);
+    free(c_format);
+
     va_end(args);
     if(iostat != NULL) *iostat = 0;
 }

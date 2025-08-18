@@ -140,6 +140,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm_new_classes")
+            add_executable(${name} ${file_name}.f90 ${extra_files})
+            target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}> --new-classes)
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
@@ -177,7 +181,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_link_options(${name} PUBLIC -L$ENV{CONDA_PREFIX}/lib ${extra_args})
 
             add_test(NAME ${name} COMMAND ${name})
-        
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_submodule")
             set(object_files "")
             set(prev_file "")
@@ -243,7 +246,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_new_classes)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -1380,6 +1383,7 @@ RUN(NAME select_type_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME program_02 LABELS gfortran llvm)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1874,10 +1878,10 @@ RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
-RUN(NAME class_01 LABELS gfortran llvm)
-RUN(NAME class_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_03 LABELS gfortran llvm)
-RUN(NAME class_04 LABELS gfortran llvm fortran)
+RUN(NAME class_01 LABELS gfortran llvm llvm_new_classes)
+RUN(NAME class_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
+RUN(NAME class_03 LABELS gfortran llvm llvm_new_classes)
+RUN(NAME class_04 LABELS gfortran llvm fortran llvm_new_classes)
 RUN(NAME class_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1937,6 +1941,7 @@ RUN(NAME class_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 RUN(NAME class_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -c --cpp EXTRAFILES class_63_module_1.f90 class_63_module_2.f90)
+RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
@@ -2593,6 +2598,7 @@ RUN(NAME separate_compilation_20 LABELS gfortran llvm_submodule EXTRAFILES separ
 RUN(NAME separate_compilation_21 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_21a.f90 separate_compilation_21b.f90)
 RUN(NAME separate_compilation_22 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_22a.f90 separate_compilation_22b.f90)
 RUN(NAME separate_compilation_23 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_23a.f90 separate_compilation_23b.f90)
+RUN(NAME separate_compilation_24 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_24a.f90 separate_compilation_24b.f90)
 
 
 

@@ -112,8 +112,8 @@ struct CompilerOptions {
         It is overridden by `generate_object_code` option.
     */
     bool generate_code_for_global_procedures = false;
-    bool no_warnings = false;
-    bool disable_style = false;
+    bool show_warnings = true;
+    bool show_style_suggestions = true;
     bool logical_casting = false;
     bool no_error_banner = false;
     bool bounds_checking = true;
