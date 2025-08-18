@@ -4569,7 +4569,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
-        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), 
+                                        get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
         llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(kv_struct_type->getPointerTo(), 
                                     get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
         llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep2(
