@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           path: src
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -166,7 +166,7 @@ jobs:
 #      matrix:
 #        os: ["ubuntu-latest"]
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v5
 #        with:
 #          fetch-depth: 0
 #      - uses: prefix-dev/setup-pixi@v0.8.1
@@ -215,7 +215,7 @@ jobs:
         llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -496,7 +496,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -531,7 +531,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -552,7 +552,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -601,7 +601,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -659,7 +659,7 @@ jobs:
       USER: lfortran
       PROJECT: lfortran
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
