@@ -17,7 +17,7 @@ data (arr1(i), arr2(i), i=1,2) / 1.2, z'02', z'01', 3 /
 
 
 !Check Declaration Statements
-!Check Scalar Assigment
+!Check Scalar Initializations
 real::a = o'10'
 integer::b = z'10'
 !Check Parameter Initializations
@@ -27,10 +27,31 @@ integer,parameter::d = z'02'
 real:: e(3) = [real::b'01', z'10', 3.4]
 integer:: f(3) = [integer::1, b'10', 4]
 
+!Check for BOZ Assignments
+integer :: boz_6
+integer :: boz_arr_int(2)
+real:: boz_7
+real:: boz_arr_real(2)
+
+!Check Integer Array Assignments
+boz_arr_int(1) = b'11'
+boz_arr_int(2) = 1
+
+!Check Real Array Assignments
+boz_arr_real(1) = z'01'
+boz_arr_real(2) = 1.2
+
+!Check Integer Scalar Assignments
+boz_6 = o'02'
+!Check Real Scalar Assignments
+boz_7 = z'03'
+
 print *, boz_1
 print *, matrix1
 print *, matrix2
 print *, arr1, arr2
 print *, a,b,c,d,e,f
-end program
+print *, boz_6, boz_7
+print *, boz_arr_int, boz_arr_real
 
+end program

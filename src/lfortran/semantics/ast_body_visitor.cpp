@@ -3287,11 +3287,34 @@ public:
                 throw SemanticAbort();
             }
         }
+        // Handle Conversion from BOZ to Real Type for assign statements
+        ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        if (AST::is_a<AST::BOZ_t>(*x.m_value)){
+            //For assigning Scalar Variable
+            if (ASR::is_a<ASR::Var_t>(*target)){
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(target);
+                ASR::symbol_t* sym = var->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)){
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (ASR::is_a<ASR::Real_t>(*v->m_type)){
+                        current_variable_type_ = v->m_type;
+                    }
+                }
+            }
+            // For assigning Array Variable    
+            else if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+                ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(target);
+                if (ASR::is_a<ASR::Real_t>(*array_item->m_type)){
+                    current_variable_type_ = array_item->m_type;
+                }
+            }
+        }
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
         }
+        current_variable_type_ = temp_current_variable_type_;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         if (ASR::is_a<ASR::Var_t>(*target)) {
