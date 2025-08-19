@@ -5370,8 +5370,8 @@ namespace Repeat {
 
     static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        char* str = ASR::down_cast<ASR::StringConstant_t>(expr_value(args[0]))->m_s;
+        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
         size_t len = std::strlen(str);
         size_t new_len = len*n;
         char* result = new char[new_len+1];
