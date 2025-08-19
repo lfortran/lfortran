@@ -70,11 +70,11 @@ ifcont:                                           ; preds = %else, %then
   %26 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
   %27 = load i64, i64* %26, align 4
   %28 = call i8* @_lfortran_str_slice_assign(i8* %21, i64 %23, i8* %25, i64 %27, i32 1, i32 %19, i32 1, i1 true, i1 true)
-  %29 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %30 = load i64, i64* %29, align 4
-  %31 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %32 = load i8*, i8** %31, align 8
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %32, i8* align 8 %28, i64 %30, i1 false)
+  %29 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
+  %30 = load i8*, i8** %29, align 8
+  %31 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
+  %32 = load i64, i64* %31, align 4
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %30, i8* align 8 %28, i64 %32, i1 false)
   %33 = load i32, i32* %s1_len, align 4
   %34 = add i32 %33, 1
   %35 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
@@ -89,11 +89,11 @@ ifcont:                                           ; preds = %else, %then
   %44 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 1
   %45 = load i64, i64* %44, align 4
   %46 = call i8* @_lfortran_str_slice_assign(i8* %39, i64 %41, i8* %43, i64 %45, i32 %34, i32 %37, i32 1, i1 true, i1 true)
-  %47 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %48 = load i64, i64* %47, align 4
-  %49 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %50 = load i8*, i8** %49, align 8
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %50, i8* align 8 %46, i64 %48, i1 false)
+  %47 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
+  %48 = load i8*, i8** %47, align 8
+  %49 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
+  %50 = load i64, i64* %49, align 4
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %48, i8* align 8 %46, i64 %50, i1 false)
   br label %return
 
 return:                                           ; preds = %ifcont
