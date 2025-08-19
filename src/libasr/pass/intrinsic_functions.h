@@ -5435,6 +5435,53 @@ namespace Repeat {
         return b.Call(f_sym, new_args, ASRUtils::duplicate_type(al, ASRUtils::expr_type(result)), nullptr);
     }
 
+        static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 2)  {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for Repeat expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+            ASRUtils::require_impl((is_character(*arg_type0) && is_integer(*arg_type1)), "Unexpected args, Repeat expects (char, int) as arguments", x.base.base.loc, diagnostics);
+        }
+        else {
+            ASRUtils::require_impl(false, "Unexpected number of args, Repeat takes 2 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Repeat(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() == 2)  {
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+            if(!((is_character(*arg_type0) && is_integer(*arg_type1)))) {
+                append_error(diag, "Unexpected args, Repeat expects (char, int) as arguments", loc);
+                return nullptr;
+            }
+        }
+        else {
+            append_error(diag, "Unexpected number of args, Repeat takes 2 arguments, found " + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+        ASR::expr_t  *m_value     {};
+        ASR::ttype_t *return_type {};
+        if (all_args_evaluated(args)) {
+            m_value = eval_Repeat(al, loc, return_type, args, diag);
+            if (diag.has_error()) return nullptr;
+            return_type = expr_type(m_value);
+        } else {
+            return_type = allocatable_deferred_string();
+        }
+        
+        for( size_t i = 0; i < 2; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);
+                break;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Repeat), args.p, args.n, 0, return_type, m_value);
+    }
+
 } // namespace Repeat
 
 namespace StringContainsSet {

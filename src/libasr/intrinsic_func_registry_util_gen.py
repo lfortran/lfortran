@@ -184,12 +184,6 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
-    "Repeat": [
-        {
-            "args": [("char", "int")],
-            "return": "allocatable_deferred_string()"
-        }
-    ],
     "StringContainsSet": [
         {
             "args": [("char", "char", "bool", "int")],
