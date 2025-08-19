@@ -983,12 +983,40 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         overloaded = ASRUtils::EXPR(asr);
     }
 
-    ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
-    ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(right));
+    // Earlier, `.and.` between int and logical (incl. pointers) caused failures.
+    // The types were not being fully unwrapped before semantic checks.
+    // By applying `type_get_past_allocatable_pointer` on both operands,
+    // we correctly resolve to base types and catch invalid mixes.
+    ASR::ttype_t *left_type  = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(left));
+    ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(right));
 
-    LCOMPILERS_ASSERT(
-        ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
+    auto check_logical_type = [&](ASR::ttype_t *t, ASR::expr_t *expr, const std::string &side) {
+        if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(t);
+            ASR::ttype_t *element_type = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(arr_type->m_type));
+            if (!ASR::is_a<ASR::Logical_t>(*element_type)) {
+                diag.add(Diagnostic(
+                    side + " operand's array element type must be LOGICAL",
+                    Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}
+                ));
+                throw SemanticAbort();
+            }
+        } else if (!ASR::is_a<ASR::Logical_t>(*t)) {
+            diag.add(Diagnostic(
+                side + " operand must be LOGICAL or LOGICAL array",
+                Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}
+            ));
+            throw SemanticAbort();
+        }
+    };
 
+    if (!overloaded) {
+         check_logical_type(left_type, left, "Left");
+         check_logical_type(right_type, right, "Right");
+         LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
+            ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
+     }
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
     ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
