@@ -4465,7 +4465,6 @@ public:
 
     void collect_variable_types_and_struct_types(
         std::set<std::string>& variable_type_names,
-        std::vector<ASR::symbol_t*>& struct_types,
         SymbolTable* x_symtab) {
         if (x_symtab == nullptr) {
             return ;
@@ -4478,12 +4477,9 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*v_type)) {
                     variable_type_names.insert(ASRUtils::symbol_name(var_sym));
                 }
-            } else if (ASR::is_a<ASR::Struct_t>(
-                        *ASRUtils::symbol_get_past_external(var_sym))) {
-                struct_types.push_back(ASRUtils::symbol_get_past_external(var_sym));
             }
         }
-        collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
+        collect_variable_types_and_struct_types(variable_type_names, x_symtab->parent);
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         if (v->m_value != nullptr) {
@@ -4871,40 +4867,31 @@ public:
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         if( create_vtabs ) {
             std::set<std::string> variable_type_names;
-            std::vector<ASR::symbol_t*> struct_types;
+            std::set<std::string> class_type_names;
             // Collects all Struct symbols and StructType variables type names in x.m_symtab and its parent symtabs
-            collect_variable_types_and_struct_types(variable_type_names, struct_types, x.m_symtab);
-            for( size_t i = 0; i < struct_types.size(); i++ ) {
-                ASR::symbol_t* struct_type = struct_types[i];
-                bool create_vtab = false;
-                for( const std::string& variable_type_name: variable_type_names ) {
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-                        ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
-                    ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
-                    if (ASRUtils::is_allocatable_or_pointer(var->m_type) &&
-                          ASRUtils::is_class_type(ASRUtils::extract_type(var->m_type))) {
-                        create_vtab = true;
-                        break;
-                    }
-                    bool is_vtab_needed = false;
-                    ASR::symbol_t* temp_struct_type = struct_type;
-                    while( !is_vtab_needed && temp_struct_type ) {
-                        if( temp_struct_type == class_sym ) {
-                            is_vtab_needed = true;
-                        } else {
-                            temp_struct_type = ASR::down_cast<ASR::Struct_t>(
-                                ASRUtils::symbol_get_past_external(temp_struct_type))->m_parent;
-                        }
-                    }
-                    if( is_vtab_needed ) {
-                        create_vtab = true;
-                        break;
-                    }
+            collect_variable_types_and_struct_types(variable_type_names, x.m_symtab);
+            for( const std::string& variable_type_name: variable_type_names ) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
+                ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                bool is_class_type = ASRUtils::is_class_type(ASRUtils::extract_type(var->m_type));
+                // std::cout<<var->m_name<<" "<<ASRUtils::symbol_name(type_sym)<<" "<<is_class_type<<std::endl;
+                if (is_class_type) {
+                    class_type_names.insert(ASRUtils::symbol_name(type_sym));
                 }
-                if( create_vtab ) {
-                    create_vtab_for_struct_type(
-                        ASRUtils::symbol_get_past_external(struct_types[i]),
-                        x.m_symtab);
+                create_vtab_for_struct_type(type_sym, x.m_symtab);
+            }
+            for( auto& item: type2vtab ) {
+                ASR::Struct_t* a_dt = ASR::down_cast<ASR::Struct_t>(item.first);
+                std::string tmp_name = a_dt->m_name;
+                // std::cout<<tmp_name<<std::endl;
+                while (dertype2parent.find(tmp_name) != dertype2parent.end()) {
+                    tmp_name = dertype2parent[tmp_name];
+                    // std::cout<<tmp_name<<" "<<(class_type_names.find(tmp_name) != class_type_names.end())<<std::endl;
+                    if (class_type_names.find(tmp_name) != class_type_names.end()) {
+                        create_vtab_for_struct_type(ASRUtils::symbol_get_past_external(item.first), x.m_symtab);
+                        break;
+                    }
                 }
             }
         }
@@ -12099,9 +12086,6 @@ public:
                 (a_dt == dt_sym_type ||
                 ASRUtils::is_parent(a_dt, dt_sym_type) ||
                 ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
-                // if extended type vtab is not present in current scope
-                // We need to add its vtab (Eg. class_65.f90)
-                create_vtab_for_struct_type(&a_dt->base, current_scope);
                 for( auto& item2: item.second ) {
                     if( item2.first == current_scope ) {
                         // Find the Struct symbol to which the StructMethodDeclaration belongs
