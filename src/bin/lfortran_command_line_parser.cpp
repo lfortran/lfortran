@@ -70,7 +70,7 @@ namespace LCompilers::CommandLineInterface {
         // LFortran specific options
         // Warning-related flags
         app.add_flag("--no-warnings", disable_warnings, "Turn off all warnings")->group(group_warning_options);
-        app.add_flag("--no-style-warnings", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
+        app.add_flag("--no-style-suggestions", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
         app.add_flag("--style-suggestions", style_suggestions, "Enable style suggestions")->group(group_warning_options);
         app.add_flag("--no-error-banner", disable_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
@@ -320,7 +320,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (opts.disable_style_suggestions && style_suggestions) {
-            throw lc::LCompilersException("Cannot use --no-style-warnings and --style-suggestions at the same time");
+            throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");
         }
 
         if (opts.disable_implicit_typing && compiler_options.implicit_typing) {
