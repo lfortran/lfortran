@@ -113,6 +113,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedCharKind,
     Adjustl,
     Adjustr,
+    StringConcat,
     StringLenTrim,
     StringTrim,
     Ichar,
@@ -4886,6 +4887,152 @@ namespace Adjustr {
     }
 
 } // namespace Adjustr
+
+namespace StringConcat {
+    
+
+    inline void check_args(ASR::expr_t** m_args, size_t n_args, const Location& loc, diag::Diagnostics& diag){
+        if(n_args == 2){
+            ASR::ttype_t* arg0 = expr_type(m_args[0]);
+            ASR::ttype_t* arg1 = expr_type(m_args[1]);
+            require_impl(   is_character(*arg0) && is_character(*arg1),
+                            "Unexpected arg types. StringConcat expects (char, char)",
+                            loc, diag);
+        } else {
+            require_impl(   false,
+                            "Unexpected number of args, StringConcat takes 2 arguments, found "+ std::to_string(n_args),
+                            loc, diag);
+        }   
+    }
+
+    inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics){
+        ASRUtils::require_impl( x.m_overload_id == 0,
+                                "Overload is expected to be 0 while the overload is "+std::to_string(x.m_overload_id),
+                                x.base.base.loc,
+                                diagnostics);
+        check_args(x.m_args, x.n_args, x.base.base.loc, diagnostics);
+    }
+
+    inline ASR::expr_t *eval_StringConcat(Allocator &al, const Location &loc,
+            ASR::ttype_t* value_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/){
+        char* result {};
+        int64_t s0_length, s1_length;
+        { // Allocate result memory
+            ASR::String_t* s0 = get_string_type(args[0]);
+            ASR::String_t* s1 = get_string_type(args[1]);
+            bool extracted_0  = extract_value(expr_value(s0->m_len), s0_length);
+            bool extracted_1  = extract_value(expr_value(s1->m_len), s1_length);
+            LCOMPILERS_ASSERT(extracted_0 && extracted_1)
+            result =al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
+        }
+        { // Concat strings
+            char* s0_char, *s1_char;
+            bool extracted_0 = extract_value(expr_value(args[0]), s0_char);
+            bool extracted_1 = extract_value(expr_value(args[1]), s1_char);
+            LCOMPILERS_ASSERT(extracted_0 && extracted_1)
+            memcpy(result, s0_char, s0_length);
+            memcpy(result + s0_length, s1_char, s1_length);
+        }
+        return  make_ConstantWithType(make_StringConstant_t, result, value_type, loc);
+    }
+
+    inline ASR::asr_t* create_StringConcat(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag){
+        check_args(args.p, args.size(), loc, diag);
+        Vec<ASR::expr_t*> m_args;
+        m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        
+        ASR::ttype_t* return_type {};
+        { // Create String return type
+            ASRBuilder b(al, loc);
+            ASR::String_t* s1 = get_string_type(args[0]);
+            ASR::String_t* s2 = get_string_type(args[1]);
+            if(is_value_constant(s1->m_len) && is_value_constant(s1->m_len)){ // Sum both lengths
+                int64_t s1_len, s2_len;
+                extract_value(s1->m_len, s1_len);
+                extract_value(s2->m_len, s2_len);
+                return_type = b.String(b.i32(s1_len + s2_len), ASR::ExpressionLength);
+            } else {
+                return_type = b.String(nullptr, ASR::DeferredLength);
+            }
+        }
+
+        { // Handle Array Type
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = 0;
+            if( ASRUtils::is_array(ASRUtils::expr_type(args[0])) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), m_dims);
+            } else if( ASRUtils::is_array(ASRUtils::expr_type(args[1])) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(args[1]), m_dims);
+            }
+            return_type = ASRUtils::make_Array_t_util(al, return_type->base.loc,
+                    ASRUtils::extract_type(return_type), m_dims, n_dims);
+        }
+
+        ASR::expr_t* value {};
+        if(all_args_evaluated(m_args)){
+            value = eval_StringConcat(al, loc, return_type, args, diag);
+        }
+        return ASR::make_IntrinsicElementalFunction_t(  al, loc,
+                                                        static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
+                                                        m_args.p, m_args.n,
+                                                        0, return_type, value);
+    }
+
+    
+    inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
+        declare_basic_variables("_lcompilers_stringconcat")
+
+        /* Args */
+        fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
+        fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
+
+        /* local variables */
+        ASR::expr_t* s1_len = declare("s1_len", int32, Local);
+        ASR::expr_t* s2_len = declare("s2_len", int32, Local);
+
+        /* Return Variable */
+        ASR::expr_t* ret_var = declare("concat_result", b.allocatable(b.String(nullptr, ASR::DeferredLength)), ReturnVar);
+
+        /* Body */
+        /*
+            function lcompilers_stringconcat(s1, s2) result(concat_result)
+                character(*) :: s1
+                character(*) :: s2
+                integer(4) :: s1_len
+                integer(4) :: s2_len
+                character(:), allocatable :: concat_result
+                s1_len = len(s1)
+                s2_len = len(s2)
+                allocate(character(s1_len + s2_len)::concat_result)
+                concat_result(1:s1_len) = s1
+                concat_result(s1_len+1: len(concat_result)) = s2
+            end function
+        */
+        body.push_back(al, b.Assignment(s1_len, b.StringLen(args[0])));
+        body.push_back(al, b.Assignment(s2_len, b.StringLen(args[1])));
+        body.push_back(al, b.Allocate(ret_var, nullptr, 0, b.Add(s1_len, s2_len)));
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), s1_len), args[0]));
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(s1_len, b.i32(1)), b.StringLen(ret_var)), args[1]));
+
+        /* Create The function symbol */
+        ASR::symbol_t *f_sym = make_ASR_Function_t( 
+                                fn_name, fn_symtab,
+                                dep, args,
+                                body,
+                                ret_var,
+                                ASR::abiType::Source,
+                                ASR::deftypeType::Implementation,
+                                nullptr);
+        scope->add_or_overwrite_symbol(fn_name, f_sym);
+        /* Return a Call */
+        return b.Call(f_sym, new_args, ASRUtils::expr_type(ret_var), nullptr);
+    }
+
+}
 
 namespace StringLenTrim {
 

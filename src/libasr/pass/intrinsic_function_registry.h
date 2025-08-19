@@ -124,6 +124,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Present)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
+        INTRINSIC_NAME_CASE(StringConcat)
         INTRINSIC_NAME_CASE(StringLenTrim)
         INTRINSIC_NAME_CASE(StringTrim)
         INTRINSIC_NAME_CASE(Ichar)
@@ -322,6 +323,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             {&Adjustr::instantiate_Adjustr, &Adjustr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
+            {&StringConcat::instantiate_StringConcat, &StringConcat::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
             {&StringLenTrim::instantiate_StringLenTrim, &StringLenTrim::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
@@ -687,6 +690,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "adjustl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             "adjustr"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
+            "stringconcat"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
             "len_trim"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
@@ -1036,6 +1041,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
                 {"adjustr", {&Adjustr::create_Adjustr, &Adjustr::eval_Adjustr}},
+                {"stringconcat", {&StringConcat::create_StringConcat, &StringConcat::eval_StringConcat}},
                 {"len_trim", {&StringLenTrim::create_StringLenTrim, &StringLenTrim::eval_StringLenTrim}},
                 {"trim", {&StringTrim::create_StringTrim, &StringTrim::eval_StringTrim}},
                 {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
