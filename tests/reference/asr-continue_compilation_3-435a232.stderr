@@ -271,20 +271,128 @@ semantic error: Kind of all the arguments of Mergebits must be the same
 177 |     print *, merge_bits(merge_i,merge_j,merge_k)
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Argument of 'size' must be an array
-   --> tests/errors/continue_compilation_3.f90:181:23
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:181:14
     |
-181 |         print *, size(bpe)
+181 |     print *, 5 .and. .true.
+    |              ^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:184:14
+    |
+184 |     print *, 3.14 .and. .false.
+    |              ^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:187:14
+    |
+187 |     print *, 5 .and. 6
+    |              ^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:190:14
+    |
+190 |     print *, 5 .or. 6
+    |              ^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:191:14
+    |
+191 |     print *, 5 .eqv. 6
+    |              ^ 
+
+semantic error: Right operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:192:28
+    |
+192 |     print *, .true. .neqv. 6
+    |                            ^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:193:14
+    |
+193 |     print *, 3.14 .and. "abcd"
+    |              ^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:194:14
+    |
+194 |     print *, "abcd" .neqv. "cdef"
+    |              ^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:195:14
+    |
+195 |     print *, 1 .neqv. 2
+    |              ^ 
+
+semantic error: Left operand's array element type must be LOGICAL
+   --> tests/errors/continue_compilation_3.f90:196:14
+    |
+196 |     print *, [1,2,3] .and. .true.
+    |              ^^^^^^^ 
+
+semantic error: Left operand's array element type must be LOGICAL
+   --> tests/errors/continue_compilation_3.f90:197:14
+    |
+197 |     print *, [1.0, 2.0] .or. [3.0, 4.0]
+    |              ^^^^^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:198:14
+    |
+198 |     print *, "str1" .or. "str2"
+    |              ^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:199:14
+    |
+199 |     print *, "x" .and. .false.
+    |              ^^^ 
+
+semantic error: Operand of .not. operator is string
+   --> tests/errors/continue_compilation_3.f90:200:14
+    |
+200 |     print *, .NOT. "lf"
+    |              ^^^^^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:201:14
+    |
+201 |     print *, "8356" .or. 8356
+    |              ^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+   --> tests/errors/continue_compilation_3.f90:202:14
+    |
+202 |     print *, "8356" .eqv. 8356.00
+    |              ^^^^^^ 
+
+semantic error: Left operand's array element type must be LOGICAL
+   --> tests/errors/continue_compilation_3.f90:203:14
+    |
+203 |     print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different `character` lengths 7 and 2 in array constructor
+   --> tests/errors/continue_compilation_3.f90:204:26
+    |
+204 |     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
+    |                          ^^^^ 
+
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_3.f90:208:23
+    |
+208 |         print *, size(bpe)
     |                       ^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:182:15
+   --> tests/errors/continue_compilation_3.f90:209:15
     |
-182 |         bpe = d
+209 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:182:9
+   --> tests/errors/continue_compilation_3.f90:209:9
     |
-182 |         bpe = d
+209 |         bpe = d
     |         ^^^ 
