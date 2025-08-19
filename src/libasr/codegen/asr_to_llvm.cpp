@@ -6217,12 +6217,13 @@ public:
 
         tmp = builder->CreateCall(fn, {str_data, str_len, str_val_data, str_val_len, idx1, idx2, step, lp, rp});
 
-        strings_to_be_deallocated.push_back(al, tmp); // char* returing from this call is dead after making the next str_copy call.
-
+        llvm::Value* str_arg_data {};
+        llvm::Value* str_arg_len  {};
+        std::tie(str_arg_data, str_arg_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(ss->m_arg), str);
         tmp = builder->CreateMemCpy(
-            llvm_utils->get_string_data(ASRUtils::get_string_type(ss->m_arg), str),llvm::MaybeAlign(8),
+            str_arg_data,llvm::MaybeAlign(8),
             tmp, llvm::MaybeAlign(8),
-            llvm_utils->get_string_length(ASRUtils::get_string_type(ss->m_arg), str));
+            str_arg_len);
     }
 
     void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
