@@ -472,12 +472,12 @@
                                             )
                                             (Assignment
                                                 (Var 12 lhs)
-                                                (StringConcat
-                                                    (Var 12 lhs)
-                                                    (Var 12 temporary)
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                                (IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 12 lhs)
+                                                    (Var 12 temporary)]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
                                                     ()
                                                 )
                                                 ()
@@ -1218,8 +1218,9 @@
                                         )
                                         [(Assignment
                                             (Var 14 lhs)
-                                            (StringConcat
-                                                (Var 14 lhs)
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(Var 14 lhs)
                                                 (IntrinsicElementalFunction
                                                     StringTrim
                                                     [(StructInstanceMember
@@ -1235,10 +1236,9 @@
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
-                                                )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
                                                 ()
                                             )
                                             ()

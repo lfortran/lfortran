@@ -4948,11 +4948,11 @@ namespace StringConcat {
             ASRBuilder b(al, loc);
             ASR::String_t* s1 = get_string_type(args[0]);
             ASR::String_t* s2 = get_string_type(args[1]);
-            if(is_value_constant(s1->m_len) && is_value_constant(s1->m_len)){ // Sum both lengths
+            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){ // Sum both lengths
                 int64_t s1_len, s2_len;
                 extract_value(s1->m_len, s1_len);
                 extract_value(s2->m_len, s2_len);
-                return_type = b.String(b.i32(s1_len + s2_len), ASR::ExpressionLength);
+                return_type = b.String(b.i64(s1_len + s2_len), ASR::ExpressionLength);
             } else {
                 return_type = b.String(nullptr, ASR::DeferredLength);
             }
@@ -4984,7 +4984,13 @@ namespace StringConcat {
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
-        declare_basic_variables("_lcompilers_stringconcat")
+        char intrinsic_fn_name[] = "_lcompilers_stringconcat";
+        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
+            ASRBuilder b(al, loc);
+            return b.Call(f_sym, new_args, b.String(nullptr, ASR::DeferredLength), nullptr);
+        }
+        
+        declare_basic_variables(intrinsic_fn_name)
 
         /* Args */
         fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
@@ -5029,7 +5035,7 @@ namespace StringConcat {
                                 nullptr);
         scope->add_or_overwrite_symbol(fn_name, f_sym);
         /* Return a Call */
-        return b.Call(f_sym, new_args, ASRUtils::expr_type(ret_var), nullptr);
+        return b.Call(f_sym, new_args, extract_type(expr_type(ret_var)), nullptr);
     }
 
 }

@@ -2731,12 +2731,12 @@
                                             2 f_string0
                                             ()
                                             [((StringPhysicalCast
-                                                (StringConcat
-                                                    (Var 53 s)
-                                                    (Var 2 c_null_char)
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                                (IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 53 s)
+                                                    (Var 2 c_null_char)]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
                                                     ()
                                                 )
                                                 DescriptorString

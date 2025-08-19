@@ -61,12 +61,14 @@
                                             ()
                                         )
                                         [(Print
-                                            (StringConcat
-                                                (StringConstant
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(StringConstant
                                                     "Hello "
                                                     (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
-                                                (Var 3 name)
+                                                (Var 3 name)]
+                                                0
                                                 (String 1 (IntegerConstant 16 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                 ()
                                             )
