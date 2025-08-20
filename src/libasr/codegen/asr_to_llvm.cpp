@@ -12742,7 +12742,8 @@ public:
             return ;
         }
 
-        m_v = ASRUtils::get_expr_size_var(m_v);
+        m_v = ASRUtils::get_expr_size_expr(m_v);
+        LCOMPILERS_ASSERT(m_v);
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;

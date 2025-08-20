@@ -863,7 +863,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         ASRUtils::ExprStmtDuplicator d(al);
-        ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_var(value));
+        ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(value));
 
         Location loc; loc.first = 1, loc.last = 1;
         ASRUtils::ASRBuilder builder(al, loc);
@@ -1028,8 +1028,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-            ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
-            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
+            ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
+            ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, d_value)));
         }
 
