@@ -1512,6 +1512,7 @@ public:
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
+        else if(intrinsic_func_name == "StringConcat") {{visit_expr(*x.m_args[0]);out+=src;} out+="//"; {visit_expr(*x.m_args[1]);out+=src;} src=std::move(out);return;}
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
