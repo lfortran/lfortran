@@ -4920,20 +4920,18 @@ namespace StringConcat {
         { // Allocate result memory
             ASR::String_t* s0 = get_string_type(args[0]);
             ASR::String_t* s1 = get_string_type(args[1]);
-            bool extracted_0  = extract_value(expr_value(s0->m_len), s0_length);
-            bool extracted_1  = extract_value(expr_value(s1->m_len), s1_length);
-            LCOMPILERS_ASSERT(extracted_0 && extracted_1)
+            extract_value_(expr_value(s0->m_len), s0_length);
+            extract_value_(expr_value(s1->m_len), s1_length);
             result =al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
         }
         { // Concat strings
-            char* s0_char, *s1_char;
-            bool extracted_0 = extract_value(expr_value(args[0]), s0_char);
-            bool extracted_1 = extract_value(expr_value(args[1]), s1_char);
-            LCOMPILERS_ASSERT(extracted_0 && extracted_1)
+            char* s0_char {}, *s1_char {};
+            extract_value_(expr_value(args[0]), s0_char);
+            extract_value_(expr_value(args[1]), s1_char);
             memcpy(result, s0_char, s0_length);
             memcpy(result + s0_length, s1_char, s1_length);
         }
-        return  make_ConstantWithType(make_StringConstant_t, result, value_type, loc);
+        return make_ConstantWithType(make_StringConstant_t, result, value_type, loc);
     }
 
     inline ASR::asr_t* create_StringConcat(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag){

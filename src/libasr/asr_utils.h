@@ -1802,7 +1802,7 @@ template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
         std::is_same<T, std::complex<float>>::value == false>::type>
-static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
+static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns extraction state.
     if( !is_value_constant(value_expr) ) {
         return false;
     }
@@ -1865,6 +1865,15 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             return false;
     }
     return true;
+}
+
+template <typename T,
+    typename = typename std::enable_if<
+        std::is_same<T, std::complex<double>>::value == false &&
+        std::is_same<T, std::complex<float>>::value == false>::type>
+inline void extract_value_(ASR::expr_t* value_expr, T& value) { // Raises error if expr doesn't have value.
+    bool extracted = extract_value(value_expr, value);
+    if (!extracted) LCompilersException("Expr value can't be extracted");
 }
 
 static inline std::string extract_dim_value(ASR::expr_t* dim) {
