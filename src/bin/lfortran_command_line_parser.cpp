@@ -43,6 +43,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_bounds_checking = false;
         bool style_suggestions = false;
         bool disable_warnings = false;
+        bool disable_implicit_argument_casting = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -81,6 +82,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
+        app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required")->group(group_language_options);
@@ -238,6 +240,9 @@ namespace LCompilers::CommandLineInterface {
                 compiler_options.implicit_typing = false;
             }
             compiler_options.implicit_argument_casting = true;
+            if (disable_implicit_argument_casting) {
+                compiler_options.implicit_argument_casting = false;
+            }
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
@@ -253,6 +258,9 @@ namespace LCompilers::CommandLineInterface {
                 compiler_options.implicit_typing = false;
             }
             compiler_options.implicit_argument_casting = true;
+            if (disable_implicit_argument_casting) {
+                compiler_options.implicit_argument_casting = false;
+            }
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
@@ -314,6 +322,10 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-typing and --implicit-typing at the same time");
         }
 
+        if (disable_implicit_argument_casting && compiler_options.implicit_argument_casting) {
+            throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
+        }
+
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
         if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
@@ -322,6 +334,10 @@ namespace LCompilers::CommandLineInterface {
 
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
+        }
+
+        if (disable_implicit_argument_casting) {
+            compiler_options.implicit_argument_casting = false;
         }
 
         if (opts.cpp && opts.no_cpp) {

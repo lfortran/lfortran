@@ -4035,6 +4035,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
+enable_disable_implicit_argument_casting = true
 
 [[test]]
 filename = "../integration_tests/valid_array_assignment_same_length_different_start.f90"
