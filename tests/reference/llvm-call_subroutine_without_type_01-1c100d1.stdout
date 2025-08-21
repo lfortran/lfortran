@@ -1,12 +1,13 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%mytype_polymorphic = type { i64, %mytype* }
 %mytype = type <{ float }>
+%mytype_polymorphic = type { i64, %mytype* }
 %string_descriptor = type <{ i8*, i64 }>
 %__vtab_mytype = type { i64 }
 
-@__lcompilers_created__nested_context__get_i_self = global %mytype_polymorphic zeroinitializer
+@_inner__lcompilers_created__nested_context__get_i_self = global %mytype zeroinitializer
+@__lcompilers_created__nested_context__get_i_self = global %mytype_polymorphic { i64 0, %mytype* @_inner__lcompilers_created__nested_context__get_i_self }
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1
 @string_const_data = private constant [5 x i8] c"r = \00"
@@ -66,17 +67,20 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   store i64 %7, i64* %10, align 4
   %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %12 = load i8*, i8** %11, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %13 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  %14 = getelementptr %mytype, %mytype* %13, i32 0, i32 0
-  %15 = load float, float* %14, align 4
-  %16 = fcmp une float %15, 1.000000e+00
-  br i1 %16, label %then, label %else
+  %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %14 = load i64, i64* %13, align 4
+  %15 = trunc i64 %14 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %16 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  %17 = getelementptr %mytype, %mytype* %16, i32 0, i32 0
+  %18 = load float, float* %17, align 4
+  %19 = fcmp une float %18, 1.000000e+00
+  br i1 %19, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %17, i8* %18)
+  %20 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  %21 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %20, i8* %21)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -96,7 +100,7 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

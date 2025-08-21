@@ -118,6 +118,7 @@ time_section "🧪 Testing fortran-shlex" '
   micromamba install -c conda-forge fpm
   git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
   fpm --compiler=$FC build
+  fpm --compiler=$FC test
   print_success "Done with fortran-shlex"
   cd ..
 '
@@ -150,10 +151,11 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-2
+  git checkout lf-6
   micromamba install -c conda-forge fpm
-  git checkout c34cfdde5e1f82918668c5d06c3faa315489b1c0
-  fpm --compiler=$FC build
+  git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
+  fpm --compiler=$FC build --flag "--realloc-lhs"
+  fpm --compiler=$FC test --flag "--realloc-lhs"
   print_success "Done with M_CLI2"
   cd ..
 '
@@ -217,8 +219,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-20
-  git checkout 8cbc69ca553b5c1b3d5bd882263e108feb75fa7a
+  git checkout n-lf-21
+  git checkout ec78a3c86c7f3971bcee7ca0241c4abb85b26749
   micromamba install -c conda-forge fypp
 
   git clean -fdx
@@ -231,8 +233,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
 
   git clean -dfx
   git restore .
-  git checkout sc-lf-9
-  git checkout ac269856afa1a623b5a0d9a1968c6a70d43d69ea
+  git checkout sc-lf-12
+  git checkout 4d832ce2f4c6629d5273651af20736e121d7abe0
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
@@ -252,9 +254,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
+  git checkout lf-7
   micromamba install -c conda-forge fpm
-  git checkout b946c489ef575e8103b6f5b07bfdfe0171e1dac5
+  git checkout 0495209655831f5a13f643feaa790e08851adf8a
   fpm --compiler=$FC build
   print_success "Done with FPM"
   cd ..

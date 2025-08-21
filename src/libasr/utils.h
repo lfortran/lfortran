@@ -89,6 +89,7 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
+    bool target_offload_enabled = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -96,6 +97,7 @@ struct CompilerOptions {
     std::string column = "";
     bool continue_compilation = false;
     bool semantics_only = false;
+    bool new_classes = false;
     /*
         Generates object code for modules as well as global procedures ( subroutines / functions )
         avialable in ASR. This needs to be explicity set to true.
@@ -110,11 +112,11 @@ struct CompilerOptions {
         It is overridden by `generate_object_code` option.
     */
     bool generate_code_for_global_procedures = false;
-    bool no_warnings = false;
-    bool disable_style = false;
+    bool show_warnings = true;
+    bool show_style_suggestions = true;
     bool logical_casting = false;
     bool no_error_banner = false;
-    bool enable_bounds_checking = false;
+    bool bounds_checking = true;
     std::string error_format = "human";
     bool new_parser = false;
     bool implicit_typing = false;

@@ -179,16 +179,6 @@
                                     (SymbolTable
                                         15
                                         {
-                                            1_destroy:
-                                                (ExternalSymbol
-                                                    15
-                                                    1_destroy
-                                                    12 destroy
-                                                    1_toml_structure
-                                                    []
-                                                    destroy
-                                                    Public
-                                                ),
                                             1_toml_array_list:
                                                 (ExternalSymbol
                                                     15
@@ -207,6 +197,16 @@
                                                     tomlf_structure_base
                                                     []
                                                     toml_structure
+                                                    Public
+                                                ),
+                                            1_toml_structure_destroy:
+                                                (ExternalSymbol
+                                                    15
+                                                    1_toml_structure_destroy
+                                                    12 destroy
+                                                    1_toml_structure
+                                                    []
+                                                    destroy
                                                     Public
                                                 ),
                                             1_toml_value_key:
@@ -332,7 +332,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            15 1_destroy
+                                            15 1_toml_structure_destroy
                                             ()
                                             []
                                             (StructInstanceMember

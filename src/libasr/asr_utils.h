@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <limits>
+#include <optional>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
@@ -69,14 +70,18 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
 ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false);
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions=false);
 
-static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
+static inline std::string type_to_str_python_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
+
+static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym);
 
 const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
+
+ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -205,6 +210,25 @@ static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
     return func_type;
 }
 
+static inline ASR::Function_t* get_function(ASR::symbol_t* x)
+{
+    ASR::symbol_t* a_name = ASRUtils::symbol_get_past_external(x);
+
+    if (ASR::is_a<ASR::Function_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(a_name);
+    } else if (ASR::is_a<ASR::Variable_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration));
+    } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name)->m_proc));
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+    
+    return nullptr;
+}
+
 static inline const ASR::symbol_t *symbol_get_past_external(const ASR::symbol_t *f)
 {
     if (f->type == ASR::symbolType::ExternalSymbol) {
@@ -241,7 +265,7 @@ static inline ASR::expr_t* get_past_array_physical_cast(ASR::expr_t* x) {
     if( !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ) {
         return x;
     }
-    return ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+    return get_past_array_physical_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
 }
 
 static inline ASR::expr_t* get_past_array_broadcast(ASR::expr_t* x) {
@@ -425,9 +449,6 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
     return nullptr;
 }
 
-// Recursively creates a Var node expression from a symbol.
-// For Variable: returns Var node for the variable.
-// For Function: resolves m_return_var, gets the variable, and returns Var node for it.
 static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) {
     sym = ASRUtils::symbol_get_past_external(sym);
     switch (sym->type) {
@@ -435,9 +456,7 @@ static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) 
             return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
         }
         case ASR::symbolType::Function: {
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
-            ASR::Var_t* ret_var = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
-            return get_expr_from_sym(al, ret_var->m_v);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
         }
         default: {
             throw LCompilersException("get_expr_from_sym: Only Variable and Function symbols are supported.");
@@ -513,14 +532,17 @@ static std::string intent_to_str(ASR::intentType intent) {
     }
 }
 
-static inline std::string type_to_str_fortran(const ASR::ttype_t *t);
+static inline std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
+
+static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym);
+
 static inline char *symbol_name(const ASR::symbol_t *f);
 
 static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
-            std::string res = type_to_str_fortran(v->m_type);
+            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 res += ", parameter";
@@ -578,7 +600,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                 ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
                 if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                     const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    std::string arg_decl = type_to_str_fortran(arg_var->m_type);
+                    std::string arg_decl = type_to_str_fortran_symbol(arg_var->m_type, arg_var->m_type_declaration);
                     if (arg_var->m_intent != ASR::intentType::Unspecified) {
                         arg_decl += ", intent(" + intent_to_str(arg_var->m_intent) + ")";
                     }
@@ -594,7 +616,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                     const ASR::symbol_t *v_sym = var->m_v;
                     if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                         const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
-                        std::string ret_type = type_to_str_fortran(v->m_type);
+                        std::string ret_type = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
                         res += "    " + ret_type + " :: " + std::string(v->m_name) + "\n";
                     }
                 }
@@ -733,7 +755,7 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
         }
         default:
             throw LCompilersException("Cannot extract the physical type of " +
-                    ASRUtils::type_to_str_python(e) + " type.");
+                    std::to_string(e->type) + " type.");
     }
 }
 
@@ -861,7 +883,8 @@ static inline void encode_dimensions(size_t n_dims, std::string& res,
     }
 }
 
-static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
+static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
+                                                     ASR::symbol_t* struct_sym)
 {
     switch (t->type) {
         case ASR::ttypeType::Integer: {
@@ -892,8 +915,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType name
-            return "derived type";
+            return ASRUtils::symbol_name(struct_sym);
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
@@ -906,12 +928,12 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "dict";
         }
         case ASR::ttypeType::Pointer: {
-            return type_to_str_fortran(ASRUtils::type_get_past_pointer(
-                        const_cast<ASR::ttype_t*>(t))) + " pointer";
+            return type_to_str_fortran_symbol(ASRUtils::type_get_past_pointer(
+                        const_cast<ASR::ttype_t*>(t)), struct_sym) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
-            return type_to_str_fortran(ASRUtils::type_get_past_allocatable(
-                        const_cast<ASR::ttype_t*>(t))) + " allocatable";
+            return type_to_str_fortran_symbol(ASRUtils::type_get_past_allocatable(
+                        const_cast<ASR::ttype_t*>(t)), struct_sym) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
             return "type(c_ptr)";
@@ -925,7 +947,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_fortran(array_t->m_type);
+            std::string res = type_to_str_fortran_symbol(array_t->m_type, struct_sym);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -933,11 +955,11 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "FunctionType(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str_fortran(ftp->m_arg_types[i]) + ", ";
+                result += type_to_str_fortran_symbol(ftp->m_arg_types[i], nullptr) + ", ";
             }
             if( ftp->m_return_var_type ) {
                 result += "return_type: ";
-                result += type_to_str_fortran(ftp->m_return_var_type);
+                result += type_to_str_fortran_symbol(ftp->m_return_var_type, nullptr);
             }
             result += ")";
             return result;
@@ -947,13 +969,19 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
     }
 }
 
-static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
-    std::string type = type_to_str_fortran(t);
-    std::string kind = std::to_string(extract_kind_from_ttype_t(t));
-    return type + "(" + kind + ")";
+static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::expr_t* expr)
+{
+    ASR::symbol_t* struct_sym = nullptr;
+
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
+        LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
+        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    }
+
+    return type_to_str_fortran_symbol(t, struct_sym);
 }
 
-static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
+static inline std::string type_to_str_with_substitution(ASR::expr_t* expr, const ASR::ttype_t *t,
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs)
 {
     if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
@@ -962,16 +990,16 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
     }
     switch (t->type) {
         case ASR::ttypeType::Pointer: {
-            return type_to_str_with_substitution(ASRUtils::type_get_past_pointer(
+            return type_to_str_with_substitution(expr, ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), subs) + " pointer";
         }
         case ASR::ttypeType::Allocatable: {
-            return type_to_str_with_substitution(ASRUtils::type_get_past_allocatable(
+            return type_to_str_with_substitution(expr, ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t)), subs) + " allocatable";
         }
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_with_substitution(array_t->m_type, subs);
+            std::string res = type_to_str_with_substitution(expr, array_t->m_type, subs);
             encode_dimensions(array_t->n_dims, res, false);
             return res;
         }
@@ -979,18 +1007,18 @@ static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
             ASR::FunctionType_t* ftp = ASR::down_cast<ASR::FunctionType_t>(t);
             std::string result = "(";
             for( size_t i = 0; i < ftp->n_arg_types; i++ ) {
-                result += type_to_str_with_substitution(ftp->m_arg_types[i], subs) + ", ";
+                result += type_to_str_with_substitution(nullptr, ftp->m_arg_types[i], subs) + ", ";
             }
             result += "return_type: ";
             if( ftp->m_return_var_type ) {
-                result += type_to_str_with_substitution(ftp->m_return_var_type, subs);
+                result += type_to_str_with_substitution(nullptr, ftp->m_return_var_type, subs);
             } else {
                 result += "void";
             }
             result += ")";
             return result;
         }
-        default : return type_to_str_fortran(t);
+        default : return type_to_str_fortran_expr(t, expr);
     }
 }
 
@@ -1993,8 +2021,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             break;
         }
         case ASR::ttypeType::UnionType: {
-            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            res = symbol_name(d->m_union_type);
+            if ( expr != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr));
+                res = symbol_name(sym);
+            } else {
+                res = "UnionType";
+            }
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -2024,7 +2056,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         default: {
             throw LCompilersException("Type encoding not implemented for "
-                                      + ASRUtils::type_to_str_python(t));
+                                      + ASRUtils::type_to_str_python_expr(t, expr));
         }
     }
     if( is_dimensional && set_dimensional_hint ) {
@@ -2042,12 +2074,12 @@ static inline std::string get_type_code(ASR::ttype_t** types, size_t n_types,
     return code;
 }
 
-static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message)
+static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* struct_sym)
 {
     switch (t->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            std::string res = type_to_str_python(array_t->m_type, for_error_message);
+            std::string res = type_to_str_python_symbol(array_t->m_type, struct_sym);
             std::string dim_info = type_encode_dims(array_t->n_dims, array_t->m_dims);
             res += dim_info;
             return res;
@@ -2104,7 +2136,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             ASR::Tuple_t *tup = ASR::down_cast<ASR::Tuple_t>(t);
             std::string result = "tuple[";
             for (size_t i=0; i<tup->n_type; i++) {
-                result += type_to_str_python(tup->m_type[i]);
+                result += type_to_str_python_symbol(tup->m_type[i], nullptr);
                 if (i+1 != tup->n_type) {
                     result += ", ";
                 }
@@ -2114,39 +2146,39 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         }
         case ASR::ttypeType::Set: {
             ASR::Set_t *s = (ASR::Set_t *)t;
-            return "set[" + type_to_str_python(s->m_type) + "]";
+            return "set[" + type_to_str_python_symbol(s->m_type, nullptr) + "]";
         }
         case ASR::ttypeType::Dict: {
             ASR::Dict_t *d = (ASR::Dict_t *)t;
-            return "dict[" + type_to_str_python(d->m_key_type) + ", " + type_to_str_python(d->m_value_type) + "]";
+            std::string key = type_to_str_python_symbol(d->m_key_type, nullptr);
+            std::string value = type_to_str_python_symbol(d->m_value_type, nullptr);
+            return "dict[" + key + ", " + value + "]";
         }
         case ASR::ttypeType::List: {
             ASR::List_t *l = (ASR::List_t *)t;
-            return "list[" + type_to_str_python(l->m_type) + "]";
+            return "list[" + type_to_str_python_symbol(l->m_type, nullptr) + "]";
         }
         case ASR::ttypeType::CPtr: {
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType name
-            // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            return "derived type";
+            return ASRUtils::symbol_name(struct_sym);
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
             return "enum " + std::string(symbol_name(d->m_enum_type));
         }
         case ASR::ttypeType::UnionType: {
-            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            return "union " + std::string(symbol_name(d->m_union_type));
+            /*ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);*/
+            return "UnionType";
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
-            return "Pointer[" + type_to_str_python(p->m_type) + "]";
+            return "Pointer[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* p = ASR::down_cast<ASR::Allocatable_t>(t);
-            return "Allocatable[" + type_to_str_python(p->m_type) + "]";
+            return "Allocatable[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -2157,6 +2189,18 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
+}
+
+static inline std::string type_to_str_python_expr(const ASR::ttype_t *t, ASR::expr_t* expr)
+{
+    ASR::symbol_t* struct_sym = nullptr;
+
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
+        LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
+        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    }
+
+    return type_to_str_python_symbol(t, struct_sym);
 }
 
 static inline std::string binop_to_str_python(const ASR::binopType t) {
@@ -2247,7 +2291,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, false, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2270,7 +2314,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, true, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2305,7 +2349,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2338,7 +2382,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
+            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
@@ -2429,6 +2473,14 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::LocationManager &lm,
                             bool generate_object_code = false,
                             bool load_submodules = false);
+
+void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
+                               ASR::Module_t* mod, const Location &loc,
+                               std::set<std::string> &loaded_submodules,
+                               LCompilers::PassOptions& pass_options,
+                               bool run_verify,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               LCompilers::LocationManager &lm);
 
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
@@ -2712,7 +2764,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
             break;
         }
         default:
-            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(x) + ".");
+            throw LCompilersException("Not implemented " + std::to_string(x->type) + ".");
     }
     return n_dims;
 }
@@ -2846,6 +2898,48 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
                 is_dependent_only_on_argument = false;
             }
         }
+};
+
+// This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
+// To be used when creating FunctionCall or SubroutineCall.
+class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
+    private:
+
+    Allocator& al;
+    ASR::call_arg_t* m_args;
+    size_t n_args;
+    bool is_method;
+
+    public:
+
+    ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_, bool is_method_ = false) :
+        al(al_), m_args(m_args_), n_args(n_args_), is_method(is_method_) {}
+
+    void replace_FunctionParam(ASR::FunctionParam_t *x) {
+        if (current_expr) {
+            size_t n = x->m_param_number - is_method;
+            if (n >= n_args) {
+                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
+            };
+            *current_expr = m_args[n].m_value;
+        }
+    }
+
+    ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.allow_procedure_calls = true;
+        duplicator.success = true;
+
+        ASR::expr_t* tc = duplicator.duplicate_expr(t);
+        LCOMPILERS_ASSERT(duplicator.success);
+
+        ASR::expr_t** current_copy = current_expr;
+        current_expr = &tc;
+        replace_expr(tc);
+        current_expr = current_copy;
+
+        return tc;
+    }
 };
 
 static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
@@ -3169,7 +3263,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
-                tnew->m_union_type));
+                tnew->m_data_member_types, tnew->n_data_member_types));
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -3251,7 +3345,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Tuple_t(al, tup->base.base.loc,
                 types.p, types.size()));
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
     LCOMPILERS_ASSERT(t_ != nullptr);
     return ASRUtils::make_Array_t_util(
@@ -3296,6 +3390,18 @@ static inline bool is_deferredLength_string(ASR::ttype_t* t){
     return false;
 }
 
+static inline bool is_allocatable_descriptor_string(ASR::ttype_t* t) {
+    if (!ASR::is_a<ASR::Allocatable_t>(*t))
+        return false;
+
+    ASR::ttype_t* t1 = ASR::down_cast<ASR::Allocatable_t>(t)->m_type;
+
+    if (!ASR::is_a<ASR::String_t>(*t1))
+        return false;
+    ASR::String_t* string = ASR::down_cast<ASR::String_t>(t1);
+    return string->m_physical_type == ASR::string_physical_typeType::DescriptorString &&
+            string->m_len_kind == ASR::string_length_kindType::DeferredLength;
+}
 
 static inline ASR::String_t* get_string_type(ASR::ttype_t* s){
     LCOMPILERS_ASSERT(is_character(*s))
@@ -3426,7 +3532,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::CPtr: {
             return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
         }
-        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
+        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
 }
 
@@ -3652,7 +3758,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
         }
         default: {
             diag.add(diag::Diagnostic(
-                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
+                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(len_expr), len_expr),
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {loc})}));
             throw SemanticAbort();
@@ -3732,7 +3838,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), true);
+            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), x, y, true);
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
@@ -3792,7 +3898,7 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
 
-inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
+inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions=false) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
@@ -3823,7 +3929,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::Array): {
                 ASR::Array_t* a2 = ASR::down_cast<ASR::Array_t>(a);
                 ASR::Array_t* b2 = ASR::down_cast<ASR::Array_t>(b);
-                if( !types_equal(a2->m_type, b2->m_type) ) {
+                if( !types_equal(a2->m_type, b2->m_type, a_expr, b_expr) ) {
                     return false;
                 }
 
@@ -3877,46 +3983,50 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::List) : {
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
-                return types_equal(a2->m_type, b2->m_type);
+                return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
             case (ASR::ttypeType::StructType) : {
-                ASR::StructType_t *st1 = ASR::down_cast<ASR::StructType_t>(a);
-                ASR::StructType_t *st2 = ASR::down_cast<ASR::StructType_t>(b);
-                
-                if (st1->n_data_member_types != st2->n_data_member_types) return false;
-                for (size_t i = 0; i < st1->n_data_member_types; i++) {
-                    if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
+                ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
+                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
+
+                if (!is_derived_type_similar(x_struct, y_struct)) {
+                    return false;
                 }
 
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(a_expr)));
+                ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(b_expr)));
+                
+                if (x_union == y_union) return true;
+
+                return false;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+
+                ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
+                ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
                     return false;
                 }
                 for( size_t i = 0; i < a2->n_arg_types; i++ ) {
-                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], true) ) {
+                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], left_func->m_args[i],
+                         right_func->m_args[i], true) ) {
                         return false;
                     }
                 }
-                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, true) ) {
+                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, left_func->m_return_var,
+                     right_func->m_return_var, true) ) {
                     return false;
                 }
                 return true;
@@ -3928,8 +4038,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
 }
 
 inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
-    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs,
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions=false) {
+    ASR::Struct_t* a_struct = nullptr;
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
@@ -3945,6 +4056,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
         ASR::TypeParameter_t* a_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
         a = subs[a_tp->m_param].first;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(a))) {
+            a_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(subs[a_tp->m_param].second));
+        }
     }
     if (a->type == b->type) {
         // TODO: check dims
@@ -3953,7 +4067,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::Array): {
                 ASR::Array_t* a2 = ASR::down_cast<ASR::Array_t>(a);
                 ASR::Array_t* b2 = ASR::down_cast<ASR::Array_t>(b);
-                if( !types_equal_with_substitution(a2->m_type, b2->m_type, subs) ) {
+                if( !types_equal_with_substitution(a2->m_type, b2->m_type, subs, a_expr, b_expr) ) {
                     return false;
                 }
 
@@ -4007,46 +4121,53 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::List) : {
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
-                return types_equal_with_substitution(a2->m_type, b2->m_type, subs);
+                return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
             }
-            case (ASR::ttypeType::StructType) : {                
-                ASR::StructType_t *st1 = ASR::down_cast<ASR::StructType_t>(a);
-                ASR::StructType_t *st2 = ASR::down_cast<ASR::StructType_t>(b);
-                
-                if (st1->n_data_member_types != st2->n_data_member_types) return false;
-                for (size_t i = 0; i < st1->n_data_member_types; i++) {
-                    if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
+            case (ASR::ttypeType::StructType) : {          
+                ASR::Struct_t* x_struct = nullptr;
+                if (a_struct) {
+                    x_struct = a_struct;
+                } else {
+                    x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
+                }
+                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
+
+                if (!is_derived_type_similar(x_struct, y_struct)) {
+                    return false;
                 }
 
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(a_expr)));
+                ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(b_expr)));
+                
+                if (x_union == y_union) return true;
+
+                return false;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+
+                ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
+                ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
                     return false;
                 }
                 for( size_t i = 0; i < a2->n_arg_types; i++ ) {
-                    if( !types_equal_with_substitution(a2->m_arg_types[i], b2->m_arg_types[i], subs, true) ) {
+                    if( !types_equal_with_substitution(a2->m_arg_types[i], b2->m_arg_types[i], subs, left_func->m_args[i], right_func->m_args[i], true) ) {
                         return false;
                     }
                 }
-                if( !types_equal_with_substitution(a2->m_return_var_type, b2->m_return_var_type, subs, true) ) {
+                if( !types_equal_with_substitution(a2->m_return_var_type, b2->m_return_var_type, subs, left_func->m_return_var, right_func->m_return_var, true) ) {
                     return false;
                 }
                 return true;
@@ -4057,7 +4178,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     return false;
 }
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions) {
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions) {
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
@@ -4078,33 +4199,33 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         if( y_underlying ) {
             y = y_underlying;
         }
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     }
     if( ASR::is_a<ASR::Pointer_t>(*x) ||
         ASR::is_a<ASR::Pointer_t>(*y) ) {
         x = ASRUtils::type_get_past_pointer(x);
         y = ASRUtils::type_get_past_pointer(y);
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if( ASR::is_a<ASR::Allocatable_t>(*x) ||
                ASR::is_a<ASR::Allocatable_t>(*y) ) {
         x = ASRUtils::type_get_past_allocatable(x);
         y = ASRUtils::type_get_past_allocatable(y);
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::List_t>(*x) && ASR::is_a<ASR::List_t>(*y)) {
         x = ASR::down_cast<ASR::List_t>(x)->m_type;
         y = ASR::down_cast<ASR::List_t>(y)->m_type;
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::Set_t>(*x) && ASR::is_a<ASR::Set_t>(*y)) {
         x = ASR::down_cast<ASR::Set_t>(x)->m_type;
         y = ASR::down_cast<ASR::Set_t>(y)->m_type;
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::Dict_t>(*x) && ASR::is_a<ASR::Dict_t>(*y)) {
         ASR::ttype_t *x_key_type = ASR::down_cast<ASR::Dict_t>(x)->m_key_type;
         ASR::ttype_t *y_key_type = ASR::down_cast<ASR::Dict_t>(y)->m_key_type;
         ASR::ttype_t *x_value_type = ASR::down_cast<ASR::Dict_t>(x)->m_value_type;
         ASR::ttype_t *y_value_type = ASR::down_cast<ASR::Dict_t>(y)->m_value_type;
-        return (check_equal_type(x_key_type, y_key_type) &&
-                check_equal_type(x_value_type, y_value_type));
+        return (check_equal_type(x_key_type, y_key_type, nullptr, nullptr) &&
+                check_equal_type(x_value_type, y_value_type, nullptr, nullptr));
     } else if (ASR::is_a<ASR::Tuple_t>(*x) && ASR::is_a<ASR::Tuple_t>(*y)) {
         ASR::Tuple_t *a = ASR::down_cast<ASR::Tuple_t>(x);
         ASR::Tuple_t *b = ASR::down_cast<ASR::Tuple_t>(y);
@@ -4113,7 +4234,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         }
         bool result = true;
         for (size_t i=0; i<a->n_type; i++) {
-            result = result && check_equal_type(a->m_type[i], b->m_type[i]);
+            result = result && check_equal_type(a->m_type[i], b->m_type[i], nullptr, nullptr);
             if (!result) {
                 return false;
             }
@@ -4128,13 +4249,17 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
     } else if (ASR::is_a<ASR::FunctionType_t>(*x) && ASR::is_a<ASR::FunctionType_t>(*y)) {
         ASR::FunctionType_t* left_ft = ASR::down_cast<ASR::FunctionType_t>(x);
         ASR::FunctionType_t* right_ft = ASR::down_cast<ASR::FunctionType_t>(y);
+
+        ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
+        ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
+
         if (left_ft->n_arg_types != right_ft->n_arg_types) {
             return false;
         }
         bool result;
         for (size_t i=0; i<left_ft->n_arg_types; i++) {
             result = check_equal_type(left_ft->m_arg_types[i],
-                        right_ft->m_arg_types[i]);
+                        right_ft->m_arg_types[i], left_func->m_args[i], right_func->m_args[i]);
             if (!result) return false;
         }
         if (left_ft->m_return_var_type == nullptr &&
@@ -4143,12 +4268,12 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         } else if (left_ft->m_return_var_type != nullptr &&
                 right_ft->m_return_var_type != nullptr) {
                 return check_equal_type(left_ft->m_return_var_type,
-                        right_ft->m_return_var_type);
+                        right_ft->m_return_var_type, left_func->m_return_var, right_func->m_return_var);
         }
         return false;
     }
 
-    return types_equal(x, y, check_for_dimensions);
+    return types_equal(x, y, x_expr, y_expr, check_for_dimensions);
 }
 
 inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_t* value) {
@@ -4163,6 +4288,19 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
         is_class_same = (sym_target == sym_value);
+        is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+    }
+    return is_class_same;
+}
+
+inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::symbol_t* value) {
+    target = ASRUtils::symbol_get_past_external(target);
+    value = ASRUtils::symbol_get_past_external(value);
+    bool is_class_same = false;
+    if (ASR::is_a<ASR::Struct_t>(*target) && ASR::is_a<ASR::Struct_t>(*value)) {
+        ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(target);
+        ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(value);
+        is_class_same = (target == value);
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
@@ -4269,7 +4407,7 @@ static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
         }
         default: {
             throw LCompilersException("Cannot extract intent of ASR::exprType::" +
-                ASRUtils::type_to_str_python(ASRUtils::expr_type(expr)));
+                ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(expr), expr));
         }
     }
     return ASR::intentType::Unspecified;
@@ -4973,6 +5111,66 @@ class SymbolDuplicator {
 
 };
 
+// This replacer is for checking if symbols in the input expression are accessible from current_scope.
+// If they are accessible as external symbols then replace them by the corresponding ExternalSymbol.
+// If atleast one symbol is not accessible then result is false.
+class CheckSymbolReplacer: public ASR::BaseExprReplacer<CheckSymbolReplacer> {
+    private:
+
+    Allocator &al;
+    bool result;
+    SymbolTable* current_scope;
+    SetChar& current_function_dependencies;
+
+    public:
+    CheckSymbolReplacer(Allocator &al_, SymbolTable* current_scope_, SetChar& current_function_dependencies_) :
+        al(al_), result(true), current_scope(current_scope_), current_function_dependencies(current_function_dependencies_) {}
+
+    ASR::symbol_t* handle_symbol(ASR::symbol_t* x) {
+        if (result) {
+            ASR::symbol_t* y = current_scope->resolve_symbol(ASRUtils::symbol_name((x)));
+            if (y == nullptr) {
+                result = false;
+            }
+            if (y && ASR::is_a<ASR::ExternalSymbol_t>(*y)) {
+                ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(y);
+                if (ext->m_external == x) {
+                    return y;
+                }
+            }
+            if (x != y) {
+                result = false;
+            }
+        }
+        return x;
+    }
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = handle_symbol(x->m_v);
+        ADD_ASR_DEPENDENCIES(current_scope, x->m_v, current_function_dependencies);
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        x->m_name = handle_symbol(x->m_name);
+        ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
+        if (x->m_original_name) {
+            x->m_original_name = handle_symbol(x->m_original_name);
+            ADD_ASR_DEPENDENCIES(current_scope, x->m_original_name, current_function_dependencies);
+        }
+    }
+
+    bool check_and_update_symbols(ASR::expr_t* t) {
+        if (t) {
+            ASR::expr_t** current_copy = current_expr;
+            current_expr = &t;
+            replace_expr(t);
+            current_expr = current_copy;
+            return result;
+        }
+        return false;
+    }
+};
+
 class ReplaceReturnWithGotoVisitor: public ASR::BaseStmtReplacer<ReplaceReturnWithGotoVisitor> {
 
     private:
@@ -5067,12 +5265,14 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
     // then length can be computed easily by extracting
     // compile time values of end and start.
     if( start_value && end_value ) {
-        int64_t start_int = -1, end_int = -1;
+        int64_t start_int = -1, end_int = -1, size = 0;
         ASRUtils::extract_value(start_value, start_int);
         ASRUtils::extract_value(end_value, end_int);
-        end_int = end_int < 0 ? 0 : end_int;
+        if (end_int - start_int + 1 > 0) {
+            size = end_int - start_int + 1;
+        }
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, start->base.loc,
-                              end_int - start_int + 1,
+                              size,
                               ASRUtils::expr_type(start)));
     }
 
@@ -5333,6 +5533,18 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
 static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al, bool for_type=true) {
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
     return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr, for_type));
+}
+
+static inline ASR::ttype_t* get_union_type(Allocator &al, const Location &loc, ASR::symbol_t* union_sym) {
+    Vec<ASR::ttype_t *> member_type_vec;
+    member_type_vec.reserve(al, 1);
+    ASR::Union_t* union_sym_ = ASR::down_cast<ASR::Union_t>(union_sym);
+    for (size_t i=0;i<union_sym_->n_members;i++) {
+        ASR::symbol_t* member_sym = union_sym_->m_symtab->resolve_symbol(union_sym_->m_members[i]);
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+        member_type_vec.push_back(al, member_var->m_type);
+    }
+    return ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, member_type_vec.p, member_type_vec.n));
 }
 
 static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
@@ -5656,7 +5868,22 @@ static inline void import_struct_t(Allocator& al,
     }
 }
 
-
+static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
+    const Location& loc, ASR::expr_t* v_expr, SymbolTable* current_scope) {
+    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(v_expr);
+    if (struct_sym == nullptr) return nullptr;
+    std::string struct_name = symbol_name(struct_sym);
+    if (current_scope->resolve_symbol(struct_name) == nullptr) {
+        struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, loc, current_scope, s2c(al, struct_name), struct_sym,
+            ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+            s2c(al, struct_name), ASR::accessType::Public));
+        current_scope->add_symbol(struct_name, struct_sym);
+    } else {
+        struct_sym = current_scope->resolve_symbol(struct_name);
+    }
+    return struct_sym;
+}
 
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,
@@ -5723,7 +5950,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             }
         }
         case ASR::ttypeType::UnsignedInteger: {
-            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            ASR::UnsignedIntegerConstant_t* value_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value);
             switch (kind) {
                 case 1: ((uint8_t*)x->m_data)[i] = value_int->m_n; break;
                 case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
@@ -5882,13 +6109,13 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 1: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 2: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 4: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 8: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint64_t*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
@@ -5951,6 +6178,14 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 }
 
 template<typename T>
+T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+    }
+    return data;
+}
+
+template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
         data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
@@ -5990,10 +6225,10 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: return set_data_int(new uint8_t[n_args], a_args, n_args);
-                case 2: return set_data_int(new uint16_t[n_args], a_args, n_args);
-                case 4: return set_data_int(new uint32_t[n_args], a_args, n_args);
-                case 8: return set_data_int(new uint64_t[n_args], a_args, n_args);
+                case 1: return set_data_uint(new uint8_t[n_args], a_args, n_args);
+                case 2: return set_data_uint(new uint16_t[n_args], a_args, n_args);
+                case 4: return set_data_uint(new uint32_t[n_args], a_args, n_args);
+                case 8: return set_data_uint(new uint64_t[n_args], a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
@@ -6086,6 +6321,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
@@ -6185,24 +6421,15 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
-    bool implicit_argument_casting, bool nopass) {
+    bool implicit_argument_casting, bool nopass, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
         is_method = false;
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
-    ASR::Function_t* func = nullptr;
-    
-    if (ASR::is_a<ASR::Function_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(a_name_);
-    } else if (ASR::is_a<ASR::Variable_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type_declaration));
-    } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name_)->m_proc));
-    }
+    ASR::Function_t* func = ASRUtils::get_function(a_name);
+
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ) {
             continue;
@@ -6227,7 +6454,19 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
               ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(orig_arg_type))) &&
             a_dt == nullptr ) {
-            if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type)) {
+                // Pass actual argument expression to `check_equal_type()` if the expression is
+                // `ASR::FunctionParam_t`.
+                ASR::expr_t* arg_expr = arg;
+                ASR::expr_t* orig_arg_expr = func->m_args[i + is_method];
+                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
+                    ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
+                    arg_expr = func->m_args[func_param->m_param_number];
+                } 
+                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr)) {
+                    ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr);
+                    orig_arg_expr = func->m_args[func_param->m_param_number];
+                }
+            if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr)) {
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
                     // get current_scope
                     SymbolTable* current_scope = nullptr;
@@ -6331,8 +6570,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type) || 
-                    ASRUtils::check_class_assignment_compatibility(orig_arg, arg),
+                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
                     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
                         ASRUtils::get_type_code(orig_arg_type) + ")");
             }
@@ -6350,19 +6588,48 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 physical_cast_arg.loc = arg->base.loc;
                 Vec<ASR::dimension_t>* dimensions = nullptr;
                 Vec<ASR::dimension_t> dimension_;
-                if( ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims) ) {
-                    dimension_.reserve(al, orig_arg_array_t->n_dims);
-                    dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
+
+                if (ASRUtils::is_pointer(physical_cast_type)) {
+                    dimensions = nullptr;
+                } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
+                } else if (current_scope) {
+                    // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                    ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
+                    SetChar temp_function_dependencies;
+                    CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
+                    bool valid_symbols = true;
+                    for (size_t i = 0; i < dimension_.size(); i++) {
+                        dimension_.p[i].loc = arg->base.loc;
+                        dimension_.p[i].m_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
+                        dimension_.p[i].m_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
+                        valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+
+                        if (!valid_symbols) {
+                            break;
+                        }
+                    }
+                    // If the symbols are valid then include the dimension in ArrayPhysicalCast
+                    if (valid_symbols) {
+                        dimensions = &dimension_;
+                        if (current_function_dependencies.has_value()) {
+                            for (size_t j = 0; j < temp_function_dependencies.n; j++) {
+                                current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
+                            }
+                        }
+                    } else {
+                        dimensions = nullptr;
+                    }
                 }
+
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
                 LCOMPILERS_ASSERT_MSG(dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
                     orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
-                ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(
-                                                        ASRUtils::expr_type(arg));
                 physical_cast_arg.m_value = ASRUtils::EXPR(
                                                 ASRUtils::make_ArrayPhysicalCast_t_util(
                                                     al,
@@ -6385,10 +6652,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, 
-        ASRUtils::get_class_proc_nopass_val(a_name));
+        ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
         !ASRUtils::is_fixed_size_array(a_type) &&
@@ -6435,10 +6702,10 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 static inline ASR::asr_t* make_SubroutineCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
+    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         ASRUtils::get_class_proc_nopass_val(a_name));
+         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&

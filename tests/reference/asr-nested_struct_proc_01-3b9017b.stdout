@@ -461,10 +461,10 @@
                                                     map
                                                     Public
                                                 ),
-                                            1_omap_i_at_rc:
+                                            1_omap_map_omap_i_at_rc:
                                                 (ExternalSymbol
                                                     10
-                                                    1_omap_i_at_rc
+                                                    1_omap_map_omap_i_at_rc
                                                     7 at_rc
                                                     omap_map
                                                     []
@@ -699,9 +699,15 @@
                                     (Associate
                                         (Var 10 tmp)
                                         (FunctionCall
-                                            10 1_omap_i_at_rc
-                                            7 at
-                                            [((StructInstanceMember
+                                            10 1_omap_map_omap_i_at_rc
+                                            ()
+                                            [((Var 10 key))
+                                            ((Var 10 status))]
+                                            (Pointer
+                                                (Complex 4)
+                                            )
+                                            ()
+                                            (StructInstanceMember
                                                 (Var 10 this)
                                                 10 1_integer32complex32orderedmap_map
                                                 (StructType
@@ -717,14 +723,7 @@
                                                     .false.
                                                 )
                                                 ()
-                                            ))
-                                            ((Var 10 key))
-                                            ((Var 10 status))]
-                                            (Pointer
-                                                (Complex 4)
                                             )
-                                            ()
-                                            ()
                                         )
                                     )
                                     (If
@@ -1006,10 +1005,10 @@
                                     insert
                                     Private
                                 ),
-                            1_omap_insert_key_value:
+                            1_integer32complex32orderedmap_omap_insert_key_value:
                                 (ExternalSymbol
                                     11
-                                    1_omap_insert_key_value
+                                    1_integer32complex32orderedmap_omap_insert_key_value
                                     8 insert_key_value
                                     integer32complex32orderedmap
                                     []
@@ -1386,7 +1385,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        11 1_omap_insert_key_value
+                        11 1_integer32complex32orderedmap_omap_insert_key_value
                         11 1_insert
                         [((Var 11 key))
                         ((Var 11 value))]

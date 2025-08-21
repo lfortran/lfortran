@@ -244,7 +244,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             }
         }
     }
-    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
+    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
 
     declare_basic_variables(new_name);
     if (scope->get_symbol(new_name)) {
@@ -392,7 +392,8 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 
     ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
     ASR::ttype_t* output_type = x.m_type;
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, x.m_args[0],
+         const_cast<ASR::expr_t*>(&x.base), true),
         "The input and output type of elemental intrinsic, " +
         std::to_string(static_cast<int64_t>(x.m_intrinsic_id)) +
         " must exactly match, input type: " +
@@ -584,7 +585,7 @@ namespace MathIntrinsicFunction{
         } else {
             c_func_name = "_lfortran_d" + lcompiler_name;
         }
-        std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python(arg_types[0]);
+        std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python_expr(arg_types[0], new_args[0].m_value);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
@@ -670,7 +671,7 @@ namespace Aimag {
             const Location &loc, SymbolTable* scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
-        declare_basic_variables("_lcompilers_aimag_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_aimag_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc,
@@ -718,7 +719,7 @@ namespace Atan2 {
                 }
             }
         }
-        new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
+        new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
@@ -766,7 +767,8 @@ namespace Abs {
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
         } else {
-            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type,
+                 x.m_args[0], const_cast<ASR::expr_t*>(&x.base), true),
                 "The input and output type of Abs intrinsic must exactly match, input type: " +
                 input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
@@ -831,7 +833,7 @@ namespace Abs {
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_abs_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_abs_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
             ASR::symbol_t *s = scope->get_symbol(func_name);
@@ -930,7 +932,7 @@ namespace Scale {
     static inline ASR::expr_t* instantiate_Scale(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_scale_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_scale_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -962,7 +964,7 @@ namespace Dprod {
     static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dprod_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_dprod_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         LCOMPILERS_ASSERT((ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4 &&
@@ -1095,7 +1097,7 @@ namespace OutOfRange
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
-        declare_basic_variables("_lcompilers_out_of_range_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_out_of_range_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
 
         fill_func_arg("value", arg_types[0]);
         fill_func_arg("mold", arg_types[1]);
@@ -1291,7 +1293,7 @@ namespace Sign {
     static inline ASR::expr_t* instantiate_Sign(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_sign_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1358,7 +1360,7 @@ namespace Shiftr {
     static inline ASR::expr_t* instantiate_Shiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_shiftr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_shiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1406,7 +1408,7 @@ namespace Rshift {
     static inline ASR::expr_t* instantiate_Rshift(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_rshift_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_rshift_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1450,7 +1452,7 @@ namespace Shiftl {
     static inline ASR::expr_t* instantiate_Shiftl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_shiftl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_shiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1498,7 +1500,7 @@ namespace Dshiftl {
     static inline ASR::expr_t* instantiate_Dshiftl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dshiftl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_dshiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
@@ -1562,7 +1564,7 @@ namespace Dshiftr {
     static inline ASR::expr_t* instantiate_Dshiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dshiftr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_dshiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
@@ -1615,7 +1617,7 @@ namespace Dreal {
     static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
-        declare_basic_variables("_lcompilers_dreal_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_dreal_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.c2r_t(args[0], real64)));
@@ -1657,7 +1659,7 @@ namespace Ishft {
     static inline ASR::expr_t* instantiate_Ishft(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ishft_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ishft_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1718,7 +1720,7 @@ namespace Bgt {
     static inline ASR::expr_t* instantiate_Bgt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_bgt_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_bgt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1763,7 +1765,7 @@ namespace Blt {
     static inline ASR::expr_t* instantiate_Blt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_blt_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_blt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1808,7 +1810,7 @@ namespace Bge {
     static inline ASR::expr_t* instantiate_Bge(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_bge_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_bge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1908,7 +1910,7 @@ namespace Ble {
     static inline ASR::expr_t* instantiate_Ble(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ble_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ble_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1947,7 +1949,7 @@ namespace Lgt {
     static inline ASR::expr_t* instantiate_Lgt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_lgt_" + type_to_str_python(type_get_past_allocatable(arg_types[0])));
+        declare_basic_variables("_lcompilers_lgt_" + type_to_str_python_expr(type_get_past_allocatable(arg_types[0]), new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1977,7 +1979,7 @@ namespace Llt {
     static inline ASR::expr_t* instantiate_Llt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_llt_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_llt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2007,7 +2009,7 @@ namespace Lge {
     static inline ASR::expr_t* instantiate_Lge(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_lge_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_lge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2037,7 +2039,7 @@ namespace Lle {
     static inline ASR::expr_t* instantiate_Lle(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_lle_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_lle_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2074,7 +2076,7 @@ namespace Int {
     static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_int_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_int_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         if (is_integer(*arg_types[0])) {
@@ -2107,7 +2109,7 @@ namespace Not {
     static inline ASR::expr_t* instantiate_Not(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_not_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_not_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2142,7 +2144,7 @@ namespace Iand {
     static inline ASR::expr_t* instantiate_Iand(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_iand_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_iand_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2186,7 +2188,7 @@ namespace And {
     static inline ASR::expr_t* instantiate_And(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_and_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_and_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2218,7 +2220,7 @@ namespace Ior {
     static inline ASR::expr_t* instantiate_Ior(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ior_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ior_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2262,7 +2264,7 @@ namespace Or {
     static inline ASR::expr_t* instantiate_Or(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_or_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_or_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2294,7 +2296,7 @@ namespace Ieor {
     static inline ASR::expr_t* instantiate_Ieor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ieor_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ieor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2334,7 +2336,7 @@ namespace Xor {
     static inline ASR::expr_t* instantiate_Xor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_xor_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_xor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2373,7 +2375,7 @@ namespace Ibits {
     static inline ASR::expr_t* instantiate_Ibits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibits_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ibits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
@@ -2404,7 +2406,7 @@ namespace Aint {
     static inline ASR::expr_t* instantiate_Aint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_aint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_aint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
@@ -2432,7 +2434,7 @@ namespace Anint {
     static inline ASR::expr_t* instantiate_Anint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_anint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_anint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2487,7 +2489,7 @@ namespace Nint {
     static inline ASR::expr_t* instantiate_Nint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_nint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_nint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2523,7 +2525,7 @@ namespace Idnint {
     static inline ASR::expr_t* instantiate_Idnint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_idnint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_idnint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8);
@@ -2551,7 +2553,7 @@ namespace Logical {
     static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_logical_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_logical_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al,b.Assignment(result, b.bool_t(args[0], return_type)));
@@ -2578,7 +2580,7 @@ namespace Floor {
     static inline ASR::expr_t* instantiate_Floor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_floor_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_floor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2625,7 +2627,7 @@ namespace Ceiling {
     static inline ASR::expr_t* instantiate_Ceiling(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ceiling_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ceiling_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2693,7 +2695,7 @@ namespace Dim {
     static inline ASR::expr_t* instantiate_Dim(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dim_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_dim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2801,7 +2803,7 @@ namespace Exponent {
     static inline ASR::expr_t* instantiate_Exponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompiler_optimization_exponent_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompiler_optimization_exponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         int32_t kind = extract_kind_from_ttype_t(arg_types[0]);
@@ -2879,7 +2881,7 @@ namespace Fraction {
     static inline ASR::expr_t* instantiate_Fraction(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_fraction_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_fraction_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2941,7 +2943,7 @@ namespace SetExponent {
     static inline ASR::expr_t* instantiate_SetExponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_setexponent_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_setexponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2970,7 +2972,7 @@ namespace Sngl {
     static inline ASR::expr_t* instantiate_Sngl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_sngl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_sngl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.r2r_t(args[0], real32)));
@@ -2995,7 +2997,7 @@ namespace Ifix {
     static inline ASR::expr_t* instantiate_Ifix(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ifix_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ifix_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
             LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4);
         }
@@ -3022,7 +3024,7 @@ namespace Idint {
     static inline ASR::expr_t* instantiate_Idint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_idint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_idint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
@@ -3049,7 +3051,7 @@ namespace FMA {
     static inline ASR::expr_t* instantiate_FMA(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_fma_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_fma_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[0]);
         fill_func_arg("c", arg_types[0]);
@@ -3089,7 +3091,7 @@ namespace SignFromValue {
     static inline ASR::expr_t* instantiate_SignFromValue(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_signfromvalue_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_signfromvalue_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3134,7 +3136,7 @@ namespace FlipSign {
     static inline ASR::expr_t* instantiate_FlipSign(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_flipsign_" + type_to_str_python(arg_types[1]));
+        declare_basic_variables("_lcompilers_optimization_flipsign_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
         fill_func_arg("signal", arg_types[0]);
         fill_func_arg("variable", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3223,7 +3225,7 @@ namespace FloorDiv {
     static inline ASR::expr_t* instantiate_FloorDiv(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_floordiv_" + type_to_str_python(arg_types[1]));
+        declare_basic_variables("_lcompilers_optimization_floordiv_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
         auto r = declare("r", real64, Local);
@@ -3281,7 +3283,7 @@ namespace Mod {
     static inline ASR::expr_t* instantiate_Mod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_mod_" + type_to_str_python(arg_types[1]));
+        declare_basic_variables("_lcompilers_optimization_mod_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("p", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3342,7 +3344,7 @@ namespace Ibclr {
     static inline ASR::expr_t* instantiate_Ibclr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibclr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ibclr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3392,7 +3394,7 @@ namespace Ibset {
     static inline ASR::expr_t* instantiate_Ibset(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibset_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ibset_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3443,7 +3445,7 @@ namespace Btest {
     static inline ASR::expr_t* instantiate_Btest(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_btest_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_btest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3512,7 +3514,7 @@ namespace Popcnt {
     static inline ASR::expr_t* instantiate_Popcnt(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-            declare_basic_variables("_lcompilers_popcnt_" + type_to_str_python(arg_types[0]));
+            declare_basic_variables("_lcompilers_popcnt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         auto count = declare("j", arg_types[0], Local);
@@ -3594,7 +3596,7 @@ namespace Maskl {
     static inline ASR::expr_t* instantiate_Maskl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3665,7 +3667,7 @@ namespace Maskr {
     static inline ASR::expr_t* instantiate_Maskr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3780,7 +3782,7 @@ namespace Trailz {
     static inline ASR::expr_t* instantiate_Trailz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_trailz_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_trailz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("n", arg_types[0]);
         ASR::expr_t* n_val = declare("n_val", arg_types[0], Local);
         body.push_back(al, b.Assignment(n_val, args[0]));
@@ -3856,7 +3858,7 @@ namespace Nearest {
     static inline ASR::expr_t* instantiate_Nearest(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_nearest_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_nearest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("s", arg_types[1]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
@@ -3949,7 +3951,7 @@ namespace Spacing {
     static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_spacing_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_spacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         /*
@@ -3994,7 +3996,7 @@ namespace Modulo {
     static inline ASR::expr_t* instantiate_Modulo(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_modulo_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_modulo_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("p", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4033,7 +4035,7 @@ namespace BesselJN {
         } else {
             c_func_name = "_lfortran_dbesseljn";
         }
-        std::string new_name = "_lcompilers_bessel_jn_"+ type_to_str_python(arg_types[1]);
+        std::string new_name = "_lcompilers_bessel_jn_"+ type_to_str_python_expr(arg_types[1], new_args[1].m_value);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
@@ -4075,7 +4077,7 @@ namespace BesselYN {
         } else {
             c_func_name = "_lfortran_dbesselyn";
         }
-        std::string new_name = "_lcompilers_bessel_yn_"+ type_to_str_python(arg_types[1]);
+        std::string new_name = "_lcompilers_bessel_yn_"+ type_to_str_python_expr(arg_types[1], new_args[1].m_value);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
@@ -4114,7 +4116,7 @@ namespace Poppar {
     static inline ASR::expr_t* instantiate_Poppar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-            declare_basic_variables("_lcompilers_poppar_" + type_to_str_python(arg_types[0]));
+            declare_basic_variables("_lcompilers_poppar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -4158,7 +4160,7 @@ namespace Real {
     static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_real_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_real_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -4214,7 +4216,7 @@ namespace Mergebits {
     static inline ASR::expr_t* instantiate_Mergebits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_mergebits_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_mergebits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
         fill_func_arg("mask", arg_types[2]);
@@ -4261,7 +4263,7 @@ namespace Leadz {
     static inline ASR::expr_t* instantiate_Leadz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_leadz_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_leadz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("n", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         auto total_bits = declare("r", arg_types[0], Local);
@@ -4376,7 +4378,7 @@ namespace Ishftc {
         } else {
             c_func_name = "_lfortran_dishftc";
         }
-        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[0]);
+        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python_expr(arg_types[0], new_args[0].m_value);
 
         declare_basic_variables(new_name);
         if (new_args.p[1].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 8) {
@@ -4428,7 +4430,7 @@ namespace Hypot {
     static inline ASR::expr_t* instantiate_Hypot(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_hypot_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_hypot_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
@@ -4533,7 +4535,7 @@ namespace SelectedIntKind {
     static inline ASR::expr_t* instantiate_SelectedIntKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_selected_int_kind_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_selected_int_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, int32, ReturnVar);
         auto number = declare("num", arg_types[0], Local);
@@ -4585,7 +4587,7 @@ namespace SelectedRealKind {
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_selected_real_kind_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_selected_real_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
@@ -4640,7 +4642,7 @@ namespace SelectedCharKind {
     static inline ASR::expr_t* instantiate_SelectedCharKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_selected_char_kind_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_selected_char_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
@@ -4728,7 +4730,7 @@ namespace Adjustl {
     static inline ASR::expr_t* instantiate_Adjustl(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_adjustl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_adjustl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
             ASR::string_length_kindType::ExpressionLength,
@@ -4816,7 +4818,7 @@ namespace Adjustr {
     static inline ASR::expr_t* instantiate_Adjustr(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_adjustr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_adjustr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
             nullptr, ASR::string_length_kindType::AssumedLength,
              ASR::string_physical_typeType::DescriptorString)));
@@ -4902,7 +4904,7 @@ namespace StringLenTrim {
     static inline ASR::expr_t* instantiate_StringLenTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
 
@@ -4964,7 +4966,7 @@ namespace StringTrim {
     static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_trim_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
@@ -5007,7 +5009,7 @@ namespace Ichar {
     static inline ASR::expr_t* instantiate_Ichar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ichar_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_ichar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
@@ -5044,7 +5046,7 @@ namespace Char {
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_char_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
@@ -5069,7 +5071,7 @@ namespace Achar {
     static inline ASR::expr_t* instantiate_Achar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_achar_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
@@ -5118,7 +5120,7 @@ namespace Digits {
     static inline ASR::expr_t* instantiate_Digits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_digits_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_digits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, int32, ReturnVar);
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
@@ -5189,7 +5191,7 @@ namespace Rrspacing {
     static inline ASR::expr_t* instantiate_Rrspacing(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_rrspacing_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_optimization_rrspacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -5230,8 +5232,8 @@ namespace Repeat {
     static inline ASR::expr_t* instantiate_Repeat(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        auto func_name = "_lcompilers_optimization_repeat_" + type_to_str_python(arg_types[0])
-             + type_to_str_python(arg_types[1]);
+        auto func_name = "_lcompilers_optimization_repeat_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+             + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
             ASR::symbol_t *s = scope->get_symbol(func_name);
@@ -5318,7 +5320,7 @@ namespace StringContainsSet {
     static inline ASR::expr_t* instantiate_StringContainsSet(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_verify_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_verify_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
@@ -5449,7 +5451,7 @@ namespace StringFindSet {
     static inline ASR::expr_t* instantiate_StringFindSet(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_scan_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_scan_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
@@ -5574,7 +5576,7 @@ namespace SubstrIndex {
     static inline ASR::expr_t* instantiate_SubstrIndex(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_index_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_index_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str",   ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,  ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
@@ -5763,7 +5765,7 @@ namespace ErfcScaled {
     static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -5790,7 +5792,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASR::ttype_t* arg0_type = ASRUtils::expr_type(x.m_args[0]);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*arg0_type) &&
-        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]), ASRUtils::get_contained_type(arg0_type)),
+        ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]), ASRUtils::get_contained_type(arg0_type), nullptr, nullptr),
         "First argument to list.index must be of list type and "
         "second argument must be of same type as list elemental type",
         x.base.base.loc, diagnostics);
@@ -5826,7 +5828,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
     ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(type)->m_type;
     ASR::ttype_t *ele_type = ASRUtils::expr_type(args[1]);
-    if (!ASRUtils::check_equal_type(ele_type, list_type)) {
+    if (!ASRUtils::check_equal_type(ele_type, list_type, nullptr, nullptr)) {
         std::string fnd = ASRUtils::get_type_code(ele_type);
         std::string org = ASRUtils::get_type_code(list_type);
         append_error(diag,
@@ -5890,7 +5892,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
             break;
     }
     ASRUtils::require_impl(ASRUtils::check_equal_type(x.m_type,
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Return type of list.pop must be of same type as list's element type",
         x.base.base.loc, diagnostics);
 }
@@ -5953,7 +5955,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
         ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 0)),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 0), nullptr, nullptr),
         "Return type of dict.keys must be of list of dict key element type",
         x.base.base.loc, diagnostics);
 }
@@ -6000,7 +6002,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*x.m_type) &&
         ASRUtils::check_equal_type(ASRUtils::get_contained_type(x.m_type),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 1)),
+        ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]), 1), nullptr, nullptr),
         "Return type of dict.values must be of list of dict value element type",
         x.base.base.loc, diagnostics);
 }
@@ -6046,7 +6048,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         "First argument to set.add must be of set type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Second argument to set.add must be of same type as set's element type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(x.m_type == nullptr,
@@ -6068,7 +6070,7 @@ static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
         return nullptr;
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr, nullptr)) {
         append_error(diag, "Argument to set.add must be of same type as set's "
             "element type", loc);
         return nullptr;
@@ -6097,7 +6099,7 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag:
         "First argument to set.remove must be of set type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
-            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0])), nullptr, nullptr),
         "Second argument to set.remove must be of same type as set's element type",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(x.m_type == nullptr,
@@ -6119,7 +6121,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
         return nullptr;
     }
     if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]),
-        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])))) {
+        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr, nullptr)) {
         append_error(diag, "Argument to set.remove must be of same type as set's "
             "element type", loc);
         return nullptr;
@@ -6257,7 +6259,7 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_max0_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
         ASR::ttype_t* function_return_type = return_type; // Function-variable-return type.
         if (ASRUtils::is_string_only(arg_types[0])) {
@@ -6428,7 +6430,7 @@ namespace Min {
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_min0_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
 
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
@@ -6674,7 +6676,7 @@ namespace Conjg {
     static inline ASR::expr_t* instantiate_Conjg(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string func_name = "_lcompilers_conjg_" + type_to_str_python(arg_types[0]);
+        std::string func_name = "_lcompilers_conjg_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
             ASR::symbol_t *s = scope->get_symbol(func_name);

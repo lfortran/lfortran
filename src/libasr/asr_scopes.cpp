@@ -5,7 +5,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/pass_utils.h>
 
-std::string lcompilers_unique_ID;
+std::string lcompilers_unique_ID_separate_compilation;
 std::string lcompilers_commandline_options;
 
 namespace LCompilers  {
@@ -100,8 +100,8 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
 
 std::string SymbolTable::get_unique_name(const std::string &name, bool use_unique_id) {
     std::string unique_name = name;
-    if( use_unique_id && !lcompilers_unique_ID.empty()) {
-        unique_name += "_" + lcompilers_unique_ID;
+    if( use_unique_id && !lcompilers_unique_ID_separate_compilation.empty()) {
+        unique_name += "_" + lcompilers_unique_ID_separate_compilation;
     }
     int counter = 1;
     while (scope.find(unique_name) != scope.end()) {

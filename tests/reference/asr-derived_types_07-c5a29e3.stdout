@@ -12,16 +12,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            1_match_key:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_match_key
-                                                    3 match_key
-                                                    toml_value
-                                                    []
-                                                    match_key
-                                                    Public
-                                                ),
                                             1_toml_node_val:
                                                 (ExternalSymbol
                                                     13
@@ -30,6 +20,16 @@
                                                     toml_node
                                                     []
                                                     val
+                                                    Public
+                                                ),
+                                            1_toml_value_match_key:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_value_match_key
+                                                    3 match_key
+                                                    toml_value
+                                                    []
+                                                    match_key
                                                     Public
                                                 ),
                                             1_toml_vector_lst:
@@ -318,7 +318,7 @@
                                             [(If
                                                 ()
                                                 (FunctionCall
-                                                    13 1_match_key
+                                                    13 1_toml_value_match_key
                                                     ()
                                                     [((Var 13 key))]
                                                     (Logical 4)

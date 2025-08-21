@@ -42,6 +42,16 @@
                                                     dep
                                                     Public
                                                 ),
+                                            1_dependency_tree_t_update_dependency:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_dependency_tree_t_update_dependency
+                                                    12 update_dependency
+                                                    dependency_tree_t
+                                                    []
+                                                    update_dependency
+                                                    Public
+                                                ),
                                             1_update:
                                                 (ExternalSymbol
                                                     7
@@ -51,16 +61,6 @@
                                                     []
                                                     update
                                                     Private
-                                                ),
-                                            1_update_dependency:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_update_dependency
-                                                    12 update_dependency
-                                                    dependency_tree_t
-                                                    []
-                                                    update_dependency
-                                                    Public
                                                 ),
                                             deps:
                                                 (Variable
@@ -235,7 +235,7 @@
                                     []
                                     [(Var 7 settings)]
                                     [(SubroutineCall
-                                        7 1_update_dependency
+                                        7 1_dependency_tree_t_update_dependency
                                         7 1_update
                                         [((StructInstanceMember
                                             (ArrayItem

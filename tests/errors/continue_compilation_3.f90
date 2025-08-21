@@ -176,6 +176,33 @@ program continue_compilation_3
     print *, merge_bits(1, 2, 3_8)
     print *, merge_bits(merge_i,merge_j,merge_k)
 
+    ! adding the new test for performing logical .and. between int-logical type.
+    !and_mismatch_int_logical
+    print *, 5 .and. .true.
+
+    !and_mismatch_real_logical
+    print *, 3.14 .and. .false.
+
+    !and_okay_int_int
+    print *, 5 .and. 6
+
+    !adding a few more cases
+    print *, 5 .or. 6
+    print *, 5 .eqv. 6
+    print *, .true. .neqv. 6
+    print *, 3.14 .and. "abcd"
+    print *, "abcd" .neqv. "cdef"
+    print *, 1 .neqv. 2
+    print *, [1,2,3] .and. .true.
+    print *, [1.0, 2.0] .or. [3.0, 4.0]
+    print *, "str1" .or. "str2"
+    print *, "x" .and. .false.
+    print *, .NOT. "lf"
+    print *, "8356" .or. 8356
+    print *, "8356" .eqv. 8356.00
+    print *, ['c', 'o', 'd', 'e'] .or. ['m', 'a', 's']
+    print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
+
     contains 
     subroutine bpe()
         print *, size(bpe)

@@ -1,6 +1,7 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
+#include <regex>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -79,7 +80,7 @@
 #define MAGENTA "\033[35m"   // Magenta for 'File reading' and 'Src -> ASR'
 #define RED        "\033[31m"   // Red for 'Time taken by pass' and 'ASR -> ASR passes'
 
-extern std::string lcompilers_unique_ID;
+extern std::string lcompilers_unique_ID_separate_compilation;   // Used in naming unique symbols during separate compilation
 extern std::string lcompilers_commandline_options;
 
 namespace {
@@ -114,18 +115,10 @@ std::string get_system_temp_dir()
 std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
 
 
-std::string get_unique_ID() {
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
-    std::uniform_int_distribution<int> dist(0, 61);
-    const std::string v =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    std::string res;
-    for (int i = 0; i < 22; i++) {
-        res += v[dist(rng)];
-    }
-    return res;
-}
+
+// The unique compilation ID for this invocation of the compiler.
+// Used in naming unique intermediate object files during both compilation modes.
+const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
@@ -1142,7 +1135,7 @@ int compile_src_to_object_file(const std::string &infile,
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    lcompilers_unique_ID = compiler_options.separate_compilation ? get_unique_ID() : "";
+    lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -1231,7 +1224,7 @@ int compile_src_to_object_file(const std::string &infile,
                 if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
-                        .filename().replace_extension(".mlir.tmp.o")).string();
+                        .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1961,9 +1954,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += s + " ";
                 if (backend == Backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
-                        LCompilers::endswith(s, ".tmp.o")) {
-                    std::string mlir_tmp_o = s.substr(0, s.size() - 6) +
-                        ".mlir.tmp.o";
+                        std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
+                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
+                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
+                        ".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o").string();
                     compile_cmd += mlir_tmp_o + " ";
                     mlir_temp_object_files.push_back(mlir_tmp_o);
                 }
@@ -2356,7 +2350,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    lcompilers_unique_ID = ( parser.opts.compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures ) ? get_unique_ID() : "";
+    lcompilers_unique_ID_separate_compilation = ( parser.opts.compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures ) ? LCOMPILERS_UNIQUE_ID : "";
     if (parser.opts.compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
@@ -2656,7 +2650,7 @@ int main_app(int argc, char *argv[]) {
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
-                                .filename().replace_extension(".tmp.o")).string();
+                                .filename().replace_extension(".tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
         temp_object_files.push_back(tmp_o);
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {

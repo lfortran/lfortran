@@ -1,0 +1,14 @@
+SUBROUTINE st_fn_bug2()
+COMPLEX ZDUM,ZDUM1,ZDUM2,CSIGN1
+REAL CABS1
+CABS1(ZDUM) = ABS(REAL(ZDUM)) + ABS(AIMAG(ZDUM))
+CSIGN1(ZDUM1,ZDUM2) = CABS1(ZDUM1)*(ZDUM2/CABS1(ZDUM2))
+ZDUM1 = (1.0, 2.0)
+ZDUM2 = (2.0, 3.0)
+print *, CABS1(CSIGN1(ZDUM1,ZDUM2))
+if ( abs(CABS1(CSIGN1(ZDUM1,ZDUM2)) - 3.0) > 1e-8 ) error stop
+END
+
+program statement_02
+call st_fn_bug2()
+end program

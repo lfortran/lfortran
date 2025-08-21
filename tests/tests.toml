@@ -189,6 +189,18 @@ filename = "../integration_tests/openmp_46.f90"
 asr_openmp = true
 
 [[test]]
+filename = "../integration_tests/openmp_70.f90"
+c_target_omp = true
+
+[[test]]
+filename = "../integration_tests/openmp_71.f90"
+c_target_cuda = true
+
+[[test]]
+filename = "../integration_tests/openmp_72.f90"
+c_target_cuda = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -3240,6 +3252,8 @@ asr = true
 [[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
+asr_disable_implicit_typing = true
+enable_and_disable_implicit_typing = true
 
 [[test]]
 filename = "implicit_typing2.f90"
@@ -3550,7 +3564,7 @@ asr_implicit_typing = true
 filename = "implicit10.f90"
 asr = true
 asr_implicit_typing = true
-ast_disable_style = true
+ast_disable_style_suggestion = true
 
 [[test]]
 filename = "implicit11.f90"
@@ -3669,8 +3683,13 @@ asr = true
 
 [[test]]
 filename = "save4.f90"
-asr_no_warnings = true
-asr_disable_style_and_warnings = true
+asr_disable_warnings = true
+asr_disable_style_suggestion_and_warnings = true
+
+[[test]]
+filename = "style1.f90"
+asr_disable_warnings = true
+asr_enable_style_suggestion = true
 
 [[test]]
 filename = "../integration_tests/c_ptr_02.f90"
@@ -3845,6 +3864,26 @@ filename = "errors/intrinsics2.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_bounds_check_01.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_02.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_03.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_04.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_05.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -3996,6 +4035,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
+enable_disable_implicit_argument_casting = true
 
 [[test]]
 filename = "../integration_tests/valid_array_assignment_same_length_different_start.f90"
@@ -4727,3 +4767,11 @@ llvm = true
 [[test]]
 filename = "../integration_tests/functions_41.f90"
 ast = true
+
+[[test]]
+filename = "classes1.f90"
+llvm_new_classes = true
+
+[[test]]
+filename = "classes2.f90"
+llvm_new_classes = true

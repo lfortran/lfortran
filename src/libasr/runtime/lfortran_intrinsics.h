@@ -18,6 +18,8 @@ struct _lfortran_complex_64 {
     double re, im;
 };
 
+typedef int8_t fchar;
+
 #ifdef _MSC_VER
 typedef _Fcomplex float_complex_t;
 typedef _Dcomplex double_complex_t;
@@ -72,7 +74,7 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed);
 LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
-LFORTRAN_API void _lfortran_printf(const char* format, ...);
+LFORTRAN_API void _lfortran_printf(const char* format, const char* str, uint32_t str_len, const char* end, uint32_t end_len);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
@@ -237,7 +239,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     int32_t *iostat,
     char* action, int64_t action_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
-LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,

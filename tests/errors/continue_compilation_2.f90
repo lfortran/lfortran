@@ -205,8 +205,8 @@ program continue_compilation_2
     real(8) :: ifix_runtime = 4.23
     logical :: min_max = .true.
     integer :: intent_bug_sub_x = 10
-
-
+    character(len=2) :: lhs
+    character :: rhs(2)
 
 
 
@@ -459,7 +459,9 @@ program continue_compilation_2
     !nested intent
     call sub_a(intent_bug_sub_x)
     print *, outer_func(intent_bug_sub_x)
-
+    !size_intrinsic_check
+    print *, size(ichar_runtime)
+    lhs = rhs
     contains
     logical function f(x)
         integer, intent(in), optional :: x

@@ -116,7 +116,7 @@ public :
             new_call_args.push_back(al, {result_var->base.loc, result_var});
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
-                                                nullptr, false));
+                                                nullptr, false, current_scope));
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
@@ -223,7 +223,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false));
+                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope));
             pass_result.push_back(al, subrout_call);
             remove_original_statement = true;
         }

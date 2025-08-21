@@ -57,6 +57,8 @@ private:
     bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
+    bool _inside_call = false;
+    bool _inside_array_physical_cast_type = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -380,7 +382,7 @@ public:
                 std::string variable_name = ASRUtils::symbol_name(target_Var->m_v);
                 require(const_assigned.find(std::make_pair(current_symtab->counter,
                     variable_name)) == const_assigned.end(),
-                    "Assignment target with " + ASRUtils::type_to_str_python(target_type)
+                    "Assignment target with " + ASRUtils::type_to_str_python_expr(target_type, target)
                     + " cannot be re-assigned.");
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
@@ -561,9 +563,6 @@ public:
             if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
                 struct_dependencies.push_back(std::string(aggregate_type_name));
@@ -612,7 +611,7 @@ public:
                 "All members of EnumType must have their values to be set. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in "
                 + std::string(x.m_name) + " EnumType.");
-            require(ASRUtils::check_equal_type(itr_var->m_type, common_type),
+            require(ASRUtils::check_equal_type(itr_var->m_type, common_type, nullptr, nullptr),
                 "All members of EnumType must the same type. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in " +
                 std::string(x.m_name) + " EnumType.");
@@ -695,7 +694,7 @@ public:
                 array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
             }
 
-            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+            if (array_construct && array_construct->n_args > 0) {
                 for (size_t j = 0; j < array_construct->n_args; j++) {
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
@@ -982,11 +981,14 @@ public:
             }
         }
 
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
                 visit_expr(*(x.m_args[i].m_value));
             }
         }
+        _inside_call = _inside_call_copy;
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
@@ -1001,6 +1003,10 @@ public:
             require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
                 "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+            bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+            _inside_array_physical_cast_type = true;
+            visit_ttype(*x.m_type);
+            _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
 
@@ -1106,7 +1112,10 @@ public:
             ::get_verify_function(x.m_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
+        _inside_call = _inside_call_copy;
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
@@ -1118,7 +1127,10 @@ public:
             ::get_verify_function(x.m_arr_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
+        _inside_call = _inside_call_copy;
     }
 
     void visit_FunctionCall(const FunctionCall_t &x) {
@@ -1209,6 +1221,11 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
+        if (_inside_array_physical_cast_type && !_inside_call) {
+            require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
+                    "Dimensions in ArrayPhysicalCast must be present if not inside a call",
+                    x.loc);
+        }
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
@@ -1278,7 +1295,7 @@ public:
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
                 "String length must be of type INTEGER,"
                 "found " + 
-                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len)));
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
         if(x.m_len && ASRUtils::is_value_constant(x.m_len)){

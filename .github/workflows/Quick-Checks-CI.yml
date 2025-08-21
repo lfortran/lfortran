@@ -23,7 +23,7 @@ concurrency:
 
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: 14.0
+  MACOSX_DEPLOYMENT_TARGET: 15.0
 
 jobs:
   Build:
@@ -44,7 +44,7 @@ jobs:
           - os: windows-2025
             llvm-version: "11"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -300,6 +300,13 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
+      
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Target Offload
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b target_offload
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
         shell: bash -e -l {0}
@@ -369,7 +376,7 @@ jobs:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

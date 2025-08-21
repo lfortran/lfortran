@@ -160,6 +160,7 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    int64_t global_deep_count;
 
     CompilerOptions &compiler_options;
 
@@ -218,6 +219,7 @@ public:
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
     global_array_count(0),
+    global_deep_count(0),
     compiler_options(compiler_options_),
     current_select_type_block_type(nullptr),
     current_select_type_block_type_asr(nullptr),
@@ -353,7 +355,7 @@ public:
                 break;
             }
             default : throw LCompilersException("Debug information for the type: `"
-                + ASRUtils::type_to_str_python(t) + "` is not yet implemented");
+                + std::to_string(t->type) + "` is not yet implemented");
         }
     }
 
@@ -450,7 +452,7 @@ public:
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
             LCOMPILERS_ASSERT(m_dim.m_length != nullptr);
-            visit_expr(*(m_dim.m_length));
+            load_array_size_deep_copy(m_dim.m_length);
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
@@ -810,7 +812,7 @@ public:
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, complex_type);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
         builder->CreateCall(fn, args);
-        return llvm_utils->CreateLoad(presult);
+        return llvm_utils->CreateLoad2(complex_type, presult);
     }
 
 
@@ -871,7 +873,7 @@ public:
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, character_type);
         std::vector<llvm::Value*> args = {pleft_arg, right_arg, presult};
         builder->CreateCall(fn, args);
-        return llvm_utils->CreateLoad(presult);
+        return llvm_utils->CreateLoad2(character_type, presult);
     }
 
     llvm::Value* lfortran_str_len(llvm::Value* str, bool use_descriptor=false)
@@ -1413,7 +1415,7 @@ public:
                     realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr))) 
                     && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
-                    llvm::Value* x_arr_ = llvm_utils->CreateLoad(x_arr);
+                    llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[x_arr_] = type;
 #endif
@@ -1518,6 +1520,14 @@ public:
                     llvm::ConstantPointerNull::get(llvm_utils->get_el_type(x.m_vars[i],
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_vars[i])), module.get())->getPointerTo())
                     , data_ptr);
+            } else if(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_vars[i]))) {
+                llvm::Value* np = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
+                llvm::Value* data_target = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
+                    ASRUtils::expr_type(x.m_vars[i]), module.get()), target, 0);
+                llvm::Value* len = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
+                    ASRUtils::expr_type(x.m_vars[i]), module.get()), target, 1);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), len);
+                builder->CreateStore(np, data_target);
             } else {
                 llvm::Value* np = builder->CreateIntToPtr(
                     llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
@@ -1530,7 +1540,7 @@ public:
         llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
         llvm::AllocaInst *arg_arr = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
-        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_arr)};
+        std::vector<llvm::Value*> args = { llvm_utils->CreateLoad2(character_type, arg_arr) };
         builder->CreateCall(fn, args);
         arr_descr->reset_is_allocated_flag(tmp, llvm_data_type);
     }
@@ -1649,7 +1659,7 @@ public:
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr)),
+                                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
             ASR::ttype_t *cur_type = ASRUtils::expr_type(tmp_expr);
@@ -1665,7 +1675,8 @@ public:
                     llvm::Value* tmp_ = tmp;
                     if (LLVM::is_llvm_pointer(*cur_type)
                         && !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
                     if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                         // If it is a class type, we need to get the pointer to the struct
@@ -1703,14 +1714,15 @@ public:
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
                         builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
-                        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_tmp)};
+                        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad2(character_type, arg_tmp)};
                         builder->CreateCall(free_fn, args);
                         builder->CreateStore(
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
                     }, [](){});
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
 #if LLVM_VERSION_MAJOR > 16
                 ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
@@ -1746,6 +1758,7 @@ public:
         bool is_list_local = false;
         ASR::dimension_t* m_dims_local = nullptr;
         int n_dims_local = -1, a_kind_local = -1;
+
         llvm::Type* llvm_el_type = llvm_utils->get_type_from_ttype_t(const_cast<ASR::expr_t*>(&x.base), list_type->m_type,
                                     nullptr, ASR::storage_typeType::Default, is_array_type_local,
                                     is_malloc_array_type_local, is_list_local, m_dims_local,
@@ -1754,6 +1767,7 @@ public:
         int32_t type_size = -1;
         if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
+            ASRUtils::is_allocatable_descriptor_string(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
@@ -1763,20 +1777,15 @@ public:
         llvm::Type* const_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* const_list = llvm_utils->CreateAlloca(*builder, const_list_type, nullptr, "const_list");
         list_api->list_init(type_code, const_list, module.get(), x.n_args, x.n_args);
-        int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_args; i++ ) {
-            if (is_argument_of_type_CPtr(x.m_args[i])) {
-                ptr_loads = 0;
-             } else {
-                ptr_loads = 1;
-             }
-            this->visit_expr(*x.m_args[i]);
+            visit_expr_load_wrapper(
+                x.m_args[i], 
+                is_argument_of_type_CPtr(x.m_args[i]) || ASRUtils::is_character(*expr_type(x.m_args[i])) ? 0 : 1);
             llvm::Value* item = tmp;
             llvm::Value* pos = llvm::ConstantInt::get(context, llvm::APInt(32, i));
             list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item, list_type->m_type,
                                  false, module.get(), name2memidx);
         }
-        ptr_loads = ptr_loads_copy;
         tmp = const_list;
     }
 
@@ -1785,18 +1794,16 @@ public:
         llvm::Value* const_dict = llvm_utils->CreateAlloca(*builder, const_dict_type, nullptr, "const_dict");
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
         llvm_utils->set_dict_api(x_dict);
-        std::string key_type_code = ASRUtils::get_type_code(x_dict->m_key_type);
-        std::string value_type_code = ASRUtils::get_type_code(x_dict->m_value_type);
-        llvm_utils->dict_api->dict_init(key_type_code, value_type_code, const_dict, module.get(), x.n_keys);
+        llvm_utils->dict_api->dict_init(x_dict, const_dict, module.get(), x.n_keys);
         int64_t ptr_loads_key = !LLVM::is_llvm_struct(x_dict->m_key_type);
         int64_t ptr_loads_value = !LLVM::is_llvm_struct(x_dict->m_value_type);
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_keys; i++ ) {
             ptr_loads = ptr_loads_key;
-            visit_expr_wrapper(x.m_keys[i], true);
+            visit_expr_wrapper(x.m_keys[i], ASRUtils::is_character(*expr_type(x.m_keys[i])) ? 0 : 1);
             llvm::Value* key = tmp;
             ptr_loads = ptr_loads_value;
-            visit_expr_wrapper(x.m_values[i], true);
+            visit_expr_wrapper(x.m_values[i], ASRUtils::is_character(*expr_type(x.m_values[i])) ? 0 : 1);
             llvm::Value* value = tmp;
             llvm_utils->dict_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_dict, key, value, module.get(),
                                  x_dict->m_key_type, x_dict->m_value_type, name2memidx);
@@ -1967,7 +1974,6 @@ public:
         this->visit_expr_wrapper(x.m_ele, true);
         llvm::Value *item = tmp;
         ptr_loads = ptr_loads_copy;
-
         list_api->append(x.m_a, plist, item, asr_list->m_type, module.get(), name2memidx);
     }
 
@@ -1990,7 +1996,8 @@ public:
             return ;
         }
         if( ptr_loads > 0 ) {
-            tmp = llvm_utils->CreateLoad(tmp);
+            llvm::Type* value_type = llvm_utils->getMemberType(member_type_asr, member_var, module.get());
+            tmp = llvm_utils->CreateLoad2(value_type, tmp);
         }
     }
 
@@ -2003,7 +2010,7 @@ public:
         visit_expr_load_wrapper(x.m_pos, 1, true);
         llvm::Value *pos = tmp;
 
-        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -2028,12 +2035,14 @@ public:
             builder->CreateStore(tmp, def_value_ptr);
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->get_item(x.m_a, pdict, key, module.get(), dict_type, def_value_ptr,
-                                  LLVM::is_llvm_struct(dict_type->m_value_type));
+                                  LLVM::is_llvm_struct(dict_type->m_value_type) || 
+                                  ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type));
         } else {
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->read_item(x.m_a, pdict, key, module.get(), dict_type,
-                                    compiler_options.enable_bounds_checking,
-                                    LLVM::is_llvm_struct(dict_type->m_value_type));
+                                    compiler_options.bounds_checking,
+                                    LLVM::is_llvm_struct(dict_type->m_value_type) || 
+                                    ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type));
         }
     }
 
@@ -2166,8 +2175,9 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
-        this->visit_expr_wrapper(x.m_key, true);
+        ptr_loads = !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type));
+        visit_expr_load_wrapper(x.m_key, 
+            !(LLVM::is_llvm_struct(dict_type->m_key_type) || ASRUtils::is_character(*dict_type->m_key_type)));
         llvm::Value *key = tmp;
         visit_expr_load_wrapper(x.m_value,
             !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type)) ? 1 : 0,
@@ -2730,9 +2740,15 @@ public:
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         llvm::Value* array = nullptr;
         ASR::Variable_t *v = nullptr;
+        bool is_intent_in = false;
+        std::string array_name;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
+            array_name = v->m_name;
             uint32_t v_h = get_hash((ASR::asr_t*)v);
+            if (v->m_intent == ASRUtils::intent_in) {
+                is_intent_in = true;
+            }
             array = llvm_symtab[v_h];
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 ASR::Struct_t* der_symbol = ASR::down_cast<ASR::Struct_t>(
@@ -2758,7 +2774,9 @@ public:
             this->visit_expr_wrapper(x.m_args[0].m_right, true);
             llvm::Value *p = nullptr;
             llvm::Value *idx = tmp;
-            llvm::Value *str = llvm_utils->CreateLoad(array);
+            ASR::ttype_t* array_asr_type = ASRUtils::extract_type(expr_type(x.m_v));
+            llvm::Type* str_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, array_asr_type, module.get());
+            llvm::Value *str = llvm_utils->CreateLoad2(str_value_type, array);
             if( is_assignment_target ) {
                 idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 std::vector<llvm::Value*> idx_vec = {idx};
@@ -2804,6 +2822,14 @@ public:
                 ptr_type[array] = array_type;
 #endif
             }
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+            if (compiler_options.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
+                llvm::Value* cond = builder->CreateNot(is_allocated);
+                llvm_utils->generate_runtime_error(cond,
+                    "Runtime Error: Array '%s' is not allocated.\n",
+                        builder->CreateGlobalStringPtr(array_name));
+            }
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
@@ -2817,7 +2843,11 @@ public:
                     this->visit_expr_wrapper(m_dims[idim].m_start, true);
                     llvm::Value* dim_start = tmp;
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    if (is_intent_in) {
+                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    } else {
+                        load_array_size_deep_copy(m_dims[idim].m_length);
+                    }
                     llvm::Value* dim_size = tmp;
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
@@ -2859,7 +2889,9 @@ public:
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v),
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic,
+                                                    current_select_type_block_type, false,
+                                                    compiler_options.bounds_checking, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -3160,8 +3192,10 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
-                tmp = llvm_utils->CreateLoad2(
-                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+                if ( !compiler_options.new_classes ) {
+                    tmp = llvm_utils->CreateLoad2(
+                        name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+                }
             }
             if( current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                 (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name) ) {
@@ -3171,9 +3205,26 @@ public:
                 // TODO: Select type by comparing with vtab
             }
         }
+        if (ASR::is_a<ASR::Struct_t>(*symbol_get_past_external(x.m_m))) {
+            ASR::Struct_t* member_struct = down_cast<ASR::Struct_t>(symbol_get_past_external(x.m_m));
+            std::string member_name = member_struct->m_name;
+            while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
+                        (current_der_type_name != member_name)) {
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                current_der_type_name = dertype2parent[current_der_type_name];
+            }
+            return;
+        }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
+
+        llvm::Type *xtype = name2dertype[current_der_type_name];
+        if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
+            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+        }
+        
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
             if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
@@ -3184,12 +3235,7 @@ public:
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
 
-        llvm::Type *xtype = name2dertype[current_der_type_name];
-        if ((ASRUtils::is_allocatable(x_m_v_type) || ASRUtils::is_pointer(x_m_v_type)) &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
-            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
-        }
+        xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
@@ -3197,6 +3243,7 @@ public:
         ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, x.m_m),
             member_type, module.get());
 #endif
+        member_type = ASRUtils::type_get_past_array(member_type);
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = member->m_type_declaration;
             current_der_type_name = ASRUtils::symbol_name(
@@ -3513,29 +3560,34 @@ public:
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
+            bool is_class = !struct_t->m_is_cstruct;
             if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
-                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_type_declaration));
                 std::vector<llvm::Constant*> field_values;
-                for (auto& member : struct_sym->m_symtab->get_scope()) {
-                    ASR::symbol_t* sym = member.second;
-                    if (!ASR::is_a<ASR::Variable_t>(*sym))
-                        continue;
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (var->m_value != nullptr) {
-                        llvm::Constant* c = llvm_utils->create_llvm_constant_from_asr_expr(var->m_value, module.get());
-                        field_values.push_back(c);
-                    } else {
-                        llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
-                            ASR::make_Var_t(al, var->base.base.loc, const_cast<ASR::symbol_t*>(&var->base))), 
-                            var->m_type, module.get());
-                        field_values.push_back(llvm::Constant::getNullValue(member_type));
-                    }
-                }
+                llvm_utils->get_type_default_field_values(x.m_type_declaration, module.get(), field_values);
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
+                if (is_class) {
+                    // llvm_struct_type = %toml_lexer_polymorphic {i64, %toml_lexer*}
+                    ASR::ttype_t* inner_struct_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                            ASRUtils::symbol_get_past_external(x.m_type_declaration), true);
+                    // innerType = %toml_lexer*
+                    llvm::StructType* innerType = llvm::cast<llvm::StructType>(
+                        llvm_utils->get_type_from_ttype_t_util(inner_struct_type, x.m_type_declaration, module.get()));
+                    init_value = llvm::ConstantStruct::get(innerType, field_values);
+                    std::string inner_type_name = "_inner" + llvm_var_name; 
+                    llvm::Constant *inner_ptr = module->getOrInsertGlobal(inner_type_name, innerType);
+                    module->getNamedGlobal(inner_type_name)->setInitializer(init_value);
+                    int class_hash = get_class_hash(ASRUtils::symbol_get_past_external(x.m_type_declaration));
+                    field_values.clear();
+                    llvm::Constant* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), 
+                                            llvm::APInt(64, class_hash)); 
+                    // push type_hash and type pointer to %toml_lexer_polymorphic
+                    field_values.push_back(struct_hash);
+                    field_values.push_back(inner_ptr);
+                }
                 init_value = llvm::ConstantStruct::get(llvm_struct_type, field_values);
             }
-            if (struct_t->m_is_cstruct) {
+            if (!is_class) {
                 if( x.m_type_declaration && ASRUtils::is_c_ptr(x.m_type_declaration) ) {
                     llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
                     llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
@@ -3742,7 +3794,7 @@ public:
             ptr_type[ptr] = type;
 #endif
         } else {
-            throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type), x.base.base.loc);
+            throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
     }
 
@@ -4140,10 +4192,17 @@ public:
                                         llvm::APInt(64, get_class_hash(struct_sym))); 
                 llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t( 
                     al, v->base.base.loc, &v->base)), v->m_type, module.get());
-                llvm::Value* hash_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 0); 
-                builder->CreateStore(struct_hash, hash_ptr); 
-                llvm::Value* struct_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 1); 
-                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); 
+                if ( compiler_options.new_classes ) {
+                    // ptr = llvm_utils->CreateLoad2(v_llvm_type->getPointerTo(), ptr);
+                    ptr = builder->CreateBitCast(ptr, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(struct_sym)), module.get(), true)->getPointerTo());
+                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), ptr);
+                } else {
+                    llvm::Value* hash_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 0);
+                    builder->CreateStore(struct_hash, hash_ptr);
+                    llvm::Value* struct_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 1);
+                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr);
+                }
             } else { 
                 builder->CreateStore(null_value, ptr); 
             }
@@ -4330,11 +4389,12 @@ public:
             }
         }
         llvm::Value* llvmi = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
+        llvm::Type* t = llvm::Type::getInt32Ty(context);
         LLVM::CreateStore(*builder,
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)), llvmi);
         create_loop(nullptr, [=]() {
-                llvm::Value* llvmi_loaded = llvm_utils->CreateLoad(llvmi);
-                llvm::Value* array_size_loaded = llvm_utils->CreateLoad(array_size);
+                llvm::Value* llvmi_loaded = llvm_utils->CreateLoad2(t, llvmi);
+                llvm::Value* array_size_loaded = llvm_utils->CreateLoad2(t, array_size);
                 return builder->CreateICmpSLT(
                     llvmi_loaded, array_size_loaded);
             },
@@ -4343,20 +4403,20 @@ public:
                 switch (phy_type) {
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         llvm::Type* ptr_i_type = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
-                        ptr_i = llvm_utils->create_gep2(ptr_i_type, ptr, llvm_utils->CreateLoad(llvmi));
+                        ptr_i = llvm_utils->create_gep2(ptr_i_type, ptr, llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
                         ptr_i = llvm_utils->create_ptr_gep2(el_type,
                             llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr)),
-                            llvm_utils->CreateLoad(llvmi));
+                            llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
                     case ASR::array_physical_typeType::PointerToDataArray: {
 #if LLVM_VERSION_MAJOR > 16
                         ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
 #endif
-                        ptr_i = llvm_utils->create_ptr_gep(ptr, llvm_utils->CreateLoad(llvmi));
+                        ptr_i = llvm_utils->create_ptr_gep(ptr, llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
                     default: {
@@ -4367,7 +4427,7 @@ public:
                     ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
                         ptr_i, ASRUtils::extract_type(v_m_type));
                 LLVM::CreateStore(*builder,
-                    builder->CreateAdd(llvm_utils->CreateLoad(llvmi),
+                    builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
                     llvmi);
             });
@@ -4496,7 +4556,7 @@ public:
             }
         } else if(ASRUtils::is_array(v->m_type) &&
                 (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) ||
-                ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value))){
+                (v->m_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value)))){
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
@@ -4509,7 +4569,7 @@ public:
                         module.get()),
                     false);
                 llvm::Value* data_ptr = llvm_utils->create_gep2(
-                    array_desc_type, llvm_utils->CreateLoad(target_var), 0);
+                    array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
                 builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
@@ -4604,8 +4664,14 @@ public:
                         if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length),module.get());
-                            llvm::Value* deep = llvm_utils->CreateAlloca(*builder, deep_type, nullptr, "deep");
+                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
+                            llvm::Value* deep = new llvm::GlobalVariable(
+                                    *module,
+                                    deep_type,
+                                    false,
+                                    llvm::GlobalValue::InternalLinkage,
+                                    llvm::Constant::getNullValue(deep_type),
+                                    "deep_" + std::to_string(global_deep_count++));
                             builder->CreateStore(tmp, deep, v->m_is_volatile);
                             llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
                             tmp = llvm_utils->CreateLoad2(m_dims_length_llvm_type,deep, v->m_is_volatile);
@@ -4799,9 +4865,9 @@ public:
                     llvm_utils->get_type_from_ttype_t_util(nullptr, v->m_type, module.get());
 
                     if (ASRUtils::is_character(*asr_dict->m_key_type))
-                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_sc->dict_init(asr_dict, ptr, module.get(), 0);
                     else
-                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                        dict_api_lp->dict_init(asr_dict, ptr, module.get(), 0);
                 }
             }
         }
@@ -4823,17 +4889,19 @@ public:
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                         ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
-                    if (ASRUtils::is_allocatable(var->m_type) && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(var->m_type))) {
+                    if (ASRUtils::is_allocatable_or_pointer(var->m_type) &&
+                          ASRUtils::is_class_type(ASRUtils::extract_type(var->m_type))) {
                         create_vtab = true;
                         break;
                     }
                     bool is_vtab_needed = false;
-                    while( !is_vtab_needed && struct_type ) {
-                        if( struct_type == class_sym ) {
+                    ASR::symbol_t* temp_struct_type = struct_type;
+                    while( !is_vtab_needed && temp_struct_type ) {
+                        if( temp_struct_type == class_sym ) {
                             is_vtab_needed = true;
                         } else {
-                            struct_type = ASR::down_cast<ASR::Struct_t>(
-                                ASRUtils::symbol_get_past_external(struct_type))->m_parent;
+                            temp_struct_type = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(temp_struct_type))->m_parent;
                         }
                     }
                     if( is_vtab_needed ) {
@@ -5235,6 +5303,9 @@ public:
                 llvm::Value *tmp = ret_val;
                 if (is_a<ASR::Complex_t>(*arg_type)) {
                     int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    llvm::Type* complex_val_type = llvm_utils->get_type_from_ttype_t_util(x.m_return_var,
+                        arg_type,
+                        module.get());
                     if (c_kind == 4) {
                         if (compiler_options.platform == Platform::Windows) {
                             // tmp is {float, float}*
@@ -5243,10 +5314,11 @@ public:
                             // Convert {float,float}* to i64* using bitcast
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert i64* -> i64
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(type_fx2p, tmp);
                         } else if (compiler_options.platform == Platform::macOS_ARM) {
                             // Pass by value
-                            tmp = llvm_utils->CreateLoad(tmp);
+
+                            tmp = llvm_utils->CreateLoad2(complex_val_type, tmp);
                         } else {
                             // tmp is {float, float}*
                             // type_fx2 is <2 x float>
@@ -5262,7 +5334,7 @@ public:
                             // 128 bit aggregate type is passed by reference
                         } else {
                             // Pass by value
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(complex_val_type, tmp);
                         }
                     }
                 ret_val2 = tmp;
@@ -5306,17 +5378,19 @@ public:
                 ASR::Variable_t *arg = EXPR2VAR(x.m_args[0]);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 llvm::Value* llvm_arg1 = llvm_symtab[h];
+                llvm::Type* llvm_arg1_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[0], arg->m_type, module.get());
 
                 arg = EXPR2VAR(x.m_args[1]);
                 h = get_hash((ASR::asr_t*)arg);
                 llvm::Value* llvm_arg2 = llvm_symtab[h];
+                llvm::Type* llvm_arg2_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[1], arg->m_type, module.get());
 
                 ASR::Variable_t *ret = EXPR2VAR(x.m_return_var);
                 h = get_hash((ASR::asr_t*)ret);
                 llvm::Value* llvm_ret_ptr = llvm_symtab[h];
 
-                llvm::Value* dim_des_val = llvm_utils->CreateLoad(llvm_arg1);
-                llvm::Value* dim_val = llvm_utils->CreateLoad(llvm_arg2);
+                llvm::Value* dim_des_val = llvm_utils->CreateLoad2(llvm_arg1_type, llvm_arg1);
+                llvm::Value* dim_val = llvm_utils->CreateLoad2(llvm_arg2_type, llvm_arg2);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
@@ -5380,7 +5454,9 @@ public:
             (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type))
              || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(asr_type))
              || llvm::isa<llvm::AllocaInst>(llvm_tmp))) {
-            llvm_tmp = llvm_utils->CreateLoad(llvm_tmp);
+            ASR::ttype_t* contained_type = ASRUtils::type_get_past_pointer(asr_type);
+            llvm::Type* llvm_ty = llvm_utils->get_type_from_ttype_t_util(nullptr, contained_type, module.get());
+            llvm_tmp = llvm_utils->CreateLoad2(llvm_ty->getPointerTo(), llvm_tmp);
         }
         asr_type = ASRUtils::get_contained_type(asr_type);
 
@@ -5462,7 +5538,8 @@ public:
             if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
                 // `type(c_ptr)` requires an extra load here
                 // TODO: be more explicit about ptr_loads: https://github.com/lfortran/lfortran/issues/4245
-                llvm_cptr = llvm_utils->CreateLoad(llvm_cptr);
+                llvm::Type* llvm_cptr_type = llvm_utils->get_type_from_ttype_t_util(cptr, ASRUtils::expr_type(cptr), module.get());
+                llvm_cptr = llvm_utils->CreateLoad2(llvm_cptr_type, llvm_cptr);
             }
             ptr_loads = 0;
             this->visit_expr(*fptr);
@@ -5498,17 +5575,13 @@ public:
             llvm::Value* shape_data = llvm_shape;
             if( llvm_shape && (ASRUtils::extract_physical_type(asr_shape_type) ==
                 ASR::array_physical_typeType::DescriptorArray) ) {
-                shape_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+                ASR::ttype_t* shape_elem_asr_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(shape));
+                llvm::Type* shape_elem_llvm_type = llvm_utils->get_type_from_ttype_t_util( nullptr, shape_elem_asr_type, module.get());
+                shape_data = llvm_utils->CreateLoad2(shape_elem_llvm_type, arr_descr->get_pointer_to_data(llvm_shape));
             }
             llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_data_type->getPointerTo());
             builder->CreateStore(llvm_cptr, fptr_data);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-            ASR::ArrayConstant_t* lower_bounds = nullptr;
-            if( x.m_lower_bounds ) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_lower_bounds));
-                lower_bounds = ASR::down_cast<ASR::ArrayConstant_t>(x.m_lower_bounds);
-                LCOMPILERS_ASSERT(fptr_rank == ASRUtils::get_fixed_size_of_array(lower_bounds->m_type));
-            }
             for( int i = 0; i < fptr_rank; i++ ) {
                 llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                 llvm::Value* desi = arr_descr->get_pointer_to_dimension_descriptor(fptr_des, curr_dim);
@@ -5518,25 +5591,25 @@ public:
                 builder->CreateStore(prod, desi_stride);
                 llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value* new_lb = i32_one;
-                if( lower_bounds ) {
+                if( x.m_lower_bounds ) {
                     int ptr_loads_copy = ptr_loads;
                     ptr_loads = 2;
-                    this->visit_expr_wrapper(ASRUtils::fetch_ArrayConstant_value(al, lower_bounds, i), true);
+                    this->visit_expr_wrapper(x.m_lower_bounds, true);
                     ptr_loads = ptr_loads_copy;
-                    new_lb = tmp;
+                    tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context), tmp,  i);
+                    new_lb = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), tmp);
                 }
-                llvm::Value* new_ub = nullptr;
+                llvm::Value* new_size = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerToDataArray ) {
-                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                    new_size = shape_data ? llvm_utils->CreateLoad2(
                         llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
                     llvm::Type* shape_llvm_type = llvm_utils->get_type_from_ttype_t_util(shape, asr_shape_type, module.get());
-                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                    new_size = shape_data ? llvm_utils->CreateLoad2(
                         llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_llvm_type, shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
-                llvm::Value* new_size = builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one);
                 builder->CreateStore(new_size, desi_size);
                 prod = builder->CreateMul(prod, new_size);
             }
@@ -5684,7 +5757,7 @@ public:
                 builder->CreateStore(builder->CreateICmpNE(ptr, nptr), res);
             }
         });
-        tmp = llvm_utils->CreateLoad(res);
+        tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
     }
 
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
@@ -5696,10 +5769,12 @@ public:
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
+        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
+            ASRUtils::expr_type(array_section->m_v), module.get());
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
-            value_desc = llvm_utils->CreateLoad(value_desc);
+            value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
 #if LLVM_VERSION_MAJOR > 16
         ptr_type[value_desc] = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
@@ -5820,8 +5895,10 @@ public:
                 if(ASRUtils::is_array(target_type) ){ // Fetch data ptr
                     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(target_type) ==
                         ASR::array_physical_typeType::DescriptorArray);
-                    llvm_target = llvm_utils->CreateLoad(llvm_target);
-                    llvm_target = arr_descr->get_pointer_to_data(llvm_target);
+                    llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, target_type, module.get());
+                    llvm_target = llvm_utils->CreateLoad2(target_type_llvm, llvm_target);
+                    llvm_target = arr_descr->get_pointer_to_data(x.m_target, target_type, llvm_target, module.get());
                 }
                 builder->CreateStore(llvm_value, llvm_target);
             } else if(ASRUtils::is_string_only(value_type)){ // Maybe we can handle this case in a string api function
@@ -5846,34 +5923,50 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
-                llvm_value = llvm_utils->CreateLoad(llvm_value);
+                llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class && !is_value_class) {
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                llvm::Value* vtab_address_ptr = llvm_utils->create_gep2(llvm_target_type, llvm_target, 0);
-                llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
-                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
-                if (type2vtab.find(struct_sym) == type2vtab.end() ||
-                    type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
-                    create_vtab_for_struct_type(struct_sym, current_scope);
-                }
-                llvm::Value* vtab_obj = type2vtab[struct_sym][current_scope];
-                llvm::Type* vtab_struct_type = llvm_utils->getStructType(
-                    ASR::down_cast<ASR::Struct_t>(struct_sym), module.get(), false);
-                llvm::Value* vtab_obj_casted = builder->CreateBitCast(vtab_obj, vtab_struct_type->getPointerTo());
-                llvm::Value* gep = llvm_utils->create_gep2(vtab_struct_type, vtab_obj_casted, 0);
-                llvm::Value* struct_type_hash = llvm_utils->CreateLoad2(i64, gep);
-                builder->CreateStore(struct_type_hash, vtab_address_ptr);
+                if ( compiler_options.new_classes ) {
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
+                    if (type2vtab.find(struct_sym) == type2vtab.end() ||
+                        type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
+                        create_vtab_for_struct_type(struct_sym, current_scope);
+                    }
+                    ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
+                    llvm_value = builder->CreateBitCast(
+                        llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
+                    llvm_target = builder->CreateBitCast(
+                        llvm_target, llvm_utils->getStructType(struct_type_t, module.get(), true)->getPointerTo()
+                    );
+                    builder->CreateStore(llvm_value, llvm_target);
+                } else {
+                    llvm::Value* vtab_address_ptr = llvm_utils->create_gep2(llvm_target_type, llvm_target, 0);
+                    llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
+                    if (type2vtab.find(struct_sym) == type2vtab.end() ||
+                        type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
+                        create_vtab_for_struct_type(struct_sym, current_scope);
+                    }
+                    llvm::Value* vtab_obj = type2vtab[struct_sym][current_scope];
+                    llvm::Type* vtab_struct_type = llvm_utils->getStructType(
+                        ASR::down_cast<ASR::Struct_t>(struct_sym), module.get(), false);
+                    llvm::Value* vtab_obj_casted = builder->CreateBitCast(vtab_obj, vtab_struct_type->getPointerTo());
+                    llvm::Value* gep = llvm_utils->create_gep2(vtab_struct_type, vtab_obj_casted, 0);
+                    llvm::Value* struct_type_hash = llvm_utils->CreateLoad2(i64, gep);
+                    builder->CreateStore(struct_type_hash, vtab_address_ptr);
 
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
-                llvm_value = builder->CreateBitCast(
-                    llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
-                builder->CreateStore(llvm_value, llvm_target);
+                    ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
+                    llvm_value = builder->CreateBitCast(
+                        llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
+                    builder->CreateStore(llvm_value, llvm_target);
+                }
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 llvm::Value* val_data_ptr = llvm_utils->create_gep2(llvm_value_type, llvm_value, 1);
-              
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))));
                 [[maybe_unused]] ASR::Struct_t* class_type_t = ASR::down_cast<ASR::Struct_t>(
@@ -5881,8 +5974,13 @@ public:
                 LCOMPILERS_ASSERT(ASRUtils::is_derived_type_similar(struct_type_t, class_type_t));
                 llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Value* casted_val_ptr = builder->CreateBitCast(val_data_ptr, struct_type->getPointerTo());
-
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
+                llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                // This ensures the case where we are storing the base to base_polymorphic, and hence we need to load base from the later one.
+                std::string polymorphic_struct_name = std::string(struct_type_t->m_name) + "_polymorphic";
+                if(llvm_target_type == name2dertype[polymorphic_struct_name]) {
+                    llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
+                }
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
                 std::string value_struct_t_name = "";
@@ -5917,42 +6015,116 @@ public:
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray));
                 if( LLVM::is_llvm_pointer(*value_type) ) {
-                    llvm_value = llvm_utils->CreateLoad(llvm_value);
+                    llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                    llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
                 if( is_value_data_only_array ) { // This needs a refactor to handle
                     ASR::ttype_t* target_type_ = ASRUtils::type_get_past_pointer(target_type);
                     switch( ASRUtils::extract_physical_type(target_type_) ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
-                                // Declare llvm type for (Array descriptor, Dimension Descriptor)
-                                llvm::Type* const array_desc_type = llvm_utils->arr_api->
-                                    get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
-                                        llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
-                                LCOMPILERS_ASSERT(array_desc_type->isStructTy());
-                                llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
-                                llvm::Value* llvm_target_ = builder->CreateLoad(array_desc_type->getPointerTo(), llvm_target);
-                                // Store exact data pointer
-                                llvm::Value* value_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_value, 0); // Pointer to data of the RHS array.
-                                llvm::Value* target_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_target_, 0); // Pointer to data of the LHS array.
-                                builder->CreateStore(builder->CreateLoad(
-                                    llvm_utils->get_el_type(x.m_value,
-                                        ASRUtils::extract_type(value_type), module.get())->getPointerTo(), value_data_ptr),
-                                    target_data_ptr);
-                                // Deep Copy dimension descriptor
-                                llvm::Value* value_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
-                                                                 llvm_utils->create_gep2(array_desc_type, llvm_value, 2)); // Pointer to dimension descriptor of the RHS array.
-                                llvm::Value* target_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
-                                                            llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
-                                llvm::DataLayout data_layout(module->getDataLayout());
-                                int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-                                builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
-                                // Copy offset
-                                llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
-                                llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
-                                builder->CreateStore(builder->CreateLoad(llvm::Type::getInt32Ty(context),value_offset), target_offset);
-                                // Other fields of the array descriptor should be already set.
-                                return;
-                            }else if( ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+                                // Check if this is polymorphic array pointer association in select type
+                                if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) && current_select_type_block_type_asr != nullptr) {
+
+                                    // SPECIAL HANDLING FOR POLYMORPHIC ARRAY POINTER ASSOCIATION
+                                    // This handles: xx => generic (where generic is class(*) array)
+                                    
+                                    // Get the concrete target type (what xx should be)
+                                    llvm::Type* const target_array_desc_type = llvm_utils->arr_api->
+                                        get_array_type(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type_),
+                                            llvm_utils->get_el_type(x.m_target, ASRUtils::extract_type(target_type_), module.get()), false);
+                                    
+                                    llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
+                                    llvm::Value* llvm_target_ = builder->CreateLoad(target_array_desc_type->getPointerTo(), llvm_target);
+                                    
+                                    // EXTRACT CONCRETE DATA POINTER FROM POLYMORPHIC ARRAY
+                                    // The polymorphic array (generic) has structure: 
+                                    // { %polymorphic_wrapper*, offset, dims*, is_allocated, rank }
+                                    // where polymorphic_wrapper is { i64 type_id, void* data }
+                                    
+                                    // Get the source polymorphic array descriptor type
+                                    llvm::Type* const src_array_desc_type = llvm_utils->arr_api->
+                                        get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
+                                            llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
+                                    
+                                    // Get pointer to polymorphic wrapper array
+                                    llvm::Value* poly_wrapper_array_ptr = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 0);
+                                    
+                                    // Define polymorphic wrapper structure: { i64 type_id, void* data_ptr }
+                                    std::vector<llvm::Type*> poly_wrapper_fields = {
+                                        llvm::Type::getInt64Ty(context),                    // type_id field
+                                        llvm::Type::getVoidTy(context)->getPointerTo()     // data_ptr field  
+                                    };
+                                    llvm::Type* poly_wrapper_type = llvm::StructType::get(context, poly_wrapper_fields, false);
+                                    
+                                    // Load the first polymorphic wrapper element
+                                    llvm::Value* first_poly_wrapper = llvm_utils->CreateLoad2(
+                                        poly_wrapper_type->getPointerTo(), poly_wrapper_array_ptr);
+                                    
+                                    // Extract the void* data pointer from the polymorphic wrapper
+                                    llvm::Value* void_data_ptr_field = llvm_utils->create_gep2(poly_wrapper_type, first_poly_wrapper, 1);
+                                    llvm::Value* void_data_ptr = llvm_utils->CreateLoad2(
+                                        llvm::Type::getVoidTy(context)->getPointerTo(), void_data_ptr_field);
+                                    
+                                    // Cast void* to concrete element type pointer
+                                    llvm::Type* concrete_element_type = llvm_utils->get_el_type(
+                                        x.m_target, ASRUtils::extract_type(target_type_), module.get());
+                                    llvm::Value* concrete_data_ptr = builder->CreateBitCast(
+                                        void_data_ptr, concrete_element_type->getPointerTo());
+                                    
+                                    // SETUP TARGET ARRAY DESCRIPTOR WITH CONCRETE DATA POINTER
+                                    llvm::Value* target_data_ptr = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 0);
+                                    builder->CreateStore(concrete_data_ptr, target_data_ptr);
+                                    
+                                    // COPY DIMENSION DESCRIPTORS FROM SOURCE TO TARGET
+                                    llvm::Value* src_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
+                                                                llvm_utils->create_gep2(src_array_desc_type, llvm_value, 2));
+                                    llvm::Value* target_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
+                                                                llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 2));
+                                    
+                                    llvm::DataLayout data_layout(module->getDataLayout());
+                                    int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), src_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
+                                    
+                                    // COPY OFFSET FROM SOURCE TO TARGET
+                                    llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
+                                    llvm::Value* target_offset = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 1);
+                                    builder->CreateStore(
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), src_offset), 
+                                        target_offset);
+                                    
+                                    return;
+                                    
+                                } else {    // Declare llvm type for (Array descriptor, Dimension Descriptor)
+                                    llvm::Type* const array_desc_type = llvm_utils->arr_api->
+                                        get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
+                                            llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
+                                    LCOMPILERS_ASSERT(array_desc_type->isStructTy());
+                                    llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
+                                    llvm::Value* llvm_target_ = builder->CreateLoad(array_desc_type->getPointerTo(), llvm_target);
+                                    // Store exact data pointer
+                                    llvm::Value* value_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_value, 0); // Pointer to data of the RHS array.
+                                    llvm::Value* target_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_target_, 0); // Pointer to data of the LHS array.
+                                    builder->CreateStore(builder->CreateLoad(
+                                        llvm_utils->get_el_type(x.m_value,
+                                            ASRUtils::extract_type(value_type), module.get())->getPointerTo(), value_data_ptr),
+                                        target_data_ptr);
+                                    // Deep Copy dimension descriptor
+                                    llvm::Value* value_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
+                                                                    llvm_utils->create_gep2(array_desc_type, llvm_value, 2)); // Pointer to dimension descriptor of the RHS array.
+                                    llvm::Value* target_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
+                                                                llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
+                                    llvm::DataLayout data_layout(module->getDataLayout());
+                                    int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
+                                    // Copy offset
+                                    llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
+                                    llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
+                                    builder->CreateStore(builder->CreateLoad(llvm::Type::getInt32Ty(context),value_offset), target_offset);
+                                    // Other fields of the array descriptor should be already set.
+                                    return;
+                                }
+                            } else if( ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ) {
                                 llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                                     value_type, module.get());
                                 llvm_value = llvm_utils->create_gep2(llvm_type, llvm_value, 0);
@@ -5970,7 +6142,8 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            llvm_value = llvm_utils->CreateLoad(llvm_value);
+                            llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,value_type, module.get());
+                            llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);
                             break;
                         }
                         case ASR::array_physical_typeType::PointerToDataArray: {
@@ -6257,13 +6430,14 @@ public:
 
 
             llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
+            // Get value object of value_class_type pointer
             value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
-            // bitcast to the correct type
-            value_class_ptr = builder->CreateBitCast(value_class_ptr, wrapper_target_llvm_type->getPointerTo());
-            value_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type, value_class_ptr);
+            value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type, value_class_ptr);
 
             llvm::Value* target_class_ptr = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
+            // Bitcast target_class_type to value_class_type and then store value object in it
             target_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type->getPointerTo(), target_class_ptr);
+            target_class_ptr = builder->CreateBitCast(target_class_ptr, wrapper_value_llvm_type->getPointerTo());
 
             builder->CreateStore(value_class_ptr, target_class_ptr);
             return;
@@ -6398,7 +6572,7 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.enable_bounds_checking,
+                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.bounds_checking,
                                              module.get(), true);
             }
         } else {
@@ -6499,7 +6673,7 @@ public:
         }
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
-            ASRUtils::check_equal_type(target_type, value_type) ) {
+            ASRUtils::check_equal_type(target_type, value_type, x.m_target, x.m_value) ) {
             bool data_only_copy = false;
             ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
             ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
@@ -6585,6 +6759,12 @@ public:
                         llvm_size = llvm_utils->get_stringArray_whole_size(target_type);
                     }
                 } else {
+                    target = llvm_utils->CreateLoad(target);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type),
+                        module.get());
+#endif
                     target_data = 
                             ASRUtils::is_array_of_strings(target_type) ?
                             llvm_utils->get_stringArray_data(target_type, target) :
@@ -6606,6 +6786,7 @@ public:
                                 break;
                             }
                             this->visit_expr_wrapper(value_dims[i].m_length, true);
+                            tmp = builder->CreateSExtOrTrunc(tmp, llvm::Type::getInt32Ty(context));
                             llvm_size = builder->CreateMul(llvm_size, tmp);
                         }
                         if(ASRUtils::is_array_of_strings(value_type)){ // Neglect previous llvm_size
@@ -6858,7 +7039,7 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::SIMDArray) {
-            tmp = llvm_utils->CreateLoad(arg);
+            tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -6910,17 +7091,17 @@ public:
                     tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
             } else {
-                tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),arr_descr->get_pointer_to_data(tmp));
             }
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             if (ASRUtils::is_fixed_size_array(m_type)) {
-                tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
                 tmp = builder->CreateBitCast(tmp, target_type); // [1 x i8*]*
                 // we need [1 x i8*]
-                tmp = llvm_utils->CreateLoad(tmp);
+                tmp = llvm_utils->CreateLoad2(target_type, tmp);
             }
         } else {
             LCOMPILERS_ASSERT(false);
@@ -7092,7 +7273,7 @@ public:
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
                     llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
                     if( ASRUtils::is_array(selector_var_type) ) {
-                        vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep2(i64, vptr_int_hash, 0));
+                        vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(i64, vptr_int_hash, 0));
                     }
                     ASR::TypeStmtName_t* type_stmt_name = ASR::down_cast<ASR::TypeStmtName_t>(select_type_stmts[i]);
                     ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(type_stmt_name->m_sym);
@@ -7601,7 +7782,7 @@ public:
             this->visit_expr_wrapper(x.m_orelse, true);
             builder->CreateStore(tmp, ifexp_res);
         });
-        tmp = llvm_utils->CreateLoad(ifexp_res);
+        tmp = llvm_utils->CreateLoad2(_type, ifexp_res);
     }
 
     // TODO: Implement visit_DooLoop
@@ -7846,7 +8027,7 @@ public:
         llvm::Value *str {};
         { // Set proper load + Visit + Revert load
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1; this->visit_expr_wrapper(x.m_idx, true);
+            ptr_loads = LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1; this->visit_expr_wrapper(x.m_idx, true);
             idx = tmp;
             ptr_loads = 0; this->visit_expr_wrapper(x.m_arg, true);
             str = tmp;
@@ -7914,11 +8095,11 @@ public:
         llvm::Value *str = tmp;
         llvm::Value *left{}, *right{};
         if (x.m_start) {
-            this->visit_expr_load_wrapper(x.m_start, 1, true);
+            this->visit_expr_load_wrapper(x.m_start, LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1, true);
             left = tmp;
         }
         if (x.m_end) {
-            this->visit_expr_load_wrapper(x.m_end, 1, true);
+            this->visit_expr_load_wrapper(x.m_end, LLVM::is_llvm_pointer(*expr_type(x.m_end)) ? 2 : 1, true);
             right = tmp;
         }
         LCOMPILERS_ASSERT(x.m_step)
@@ -8125,10 +8306,12 @@ public:
         lookup_enum_value_for_nonints = false;
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
-            right_val = llvm_utils->CreateLoad(right_val);
+            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
+            right_val = llvm_utils->CreateLoad2(right_type, right_val);
         }
         if (ASRUtils::is_simd_array(x.m_left) && is_a<ASR::Var_t>(*x.m_left)) {
-            left_val = llvm_utils->CreateLoad(left_val);
+            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left, ASRUtils::expr_type(x.m_left), module.get());
+            left_val = llvm_utils->CreateLoad2(left_type, left_val);
         }
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -8219,10 +8402,12 @@ public:
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
         if( left_val->getType()->isPointerTy() ) {
-            left_val = llvm_utils->CreateLoad(left_val);
+            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left, ASRUtils::expr_type(x.m_left), module.get());
+            left_val = llvm_utils->CreateLoad2(left_type, left_val);
         }
         if( right_val->getType()->isPointerTy() ) {
-            right_val = llvm_utils->CreateLoad(right_val);
+            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
+            right_val = llvm_utils->CreateLoad2(right_type, right_val);
         }
         std::string fn_name;
         switch (x.m_op) {
@@ -8676,26 +8861,22 @@ public:
         llvm::Value* x_v = llvm_symtab[x_h];
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
-#if LLVM_VERSION_MAJOR > 16
+        llvm::Type* type_req = nullptr;
         int loads = 0;
-#endif
         while( ptr_loads_copy-- ) {
-#if LLVM_VERSION_MAJOR > 16
             if( loads == 0 ) {
-                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                ptr_type[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     x->m_type, module.get());
+                
             } else {
-                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                ptr_type[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     ASRUtils::type_get_past_allocatable_pointer(x->m_type),
                     module.get());
             }
-#endif
-            tmp = llvm_utils->CreateLoad(tmp);
-#if LLVM_VERSION_MAJOR > 16
+            tmp = llvm_utils->CreateLoad2(type_req, tmp);
             loads++;
-#endif
         }
     }
 
@@ -8771,9 +8952,8 @@ public:
                 break;
             }
             case ASR::ttypeType::UnionType: {
-                ASR::UnionType_t* der = ASR::down_cast<ASR::UnionType_t>(t2_);
                 ASR::Union_t* der_type = ASR::down_cast<ASR::Union_t>(
-                    ASRUtils::symbol_get_past_external(der->m_union_type));
+                    ASRUtils::symbol_get_past_external(x->m_type_declaration));
                 current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
@@ -9028,7 +9208,8 @@ public:
         }
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(const_cast<ASR::expr_t*>(&x.base), ASRUtils::type_get_past_array(x.m_type), module.get());
         llvm::Type* target_llvm_type = target_base_type->getPointerTo();
-        if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type), false) &&
+        if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
+             x.m_source, const_cast<ASR::expr_t*>(&x.base), false) &&
                 !( ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) && ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
                 ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1 ) /*Workaround (Refer to : `transfer_05`, `array_06_transfer`), scalar mold shold have scalar LHS*/ ) {
             tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
@@ -9388,7 +9569,32 @@ public:
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(arg_type != nullptr)
                 int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind);
+
+                if (arg->getType()->isPointerTy())
+                    arg = llvm_utils->CreateLoad2(llvm_utils->getIntType(arg_kind), arg);
+
+                tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind); // Returns i8*
+                
+                if (ASRUtils::is_allocatable_descriptor_string(x.m_type)) {
+                    llvm::Value* temp_str = builder->CreateAlloca(string_descriptor);
+                    llvm_utils->set_string_memory_on_heap(
+                        ASR::string_physical_typeType::DescriptorString,
+                        temp_str, lfortran_str_len(tmp)
+                    );            
+
+                    llvm::Value *lhs_data, *lhs_len;
+                    llvm::Value *rhs_data, *rhs_len;
+                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(
+                                                    ASR::down_cast<ASR::String_t>(ASRUtils::TYPE(ASR::make_String_t(
+                                                        al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength, 
+                                                        ASR::string_physical_typeType::DescriptorString))), 
+                                                    temp_str, true, true);
+                    rhs_data = tmp;
+                    rhs_len = lfortran_str_len(tmp);
+                    llvm_utils->lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len, true, true);
+                    tmp = temp_str;
+                }
                 break;
             }
             case (ASR::cast_kindType::LogicalToString) : {
@@ -9396,20 +9602,43 @@ public:
                 llvm::Value *zero_str = builder->CreateGlobalStringPtr("False");
                 llvm::Value *one_str = builder->CreateGlobalStringPtr("True");
                 tmp = builder->CreateSelect(cmp, zero_str, one_str);
+
+                if (ASRUtils::is_allocatable(x.m_type)) {
+                    llvm::Value* temp_str = builder->CreateAlloca(string_descriptor);
+                    llvm_utils->set_string_memory_on_heap(
+                        ASR::string_physical_typeType::DescriptorString,
+                        temp_str, lfortran_str_len(tmp)
+                    );            
+
+                    llvm::Value *lhs_data, *lhs_len;
+                    llvm::Value *rhs_data, *rhs_len;
+
+                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(
+                                                    ASR::down_cast<ASR::String_t>(ASRUtils::TYPE(ASR::make_String_t(
+                                                        al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength, 
+                                                        ASR::string_physical_typeType::DescriptorString))), 
+                                                    temp_str, true, true);
+                    rhs_data = tmp;
+                    rhs_len = lfortran_str_len(tmp);
+
+                    llvm_utils->lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len, true, true);
+                    tmp = temp_str;
+                }
                 break;
             }
             case (ASR::cast_kindType::ListToArray) : {
                 if( !ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_arg)) ) {
                     throw CodeGenError("The argument of ListToArray cast should "
-                        "be a list/std::vector, found, " + ASRUtils::type_to_str_fortran(
-                            ASRUtils::expr_type(x.m_arg)));
+                        "be a list/std::vector, found, " + ASRUtils::type_to_str_fortran_expr(
+                            ASRUtils::expr_type(x.m_arg), x.m_arg));
                 }
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_arg);
                 ptr_loads = ptr_loads_copy;
                 llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
-                tmp = llvm_utils->CreateLoad(list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
+                tmp = llvm_utils->CreateLoad2(list_llvm_type, list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
                 break;
             }
             case (ASR::cast_kindType::PointerToInteger): {
@@ -9596,7 +9825,7 @@ public:
                 break;
             }
             default: {
-                std::string s_type = ASRUtils::type_to_str_fortran(type);
+                std::string s_type = ASRUtils::type_to_str_fortran_expr(type, nullptr);
                 throw CodeGenError("Read function not implemented for: " + s_type);
             }
         }
@@ -9716,7 +9945,7 @@ public:
                 if (is_string) {
                     // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read_" +
-                                            ASRUtils::type_to_str_python(ASRUtils::extract_type(type));
+                                            ASRUtils::type_to_str_python_expr(ASRUtils::extract_type(type), x.m_values[i]);
                     if (ASRUtils::is_array(type)) {
                         runtime_func_name += "_array";
                     }
@@ -9788,7 +10017,11 @@ public:
                     llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::extract_type(type), module.get());
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
-                        var_to_read_into = llvm_utils->CreateLoad(var_to_read_into);
+                        llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i],
+                            ASRUtils::type_get_past_allocatable_pointer(type),
+                            module.get())->getPointerTo();
+                        var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                     }
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
 #if LLVM_VERSION_MAJOR > 16
@@ -10152,10 +10385,20 @@ public:
 
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s");
-                llvm::Value* end{};
-                if (x.m_end) { end = get_string_data(x.m_end); }
-                printf(context, *module, *builder, {fmt_ptr, end});
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s%s");
+                llvm::Value *str_data, *str_len;
+                // For empty output, use a space (like old behavior)
+                str_data = builder->CreateGlobalStringPtr(" ");
+                str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                llvm::Value *end_data, *end_len;
+                if (x.m_end) {
+                    std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
+                    end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
+                } else {
+                    end_data = builder->CreateGlobalStringPtr("\n");
+                    end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                }
+                printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
             } else if (x.n_values == 1){
                 handle_print(x.m_values[0], x.m_end);
             } else {
@@ -10270,6 +10513,13 @@ public:
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc);
+
+            // Push the length of the string to args
+            ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+            if (x.m_is_formatted && ASRUtils::is_character(*t)) {
+                llvm::Value *str_len = get_string_length(m_values[i]);
+                args.push_back(str_len);
+            }
         }
         if (!x.m_is_formatted) {  // give -1 argument for end of arguments
             llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
@@ -10399,7 +10649,7 @@ public:
             res += "CPtr";
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran(type) + "` type.");
+                ASRUtils::type_to_str_fortran_expr(type, nullptr) + "` type.");
         }
         return res;
     }
@@ -10558,31 +10808,57 @@ public:
             args.push_back(tmp);
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran(t) + "` type.", loc);
+                ASRUtils::type_to_str_fortran_expr(t, v) + "` type.", loc);
         }
     }
 
-    void handle_print(ASR::expr_t* arg, ASR::expr_t* end_expr) {
-        std::vector<llvm::Value *> args;
-        args.push_back(nullptr); // reserve space for fmt_str
-        std::vector<std::string> fmt;
-        llvm::Value* end{};
-        if(end_expr == nullptr){
-            end = builder->CreateGlobalStringPtr("\n");
+    void handle_print(ASR::expr_t* arg, ASR::expr_t* end_expr)
+    {
+        ASR::ttype_t* t = ASRUtils::expr_type(arg);
+        llvm::Value* main_data = nullptr;
+        llvm::Value* main_len = nullptr;
+
+        // End string (always computed once)
+        llvm::Value *end_data, *end_len;
+        if (end_expr == nullptr) {
+            end_data = builder->CreateGlobalStringPtr("\n");
+            end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
-            end = get_string_data(end_expr);
+            std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
+            end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
         }
-        compute_fmt_specifier_and_arg(fmt, args, arg, arg->base.loc);
-        fmt.push_back("%s");
-        args.push_back(end);
+
         std::string fmt_str;
-        for (size_t i=0; i<fmt.size(); i++) {
-            fmt_str += fmt[i];
+
+        if (ASRUtils::is_character(*t)) {
+            // --- String path ---
+            std::tie(main_data, main_len) = get_string_data_and_length(arg);
+            main_len = builder->CreateTrunc(main_len, llvm::Type::getInt32Ty(context));
+            fmt_str = "%s";
+        } else {
+            // --- Non-string path ---
+            // Evaluate once
+            this->visit_expr_wrapper(arg, true);
+            llvm::Value* val = tmp;  // integer/real/etc value
+            main_len = llvm::ConstantInt::get(context, llvm::APInt(32, 0));  // no length for non-string
+
+            // Determine correct printf specifier
+            std::vector<std::string> fmt_parts;
+            std::vector<llvm::Value*> dummy_args;
+            dummy_args.push_back(nullptr);
+            compute_fmt_specifier_and_arg(fmt_parts, dummy_args, arg, arg->base.loc);
+
+            fmt_str.clear();
+            for (auto& f : fmt_parts)
+                fmt_str += f;
+            llvm::Value* as_i32 = builder->CreateSExtOrBitCast(val, llvm::Type::getInt32Ty(context));
+            main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
-        args[0] = fmt_ptr;
-        printf(context, *module, *builder, args);
+        fmt_str += "%s";
+        llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
     }
+
 
     void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
         std::string fmt_str;
@@ -10797,6 +11073,10 @@ public:
                                             // Local variable or Dummy out argument
                                             // of type CPtr is a void**, so we
                                             // have to load it
+                                            // TODO: Convert this into createload2
+                                            // llvm::Type* cptr_type = llvm::PointerType::get(
+                                            //         llvm::Type::getInt8Ty(context), 0);
+                                            // tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                             tmp = llvm_utils->CreateLoad(tmp);
                                         }
                                     } else {
@@ -10852,6 +11132,7 @@ public:
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
+
                                     tmp = llvm_utils->CreateLoad(tmp);
                                 }
                                 if (ASRUtils::is_class_type(
@@ -11046,7 +11327,7 @@ public:
                         break;
                     }
                     default :
-                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran(arg_type) + " not implemented yet.");
+                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran_expr(arg_type, x.m_args[i].m_value) + " not implemented yet.");
                 }
                 if( ASR::is_a<ASR::EnumValue_t>(*x.m_args[i].m_value) ) {
                     target_type = llvm::Type::getInt32Ty(context);
@@ -11342,22 +11623,28 @@ public:
                     ASRUtils::extract_physical_type(s_m_args0_type) == ASR::array_physical_typeType::DescriptorArray) {
                     // TODO: Handle convert of descriptor arrays
                 }
-                llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
-                    llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))),
-                            LLVM::is_llvm_pointer(*s_m_args0_type)));
-                llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0,
-                    ASRUtils::type_get_past_array(s_m_args0_type), module.get());
+                if ( compiler_options.new_classes ) {
+                    return builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true));
+                } else {
+                    llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
+                        llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))),
+                                LLVM::is_llvm_pointer(*s_m_args0_type)));
 
-                llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
-                llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
-                builder->CreateStore(hash, hash_ptr);
-                llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
+                    llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0,
+                        ASRUtils::type_get_past_array(s_m_args0_type), module.get());
 
-                builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true)), class_ptr);
+                    llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+                    builder->CreateStore(hash, hash_ptr);
+                    llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
 
-                return dt_polymorphic;
+                    builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true)), class_ptr);
+
+                    return dt_polymorphic;
+                }
             } else {
                 // No need to convert if types are same
                 if (llvm_utils->getClassType(
@@ -11400,6 +11687,132 @@ public:
         return dt;
     }
 
+    llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type) {
+        ASR::dimension_t* m_dims = nullptr;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+        if( ASRUtils::extract_physical_type(type) == ASR::array_physical_typeType::FixedSizeArray ) {
+            int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+            return llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, size));
+        } else {
+            llvm::Value* llvm_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            for( int i = 0; i < n_dims; i++ ) {
+                if (m_dims[i].m_length) {
+                    load_array_size_deep_copy(m_dims[i].m_length);
+                    tmp = builder->CreateSExtOrTrunc(tmp, llvm_utils->getIntType(4));
+                    llvm_size = builder->CreateMul(tmp, llvm_size);
+                }
+            }
+            ptr_loads = ptr_loads_copy;
+            return llvm_size;
+        }
+    }
+
+    template<typename T>
+    void bounds_check_call(T& x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t* arg_expr = x.m_args[i].m_value;
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
+                ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+                if (arr_cast->m_old == ASR::DescriptorArray && arr_cast->m_new == ASR::PointerToDataArray) {
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
+                    this->visit_expr_wrapper(arr_cast->m_arg, false);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(arr_cast->m_arg,
+                        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arr_cast->m_arg)),
+                        module.get(), ASRUtils::expr_abi(arr_cast->m_arg));
+                    if (is_a<ASR::StructInstanceMember_t>(*arr_cast->m_arg)) {
+                        tmp = llvm_utils->CreateLoad2(arr_type->getPointerTo(), tmp);
+                    }
+                    llvm::Value* arg = tmp;
+
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[tmp] = arr_type;
+#endif
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
+                    llvm::Value* desc_rank = arr_descr->get_rank(arg);
+                    llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
+                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
+                    llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                    llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+                    llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                    builder->CreateCondBr(builder->CreateICmpEQ(desc_rank, pointer_rank), thenBB, elseBB);
+                    builder->SetInsertPoint(thenBB);
+                    for (int j = 0; j < n_dims; j++) {
+                        if (m_dims[j].m_length) {
+                            llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
+                            llvm::Value* descriptor_length = arr_descr->get_array_size(arg, dim, 4);
+                            load_array_size_deep_copy(m_dims[j].m_length);
+                            llvm::Value* pointer_length = tmp;
+                            llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
+                                    "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
+                                    "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                    builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                    descriptor_length,
+                                    dim,
+                                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                    pointer_length);
+                        }
+                    }
+                    builder->CreateBr(mergeBB);
+                    start_new_block(elseBB);
+                    llvm::Value* desc_size = arr_descr->get_array_size(arg, nullptr, 4);
+                    llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                    llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
+                            "Runtime error: Array size mismatch in subroutine '%s'\n\n"
+                            "Tried to match size %d of argument number %d, but expected size is %d\n",
+                            builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                            desc_size,
+                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                            pointer_size);
+                    builder->CreateBr(mergeBB);
+                    start_new_block(mergeBB);
+                } else if (arr_cast->m_old == ASR::FixedSizeArray && arr_cast->m_new == ASR::PointerToDataArray) {
+                    ASR::ttype_t* fixed_size_type = ASRUtils::expr_type(arr_cast->m_arg);
+                    ASR::dimension_t* m_dims_fixed = nullptr;
+                    int n_dims_fixed = ASRUtils::extract_dimensions_from_ttype(fixed_size_type, m_dims_fixed);
+
+                    ASR::dimension_t* m_dims_pointer = nullptr;
+                    int n_dims_pointer = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims_pointer);
+
+                    if (n_dims_fixed == n_dims_pointer) {
+                        for (int j = 0; j < n_dims_fixed; j++) {
+                            if (m_dims_pointer[j].m_length) {
+                                llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
+                                llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length)));
+                                load_array_size_deep_copy(m_dims_pointer[j].m_length);
+                                llvm::Value* pointer_length = tmp;
+                                llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
+                                        "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
+                                        "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                        builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                        fixed_length,
+                                        dim,
+                                        llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                        pointer_length);
+                            }
+                        }
+                    } else {
+                        llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
+                        llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
+                                "Runtime error: Array size mismatch in subroutine '%s'\n\n"
+                                "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                fixed_size,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                pointer_size);
+                    }
+                }
+            }
+        }
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
@@ -11408,6 +11821,11 @@ public:
             if( generate_optimization_instructions(routine, x.m_args) ) {
                 return ;
             }
+        }
+
+        // Generate runtime error if array arguments' shape doesn't match
+        if (compiler_options.bounds_checking) {
+            bounds_check_call(x);
         }
 
         std::vector<llvm::Value*> args;
@@ -11639,9 +12057,9 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
-                        if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python(expected_arg_type)
-                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type) + "`", x.m_args[i].m_value->base.loc);
+                        if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
+                                    + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                         }
                     }
                 }
@@ -11900,65 +12318,69 @@ public:
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(x.m_dt,
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
         llvm_dt = builder->CreateBitCast(llvm_dt, llvm_dt_type->getPointerTo());
-        for( size_t i = 0; i < vtabs.size(); i++ ) {
-            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        if ( compiler_options.new_classes ) {
+            // TODO: handle function call without `xx_polymorphic`
+        } else {
+            for( size_t i = 0; i < vtabs.size(); i++ ) {
+                llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
-            llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-            llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
 
-            llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_dt_type, llvm_dt, 0));
-            llvm::Type *dt_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_dt))), module.get(), true);
-            llvm::Value* dt_data = llvm_utils->CreateLoad2(dt_type, llvm_utils->create_gep2(llvm_dt_type, llvm_dt, 1));
-            ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_dt);
-            if( ASRUtils::is_array(selector_var_type) ) {
-                vptr_int_hash = llvm_utils->CreateLoad2(vptr_int_hash->getType()->getPointerTo(), llvm_utils->create_gep2(vptr_int_hash->getType(), vptr_int_hash, 0));
-            }
-            ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(vtabs[i].second);
-            llvm::Value* type_sym_vtab = vtabs[i].first;
-            llvm::Type* struct_ty = llvm::StructType::get(context, { i64 }, true);
-            llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, struct_ty->getPointerTo());
-            llvm::Value* cond = builder->CreateICmpEQ(
-                                    vptr_int_hash,
-                                    llvm_utils->CreateLoad2(i64,
-                                        llvm_utils->create_gep2(struct_ty, vtab_obj_casted, 0) ) );
-
-            builder->CreateCondBr(cond, thenBB, elseBB);
-            builder->SetInsertPoint(thenBB);
-            {
-                std::vector<llvm::Value*> args;
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
-                ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
-                ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
-                if (!class_proc->m_is_nopass) {
-                    // add the self argument only when the class procedure has the `pass` attribute
-                    llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
-                    llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
-                    llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
-                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
-                    builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
-                    builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
-                                        target_dt_data_ptr);
-                    args.push_back(target_dt);
+                llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_dt_type, llvm_dt, 0));
+                llvm::Type *dt_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_dt))), module.get(), true);
+                llvm::Value* dt_data = llvm_utils->CreateLoad2(dt_type, llvm_utils->create_gep2(llvm_dt_type, llvm_dt, 1));
+                ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_dt);
+                if( ASRUtils::is_array(selector_var_type) ) {
+                    vptr_int_hash = llvm_utils->CreateLoad2(vptr_int_hash->getType()->getPointerTo(), llvm_utils->create_gep2(vptr_int_hash->getType(), vptr_int_hash, 0));
                 }
-                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
-                uint32_t h = get_hash((ASR::asr_t*) s_proc);
-                llvm::Function* fn = llvm_symtab_fn[h];
-                ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(s_proc);
-                LCOMPILERS_ASSERT(s != nullptr);
-                std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
-                args.insert(args.end(), args2.begin(), args2.end());
-                ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
-                builder->CreateStore(CreateCallUtil(fn, args, return_var_type0), tmp);
-            }
-            builder->CreateBr(mergeBB);
+                ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(vtabs[i].second);
+                llvm::Value* type_sym_vtab = vtabs[i].first;
+                llvm::Type* struct_ty = llvm::StructType::get(context, { i64 }, true);
+                llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, struct_ty->getPointerTo());
+                llvm::Value* cond = builder->CreateICmpEQ(
+                                        vptr_int_hash,
+                                        llvm_utils->CreateLoad2(i64,
+                                            llvm_utils->create_gep2(struct_ty, vtab_obj_casted, 0) ) );
+    
+                builder->CreateCondBr(cond, thenBB, elseBB);
+                builder->SetInsertPoint(thenBB);
+                {
+                    std::vector<llvm::Value*> args;
+                    ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
+                    ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
+                    ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
+                    if (!class_proc->m_is_nopass) {
+                        // add the self argument only when the class procedure has the `pass` attribute
+                        llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                        llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
+                        llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
+                        llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
+                        builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
+                        llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
+                        builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
+                                            target_dt_data_ptr);
+                        args.push_back(target_dt);
+                    }
+                    ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
+                    uint32_t h = get_hash((ASR::asr_t*) s_proc);
+                    llvm::Function* fn = llvm_symtab_fn[h];
+                    ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(s_proc);
+                    LCOMPILERS_ASSERT(s != nullptr);
+                    std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
+                    args.insert(args.end(), args2.begin(), args2.end());
+                    ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
+                    builder->CreateStore(CreateCallUtil(fn, args, return_var_type0), tmp);
+                }
+                builder->CreateBr(mergeBB);
 
-            start_new_block(elseBB);
-            current_select_type_block_type = nullptr;
-            current_select_type_block_der_type.clear();
+                start_new_block(elseBB);
+                current_select_type_block_type = nullptr;
+                current_select_type_block_der_type.clear();
+            }
+            start_new_block(mergeBB);
         }
-        start_new_block(mergeBB);
         tmp = llvm_utils->CreateLoad(tmp);
     }
 
@@ -11976,6 +12398,11 @@ public:
             return ;
         }
 
+        // Generate runtime error if array arguments' shape doesn't match
+        if (compiler_options.bounds_checking) {
+            bounds_check_call(x);
+        }
+
         std::vector<llvm::Value*> args;
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
@@ -11984,7 +12411,9 @@ public:
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
             ptr_loads = ptr_loads_copy;
-            llvm::Value* callee = llvm_utils->CreateLoad(tmp);
+            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+            llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
@@ -12178,7 +12607,7 @@ public:
                             args.insert(args.begin(), tmp);
                             builder->CreateCall(fn, args);
                             // Convert {double,double}* to {double,double}
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
                             tmp = builder->CreateCall(fn, args);
                         }
@@ -12220,7 +12649,7 @@ public:
                         // Convert i64* to {float,float}* using bitcast
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
                     } else if (compiler_options.platform == Platform::macOS_ARM) {
                         // pass
                     } else {
@@ -12234,7 +12663,7 @@ public:
                         // Convert <2 x float>* to {float,float}* using bitcast
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
                     }
                 }
             }
@@ -12260,8 +12689,10 @@ public:
             } else {
                 this->visit_expr_wrapper(x, true);
             }
-        } else {
+        } else if (x != nullptr) {
             this->visit_expr_wrapper(x, true);
+        } else {
+            throw CodeGenError("x is nullptr in load_array_size_deep_copy()");
         }
     }
 
@@ -12343,7 +12774,7 @@ public:
                         start_new_block(elseBB);
                     }
                     start_new_block(mergeBB);
-                    tmp = llvm_utils->CreateLoad(target);
+                    tmp = llvm_utils->CreateLoad2(target_type, target);
                 } else {
                     int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
                     if( physical_type == ASR::array_physical_typeType::FixedSizeArray ) {

@@ -460,7 +460,7 @@ namespace GetCommandArgument {
         if (x.n_args > 0) {
             ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of integer type", x.base.base.loc, diagnostics);
         } 
-        if(x.n_args > 1) {
+        if (x.n_args > 1) {
             ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[1])), "Second argument must be of character type", x.base.base.loc, diagnostics);
         }
         if (x.n_args > 2) {
@@ -475,16 +475,21 @@ namespace GetCommandArgument {
 
     static inline ASR::asr_t* create_GetCommandArgument(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
+        ASRBuilder b(al, loc);
+        int64_t overload_id = 0;
+        if (args[1]) overload_id |= 1 << 0; // VALUE
+        if (args[2]) overload_id |= 1 << 1; // LENGTH
+        if (args[3]) overload_id |= 1 << 2; // STATUS
         m_args.push_back(al, args[0]);
         for (int i = 1; i < int(args.size()); i++) {
             if(args[i]) m_args.push_back(al, args[i]);
         }
-        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument), m_args.p, m_args.n, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument), m_args.p, m_args.n, overload_id);
     }
 
     static inline ASR::stmt_t* instantiate_GetCommandArgument(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
         
         std::string c_func_name_1 = "_lfortran_get_command_argument_value";
         std::string c_func_name_2 = "_lfortran_get_command_argument_length";
@@ -492,13 +497,13 @@ namespace GetCommandArgument {
 
         std::string new_name = "_lcompilers_get_command_argument_";
         declare_basic_variables(new_name);
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
         fill_func_arg_sub("number", arg_types[0], In);
-
-        std::string first_param_c_func_name = ASRUtils::is_integer(*arg_types[1]) ? c_func_name_2 : c_func_name_1;
-
-        if (arg_types.size() > 1) { // TODO : Correct this as it assumes `arg[1]` to be the `value` (this function has all parameters as optional)
-            fill_func_arg_sub("value", arg_types[1], InOut);
+        constexpr int VALUE_BIT  = 1 << 0;
+        constexpr int LENGTH_BIT = 1 << 1;
+        constexpr int STATUS_BIT = 1 << 2;
+        int optional_arg_index = 1;
+        ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
+        body.push_back(al, b.Assignment(length_to_allocate, b.i32(0)));
 
         /*
             subroutine _lcompilers_get_command_argument_(number, value)
@@ -525,72 +530,63 @@ namespace GetCommandArgument {
         */
 
             // Declare `_lfortran_get_command_argument_length` interface
-            ASR::symbol_t *_lfortran_get_command_argument_length_interface = 
-            b.create_c_func_subroutines(c_func_name_2, fn_symtab, 1, int32);
-            fn_symtab->add_symbol(c_func_name_2, _lfortran_get_command_argument_length_interface);
-            dep.push_back(al, s2c(al, c_func_name_2));
-            // Call it + assign based on argument index 1
-            if(ASRUtils::is_integer(*arg_types[1])){ // length
-                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-                call_args.push_back(al, args[0]);
-                body.push_back(al, b.Assignment(
-                    args[1],
-                    b.Call(_lfortran_get_command_argument_length_interface, call_args, int32)));
-
-            } else { // value
-                // Call _lfortran_get_command_argument_length
-                ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
-                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-                call_args.push_back(al, args[0]);
-                body.push_back(al, b.Assignment(
-                    length_to_allocate,
-                    b.Call(_lfortran_get_command_argument_length_interface, call_args, int32)));
-                // Declare `command_argument_holder` + allocate it
-                ASR::expr_t* command_argument_holder = 
-                    declare("command_argument_holder", b.allocatable(b.String(nullptr, ASR::DeferredLength)), Local);
-                body.push_back(al, b.Allocate(command_argument_holder, nullptr, 0, length_to_allocate));
-
-                // Declare `_lfortran_get_command_argument_value` + call it
-                {
-                    Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
-                    parameter_types.push_back(al, int32);
-                    parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
-                    std::vector<std::string> parameter_names = {"n", "receiver"};
-                    std::vector<bool> is_parameter_value = {true, false};
-                    ASR::symbol_t* _lfortran_get_command_argument_value = 
-                        b.create_c_subroutine_interface(
-                            c_func_name_1, fn_symtab,
-                            parameter_types, parameter_names, is_parameter_value);
-                    fn_symtab->add_symbol(c_func_name_1, _lfortran_get_command_argument_value);
-                    dep.push_back(al, s2c(al, c_func_name_1));
-                    Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
-                    call_args.push_back(al, {loc, args[0]});
-                    call_args.push_back(al, {loc, 
-                        ASRUtils::create_string_physical_cast(al, command_argument_holder,
-                            get_string_type(parameter_types[1])->m_physical_type)});
-                    body.push_back(al, b.SubroutineCall(_lfortran_get_command_argument_value, call_args));
-                }
-                // assign `command_argument_holder` into `value`
-                body.push_back(al, b.Assignment(args[1], command_argument_holder));
+        ASR::symbol_t *_lfortran_get_command_argument_length_interface = 
+        b.create_c_func_subroutines(c_func_name_2, fn_symtab, 1, int32);
+        fn_symtab->add_symbol(c_func_name_2, _lfortran_get_command_argument_length_interface);
+        dep.push_back(al, s2c(al, c_func_name_2));
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+        call_args.push_back(al, args[0]);
+        body.push_back(al, b.Assignment(length_to_allocate,
+            b.Call(_lfortran_get_command_argument_length_interface, call_args, int32)));
+            
+        if (overload_id & VALUE_BIT) {
+            fill_func_arg_sub("value", arg_types[optional_arg_index], InOut);
+            ASR::expr_t* command_argument_holder = 
+                declare("command_argument_holder", b.allocatable(b.String(nullptr, ASR::DeferredLength)), Local);
+            body.push_back(al, b.Allocate(command_argument_holder, nullptr, 0, length_to_allocate));
+            {
+                Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
+                parameter_types.push_back(al, int32);
+                parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
+                std::vector<std::string> parameter_names = {"n", "receiver"};
+                std::vector<bool> is_parameter_value = {true, false};
+                ASR::symbol_t* _lfortran_get_command_argument_value = 
+                    b.create_c_subroutine_interface(
+                        c_func_name_1, fn_symtab,
+                        parameter_types, parameter_names, is_parameter_value);
+                fn_symtab->add_symbol(c_func_name_1, _lfortran_get_command_argument_value);
+                dep.push_back(al, s2c(al, c_func_name_1));
+                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+                call_args.push_back(al, {loc, args[0]});
+                call_args.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, command_argument_holder,
+                        get_string_type(parameter_types[1])->m_physical_type)});
+                body.push_back(al, b.SubroutineCall(_lfortran_get_command_argument_value, call_args));
             }
-
+            // assign `command_argument_holder` into `value`
+            body.push_back(al, b.Assignment(args[optional_arg_index], command_argument_holder));
+            optional_arg_index++;
         }
-        if (arg_types.size() > 2 && !ASRUtils::is_integer(*arg_types[1])) {
-            fill_func_arg_sub("length", arg_types[2], InOut);
-            body.push_back(al, b.Assignment(args[2], b.Var(fn_symtab->resolve_symbol("length_to_allocate")))); //Declared aboe
-        } else if ( arg_types.size() > 2 && ASRUtils::is_integer(*arg_types[1]) ) {
-            fill_func_arg_sub("status", arg_types[2], InOut);
-            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
-            fn_symtab->add_symbol(c_func_name_3, s_3);
-            dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+        if (overload_id & LENGTH_BIT) {
+            fill_func_arg_sub("length", arg_types[optional_arg_index], InOut);
+            body.push_back(al, b.Assignment(args[optional_arg_index], b.Var(fn_symtab->resolve_symbol("length_to_allocate"))));
+            optional_arg_index++;
         }
-        if (arg_types.size() == 4) {
-            fill_func_arg_sub("status", arg_types[3], InOut);
-            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[3]);
-            fn_symtab->add_symbol(c_func_name_3, s_3);
-            dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[3], b.Call(s_3, call_args, arg_types[3])));
+        if (overload_id & STATUS_BIT) {
+            fill_func_arg_sub("status", arg_types[optional_arg_index], InOut);
+            {
+                ASR::symbol_t* _lfortran_get_command_argument_status = 
+                    b.create_c_func_subroutines( c_func_name_3, fn_symtab, 3, int32);
+                fn_symtab->add_symbol(c_func_name_3, _lfortran_get_command_argument_status);
+                dep.push_back(al, s2c(al, c_func_name_3));
+                ASR::expr_t* stat = declare("stat", int32, Local);
+                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+                call_args.push_back(al, args[0]);
+                if (overload_id & VALUE_BIT) call_args.push_back(al, b.StringLen(args[1]));
+                else call_args.push_back(al, length_to_allocate);
+                call_args.push_back(al, length_to_allocate);
+                body.push_back(al, b.Assignment(stat, b.Call(_lfortran_get_command_argument_status, call_args, int32)));
+            }
+            body.push_back(al, b.Assignment(args[optional_arg_index], b.Var(fn_symtab->resolve_symbol("stat"))));
         }
 
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1115,7 +1111,7 @@ namespace CpuTime {
         } else {
             c_func_name = "_lfortran_d_cpu_time";
         }
-        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python(arg_types[0]);
+        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
         fill_func_arg_sub("time", arg_types[0], InOut);
 
@@ -1153,7 +1149,7 @@ namespace MoveAlloc {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
-        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran(arg_types[0]);
+        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran_expr(arg_types[0], new_args[0].m_value);
         bool is_struct_type_from = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
         bool is_struct_type_to = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[1]));
         declare_basic_variables(new_name);
@@ -1225,7 +1221,7 @@ namespace Mvbits {
         } else {
             c_func_name = "_lfortran_mvbits64";
         }
-        std::string new_name = "_lcompilers_mvbits_" + type_to_str_fortran(arg_types[0]);
+        std::string new_name = "_lcompilers_mvbits_" + type_to_str_fortran_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(new_name);
         fill_func_arg_sub("from", arg_types[0], In);
         fill_func_arg_sub("frompos", arg_types[1], In);

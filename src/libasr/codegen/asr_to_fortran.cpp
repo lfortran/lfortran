@@ -276,7 +276,7 @@ public:
             }
             default:
                 throw LCompilersException("The type `"
-                    + ASRUtils::type_to_str_python(t) + "` is not handled yet");
+                    + ASRUtils::type_to_str_python_symbol(t, type_decl) + "` is not handled yet");
         }
         return r;
     }

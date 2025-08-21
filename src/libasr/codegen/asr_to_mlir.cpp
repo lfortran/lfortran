@@ -93,7 +93,7 @@ public:
                     ASRUtils::get_fixed_size_of_array(asr_type));
             } default: {
                 throw LCompilersException("Variable type '"+
-                    ASRUtils::type_to_str_python(asr_type) +
+                    ASRUtils::type_to_str_python_expr(asr_type, nullptr) +
                     "' is not supported yet");
             }
         }
@@ -498,7 +498,7 @@ public:
             }
         } else {
             throw CodeGenError("The type `"+
-                ASRUtils::type_to_str_python(arr_type)
+                ASRUtils::type_to_str_python_expr(arr_type, x.m_v)
                 +"` is not supported yet", x.base.base.loc);
         }
         tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
