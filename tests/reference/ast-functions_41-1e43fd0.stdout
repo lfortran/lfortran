@@ -31,6 +31,7 @@
                 []
                 []
                 []
+                []
             )]
             (TriviaNode
                 []
@@ -66,6 +67,7 @@
         (Function
             notrecursive_fun
             []
+            []
             [(SimpleAttribute
                 AttrNonRecursive
             )
@@ -74,6 +76,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()

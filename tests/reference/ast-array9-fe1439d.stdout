@@ -17,6 +17,7 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeCharacter
@@ -25,6 +26,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -48,7 +51,9 @@
                 TypeType
                 []
                 ()
+                ()
                 varying_string
+                []
                 None
             )
             []
@@ -66,7 +71,9 @@
                 TypeType
                 []
                 ()
+                ()
                 varying_string
+                []
                 None
             )
             [(SimpleAttribute
@@ -89,6 +96,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -111,6 +120,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -135,6 +146,8 @@
                 Value)]
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -174,6 +187,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
@@ -190,6 +205,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
@@ -208,6 +225,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
@@ -239,6 +258,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
@@ -256,6 +277,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
@@ -275,6 +298,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()

@@ -14,8 +14,9 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    237 // shift/reduce conflicts
-%expect-rr 175 // reduce/reduce conflicts
+
+%expect    245 // shift/reduce conflicts
+%expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -232,6 +233,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_END_INTERFACE
 %token <string> KW_ENDINTERFACE
 
+%token <string> KW_END_IMPLEMENTS
+%token <string> KW_ENDIMPLEMENTS
+
 %token <string> KW_END_TYPE
 %token <string> KW_ENDTYPE
 
@@ -291,6 +295,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_INTEGER
 %token <string> KW_INTENT
 %token <string> KW_INTERFACE
+%token <string> KW_IMPLEMENTS
 %token <string> KW_INTRINSIC
 %token <string> KW_IS
 %token <string> KW_KIND
@@ -337,6 +342,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_RETURN
 %token <string> KW_REWIND
 %token <string> KW_SAVE
+%token <string> KW_SEALED
 %token <string> KW_SELECT
 %token <string> KW_SELECT_CASE
 %token <string> KW_SELECT_RANK
@@ -362,6 +368,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_THEN
 %token <string> KW_TO
 %token <string> KW_TYPE
+%token <string> KW_TYPE_DEF
 %token <string> KW_UNFORMATTED
 %token <string> KW_USE
 %token <string> KW_VALUE
@@ -392,6 +399,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> id
 %type <vec_ast> id_list
 %type <vec_ast> id_list_opt
+%type <vec_ast> trait_list
 %type <ast> script_unit
 %type <ast> module
 %type <ast> end_module
@@ -405,6 +413,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
+%type <ast> implements_decl
+%type <ast> implements_stmt
 %type <ast> derived_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
@@ -426,6 +436,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> id_or_star
 %type <ast> function
 %type <ast> end_function
+%type <vec_ast> generic_type_param_list
+%type <ast> generic_type_param
+%type <vec_ast> generic_type_param_instantiation_list
 %type <ast> use_statement
 %type <ast> use_statement1
 %type <vec_ast> use_statement_star
@@ -564,6 +577,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> interface_body
 %type <ast> interface_item
 %type <interface_op_type> operator_type
+%type <vec_ast> implements_body
+%type <ast> implements_item
 %type <ast> write_arg
 %type <argstarkw> write_arg2
 %type <vec_argstarkw> write_arg_list
@@ -591,6 +606,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_equi> equivalence_set_list
 %type <ast> sep_one
 %type <vec_ast> sep
+%type <vec_ast> type_list
 
 // Precedence
 
@@ -695,6 +711,7 @@ interface_stmt
     | KW_INTERFACE KW_OPERATOR "(" TK_DEF_OP ")" {
         $$ = INTERFACE_HEADER_DEFOP($4, @$); }
     | KW_ABSTRACT KW_INTERFACE { $$ = ABSTRACT_INTERFACE_HEADER(@$); }
+    | KW_ABSTRACT KW_INTERFACE "::" id { $$ = ABSTRACT_INTERFACE_HEADER_NAME($4, @$); }
     | KW_INTERFACE KW_WRITE "(" id ")" { $$ = INTERFACE_HEADER_WRITE($4, @$); }
     | KW_INTERFACE KW_READ "(" id ")" { $$ = INTERFACE_HEADER_READ($4, @$); }
     ;
@@ -712,7 +729,6 @@ endinterface0
     : KW_END_INTERFACE
     | KW_ENDINTERFACE
     ;
-
 
 interface_body
     : interface_body interface_item { $$ = $1; LIST_ADD($$, $2); }
@@ -732,6 +748,49 @@ interface_item
         $$ = INTERFACE_PROC($1, @$); }
     | function {
         $$ = INTERFACE_PROC($1, @$); }
+    | type_list sep {
+        $$ = INTERFACE_TYPE_LIST($1, @$); }
+    | KW_TYPE_DEF "," KW_DEFERRED "::" id sep {
+        $$ = INTERFACE_TYPE_DEF($5, SIMPLE_ATTR(Deferred, @$), @$); }
+    ;
+
+type_list
+    : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | type_list TK_VBAR var_type { $$ = $1; LIST_ADD($$, $3); }
+    ;
+
+implements_decl
+    : implements_stmt sep implements_body endimplements {
+        $$ = IMPLEMENTS($1, $3, @$); }
+    ;
+
+implements_stmt
+    : KW_IMPLEMENTS id "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE1($2, $4, @$); }
+    | KW_IMPLEMENTS id "::" id { $$ =  IMPLEMENTS_HEADER_INTERFACE1($2, $4, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE2($3, $6, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" "::" id { $$ = IMPLEMENTS_HEADER_INTERFACE2($3, $6, @$); }
+    ;
+
+implements_body
+    : implements_body implements_item { $$ = $1; LIST_ADD($$, $2); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+implements_item
+    : KW_PROCEDURE proc_modifiers id sep { $$ = IMPLEMENTS_PROC($3, $2, @$); }
+    ;
+
+// Using "id" instead of "TK_NAME" causes ambiguity and hundreds of reduce/shift 
+// conflicts with "var_type"
+endimplements
+    : endimplements0 sep
+    | endimplements0 TK_NAME sep
+    | endimplements0 var_type sep
+    ;
+
+endimplements0
+    : KW_END_IMPLEMENTS
+    | KW_ENDIMPLEMENTS
     ;
 
 enum_decl
@@ -758,6 +817,9 @@ derived_type_decl
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    | KW_TYPE var_modifiers id "{" generic_type_param_list "}" sep var_decl_star
+        derived_type_contains_opt end_type sep {
+            $$ = DERIVED_TYPE3($2, $3, TRIVIA($7, $11, @$), $8, $5, $9, @$); }
     ;
 
 
@@ -1022,6 +1084,14 @@ function
             LLOC(@$, @12); $$ = FUNCTION0($2, $4, nullptr, nullptr,
                 TRIVIA($6, $13, @$), $7, $8, $9, SPLIT_DECL(p.m_a, $10),
                 SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+    | KW_FUNCTION id "{" generic_type_param_list "}" "(" id_list_opt ")"
+        result_opt
+        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        contains_block_opt
+        end_function sep {
+            LLOC(@$, @14); $$ = GENERIC_FUNCTION0($2, $4, $7, nullptr, nullptr,
+                TRIVIA($10, $17, @$), $11, $12, $13, SPLIT_DECL(p.m_a, $14),
+                SPLIT_STMT(p.m_a, $14), $15, $16, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
@@ -1091,6 +1161,17 @@ fn_mod
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
     | KW_NON_RECURSIVE {  $$ = SIMPLE_ATTR(NonRecursive, @$); }
     ;
+generic_type_param_list
+    : generic_type_param_list "," generic_type_param { $$ = $1; LIST_ADD($$, $3); }
+    | generic_type_param { LIST_NEW($$); LIST_ADD($$, $1); }
+
+generic_type_param
+    : id "::" id { $$ = GENERIC_TYPE_PARAM($1, $3, @$); }
+    ;
+
+generic_type_param_instantiation_list
+    : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | type_list "," var_type { $$ = $1; LIST_ADD($$, $3); }
 
 temp_decl_star
     : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
@@ -1114,7 +1195,8 @@ decl_star
 
 decl
     : var_decl
-    | interface_decl
+    | interface_decl 
+    | implements_decl
     | derived_type_decl
     | union_type_decl
     | template_decl
@@ -1512,6 +1594,7 @@ var_modifier
     | KW_OPTIONAL { $$ = SIMPLE_ATTR(Optional, @$); }
     | KW_PROTECTED { $$ = SIMPLE_ATTR(Protected, @$); }
     | KW_SAVE { $$ = SIMPLE_ATTR(Save, @$); }
+    | KW_SEALED { $$ = SIMPLE_ATTR(Sealed, @$); }
     | KW_SEQUENCE { $$ = SIMPLE_ATTR(Sequence, @$); }
     | KW_CONTIGUOUS { $$ = SIMPLE_ATTR(Contiguous, @$); }
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
@@ -1530,6 +1613,7 @@ var_modifier
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" { $$ = ATTR_IMPLEMENTS($3, @$); }
     ;
 
 
@@ -1578,6 +1662,8 @@ declaration_type_spec
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
+    | KW_CLASS "(" id "{" id "}" ")" {
+        $$ = ATTR_GENERIC_TYPE_NAME(Class, GENERIC_TYPE_PARAM($3, $5, @$), @$); }
     ;
 
 var_type
@@ -1689,6 +1775,7 @@ decl_statements
 decl_statement
     : var_decl
     | interface_decl
+    | implements_decl
     | derived_type_decl
     | union_type_decl
     | enum_decl
@@ -2398,6 +2485,7 @@ designator
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
+    | id "{" generic_type_param_instantiation_list "}" { $$ = FUNCCALLORARRAY6($1, $3, @$); }
     | id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
@@ -2546,6 +2634,11 @@ id_list
     | id { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
+trait_list
+    : trait_list "+" id { $$ = $1; LIST_ADD($$, $3); }
+    | id { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
 // id?
 id_opt
     : id { $$ = $1; }
@@ -2599,6 +2692,7 @@ id
     | KW_ENDDO { $$ = SYMBOL($1, @$); }
     | KW_ENDIF { $$ = SYMBOL($1, @$); }
     | KW_ENDINTERFACE { $$ = SYMBOL($1, @$); }
+    | KW_ENDIMPLEMENTS { $$ = SYMBOL($1, @$ ); }
     | KW_ENDTYPE { $$ = SYMBOL($1, @$); }
     | KW_ENDPROGRAM { $$ = SYMBOL($1, @$); }
     | KW_ENDMODULE { $$ = SYMBOL($1, @$); }
@@ -2649,6 +2743,7 @@ id
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
     | KW_INTENT { $$ = SYMBOL($1, @$); }
     | KW_INTERFACE { $$ = SYMBOL($1, @$); }
+    | KW_IMPLEMENTS { $$ = SYMBOL($1, @$); }
     | KW_INTRINSIC { $$ = SYMBOL($1, @$); }
     | KW_IS { $$ = SYMBOL($1, @$); }
     | KW_KIND { $$ = SYMBOL($1, @$); }
@@ -2697,6 +2792,7 @@ id
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
     | KW_SAVE { $$ = SYMBOL($1, @$); }
+    | KW_SEALED { $$ = SYMBOL($1, @$); }
     | KW_SELECT { $$ = SYMBOL($1, @$); }
     | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
     | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

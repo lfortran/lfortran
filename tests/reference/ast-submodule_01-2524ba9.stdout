@@ -17,12 +17,15 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeInteger
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -64,6 +67,8 @@
                             []
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -83,7 +88,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         [(AttrIntent
@@ -135,11 +142,14 @@
                 (Function
                     func1
                     []
+                    []
                     [(AttrType
                         TypeReal
                         []
                         ()
                         ()
+                        ()
+                        []
                         None
                     )
                     (SimpleAttribute
@@ -166,6 +176,7 @@
             (InterfaceProc
                 (Function
                     func2
+                    []
                     [(b)]
                     [(SimpleAttribute
                         AttrModule
@@ -186,7 +197,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         []
@@ -204,7 +217,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         []
@@ -253,12 +268,15 @@
             [(AttrExtends
                 Base
             )]
+            []
             [(Declaration
                 (AttrType
                     TypeReal
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -324,6 +342,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(AttrIntent
@@ -343,7 +363,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     Base
+                    []
                     None
                 )
                 [(AttrIntent
@@ -387,11 +409,14 @@
         [(Function
             func1
             []
+            []
             [(AttrType
                 TypeReal
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             (SimpleAttribute
@@ -435,6 +460,7 @@
         []
         [(Function
             func2
+            []
             [(b)]
             [(SimpleAttribute
                 AttrModule
@@ -455,7 +481,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     Base
+                    []
                     None
                 )
                 []
@@ -473,7 +501,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     Base
+                    []
                     None
                 )
                 []
@@ -539,6 +569,8 @@
                             []
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -558,7 +590,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         [(AttrIntent
@@ -582,11 +616,14 @@
                 (Function
                     interfaceFunc1
                     []
+                    []
                     [(AttrType
                         TypeReal
                         []
                         ()
                         ()
+                        ()
+                        []
                         None
                     )]
                     ()
@@ -608,6 +645,7 @@
             (InterfaceProc
                 (Function
                     interfaceFunc2
+                    []
                     [(b)]
                     []
                     ()
@@ -627,7 +665,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         []
@@ -645,7 +685,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             Base
+                            []
                             None
                         )
                         []
@@ -669,12 +711,15 @@
             []
             ()
             []
+            []
             [(Declaration
                 (AttrType
                     TypeProcedure
                     []
                     ()
+                    ()
                     interfaceSub1
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -697,7 +742,9 @@
                     TypeProcedure
                     []
                     ()
+                    ()
                     interfaceFunc1
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -720,7 +767,9 @@
                     TypeProcedure
                     []
                     ()
+                    ()
                     interfaceFunc2
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -773,7 +822,9 @@
                 TypeType
                 []
                 ()
+                ()
                 Container
+                []
                 None
             )
             []
@@ -831,6 +882,7 @@
                 []
                 []
                 []
+                []
             )
             ()
             0)]
@@ -854,9 +906,11 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -882,9 +936,11 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
                 0)]
+                []
                 []
                 []
                 []

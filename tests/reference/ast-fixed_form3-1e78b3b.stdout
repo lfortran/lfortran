@@ -1,12 +1,15 @@
 (TranslationUnit
     [(Function
         functionf
+        []
         [(n)]
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -21,6 +24,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -41,6 +46,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -59,12 +66,15 @@
     )
     (Function
         f
+        []
         [(endfunctionf)]
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -79,6 +89,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -102,12 +114,15 @@
     )
     (Function
         g
+        []
         [(integerx)]
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -122,6 +137,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -140,6 +157,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -175,12 +194,15 @@
     )
     (Function
         g2
+        []
         [(integerx)]
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -195,6 +217,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -213,6 +237,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []

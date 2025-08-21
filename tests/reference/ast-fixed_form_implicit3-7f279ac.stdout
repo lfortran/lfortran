@@ -1,12 +1,15 @@
 (TranslationUnit
     [(Function
         c0
+        []
         [(a)]
         [(AttrType
             TypeCharacter
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -22,6 +25,7 @@
     )
     (Function
         c1
+        []
         [(a)]
         [(AttrType
             TypeCharacter
@@ -30,6 +34,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -45,6 +51,7 @@
     )
     (Function
         c11
+        []
         [(a)]
         [(AttrType
             TypeCharacter
@@ -53,6 +60,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -68,6 +77,7 @@
     )
     (Function
         c111
+        []
         [(a)]
         [(AttrType
             TypeCharacter
@@ -76,6 +86,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -91,12 +103,15 @@
     )
     (Function
         cstar
+        []
         [(a)]
         [(AttrType
             TypeCharacter
             []
             ()
             ()
+            ()
+            []
             DoubleAsterisk
         )]
         ()
@@ -112,12 +127,15 @@
     )
     (Function
         i0
+        []
         [(a)]
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -133,6 +151,7 @@
     )
     (Function
         i4
+        []
         [(a)]
         [(AttrType
             TypeInteger
@@ -141,6 +160,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -156,6 +177,7 @@
     )
     (Function
         i8
+        []
         [(a)]
         [(AttrType
             TypeInteger
@@ -164,6 +186,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -179,12 +203,15 @@
     )
     (Function
         r0
+        []
         [(a)]
         [(AttrType
             TypeReal
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -200,6 +227,7 @@
     )
     (Function
         r4
+        []
         [(a)]
         [(AttrType
             TypeReal
@@ -208,6 +236,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -223,6 +253,7 @@
     )
     (Function
         r8
+        []
         [(a)]
         [(AttrType
             TypeReal
@@ -231,6 +262,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -246,12 +279,15 @@
     )
     (Function
         cm0
+        []
         [(a)]
         [(AttrType
             TypeComplex
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -267,6 +303,7 @@
     )
     (Function
         cm4
+        []
         [(a)]
         [(AttrType
             TypeComplex
@@ -275,6 +312,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -290,6 +329,7 @@
     )
     (Function
         cm8
+        []
         [(a)]
         [(AttrType
             TypeComplex
@@ -298,6 +338,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -313,12 +355,15 @@
     )
     (Function
         l0
+        []
         [(a)]
         [(AttrType
             TypeLogical
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -334,6 +379,7 @@
     )
     (Function
         l1
+        []
         [(a)]
         [(AttrType
             TypeLogical
@@ -342,6 +388,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -357,6 +405,7 @@
     )
     (Function
         l4
+        []
         [(a)]
         [(AttrType
             TypeLogical
@@ -365,6 +414,8 @@
             Value)]
             ()
             ()
+            ()
+            []
             None
         )]
         ()

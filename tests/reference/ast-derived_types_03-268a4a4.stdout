@@ -20,12 +20,15 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeInteger
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -45,7 +48,9 @@
                 TypeType
                 []
                 ()
+                ()
                 X
+                []
                 None
             )
             []
@@ -81,12 +86,15 @@
                 []
                 ()
                 []
+                []
                 [(Declaration
                     (AttrType
                         TypeInteger
                         []
                         ()
                         ()
+                        ()
+                        []
                         None
                     )
                     []
@@ -106,7 +114,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     A
+                    []
                     None
                 )
                 []
@@ -126,11 +136,14 @@
         (Function
             Z
             []
+            []
             [(AttrType
                 TypeInteger
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()
@@ -148,12 +161,15 @@
                 []
                 ()
                 []
+                []
                 [(Declaration
                     (AttrType
                         TypeInteger
                         []
                         ()
                         ()
+                        ()
+                        []
                         None
                     )
                     []
@@ -173,7 +189,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     A
+                    []
                     None
                 )
                 []

@@ -2,11 +2,14 @@
     [(Function
         f
         []
+        []
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -32,11 +35,14 @@
     (Function
         g
         []
+        []
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()
@@ -62,11 +68,14 @@
     (Function
         h
         []
+        []
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()

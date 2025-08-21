@@ -109,6 +109,11 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define CONCURRENT_CONTROLS(x) VEC_CAST(x, concurrent_control)
 #define CONCURRENT_LOCALITIES(x) VEC_CAST(x, concurrent_locality)
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
+#define IMPLEMENTS_ITEMS(x) VEC_CAST(x, implements_item)
+#define GENERIC_TYPE_PARAMS(x) VEC_CAST(x, generic_type_param)
+
+// Allocator &al, const Location &a_loc, char* a_name, decl_typeType a_type_name
+#define GENERIC_TYPE_PARAM(a_name, a_type_name, l) make_GenericTypeParameter_t(p.m_a, l, name2char(a_name), name2char(a_type_name))
 
 Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     Vec<ast_t*> v;
@@ -269,42 +274,56 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, nullptr, \
-            nullptr, None)
+            nullptr, 0, nullptr, nullptr, \
+            nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_INT(x, n, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, \
+            nullptr, 0, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, \
+            nullptr, 0, None)
 
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
+            nullptr, 0, nullptr, nullptr, \
+            name2char(name), \
+            nullptr, 0, None)
+
+#define ATTR_GENERIC_TYPE_NAME(x, generic_type_param, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
             nullptr, 0, nullptr, \
-            name2char(name), None)
+            down_cast<generic_type_param_t>(generic_type_param), \
+            nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, nullptr, \
-            nullptr, sym)
+            nullptr, 0, nullptr, nullptr,\
+            nullptr, nullptr, 0, sym)
 
 #define ATTR_TYPE_ATTR(x, attr, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, \
             down_cast<decl_attribute_t>(attr), \
-            nullptr, None)
+            nullptr, nullptr, nullptr, 0, None)
 
 #define ATTR_NAME(x, l) make_AttrNamelist_t \
             (p.m_a, l, name2char(x))
+
+#define ATTR_IMPLEMENTS(x, l) make_AttrImplements_t( \
+            p.m_a, l, \
+            REDUCE_ARGS(p.m_a, x), x.size())
 
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
             p.m_a, l, \
@@ -455,7 +474,8 @@ static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
 					   args, vs.n_dim,
 					   nullptr, 0, /* keywords */
 					   nullptr, 0, /* subargs */
-					   nullptr, 0 /* temp_args */ ));
+					   nullptr, 0, /* temp_args */ 
+                                           nullptr, 0 /* generic_type_args */));
     }
 }
 
@@ -1538,6 +1558,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1563,6 +1585,34 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*end_name*/ &(name_opt->loc))
 #define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
+        /*args*/ ARGS(p.m_a, l, args), \
+        /*n_args*/ args.size(), \
+        /*return_type*/ nullptr, \
+        /*return_type*/ 0, \
+        /*return_var*/ EXPR_OPT(return_var), \
+        /*bind*/ bind_opt(bind), \
+        trivia_cast(trivia), \
+        /*use*/ USES(use), \
+        /*n_use*/ use.size(), \
+        /*m_import*/ VEC_CAST(import, import_statement), \
+        /*n_import*/ import.size(), \
+        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
+        /*n_implicit*/ implicit.size(), \
+        /*decl*/ DECLS(decl), \
+        /*n_decl*/ decl.size(), \
+        /*body*/ STMTS(stmts), \
+        /*n_body*/ stmts.size(), \
+        /*contains*/ CONTAINS(contains), \
+        /*n_contains*/ contains.size(), \
+        /*temp_args*/ nullptr, \
+        /*n_temp_args*/ 0)
+
+#define GENERIC_FUNCTION0(name, type_params, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*generic_type_params*/ GENERIC_TYPE_PARAMS(type_params), \
+        /*n_generic_type_params*/ type_params.size(),\
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*return_type*/ nullptr, \
@@ -1590,6 +1640,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1616,6 +1668,8 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
         make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*generic_type_params*/ nullptr, \
+        /*n_generic_type_params*/ 0,\
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
@@ -2228,6 +2282,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         const Vec<FnArg> &args,
         const Vec<FnArg> &subargs,
         const Vec<ast_t*> &temp_args,
+        const Vec<ast_t*> &generic_args,
         Location &l) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
@@ -2250,24 +2305,32 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     for (size_t i=0; i<temp_args.size(); i++) {
         v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
     }
+    Vec<decl_attribute_t*> v4;
+    v4.reserve(al, generic_args.size());
+    for (size_t i=0; i<generic_args.size(); i++) {
+        v4.push_back(al, down_cast<decl_attribute_t>(generic_args[i]));
+    }
     return make_FuncCallOrArray_t(al, l,
         /*char* a_func*/ name2char(id),
         /* struct_member_t* */member.p, /* size_t */member.size(),
         /*fnarg_t* a_args*/ v.p, /*size_t n_args*/ v.size(),
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
         /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
-        /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size());
+        /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size(),
+        /*m_generic_args*/ v4.p, /*n_generic_args*/ v4.size());
 }
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
-        args, empty1(), empty_vecast(), l)
+        args, empty1(), empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \
-        members, args, empty1(), empty_vecast(), l)
+        members, args, empty1(), empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY3(id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        empty5(), args, subargs, empty_vecast(), l)
+        empty5(), args, subargs, empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        mem, args, subargs, empty_vecast(), l)
+        mem, args, subargs, empty_vecast(), empty_vecast(), l)
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
-        args, empty1(), temp_args, l)
+        args, empty1(), temp_args, empty_vecast(), l)
+#define FUNCCALLORARRAY6(id, generic_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
+        empty1(), empty1(), empty_vecast(), generic_args, l)
 
 ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         const Vec<FnArg> &args, Location &l, LCompilers::diag::Diagnostics &diagnostics) {
@@ -2545,6 +2608,8 @@ return make_Submodule_t(al, a_loc,
 #define INTERFACE_HEADER_DEFOP(op, l) make_InterfaceHeaderDefinedOperator_t( \
         p.m_a, l, def_op_to_str(p.m_a, op))
 #define ABSTRACT_INTERFACE_HEADER(l) make_AbstractInterfaceHeader_t(p.m_a, l)
+#define ABSTRACT_INTERFACE_HEADER_NAME(id, l) make_AbstractInterfaceHeaderName_t(p.m_a, l, \
+        name2char(id))
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
@@ -2568,10 +2633,38 @@ return make_Submodule_t(al, a_loc,
         make_InterfaceProc_t(p.m_a, l, \
         down_cast<program_unit_t>(proc))
 
+#define INTERFACE_TYPE_LIST(a_types, l) make_InterfaceTypeList_t(p.m_a, l, \
+        VEC_CAST(a_types, decl_attribute), \
+        a_types.size())
+
+#define INTERFACE_TYPE_DEF(name, attr, l) make_InterfaceTypeDef_t(p.m_a, l, \
+        name2char(name), down_cast<decl_attribute_t>(attr))
+
+#define IMPLEMENTS(header, contains, l) make_Implements_t(p.m_a, l, \
+        down_cast<implements_header_t>(header), \
+        IMPLEMENTS_ITEMS(contains), contains.size())
+
+#define IMPLEMENTS_HEADER_TYPE1(trait_name, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, A2LIST(p.m_a, trait_name)), 1, down_cast<decl_attribute_t>(type_name))
+
+#define IMPLEMENTS_HEADER_INTERFACE1(trait_name, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, A2LIST(p.m_a, trait_name)), 1, name2char(type_name))
+
+#define IMPLEMENTS_HEADER_TYPE2(trait_names, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, trait_names), trait_names.size(), down_cast<decl_attribute_t>(type_name))
+        
+#define IMPLEMENTS_HEADER_INTERFACE2(trait_names, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, trait_names), trait_names.size(), name2char(type_name))
+
+#define IMPLEMENTS_PROC(a_name, a_attrs, l) make_ImplementsProc_t(p.m_a, l, \
+        name2char(a_name), \
+        VEC_CAST(a_attrs, decl_attribute), a_attrs.size())
+
 #define DERIVED_TYPE(attr, name, trivia, decl, contains, l) make_DerivedType_t(p.m_a, l, \
         name2char(name), nullptr, 0, \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(),  \
+        nullptr, 0, \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
 #define DERIVED_TYPE1(attr, name, namelist, trivia, decl, contains, l) \
@@ -2579,6 +2672,7 @@ return make_Submodule_t(al, a_loc,
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(),  \
+        nullptr, 0, \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
 #define DERIVED_TYPE2(name, attr, trivia, l) \
@@ -2601,8 +2695,17 @@ ast_t* TYPEPARAMETER0(Allocator &al,
     v.push_back(al, down_cast<decl_attribute_t>(attr));
     return make_DerivedType_t(al, l,
         name2char(id), nullptr, 0, trivia_cast(trivia), v.p, v.size(),
-        nullptr, 0, nullptr, 0);
+        nullptr, 0, nullptr, 0, nullptr, 0);
 }
+
+#define DERIVED_TYPE3(attr, name, trivia, decl, type_params, contains, l) \
+        make_DerivedType_t(p.m_a, l, name2char(name), \
+        nullptr, 0, \
+        trivia_cast(trivia), \
+        VEC_CAST(attr, decl_attribute), attr.size(),  \
+        GENERIC_TYPE_PARAMS(type_params), type_params.size(), \
+        DECLS(decl), decl.size(), \
+        VEC_CAST(contains, procedure_decl), contains.size())
 
 #define TEMPLATE(name, namelist, decl, contains, l) \
         make_Template_t(p.m_a, l, name2char(name), \
@@ -2780,6 +2883,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         default : { throw LCompilers::LCompilersException("Not implemented"); }
     }
 }
+
 
 ast_t* set_trivia(Allocator &al, Location &l,
         trivia_node_t** m_t1, size_t n_t1,

@@ -24,12 +24,15 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeReal
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -48,6 +51,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -71,12 +76,15 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeComplex
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -94,7 +102,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     X
+                    []
                     None
                 )
                 []
@@ -128,7 +138,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -195,12 +207,15 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeComplex
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -218,7 +233,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     Y
+                    []
                     None
                 )
                 []
@@ -272,7 +289,9 @@
                 TypeType
                 []
                 ()
+                ()
                 X
+                []
                 None
             )
             []
@@ -290,7 +309,9 @@
                 TypeType
                 []
                 ()
+                ()
                 Z
+                []
                 None
             )
             []

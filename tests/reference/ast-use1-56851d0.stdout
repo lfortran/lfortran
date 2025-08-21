@@ -34,11 +34,14 @@
     (Function
         g
         []
+        []
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()

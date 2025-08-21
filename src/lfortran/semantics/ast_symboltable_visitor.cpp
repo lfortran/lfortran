@@ -463,7 +463,7 @@ public:
                                     al, decl->m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl->m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
@@ -1023,7 +1023,7 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
 
@@ -1316,7 +1316,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
@@ -1450,9 +1450,17 @@ public:
                                     al, decl.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, nullptr, 0, AST::symbolType::None)));
                         
                     } 
+
+//static inline ast_t* make_AttrType_t(
+//        Allocator &al, const Location &a_loc, 
+//       decl_typeType a_type, 
+//        kind_item_t* a_kind, size_t n_kind, 
+//        decl_attribute_t* a_attr, 
+//        generic_type_param_t* a_parametrized_type, 
+//        char* a_name, char** a_traits, size_t n_traits, symbolType a_sym) {
 
                     LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&

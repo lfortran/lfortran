@@ -13,6 +13,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -31,6 +33,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -50,6 +54,7 @@
             iam
             (FuncCallOrArray
                 this_image
+                []
                 []
                 []
                 []
@@ -142,6 +147,7 @@
             ()
             (== (FuncCallOrArray
                 this_image
+                []
                 []
                 []
                 []

@@ -26,11 +26,14 @@
     (Function
         h
         []
+        []
         [(AttrType
             TypeInteger
             []
             ()
             ()
+            ()
+            []
             None
         )]
         ()

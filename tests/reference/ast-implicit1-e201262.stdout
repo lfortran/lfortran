@@ -56,6 +56,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -78,6 +80,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -100,6 +104,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -122,6 +128,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -146,6 +154,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -170,6 +180,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -192,6 +204,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -212,6 +226,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -228,6 +244,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -264,6 +282,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -294,6 +314,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -316,6 +338,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -344,6 +368,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -366,6 +392,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -388,6 +416,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -412,6 +442,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -434,6 +466,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -456,6 +490,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -478,6 +514,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -502,6 +540,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -520,6 +560,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -540,6 +582,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -558,6 +602,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -576,6 +622,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -595,7 +643,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     BLOB
+                    []
                     None
                 )
                 [(LetterSpec
@@ -611,7 +661,9 @@
                     TypeClass
                     []
                     ()
+                    ()
                     X
+                    []
                     None
                 )
                 [(LetterSpec
@@ -634,6 +686,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -649,6 +703,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -664,6 +720,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -685,10 +743,13 @@
                         []
                         []
                         []
+                        []
                     )
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -707,6 +768,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -722,6 +785,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -737,6 +802,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -758,10 +825,13 @@
                         []
                         []
                         []
+                        []
                     )
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -780,6 +850,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -795,6 +867,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -810,6 +884,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -831,10 +907,13 @@
                         []
                         []
                         []
+                        []
                     )
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -853,6 +932,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -868,6 +949,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -883,6 +966,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -904,10 +989,13 @@
                         []
                         []
                         []
+                        []
                     )
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -929,6 +1017,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -950,6 +1040,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -968,6 +1060,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec

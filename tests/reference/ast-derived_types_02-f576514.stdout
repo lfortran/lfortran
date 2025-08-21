@@ -21,6 +21,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -37,6 +39,7 @@
                 (Real "0.d0")
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -60,6 +63,7 @@
             []
             []
             []
+            []
         )
         (DerivedType
             C
@@ -69,6 +73,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            []
             []
             []
             []
@@ -88,6 +93,7 @@
             (SimpleAttribute
                 AttrPublic
             )]
+            []
             [(Declaration
                 ()
                 [(SimpleAttribute
@@ -104,6 +110,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -125,7 +133,9 @@
                     TypeType
                     []
                     ()
+                    ()
                     C
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -137,6 +147,7 @@
                 ()
                 (FuncCallOrArray
                     null
+                    []
                     []
                     []
                     []
@@ -155,6 +166,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -173,6 +186,7 @@
                     []
                     []
                     []
+                    []
                 )
                 Arrow
                 ())
@@ -184,6 +198,7 @@
                 ()
                 (FuncCallOrArray
                     null
+                    []
                     []
                     []
                     []
@@ -234,7 +249,9 @@
                     TypeClass
                     []
                     ()
+                    ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -272,7 +289,9 @@
                     TypeClass
                     []
                     ()
+                    ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -314,7 +333,9 @@
                 TypeType
                 []
                 ()
+                ()
                 X
+                []
                 None
             )
             []

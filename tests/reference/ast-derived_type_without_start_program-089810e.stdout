@@ -9,12 +9,15 @@
             []
             ()
             []
+            []
             [(Declaration
                 (AttrType
                     TypeReal
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
