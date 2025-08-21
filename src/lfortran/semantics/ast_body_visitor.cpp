@@ -3929,46 +3929,6 @@ public:
         return nullptr;
     }
 
-    void handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
-        if (to_lower(var_name) == "mvbits") {
-            if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                if( !signature_matched ) {
-                    diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (ASRUtils::expr_value(args[3]) != nullptr) {
-                    diag.add(Diagnostic(
-                        "`to` argument of `mvbits` must be a variable",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{args[3]->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    fill_optional_kind_arg(var_name, args);
-
-                    ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
-                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    current_body->push_back(al, ASRUtils::STMT(tmp));
-                    tmp = nullptr;
-                }
-            }
-        }
-    }
-
     /*
         Function to convert 'FLUSH' subroutine call to 'FLUSH' ASR node
     */
@@ -4168,10 +4128,6 @@ public:
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
         if( intrinsic_subroutine ) {
             tmp = intrinsic_subroutine;
-            return;
-        }
-        if (sub_name == "mvbits") {
-            handle_Mvbits(x, sub_name);
             return;
         }
         if (x.n_temp_args > 0) {
