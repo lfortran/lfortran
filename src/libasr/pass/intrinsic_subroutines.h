@@ -2,6 +2,7 @@
 #define LIBASR_PASS_INTRINSIC_SUBROUTINES_H
 
 
+#include "libasr/pass/intrinsic_function_registry.h"
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 
@@ -1163,6 +1164,17 @@ namespace MoveAlloc {
         } else {
             fill_func_arg_sub("to", arg_types[1], InOut);
         }
+
+        Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, args[0]);
+
+        // ASR node for `allocated(from)`
+        ASR::expr_t* is_from_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0, logical, nullptr));
+
+        std::vector<ASR::stmt_t*> if_body;
+
         if (!ASRUtils::is_character(*arg_types[0])) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
             Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
@@ -1176,13 +1188,17 @@ namespace MoveAlloc {
         al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
                 alloc_dims.push_back(al, dim);
             }
-            body.push_back(al, b.Allocate(args[1], alloc_dims));
+            if_body.push_back(b.Allocate(args[1], alloc_dims));
         }
-        body.push_back(al, b.Assignment(args[1], args[0]));
+        if_body.push_back(b.Assignment(args[1], args[0]));
         Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
                     explicit_deallocate_args.push_back(al, args[0]);
         ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-        body.push_back(al, explicit_deallocate);
+        if_body.push_back(explicit_deallocate);
+
+        ASR::stmt_t* if_stmt = b.If(is_from_allocated, if_body, {});
+        body.push_back(al, if_stmt);
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);

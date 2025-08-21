@@ -2033,11 +2033,15 @@ public:
             != vars_with_deferred_struct_declaration.end()) {
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
                 ASR::ttype_t* var_type = var->m_type;
-                if ( ASR::is_a<ASR::Pointer_t>(*var_type) ) {
-                    ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(var_type);
-                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(ptr->m_type));
-                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
-                    var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
+                if (ASR::is_a<ASR::Pointer_t>(*var_type) || ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var_type));
+                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                         ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
+                    if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
+                        var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
+                    } else if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                        var->m_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x.base.base.loc, type));
+                    }
                     if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
                         ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
                         ptr_null->m_type = var->m_type;
