@@ -5968,11 +5968,10 @@ public:
                 llvm::Value* casted_val_ptr = builder->CreateBitCast(val_data_ptr, struct_type->getPointerTo());
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                for(auto map_:name2dertype) {
-                    // for the case where the target is polymorphic
-                    if(llvm_target_type == map_.second && map_.first.find("_polymorphic") != std::string::npos) {
-                        llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
-                    }
+                // This ensures the case where we are storing the base to base_polymorphic, and hence we need to load base from the later one.
+                std::string polymorphic_struct_name = std::string(struct_type_t->m_name) + "_polymorphic";
+                if(llvm_target_type == name2dertype[polymorphic_struct_name]) {
+                    llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
                 }
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
