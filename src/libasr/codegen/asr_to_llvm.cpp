@@ -1520,6 +1520,14 @@ public:
                     llvm::ConstantPointerNull::get(llvm_utils->get_el_type(x.m_vars[i],
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_vars[i])), module.get())->getPointerTo())
                     , data_ptr);
+            } else if(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_vars[i]))) {
+                llvm::Value* np = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
+                llvm::Value* data_target = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
+                    ASRUtils::expr_type(x.m_vars[i]), module.get()), target, 0);
+                llvm::Value* len = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
+                    ASRUtils::expr_type(x.m_vars[i]), module.get()), target, 1);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), len);
+                builder->CreateStore(np, data_target);
             } else {
                 llvm::Value* np = builder->CreateIntToPtr(
                     llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
