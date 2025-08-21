@@ -5950,7 +5950,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             }
         }
         case ASR::ttypeType::UnsignedInteger: {
-            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            ASR::UnsignedIntegerConstant_t* value_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value);
             switch (kind) {
                 case 1: ((uint8_t*)x->m_data)[i] = value_int->m_n; break;
                 case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
@@ -6109,13 +6109,13 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 1: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 2: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 4: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 8: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint64_t*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
@@ -6178,6 +6178,14 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 }
 
 template<typename T>
+T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+    }
+    return data;
+}
+
+template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
         data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
@@ -6217,10 +6225,10 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: return set_data_int(new uint8_t[n_args], a_args, n_args);
-                case 2: return set_data_int(new uint16_t[n_args], a_args, n_args);
-                case 4: return set_data_int(new uint32_t[n_args], a_args, n_args);
-                case 8: return set_data_int(new uint64_t[n_args], a_args, n_args);
+                case 1: return set_data_uint(new uint8_t[n_args], a_args, n_args);
+                case 2: return set_data_uint(new uint16_t[n_args], a_args, n_args);
+                case 4: return set_data_uint(new uint32_t[n_args], a_args, n_args);
+                case 8: return set_data_uint(new uint64_t[n_args], a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
@@ -6313,6 +6321,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
