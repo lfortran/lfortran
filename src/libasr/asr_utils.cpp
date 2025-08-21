@@ -1229,7 +1229,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     if (ASR::is_a<ASR::Struct_t>(*member)) {
         ASR::Struct_t* member_variable = ASR::down_cast<ASR::Struct_t>(member);
         ASR::symbol_t *mem_es = nullptr;
-        std::string mem_name = "1_" + std::string(ASRUtils::symbol_name(member));
+        std::string mem_name = "1_" + std::string(member_variable->m_name) +
+            "_" + std::string(ASRUtils::symbol_name(member));
         if (current_scope->resolve_symbol(mem_name)) {
             mem_es = current_scope->resolve_symbol(mem_name);
         } else {
@@ -2498,7 +2499,8 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
             class_proc_name = ASRUtils::symbol_name(original_sym);
         }
         if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
-            std::string imported_proc_name = "1_" + class_proc_name;
+            std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym));
+            std::string imported_proc_name = "1_" + struct_name + "_" + class_proc_name;
             if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
                 ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
                 std::string module_name = ASRUtils::symbol_name(module_sym);

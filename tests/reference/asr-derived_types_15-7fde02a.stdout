@@ -371,26 +371,6 @@
                     (SymbolTable
                         6
                         {
-                            1_multiply:
-                                (ExternalSymbol
-                                    6
-                                    1_multiply
-                                    3 multiply
-                                    t_1
-                                    []
-                                    multiply
-                                    Public
-                                ),
-                            1_sqrt_subtract:
-                                (ExternalSymbol
-                                    6
-                                    1_sqrt_subtract
-                                    3 sqrt_subtract
-                                    t_1
-                                    []
-                                    sqrt_subtract
-                                    Public
-                                ),
                             1_t_1_i:
                                 (ExternalSymbol
                                     6
@@ -399,6 +379,26 @@
                                     t_1
                                     []
                                     i
+                                    Public
+                                ),
+                            1_t_1_multiply:
+                                (ExternalSymbol
+                                    6
+                                    1_t_1_multiply
+                                    3 multiply
+                                    t_1
+                                    []
+                                    multiply
+                                    Public
+                                ),
+                            1_t_1_sqrt_subtract:
+                                (ExternalSymbol
+                                    6
+                                    1_t_1_sqrt_subtract
+                                    3 sqrt_subtract
+                                    t_1
+                                    []
+                                    sqrt_subtract
                                     Public
                                 ),
                             t_1:
@@ -458,7 +458,7 @@
                         ()
                         (RealCompare
                             (FunctionCall
-                                6 1_multiply
+                                6 1_t_1_multiply
                                 ()
                                 [((RealConstant
                                     5.000000
@@ -490,7 +490,7 @@
                         ()
                         (RealCompare
                             (FunctionCall
-                                6 1_sqrt_subtract
+                                6 1_t_1_sqrt_subtract
                                 ()
                                 [((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)

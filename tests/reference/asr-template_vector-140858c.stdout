@@ -47,10 +47,10 @@
                                     (SymbolTable
                                         7
                                         {
-                                            1___asr_push_back:
+                                            1_intvector___asr_push_back:
                                                 (ExternalSymbol
                                                     7
-                                                    1___asr_push_back
+                                                    1_intvector___asr_push_back
                                                     8 push_back
                                                     intvector
                                                     []
@@ -743,7 +743,7 @@
                                     []
                                     []
                                     [(SubroutineCall
-                                        7 1___asr_push_back
+                                        7 1_intvector___asr_push_back
                                         ()
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (Var 7 v)
@@ -798,16 +798,6 @@
                                                     (SymbolTable
                                                         5
                                                         {
-                                                            1_resize:
-                                                                (ExternalSymbol
-                                                                    5
-                                                                    1_resize
-                                                                    4 resize
-                                                                    vector
-                                                                    []
-                                                                    resize
-                                                                    Public
-                                                                ),
                                                             1_vector_elements:
                                                                 (ExternalSymbol
                                                                     5
@@ -816,6 +806,16 @@
                                                                     vector
                                                                     []
                                                                     elements
+                                                                    Public
+                                                                ),
+                                                            1_vector_resize:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    1_vector_resize
+                                                                    4 resize
+                                                                    vector
+                                                                    []
+                                                                    resize
                                                                     Public
                                                                 ),
                                                             1_vector_sz:
@@ -963,7 +963,7 @@
                                                         .false.
                                                     )
                                                     (SubroutineCall
-                                                        5 1_resize
+                                                        5 1_vector_resize
                                                         ()
                                                         [((Var 5 new_size))]
                                                         (Var 5 this)

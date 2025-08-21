@@ -7,10 +7,10 @@
                     (SymbolTable
                         5
                         {
-                            1_test_subroutine:
+                            1_test_type_test_subroutine:
                                 (ExternalSymbol
                                     5
-                                    1_test_subroutine
+                                    1_test_type_test_subroutine
                                     3 test_subroutine
                                     test_type
                                     []
@@ -67,7 +67,7 @@
                     main
                     [test_module]
                     [(SubroutineCall
-                        5 1_test_subroutine
+                        5 1_test_type_test_subroutine
                         ()
                         [(())]
                         (Var 5 test_type_instance)

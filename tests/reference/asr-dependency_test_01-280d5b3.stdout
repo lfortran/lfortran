@@ -12,10 +12,10 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_find_dependency:
+                                            1_dependency_tree_t_find_dependency:
                                                 (ExternalSymbol
                                                     6
-                                                    1_find_dependency
+                                                    1_dependency_tree_t_find_dependency
                                                     5 find_dependency
                                                     dependency_tree_t
                                                     []
@@ -194,7 +194,7 @@
                                     [(Assignment
                                         (Var 6 id)
                                         (FunctionCall
-                                            6 1_find_dependency
+                                            6 1_dependency_tree_t_find_dependency
                                             ()
                                             [((Var 6 dependency))]
                                             (Integer 4)
