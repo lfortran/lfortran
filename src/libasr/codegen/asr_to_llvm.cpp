@@ -5861,7 +5861,7 @@ public:
             ASR::ttype_t *type = ASRUtils::get_contained_type(target_type);
             type = ASRUtils::type_get_past_allocatable(type);
             [[maybe_unused]] bool is_target_class = ASRUtils::is_class_type(
-                ASRUtils::type_get_past_pointer(target_type));
+                ASRUtils::type_get_past_allocatable_pointer(target_type));
             [[maybe_unused]] bool is_value_class = ASRUtils::is_class_type(
                 ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(value_type)));
@@ -5950,12 +5950,6 @@ public:
                 llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Value* casted_val_ptr = builder->CreateBitCast(val_data_ptr, struct_type->getPointerTo());
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
-                llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                // This ensures the case where we are storing the base to base_polymorphic, and hence we need to load base from the later one.
-                std::string polymorphic_struct_name = std::string(struct_type_t->m_name) + "_polymorphic";
-                if(llvm_target_type == name2dertype[polymorphic_struct_name]) {
-                    llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
-                }
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
                 std::string value_struct_t_name = "";
