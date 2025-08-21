@@ -11022,14 +11022,7 @@ public:
                 args.push_back(llvm_arg);
                 continue ;
             }
-            if(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value)) &&
-                ASRUtils::is_character(*ASRUtils::extract_type(orig_arg->m_type))){
-                LCOMPILERS_ASSERT_MSG(
-                    ASRUtils::is_character_phsyical_types_matched(
-                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)),
-                        ASRUtils::extract_type(orig_arg->m_type)),
-                    "Unmatching String Physical Types");
-            }
+
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                 ASR::symbol_t* var_sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
@@ -11041,6 +11034,30 @@ public:
                             tmp = llvm_symtab_deep_copy[{h, current_scope}];
                         } else {
                             tmp = llvm_symtab[h];
+                        }
+                        if (ASRUtils::is_character(*orig_arg->m_type) &&
+                            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value)) && x_abi == ASR::abiType::BindC) {
+                            ASR::String_t* orig_ttype = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(orig_arg->m_type));
+                            if(orig_ttype->m_physical_type == ASR::string_physical_typeType::CChar) {
+                                    llvm::Type* orig_type = llvm_utils->get_type_from_ttype_t_util(
+                                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                                    orig_arg->m_type, module.get(), x_abi)->getPointerTo();
+                                if (tmp->getType() != orig_type && tmp->getType()->isPointerTy()) {
+                                    // Extract data pointer from string descriptor
+                                    llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_args[i].m_value,
+                                        arg->m_type, module.get(), x_abi);
+                                    llvm::Value* data_ptr_field = llvm_utils->create_gep2(string_desc_type, tmp, 0);
+                                    llvm::Value* raw_data_ptr = llvm_utils->CreateLoad2(orig_type, data_ptr_field);
+                                    tmp = raw_data_ptr;
+                                }
+                            } else {
+                                LCOMPILERS_ASSERT_MSG(
+                                    ASRUtils::is_character_phsyical_types_matched(
+                                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)),
+                                        ASRUtils::extract_type(orig_arg->m_type)),
+                                    "Unmatching String Physical Types");
+                            }
                         }
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
