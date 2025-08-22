@@ -125,22 +125,24 @@ namespace LCompilers {
             llvm::Value* arg_struct = llvm_utils->CreateAlloca(*builder, arg_type);
             llvm::Value* first_ele_ptr = nullptr;
             std::string asr_arg_type_code = ASRUtils::get_type_code(ASRUtils::get_contained_type(asr_arg_type), false, false);
+            llvm::Type* element_type = llvm_utils->get_type_from_ttype_t_util(
+                nullptr, ASRUtils::get_contained_type(asr_arg_type), llvm_utils->module);
             llvm::StructType* tmp_struct_type = tkr2array[asr_arg_type_code].first;
             if( tmp_struct_type->getElementType(0)->isArrayTy() ) {
-                first_ele_ptr = llvm_utils->create_gep(get_pointer_to_data(tmp), 0);
+                first_ele_ptr = llvm_utils->create_gep2(element_type, get_pointer_to_data(tmp), 0);
             } else if( tmp_struct_type->getNumElements() < 5 ) {
-                first_ele_ptr = llvm_utils->CreateLoad(get_pointer_to_data(tmp));
+                first_ele_ptr = llvm_utils->CreateLoad2(element_type, get_pointer_to_data(tmp));
             } else if( tmp_struct_type->getNumElements() == 5 ) {
                 return tmp;
             }
-            llvm::Value* first_arg_ptr = llvm_utils->create_gep(arg_struct, 0);
+            llvm::Value* first_arg_ptr = llvm_utils->create_gep2(arg_type, arg_struct, 0);
             builder->CreateStore(first_ele_ptr, first_arg_ptr);
             llvm::Value* sec_ele_ptr = get_offset(arg_type, tmp);
-            llvm::Value* sec_arg_ptr = llvm_utils->create_gep(arg_struct, 1);
+            llvm::Value* sec_arg_ptr = llvm_utils->create_gep2(arg_type, arg_struct, 1);
             builder->CreateStore(sec_ele_ptr, sec_arg_ptr);
             llvm::Value* third_ele_ptr
                 = llvm_utils->CreateLoad(get_pointer_to_dimension_descriptor_array(arg_type, tmp));
-            llvm::Value* third_arg_ptr = llvm_utils->create_gep(arg_struct, 2);
+            llvm::Value* third_arg_ptr = llvm_utils->create_gep2(arg_type, arg_struct, 2);
             builder->CreateStore(third_ele_ptr, third_arg_ptr);
             return arg_struct;
         }
