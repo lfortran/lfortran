@@ -364,10 +364,10 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR > 16
             llvm_utils->ptr_type[arr] = arr_type;
 #endif
-            llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
+            llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
-            llvm::Value* dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
+            llvm::Value* dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep2(arr_type, arr, 2));
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
