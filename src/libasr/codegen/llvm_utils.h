@@ -319,12 +319,6 @@ namespace LCompilers {
                 }
                 start_new_block(mergeBB);
             }
-
-            /*
-             * Initialize string with empty characters.
-            */
-            void string_init(llvm::Value* arg_size, llvm::Value* arg_string);
-
             /*
                 * Checker for the desired type while operating on array of strings.
                 To make sure of consistency while working, to avoid llvm IR opaque errors.
@@ -349,8 +343,9 @@ namespace LCompilers {
 
             /*
              * Allocate stack memory for string.
+             * Notice : It doesn't set the length.
             */
-            void initialize_string_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+            void set_string_memory_on_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
 
             /*
                 Create a string based on the physical type.
@@ -434,13 +429,6 @@ namespace LCompilers {
             */
             void set_array_of_strings_memory_on_stack(ASR::String_t* str_type,llvm::Value* str, llvm::Value* str_len, llvm::Value* array_size);
 
-            /*
-                - Gets the llvm Variable for different strings representations (standalone or array)
-                    e.g. --> (character, allocatable-character, array of strings, etc.)
-                - Returns a pointer to the string container
-                    e.g. --> (string_descriptor*, array_descriptor*, i8**)
-            */
-            llvm::Value* fetch_string_llvm_var(ASR::Variable_t* x);
 
             /*
                 * Gets the data pointer of an array of strings

@@ -3,12 +3,12 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 
-@my_name_data = private global [8 x i8] c"Dominic\00"
-@my_name = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @my_name_data, i32 0, i32 0), i64 7 }>
+@my_name_data = private global [7 x i8] c"Dominic"
+@my_name = private global %string_descriptor <{ i8* getelementptr inbounds ([7 x i8], [7 x i8]* @my_name_data, i32 0, i32 0), i64 7 }>
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [19 x i8] c"S-DESC-11,S-DESC-7\00", align 1
-@string_const_data = private constant [12 x i8] c"My name is \00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
+@string_const_data = private constant [11 x i8] c"My name is "
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
