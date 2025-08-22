@@ -4,8 +4,8 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data = private constant [12 x i8] c"Hello world\00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
+@string_const_data = private constant [11 x i8] c"Hello world"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @f() {
