@@ -898,27 +898,29 @@ namespace GetEnvironmentVariable {
         std::string c_func_name = "_lfortran_get_environment_variable";
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("name", arg_types[0], InOut);
+        fill_func_arg_sub("name", arg_types[0], In);
         if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {// this is the case where args[1] is `value`
             /*
             interface 
-                subroutine _lfortran_get_environment_variable(name, string_receiver) bind(c)
+                subroutine _lfortran_get_environment_variable(name, name_len, string_receiver) bind(c)
                     character(len=1, c_char) :: name(*)
+                    integer :: name_len
                     character(len=1, c_char) :: string_receiver(*)
                 end subroutine
 
-                integer function _lfortran_get_length_of_environment_variable(name) bind(c)
+                integer function _lfortran_get_length_of_environment_variable(name, name_len) bind(c)
                     character(len=1, c_char) :: name(*)
+                    integer :: name_len
                 end function 
             end interface
 
             integer :: length_to_allocate
-            length_to_allocate =  _lfortran_get_length_of_environment_variable(name)
+            length_to_allocate =  _lfortran_get_length_of_environment_variable(name, len(name))
 
             character(:), allocatable :: envVar_string_holder
             allocate(character(length_to_allocate) :: envVar_string_holder)
 
-            call_lfortran_get_environment_variable(name, envVar_string_holder)
+            call _lfortran_get_environment_variable(name, len(name), envVar_string_holder)
             value = envVar_string_holder
 
             deallocate(envVar_string_holder)
@@ -927,23 +929,33 @@ namespace GetEnvironmentVariable {
            // Declare interface `_lfortran_get_environment_variable`
             Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
             parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
+            parameter_types.push_back(al, int32);
             parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
-            ASR::symbol_t* _lfortran_get_environment_variable = b.create_c_subroutine_interface(c_func_name, fn_symtab, parameter_types, {"name", "string_receiver"});
+            ASR::symbol_t* _lfortran_get_environment_variable = 
+                                                        b.create_c_subroutine_interface(
+                                                            c_func_name,
+                                                            fn_symtab,
+                                                            parameter_types,
+                                                            {"name", "name_len", "string_receiver"},
+                                                            {false , true      , false            });
             fn_symtab->add_symbol(c_func_name, _lfortran_get_environment_variable);
             dep.push_back(al, s2c(al, c_func_name));
 
             // Declare interface `_lfortran_get_length_of_environment_variable`
             std::string c_func_name = "_lfortran_get_length_of_environment_variable";
             ASR::symbol_t *_lfortran_get_length_of_environment_variable = b.create_c_func_subroutines_with_return_type(
-                c_func_name, fn_symtab, 1, 
-                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1)}, int32);
+                c_func_name, fn_symtab, 2, 
+                {   b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1), 
+                    int32},
+                int32);
             fn_symtab->add_symbol(c_func_name, _lfortran_get_length_of_environment_variable);
             dep.push_back(al, s2c(al, c_func_name));
 
-            // `length_to_allocate = _lfortran_get_length_of_environment_variable(name)`
+            // `length_to_allocate = _lfortran_get_length_of_environment_variable(name, len(name))`
             ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+            call_args.push_back(al, b.StringLen(args[0] /* name */));
             body.push_back(al, b.Assignment(length_to_allocate, b.Call(_lfortran_get_length_of_environment_variable, call_args, int32)));
 
             // Declare allocatable string_holder + allocate
@@ -953,6 +965,7 @@ namespace GetEnvironmentVariable {
             // Call `_lfortran_get_environment_variable`
             Vec<ASR::call_arg_t> call_to_lfortran_get_environment_variable; call_to_lfortran_get_environment_variable.reserve(al, 2);
             call_to_lfortran_get_environment_variable.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar)});
+            call_to_lfortran_get_environment_variable.push_back(al, {loc, b.StringLen(args[0] /* name */)});
             call_to_lfortran_get_environment_variable.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, envVar_string_holder, ASR::CChar)});
             body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
 
@@ -976,13 +989,15 @@ namespace GetEnvironmentVariable {
             // this is the case where args[1] is `length`
             c_func_name = "_lfortran_get_length_of_environment_variable";
             fill_func_arg_sub("length", arg_types[1], InOut);
-            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, 
-                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1)},
+            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2, 
+                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                int32},
                 arg_types[1]);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+            call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
             body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
 
             if (arg_types.size() >= 3) {
