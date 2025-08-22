@@ -2780,7 +2780,7 @@ public:
             if( is_assignment_target ) {
                 idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 std::vector<llvm::Value*> idx_vec = {idx};
-                p = llvm_utils->CreateGEP(str, idx_vec);
+                p = llvm_utils->CreateGEP2(str_value_type, str, idx_vec);
             } else {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(x.m_v)));
                 llvm::Value* str_len = llvm_utils->get_string_length(str_type, str);
