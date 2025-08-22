@@ -172,7 +172,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
@@ -180,7 +180,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -215,7 +215,7 @@ namespace LCompilers {
                 * implemented by current class).
                 */
                 virtual
-                llvm::Value* get_offset(llvm::Value* dim_des, bool load=true) = 0;
+                llvm::Value* get_offset(llvm::Type* type, llvm::Value* dim_des, bool load=true) = 0;
 
                 /*
                 * Returns lower bound in the input
@@ -412,7 +412,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
@@ -420,7 +420,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);
@@ -445,7 +445,7 @@ namespace LCompilers {
                 void set_rank(llvm::Value* arr, llvm::Value* rank);
 
                 virtual
-                llvm::Value* get_offset(llvm::Value* dim_des, bool load=true);
+                llvm::Value* get_offset(llvm::Type* type, llvm::Value* dim_des, bool load=true);
 
                 virtual
                 llvm::Value* get_lower_bound(llvm::Value* dim_des, bool load=true);

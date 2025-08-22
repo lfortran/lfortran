@@ -5252,7 +5252,7 @@ public:
                     ASRUtils::extract_type(symbol_type), module.get());
                 builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
                 llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg_array_desc)),
-                    arr_descr->get_offset(arg_array_desc)), arr_descr->get_pointer_to_data(array_desc));
+                    arr_descr->get_offset(desc_array_type, arg_array_desc)), arr_descr->get_pointer_to_data(array_desc));
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
                 Vec<llvm::Value*> lbs, lengths;
@@ -5557,7 +5557,7 @@ public:
                 ASRUtils::get_contained_type(fptr_type), module.get());
             llvm::Value* fptr_array = llvm_utils->CreateAlloca(*builder, llvm_fptr_type);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                arr_descr->get_offset(fptr_array, false));
+                arr_descr->get_offset(llvm_fptr_type, fptr_array, false));
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(fptr),
@@ -5856,12 +5856,12 @@ public:
                 llvm_diminfo.push_back(al, tmp);
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
-                target, expr_type(x.m_target),
+                target, expr_type(x.m_target), x.m_target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank);
         } else {
             arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
-                target, expr_type(x.m_target),
+                target, expr_type(x.m_target), x.m_target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank);
         }
@@ -7046,8 +7046,8 @@ public:
 #if LLVM_VERSION_MAJOR > 16
             ptr_type[arg] = arr_type;
 #endif
-            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg));
-            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arg));
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -7094,7 +7094,7 @@ public:
 #if LLVM_VERSION_MAJOR > 16
             ptr_type[arg] = arr_type;
 #endif
-            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
         } else if(
@@ -7108,8 +7108,8 @@ public:
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
             builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
-                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp)),
-                arr_descr->get_offset(tmp)), arr_descr->get_pointer_to_data(target));
+                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
+                arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
             arr_descr->reset_array_details(target, tmp, n_dims);
             tmp = target;
@@ -9106,10 +9106,11 @@ public:
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_arr));
         if (std::is_same<T, ASR::ComplexIm_t>::value) {
+            llvm::Type* des_real_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg, t.m_type, module.get());
             llvm::Value* incremented_offset = builder->CreateAdd(
-                arr_descr->get_offset(des_real_arr, true),
+                arr_descr->get_offset(des_real_type, des_real_arr, true),
                 llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            builder->CreateStore(incremented_offset, arr_descr->get_offset(des_real_arr, false));
+            builder->CreateStore(incremented_offset, arr_descr->get_offset(des_real_type, des_real_arr, false));
         }
         int n_dims = ASRUtils::extract_n_dims_from_ttype(t.m_type);
         llvm::Value* dim_des_real_arr = arr_descr->get_pointer_to_dimension_descriptor_array(des_real_arr, true);
