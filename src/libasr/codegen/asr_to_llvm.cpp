@@ -1402,7 +1402,7 @@ public:
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[ptr_] = type;
 #endif
-                            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+                            arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
                             LLVM::CreateStore(
                                 *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
@@ -4160,7 +4160,7 @@ public:
                 llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
                 builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(ptr_));
             }
-            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+            arr_descr->fill_dimension_descriptor(type_, ptr_, n_dims);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {

@@ -417,8 +417,8 @@ namespace LCompilers {
             }
         }
 
-        void SimpleCMODescriptor::fill_dimension_descriptor(llvm::Value* arr, int n_dims) {
-            llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
+        void SimpleCMODescriptor::fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims) {
+            llvm::Value* dim_des_val = llvm_utils->create_gep2(type, arr, 2);
             llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first;
@@ -427,8 +427,8 @@ namespace LCompilers {
 
             // If unallocated, set lower bound and size to 1.
             // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 1));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 2));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 1));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep2(dim_des, dim_des_first, 2));
 
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
