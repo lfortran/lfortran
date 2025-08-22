@@ -330,6 +330,9 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         case ASR::ttypeType::Allocatable: {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
         }
+        case ASR::ttypeType::StructType: {
+            return 4;
+        }
         default : {
             return -1;
         }
@@ -3060,6 +3063,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type);
+ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop = false);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);

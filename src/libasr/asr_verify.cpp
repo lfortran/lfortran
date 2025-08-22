@@ -949,6 +949,23 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        if (check_external) {
+            require(ASR::is_a<ASR::Var_t>(*x.m_target) ||
+                    ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_target) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) ||
+                    ASR::is_a<ASR::BitCast_t>(*x.m_target) ||
+                    ASR::is_a<ASR::ArrayConstant_t>(*x.m_target), "DebugCheckArrayBounds::m_target must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+
+            require(ASR::is_a<ASR::Var_t>(*x.m_value) ||
+                    ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) ||
+                    ASR::is_a<ASR::BitCast_t>(*x.m_value) ||
+                    ASR::is_a<ASR::ArrayConstant_t>(*x.m_value), "DebugCheckArrayBounds::m_value must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
+    }
+
     void visit_ArraySection(const ArraySection_t &x) {
         require(
             ASR::is_a<ASR::Array_t>(*x.m_type),

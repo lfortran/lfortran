@@ -141,7 +141,7 @@ public:
     std::map<std::string, std::map<std::string, int>> name2memidx;
 
     std::map<uint64_t, llvm::Value*> llvm_symtab; // llvm_symtab_value
-    std::map<uint64_t, llvm::Value*> llvm_symtab_deep_copy;
+    std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
@@ -2010,7 +2010,7 @@ public:
         visit_expr_load_wrapper(x.m_pos, 1, true);
         llvm::Value *pos = tmp;
 
-        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.bounds_checking, module.get(),
+        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.po.bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -2040,8 +2040,8 @@ public:
         } else {
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->read_item(x.m_a, pdict, key, module.get(), dict_type,
-                                    compiler_options.bounds_checking,
-                                    LLVM::is_llvm_struct(dict_type->m_value_type) || 
+                                    compiler_options.po.bounds_checking,
+                                    LLVM::is_llvm_struct(dict_type->m_value_type) ||
                                     ASRUtils::is_allocatable_descriptor_string(dict_type->m_value_type));
         }
     }
@@ -2823,7 +2823,7 @@ public:
 #endif
             }
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
-            if (compiler_options.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
+            if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
@@ -2891,7 +2891,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    compiler_options.bounds_checking, array_name);
+                                                    compiler_options.po.bounds_checking, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -4675,7 +4675,7 @@ public:
                             builder->CreateStore(tmp, deep, v->m_is_volatile);
                             llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
                             tmp = llvm_utils->CreateLoad2(m_dims_length_llvm_type,deep, v->m_is_volatile);
-                            llvm_symtab_deep_copy[m_length_variable_h] = deep;
+                            llvm_symtab_deep_copy[{m_length_variable_h, current_scope}] = deep;
                         }
                     }
 
@@ -6573,7 +6573,7 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.bounds_checking,
+                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.po.bounds_checking,
                                              module.get(), true);
             }
         } else {
@@ -6883,6 +6883,39 @@ public:
         }
     }
 
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
+        if (compiler_options.po.bounds_checking) {
+            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))
+            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_value)))
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::ArraySize_t* value_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
+                x.m_value, nullptr, type32, nullptr));
+            visit_ArraySize(*value_array_size);
+            llvm::Value* value_size = tmp;
+
+            ASR::ArraySize_t* target_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
+                x.m_target, nullptr, type32, nullptr));
+            visit_ArraySize(*target_array_size);
+            llvm::Value* target_size = tmp;
+
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+            if (target_variable) {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                    "Runtime Error: Size mismatch in assignment to '%s'\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                    target_size,
+                                                    value_size);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                    "Runtime Error: Size mismatch in assignment\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    target_size,
+                                                    value_size);
+            }
+        }
+    }
+
     // Checks if target_expr is allocated and if not then allocate
     // Used for compiler_options.po.realloc_lhs
     void check_and_allocate(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr, ASR::ttype_t *value_struct_type = nullptr) {
@@ -7160,6 +7193,9 @@ public:
         fn->getBasicBlockList().push_back(blockend);
 #endif
         builder->SetInsertPoint(blockstart);
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = block->m_symtab;
+
         declare_vars(*block);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
@@ -7180,6 +7216,8 @@ public:
             builder->CreateBr(blockend);
         }
         builder->SetInsertPoint(blockend);
+
+        current_scope = current_scope_copy;
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
@@ -11016,8 +11054,8 @@ public:
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                        if (llvm_symtab_deep_copy.find(h) != llvm_symtab_deep_copy.end()) {
-                            tmp = llvm_symtab_deep_copy[h];
+                        if (llvm_symtab_deep_copy.find({h, current_scope}) != llvm_symtab_deep_copy.end()) {
+                            tmp = llvm_symtab_deep_copy[{h, current_scope}];
                         } else {
                             tmp = llvm_symtab[h];
                         }
@@ -11825,7 +11863,7 @@ public:
         }
 
         // Generate runtime error if array arguments' shape doesn't match
-        if (compiler_options.bounds_checking) {
+        if (compiler_options.po.bounds_checking) {
             bounds_check_call(x);
         }
 
@@ -12400,7 +12438,7 @@ public:
         }
 
         // Generate runtime error if array arguments' shape doesn't match
-        if (compiler_options.bounds_checking) {
+        if (compiler_options.po.bounds_checking) {
             bounds_check_call(x);
         }
 
@@ -12681,9 +12719,9 @@ public:
             if (x_sym != nullptr && ASR::is_a<ASR::Variable_t>(*x_sym)) {
                 ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
                 uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
-                if (llvm_symtab_deep_copy.find(x_sym_variable_h) != llvm_symtab_deep_copy.end()) {
+                if (llvm_symtab_deep_copy.find({x_sym_variable_h, current_scope}) != llvm_symtab_deep_copy.end()) {
                     tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get()),
-                        llvm_symtab_deep_copy[x_sym_variable_h]);
+                        llvm_symtab_deep_copy[{x_sym_variable_h, current_scope}]);
                 } else {
                     this->visit_expr_wrapper(x, true);
                 }
@@ -12704,6 +12742,8 @@ public:
             return ;
         }
 
+        m_v = ASRUtils::get_expr_size_expr(m_v);
+        LCOMPILERS_ASSERT(m_v);
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;
@@ -12744,6 +12784,7 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::PointerToDataArray:
+            case ASR::array_physical_typeType::SIMDArray:
             case ASR::array_physical_typeType::FixedSizeArray: {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_v,
                         ASRUtils::type_get_past_allocatable(
@@ -12767,7 +12808,7 @@ public:
                         builder->CreateCondBr(cond, thenBB, elseBB);
                         builder->SetInsertPoint(thenBB);
                         {
-                            this->visit_expr_wrapper(m_dims[i].m_length, true);
+                            load_array_size_deep_copy(m_dims[i].m_length);
                             builder->CreateStore(tmp, target);
                         }
                         builder->CreateBr(mergeBB);

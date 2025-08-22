@@ -171,7 +171,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
-        app.add_flag("--array-bounds-checking", compiler_options.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
+        app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
 
         // LSP specific options
@@ -277,7 +277,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (disable_bounds_checking || compiler_options.po.fast) {
-            compiler_options.bounds_checking = false;
+            compiler_options.po.bounds_checking = false;
         }
 
         compiler_options.use_colors = !opts.arg_no_color;

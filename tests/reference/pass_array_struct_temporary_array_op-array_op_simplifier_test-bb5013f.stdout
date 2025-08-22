@@ -256,6 +256,10 @@
                         ()
                         ()
                     )
+                    (DebugCheckArrayBounds
+                        (Var 2 d)
+                        (Var 2 a)
+                    )
                     (Assignment
                         (Var 2 __libasr_index_1_1)
                         (ArrayBound
