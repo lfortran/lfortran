@@ -9,10 +9,10 @@ source_filename = "LFortran"
 @__module_class_circle1_pi = global float 0x400921FB60000000
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [25 x i8] c"S-DESC-12,R4,S-DESC-8,R4\00", align 1
-@string_const_data = private constant [13 x i8] c"Circle: r = \00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([13 x i8], [13 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
-@string_const_data.1 = private constant [9 x i8] c" area = \00"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.1, i32 0, i32 0), i64 8 }>
+@string_const_data = private constant [12 x i8] c"Circle: r = "
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
+@string_const_data.1 = private constant [8 x i8] c" area = "
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.1, i32 0, i32 0), i64 8 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @__module_class_circle1_circle_area(%circle_polymorphic* %this) {

@@ -7,13 +7,13 @@ source_filename = "LFortran"
 @__module_modules_11_module11_j = global i32 2
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,I4\00", align 1
-@string_const_data = private constant [5 x i8] c"i = \00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
+@string_const_data = private constant [4 x i8] c"i = "
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [12 x i8] c"S-DESC-4,I4\00", align 1
-@string_const_data.2 = private constant [5 x i8] c"j = \00"
-@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.2, i32 0, i32 0), i64 4 }>
+@string_const_data.2 = private constant [4 x i8] c"j = "
+@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.2, i32 0, i32 0), i64 4 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_modules_11_module11_access_internally() {
