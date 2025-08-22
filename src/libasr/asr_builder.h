@@ -1255,6 +1255,7 @@ class ASRBuilder {
             ASR::ttype_t* return_type) {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        LCOMPILERS_ASSERT( (size_t)n_args == arg_types.size())
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
                 ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
