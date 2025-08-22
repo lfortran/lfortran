@@ -288,7 +288,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
@@ -339,7 +339,7 @@ namespace LCompilers {
                 std::vector<llvm::Value*>& heap_arrays;
 
                 llvm::Value* cmo_convertor_single_element(
-                    llvm::Value* arr, std::vector<llvm::Value*>& m_args,
+                    llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
                     int n_args, bool check_for_bounds, std::string array_name = "");
 
                 llvm::Value* cmo_convertor_single_element_data_only(
@@ -477,7 +477,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,

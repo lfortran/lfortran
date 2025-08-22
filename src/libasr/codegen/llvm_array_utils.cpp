@@ -518,8 +518,10 @@ namespace LCompilers {
                     section_first_indices.push_back(non_sliced_indices[i]);
                 }
             }
+            llvm::Type* type_llvm = llvm_utils->get_type_from_ttype_t_util(
+                target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), llvm_utils->module);
             llvm::Value* target_offset = cmo_convertor_single_element(
-                value_desc, section_first_indices, value_rank, false);
+                type_llvm, value_desc, section_first_indices, value_rank, false);
 
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
@@ -715,9 +717,10 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
-            llvm::Value* arr, std::vector<llvm::Value*>& m_args,
+            llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
             int n_args, bool check_for_bounds, std::string array_name) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
+            llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(
+                dim_des->getPointerTo(), llvm_utils->create_gep2(type, arr, 2));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             llvm::Type *i32 = llvm::Type::getInt32Ty(context);
             for( int r = 0; r < n_args; r++ ) {
@@ -750,7 +753,7 @@ namespace LCompilers {
                 llvm::Value* stride = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 0));
                 idx = builder->CreateAdd(idx, builder->CreateMul(stride, curr_llvm_idx));
             }
-            llvm::Value* offset_val = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep(arr, 1));
+            llvm::Value* offset_val = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(type, arr, 1));
             return builder->CreateAdd(idx, offset_val);
         }
 
@@ -799,7 +802,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name) {
             llvm::Value* tmp = nullptr;
@@ -817,7 +820,9 @@ namespace LCompilers {
                     }
                 }
             } else {
-                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds, array_name);
+                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
+                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, array_name);
                 llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(array));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
