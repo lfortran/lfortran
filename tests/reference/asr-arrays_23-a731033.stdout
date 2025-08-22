@@ -202,8 +202,9 @@
                                         )
                                         (Assignment
                                             (Var 4 message)
-                                            (StringConcat
-                                                (StringSection
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(StringSection
                                                     (Var 4 num)
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerBinOp
@@ -247,10 +248,9 @@
                                                     ) ExpressionLength DescriptorString)
                                                     ()
                                                 )
-                                                (Var 4 message)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
+                                                (Var 4 message)]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
                                                 ()
                                             )
                                             ()
@@ -260,17 +260,19 @@
                                     )
                                     (Assignment
                                         (Var 4 message)
-                                        (StringConcat
-                                            (StringConcat
-                                                (StringConcat
-                                                    (Var 4 message)
+                                        (IntrinsicElementalFunction
+                                            StringConcat
+                                            [(IntrinsicElementalFunction
+                                                StringConcat
+                                                [(IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 4 message)
                                                     (StringConstant
                                                         "   | "
                                                         (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                                    )]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
                                                     ()
                                                 )
                                                 (StringSection
@@ -299,19 +301,17 @@
                                                         ()
                                                     ) ExpressionLength DescriptorString)
                                                     ()
-                                                )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
                                                 ()
                                             )
                                             (StringConstant
                                                 "   |"
                                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
+                                            )]
+                                            0
+                                            (String 1 () DeferredLength DescriptorString)
                                             ()
                                         )
                                         ()

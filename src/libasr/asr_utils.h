@@ -1802,7 +1802,7 @@ template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
         std::is_same<T, std::complex<float>>::value == false>::type>
-static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
+static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns extraction state.
     if( !is_value_constant(value_expr) ) {
         return false;
     }
@@ -1865,6 +1865,15 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             return false;
     }
     return true;
+}
+
+template <typename T,
+    typename = typename std::enable_if<
+        std::is_same<T, std::complex<double>>::value == false &&
+        std::is_same<T, std::complex<float>>::value == false>::type>
+inline void extract_value_(ASR::expr_t* value_expr, T& value) { // Raises error if expr doesn't have value.
+    bool extracted = extract_value(value_expr, value);
+    if (!extracted) LCompilersException("Expr value can't be extracted");
 }
 
 static inline std::string extract_dim_value(ASR::expr_t* dim) {
@@ -3354,6 +3363,51 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         override_physical_type);
 }
 
+
+/*
+    -- This class is responsible of replacing FuncParam in Function's type
+        into the actual argument passed in the FunctionCall. --
+    -------------------------------------------------------------------------
+    * - It duplicates the FunctionReturn type; No need to duplicate it yourself.
+    * - Only used through static `replace` to prevent further usages.
+    * - If used frequently, You can create a static instance in `replace` and reuse it instaed.
+    --------------------------------------------------------------------------
+    * EXAMPLE - Length Of String Type:
+    
+    (String ( FunctionParam 0 (Integer 4) ) ExpressionLength DescriptorString )
+        |
+        INTO
+        |
+        V
+    (String ( var 1 arg )                   ExpressionLength DescriptorString )
+*/
+class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplacer> {
+    private :
+    ASR::FunctionCall_t* f_call_;
+    Allocator &al_;
+    FuncParamToArgReplacer(Allocator& al, ASR::FunctionCall_t* f_call): f_call_(f_call), al_(al) {}
+    void replace_(){
+        /* 
+            Duplicate, As we assume passed type is Function's node;
+            If not duplicated, Changes will reflect on original node.
+        */
+        ASR::ttype_t* const f_call_t_dup = ASRUtils::duplicate_type(al_, f_call_->m_type);
+        f_call_->m_type = f_call_t_dup;
+        replace_ttype(f_call_->m_type);
+
+    }
+    public : 
+    void replace_FunctionParam(ASR::FunctionParam_t* x){
+        /* Replace FuncParam With Correspondent Arg */
+        LCOMPILERS_ASSERT(x->m_param_number < (int64_t)f_call_->n_args)
+        *current_expr = f_call_->m_args[x->m_param_number].m_value;
+    }
+
+    inline static void replace(Allocator& al, ASR::FunctionCall_t* f_call){
+        auto instance = FuncParamToArgReplacer(al, f_call);
+        instance.replace_();
+    }
+};
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
     ASR::expr_t* dt=nullptr, bool nopass = false) {
