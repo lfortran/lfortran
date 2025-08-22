@@ -4994,33 +4994,24 @@ namespace StringConcat {
         fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
         fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
 
-        /* local variables */
-        ASR::expr_t* s1_len = declare("s1_len", int32, Local);
-        ASR::expr_t* s2_len = declare("s2_len", int32, Local);
-
         /* Return Variable */
-        ASR::expr_t* ret_var = declare("concat_result", b.allocatable(b.String(nullptr, ASR::DeferredLength)), ReturnVar);
+        ASR::expr_t* ret_var = declare(
+                                "concat_result",
+                                b.String(b.Add(b.StringLen(args[0]) /* s1 */, b.StringLen(args[1]) /* s2 */), ASR::ExpressionLength),
+                                ReturnVar);
 
         /* Body */
         /*
             function lcompilers_stringconcat(s1, s2) result(concat_result)
                 character(*) :: s1
                 character(*) :: s2
-                integer(4) :: s1_len
-                integer(4) :: s2_len
-                character(:), allocatable :: concat_result
-                s1_len = len(s1)
-                s2_len = len(s2)
-                allocate(character(s1_len + s2_len)::concat_result)
-                concat_result(1:s1_len) = s1
-                concat_result(s1_len+1: len(concat_result)) = s2
+                character(len(s1) + len(s2)) :: concat_result
+                concat_result(1 : len(s1)) = s1
+                concat_result(len(s1) + 1 : len(concat_result)) = s2
             end function
         */
-        body.push_back(al, b.Assignment(s1_len, b.StringLen(args[0])));
-        body.push_back(al, b.Assignment(s2_len, b.StringLen(args[1])));
-        body.push_back(al, b.Allocate(ret_var, nullptr, 0, b.Add(s1_len, s2_len)));
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), s1_len), args[0]));
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(s1_len, b.i32(1)), b.StringLen(ret_var)), args[1]));
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), b.StringLen(args[0]/*s1*/)), args[0]));
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(b.StringLen(args[0]/*s1*/), b.i32(1)), b.StringLen(ret_var)), args[1]));
 
         /* Create The function symbol */
         ASR::symbol_t *f_sym = make_ASR_Function_t( 
@@ -5032,8 +5023,11 @@ namespace StringConcat {
                                 ASR::deftypeType::Implementation,
                                 nullptr);
         scope->add_or_overwrite_symbol(fn_name, f_sym);
-        /* Return a Call */
-        return b.Call(f_sym, new_args, extract_type(expr_type(ret_var)), nullptr);
+
+        /* Create Call + Replace FuncParams */
+        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        FuncParamToArgReplacer::replace(al, ASR::down_cast<ASR::FunctionCall_t>(f_call));
+        return f_call;
     }
 
 }
