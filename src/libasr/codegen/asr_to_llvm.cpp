@@ -5275,7 +5275,7 @@ public:
                     }
                 }
                 arr_descr->reset_array_details(
-                    array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
+                    desc_array_type, array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
                 ptr_loads = ptr_loads_copy;
                 llvm_symtab[h] = array_desc;
             }
@@ -7111,7 +7111,7 @@ public:
                 llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
                 arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target, tmp, n_dims);
+            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
             tmp = target;
         } else if (
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
