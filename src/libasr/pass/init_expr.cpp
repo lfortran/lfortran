@@ -96,6 +96,21 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         *current_expr = nullptr;
     }
 
+    void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
+        // We don't need to replace the shape here, as it will overwrite some results
+        x->m_shape = nullptr;
+
+        // If the array is a Var, get past it to it's value
+        if (ASR::is_a<ASR::Var_t>(*x->m_array)) {
+            ASR::Variable_t *arr_variable = ASRUtils::EXPR2VAR(x->m_array);
+            if (arr_variable != nullptr) {
+                x->m_array = arr_variable->m_symbolic_value;
+            }
+        }
+
+        BaseExprReplacer<ReplaceInitExpr>::replace_ArrayReshape(x);
+    }
+
 };
 
 class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVisitor>
@@ -196,7 +211,8 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_parent_symtab;
-            if (x.m_symbolic_value && (x.m_storage != ASR::storage_typeType::Parameter)) {
+            if (x.m_symbolic_value && (x.m_storage != ASR::storage_typeType::Parameter ||
+                ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value))) {
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(x.m_symbolic_value));
                 call_replacer();
