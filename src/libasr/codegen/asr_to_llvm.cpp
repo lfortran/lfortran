@@ -440,7 +440,7 @@ public:
         return is_ok;
     }
 
-    void fill_array_details(llvm::Value* arr, llvm::Type* llvm_data_type,
+    void fill_array_details(llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type,
                             ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
                             bool reserve_data_memory=true) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
@@ -482,7 +482,7 @@ public:
                 }
             }
         } else {
-            arr_descr->fill_array_details(arr, llvm_data_type, n_dims,
+            arr_descr->fill_array_details(arr_ty, arr, llvm_data_type, n_dims,
                 llvm_dims, module.get(), reserve_data_memory);
         }
     }
@@ -4164,7 +4164,8 @@ public:
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
-            fill_array_details(ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
+            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
         }
         if( is_array_type && is_malloc_array_type &&
             !is_list && !is_data_only && 
@@ -6136,7 +6137,7 @@ public:
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
                             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, data_type, module.get());
-                            fill_array_details(llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
+                            fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_));
                             llvm_value = llvm_target_;
                             break;
@@ -7013,7 +7014,9 @@ public:
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
         llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
-        fill_array_details(target, llvm_data_type, m_dims, n_dims, false, false);
+        llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
+            ASRUtils::type_get_past_allocatable(m_type), module.get());
+        fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
         if( LLVM::is_llvm_pointer(*m_type) ) {
             llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                 target_type->getPointerTo(), nullptr, "array_descriptor_ptr");

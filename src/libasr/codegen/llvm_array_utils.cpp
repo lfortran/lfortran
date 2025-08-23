@@ -273,12 +273,12 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_array_details(
-        llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+        llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
         std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
         llvm::Module* module, bool reserve_data_memory) {
-            llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
+            llvm::Value* offset_val = llvm_utils->create_gep2(arr_ty, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_val);
-            llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
+            llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_ty, arr, 2);
             llvm::Value* arr_rank = llvm::ConstantInt::get(context, llvm::APInt(32, n_dims));
             llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, arr_rank);
             builder->CreateStore(dim_des_first, dim_des_val);
