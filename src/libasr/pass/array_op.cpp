@@ -1030,7 +1030,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
             ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, d_value)));
+
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::expr_t* d_target_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+                d_target, nullptr, type32, nullptr));
+            ASR::expr_t* d_value_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+                d_value, nullptr, type32, nullptr));
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size)));
         }
 
         Vec<ASR::expr_t**> fix_type_args;

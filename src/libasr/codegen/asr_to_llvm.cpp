@@ -6865,18 +6865,11 @@ public:
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
-            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))
-            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_value)))
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            ASR::ArraySize_t* value_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_value, nullptr, type32, nullptr));
-            visit_ArraySize(*value_array_size);
-            llvm::Value* value_size = tmp;
-
-            ASR::ArraySize_t* target_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_target, nullptr, type32, nullptr));
-            visit_ArraySize(*target_array_size);
+            visit_expr(*x.m_target);
             llvm::Value* target_size = tmp;
+
+            visit_expr(*x.m_value);
+            llvm::Value* value_size = tmp;
 
             ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
             if (target_variable) {
