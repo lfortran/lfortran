@@ -104,7 +104,7 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         if (ASR::is_a<ASR::Var_t>(*x->m_array)) {
             ASR::Variable_t *arr_variable = ASRUtils::EXPR2VAR(x->m_array);
             if (arr_variable != nullptr) {
-                x->m_array = arr_variable->m_symbolic_value;
+                x->m_array = arr_variable->m_value;
             }
         }
 
