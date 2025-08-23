@@ -2962,7 +2962,11 @@ public:
                 ptr_type[shape] = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
 #endif
-                tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, module.get());
+                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
+                    ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
+                llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
+                    ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
+                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get());
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -4367,7 +4371,7 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Type* ptr_type = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
+                llvm::Type* ptr_type = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::type_get_past_allocatable_pointer(v_m_type), module.get());
                 llvm::Value* array_size_value = arr_descr->get_array_size(ptr_type, ptr, nullptr, 4);
                 LLVM::CreateStore(*builder, array_size_value, array_size);
                 break;
@@ -11782,7 +11786,7 @@ public:
 #endif
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
-                    llvm::Value* desc_rank = arr_descr->get_rank(arg);
+                    llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
 

@@ -255,7 +255,7 @@ namespace LCompilers {
                     bool load=true) = 0;
 
                 virtual
-                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
+                llvm::Value* get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer=false) = 0;
 
                 virtual
                 void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank) = 0;
@@ -302,8 +302,8 @@ namespace LCompilers {
 
 
                 virtual
-                llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
+                                     llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module) = 0;
 
                 virtual
@@ -439,7 +439,7 @@ namespace LCompilers {
                 llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
 
                 virtual
-                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
+                llvm::Value* get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer=false);
 
                 virtual
                 void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank);
@@ -490,8 +490,8 @@ namespace LCompilers {
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
 
                 virtual
-                llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
+                                     llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module);
 
                 virtual
