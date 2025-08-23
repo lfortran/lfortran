@@ -44,6 +44,7 @@ namespace LCompilers::CommandLineInterface {
         bool style_suggestions = false;
         bool disable_warnings = false;
         bool disable_implicit_argument_casting = false;
+        bool disable_error_banner = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -69,9 +70,9 @@ namespace LCompilers::CommandLineInterface {
         // LFortran specific options
         // Warning-related flags
         app.add_flag("--no-warnings", disable_warnings, "Turn off all warnings")->group(group_warning_options);
-        app.add_flag("--no-style-warnings", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
-        app.add_flag("--style-warnings", style_suggestions, "Enable style suggestions")->group(group_warning_options);
-        app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner")->group(group_warning_options);
+        app.add_flag("--no-style-suggestions", opts.disable_style_suggestions, "Turn off style suggestions")->group(group_warning_options);
+        app.add_flag("--style-suggestions", style_suggestions, "Enable style suggestions")->group(group_warning_options);
+        app.add_flag("--no-error-banner", disable_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);
 
         // Language-related flags (affecting Fortran language behavior, typing, and interfaces)
@@ -228,6 +229,10 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.show_warnings = false;
         }
 
+        if (disable_error_banner) {
+            compiler_options.show_error_banner = false;
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -315,7 +320,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (opts.disable_style_suggestions && style_suggestions) {
-            throw lc::LCompilersException("Cannot use --no-style-warnings and --style-warnings at the same time");
+            throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");
         }
 
         if (opts.disable_implicit_typing && compiler_options.implicit_typing) {

@@ -206,7 +206,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "ast_disable_style_suggestion",
-            "lfortran --show-ast --no-style-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-ast --no-style-suggestions --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -278,7 +278,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_disable_style_suggestion_and_warnings",
-            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --no-style-suggestions --no-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -291,7 +291,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "asr_enable_style_suggestion",
-                "lfortran --std=f23 --style-warnings --no-color {infile}",
+                "lfortran --std=f23 --style-suggestions --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
