@@ -4655,7 +4655,8 @@ public:
 
             tmp = ASR::make_Print_t(al, x.base.base.loc, string_format);
         } else if (!fmt && body.size() == 1
-                        && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))) {
+                        && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
+                        && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])) {
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
