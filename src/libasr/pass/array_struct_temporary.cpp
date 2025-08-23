@@ -1617,8 +1617,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
-        visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
-            ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id));
+        // Argument `to` in `move_alloc` can be an unallocated struct type variable, so creating a
+        // temporary and assigning `to` to it will lead to a segfault during deepcopying the values.
+        // Hence, skip creating temporaries for `move_alloc` arguments and pass directly. 
+        // This also saves an extra overhead of copying back the allocated pointers from the temporary 
+        // to the actual variable.
+        // Please see `integration_tests/derived_types_78.f90` for an example.
+        if (ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id) != "MoveAlloc") {
+            visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
+                ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id));
+        }
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
