@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-array_bounds_check_03-15fcd63.stderr",
+    "stderr_hash": "146bed24754c56ec7e893031cc95bf0d8d5fe38f21e0fe0596651cd7",
+    "returncode": 1
 }
