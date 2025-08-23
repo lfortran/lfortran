@@ -247,8 +247,8 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::
-        set_rank(llvm::Value* arr, llvm::Value* rank) {
-            llvm::Value* rank_ptr = llvm_utils->create_gep(arr, 4);
+        set_rank(llvm::Type* type,llvm::Value* arr, llvm::Value* rank) {
+            llvm::Value* rank_ptr = llvm_utils->create_gep2(type, arr, 4);
             LLVM::CreateStore(*builder, rank, rank_ptr);
         }
 
@@ -351,9 +351,12 @@ namespace LCompilers {
             llvm::Value* dest_dim_des_ptr = llvm_utils->create_gep2(dest_array_type, destination, 2);
             builder->CreateStore(source_dim_des_val, dest_dim_des_ptr);
 
-
+            llvm::errs() << "source :"; source->getType()->print(llvm::errs()); llvm::errs() << "\n";
+            llvm::errs() << "destination :"; destination->getType()->print(llvm::errs()); llvm::errs() << "\n";
+            llvm::errs() << "source_array_type :"; source_array_type->print(llvm::errs()); llvm::errs() << "\n";
+            llvm::errs() << "dest_array_type :"; dest_array_type->print(llvm::errs()); llvm::errs() << "\n";
             llvm::Value* source_rank = this->get_rank(source, false);
-            this->set_rank(destination, source_rank);
+            this->set_rank(dest_array_type, destination, source_rank);
         };
 
         void SimpleCMODescriptor::fill_malloc_array_details(

@@ -5566,7 +5566,7 @@ public:
             llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
             llvm::Value* dim_des = llvm_utils->CreateAlloca(*builder, arr_descr->get_dimension_descriptor_type(), llvm_rank);
             builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, fptr_array, false));
-            arr_descr->set_rank(fptr_array, llvm_rank);
+            arr_descr->set_rank(llvm_fptr_type, fptr_array, llvm_rank);
             builder->CreateStore(fptr_array, llvm_fptr);
             llvm_fptr = fptr_array;
             ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);

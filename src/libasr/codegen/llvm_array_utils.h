@@ -258,7 +258,7 @@ namespace LCompilers {
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
 
                 virtual
-                void set_rank(llvm::Value* arr, llvm::Value* rank) = 0;
+                void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank) = 0;
 
                 /*
                 * Returns pointer to dimension descriptor array
@@ -442,7 +442,7 @@ namespace LCompilers {
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
 
                 virtual
-                void set_rank(llvm::Value* arr, llvm::Value* rank);
+                void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank);
 
                 virtual
                 llvm::Value* get_offset(llvm::Type* type, llvm::Value* dim_des, bool load=true);
