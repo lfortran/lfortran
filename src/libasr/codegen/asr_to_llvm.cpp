@@ -6871,7 +6871,13 @@ public:
             visit_expr(*x.m_value);
             llvm::Value* value_size = tmp;
 
-            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+            ASR::expr_t* target_expr = nullptr;
+            if (ASR::is_a<ASR::ArraySize_t>(*x.m_target)) {
+                target_expr = ASR::down_cast<ASR::ArraySize_t>(x.m_target)->m_v;
+            }
+
+            // TODO: Try to reserve the target Var, ArraySize can get replaced by IntegerBinOp
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(target_expr);
             if (target_variable) {
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                     "Runtime Error: Size mismatch in assignment to '%s'\n\n"
