@@ -2765,38 +2765,7 @@ public:
 
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
-        if (ASRUtils::is_character(*x.m_type) && n_dims == 0) {
-            // String indexing:
-            if (x.n_args != 1) {
-                throw CodeGenError("Only string(a) supported for now.", x.base.base.loc);
-            }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[0].m_right));
-            this->visit_expr_wrapper(x.m_args[0].m_right, true);
-            llvm::Value *p = nullptr;
-            llvm::Value *idx = tmp;
-            ASR::ttype_t* array_asr_type = ASRUtils::extract_type(expr_type(x.m_v));
-            llvm::Type* str_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, array_asr_type, module.get());
-            llvm::Value *str = llvm_utils->CreateLoad2(str_value_type, array);
-            if( is_assignment_target ) {
-                idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-                std::vector<llvm::Value*> idx_vec = {idx};
-                p = llvm_utils->CreateGEP2(str_value_type, str, idx_vec);
-            } else {
-                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(x.m_v)));
-                llvm::Value* str_len = llvm_utils->get_string_length(str_type, str);
-                p = lfortran_str_item(str, str_len, idx);
-            }
-            // TODO: Currently the string starts at the right location, but goes to the end of the original string.
-            // We have to allocate a new string, copy it and add null termination.
-
-            tmp = p;
-            if( ptr_loads == 0 ) {
-                tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                builder->CreateStore(p, tmp);
-            }
-
-            //tmp = p;
-        } else {
+        {
             // Array indexing:
             std::vector<llvm::Value*> indices;
             for( size_t r = 0; r < x.n_args; r++ ) {
