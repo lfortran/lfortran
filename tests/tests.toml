@@ -3690,6 +3690,7 @@ asr_disable_style_suggestion_and_warnings = true
 filename = "style1.f90"
 asr_disable_warnings = true
 asr_enable_style_suggestion = true
+enable_disable_style_suggestion = true
 
 [[test]]
 filename = "../integration_tests/c_ptr_02.f90"
