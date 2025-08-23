@@ -440,7 +440,7 @@ public:
         return is_ok;
     }
 
-    void fill_array_details(llvm::Value* arr, llvm::Type* llvm_data_type,
+    void fill_array_details(llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type,
                             ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
                             bool reserve_data_memory=true) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
@@ -482,7 +482,7 @@ public:
                 }
             }
         } else {
-            arr_descr->fill_array_details(arr, llvm_data_type, n_dims,
+            arr_descr->fill_array_details(arr_ty, arr, llvm_data_type, n_dims,
                 llvm_dims, module.get(), reserve_data_memory);
         }
     }
@@ -2931,7 +2931,11 @@ public:
                 ptr_type[shape] = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
 #endif
-                tmp = arr_descr->reshape(array, llvm_data_type, shape, asr_shape_type, module.get());
+                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
+                    ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
+                llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
+                    ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
+                tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get());
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -4133,7 +4137,8 @@ public:
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
-            fill_array_details(ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
+            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
         }
         if( is_array_type && is_malloc_array_type &&
             !is_list && !is_data_only && 
@@ -4335,7 +4340,8 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* array_size_value = arr_descr->get_array_size(ptr, nullptr, 4);
+                llvm::Type* ptr_type = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::type_get_past_allocatable_pointer(v_m_type), module.get());
+                llvm::Value* array_size_value = arr_descr->get_array_size(ptr_type, ptr, nullptr, 4);
                 LLVM::CreateStore(*builder, array_size_value, array_size);
                 break;
             }
@@ -5534,7 +5540,7 @@ public:
             llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
             llvm::Value* dim_des = llvm_utils->CreateAlloca(*builder, arr_descr->get_dimension_descriptor_type(), llvm_rank);
             builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, fptr_array, false));
-            arr_descr->set_rank(fptr_array, llvm_rank);
+            arr_descr->set_rank(llvm_fptr_type, fptr_array, llvm_rank);
             builder->CreateStore(fptr_array, llvm_fptr);
             llvm_fptr = fptr_array;
             ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);
@@ -6105,7 +6111,7 @@ public:
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
                             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, data_type, module.get());
-                            fill_array_details(llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
+                            fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_));
                             llvm_value = llvm_target_;
                             break;
@@ -6689,7 +6695,9 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
 #endif
-                llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
+                llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
                 value = llvm_utils->create_gep(value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
@@ -6808,8 +6816,11 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
 #endif
-                arr_descr->copy_array(value, target, module.get(),
-                                      target_type, false);
+                llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                        ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
+                arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
@@ -6982,7 +6993,9 @@ public:
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
         llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
-        fill_array_details(target, llvm_data_type, m_dims, n_dims, false, false);
+        llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
+            ASRUtils::type_get_past_allocatable(m_type), module.get());
+        fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
         if( LLVM::is_llvm_pointer(*m_type) ) {
             llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                 target_type->getPointerTo(), nullptr, "array_descriptor_ptr");
@@ -11742,7 +11755,7 @@ public:
 #endif
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
-                    llvm::Value* desc_rank = arr_descr->get_rank(arg);
+                    llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -11755,7 +11768,7 @@ public:
                     for (int j = 0; j < n_dims; j++) {
                         if (m_dims[j].m_length) {
                             llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
-                            llvm::Value* descriptor_length = arr_descr->get_array_size(arg, dim, 4);
+                            llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
                             load_array_size_deep_copy(m_dims[j].m_length);
                             llvm::Value* pointer_length = tmp;
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
@@ -11770,7 +11783,7 @@ public:
                     }
                     builder->CreateBr(mergeBB);
                     start_new_block(elseBB);
-                    llvm::Value* desc_size = arr_descr->get_array_size(arg, nullptr, 4);
+                    llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
                     llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
@@ -12750,7 +12763,7 @@ public:
         }
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                tmp = arr_descr->get_array_size(llvm_arg, llvm_dim, output_kind, dim_kind);
+                tmp = arr_descr->get_array_size(array_type, llvm_arg, llvm_dim, output_kind, dim_kind);
                 break;
             }
             case ASR::array_physical_typeType::PointerToDataArray:
