@@ -4367,7 +4367,8 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* array_size_value = arr_descr->get_array_size(ptr, nullptr, 4);
+                llvm::Type* ptr_type = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
+                llvm::Value* array_size_value = arr_descr->get_array_size(ptr_type, ptr, nullptr, 4);
                 LLVM::CreateStore(*builder, array_size_value, array_size);
                 break;
             }
@@ -6721,7 +6722,9 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
 #endif
-                llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
+                llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
                 value = llvm_utils->create_gep(value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
@@ -6840,8 +6843,11 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
 #endif
-                arr_descr->copy_array(value, target, module.get(),
-                                      target_type, false);
+                llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                        ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
+                arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
@@ -11789,7 +11795,7 @@ public:
                     for (int j = 0; j < n_dims; j++) {
                         if (m_dims[j].m_length) {
                             llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
-                            llvm::Value* descriptor_length = arr_descr->get_array_size(arg, dim, 4);
+                            llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
                             load_array_size_deep_copy(m_dims[j].m_length);
                             llvm::Value* pointer_length = tmp;
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
@@ -11804,7 +11810,7 @@ public:
                     }
                     builder->CreateBr(mergeBB);
                     start_new_block(elseBB);
-                    llvm::Value* desc_size = arr_descr->get_array_size(arg, nullptr, 4);
+                    llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
                     llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
@@ -12784,7 +12790,7 @@ public:
         }
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                tmp = arr_descr->get_array_size(llvm_arg, llvm_dim, output_kind, dim_kind);
+                tmp = arr_descr->get_array_size(array_type, llvm_arg, llvm_dim, output_kind, dim_kind);
                 break;
             }
             case ASR::array_physical_typeType::PointerToDataArray:

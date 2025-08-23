@@ -2802,7 +2802,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     switch( physical_type ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            arr_api->copy_array(src, dest, module, asr_src_type, false);
+                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_src_type)), module);
+                            arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {

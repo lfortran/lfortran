@@ -881,7 +881,7 @@ namespace LCompilers {
             );
         }
 
-        llvm::Value* SimpleCMODescriptor::get_array_size(llvm::Value* array, llvm::Value* dim, int kind, int dim_kind) {
+        llvm::Value* SimpleCMODescriptor::get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim, int kind, int dim_kind) {
             llvm::Value* dim_des_val = this->get_pointer_to_dimension_descriptor_array(array);
             llvm::Value* tmp = nullptr;
             if( dim ) {
@@ -935,7 +935,7 @@ namespace LCompilers {
             llvm::Value* reshaped = llvm_utils->CreateAlloca(*builder, arr_type, nullptr, "reshaped");
 
             // Deep copy data from array to reshaped.
-            llvm::Value* num_elements = this->get_array_size(array, nullptr, 4);
+            llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(reshaped);
             llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
@@ -958,7 +958,7 @@ namespace LCompilers {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
                 builder->CreateStore(llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(arr_type, array, 1)),
                             llvm_utils->create_gep2(arr_type, reshaped, 1));
-                llvm::Value* n_dims = this->get_array_size(shape, nullptr, 4);
+                llvm::Value* n_dims = this->get_array_size(arr_type, shape, nullptr, 4);
                 llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape));
                 llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_type, reshaped, 2);
                 llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
@@ -1001,9 +1001,9 @@ namespace LCompilers {
         }
 
         // Shallow copies source array descriptor to destination descriptor
-        void SimpleCMODescriptor::copy_array(llvm::Value* src, llvm::Value* dest,
+        void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::ttype_t* asr_data_type, bool reserve_memory) {
-            llvm::Value* num_elements = this->get_array_size(src, nullptr, 4);
+            llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest);
             llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(

@@ -307,7 +307,7 @@ namespace LCompilers {
                                      llvm::Module* module) = 0;
 
                 virtual
-                void copy_array(llvm::Value* src, llvm::Value* dest,
+                void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
                                 bool reserve_memory) = 0;
 
@@ -318,7 +318,7 @@ namespace LCompilers {
                                           llvm::Value* num_elements) = 0;
 
                 virtual
-                llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
+                llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4) = 0;
 
         };
@@ -495,7 +495,7 @@ namespace LCompilers {
                                      llvm::Module* module);
 
                 virtual
-                void copy_array(llvm::Value* src, llvm::Value* dest,
+                void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
                                 bool reserve_memory);
 
@@ -506,7 +506,7 @@ namespace LCompilers {
                                           llvm::Value* num_elements);
 
                 virtual
-                llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
+                llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4);
 
         };
