@@ -4779,3 +4779,7 @@ llvm_new_classes = true
 [[test]]
 filename = "classes2.f90"
 llvm_new_classes = true
+
+[[test]]
+filename = "implied_do_loop2.f90"
+run = true
