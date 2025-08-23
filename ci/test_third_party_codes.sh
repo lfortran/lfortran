@@ -183,7 +183,7 @@ time_section "🧪 Testing fortran_mpi" '
 '
 
 time_section "🧪 Testing POT3D with fortran_mpi" '
-  git clone https://github.com/parth121101/POT3D.git
+  git clone https://github.com/parth121101/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
   git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
