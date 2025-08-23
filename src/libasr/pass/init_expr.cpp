@@ -103,8 +103,13 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         // If the array is a Var, get past it to it's value
         if (ASR::is_a<ASR::Var_t>(*x->m_array)) {
             ASR::Variable_t *arr_variable = ASRUtils::EXPR2VAR(x->m_array);
-            if (arr_variable != nullptr) {
+            if (arr_variable->m_value != nullptr) {
                 x->m_array = arr_variable->m_value;
+            }
+        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*x->m_array)) {
+            ASR::ArrayConstructor_t *arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(x->m_array);
+            if (arr_constructor->m_value) {
+                x->m_array = arr_constructor->m_value;
             }
         }
 
