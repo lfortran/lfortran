@@ -953,11 +953,11 @@ namespace LCompilers {
 
             if( this->is_array(asr_shape_type) ) {
                 llvm::Type *i32 = llvm::Type::getInt32Ty(context);
-                builder->CreateStore(llvm_utils->CreateLoad2(i32, llvm_utils->create_gep(array, 1)),
-                            llvm_utils->create_gep(reshaped, 1));
+                builder->CreateStore(llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(arr_type, array, 1)),
+                            llvm_utils->create_gep2(arr_type, reshaped, 1));
                 llvm::Value* n_dims = this->get_array_size(shape, nullptr, 4);
                 llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape));
-                llvm::Value* dim_des_val = llvm_utils->create_gep(reshaped, 2);
+                llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_type, reshaped, 2);
                 llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(reshaped, true));
                 builder->CreateStore(dim_des_first, dim_des_val);
