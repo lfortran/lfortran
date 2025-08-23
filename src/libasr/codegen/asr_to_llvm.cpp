@@ -11030,19 +11030,16 @@ public:
                             tmp = llvm_symtab[h];
                         }
                         if (ASRUtils::is_character(*orig_arg->m_type) &&
-                            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value)) && x_abi == ASR::abiType::BindC) {
+                            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value))) {
                             ASR::String_t* orig_ttype = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(orig_arg->m_type));
                             if(orig_ttype->m_physical_type == ASR::string_physical_typeType::CChar) {
-                                    llvm::Type* orig_type = llvm_utils->get_type_from_ttype_t_util(
-                                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                                    orig_arg->m_type, module.get(), x_abi)->getPointerTo();
-                                if (tmp->getType() != orig_type && tmp->getType()->isPointerTy()) {
+                                if (tmp->getType()->isPointerTy()) {
                                     // Extract data pointer from string descriptor
                                     llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(
                                         x.m_args[i].m_value,
                                         arg->m_type, module.get(), x_abi);
                                     llvm::Value* data_ptr_field = llvm_utils->create_gep2(string_desc_type, tmp, 0);
-                                    llvm::Value* raw_data_ptr = llvm_utils->CreateLoad2(orig_type, data_ptr_field);
+                                    llvm::Value* raw_data_ptr = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr_field);
                                     tmp = raw_data_ptr;
                                 }
                             } else {
