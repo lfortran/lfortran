@@ -41,6 +41,7 @@ program submodule_06
 
     integer(4) :: fnv_1_hasher = 1
     type(key_type) :: key
+    integer(1) :: test_object(4)
 
     allocate(key % value(4))
     fnv_1_hasher = fnv_1_hash( key % value )
@@ -49,4 +50,18 @@ program submodule_06
     print *, key % value
     if (fnv_1_hasher /= 5) error stop
     if (.not. all(key % value == [1, 2, 3, 4])) error stop
+
+    call test_fnv_1()
+
+contains
+
+    subroutine test_fnv_1()
+        integer(4) :: hash
+        hash = fnv_1_hash( test_object )
+
+        print *, hash
+        print *, test_object
+        if (hash /= 5) error stop
+        if (.not. all(test_object == [1, 2, 3, 4])) error stop
+    end subroutine test_fnv_1
 end program
