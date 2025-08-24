@@ -543,6 +543,15 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
+             // New block: Wrap based on m_is_cstruct
+            if (ASR::is_a<ASR::StructType_t>(*v->m_type)) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+                if (stype->m_is_cstruct) {
+                    res = "type(" + res + ")";
+                } else {
+                    res = "class(" + res + ")";
+                }
+            }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 res += ", parameter";
