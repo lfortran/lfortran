@@ -1032,6 +1032,7 @@ ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
     alloc_arg.m_a = struct_expr;
     alloc_arg.m_dims = nullptr;
     alloc_arg.n_dims = 0;
+    alloc_arg.m_type = ASRUtils::expr_type(struct_expr);
     alloc_arg.m_sym_subclass = ASRUtils::symbol_get_past_external(
         ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
     alloc_arg.m_len_expr = nullptr;
