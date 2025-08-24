@@ -852,7 +852,15 @@ namespace LCompilers {
                     arg->m_abi, arg->m_storage, arg->m_value_attr,
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
-                if( is_array_type ) {
+                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                    is_array_type &&
+                    ASRUtils::is_character(*arg->m_type)) {
+                    
+                    // For bind(c) character arrays, use raw i8* instead of array descriptor
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();  // i8*
+                    is_array_type = false;  // Prevent further array processing
+                    
+                } else if( is_array_type ) {
                     type = type_original->getPointerTo();
                 } else {
                     type = type_original;

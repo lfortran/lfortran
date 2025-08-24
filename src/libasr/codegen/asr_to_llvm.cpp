@@ -5861,7 +5861,7 @@ public:
             ASR::ttype_t *type = ASRUtils::get_contained_type(target_type);
             type = ASRUtils::type_get_past_allocatable(type);
             [[maybe_unused]] bool is_target_class = ASRUtils::is_class_type(
-                ASRUtils::type_get_past_pointer(target_type));
+                ASRUtils::type_get_past_allocatable_pointer(target_type));
             [[maybe_unused]] bool is_value_class = ASRUtils::is_class_type(
                 ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(value_type)));
@@ -5950,12 +5950,6 @@ public:
                 llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Value* casted_val_ptr = builder->CreateBitCast(val_data_ptr, struct_type->getPointerTo());
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
-                llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                // This ensures the case where we are storing the base to base_polymorphic, and hence we need to load base from the later one.
-                std::string polymorphic_struct_name = std::string(struct_type_t->m_name) + "_polymorphic";
-                if(llvm_target_type == name2dertype[polymorphic_struct_name]) {
-                    llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
-                }
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
                 std::string value_struct_t_name = "";
@@ -7118,6 +7112,19 @@ public:
                 tmp = builder->CreateBitCast(tmp, target_type); // [1 x i8*]*
                 // we need [1 x i8*]
                 tmp = llvm_utils->CreateLoad2(target_type, tmp);
+            }
+        } else if (
+            m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
+            m_old == ASR::array_physical_typeType::PointerToDataArray) {
+            if (ASRUtils::is_character(*ASRUtils::extract_type(ASRUtils::expr_type(m_arg)))) {
+                // For character arrays in bind(c) context
+                if (ASRUtils::is_fixed_size_array(m_type)) {
+                    // Fixed size character array - ensure correct type
+                    ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
+                    llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
+                    tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
+                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
+                }
             }
         } else {
             LCOMPILERS_ASSERT(false);
@@ -11022,14 +11029,7 @@ public:
                 args.push_back(llvm_arg);
                 continue ;
             }
-            if(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value)) &&
-                ASRUtils::is_character(*ASRUtils::extract_type(orig_arg->m_type))){
-                LCOMPILERS_ASSERT_MSG(
-                    ASRUtils::is_character_phsyical_types_matched(
-                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)),
-                        ASRUtils::extract_type(orig_arg->m_type)),
-                    "Unmatching String Physical Types");
-            }
+
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                 ASR::symbol_t* var_sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
@@ -11041,6 +11041,27 @@ public:
                             tmp = llvm_symtab_deep_copy[{h, current_scope}];
                         } else {
                             tmp = llvm_symtab[h];
+                        }
+                        if (ASRUtils::is_character(*orig_arg->m_type) &&
+                            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value))) {
+                            ASR::String_t* orig_ttype = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(orig_arg->m_type));
+                            if(orig_ttype->m_physical_type == ASR::string_physical_typeType::CChar) {
+                                if (tmp->getType()->isPointerTy()) {
+                                    // Extract data pointer from string descriptor
+                                    llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_args[i].m_value,
+                                        arg->m_type, module.get(), x_abi);
+                                    llvm::Value* data_ptr_field = llvm_utils->create_gep2(string_desc_type, tmp, 0);
+                                    llvm::Value* raw_data_ptr = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr_field);
+                                    tmp = raw_data_ptr;
+                                }
+                            } else {
+                                LCOMPILERS_ASSERT_MSG(
+                                    ASRUtils::is_character_phsyical_types_matched(
+                                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)),
+                                        ASRUtils::extract_type(orig_arg->m_type)),
+                                    "Unmatching String Physical Types");
+                            }
                         }
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
