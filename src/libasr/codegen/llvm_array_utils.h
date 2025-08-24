@@ -137,7 +137,7 @@ namespace LCompilers {
                 */
                 virtual
                 void fill_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool reserve_data_memory=true) = 0;
 
@@ -157,22 +157,22 @@ namespace LCompilers {
                     llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
-                void fill_dimension_descriptor(llvm::Value* arr, int n_dims) = 0;
+                void fill_dimension_descriptor(llvm::Type* type,llvm::Value* arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
-                    llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
+                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
-                    llvm::Value* arr, llvm::Value* source_arr,
+                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr,
                     llvm::Value** lbs, llvm::Value** lengths,
                     int n_dims) = 0;
 
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
@@ -180,7 +180,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -215,7 +215,7 @@ namespace LCompilers {
                 * implemented by current class).
                 */
                 virtual
-                llvm::Value* get_offset(llvm::Value* dim_des, bool load=true) = 0;
+                llvm::Value* get_offset(llvm::Type* type, llvm::Value* dim_des, bool load=true) = 0;
 
                 /*
                 * Returns lower bound in the input
@@ -255,10 +255,10 @@ namespace LCompilers {
                     bool load=true) = 0;
 
                 virtual
-                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
+                llvm::Value* get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer=false) = 0;
 
                 virtual
-                void set_rank(llvm::Value* arr, llvm::Value* rank) = 0;
+                void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank) = 0;
 
                 /*
                 * Returns pointer to dimension descriptor array
@@ -288,7 +288,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
@@ -302,12 +302,12 @@ namespace LCompilers {
 
 
                 virtual
-                llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
+                                     llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module) = 0;
 
                 virtual
-                void copy_array(llvm::Value* src, llvm::Value* dest,
+                void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
                                 bool reserve_memory) = 0;
 
@@ -318,7 +318,7 @@ namespace LCompilers {
                                           llvm::Value* num_elements) = 0;
 
                 virtual
-                llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
+                llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4) = 0;
 
         };
@@ -339,7 +339,7 @@ namespace LCompilers {
                 std::vector<llvm::Value*>& heap_arrays;
 
                 llvm::Value* cmo_convertor_single_element(
-                    llvm::Value* arr, std::vector<llvm::Value*>& m_args,
+                    llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
                     int n_args, bool check_for_bounds, std::string array_name = "");
 
                 llvm::Value* cmo_convertor_single_element_data_only(
@@ -381,7 +381,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Type* arr_ty, llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool reserve_data_memory=true);
 
@@ -397,22 +397,22 @@ namespace LCompilers {
                     llvm::Module* module, bool realloc=false);
 
                 virtual
-                void fill_dimension_descriptor(llvm::Value* arr, int n_dims);
+                void fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims);
 
                 virtual
                 void reset_array_details(
-                    llvm::Value* arr, llvm::Value* source_arr, int n_dims);
+                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims);
 
                 virtual
                 void reset_array_details(
-                    llvm::Value* arr, llvm::Value* source_arr,
+                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr,
                     llvm::Value** lbs, llvm::Value** lengths,
                     int n_dims);
 
                 virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
@@ -420,7 +420,7 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
-                    llvm::Value* target, ASR::ttype_t* target_type,
+                    llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);
@@ -439,13 +439,13 @@ namespace LCompilers {
                 llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
 
                 virtual
-                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
+                llvm::Value* get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer=false);
 
                 virtual
-                void set_rank(llvm::Value* arr, llvm::Value* rank);
+                void set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank);
 
                 virtual
-                llvm::Value* get_offset(llvm::Value* dim_des, bool load=true);
+                llvm::Value* get_offset(llvm::Type* type, llvm::Value* dim_des, bool load=true);
 
                 virtual
                 llvm::Value* get_lower_bound(llvm::Value* dim_des, bool load=true);
@@ -477,7 +477,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
@@ -490,12 +490,12 @@ namespace LCompilers {
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
 
                 virtual
-                llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
-                                     llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
+                                     llvm::Type* shape_type, llvm::Value* shape, ASR::ttype_t* asr_shape_type,
                                      llvm::Module* module);
 
                 virtual
-                void copy_array(llvm::Value* src, llvm::Value* dest,
+                void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
                                 bool reserve_memory);
 
@@ -506,7 +506,7 @@ namespace LCompilers {
                                           llvm::Value* num_elements);
 
                 virtual
-                llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
+                llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4);
 
         };

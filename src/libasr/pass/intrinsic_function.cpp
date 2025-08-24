@@ -31,12 +31,14 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     Allocator& al;
     SymbolTable* global_scope;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
+    bool& in_debugcheck;
+    bool& in_ttype;
 
     public:
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
-        al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_) {}
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool& in_debugcheck_, bool &in_ttype_) :
+        al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_), in_debugcheck(in_debugcheck_), in_ttype(in_ttype_) {}
 
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
@@ -44,6 +46,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             *current_expr = x->m_value;
             return;
         }
+        // If inside DebugCheckArrayBounds and not inside a type
+        // Then keep the IntrinsicElementalFunction because its arguments are used to find ArraySize
+        if (in_debugcheck && !in_ttype) return;
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:
@@ -134,10 +139,27 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
         ReplaceIntrinsicFunctions replacer;
 
     public:
+        bool in_debugcheck = false;
+        bool in_ttype = false;
 
         ReplaceIntrinsicFunctionsVisitor(Allocator& al_, SymbolTable* global_scope_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
-            replacer(al_, global_scope_, func2intrinsicid_) {}
+            replacer(al_, global_scope_, func2intrinsicid_, in_debugcheck, in_ttype) {}
+
+        // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
+        void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+            bool in_debugcheck_copy = in_debugcheck;
+            in_debugcheck = true;
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceIntrinsicFunctionsVisitor>::visit_DebugCheckArrayBounds(x);
+            in_debugcheck = in_debugcheck_copy;
+        }
+
+        void visit_ttype(const ASR::ttype_t& x) {
+            bool in_ttype_copy = in_ttype;
+            in_ttype = true;
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceIntrinsicFunctionsVisitor>::visit_ttype(x);
+            in_ttype = in_ttype_copy;
+        }
 
         void call_replacer() {
             replacer.current_expr = current_expr;

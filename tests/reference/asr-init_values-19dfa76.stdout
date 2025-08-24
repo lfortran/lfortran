@@ -267,18 +267,20 @@
                                     [s1
                                     s2]
                                     Local
-                                    (StringConcat
-                                        (Var 2 s1)
-                                        (Var 2 s2)
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(Var 2 s1)
+                                        (Var 2 s2)]
+                                        0
                                         (String 1 (IntegerConstant 4 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "left"
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 4 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
                                         "left"
-                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (String 1 (IntegerConstant 4 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
                                     (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)

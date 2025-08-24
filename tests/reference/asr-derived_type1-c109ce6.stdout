@@ -80,8 +80,9 @@
                                     nl
                                     [toml_escape]
                                     Local
-                                    (StringConcat
-                                        (StringConstant
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(StringConstant
                                             " "
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
@@ -93,19 +94,20 @@
                                                 "\n"
                                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
-                                        )
+                                        )]
+                                        0
                                         (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             " \n"
-                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
                                         " \n"
-                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public

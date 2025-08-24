@@ -729,7 +729,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 not_to_be_erased.insert(subrout_sym);
                 return;
             }
-            if( !can_edit_call(x.m_args, x.n_args) ) {
+            if( !can_edit_call(x.m_args, x.n_args) && !ASRUtils::get_FunctionType(subrout_sym)->m_module ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
             }

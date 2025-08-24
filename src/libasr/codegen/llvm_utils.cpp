@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
@@ -2179,13 +2180,22 @@ namespace LCompilers {
         bool is_dest_allocatable) {
         llvm::Value *lhs_data, *lhs_len;
         llvm::Value *rhs_data, *rhs_len;
-        llvm::Value *is_lhs_deferred, *is_lhs_allocatable;
 
         std::tie(lhs_data, lhs_len) = get_string_length_data(dest_str_type, dest, true, true);
         std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src);
-        is_lhs_deferred = llvm::ConstantInt::get(context, llvm::APInt(8, dest_str_type->m_len_kind == ASR::DeferredLength));
-        is_lhs_allocatable= llvm::ConstantInt::get(context, llvm::APInt(8, is_dest_allocatable));
         
+        return lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len, 
+                                           dest_str_type->m_len_kind == ASR::string_length_kindType::DeferredLength, 
+                                           is_dest_allocatable);
+    }
+
+    llvm::Value* LLVMUtils::lfortran_str_copy_with_data(
+        llvm::Value *lhs_data, llvm::Value *lhs_len,
+        llvm::Value *rhs_data, llvm::Value *rhs_len,
+        bool is_dest_deferred, bool is_dest_allocatable) {
+        llvm::Value* is_lhs_deferred = llvm::ConstantInt::get(context, llvm::APInt(8, is_dest_deferred));
+        llvm::Value* is_lhs_allocatable= llvm::ConstantInt::get(context, llvm::APInt(8, is_dest_allocatable));
+
 
         std::string runtime_func_name = "_lfortran_strcpy";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -2792,7 +2802,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
                     switch( physical_type ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            arr_api->copy_array(src, dest, module, asr_src_type, false);
+                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_src_type)), module);
+                            arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {

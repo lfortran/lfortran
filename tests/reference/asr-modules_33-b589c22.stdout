@@ -1525,16 +1525,6 @@
                                                     add
                                                     Private
                                                 ),
-                                            1_add_project:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_add_project
-                                                    10 add_project
-                                                    1_dependency_tree_t
-                                                    []
-                                                    add_project
-                                                    Public
-                                                ),
                                             1_dependency_tree_t:
                                                 (ExternalSymbol
                                                     5
@@ -1544,6 +1534,16 @@
                                                     []
                                                     dependency_tree_t
                                                     Private
+                                                ),
+                                            1_dependency_tree_t_add_project:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_dependency_tree_t_add_project
+                                                    10 add_project
+                                                    1_dependency_tree_t
+                                                    []
+                                                    add_project
+                                                    Public
                                                 ),
                                             1_fpm_model_t_deps:
                                                 (ExternalSymbol
@@ -1787,7 +1787,7 @@
                                     (Var 5 package)
                                     (Var 5 error)]
                                     [(SubroutineCall
-                                        5 1_add_project
+                                        5 1_dependency_tree_t_add_project
                                         5 1_add
                                         [((Var 5 package))
                                         ((Var 5 error))]

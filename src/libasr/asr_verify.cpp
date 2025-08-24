@@ -694,7 +694,7 @@ public:
                 array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
             }
 
-            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+            if (array_construct && array_construct->n_args > 0) {
                 for (size_t j = 0; j < array_construct->n_args; j++) {
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
@@ -947,6 +947,23 @@ public:
                 "ArraySize::m_v must be an array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
+    }
+
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        if (check_external) {
+            require(ASR::is_a<ASR::Var_t>(*x.m_target) ||
+                    ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_target) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) ||
+                    ASR::is_a<ASR::BitCast_t>(*x.m_target) ||
+                    ASR::is_a<ASR::ArrayConstant_t>(*x.m_target), "DebugCheckArrayBounds::m_target must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+
+            require(ASR::is_a<ASR::Var_t>(*x.m_value) ||
+                    ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) ||
+                    ASR::is_a<ASR::BitCast_t>(*x.m_value) ||
+                    ASR::is_a<ASR::ArrayConstant_t>(*x.m_value), "DebugCheckArrayBounds::m_value must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
     }
 
     void visit_ArraySection(const ArraySection_t &x) {

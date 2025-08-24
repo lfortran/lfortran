@@ -1159,40 +1159,46 @@
                                                     lower
                                                     int]
                                                     Local
-                                                    (StringConcat
-                                                        (StringConcat
-                                                            (StringConcat
-                                                                (Var 6 upper)
-                                                                (Var 6 lower)
+                                                    (IntrinsicElementalFunction
+                                                        StringConcat
+                                                        [(IntrinsicElementalFunction
+                                                            StringConcat
+                                                            [(IntrinsicElementalFunction
+                                                                StringConcat
+                                                                [(Var 6 upper)
+                                                                (Var 6 lower)]
+                                                                0
                                                                 (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                                 (StringConstant
                                                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                                 )
                                                             )
-                                                            (Var 6 int)
+                                                            (Var 6 int)]
+                                                            0
                                                             (String 1 (IntegerConstant 62 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                             (StringConstant
                                                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-                                                                (String 1 (IntegerConstant 62 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                (String 1 (IntegerConstant 62 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                         )
                                                         (StringConstant
                                                             "_"
                                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        )
+                                                        )]
+                                                        0
                                                         (String 1 (IntegerConstant 63 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                         (StringConstant
                                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                            (String 1 (IntegerConstant 63 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                            (String 1 (IntegerConstant 63 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                        (String 1 (IntegerConstant 63 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        (String 1 (IntegerConstant 63 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                     )
                                                     Parameter
-                                                    (String 1 (IntegerConstant 63 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 (IntegerConstant 63 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1416,13 +1422,15 @@
                                                                     (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                                     ()
                                                                 )
-                                                                (StringConcat
-                                                                    (Var 6 lower)
-                                                                    (Var 6 upper)
+                                                                (IntrinsicElementalFunction
+                                                                    StringConcat
+                                                                    [(Var 6 lower)
+                                                                    (Var 6 upper)]
+                                                                    0
                                                                     (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                                     (StringConstant
                                                                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                        (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                                     )
                                                                 )
                                                                 (LogicalConstant
@@ -1761,13 +1769,14 @@
                                         ())
                                         [(Assignment
                                             (Var 7 cat)
-                                            (StringConcat
-                                                (StringConcat
-                                                    (Var 7 cat)
-                                                    (Var 7 delim_str)
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 7 cat)
+                                                    (Var 7 delim_str)]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
                                                     ()
                                                 )
                                                 (StructInstanceMember
@@ -1792,10 +1801,9 @@
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
-                                                )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
                                                 ()
                                             )
                                             ()

@@ -574,6 +574,16 @@
                                     i
                                     Public
                                 ),
+                            1_complextype_integer_add_subrout:
+                                (ExternalSymbol
+                                    6
+                                    1_complextype_integer_add_subrout
+                                    3 integer_add_subrout
+                                    complextype
+                                    []
+                                    integer_add_subrout
+                                    Public
+                                ),
                             1_complextype_r:
                                 (ExternalSymbol
                                     6
@@ -584,20 +594,10 @@
                                     r
                                     Public
                                 ),
-                            1_integer_add_subrout:
+                            1_complextype_real_add_subrout:
                                 (ExternalSymbol
                                     6
-                                    1_integer_add_subrout
-                                    3 integer_add_subrout
-                                    complextype
-                                    []
-                                    integer_add_subrout
-                                    Public
-                                ),
-                            1_real_add_subrout:
-                                (ExternalSymbol
-                                    6
-                                    1_real_add_subrout
+                                    1_complextype_real_add_subrout
                                     3 real_add_subrout
                                     complextype
                                     []
@@ -871,7 +871,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_integer_add_subrout
+                        6 1_complextype_integer_add_subrout
                         6 1_add
                         [((Var 6 ione))
                         ((Var 6 izero))
@@ -945,7 +945,7 @@
                         []
                     )
                     (SubroutineCall
-                        6 1_real_add_subrout
+                        6 1_complextype_real_add_subrout
                         6 1_add
                         [((Var 6 fpzero))
                         ((Var 6 negfpone))

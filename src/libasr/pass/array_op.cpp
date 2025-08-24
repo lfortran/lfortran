@@ -369,6 +369,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     Vec<ASR::stmt_t*> pass_result;
     Vec<ASR::stmt_t*>* parent_body;
     bool realloc_lhs;
+    bool bounds_checking;
     bool remove_original_stmt;
 
     public:
@@ -379,9 +380,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         replacer.replace_expr(*current_expr);
     }
 
-    ArrayOpVisitor(Allocator& al_, bool realloc_lhs_):
+    ArrayOpVisitor(Allocator& al_, bool realloc_lhs_, bool bounds_checking_):
         al(al_), replacer(al, pass_result, remove_original_stmt),
-        parent_body(nullptr), realloc_lhs(realloc_lhs_),
+        parent_body(nullptr), realloc_lhs(realloc_lhs_), bounds_checking(bounds_checking_),
         remove_original_stmt(false) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
@@ -861,21 +862,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        // First element in vars is target itself
-        ASR::expr_t* realloc_var = nullptr;
-        size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
-        for( size_t i = 1; i < vars.size(); i++ ) {
-            size_t var_rank = ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(*vars[i]));
-            if( target_rank == var_rank ) {
-                realloc_var = *vars[i];
-                break ;
-            }
-        }
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(value));
 
         Location loc; loc.first = 1, loc.last = 1;
         ASRUtils::ASRBuilder builder(al, loc);
         Vec<ASR::dimension_t> realloc_dims;
+        size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
         for( size_t i = 0; i < target_rank; i++ ) {
             ASR::dimension_t realloc_dim;
@@ -956,6 +949,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    // Don't visit inside DebugCheckArrayBounds, it may contain ArrayConstant and result_expr will be nullptr
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        (void)x;
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         if (ASRUtils::is_simd_array(x.m_target)) {
             if( !(ASRUtils::is_allocatable(x.m_value) ||
@@ -1026,6 +1024,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             insert_realloc_for_target(xx.m_target, xx.m_value, vars);
         }
 
+        if (bounds_checking && 
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
+            ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, d_value)));
+        }
+
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 2);
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
@@ -1092,7 +1099,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& pass_options) {
-    ArrayOpVisitor v(al, pass_options.realloc_lhs);
+    ArrayOpVisitor v(al, pass_options.realloc_lhs, pass_options.bounds_checking);
     v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);

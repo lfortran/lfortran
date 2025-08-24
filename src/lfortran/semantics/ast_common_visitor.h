@@ -11062,80 +11062,12 @@ public:
             ASRUtils::type_get_past_allocatable(right_type_));
 
         if( ASR::is_a<ASR::String_t>(*left_type) &&
-            ASR::is_a<ASR::String_t>(*right_type) ) {
-            ASR::String_t *left_type2 = ASR::down_cast<ASR::String_t>(left_type);
-            ASR::String_t *right_type2 = ASR::down_cast<ASR::String_t>(right_type);
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(left_type) == 0);
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(right_type) == 0);
-            int a_len = -1;
-            int64_t l_len, r_len;
-            ASR::ttype_t *dest_type;
-            if (ASRUtils::extract_value(left_type2->m_len, l_len) &&
-                ASRUtils::extract_value(right_type2->m_len, r_len)) {
-                a_len = l_len + r_len;
-                ASR::expr_t* expr_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
-                dest_type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, x.base.base.loc,
-                    left_type2->m_kind, expr_len,
-                    ASR::ExpressionLength,
-                    ASR::string_physical_typeType::DescriptorString));
-            } else {
-                dest_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
-                    ASRUtils::TYPE(ASR::make_String_t(
-                        al, x.base.base.loc,
-                        left_type2->m_kind, nullptr,
-                        ASR::DeferredLength,
-                        ASR::string_physical_typeType::DescriptorString))));
-            }
-
-            if( (ASRUtils::is_array(right_type_) || ASRUtils::is_array(left_type_)) &&
-                !ASRUtils::is_array(dest_type) ) {
-                ASR::dimension_t* m_dims = nullptr;
-                size_t n_dims = 0;
-                if( ASRUtils::is_array(left_type_) ) {
-                    n_dims = ASRUtils::extract_dimensions_from_ttype(left_type_, m_dims);
-                } else if( ASRUtils::is_array(right_type_) ) {
-                    n_dims = ASRUtils::extract_dimensions_from_ttype(right_type_, m_dims);
-                }
-                dest_type = ASRUtils::make_Array_t_util(al, dest_type->base.loc,
-                    ASRUtils::type_get_past_pointer(dest_type), m_dims, n_dims);
-                if( ASR::is_a<ASR::Allocatable_t>(*left_type_) || ASR::is_a<ASR::Allocatable_t>(*right_type_) ) {
-                    dest_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, dest_type->base.loc, dest_type));
-                }
-            }
-
-            ASR::expr_t *value = nullptr;
-            // Assign evaluation to `value` if possible, otherwise leave nullptr
-            ASR::expr_t* left_value = ASRUtils::expr_value(left);
-            ASR::expr_t* right_value = ASRUtils::expr_value(right);
-            if (left_value != nullptr && right_value != nullptr) {
-                ASR::ttype_t* left_value_type = ASRUtils::expr_type(left_value);
-
-                char* left_value_ = ASR::down_cast<ASR::StringConstant_t>(left_value)->m_s;
-                char* right_value_ = ASR::down_cast<ASR::StringConstant_t>(right_value)->m_s;
-
-                int64_t left_value_len=-1; ASRUtils::extract_value(ASRUtils::get_string_type(left_value)->m_len, left_value_len);
-                int64_t right_value_len=-1; ASRUtils::extract_value(ASRUtils::get_string_type(right_value)->m_len, right_value_len);
-                
-                ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(
-                    ASR::make_String_t(al, x.base.base.loc, ASRUtils::get_string_type(left_value_type)->m_kind, 
-                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, left_value_len + right_value_len,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
-                        ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
-                char* result;
-                { //Concat Both sides (Make sure to use actual length and don't depend on `\0`)
-                    std::string result_s;
-                    result_s= std::string(left_value_, left_value_len) + std::string(right_value_, right_value_len);
-                    Str s; s.from_str_view(result_s);
-                    result = s.c_str(al);
-                }
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
-                    al, x.base.base.loc, result, dest_value_type));
-            }
-            tmp = ASR::make_StringConcat_t(al, x.base.base.loc, left, right, dest_type,
-                                    value);
+            ASR::is_a<ASR::String_t>(*right_type) ) { // CreateIntrinisc `stringConcat`
+            Vec<ASR::expr_t*> v; v.reserve(al, 1);
+            v.push_back(al, left);
+            v.push_back(al, right);
+            LCOMPILERS_ASSERT(ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function("stringconcat"))
+            tmp = ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("stringconcat")(al, x.base.base.loc, v, diag);
         } else {
             // resolve the intrinsic_op_name to get it's symbol
             ASR::symbol_t* sym = resolve_custom_operator(intrinsic_op_name, left);

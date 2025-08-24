@@ -5301,7 +5301,9 @@ LFORTRAN_API int32_t _lfortran_get_command_argument_length(int n) {
     }
 }
 
-LFORTRAN_API int32_t _lfortran_get_command_argument_status() {
+LFORTRAN_API int32_t _lfortran_get_command_argument_status(int n, int arg_len, int len) {
+    if (n > _argc - 1) return 42;
+    else if (arg_len < len) return -1;
     return 0;
 }
 

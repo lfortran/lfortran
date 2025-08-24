@@ -330,6 +330,9 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         case ASR::ttypeType::Allocatable: {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
         }
+        case ASR::ttypeType::StructType: {
+            return 4;
+        }
         default : {
             return -1;
         }
@@ -1811,7 +1814,7 @@ template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
         std::is_same<T, std::complex<float>>::value == false>::type>
-static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
+static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns extraction state.
     if( !is_value_constant(value_expr) ) {
         return false;
     }
@@ -1874,6 +1877,15 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             return false;
     }
     return true;
+}
+
+template <typename T,
+    typename = typename std::enable_if<
+        std::is_same<T, std::complex<double>>::value == false &&
+        std::is_same<T, std::complex<float>>::value == false>::type>
+inline void extract_value_(ASR::expr_t* value_expr, T& value) { // Raises error if expr doesn't have value.
+    bool extracted = extract_value(value_expr, value);
+    if (!extracted) LCompilersException("Expr value can't be extracted");
 }
 
 static inline std::string extract_dim_value(ASR::expr_t* dim) {
@@ -3060,6 +3072,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type);
+ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop = false);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
@@ -3363,6 +3376,51 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         override_physical_type);
 }
 
+
+/*
+    -- This class is responsible of replacing FuncParam in Function's type
+        into the actual argument passed in the FunctionCall. --
+    -------------------------------------------------------------------------
+    * - It duplicates the FunctionReturn type; No need to duplicate it yourself.
+    * - Only used through static `replace` to prevent further usages.
+    * - If used frequently, You can create a static instance in `replace` and reuse it instaed.
+    --------------------------------------------------------------------------
+    * EXAMPLE - Length Of String Type:
+    
+    (String ( FunctionParam 0 (Integer 4) ) ExpressionLength DescriptorString )
+        |
+        INTO
+        |
+        V
+    (String ( var 1 arg )                   ExpressionLength DescriptorString )
+*/
+class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplacer> {
+    private :
+    ASR::FunctionCall_t* f_call_;
+    Allocator &al_;
+    FuncParamToArgReplacer(Allocator& al, ASR::FunctionCall_t* f_call): f_call_(f_call), al_(al) {}
+    void replace_(){
+        /* 
+            Duplicate, As we assume passed type is Function's node;
+            If not duplicated, Changes will reflect on original node.
+        */
+        ASR::ttype_t* const f_call_t_dup = ASRUtils::duplicate_type(al_, f_call_->m_type);
+        f_call_->m_type = f_call_t_dup;
+        replace_ttype(f_call_->m_type);
+
+    }
+    public : 
+    void replace_FunctionParam(ASR::FunctionParam_t* x){
+        /* Replace FuncParam With Correspondent Arg */
+        LCOMPILERS_ASSERT(x->m_param_number < (int64_t)f_call_->n_args)
+        *current_expr = f_call_->m_args[x->m_param_number].m_value;
+    }
+
+    inline static void replace(Allocator& al, ASR::FunctionCall_t* f_call){
+        auto instance = FuncParamToArgReplacer(al, f_call);
+        instance.replace_();
+    }
+};
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
     ASR::expr_t* dt=nullptr, bool nopass = false) {
@@ -5959,7 +6017,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             }
         }
         case ASR::ttypeType::UnsignedInteger: {
-            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            ASR::UnsignedIntegerConstant_t* value_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value);
             switch (kind) {
                 case 1: ((uint8_t*)x->m_data)[i] = value_int->m_n; break;
                 case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
@@ -6118,13 +6176,13 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 1: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 2: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 4: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 8: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint64_t*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
@@ -6187,6 +6245,14 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 }
 
 template<typename T>
+T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+    }
+    return data;
+}
+
+template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
         data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
@@ -6226,10 +6292,10 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: return set_data_int(new uint8_t[n_args], a_args, n_args);
-                case 2: return set_data_int(new uint16_t[n_args], a_args, n_args);
-                case 4: return set_data_int(new uint32_t[n_args], a_args, n_args);
-                case 8: return set_data_int(new uint64_t[n_args], a_args, n_args);
+                case 1: return set_data_uint(new uint8_t[n_args], a_args, n_args);
+                case 2: return set_data_uint(new uint16_t[n_args], a_args, n_args);
+                case 4: return set_data_uint(new uint32_t[n_args], a_args, n_args);
+                case 8: return set_data_uint(new uint64_t[n_args], a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
@@ -6322,6 +6388,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||

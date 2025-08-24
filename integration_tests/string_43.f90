@@ -1,6 +1,5 @@
-
 program string_43
-    character(len=2) :: textblock(2)
+    character(len=2) :: textblock(3)
     textblock = f()
     print*, "lf"//textblock
 

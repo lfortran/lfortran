@@ -494,6 +494,17 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::Iachar_t* iachar = ASR::down_cast<ASR::Iachar_t>(expression);
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(iachar->m_arg));
         }
+        case ASR::exprType::ListLen:
+        case ASR::exprType::ListConstant:
+        case ASR::exprType::ListConcat: {
+            return nullptr;
+        }
+        case ASR::exprType::UnionInstanceMember: {
+            ASR::UnionInstanceMember_t* union_instance_member = ASR::down_cast<ASR::UnionInstanceMember_t>(expression);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(union_instance_member->m_m)));
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(union_instance_member->m_m));
+            return var->m_type_declaration;
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
@@ -1229,7 +1240,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     if (ASR::is_a<ASR::Struct_t>(*member)) {
         ASR::Struct_t* member_variable = ASR::down_cast<ASR::Struct_t>(member);
         ASR::symbol_t *mem_es = nullptr;
-        std::string mem_name = "1_" + std::string(ASRUtils::symbol_name(member));
+        std::string mem_name = "1_" + std::string(member_variable->m_name) +
+            "_" + std::string(ASRUtils::symbol_name(member));
         if (current_scope->resolve_symbol(mem_name)) {
             mem_es = current_scope->resolve_symbol(mem_name);
         } else {
@@ -2498,7 +2510,8 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
             class_proc_name = ASRUtils::symbol_name(original_sym);
         }
         if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
-            std::string imported_proc_name = "1_" + class_proc_name;
+            std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym));
+            std::string imported_proc_name = "1_" + struct_name + "_" + class_proc_name;
             if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
                 ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
                 std::string module_name = ASRUtils::symbol_name(module_sym);
@@ -3264,6 +3277,110 @@ ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type
     }
     return nullptr;
 }
+
+template<typename T>
+ASR::expr_t* get_binop_size_var(ASR::expr_t* x) {
+    ASR::expr_t* left = get_expr_size_expr(ASR::down_cast<T>(x)->m_left, true);
+    ASR::expr_t* right = get_expr_size_expr(ASR::down_cast<T>(x)->m_right, true);
+    if (left && ASRUtils::is_array(ASRUtils::expr_type(left))) {
+        return get_expr_size_expr(left, true);
+    } else if (right && ASRUtils::is_array(ASRUtils::expr_type(right))) {
+        return get_expr_size_expr(right, true);
+    }
+    return nullptr;
+}
+
+// Get past expressions to get the expr which will be used to calculate ArraySize.
+// This should only return one of Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant.
+// This should never return nullptr for regular calls, nullptr is only used for traversing binop to find an array.
+ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) {
+    if (ASR::is_a<ASR::Var_t>(*x) ||
+        ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
+        ASR::is_a<ASR::BitCast_t>(*x) ||
+        ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+        return x;
+    }
+
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::IntegerBinOp_t>(x);
+    } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::RealBinOp_t>(x);
+    } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::ComplexBinOp_t>(x);
+    } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
+        return get_binop_size_var<ASR::LogicalBinOp_t>(x);
+    } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
+        return get_binop_size_var<ASR::IntegerCompare_t>(x);
+    } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
+        return get_binop_size_var<ASR::RealCompare_t>(x);
+    } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
+        return get_binop_size_var<ASR::ComplexCompare_t>(x);
+    } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
+        return get_binop_size_var<ASR::StringCompare_t>(x);
+    } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
+        return get_binop_size_var<ASR::OverloadedCompare_t>(x);
+    } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
+        return get_binop_size_var<ASR::StringConcat_t>(x);
+    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::Cast_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::Cast_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::LogicalNot_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x)) {
+        ASR::IntrinsicElementalFunction_t* elemental_f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+
+        // If any argument is an array other arguments must be the same shape
+        for (size_t i = 0; i < elemental_f->n_args; i++) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(elemental_f->m_args[i]))) {
+                return get_expr_size_expr(elemental_f->m_args[i]);
+            }
+        }
+    } else if (ASR::is_a<ASR::FunctionCall_t>(*x)) {
+        ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(x);
+        if (ASRUtils::is_elemental(func_call->m_name)) {
+            // If any argument is an array other arguments must be the same shape
+            for (size_t i = 0; i < func_call->n_args; i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(func_call->m_args[i].m_value))) {
+                    return get_expr_size_expr(func_call->m_args[i].m_value);
+                }
+            }
+            // m_dt is also an argument
+            if (func_call->m_dt && ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
+                return get_expr_size_expr(func_call->m_dt);
+            }
+        }
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+        ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x);
+        if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+            return get_expr_size_expr(sim->m_v);
+        }
+    }
+
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+        return x;
+    } else if (inside_binop) {
+        return nullptr;
+    } else {
+        LCOMPILERS_ASSERT(false);
+        return nullptr;
+    }
+}
+
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;

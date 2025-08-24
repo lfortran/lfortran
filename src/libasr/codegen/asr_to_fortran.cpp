@@ -897,6 +897,19 @@ public:
         src = r;
     }
 
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
+        std::string r = indent;
+        r += "! CheckBounds LHS = ";
+        visit_expr(*x.m_target);
+        r += src;
+        r += ", RHS = ";
+        visit_expr(*x.m_value);
+        r += src;
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_Associate(const ASR::Associate_t &x) {
         visit_expr(*x.m_target);
         std::string t = std::move(src);
@@ -1512,6 +1525,7 @@ public:
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
+        else if(intrinsic_func_name == "StringConcat") {{visit_expr(*x.m_args[0]);out+=src;} out+="//"; {visit_expr(*x.m_args[1]);out+=src;} src=std::move(out);return;}
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 

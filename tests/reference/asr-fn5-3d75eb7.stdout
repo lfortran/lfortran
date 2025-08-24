@@ -176,8 +176,9 @@
                                         )
                                         [(Assignment
                                             (Var 3 strout)
-                                            (StringConcat
-                                                (Var 3 line)
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(Var 3 line)
                                                 (IntrinsicElementalFunction
                                                     Repeat
                                                     [(Var 3 pattern)
@@ -207,10 +208,9 @@
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
-                                                )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
                                                 ()
                                             )
                                             ()
