@@ -5203,7 +5203,7 @@ public:
                                 Label("",{loc})
                             }));
                         throw SemanticAbort();
-                    } else if (this->is_derived_type && is_pointer) {
+                    } else if (this->is_derived_type && (is_pointer || is_allocatable)) {
                         // Placeholder symbol for StructType type
                         // Derived type can be used before its actually defined
                         v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(

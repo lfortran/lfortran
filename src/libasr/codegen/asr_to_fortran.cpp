@@ -835,8 +835,7 @@ public:
         r += "allocate(";
         for (size_t i = 0; i < x.n_args; i ++) {
             if (x.m_args[i].m_type) {
-                visit_ttype(*x.m_args[i].m_type);
-                r += src;
+                r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
                 r += " :: ";
             }
             if (x.m_args[i].m_len_expr) {

@@ -1024,10 +1024,28 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     return array_var_temporary;
 }
 
+ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
+    Vec<ASR::alloc_arg_t> alloc_args;
+    alloc_args.reserve(al, 1);
+    ASR::alloc_arg_t alloc_arg;
+    alloc_arg.loc = struct_expr->base.loc;
+    alloc_arg.m_a = struct_expr;
+    alloc_arg.m_dims = nullptr;
+    alloc_arg.n_dims = 0;
+    alloc_arg.m_type = ASRUtils::expr_type(struct_expr);
+    alloc_arg.m_sym_subclass = ASRUtils::symbol_get_past_external(
+        ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+    alloc_arg.m_len_expr = nullptr;
+    alloc_args.push_back(al, alloc_arg);
+
+    return ASRUtils::STMT(ASR::make_Allocate_t(
+        al, struct_expr->base.loc, alloc_args.p, 1, nullptr, nullptr, nullptr));
+}
+
 ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
     ASR::expr_t* struct_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
-    ExprsWithTargetType& exprs_with_target) {
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs) {
     const Location& loc = struct_expr->base.loc;
     ASR::expr_t* struct_var_temporary = create_temporary_variable_for_struct(
         al, struct_expr, current_scope, name_hint);
@@ -1036,9 +1054,15 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
+        if (realloc_lhs && ASRUtils::is_allocatable(ASRUtils::expr_type(struct_var_temporary))
+            && !ASRUtils::is_array(ASRUtils::expr_type(struct_var_temporary))) {
+            // Allocate the temporary struct type variable before assigning any value.
+            current_body->push_back(al, allocate_struct_expr(al, struct_var_temporary));
+        }
+
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
-    }
+    } 
     return struct_var_temporary;
 }
 
@@ -1164,7 +1188,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 visit_expr(*x_values[i]);
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_values[i]), name_hint, al, current_body,
-                    current_scope, exprs_with_target);
+                    current_scope, exprs_with_target, realloc_lhs);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_values[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_values[i]);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1219,7 +1243,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
-                    current_scope, exprs_with_target);
+                    current_scope, exprs_with_target, realloc_lhs);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1269,7 +1293,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
-                    current_scope, exprs_with_target);
+                    current_scope, exprs_with_target, realloc_lhs);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1375,7 +1399,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             visit_expr(*xx.m_text);
             ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                 ASRUtils::get_past_array_physical_cast(xx.m_text), name_hint, al, current_body,
-                current_scope, exprs_with_target);
+                current_scope, exprs_with_target, realloc_lhs);
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_text) ) {
                 ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_text);
                 struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1438,7 +1462,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             visit_expr(*expr);
             ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                 ASRUtils::get_past_array_physical_cast(expr), name_hint, al, current_body,
-                current_scope, exprs_with_target);
+                current_scope, exprs_with_target, realloc_lhs);
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
                 ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
                 struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -1594,8 +1618,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
-        visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
-            ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id));
+        // Argument `to` in `move_alloc` can be an unallocated struct type variable, so creating a
+        // temporary and assigning `to` to it will lead to a segfault during deepcopying the values.
+        // Hence, skip creating temporaries for `move_alloc` arguments and pass directly. 
+        // This also saves an extra overhead of copying back the allocated pointers from the temporary 
+        // to the actual variable.
+        // Please see `integration_tests/derived_types_78.f90` for an example.
+        if (ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id) != "MoveAlloc") {
+            visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
+                ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id));
+        }
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
@@ -1819,7 +1851,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         Vec<ASR::stmt_t*>* &current_body, SymbolTable* &current_scope, ExprsWithTargetType& exprs_with_target) {
         *current_expr = create_and_allocate_temporary_variable_for_struct(
                 *current_expr, name_hint, al, current_body,
-                current_scope, exprs_with_target);
+                current_scope, exprs_with_target, realloc_lhs);
     }
 
     void force_replace_current_expr_for_scalar(ASR::expr_t** &current_expr, const std::string& name_hint, Allocator& al,
