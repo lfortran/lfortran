@@ -648,6 +648,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
                 std::string orig_str = symbol_to_str_fortran(*orig_sym);
                 return orig_str + "  ! from module " + std::string(ext->m_module_name);
             } else {
+            std::string orig_str = symbol_to_str_fortran(*orig_sym, true);
                 return "external symbol " + std::string(ext->m_name);
             }
         }
