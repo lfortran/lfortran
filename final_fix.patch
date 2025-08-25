@@ -1,0 +1,61 @@
+diff --git a/src/bin/lfortran_accessor.cpp b/src/bin/lfortran_accessor.cpp
+index 4ed319bb9..9e6eae7e2 100644
+--- a/src/bin/lfortran_accessor.cpp
++++ b/src/bin/lfortran_accessor.cpp
+@@ -182,7 +182,7 @@ namespace LCompilers::LLanguageServer {
+                     );
+                     loc.symbol_type = s->type;
+ 
+-                    pair.second = ASRUtils::symbol_to_str_fortran(*s);
++                    pair.second = ASRUtils::symbol_to_str_fortran(*s, true);
+                 }
+             }
+         }
+diff --git a/src/libasr/asr_utils.h b/src/libasr/asr_utils.h
+index 14de6ef4c..e4ee168ad 100644
+--- a/src/libasr/asr_utils.h
++++ b/src/libasr/asr_utils.h
+@@ -538,7 +538,7 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR:
+ 
+ static inline char *symbol_name(const ASR::symbol_t *f);
+ 
+-static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
++static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers) {
+     switch (s.type) {
+         case ASR::symbolType::Variable: {
+             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
+@@ -555,10 +555,12 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+             if (v->m_storage == ASR::storage_typeType::Parameter) {
+                 res += ", parameter";
+             }
+-            if (v->m_access == ASR::accessType::Private) {
+-                res += ", private";
+-            } else if (v->m_access == ASR::accessType::Public) {
+-                res += ", public";
++            if (add_symbol_access_specifiers) {
++                if (v->m_access == ASR::accessType::Private) {
++                    res += ", private";
++                } else if (v->m_access == ASR::accessType::Public) {
++                    res += ", public";
++                }
+             }
+             if (v->m_presence == ASR::presenceType::Optional) {
+                 res += ", optional";
+@@ -608,7 +610,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+                 ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
+                 if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                     const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+-                    res += "    " + symbol_to_str_fortran(arg_var->base) + "\n";
++                    res += "    " + symbol_to_str_fortran(arg_var->base, false) + "\n";
+                 }
+             }
+             // Add return variable declaration
+@@ -619,7 +621,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+                     const ASR::symbol_t *v_sym = var->m_v;
+                     if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                         const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
+-                        res += "    " + symbol_to_str_fortran(v->base) + "\n";
++                        res += "    " + symbol_to_str_fortran(v->base, false) + "\n";
+                     }
+                 }
+             }
