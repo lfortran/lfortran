@@ -543,8 +543,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
-             // New block: Wrap based on m_is_cstruct
-            if (ASR::is_a<ASR::StructType_t>(*v->m_type)) {
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
@@ -609,12 +608,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                 ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
                 if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                     const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    std::string arg_decl = type_to_str_fortran_symbol(arg_var->m_type, arg_var->m_type_declaration);
-                    if (arg_var->m_intent != ASR::intentType::Unspecified) {
-                        arg_decl += ", intent(" + intent_to_str(arg_var->m_intent) + ")";
-                    }
-                    arg_decl += " :: " + arg_name;
-                    res += "    " + arg_decl + "\n";
+                    res += "    " + symbol_to_str_fortran(arg_var->base) + "\n";
                 }
             }
             // Add return variable declaration
@@ -625,8 +619,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                     const ASR::symbol_t *v_sym = var->m_v;
                     if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                         const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
-                        std::string ret_type = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
-                        res += "    " + ret_type + " :: " + std::string(v->m_name) + "\n";
+                        res += "    " + symbol_to_str_fortran(v->base) + "\n";
                     }
                 }
             }
