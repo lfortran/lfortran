@@ -4531,15 +4531,18 @@ public:
                         int n_dims = arr->n_dims;
                         visit_expr(*x.m_args[i].m_end);
                         ASR::expr_t* call_arg = ASRUtils::EXPR(tmp);
-                        int call_arg_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(call_arg));
-                        if (n_dims != call_arg_n_dims) {
-                            diag.add(diag::Diagnostic(
-                                "Rank of array argument '" + std::string(v->m_name) +
-                                "' mismatches in subroutine call",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {call_arg->base.loc}),
-                                }));
-                            throw SemanticAbort();
+                        ASR::ttype_t* call_arg_type = ASRUtils::expr_type(call_arg);
+                        if (call_arg && ASR::is_a<ASR::Array_t>(*call_arg_type)) {
+                            int call_arg_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(call_arg));
+                            if (n_dims != call_arg_n_dims) {
+                                diag.add(diag::Diagnostic(
+                                    "Rank of array argument '" + std::string(v->m_name) +
+                                    "' mismatches in subroutine call",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {call_arg->base.loc}),
+                                    }));
+                                throw SemanticAbort();
+                            }
                         }
                     }
                     if (v->m_presence != ASR::presenceType::Optional) {
