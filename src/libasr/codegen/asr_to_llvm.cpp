@@ -6243,6 +6243,23 @@ public:
             }
             return;
         }
+
+
+        // When assigning to a StructInstanceMember, whose instance is allocatable
+        // Check if the underlying struct instance is allocated, if not allocate
+        if (x.m_realloc_lhs &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+            !ASRUtils::is_character(*asr_value_type)) {
+            ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+            if (ASRUtils::is_allocatable(sim->m_v)) {
+                check_and_allocate(sim->m_v, x.m_value, asr_value_type);
+            }
+
+            if (ASRUtils::is_allocatable(x.m_target)) {
+                check_and_allocate(x.m_target, x.m_value, asr_value_type);
+            }
+        }
+
         if( is_target_list && is_value_list ) {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -6468,17 +6485,6 @@ public:
             }
             builder->CreateStore(tmp, llvm_symtab[target_h]);
             return ;
-        }
-
-        // When assigning to a StructInstanceMember, whose instance is allocatable
-        // Check if the underlying struct instance is allocated, if not allocate
-        if (x.m_realloc_lhs &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
-            !ASRUtils::is_character(*asr_value_type)) {
-            ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASRUtils::is_allocatable(sim->m_v)) {
-                check_and_allocate(sim->m_v, x.m_value, asr_value_type);
-            }
         }
 
         llvm::Value *target, *value;
