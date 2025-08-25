@@ -6865,20 +6865,19 @@ public:
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
-            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))
-            LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(x.m_value)))
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            ASR::ArraySize_t* value_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_value, nullptr, type32, nullptr));
-            visit_ArraySize(*value_array_size);
-            llvm::Value* value_size = tmp;
-
-            ASR::ArraySize_t* target_array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                x.m_target, nullptr, type32, nullptr));
-            visit_ArraySize(*target_array_size);
+            visit_expr(*x.m_target);
             llvm::Value* target_size = tmp;
 
-            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+            visit_expr(*x.m_value);
+            llvm::Value* value_size = tmp;
+
+            ASR::expr_t* target_expr = nullptr;
+            if (ASR::is_a<ASR::ArraySize_t>(*x.m_target)) {
+                target_expr = ASR::down_cast<ASR::ArraySize_t>(x.m_target)->m_v;
+            }
+
+            // TODO: Try to reserve the target Var, ArraySize can get replaced by IntegerBinOp
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(target_expr);
             if (target_variable) {
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                     "Runtime Error: Size mismatch in assignment to '%s'\n\n"

@@ -257,8 +257,18 @@
                         ()
                     )
                     (DebugCheckArrayBounds
-                        (Var 2 d)
-                        (Var 2 a)
+                        (ArraySize
+                            (Var 2 d)
+                            ()
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 a)
+                            ()
+                            (Integer 4)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 __libasr_index_1_1)
