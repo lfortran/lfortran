@@ -19,6 +19,8 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+std::set<std::string> loaded_submodules;
+
 // depth-first graph traversal
 void visit(
     std::string const& a,
@@ -1052,7 +1054,6 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 
 void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                ASR::Module_t* mod, const Location &loc,
-                               std::set<std::string> &loaded_submodules,
                                LCompilers::PassOptions& pass_options,
                                bool run_verify,
                                const std::function<void (const std::string &, const Location &)> err,
@@ -1069,8 +1070,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     for (size_t i=0;i<mod->n_dependencies;i++) {
         ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
         load_dependent_submodules(al, symtab, dep_mod, loc,
-                                  loaded_submodules, pass_options,
-                                  run_verify, err, lm);
+                                  pass_options, run_verify,
+                                  err, lm);
     }
 
     if (mod->m_has_submodules) {
