@@ -182,7 +182,7 @@ namespace LCompilers::LLanguageServer {
                     );
                     loc.symbol_type = s->type;
 
-                    pair.second = ASRUtils::symbol_to_str_fortran(*s);
+                    pair.second = ASRUtils::symbol_to_str_fortran(*s, true);
                 }
             }
         }
