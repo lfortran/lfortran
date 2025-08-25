@@ -19,6 +19,8 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+std::set<std::string> loaded_submodules;
+
 // depth-first graph traversal
 void visit(
     std::string const& a,
@@ -943,25 +945,6 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
-    // Load all the Submodules of loaded parent module
-    if (load_submodules && mod2->m_has_submodules) {
-        std::vector<ASR::TranslationUnit_t*> submods;
-        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
-            = find_and_load_submodules(al, module_name, *symtab, pass_options, lm);
-        if (res.ok) {
-            submods = res.result;
-        } else {
-            error_message = res.error.message;
-            err(error_message, loc);
-        }
-        for (size_t i=0;i<submods.size();i++) {
-            ASR::Module_t *submod = extract_module(*submods[i]);
-            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-            submod->m_symtab->parent = symtab;
-            submod->m_loaded_from_mod = true;
-        }
-    }
-
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
     ASR::TranslationUnit_t *tu
@@ -1023,6 +1006,12 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
 
+    if (load_submodules) {
+        load_dependent_submodules(al, symtab, mod2, loc,
+                                  pass_options, run_verify,
+                                  err, lm);
+    }
+
     // Check that all modules are included in ASR now
     std::vector<std::string> modules_list
         = determine_module_dependencies(*tu);
@@ -1052,7 +1041,6 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 
 void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                ASR::Module_t* mod, const Location &loc,
-                               std::set<std::string> &loaded_submodules,
                                LCompilers::PassOptions& pass_options,
                                bool run_verify,
                                const std::function<void (const std::string &, const Location &)> err,
@@ -1069,8 +1057,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     for (size_t i=0;i<mod->n_dependencies;i++) {
         ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
         load_dependent_submodules(al, symtab, dep_mod, loc,
-                                  loaded_submodules, pass_options,
-                                  run_verify, err, lm);
+                                  pass_options, run_verify,
+                                  err, lm);
     }
 
     if (mod->m_has_submodules) {

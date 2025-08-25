@@ -35,7 +35,6 @@ public:
     std::vector<std::string> assgn_proc_names;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
-    std::set<std::string> loaded_submodules;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -3379,7 +3378,7 @@ public:
             ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(t);
             if (load_submodules) {
                 ASRUtils::load_dependent_submodules(al, tu_symtab, mod, x.base.base.loc,
-                                                    loaded_submodules, compiler_options.po, true,
+                                                    compiler_options.po, true,
                                                     [&](const std::string &msg, const Location &loc) { 
                                                         diag.add(diag::Diagnostic(
                                                             msg, diag::Level::Error, diag::Stage::Semantic, {
