@@ -565,7 +565,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             if (v->m_presence == ASR::presenceType::Optional) {
                 res += ", optional";
             }
-            if (v->m_intent != ASR::intentType::Unspecified) {
+            if (v->m_intent != ASR::intentType::Unspecified
+                && v->m_intent != ASR::intentType::ReturnVar) {
                 res += ", intent(" + intent_to_str(v->m_intent) + ")";
             }
             res += " :: " + std::string(v->m_name);
