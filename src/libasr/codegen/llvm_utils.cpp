@@ -7710,7 +7710,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             llvm::Value* curr_src = builder->CreateBitCast(llvm_utils->CreateLoad(src_itr),
                 el_struct_type);
-            llvm::Value* src_el_ptr = llvm_utils->create_gep(curr_src, 0);
+            llvm::Value* src_el_ptr = llvm_utils->create_gep2(el_struct_type, curr_src, 0);
             llvm::Value* src_el = src_el_ptr;
             if( !LLVM::is_llvm_struct(m_el_type) ) {
                 src_el = llvm_utils->CreateLoad(src_el_ptr);
@@ -7720,7 +7720,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 set, el_hash, src_el, module,
                 m_el_type, name2memidx);
 
-            llvm::Value* src_next_ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(curr_src, 1));
+            llvm::Value* src_next_ptr = llvm_utils->CreateLoad2(el_struct_type, llvm_utils->create_gep2(el_struct_type, curr_src, 1));
             LLVM::CreateStore(*builder, src_next_ptr, src_itr);
         }
 
