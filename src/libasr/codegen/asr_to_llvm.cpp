@@ -3111,7 +3111,11 @@ public:
                         llvm::APInt(32, min_value, true)));
             llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(nullptr, enum_t->m_enum_type, module.get());
             tmp = llvm_utils->create_gep2(array_type, array, tmp);
-            tmp = llvm_utils->create_gep(tmp, 0);
+            // After the first GEP, tmp points to an enum value struct
+            // Get the element type of the array (which is the enum value struct type)
+            llvm::ArrayType* array_array_type = llvm::dyn_cast<llvm::ArrayType>(array_type);
+            llvm::Type* enum_value_struct_type = array_array_type->getElementType();
+            tmp = llvm_utils->create_gep2(enum_value_struct_type, tmp, 0);
         }
     }
 
