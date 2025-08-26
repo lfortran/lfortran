@@ -8202,16 +8202,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 el_struct_type);
             llvm::Value* curr_dest = builder->CreateBitCast(llvm_utils->CreateLoad(dest_itr),
                 el_struct_type);
-            llvm::Value* src_el_ptr = llvm_utils->create_gep(curr_src, 0);
+            llvm::Value* src_el_ptr = llvm_utils->create_gep2(el_struct_type, curr_src, 0);
             llvm::Value *src_el = src_el_ptr;
             if( !LLVM::is_llvm_struct(set_type->m_type) ) {
                 src_el = llvm_utils->CreateLoad(src_el_ptr);
             }
-            llvm::Value* dest_el_ptr = llvm_utils->create_gep(curr_dest, 0);
+            llvm::Value* dest_el_ptr = llvm_utils->create_gep2(el_struct_type, curr_dest, 0);
             llvm_utils->deepcopy(set_expr, src_el, dest_el_ptr, set_type->m_type, set_type->m_type, module, name2memidx);
 
-            llvm::Value* src_next_ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(curr_src, 1));
-            llvm::Value* curr_dest_next_ptr = llvm_utils->create_gep(curr_dest, 1);
+            llvm::Value* src_next_ptr = llvm_utils->CreateLoad(llvm_utils->create_gep2(el_struct_type, curr_src, 1));
+            llvm::Value* curr_dest_next_ptr = llvm_utils->create_gep2(el_struct_type, curr_dest, 1);
             LLVM::CreateStore(*builder, src_next_ptr, src_itr);
 
             llvm::Value* src_next_exists = builder->CreateICmpNE(src_next_ptr,
