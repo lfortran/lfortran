@@ -3049,7 +3049,11 @@ public:
         llvm::Value* array = llvm_symtab[h];
         llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_enum_type, enum_type->m_enum_type, module.get());
         tmp = llvm_utils->create_gep2(type, array, tmp);
-        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
+        // After the first GEP, tmp points to an enum value struct  
+        // Get the element type of the array (which is the enum value struct type)
+        llvm::ArrayType* array_type = llvm::dyn_cast<llvm::ArrayType>(type);
+        llvm::Type* enum_value_struct_type = array_type->getElementType();
+        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep2(enum_value_struct_type, tmp, 1));
     }
 
     void visit_EnumValue(const ASR::EnumValue_t& x) {
