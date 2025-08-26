@@ -5137,14 +5137,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             llvm::Value *cond = builder->CreateICmpSGT(
                                         old_capacity_value,
-                                        llvm_utils->CreateLoad(idx_ptr));
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* itr = llvm_utils->CreateLoad(idx_ptr);
+            llvm::Value* itr = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr);
             llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
                 llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), old_key_mask_value, itr));
             llvm::Value* is_key_set = builder->CreateICmpEQ(key_mask_value,
@@ -5169,28 +5169,26 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(elseBB_rehash);
         {
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_capacity),
+                llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity),
                 get_pointer_to_capacity(dict)
             );
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_occupancy),
+                llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_occupancy),
                 get_pointer_to_occupancy(dict)
             );
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_number_of_buckets_filled),
+                llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_number_of_buckets_filled),
                 get_pointer_to_number_of_filled_buckets(dict)
             );
-            LLVM::CreateStore(*builder,
+            LLVM::CreateStore(
+                *builder,
                 builder->CreateBitCast(
-                    llvm_utils->CreateLoad(old_key_value_pairs),
-                    get_key_value_pair_type(key_asr_type, value_asr_type)->getPointerTo()
-                ),
-                get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict)
-            );
+                    llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_key_value_pairs),
+                    get_key_value_pair_type(key_asr_type, value_asr_type)->getPointerTo()),
+                get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_key_mask),
-                get_pointer_to_keymask(key_asr_type, value_asr_type, dict)
-            );
+                              llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_key_mask),
+                              get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         }
         llvm_utils->start_new_block(mergeBB_rehash);
     }
