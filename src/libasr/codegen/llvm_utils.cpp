@@ -4845,7 +4845,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_iter);
             llvm::Value *cond = builder->CreateICmpSLE(i, str_len);
             builder->CreateCondBr(cond, loopbody, loopend);
         }
@@ -4856,11 +4856,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // for c in key:
             //     hash_value = (hash_value + (ord(c) + 1) * p_pow) % m
             //     p_pow = (p_pow * p) % m
-            llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
+            llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_iter);
             llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
                                                     llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_data, i));
-            llvm::Value* p_pow = llvm_utils->CreateLoad(polynomial_powers);
-            llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+            llvm::Value* p_pow = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), polynomial_powers);
+            llvm::Value* hash = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_value);
             c = builder->CreateZExt(c, llvm::Type::getInt64Ty(context));
             c = builder->CreateAdd(c, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
             c = builder->CreateMul(c, p_pow);
@@ -4879,7 +4879,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         // end
         llvm_utils->start_new_block(loopend);
-        llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+        llvm::Value* hash = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_value);
         hash = builder->CreateTrunc(hash, llvm::Type::getInt32Ty(context));
         return builder->CreateSRem(hash, capacity);
     }
