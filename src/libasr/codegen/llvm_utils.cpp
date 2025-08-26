@@ -7219,14 +7219,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* el_struct_i8 = llvm_utils->CreateLoad(chain_itr);
             LLVM::CreateStore(*builder, el_struct_i8, chain_itr_prev);
             llvm::Value* el_struct = builder->CreateBitCast(el_struct_i8, el_struct_type->getPointerTo());
-            llvm::Value* el_struct_el = llvm_utils->create_gep(el_struct, 0);
+            llvm::Value* el_struct_el = llvm_utils->create_gep2(el_struct_type, el_struct, 0);
             if( !LLVM::is_llvm_struct(el_asr_type) ) {
                 el_struct_el = llvm_utils->CreateLoad(el_struct_el);
             }
             LLVM::CreateStore(*builder, llvm_utils->is_equal_by_value(el, el_struct_el,
                                 module, el_asr_type), is_el_matching_var);
             llvm_utils->create_if_else(builder->CreateNot(llvm_utils->CreateLoad(is_el_matching_var)), [&]() {
-                llvm::Value* next_el_struct = llvm_utils->CreateLoad(llvm_utils->create_gep(el_struct, 1));
+                llvm::Value* next_el_struct = llvm_utils->CreateLoad(llvm_utils->create_gep2(el_struct_type, el_struct, 1));
                 LLVM::CreateStore(*builder, next_el_struct, chain_itr);
             }, []() {});
         }
@@ -7358,18 +7358,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::Value* malloc_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), el_struct_size);
                 llvm::Value* new_el_struct_i8 = LLVM::lfortran_malloc(context, *module, *builder, malloc_size);
                 llvm::Value* new_el_struct = builder->CreateBitCast(new_el_struct_i8, el_struct_type->getPointerTo());
-                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(new_el_struct, 0), el_asr_type, el_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep2(el_struct_type, new_el_struct, 0), el_asr_type, el_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
-                    llvm_utils->create_gep(new_el_struct, 1));
+                    llvm_utils->create_gep2(el_struct_type, new_el_struct, 1));
                 llvm::Value* el_struct_prev_i8 = llvm_utils->CreateLoad(chain_itr_prev);
                 llvm::Value* el_struct_prev = builder->CreateBitCast(el_struct_prev_i8, el_struct_type->getPointerTo());
-                LLVM::CreateStore(*builder, new_el_struct_i8, llvm_utils->create_gep(el_struct_prev, 1));
+                LLVM::CreateStore(*builder, new_el_struct_i8, llvm_utils->create_gep2(el_struct_type, el_struct_prev, 1));
             }, [&]() {
-                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(el_linked_list, 0), el_asr_type, el_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep2(el_struct_type, el_linked_list, 0), el_asr_type, el_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
-                    llvm_utils->create_gep(el_linked_list, 1));
+                    llvm_utils->create_gep2(el_struct_type, el_linked_list, 1));
             });
 
             llvm::Value* occupancy_ptr = get_pointer_to_occupancy(set);
@@ -7382,7 +7382,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(elseBB);
         {
             llvm::Value* el_struct = builder->CreateBitCast(el_struct_i8, el_struct_type->getPointerTo());
-            llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(el_struct, 0), el_asr_type, el_asr_type, module, name2memidx);
+            llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep2(el_struct_type, el_struct, 0), el_asr_type, el_asr_type, module, name2memidx);
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(set);
