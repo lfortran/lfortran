@@ -6806,7 +6806,8 @@ public:
                     ASR::ArraySection_t *arr = down_cast<ASR::ArraySection_t>(x.m_value);
                     (void) ASRUtils::extract_value(arr->m_args->m_left, idx);
                     value = llvm_utils->create_gep(value, idx-1);
-                    target = llvm_utils->create_gep(target, 0);
+                    llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                    target = llvm_utils->create_gep2(target_llvm_type, target, 0);
                     ASR::dimension_t* asr_dims = nullptr;
                     size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                     int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
