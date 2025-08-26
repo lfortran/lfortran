@@ -3043,11 +3043,12 @@ public:
     }
 
     void lookup_EnumValue(const ASR::EnumValue_t& x) {
-        ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
-        ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
-        uint32_t h = get_hash((ASR::asr_t*) enum_type);
+        ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
+        ASR::Enum_t* enum_symbol = ASR::down_cast<ASR::Enum_t>(enum_type->m_enum_type);
+        uint32_t h = get_hash((ASR::asr_t*) enum_symbol);
         llvm::Value* array = llvm_symtab[h];
-        tmp = llvm_utils->create_gep(array, tmp);
+        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_enum_type, enum_type->m_enum_type, module.get());
+        tmp = llvm_utils->create_gep2(type, array, tmp);
         tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
     }
 
