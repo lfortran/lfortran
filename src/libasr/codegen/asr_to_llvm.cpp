@@ -4399,9 +4399,9 @@ public:
                     }
                     case ASR::array_physical_typeType::PointerToDataArray: {
 #if LLVM_VERSION_MAJOR > 16
-                        ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
+                        ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::extract_type(v_m_type), module.get());
 #endif
-                        ptr_i = llvm_utils->create_ptr_gep(ptr, llvm_utils->CreateLoad2(t, llvmi));
+                        ptr_i = llvm_utils->create_ptr_gep2(el_type, ptr, llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
                     default: {
