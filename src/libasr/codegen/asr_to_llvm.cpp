@@ -6590,7 +6590,8 @@ public:
                             arr_descr->get_pointer_to_data(llvm_utils->CreateLoad(target)));
                     } else if( ASRUtils::extract_physical_type(asr_target_type) ==
                                ASR::array_physical_typeType::FixedSizeArray ) {
-                        array_data = llvm_utils->create_gep(target, 0);
+                        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
+                        array_data = llvm_utils->create_gep2(target_llvm_type, target, 0);
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
