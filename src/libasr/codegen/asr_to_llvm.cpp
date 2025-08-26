@@ -3049,7 +3049,11 @@ public:
         llvm::Value* array = llvm_symtab[h];
         llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_enum_type, enum_type->m_enum_type, module.get());
         tmp = llvm_utils->create_gep2(type, array, tmp);
-        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
+        // After the first GEP, tmp points to an enum value struct
+        // Get the element type of the array (which is the enum value struct type)
+        llvm::ArrayType* array_type = llvm::dyn_cast<llvm::ArrayType>(type);
+        llvm::Type* enum_value_struct_type = array_type->getElementType();
+        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep2(enum_value_struct_type, tmp, 1));
     }
 
     void visit_EnumValue(const ASR::EnumValue_t& x) {
@@ -3109,8 +3113,13 @@ public:
             }
             tmp = builder->CreateSub(tmp, llvm::ConstantInt::get(tmp->getType(),
                         llvm::APInt(32, min_value, true)));
-            tmp = llvm_utils->create_gep(array, tmp);
-            tmp = llvm_utils->create_gep(tmp, 0);
+            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(nullptr, enum_t->m_enum_type, module.get());
+            tmp = llvm_utils->create_gep2(array_type, array, tmp);
+            // After the first GEP, tmp points to an enum value struct
+            // Get the element type of the array (which is the enum value struct type)
+            llvm::ArrayType* array_array_type = llvm::dyn_cast<llvm::ArrayType>(array_type);
+            llvm::Type* enum_value_struct_type = array_array_type->getElementType();
+            tmp = llvm_utils->create_gep2(enum_value_struct_type, tmp, 0);
         }
     }
 
@@ -6581,7 +6590,8 @@ public:
                             arr_descr->get_pointer_to_data(llvm_utils->CreateLoad(target)));
                     } else if( ASRUtils::extract_physical_type(asr_target_type) ==
                                ASR::array_physical_typeType::FixedSizeArray ) {
-                        array_data = llvm_utils->create_gep(target, 0);
+                        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
+                        array_data = llvm_utils->create_gep2(target_llvm_type, target, 0);
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -6677,7 +6687,8 @@ public:
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_value_descriptor_based_array && is_target_fixed_sized_array ) {
                 value = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), arr_descr->get_pointer_to_data(value));
-                target = llvm_utils->create_gep(target, 0);
+                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                target = llvm_utils->create_gep2(target_llvm_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -6794,8 +6805,10 @@ public:
                     int idx = 1;
                     ASR::ArraySection_t *arr = down_cast<ASR::ArraySection_t>(x.m_value);
                     (void) ASRUtils::extract_value(arr->m_args->m_left, idx);
-                    value = llvm_utils->create_gep(value, idx-1);
-                    target = llvm_utils->create_gep(target, 0);
+                    llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                    value = llvm_utils->create_gep2(value_llvm_type, value, idx-1);
+                    llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                    target = llvm_utils->create_gep2(target_llvm_type, target, 0);
                     ASR::dimension_t* asr_dims = nullptr;
                     size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                     int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -11280,7 +11293,8 @@ public:
                                   ASRUtils::expr_abi(x.m_args[i].m_value) == ASR::abiType::BindC) ) {
                                 tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
                             } else {
-                                tmp = llvm_utils->create_gep(tmp, llvm::ConstantInt::get(
+                                llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
+                                tmp = llvm_utils->create_gep2(arg_llvm_type, tmp, llvm::ConstantInt::get(
                                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
                             }
                         } else {
