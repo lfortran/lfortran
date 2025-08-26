@@ -57,12 +57,23 @@ real, intent(in) :: A(10, 20)
 end subroutine
 ```
 
+```fortran
+real :: x(3), a, b, c
+x = [a, b, c]  ! Both LHS and RHS are PointerToDataArray, RHS is
+ArrayConstructor
+```
+
 **FixedSizeArray**: An array that is fully known at compile time: both size and elements. ArrayConstant. In LLVM backend we can store such an array as a variable with known size (say 10). (This type might in principle be possible to use for `A(10, 20)`, but currently we don't. It cannot be used for `A(n, m)`.). It seems we cannot change elements at runtime, they are all constant.
 
 ```fortran
 program main
 real :: A(10, 20)
 end program
+```
+
+```fortran
+real :: x(3), a, b, c
+x = [1, 2, 3]  ! LHS is PointerToDataArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
 **DescriptorArray**: Array is represented by an array descriptor (struct that contains the pointer to data, dimensions, strides, etc.)
@@ -77,6 +88,14 @@ end subroutine
 subroutine f()
 real, pointer :: A(:, :)
 end subroutine
+```
+
+```fortran
+real, allocatable :: x(:)
+real :: a, b, c
+allocate(x(3))
+x = [a, b, c]  ! LHS is DescriptorArray, RHS is PointerToDataArray (ArrayConstructor)
+x = [1, 2, 3]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
 **UnboundedPointerToDataArray**: Used for `A(*)`. Represented by just a pointer. The compiler does *not* know the size of the array at compile time, and there is no information about it at runtime. So you cannot call size(A). The `A(*)` usage deprecated, one should use either `A(:)` or `A(n)`. The compiler can check this in Debug mode by passing the expression for the dimension as an argument (the NAG compiler does this, for example).
