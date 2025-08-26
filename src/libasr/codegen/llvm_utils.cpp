@@ -8002,9 +8002,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             llvm::Type* el_struct_type = typecode2elstruct[ASRUtils::get_type_code(el_asr_type)];
             found = builder->CreateBitCast(found, el_struct_type->getPointerTo());
-            llvm::Value* found_next = llvm_utils->CreateLoad(llvm_utils->create_gep(found, 1));
+            llvm::Value* found_next = llvm_utils->CreateLoad(llvm_utils->create_gep2(el_struct_type, found, 1));
             prev = builder->CreateBitCast(prev, el_struct_type->getPointerTo());
-            LLVM::CreateStore(*builder, found_next, llvm_utils->create_gep(prev, 1));
+            LLVM::CreateStore(*builder, found_next, llvm_utils->create_gep2(el_struct_type, prev, 1));
         }
         builder->CreateBr(mergeBB);
         llvm_utils->start_new_block(elseBB);
