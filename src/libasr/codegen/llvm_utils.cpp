@@ -5388,7 +5388,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
-        llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+        llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict_type->m_key_type, dict_type->m_value_type, dict));
         llvm::Value* key_mask_i = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, pos);
@@ -5451,8 +5451,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
         value_ptr = builder->CreateBitCast(value_ptr, value_type->getPointerTo());
-        llvm::Value* prev = llvm_utils->CreateLoad(chain_itr_prev);
-        llvm::Value* found = llvm_utils->CreateLoad(chain_itr);
+        llvm::Value* prev = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr_prev);
+        llvm::Value* found = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
         llvm::Type* kv_struct_type = get_key_value_pair_type(dict_type->m_key_type, dict_type->m_value_type);
         found = builder->CreateBitCast(found, kv_struct_type->getPointerTo());
         llvm::Value* found_next = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), llvm_utils->create_gep2(kv_struct_type, found, 2));
@@ -5501,7 +5501,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             return return_ptr;
         }
 
-        return llvm_utils->CreateLoad(value_ptr);
+        return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
     void LLVMDict::get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
