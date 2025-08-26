@@ -5649,13 +5649,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 {
                     llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad(chain_itr);
                     llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_pair_type->getPointerTo());
-                    llvm::Value* kv_el = llvm_utils->create_gep(kv_struct, key_or_value);
+                    llvm::Value* kv_el = llvm_utils->create_gep2(kv_pair_type, kv_struct, key_or_value);
                     if( !(LLVM::is_llvm_struct(el_asr_type) || ASRUtils::is_allocatable_descriptor_string(el_asr_type)) ) {
                         kv_el = llvm_utils->CreateLoad(kv_el);
                     }
                     llvm_utils->list_api->append(expr, elements_list, kv_el,
                                                  el_asr_type, module, name2memidx);
-                    llvm::Value* next_kv_struct = llvm_utils->CreateLoad(llvm_utils->create_gep(kv_struct, 2));
+                    llvm::Value* next_kv_struct = llvm_utils->CreateLoad(llvm_utils->create_gep2(kv_pair_type, kv_struct, 2));
                     LLVM::CreateStore(*builder, next_kv_struct, chain_itr);
                 }
 
