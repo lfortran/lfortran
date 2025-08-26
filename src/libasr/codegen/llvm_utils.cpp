@@ -4498,7 +4498,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                            module, key_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
-        llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+        llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         // Check if the actual key is present or not
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
                 llvm_utils->list_api->read_item_using_ttype(key_asr_type, key_list, pos, false, module,
@@ -4566,7 +4566,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                            module, key_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
-        llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+        llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* item = llvm_utils->list_api->read_item_using_ttype(value_asr_type, value_list, pos,
                                                         false, module, true);
         return item;
