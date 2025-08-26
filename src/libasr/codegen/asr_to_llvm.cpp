@@ -3109,7 +3109,8 @@ public:
             }
             tmp = builder->CreateSub(tmp, llvm::ConstantInt::get(tmp->getType(),
                         llvm::APInt(32, min_value, true)));
-            tmp = llvm_utils->create_gep(array, tmp);
+            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(nullptr, enum_t->m_enum_type, module.get());
+            tmp = llvm_utils->create_gep2(array_type, array, tmp);
             tmp = llvm_utils->create_gep(tmp, 0);
         }
     }
