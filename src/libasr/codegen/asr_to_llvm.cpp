@@ -11292,7 +11292,8 @@ public:
                                   ASRUtils::expr_abi(x.m_args[i].m_value) == ASR::abiType::BindC) ) {
                                 tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
                             } else {
-                                tmp = llvm_utils->create_gep(tmp, llvm::ConstantInt::get(
+                                llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
+                                tmp = llvm_utils->create_gep2(arg_llvm_type, tmp, llvm::ConstantInt::get(
                                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
                             }
                         } else {
