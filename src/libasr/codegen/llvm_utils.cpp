@@ -4739,7 +4739,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->create_if_else(does_kv_exists, [&]() {
             llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad(chain_itr);
             llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_struct_type->getPointerTo());
-            llvm::Value* value = llvm_utils->CreateLoad(llvm_utils->create_gep(kv_struct, 1));
+            llvm::Value* value = llvm_utils->CreateLoad(llvm_utils->create_gep2(kv_struct_type, kv_struct, 1));
             LLVM::CreateStore(*builder, value, tmp_value_ptr);
         }, [&]() {
             LLVM::CreateStore(*builder, llvm_utils->CreateLoad(def_value), tmp_value_ptr);
