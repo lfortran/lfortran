@@ -879,7 +879,7 @@ public:
     llvm::Value* lfortran_str_len(llvm::Value* str, bool use_descriptor=false)
     {
         if (use_descriptor) {
-            str = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(str));
+            str = llvm_utils->CreateLoad2(character_type->getPointerTo(), arr_descr->get_pointer_to_data(str));
         }
         std::string runtime_func_name = "_lfortran_str_len";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -1031,7 +1031,7 @@ public:
             complex_type = complex_type_4;
         }
         if( c->getType()->isPointerTy() ) {
-            c = llvm_utils->CreateLoad(c);
+            c = llvm_utils->CreateLoad2(complex_type, c);
         }
         llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
         builder->CreateStore(c, pc);
@@ -1104,10 +1104,10 @@ public:
     {
         llvm::Type *presult_type = llvm_utils->getFPType(a_kind);
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, presult_type);
-        llvm::Value *a = llvm_utils->CreateLoad(pa);
+        llvm::Value *a = llvm_utils->CreateLoad2(presult_type, pa);
         std::vector<llvm::Value*> args = {a, presult};
         builder->CreateCall(fn, args);
-        return llvm_utils->CreateLoad(presult);
+        return llvm_utils->CreateLoad2(presult_type, presult);
     }
 
     llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
@@ -3053,7 +3053,9 @@ public:
         // Get the element type of the array (which is the enum value struct type)
         llvm::ArrayType* array_type = llvm::dyn_cast<llvm::ArrayType>(type);
         llvm::Type* enum_value_struct_type = array_type->getElementType();
-        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep2(enum_value_struct_type, tmp, 1));
+        // Loading field 1 of the enum struct - this should be the value field
+        llvm::Type* value_field_type = enum_value_struct_type->getStructElementType(1);
+        tmp = llvm_utils->CreateLoad2(value_field_type, llvm_utils->create_gep2(enum_value_struct_type, tmp, 1));
     }
 
     void visit_EnumValue(const ASR::EnumValue_t& x) {
@@ -3080,7 +3082,9 @@ public:
 
         visit_expr(*x.m_v);
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
-            tmp = llvm_utils->CreateLoad(tmp);
+            // Load the struct member value - use the ASR type
+            llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x.m_type, module.get());
+            tmp = llvm_utils->CreateLoad2(member_type, tmp);
         }
         if( !ASR::is_a<ASR::Integer_t>(*x.m_type) && lookup_enum_value_for_nonints ) {
             lookup_EnumValue(x);
@@ -3095,7 +3099,9 @@ public:
 
         visit_expr(*x.m_v);
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
-            tmp = llvm_utils->CreateLoad(tmp);
+            // Load the struct member value for enum name - use enum type
+            llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x.m_enum_type, module.get());
+            tmp = llvm_utils->CreateLoad2(member_type, tmp);
         }
         ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
         ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
@@ -5420,7 +5426,8 @@ public:
         }
         ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
         if( ASRUtils::is_array(arg_type) ) {
-            tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+            llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_contained_type(arg_type), nullptr, module.get());
+            tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
@@ -6518,7 +6525,8 @@ public:
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
                     if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
                         if (n_dims == 0) {
-                            target = llvm_utils->CreateLoad(target);
+                            llvm::Type* string_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
+                            target = llvm_utils->CreateLoad2(string_type, target);
                             lhs_is_string_arrayref = true;
                         }
                     }
@@ -6543,7 +6551,8 @@ public:
                     if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
                         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
                         if (n_dims == 0) {
-                            target = llvm_utils->CreateLoad(target);
+                            llvm::Type* string_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
+                            target = llvm_utils->CreateLoad2(string_type, target);
                             lhs_is_string_arrayref = true;
                         }
                     }
@@ -6571,7 +6580,8 @@ public:
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::get_contained_type(asr_target->m_type)) &&
                 !ASRUtils::is_character(*asr_target->m_type)) {
-                target = llvm_utils->CreateLoad(target);
+                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
+                target = llvm_utils->CreateLoad2(target_load_type, target);
             }
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
             if ( ASRUtils::is_array(cont_type) ) {
@@ -6700,7 +6710,8 @@ public:
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_target_descriptor_based_array && is_value_fixed_sized_array ) {
                 if( ASRUtils::is_allocatable(target_type) ) {
-                    target = llvm_utils->CreateLoad(target);
+                    llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                    target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
                 }
 #if LLVM_VERSION_MAJOR > 16
                 ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
@@ -6749,7 +6760,8 @@ public:
                         llvm_size = llvm_utils->get_stringArray_whole_size(target_type);
                     }
                 } else {
-                    target = llvm_utils->CreateLoad(target);
+                    llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                    target = llvm_utils->CreateLoad2(load_type->getPointerTo(), target);
 #if LLVM_VERSION_MAJOR > 16
                     ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type),
@@ -6823,7 +6835,8 @@ public:
                 }
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
-                    target = llvm_utils->CreateLoad(target);
+                    llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                    target = llvm_utils->CreateLoad2(ptr_load_type->getPointerTo(), target);
                 }
 #if LLVM_VERSION_MAJOR > 16
                 ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
@@ -6870,7 +6883,8 @@ public:
                 }
             }
 
-            target = llvm_utils->CreateLoad(target);
+            llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
+            target = llvm_utils->CreateLoad2(target_ptr_type, target);
             builder->CreateStore(value, target);
         } else {
             builder->CreateStore(value, target);
@@ -11090,7 +11104,8 @@ public:
                                     // Local variable of type
                                     // CPtr is a void**, so we
                                     // have to load it
-                                    tmp = llvm_utils->CreateLoad(tmp);
+                                    llvm::Type* cptr_type = llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0);
+                                    tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
@@ -11135,11 +11150,10 @@ public:
                                             // Local variable or Dummy out argument
                                             // of type CPtr is a void**, so we
                                             // have to load it
-                                            // TODO: Convert this into createload2
-                                            // llvm::Type* cptr_type = llvm::PointerType::get(
-                                            //         llvm::Type::getInt8Ty(context), 0);
-                                            // tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
-                                            tmp = llvm_utils->CreateLoad(tmp);
+                                            // Convert this into createload2
+                                            llvm::Type* cptr_type = llvm::PointerType::get(
+                                                    llvm::Type::getInt8Ty(context), 0);
+                                            tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
                                         if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
@@ -11210,7 +11224,8 @@ public:
                             if( orig_arg &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                 LLVM::is_llvm_pointer(*arg->m_type) ) {
-                                tmp = llvm_utils->CreateLoad(tmp);
+                                llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
+                                tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
                         }
                     } else {
@@ -12055,7 +12070,7 @@ public:
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
-                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad(args[0])});
+                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad2(character_type, args[0])});
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
                 return;
@@ -12071,7 +12086,7 @@ public:
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
-                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad(args[0])});
+                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad2(character_type, args[0])});
                 return;
             }
             h = get_hash((ASR::asr_t*)proc_sym);
@@ -12444,7 +12459,8 @@ public:
             }
             start_new_block(mergeBB);
         }
-        tmp = llvm_utils->CreateLoad(tmp);
+        llvm::Type* result_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(&(x.base)), nullptr, module.get());
+        tmp = llvm_utils->CreateLoad2(result_type, tmp);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
