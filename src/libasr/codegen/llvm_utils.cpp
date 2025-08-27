@@ -5535,8 +5535,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
         std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
-        llvm::Value* capacity = llvm_utils->CreateLoad(get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
-        llvm::Value* key_mask = llvm_utils->CreateLoad(get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
+        llvm::Value* capacity = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context),
+            get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(),
+            get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* el_list = key_or_value == 0 ? get_key_list(dict) : get_value_list(dict);
         ASR::ttype_t* el_asr_type = key_or_value == 0 ? key_asr_type : value_asr_type;
 
@@ -5551,16 +5555,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value *cond = builder->CreateICmpSGT(capacity, llvm_utils->CreateLoad(idx_ptr));
+            llvm::Value* cond = builder->CreateICmpSGT(
+                capacity, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* idx = llvm_utils->CreateLoad(idx_ptr);
-            llvm::Value* key_mask_value = llvm_utils->CreateLoad(
-                llvm_utils->create_ptr_gep(key_mask, idx));
+            llvm::Value* idx = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr);
+            llvm::Value* key_mask_value = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, idx));
             llvm::Value* is_key_skip = builder->CreateICmpEQ(key_mask_value,
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 3)));
             llvm::Value* is_key_set = builder->CreateICmpNE(key_mask_value,
