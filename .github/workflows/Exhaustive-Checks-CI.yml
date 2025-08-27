@@ -290,10 +290,12 @@ jobs:
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
-          cd $HOME
+          mkdir -p $HOME/ext
+          cd $HOME/ext
           curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
           tar -xvf wasi-sdk.tar.gz
-          export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+          mv wasi-sdk-21.0 wasi-sdk
+          export WASI_SDK_PATH=$HOME/ext/wasi-sdk
           echo $WASI_SDK_PATH
           $WASI_SDK_PATH/bin/clang --version
 
@@ -307,25 +309,27 @@ jobs:
           export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
           wasmtime --version
 
-      - name: Setup EMSCRIPTEN SDK
+      - name: Setup Emscripten SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
-          cd $HOME
-          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
+          mkdir -p $HOME/ext
+          cd $HOME/ext
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.35.tar.gz
           tar -xvf emsdk.tar.gz
-          export EMSDK_PATH=$HOME/emsdk-3.1.59
+          mv emsdk-3.1.35 emsdk
+          export EMSDK_PATH=$HOME/ext/emsdk
           echo $EMSDK_PATH
           cd $EMSDK_PATH
-          ./emsdk install latest
-          ./emsdk activate latest
+          ./emsdk install 3.1.35
+          ./emsdk activate 3.1.35
 
       - name: Build Linux ( WASM )
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            export WASI_SDK_PATH=$HOME/ext/wasi-sdk
+            export EMSDK_PATH=$HOME/ext/emsdk
             ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
@@ -345,8 +349,8 @@ jobs:
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            export WASI_SDK_PATH=$HOME/ext/wasi-sdk
+            export EMSDK_PATH=$HOME/ext/emsdk
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
