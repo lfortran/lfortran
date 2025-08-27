@@ -6900,7 +6900,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         std::string el_type_code, llvm::Value* set,
         llvm::Module* module, llvm::Value* llvm_capacity) {
         llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(set);
-        llvm::Value* rehash_flag = llvm_utils->CreateLoad(rehash_flag_ptr);
+        llvm::Value* rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), rehash_flag_ptr);
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(set);
         LLVM::CreateStore(*builder, llvm_zero, occupancy_ptr);
