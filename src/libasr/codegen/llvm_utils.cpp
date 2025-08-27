@@ -7272,7 +7272,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                         get_pointer_to_capacity_using_typecode(el_type_code, set));
         this->resolve_collision(capacity, el_hash, el, el_list, el_mask, module, el_asr_type);
-        llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+        llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         llvm_utils->list_api->write_item(set_expr, el_list, pos, el,
                                          el_asr_type, false, module, name2memidx);
 
@@ -7339,13 +7339,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
 
-        llvm::Value* elems = llvm_utils->CreateLoad(get_pointer_to_elems(set));
-        llvm::Value* el_linked_list = llvm_utils->create_ptr_gep(elems, el_hash);
-        llvm::Value* el_mask = llvm_utils->CreateLoad(get_pointer_to_mask(set));
         llvm::Type* el_struct_type = typecode2elstruct[ASRUtils::get_type_code(el_asr_type)];
+        llvm::Value* elems = llvm_utils->CreateLoad2(el_struct_type->getPointerTo(), get_pointer_to_elems(set));
+        llvm::Value* el_linked_list = llvm_utils->create_ptr_gep2(el_struct_type, elems, el_hash);
+        llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set));
         this->resolve_collision(el_hash, el, el_linked_list, el_struct_type,
                                 el_mask, module, el_asr_type);
-        llvm::Value* el_struct_i8 = llvm_utils->CreateLoad(chain_itr);
+        llvm::Value* el_struct_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), chain_itr);
 
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
@@ -7358,7 +7358,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->SetInsertPoint(thenBB);
         {
             llvm_utils->create_if_else(builder->CreateICmpNE(
-                    llvm_utils->CreateLoad(chain_itr_prev),
+                    llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr_prev),
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo())), [&]() {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 size_t el_struct_size = data_layout.getTypeAllocSize(el_struct_type);
@@ -7369,7 +7369,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep2(el_struct_type, new_el_struct, 1));
-                llvm::Value* el_struct_prev_i8 = llvm_utils->CreateLoad(chain_itr_prev);
+                llvm::Value* el_struct_prev_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr_prev);
                 llvm::Value* el_struct_prev = builder->CreateBitCast(el_struct_prev_i8, el_struct_type->getPointerTo());
                 LLVM::CreateStore(*builder, new_el_struct_i8, llvm_utils->create_gep2(el_struct_type, el_struct_prev, 1));
             }, [&]() {
@@ -7380,7 +7380,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             });
 
             llvm::Value* occupancy_ptr = get_pointer_to_occupancy(set);
-            llvm::Value* occupancy = llvm_utils->CreateLoad(occupancy_ptr);
+            llvm::Value* occupancy = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), occupancy_ptr);
             occupancy = builder->CreateAdd(occupancy,
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
             LLVM::CreateStore(*builder, occupancy, occupancy_ptr);
@@ -7393,11 +7393,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(set);
-        llvm::Value* el_mask_value_ptr = llvm_utils->create_ptr_gep(el_mask, el_hash);
-        llvm::Value* el_mask_value = llvm_utils->CreateLoad(el_mask_value_ptr);
+        llvm::Value* el_mask_value_ptr = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el_mask, el_hash);
+        llvm::Value* el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),el_mask_value_ptr);
         llvm::Value* buckets_filled_delta = builder->CreateICmpEQ(el_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)));
-        llvm::Value* buckets_filled = llvm_utils->CreateLoad(buckets_filled_ptr);
+        llvm::Value* buckets_filled = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), buckets_filled_ptr);
         buckets_filled = builder->CreateAdd(
             buckets_filled,
             builder->CreateZExt(buckets_filled_delta, llvm::Type::getInt32Ty(context))
@@ -7481,7 +7481,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value *cond = builder->CreateICmpSGT(old_capacity, llvm_utils->CreateLoad(idx_ptr));
+            llvm::Value *cond = builder->CreateICmpSGT(old_capacity, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -7505,7 +7505,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::Value* el_hash = get_el_hash(current_capacity, el, el_asr_type, module);
                 this->resolve_collision(current_capacity, el_hash, el, new_el_list,
                                new_el_mask, module, el_asr_type);
-                llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+                llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
                 llvm::Value* el_dest = llvm_utils->list_api->read_item_using_ttype(el_asr_type,
                                     new_el_list, pos, false, module, true);
                 llvm_utils->deepcopy(set_expr, el, el_dest, el_asr_type, el_asr_type, module, name2memidx);
@@ -7535,7 +7535,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm_utils->list_api->free_data_using_type(el_type_code, el_list, module);
         LLVM::lfortran_free(context, *module, *builder, el_mask);
-        LLVM::CreateStore(*builder, llvm_utils->CreateLoad(new_el_list), el_list);
+        LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(llvm_utils->list_api->get_list_type(el_llvm_type,el_type_code, el_type_size), new_el_list), el_list);
         LLVM::CreateStore(*builder, new_el_mask, get_pointer_to_mask(set));
     }
 
