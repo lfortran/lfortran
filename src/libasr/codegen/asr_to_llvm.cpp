@@ -5588,7 +5588,7 @@ public:
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerToDataArray ) {
                     new_size = shape_data ? llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context),shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
                     llvm::Type* shape_llvm_type = llvm_utils->get_type_from_ttype_t_util(shape, asr_shape_type, module.get());
                     new_size = shape_data ? llvm_utils->CreateLoad2(
