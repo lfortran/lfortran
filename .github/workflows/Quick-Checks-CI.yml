@@ -399,25 +399,21 @@ jobs:
             node -v
             sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
 
-      - name: Install Emscripten from Git
-        # TODO: This fails with "-e" for some reason:
-        shell: bash -l {0}
+      - name: Setup Emscripten SDK
+        shell: bash -e -l {0}
         run: |
-            mkdir $HOME/ext
-            cd $HOME/ext
-
-            git clone https://github.com/emscripten-core/emsdk.git
-            cd emsdk
-            git checkout 4.0.13
-            git checkout 404dc1ec13f64fce1af1eaf5c007e18212f63527
-
-            ./emsdk install 3.1.35
-
-            ./emsdk activate 3.1.35
-
-            ./emsdk install node-18.20.3-64bit
-
-            ./emsdk activate node-18.20.3-64bit
+          mkdir $HOME/ext
+          cd $HOME/ext
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.35.tar.gz
+          tar -xvf emsdk.tar.gz
+          mv emsdk-3.1.35 emsdk
+          export EMSDK_PATH=$HOME/ext/emsdk
+          echo $EMSDK_PATH
+          cd $EMSDK_PATH
+          ./emsdk install 3.1.35
+          ./emsdk activate 3.1.35
+          ./emsdk install node-18.20.3-64bit
+          ./emsdk activate node-18.20.3-64bit
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
