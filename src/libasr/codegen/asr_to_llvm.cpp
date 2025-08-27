@@ -4965,7 +4965,7 @@ public:
                 if(v->m_storage == ASR::Save || v->m_storage == ASR::Parameter){
                     if(v->m_storage == ASR::Parameter) LCOMPILERS_ASSERT(v->m_symbolic_value)
 
-                    std::string str_initial_value_string{};
+                    std::string str_initial_value_string {};
                     if(v->m_symbolic_value){ // Get initial value if exist.
                         char* str_inital_value{};
                         ASRUtils::extract_value(ASRUtils::expr_value(v->m_symbolic_value), str_inital_value);
@@ -11335,7 +11335,7 @@ public:
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
 
-        /* STOP MSG */
+        /* STOP MSG ("ERROR STOP") */
         {
             llvm::Value* STOP_MSG = builder->CreateGlobalStringPtr(stop_msg);
             fmt += "%s";
@@ -11349,7 +11349,7 @@ public:
             visit_expr(*stop_code);
             llvm::Value* stop_code_int = tmp; tmp = nullptr;
             args.push_back(stop_code_int);
-        } else if(stop_code && ASR::is_a<ASR::String_t>(*expr_type(stop_code))){
+        } else if(stop_code && ASRUtils::is_string_only(expr_type(stop_code))){
             fmt += " %.*s";
             visit_expr_load_wrapper(stop_code, 0);
             llvm::Value* stop_code_str = tmp; tmp = nullptr;
@@ -11360,7 +11360,7 @@ public:
                 "Stop Code should be of type [String, Integer].\n"
                 "CurrentType : "+ASRUtils::type_to_str_fortran_expr(expr_type(stop_code), stop_code));
         } else if(!stop_code){
-            // Do Nothing.
+            // Do Nothing. Stop With No Error Message.
         }
         
         /* NEWLINE */

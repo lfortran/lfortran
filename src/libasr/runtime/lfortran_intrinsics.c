@@ -235,8 +235,8 @@ char* append_to_string(char* str, const char* append) {
     -- Append String (Null-Termination Independent) --
     * It allocates 1 additional character in the destination string while enlarging.
 */
-int8_t* append_to_string_NTI(int8_t* dest, int64_t dest_len, const int8_t* src, int64_t src_len) {
-    dest = (int8_t*)realloc(dest, (dest_len + src_len + 1 /* \0 */) * sizeof(int8_t));
+char* append_to_string_NTI(char* dest, int64_t dest_len, const char* src, int64_t src_len) {
+    dest = (char*)realloc(dest, (dest_len + src_len + 1 /* \0 */) * sizeof(char));
     memcpy(dest + dest_len, src, src_len);
     return dest;
 }
@@ -4794,7 +4794,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 - Not case sensitive.
 - Not null dependent.
 */
-LFORTRAN_API bool is_streql_NCS(int8_t* s1, int64_t s1_len, int8_t* s2, int64_t s2_len){
+LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len){
     if(s1_len != s2_len) return false;
     for(int64_t i = 0; i < s1_len; i++){
         if(tolower(s1[i]) != tolower((s2[i]))) return false;
