@@ -234,6 +234,19 @@ namespace LCompilers {
         } else {
             der_type_llvm = &name2dercontext[der_type_name];
             std::vector<llvm::Type*> member_types;
+            if (compiler_options.new_classes) {
+                if (struct_vtable.find(&der_type->base) == struct_vtable.end()) {
+                    // Create the `vtable` if it does not exist.
+                    llvm::StructType* vtable = llvm::StructType::create(
+                                                    context,
+                                                    { getIntType(8) },
+                                                    std::string("__new_vtab_") + der_type_name);
+                    struct_vtable.insert(std::make_pair(&der_type->base, vtable));
+                }
+                // Add `vptr` as the first element inside the polymorphic struct. The `vptr` is
+                // a pointer to the `vtable` created for the struct.
+                member_types.push_back(struct_vtable.at(&der_type->base)->getPointerTo());
+            }
             int member_idx = 0;
             if( der_type->m_parent != nullptr ) {
                 ASR::Struct_t *par_der_type = ASR::down_cast<ASR::Struct_t>(
@@ -2900,7 +2913,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     for (size_t i = 0; i < struct_sym->n_members; i++) {
                         std::string mem_name = struct_sym->m_members[i];
                         ASR::symbol_t *mem_sym = struct_sym->m_symtab->get_symbol(mem_name);
-                        int mem_idx = name2memidx[der_type_name][mem_name];
+                        int mem_idx = 0;
+                        if (compiler_options.new_classes) {
+                            // Offset by 1 to bypass `vptr` at index 0.
+                            mem_idx = name2memidx[der_type_name][mem_name] + 1;
+                        } else {
+                            mem_idx = name2memidx[der_type_name][mem_name];
+                        }
                         llvm::Value* src_member = nullptr;
                         if (llvm::isa<llvm::ConstantStruct>(src) ||
                             llvm::isa<llvm::ConstantAggregateZero>(src)) {

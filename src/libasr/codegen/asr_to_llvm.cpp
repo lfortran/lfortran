@@ -1638,7 +1638,13 @@ public:
                     dt = llvm_utils->create_gep2(name2dertype[curr_struct], dt, 0);
                     curr_struct = dertype2parent[curr_struct];
                 }
-                int dt_idx = name2memidx[curr_struct][member_name];
+                int dt_idx = 0;
+                if (compiler_options.new_classes) {
+                    // Offset by 1 to bypass `vptr` at index 0.
+                    dt_idx = name2memidx[curr_struct][member_name] + 1;
+                } else {
+                    dt_idx = name2memidx[curr_struct][member_name];
+                }
                 std::vector<llvm::Value*> idx_vars = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                     llvm::ConstantInt::get(context, llvm::APInt(32, dt_idx))};
                 if (dt->getType() != name2dertype[curr_struct]->getPointerTo()) {
@@ -3193,7 +3199,12 @@ public:
             std::string member_name = member_struct->m_name;
             while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
                         (current_der_type_name != member_name)) {
-                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                if (compiler_options.new_classes) {
+                    // Offset by 1 to bypass `vptr` at index 0.
+                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 1);
+                } else {
+                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                }
                 current_der_type_name = dertype2parent[current_der_type_name];
             }
             return;
@@ -3213,10 +3224,21 @@ public:
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
-            tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+            if (compiler_options.new_classes) {
+                // Offset by 1 to bypass `vptr` at index 0.
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 1);
+            } else {
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+            }
             current_der_type_name = dertype2parent[current_der_type_name];
         }
-        int member_idx = name2memidx[current_der_type_name][member_name];
+        int member_idx = 0;
+        if (compiler_options.new_classes) {
+            // Offset by 1 to bypass `vptr` at index 0.
+            member_idx = name2memidx[current_der_type_name][member_name] + 1;
+        } else {
+            member_idx = name2memidx[current_der_type_name][member_name];
+        }
 
         xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
@@ -4215,7 +4237,13 @@ public:
                     continue ;
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
-                int idx = name2memidx[struct_type_name][item.first];
+                int idx = 0;
+                if (compiler_options.new_classes) {
+                    // Offset by 1 to bypass `vptr` at index 0;
+                    idx = name2memidx[struct_type_name][item.first] + 1;
+                } else {
+                    idx = name2memidx[struct_type_name][item.first];
+                }
                 llvm::Type* type = name2dertype[struct_type_name];
                 llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
                 ASR::Variable_t* v = nullptr;
@@ -4327,7 +4355,12 @@ public:
                 }
             }
             if (struct_type_t->m_parent) {
-                ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 0);
+                if (compiler_options.new_classes) {
+                    // Offset by 1 to bypass `vptr`at index 0.
+                    ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 1);
+                } else {
+                    ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 0);
+                }
                 struct_type_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
             } else {
                 struct_type_t = nullptr;
@@ -4454,6 +4487,30 @@ public:
             }
         }
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
+    }
+
+    void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
+    {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
+
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+        if (llvm_utils->struct_vtable.find(struct_sym) == llvm_utils->struct_vtable.end()) {
+            // Create the `vtable` if it does not exist.
+            llvm::StructType* vtable = llvm::StructType::create(
+                context,
+                { llvm_utils->getIntType(8) },
+                std::string("__new_vtab_") + std::string(struct_t->m_name));
+            llvm_utils->struct_vtable.insert(std::make_pair(struct_sym, vtable));
+        }
+
+        llvm::Type* vtable_type = llvm_utils->struct_vtable.at(struct_sym);
+        llvm::Value* vtable_obj = llvm_utils->CreateAlloca(*builder, vtable_type);
+
+        llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep2(vtable_type, vtable_obj, 0);
+        llvm::Value* struct_type_hash = llvm::ConstantInt::get(
+            llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
+        builder->CreateStore(struct_type_hash, struct_type_hash_ptr);
     }
 
     void collect_variable_types_and_struct_types(
@@ -4895,9 +4952,14 @@ public:
                     }
                 }
                 if( create_vtab ) {
-                    create_vtab_for_struct_type(
-                        ASRUtils::symbol_get_past_external(struct_types[i]),
-                        x.m_symtab);
+                    if (compiler_options.new_classes) {
+                        create_new_vtable_for_struct_type(
+                            ASRUtils::symbol_get_past_external(struct_types[i]));
+                    } else {
+                        create_vtab_for_struct_type(
+                            ASRUtils::symbol_get_past_external(struct_types[i]),
+                            x.m_symtab);
+                    }
                 }
             }
         }
@@ -5917,7 +5979,7 @@ public:
                     ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
                     if (type2vtab.find(struct_sym) == type2vtab.end() ||
                         type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
-                        create_vtab_for_struct_type(struct_sym, current_scope);
+                        create_new_vtable_for_struct_type(struct_sym);
                     }
                     ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
@@ -7333,7 +7395,11 @@ public:
                     }
                     if ((type2vtab.find(type_sym) == type2vtab.end()) ||
                         (type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end())) {
-                        create_vtab_for_struct_type(type_sym, current_scope);
+                        if (compiler_options.new_classes) {
+                            create_new_vtable_for_struct_type(type_sym);
+                        } else {
+                            create_vtab_for_struct_type(type_sym, current_scope);
+                        }
                     }
                     llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
                     llvm::Type* vtab_struct_type = llvm_utils->getStructType(
@@ -7363,7 +7429,11 @@ public:
                     if (class_sym_vtabs.size() == 0) {
                         if ((type2vtab.find(class_sym) == type2vtab.end()) ||
                             (type2vtab[class_sym].find(current_scope) == type2vtab[class_sym].end())) {
-                            create_vtab_for_struct_type(class_sym, current_scope);
+                            if (compiler_options.new_classes) {
+                                create_new_vtable_for_struct_type(class_sym);
+                            } else {
+                                create_vtab_for_struct_type(class_sym, current_scope);
+                            }
                         }
                         class_sym_vtabs.push_back(type2vtab[class_sym][current_scope]);
                     }
@@ -11727,7 +11797,11 @@ public:
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)));
                 if( type2vtab.find(struct_sym) == type2vtab.end() &&
                     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
-                    create_vtab_for_struct_type(struct_sym, current_scope);
+                    if (compiler_options.new_classes) {
+                        create_new_vtable_for_struct_type(struct_sym);
+                    } else {
+                        create_vtab_for_struct_type(struct_sym, current_scope);
+                    }
                 }
                 if (ASRUtils::is_array(s_m_args0_type) &&
                     ASRUtils::extract_physical_type(s_m_args0_type) == ASR::array_physical_typeType::DescriptorArray) {
@@ -11768,7 +11842,11 @@ public:
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)));
                 if( type2vtab.find(struct_sym) == type2vtab.end() &&
                     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
-                    create_vtab_for_struct_type(struct_sym, current_scope);
+                    if (compiler_options.new_classes) {
+                        create_new_vtable_for_struct_type(struct_sym);
+                    } else {
+                        create_vtab_for_struct_type(struct_sym, current_scope);
+                    }
                 }
 
                 llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
@@ -12260,7 +12338,11 @@ public:
         if( ASR::is_a<ASR::StructType_t>(*dt_ttype_t) ) {
             dt_sym_type = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_dt))));
-            create_vtab_for_struct_type(&dt_sym_type->base, current_scope);
+            if (compiler_options.new_classes) {
+                create_new_vtable_for_struct_type(&dt_sym_type->base);
+            } else {
+                create_vtab_for_struct_type(&dt_sym_type->base, current_scope);
+            }
         }
         LCOMPILERS_ASSERT(dt_sym_type != nullptr);
         for( auto& item: type2vtab ) {
