@@ -408,6 +408,8 @@ jobs:
 
             git clone https://github.com/emscripten-core/emsdk.git
             cd emsdk
+            git checkout 4.0.13
+            git checkout 404dc1ec13f64fce1af1eaf5c007e18212f63527
 
             ./emsdk install 3.1.35
 
