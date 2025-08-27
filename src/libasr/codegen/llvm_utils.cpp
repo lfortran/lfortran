@@ -5857,7 +5857,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             llvm::Value *cond = builder->CreateICmpSGT(
                                         current_end_point,
-                                        llvm_utils->CreateLoad(pos_ptr));
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -5865,14 +5865,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopbody);
         {
             llvm::Value* next_index = builder->CreateAdd(
-                            llvm_utils->CreateLoad(pos_ptr),
+                            llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             tmp = read_item_using_ttype(asr_type, list, next_index, false, module, false);
-            write_item_using_ttype(asr_type, list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
+            write_item_using_ttype(asr_type, list, next_index, llvm_utils->CreateLoad2(el_type, tmp_ptr), false, module);
             LLVM::CreateStore(*builder, tmp, tmp_ptr);
 
             tmp = builder->CreateAdd(
-                        llvm_utils->CreateLoad(pos_ptr),
+                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             LLVM::CreateStore(*builder, tmp, pos_ptr);
         }
