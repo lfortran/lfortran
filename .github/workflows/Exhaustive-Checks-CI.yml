@@ -315,9 +315,9 @@ jobs:
         run: |
           mkdir -p $HOME/ext
           cd $HOME/ext
-          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.35.tar.gz
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/4.0.13.tar.gz
           tar -xvf emsdk.tar.gz
-          mv emsdk-3.1.35 emsdk
+          mv emsdk-4.0.13 emsdk
           export EMSDK_PATH=$HOME/ext/emsdk
           echo $EMSDK_PATH
           cd $EMSDK_PATH
