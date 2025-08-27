@@ -6981,8 +6981,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 // head
                 llvm_utils->start_new_block(loophead);
                 {
-                    llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
-                    llvm::Value* c = llvm_utils->CreateLoad(llvm_utils->create_ptr_gep(el, i));
+                    llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_iter);
+                    llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el, i));
                     llvm::Value *cond = builder->CreateICmpNE(c, null_char);
                     builder->CreateCondBr(cond, loopbody, loopend);
                 }
@@ -6993,10 +6993,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     // for c in el:
                     //     hash_value = (hash_value + (ord(c) + 1) * p_pow) % m
                     //     p_pow = (p_pow * p) % m
-                    llvm::Value* i = llvm_utils->CreateLoad(hash_iter);
-                    llvm::Value* c = llvm_utils->CreateLoad(llvm_utils->create_ptr_gep(el, i));
-                    llvm::Value* p_pow = llvm_utils->CreateLoad(polynomial_powers);
-                    llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+                    llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_iter);
+                    llvm::Value* c = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el, i));
+                    llvm::Value* p_pow = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), polynomial_powers);
+                    llvm::Value* hash = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_value);
                     c = builder->CreateZExt(c, llvm::Type::getInt64Ty(context));
                     c = builder->CreateAdd(c, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 1)));
                     c = builder->CreateMul(c, p_pow);
@@ -7015,7 +7015,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
                 // end
                 llvm_utils->start_new_block(loopend);
-                llvm::Value* hash = llvm_utils->CreateLoad(hash_value);
+                llvm::Value* hash = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), hash_value);
                 hash = builder->CreateTrunc(hash, llvm::Type::getInt32Ty(context));
                 return builder->CreateSRem(hash, capacity);
             }
@@ -7101,7 +7101,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+            llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
             llvm::Value* el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
                 llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el_mask, pos));
             llvm::Value* is_el_skip = builder->CreateICmpEQ(el_mask_value,
@@ -7129,12 +7129,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value *cond = nullptr;
             if( for_read ) {
                 cond = builder->CreateAnd(is_el_set, builder->CreateNot(
-                            llvm_utils->CreateLoad(is_el_matching_var)));
+                            llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_el_matching_var)));
                 cond = builder->CreateOr(is_el_skip, cond);
             } else {
                 cond = builder->CreateAnd(is_el_set, builder->CreateNot(is_el_skip));
                 cond = builder->CreateAnd(cond, builder->CreateNot(
-                            llvm_utils->CreateLoad(is_el_matching_var)));
+                            llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_el_matching_var)));
             }
             builder->CreateCondBr(cond, loopbody, loopend);
         }
@@ -7142,7 +7142,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+            llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
             pos = builder->CreateAdd(pos, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                                 llvm::APInt(32, 1)));
             pos = builder->CreateSRem(pos, capacity);
@@ -7189,8 +7189,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         LLVM::CreateStore(*builder,
                 llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()), chain_itr_prev);
-        llvm::Value* el_mask_value = llvm_utils->CreateLoad(
-            llvm_utils->create_ptr_gep(el_mask, el_hash));
+        llvm::Value* el_mask_value = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el_mask, el_hash));
         llvm_utils->create_if_else(builder->CreateICmpEQ(el_mask_value,
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1))), [&]() {
             llvm::Value* el_ll_i8 = builder->CreateBitCast(el_linked_list, llvm::Type::getInt8Ty(context)->getPointerTo());
@@ -7211,28 +7211,29 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loophead);
         {
             llvm::Value *cond = builder->CreateICmpNE(
-                llvm_utils->CreateLoad(chain_itr),
+                llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr),
                 llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo())
             );
             cond = builder->CreateAnd(cond, builder->CreateNot(
-                    llvm_utils->CreateLoad(is_el_matching_var)));
+                    llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_el_matching_var)));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* el_struct_i8 = llvm_utils->CreateLoad(chain_itr);
+            llvm::Value* el_struct_i8
+                = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
             LLVM::CreateStore(*builder, el_struct_i8, chain_itr_prev);
             llvm::Value* el_struct = builder->CreateBitCast(el_struct_i8, el_struct_type->getPointerTo());
             llvm::Value* el_struct_el = llvm_utils->create_gep2(el_struct_type, el_struct, 0);
             if( !LLVM::is_llvm_struct(el_asr_type) ) {
-                el_struct_el = llvm_utils->CreateLoad(el_struct_el);
+                el_struct_el = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), el_struct_el);
             }
             LLVM::CreateStore(*builder, llvm_utils->is_equal_by_value(el, el_struct_el,
                                 module, el_asr_type), is_el_matching_var);
-            llvm_utils->create_if_else(builder->CreateNot(llvm_utils->CreateLoad(is_el_matching_var)), [&]() {
-                llvm::Value* next_el_struct = llvm_utils->CreateLoad(llvm_utils->create_gep2(el_struct_type, el_struct, 1));
+            llvm_utils->create_if_else(builder->CreateNot(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_el_matching_var)), [&]() {
+                llvm::Value* next_el_struct = llvm_utils->CreateLoad2(el_struct_type, llvm_utils->create_gep2(el_struct_type, el_struct, 1));
                 LLVM::CreateStore(*builder, next_el_struct, chain_itr);
             }, []() {});
         }
