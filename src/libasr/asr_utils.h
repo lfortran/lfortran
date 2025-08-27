@@ -541,24 +541,35 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR:
 
 static inline char *symbol_name(const ASR::symbol_t *f);
 
-static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers) {
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+                if (stype->m_is_cstruct) {
+                    res = "type(" + res + ")";
+                } else {
+                    res = "class(" + res + ")";
+                }
+            }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 res += ", parameter";
             }
-            if (v->m_access == ASR::accessType::Private) {
-                res += ", private";
-            } else if (v->m_access == ASR::accessType::Public) {
-                res += ", public";
+            if (add_symbol_access_specifiers) {
+                if (v->m_access == ASR::accessType::Private) {
+                    res += ", private";
+                } else if (v->m_access == ASR::accessType::Public) {
+                    res += ", public";
+                }
             }
             if (v->m_presence == ASR::presenceType::Optional) {
                 res += ", optional";
             }
-            if (v->m_intent != ASR::intentType::Unspecified) {
+            if (v->m_intent != ASR::intentType::Unspecified
+                && v->m_intent != ASR::intentType::ReturnVar) {
                 res += ", intent(" + intent_to_str(v->m_intent) + ")";
             }
             res += " :: " + std::string(v->m_name);
@@ -603,12 +614,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                 ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
                 if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                     const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    std::string arg_decl = type_to_str_fortran_symbol(arg_var->m_type, arg_var->m_type_declaration);
-                    if (arg_var->m_intent != ASR::intentType::Unspecified) {
-                        arg_decl += ", intent(" + intent_to_str(arg_var->m_intent) + ")";
-                    }
-                    arg_decl += " :: " + arg_name;
-                    res += "    " + arg_decl + "\n";
+                    res += "    " + symbol_to_str_fortran(arg_var->base, false) + "\n";
                 }
             }
             // Add return variable declaration
@@ -619,8 +625,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                     const ASR::symbol_t *v_sym = var->m_v;
                     if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                         const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
-                        std::string ret_type = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
-                        res += "    " + ret_type + " :: " + std::string(v->m_name) + "\n";
+                        res += "    " + symbol_to_str_fortran(v->base, false) + "\n";
                     }
                 }
             }
@@ -644,7 +649,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
             const ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(&s);
             ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(ext->m_external);
             if (orig_sym) {
-                std::string orig_str = symbol_to_str_fortran(*orig_sym);
+                std::string orig_str = symbol_to_str_fortran(*orig_sym, true);
                 return orig_str + "  ! from module " + std::string(ext->m_module_name);
             } else {
                 return "external symbol " + std::string(ext->m_name);

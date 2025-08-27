@@ -807,8 +807,7 @@ RUN(NAME format_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# FIXME: fails with FAST with llvm >= 17, https://github.com/lfortran/lfortran/issues/8155
-RUN(NAME format_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
+RUN(NAME format_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2665,3 +2664,7 @@ RUN(NAME union_test_03 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # LFortran extensions (unsigned int)
 RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+
+# LFortran extenstion (Python's str)
+
+RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 

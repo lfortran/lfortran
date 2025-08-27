@@ -4399,9 +4399,9 @@ public:
                     }
                     case ASR::array_physical_typeType::PointerToDataArray: {
 #if LLVM_VERSION_MAJOR > 16
-                        ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, v_m_type, module.get());
+                        ptr_type[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::extract_type(v_m_type), module.get());
 #endif
-                        ptr_i = llvm_utils->create_ptr_gep(ptr, llvm_utils->CreateLoad2(t, llvmi));
+                        ptr_i = llvm_utils->create_ptr_gep2(el_type, ptr, llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
                     default: {
@@ -9605,44 +9605,91 @@ public:
                 break;
              }
             case (ASR::cast_kindType::RealToString) : {
-                llvm::Value *arg = tmp;
-                ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(arg_type != nullptr)
-                int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                tmp = lfortran_type_to_str(arg, llvm_utils->getFPType(arg_kind), "float", arg_kind);
+                /* Call Runtime Function `lfortran_float_to_str` */
+                llvm::Value* casted_float {}; // float -> string
+                { 
+                    llvm::Value *arg = tmp;
+                    ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
+                    LCOMPILERS_ASSERT(arg_type != nullptr)
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (arg->getType()->isPointerTy()) {arg = llvm_utils->CreateLoad2(llvm_utils->getFPType(arg_kind), arg);}
+
+                    casted_float = lfortran_type_to_str(arg, llvm_utils->getFPType(arg_kind), "float", arg_kind); // Returns i8*
+                }
+
+
+                /* Create A String To Hold The Runtime Function Return */
+                llvm::Value* str {};
+                {
+                    str = llvm_utils->create_string(ASRUtils::get_string_type(x.m_type), "FloatToStringCast");
+                    setup_string(str, x.m_type);
+                    /*
+                        Now we have an already set string matching `x.m_type`
+                        (allocatable-deferred-len OR Expression-len OR allocatable-nondeferred-len)
+                    */ 
+                }
+
+                /* Copy Runtime Function Return Into Our Created String*/
+                {
+                    llvm::Value *lhs_data, *lhs_len;
+                    llvm::Value *rhs_data, *rhs_len;
+                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_type), str, true, true);
+                    rhs_data = casted_float;
+                    rhs_len = lfortran_str_len(casted_float);
+                    llvm_utils->lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len, true, true);
+                }
+                
+                /* Free Runtime Function Return */
+                {
+                    builder->CreateCall(llvm_utils->_Deallocate(), {casted_float});
+                    casted_float = nullptr;
+                }
+
+                tmp = str;
                 break;
             }
             case (ASR::cast_kindType::IntegerToString) : {
-                llvm::Value *arg = tmp;
-                ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(arg_type != nullptr)
-                int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                /* Call Runtime Function `lfortran_int_to_str` */
+                llvm::Value* casted_int {};
+                { 
+                    llvm::Value *arg = tmp;
+                    ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
+                    LCOMPILERS_ASSERT(arg_type != nullptr)
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (arg->getType()->isPointerTy()) {arg = llvm_utils->CreateLoad2(llvm_utils->getIntType(arg_kind), arg);}
 
-                if (arg->getType()->isPointerTy())
-                    arg = llvm_utils->CreateLoad2(llvm_utils->getIntType(arg_kind), arg);
+                    casted_int = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind); // Returns i8*
+                }
 
-                tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind); // Returns i8*
 
-                if (ASRUtils::is_allocatable_descriptor_string(x.m_type)) {
-                    llvm::Value* temp_str = builder->CreateAlloca(string_descriptor);
-                    llvm_utils->set_string_memory_on_heap(
-                        ASR::string_physical_typeType::DescriptorString,
-                        temp_str, lfortran_str_len(tmp)
-                    );
+                /* Create A String To Hold The Runtime Function Return */
+                llvm::Value* str {};
+                {
+                    str = llvm_utils->create_string(ASRUtils::get_string_type(x.m_type), "IntegerToStringCast");
+                    setup_string(str, x.m_type);
+                    /*
+                        Now we have an already set string matching `x.m_type`
+                        (allocatable-deferred-len OR Expression-len OR allocatable-nondeferred-len)
+                    */ 
+                }
 
+                /* Copy Runtime Function Return Into Our Created String*/
+                {
                     llvm::Value *lhs_data, *lhs_len;
                     llvm::Value *rhs_data, *rhs_len;
-                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(
-                                                    ASR::down_cast<ASR::String_t>(ASRUtils::TYPE(ASR::make_String_t(
-                                                        al, x.base.base.loc, 1, nullptr,
-                                                        ASR::string_length_kindType::DeferredLength,
-                                                        ASR::string_physical_typeType::DescriptorString))),
-                                                    temp_str, true, true);
-                    rhs_data = tmp;
-                    rhs_len = lfortran_str_len(tmp);
+                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_type), str, true, true);
+                    rhs_data = casted_int;
+                    rhs_len = lfortran_str_len(casted_int);
                     llvm_utils->lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len, true, true);
-                    tmp = temp_str;
                 }
+                
+                /* Free Runtime Function Return */
+                {
+                    builder->CreateCall(llvm_utils->_Deallocate(), {casted_int});
+                    casted_int = nullptr;
+                }
+
+                tmp = str;
                 break;
             }
             case (ASR::cast_kindType::LogicalToString) : {
