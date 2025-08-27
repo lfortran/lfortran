@@ -7701,22 +7701,21 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value *cond = builder->CreateICmpNE(
-                llvm_utils->CreateLoad(src_itr),
-                llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo())
-            );
+            llvm::Value* cond = builder->CreateICmpNE(
+                llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), src_itr),
+                llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* curr_src = builder->CreateBitCast(llvm_utils->CreateLoad(src_itr),
+            llvm::Value* curr_src = builder->CreateBitCast(llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), src_itr),
                 el_struct_type);
             llvm::Value* src_el_ptr = llvm_utils->create_gep2(el_struct_type, curr_src, 0);
             llvm::Value* src_el = src_el_ptr;
             if( !LLVM::is_llvm_struct(m_el_type) ) {
-                src_el = llvm_utils->CreateLoad(src_el_ptr);
+                src_el = llvm_utils->CreateLoad2(el_struct_type, src_el_ptr);
             }
             llvm::Value* el_hash = get_el_hash(capacity, src_el, m_el_type, module);
             resolve_collision_for_write(set_expr,
@@ -7777,9 +7776,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * }
          *
          */
-        llvm::Value* occupancy = llvm_utils->CreateLoad(get_pointer_to_occupancy(set));
-        llvm::Value* buckets_filled = llvm_utils->CreateLoad(get_pointer_to_number_of_filled_buckets(set));
-        llvm::Value* rehash_condition = llvm_utils->CreateLoad(get_pointer_to_rehash_flag(set));
+        llvm::Value* occupancy = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(set));
+        llvm::Value* buckets_filled = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_number_of_filled_buckets(set));
+        llvm::Value* rehash_condition = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag(set));
         llvm::Value* buckets_filled_times_2 = builder->CreateMul(buckets_filled,
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 2)));
         rehash_condition = builder->CreateAnd(rehash_condition,
@@ -7834,15 +7833,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* el_list = get_el_list(set);
         llvm::Type* el_list_type = llvm_utils->list_api->get_list_type(nullptr, el_type_code, 0);
 
-        llvm::Value* el_mask = llvm_utils->CreateLoad(get_pointer_to_mask(set));
-        llvm::Value* capacity = llvm_utils->CreateLoad(get_pointer_to_capacity_using_type(el_list_type, set));
+        llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set));
+        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(el_list_type, set));
         pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-        llvm::Value* el_mask_value = llvm_utils->CreateLoad(
-                                        llvm_utils->create_ptr_gep(el_mask, el_hash));
+        llvm::Value* el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), el_mask, el_hash));
         llvm::Value* is_prob_not_needed = builder->CreateICmpEQ(el_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         builder->CreateCondBr(is_prob_not_needed, thenBB, elseBB);
@@ -7874,7 +7872,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     module, el_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
-        llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
+        llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         // Check if the actual element is present or not
         llvm::Value* is_el_matching = llvm_utils->is_equal_by_value(el,
                 llvm_utils->list_api->read_item_using_ttype(el_asr_type, el_list, pos, false, module,
