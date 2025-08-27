@@ -6119,7 +6119,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loophead);
         {
             llvm::Value *cond = builder->CreateICmpSGT(current_end_point,
-                                         llvm_utils->CreateLoad(i));
+                                         llvm_utils->CreateLoad2(pos_type, i));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -6127,19 +6127,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopbody);
         {
             // if occurrence found, increment cnt
-            llvm::Value* left_arg = read_item_using_ttype(item_type, list, llvm_utils->CreateLoad(i),
+            llvm::Value* left_arg = read_item_using_ttype(item_type, list, llvm_utils->CreateLoad2(pos_type, i),
                 false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* cond = llvm_utils->is_equal_by_value(left_arg, item, module, item_type);
             llvm_utils->create_if_else(cond, [&]() {
                 tmp = builder->CreateAdd(
-                            llvm_utils->CreateLoad(cnt),
+                            llvm_utils->CreateLoad2(pos_type, cnt),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 LLVM::CreateStore(*builder, tmp, cnt);
             }, [=]() {
             });
             // increment i
             tmp = builder->CreateAdd(
-                        llvm_utils->CreateLoad(i),
+                        llvm_utils->CreateLoad2(pos_type, i),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             LLVM::CreateStore(*builder, tmp, i);
         }
@@ -6148,7 +6148,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // end
         llvm_utils->start_new_block(loopend);
 
-        return llvm_utils->CreateLoad(cnt);
+        return llvm_utils->CreateLoad2(pos_type, cnt);
     }
 
     void LLVMList::remove(llvm::Value* list, llvm::Value* item,
@@ -6182,7 +6182,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loophead);
         {
             llvm::Value *cond = builder->CreateICmpSGT(current_end_point,
-                                         llvm_utils->CreateLoad(item_pos));
+                                         llvm_utils->CreateLoad2(pos_type, item_pos));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -6190,9 +6190,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopbody);
         {
             tmp = builder->CreateAdd(
-                        llvm_utils->CreateLoad(item_pos),
+                        llvm_utils->CreateLoad2(pos_type, item_pos),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item_using_ttype(item_type, list, llvm_utils->CreateLoad(item_pos),
+            write_item_using_ttype(item_type, list, llvm_utils->CreateLoad2(pos_type, item_pos),
                 read_item_using_ttype(item_type, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, item_pos);
         }
