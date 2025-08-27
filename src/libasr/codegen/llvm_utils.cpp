@@ -7574,18 +7574,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* capacity_ptr = get_pointer_to_capacity_using_type(el_list_type, set);
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(set);
         llvm::Value* number_of_buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(set);
-        llvm::Value* old_capacity_value = llvm_utils->CreateLoad(capacity_ptr);
+        llvm::Value* old_capacity_value = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), capacity_ptr);
         LLVM::CreateStore(*builder, old_capacity_value, old_capacity);
         LLVM::CreateStore(*builder,
-            llvm_utils->CreateLoad(occupancy_ptr),
-            old_occupancy
-        );
+                          llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), occupancy_ptr), old_occupancy);
         LLVM::CreateStore(*builder,
-            llvm_utils->CreateLoad(number_of_buckets_filled_ptr),
+            llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), number_of_buckets_filled_ptr),
             old_number_of_buckets_filled
         );
-        llvm::Value* old_el_mask_value = llvm_utils->CreateLoad(get_pointer_to_mask(set));
-        llvm::Value* old_elems_value = llvm_utils->CreateLoad(get_pointer_to_elems(set));
+        llvm::Value* old_el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), get_pointer_to_mask(set));
+        llvm::Value* old_elems_value = llvm_utils->CreateLoad2(typecode2elstruct[el_type_code]->getPointerTo(), get_pointer_to_elems(set));
         old_elems_value = builder->CreateBitCast(old_elems_value, llvm::Type::getInt8Ty(context)->getPointerTo());
         LLVM::CreateStore(*builder, old_el_mask_value, old_el_mask);
         LLVM::CreateStore(*builder, old_elems_value, old_elems);
@@ -7601,16 +7599,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *thenBB_rehash = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB_rehash = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB_rehash = llvm::BasicBlock::Create(context, "ifcont");
-        llvm::Value* rehash_flag = llvm_utils->CreateLoad(get_pointer_to_rehash_flag(set));
+        llvm::Value* rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_rehash_flag(set));
         builder->CreateCondBr(rehash_flag, thenBB_rehash, elseBB_rehash);
 
         builder->SetInsertPoint(thenBB_rehash);
-        old_elems_value = llvm_utils->CreateLoad(old_elems);
+        old_elems_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_elems);
         old_elems_value = builder->CreateBitCast(old_elems_value,
             typecode2elstruct[ASRUtils::get_type_code(el_asr_type)]->getPointerTo());
-        old_el_mask_value = llvm_utils->CreateLoad(old_el_mask);
-        old_capacity_value = llvm_utils->CreateLoad(old_capacity);
-        capacity = llvm_utils->CreateLoad(get_pointer_to_capacity_using_type(el_list_type, set));
+        old_el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), old_el_mask);
+        old_capacity_value = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity);
+        capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(el_list_type, set));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)), idx_ptr);
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
@@ -7621,16 +7619,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             llvm::Value *cond = builder->CreateICmpSGT(
                                         old_capacity_value,
-                                        llvm_utils->CreateLoad(idx_ptr));
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* itr = llvm_utils->CreateLoad(idx_ptr);
-            llvm::Value* el_mask_value = llvm_utils->CreateLoad(
-                llvm_utils->create_ptr_gep(old_el_mask_value, itr));
+            llvm::Value* itr = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx_ptr);
+            llvm::Value* el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), old_el_mask_value, itr));
             llvm::Value* is_el_set = builder->CreateICmpEQ(el_mask_value,
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
 
@@ -7653,26 +7650,25 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(elseBB_rehash);
         {
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_capacity),
-                get_pointer_to_capacity_using_type(el_list_type, set)
-            );
+                              llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity),
+                              get_pointer_to_capacity_using_type(el_list_type, set));
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_occupancy),
+                llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_occupancy),
                 get_pointer_to_occupancy(set)
             );
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_number_of_buckets_filled),
+                llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_number_of_buckets_filled),
                 get_pointer_to_number_of_filled_buckets(set)
             );
             LLVM::CreateStore(*builder,
                 builder->CreateBitCast(
-                    llvm_utils->CreateLoad(old_elems),
+                    llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), old_elems),
                     typecode2elstruct[ASRUtils::get_type_code(el_asr_type)]->getPointerTo()
                 ),
                 get_pointer_to_elems(set)
             );
             LLVM::CreateStore(*builder,
-                llvm_utils->CreateLoad(old_el_mask),
+                llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), old_el_mask),
                 get_pointer_to_mask(set)
             );
         }
