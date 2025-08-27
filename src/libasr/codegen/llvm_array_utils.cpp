@@ -120,7 +120,8 @@ namespace LCompilers {
         convert_to_argument(llvm::Value* tmp, ASR::ttype_t* asr_arg_type,
                             llvm::Type* arg_type, bool data_only) {
             if( data_only ) {
-                return llvm_utils->CreateLoad(get_pointer_to_data(tmp));
+                llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(nullptr, ASRUtils::get_contained_type(asr_arg_type), llvm_utils->module);
+                return llvm_utils->CreateLoad2(t, get_pointer_to_data(tmp));
             }
             llvm::Value* arg_struct = llvm_utils->CreateAlloca(*builder, arg_type);
             llvm::Value* first_ele_ptr = nullptr;
@@ -140,8 +141,10 @@ namespace LCompilers {
             llvm::Value* sec_ele_ptr = get_offset(arg_type, tmp);
             llvm::Value* sec_arg_ptr = llvm_utils->create_gep2(arg_type, arg_struct, 1);
             builder->CreateStore(sec_ele_ptr, sec_arg_ptr);
+            llvm::StructType* arg_struct_type = llvm::dyn_cast<llvm::StructType>(arg_type);
+            LCOMPILERS_ASSERT(arg_struct_type != nullptr && "arg_type must be a StructType");
             llvm::Value* third_ele_ptr
-                = llvm_utils->CreateLoad(get_pointer_to_dimension_descriptor_array(arg_type, tmp));
+                = llvm_utils->CreateLoad2(arg_struct_type->getElementType(2), get_pointer_to_dimension_descriptor_array(arg_type, tmp));
             llvm::Value* third_arg_ptr = llvm_utils->create_gep2(arg_type, arg_struct, 2);
             builder->CreateStore(third_ele_ptr, third_arg_ptr);
             return arg_struct;
@@ -312,16 +315,16 @@ namespace LCompilers {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 builder->CreateStore(builder->CreateMul(
-                    llvm_utils->CreateLoad(llvm_size),
+                    llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size),
                     llvm::ConstantInt::get(context, llvm::APInt(32, size))), llvm_size);
                 llvm::Value* arr_first_i8 = lfortran_malloc(
-                    context, *module, *builder, llvm_utils->CreateLoad(llvm_size));
+                    context, *module, *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size));
                 heap_arrays.push_back(arr_first_i8);
                 arr_first = builder->CreateBitCast(
                     arr_first_i8, llvm_data_type->getPointerTo());
             } else {
                 arr_first = llvm_utils->CreateAlloca(*builder,
-                    llvm_data_type, llvm_utils->CreateLoad(llvm_size));
+                    llvm_data_type, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size));
             }
 #if LLVM_VERSION_MAJOR > 16
             llvm_utils->ptr_type[arr_first] = llvm_data_type;
@@ -403,10 +406,10 @@ namespace LCompilers {
                 if( realloc ) {
                     ptr_as_char_ptr = lfortran_realloc(context, *module,
                         *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
-                        llvm_utils->CreateLoad(arg_size));
+                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), arg_size));
                 } else {
                     ptr_as_char_ptr = lfortran_malloc(context, *module,
-                        *builder, llvm_utils->CreateLoad(arg_size));
+                        *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), arg_size));
                 }
                 llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
 #if LLVM_VERSION_MAJOR > 16
@@ -422,7 +425,7 @@ namespace LCompilers {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first;
             dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                    llvm_utils->CreateLoad(llvm_ndims));
+                                    llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
 
             // If unallocated, set lower bound and size to 1.
             // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
@@ -443,7 +446,7 @@ namespace LCompilers {
             llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                                            llvm_utils->CreateLoad(llvm_ndims));
+                                                            llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(type, arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
             dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
@@ -480,7 +483,7 @@ namespace LCompilers {
             llvm::Value* llvm_ndims = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context), nullptr);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
-                                                               llvm_utils->CreateLoad(llvm_ndims));
+                                                               llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_ndims));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(type, arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
             dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
@@ -898,13 +901,13 @@ namespace LCompilers {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
-            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad(r), rank);
+            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), rank);
             builder->CreateCondBr(cond, loopbody, loopend);
 
             // body
             llvm_utils->start_new_block(loopbody);
-            llvm::Value* r_val = llvm_utils->CreateLoad(r);
-            llvm::Value* ret_val = llvm_utils->CreateLoad(llvm_size);
+            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
+            llvm::Value* ret_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(kind), llvm_size);
             llvm::Value* dim_size = this->get_dimension_size(dim_des_val, r_val);
             dim_size = builder->CreateSExtOrTrunc(dim_size, llvm_utils->getIntType(kind));
             ret_val = builder->CreateMul(ret_val, dim_size);
@@ -916,7 +919,7 @@ namespace LCompilers {
             // end
             llvm_utils->start_new_block(loopend);
 
-            tmp = llvm_utils->CreateLoad(llvm_size);
+            tmp = llvm_utils->CreateLoad2(llvm_utils->getIntType(kind), llvm_size);
             return tmp;
         }
 
@@ -966,20 +969,20 @@ namespace LCompilers {
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
                 // head
                 llvm_utils->start_new_block(loophead);
-                llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad(r), n_dims);
+                llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
                 builder->CreateCondBr(cond, loopbody, loopend);
 
                 // body
                 llvm_utils->start_new_block(loopbody);
-                llvm::Value* r_val = llvm_utils->CreateLoad(r);
+                llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r_val);
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
-                builder->CreateStore(llvm_utils->CreateLoad(prod), s_val);
+                builder->CreateStore(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), prod), s_val);
                 llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(i32, llvm_utils->create_ptr_gep2(i32, shape_data, r_val)), i32);
-                builder->CreateStore(builder->CreateMul(llvm_utils->CreateLoad(prod), dim_size), prod);
+                builder->CreateStore(builder->CreateMul(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), prod), dim_size), prod);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 builder->CreateStore(r_val, r);
@@ -1027,12 +1030,12 @@ namespace LCompilers {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
-            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad(r), n_dims);
+            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
             builder->CreateCondBr(cond, loopbody, loopend);
 
             // body
             llvm_utils->start_new_block(loopbody);
-            llvm::Value* r_val = llvm_utils->CreateLoad(r);
+            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
             llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
             llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
             builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
