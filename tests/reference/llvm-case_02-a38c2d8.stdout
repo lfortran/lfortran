@@ -36,75 +36,75 @@ source_filename = "LFortran"
 @string_const_data.13 = private constant [15 x i8] c"Your marks are "
 @string_const.14 = private global %string_descriptor <{ i8* getelementptr inbounds ([15 x i8], [15 x i8]* @string_const_data.13, i32 0, i32 0), i64 15 }>
 @15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@16 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@18 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.15 = private constant [10 x i8] c"Excellent!"
 @string_const.16 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.15, i32 0, i32 0), i64 10 }>
-@20 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@21 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.17 = private constant [10 x i8] c"Very good!"
 @string_const.18 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.17, i32 0, i32 0), i64 10 }>
-@22 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@23 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@21 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.19 = private constant [10 x i8] c"Well done!"
 @string_const.20 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.19, i32 0, i32 0), i64 10 }>
-@24 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@25 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.21 = private constant [8 x i8] c"Not bad!"
 @string_const.22 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.21, i32 0, i32 0), i64 8 }>
-@26 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@27 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@25 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.23 = private constant [11 x i8] c"You passed!"
 @string_const.24 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.23, i32 0, i32 0), i64 11 }>
-@28 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@29 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@28 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.25 = private constant [17 x i8] c"Better try again!"
 @string_const.26 = private global %string_descriptor <{ i8* getelementptr inbounds ([17 x i8], [17 x i8]* @string_const_data.25, i32 0, i32 0), i64 17 }>
-@30 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@31 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@30 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.27 = private constant [13 x i8] c"Invalid marks"
 @string_const.28 = private global %string_descriptor <{ i8* getelementptr inbounds ([13 x i8], [13 x i8]* @string_const_data.27, i32 0, i32 0), i64 13 }>
-@32 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@33 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.29 = private unnamed_addr constant [13 x i8] c"S-DESC-15,I4\00", align 1
 @string_const_data.30 = private constant [15 x i8] c"Your marks are "
 @string_const.31 = private global %string_descriptor <{ i8* getelementptr inbounds ([15 x i8], [15 x i8]* @string_const_data.30, i32 0, i32 0), i64 15 }>
-@34 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@35 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@33 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@34 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.32 = private constant [10 x i8] c"Excellent!"
 @string_const.33 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.32, i32 0, i32 0), i64 10 }>
-@36 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@37 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@35 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@36 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.34 = private constant [10 x i8] c"Very good!"
 @string_const.35 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.34, i32 0, i32 0), i64 10 }>
-@38 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@39 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@37 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@38 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.36 = private constant [10 x i8] c"Well done!"
 @string_const.37 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.36, i32 0, i32 0), i64 10 }>
-@40 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@41 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@40 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.38 = private constant [8 x i8] c"Not bad!"
 @string_const.39 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.38, i32 0, i32 0), i64 8 }>
-@42 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@43 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@41 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@42 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.40 = private constant [11 x i8] c"You passed!"
 @string_const.41 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.40, i32 0, i32 0), i64 11 }>
-@44 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@45 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@43 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@44 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.42 = private constant [17 x i8] c"Better try again!"
 @string_const.43 = private global %string_descriptor <{ i8* getelementptr inbounds ([17 x i8], [17 x i8]* @string_const_data.42, i32 0, i32 0), i64 17 }>
-@46 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@47 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@45 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@46 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.44 = private constant [13 x i8] c"Invalid marks"
 @string_const.45 = private global %string_descriptor <{ i8* getelementptr inbounds ([13 x i8], [13 x i8]* @string_const_data.44, i32 0, i32 0), i64 13 }>
-@48 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@49 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@47 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@48 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.46 = private unnamed_addr constant [13 x i8] c"S-DESC-15,I4\00", align 1
 @string_const_data.47 = private constant [15 x i8] c"Your marks are "
 @string_const.48 = private global %string_descriptor <{ i8* getelementptr inbounds ([15 x i8], [15 x i8]* @string_const_data.47, i32 0, i32 0), i64 15 }>
-@50 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@49 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -240,7 +240,7 @@ ifcont17:                                         ; preds = %ifcont16, %then
   br i1 %52, label %then18, label %else19
 
 then18:                                           ; preds = %ifcont17
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @16, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont20
 
@@ -258,7 +258,7 @@ ifcont20:                                         ; preds = %else19, %then18
 
 then21:                                           ; preds = %ifcont20
   %59 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.16, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* %59, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %59, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1)
   br label %ifcont38
 
 else22:                                           ; preds = %ifcont20
@@ -272,7 +272,7 @@ else22:                                           ; preds = %ifcont20
 
 then23:                                           ; preds = %else22
   %66 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.18, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @22, i32 0, i32 0), i8* %66, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8* %66, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 1)
   br label %ifcont37
 
 else24:                                           ; preds = %else22
@@ -286,7 +286,7 @@ else24:                                           ; preds = %else22
 
 then25:                                           ; preds = %else24
   %73 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.20, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @24, i32 0, i32 0), i8* %73, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* %73, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1)
   br label %ifcont36
 
 else26:                                           ; preds = %else24
@@ -300,7 +300,7 @@ else26:                                           ; preds = %else24
 
 then27:                                           ; preds = %else26
   %80 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.22, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @26, i32 0, i32 0), i8* %80, i32 8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @25, i32 0, i32 0), i8* %80, i32 8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1)
   br label %ifcont35
 
 else28:                                           ; preds = %else26
@@ -314,7 +314,7 @@ else28:                                           ; preds = %else26
 
 then29:                                           ; preds = %else28
   %87 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.24, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @28, i32 0, i32 0), i8* %87, i32 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @27, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* %87, i32 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0), i32 1)
   br label %ifcont34
 
 else30:                                           ; preds = %else28
@@ -324,12 +324,12 @@ else30:                                           ; preds = %else28
 
 then31:                                           ; preds = %else30
   %90 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.26, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* %90, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %90, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 1)
   br label %ifcont33
 
 else32:                                           ; preds = %else30
   %91 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.28, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @32, i32 0, i32 0), i8* %91, i32 13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @31, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* %91, i32 13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), i32 1)
   br label %ifcont33
 
 ifcont33:                                         ; preds = %else32, %then31
@@ -361,7 +361,7 @@ ifcont38:                                         ; preds = %ifcont37, %then21
   %99 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc39, i32 0, i32 1
   %100 = load i64, i64* %99, align 4
   %101 = trunc i64 %100 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* %98, i32 %101, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @33, i32 0, i32 0), i8* %98, i32 %101, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 1)
   %102 = load i32, i32* %marks1, align 4
   %103 = icmp sle i32 91, %102
   %104 = load i32, i32* %marks1, align 4
@@ -372,7 +372,7 @@ ifcont38:                                         ; preds = %ifcont37, %then21
 
 then40:                                           ; preds = %ifcont38
   %108 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.33, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @36, i32 0, i32 0), i8* %108, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @35, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @35, i32 0, i32 0), i8* %108, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 1)
   br label %ifcont57
 
 else41:                                           ; preds = %ifcont38
@@ -386,7 +386,7 @@ else41:                                           ; preds = %ifcont38
 
 then42:                                           ; preds = %else41
   %115 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.35, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @38, i32 0, i32 0), i8* %115, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @37, i32 0, i32 0), i8* %115, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 1)
   br label %ifcont56
 
 else43:                                           ; preds = %else41
@@ -400,7 +400,7 @@ else43:                                           ; preds = %else41
 
 then44:                                           ; preds = %else43
   %122 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.37, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @40, i32 0, i32 0), i8* %122, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @39, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* %122, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0), i32 1)
   br label %ifcont55
 
 else45:                                           ; preds = %else43
@@ -414,7 +414,7 @@ else45:                                           ; preds = %else43
 
 then46:                                           ; preds = %else45
   %129 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.39, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @42, i32 0, i32 0), i8* %129, i32 8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @41, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @41, i32 0, i32 0), i8* %129, i32 8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0), i32 1)
   br label %ifcont54
 
 else47:                                           ; preds = %else45
@@ -428,7 +428,7 @@ else47:                                           ; preds = %else45
 
 then48:                                           ; preds = %else47
   %136 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.41, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @44, i32 0, i32 0), i8* %136, i32 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @43, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @43, i32 0, i32 0), i8* %136, i32 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0), i32 1)
   br label %ifcont53
 
 else49:                                           ; preds = %else47
@@ -438,12 +438,12 @@ else49:                                           ; preds = %else47
 
 then50:                                           ; preds = %else49
   %139 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.43, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @46, i32 0, i32 0), i8* %139, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @45, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @45, i32 0, i32 0), i8* %139, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0), i32 1)
   br label %ifcont52
 
 else51:                                           ; preds = %else49
   %140 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.45, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @48, i32 0, i32 0), i8* %140, i32 13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @47, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @47, i32 0, i32 0), i8* %140, i32 13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0), i32 1)
   br label %ifcont52
 
 ifcont52:                                         ; preds = %else51, %then50
@@ -475,7 +475,7 @@ ifcont57:                                         ; preds = %ifcont56, %then40
   %148 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc58, i32 0, i32 1
   %149 = load i64, i64* %148, align 4
   %150 = trunc i64 %149 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @50, i32 0, i32 0), i8* %147, i32 %150, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @49, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @49, i32 0, i32 0), i8* %147, i32 %150, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
