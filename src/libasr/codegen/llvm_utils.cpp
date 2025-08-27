@@ -6267,7 +6267,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         LLVM::CreateStore(*builder, pos, pos_ptr);
 
         // Get element to return
-        llvm::Value* item = read_item_using_ttype(list_element_type, list, llvm_utils->CreateLoad(pos_ptr),
+        llvm::Value* item = read_item_using_ttype(list_element_type, list, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr),
                                       true, module, LLVM::is_llvm_struct(list_element_type));
         if( LLVM::is_llvm_struct(list_element_type) ) {
             LCOMPILERS_ASSERT(typecode2listtype.find(el_type_code) != typecode2listtype.end());
@@ -6314,7 +6314,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     void LLVMList::free_data_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Module* module) {
-        llvm::Value* data = llvm_utils->CreateLoad(get_pointer_to_list_data_using_type(list_type, list));
+        llvm::Type* el_type_ptr = list_type->getStructElementType(0);
+        llvm::Value* data = llvm_utils->CreateLoad2(el_type_ptr, get_pointer_to_list_data_using_type(list_type, list));
         LLVM::lfortran_free(context, *module, *builder, data);
     }
 
@@ -6355,7 +6356,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // head
            llvm_utils->start_new_block(loophead);
             {
-                llvm::Value* i = llvm_utils->CreateLoad(idx);
+                llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
                 llvm::Value* cnd = builder->CreateICmpSLT(i, a_len);
                 builder->CreateCondBr(cnd, loopbody, loopend);
             }
@@ -6363,14 +6364,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // body
             llvm_utils->start_new_block(loopbody);
             {
-                llvm::Value* i = llvm_utils->CreateLoad(idx);
+                llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
                 llvm::Value* left_arg = llvm_utils->list_api->read_item_using_ttype(item_type, l1, i,
                         false, module, LLVM::is_llvm_struct(item_type));
                 llvm::Value* right_arg = llvm_utils->list_api->read_item_using_ttype(item_type, l2, i,
                         false, module, LLVM::is_llvm_struct(item_type));
                 llvm::Value* res = llvm_utils->is_equal_by_value(left_arg, right_arg, module,
                                         item_type);
-                res = builder->CreateAnd(llvm_utils->CreateLoad(is_equal), res);
+                res = builder->CreateAnd(
+                    llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_equal), res);
                 LLVM::CreateStore(*builder, res, is_equal);
                 i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                         llvm::APInt(32, 1)));
@@ -6386,7 +6388,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(elseBB);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 0)), is_equal);
         llvm_utils->start_new_block(mergeBB);
-        return llvm_utils->CreateLoad(is_equal);
+        return llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), is_equal);
     }
 
     llvm::Value* LLVMList::check_list_inequality(llvm::Value* l1, llvm::Value* l2,
