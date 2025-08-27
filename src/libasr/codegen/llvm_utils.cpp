@@ -1364,14 +1364,14 @@ namespace LCompilers {
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
 
-    llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, int idx) {
+    llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
         return LLVMUtils::CreateGEP(ds, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, llvm::Value* idx) {
+    llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         idx};
@@ -3155,7 +3155,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDict::get_key_list(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 1);
+        return llvm_utils->create_gep_deprecated(dict, 1);
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_key_value_pairs_using_type(ASR::ttype_t* key_type,
@@ -3170,7 +3170,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDict::get_value_list(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 2);
+        return llvm_utils->create_gep_deprecated(dict, 2);
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_value_list(llvm::Value* /*dict*/) {
@@ -3178,7 +3178,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDict::get_pointer_to_occupancy(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 0);
+        return llvm_utils->create_gep_deprecated(dict, 0);
     }
 
     llvm::Value* LLVMDict::get_pointer_to_occupancy_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) {
@@ -3188,7 +3188,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_occupancy(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 0);
+        return llvm_utils->create_gep_deprecated(dict, 0);
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_occupancy_using_type(
@@ -3199,7 +3199,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_rehash_flag(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 5);
+        return llvm_utils->create_gep_deprecated(dict, 5);
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_rehash_flag_using_type(
@@ -3217,7 +3217,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_number_of_filled_buckets(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 1);
+        return llvm_utils->create_gep_deprecated(dict, 1);
     }
 
     llvm::Value* LLVMDict::get_pointer_to_capacity_using_type(ASR::ttype_t* /*key_type*/, ASR::ttype_t* value_type,
@@ -3236,7 +3236,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_capacity(llvm::Value* dict) {
-        return llvm_utils->create_gep(dict, 2);
+        return llvm_utils->create_gep_deprecated(dict, 2);
     }
 
     void LLVMDict::dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity) {
@@ -6764,7 +6764,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_occupancy(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 0);
+        return llvm_utils->create_gep_deprecated(set, 0);
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) {
@@ -6773,7 +6773,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetLinearProbing::get_el_list(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 1);
+        return llvm_utils->create_gep_deprecated(set, 1);
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set) {
@@ -6787,7 +6787,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_mask(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 2);
+        return llvm_utils->create_gep_deprecated(set, 2);
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_el_list(llvm::Value* /*set*/) {
@@ -6795,7 +6795,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_occupancy(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 0);
+        return llvm_utils->create_gep_deprecated(set, 0);
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_occupancy_using_type(llvm::Type* set_type,llvm::Value* set) {
@@ -6809,7 +6809,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_number_of_filled_buckets(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 1);
+        return llvm_utils->create_gep_deprecated(set, 1);
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) {
@@ -6817,15 +6817,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_elems(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 3);
+        return llvm_utils->create_gep_deprecated(set, 3);
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_mask(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 4);
+        return llvm_utils->create_gep_deprecated(set, 4);
     }
 
     llvm::Value* LLVMSetSeparateChaining::get_pointer_to_rehash_flag(llvm::Value* set) {
-        return llvm_utils->create_gep(set, 5);
+        return llvm_utils->create_gep_deprecated(set, 5);
     }
 
     llvm::Type* LLVMSetLinearProbing::get_set_type(std::string type_code, int32_t type_size,

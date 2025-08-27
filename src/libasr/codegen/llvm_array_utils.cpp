@@ -220,7 +220,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep(arr, 2);
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep_deprecated(arr, 2);
             if( !load ) {
                 return dim_des_arr_ptr;
             }
@@ -672,7 +672,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Value* arr) {
-            return llvm_utils->create_gep(arr, 0);
+            return llvm_utils->create_gep_deprecated(arr, 0);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {

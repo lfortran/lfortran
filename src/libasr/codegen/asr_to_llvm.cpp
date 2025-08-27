@@ -6674,8 +6674,8 @@ public:
             llvm::Type* target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, ASRUtils::extract_type(value_type), module.get());
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
-                value = llvm_utils->create_gep(value, 0);
-                target = llvm_utils->create_gep(target, 0);
+                value = llvm_utils->create_gep_deprecated(value, 0);
+                target = llvm_utils->create_gep_deprecated(target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -6711,7 +6711,7 @@ public:
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
-                value = llvm_utils->create_gep(value, 0);
+                value = llvm_utils->create_gep_deprecated(value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
                 llvm_size = builder->CreateMul(llvm_size,
@@ -6719,11 +6719,11 @@ public:
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_target_data_only_array || is_value_data_only_array ) {
                 if( is_value_fixed_sized_array ) {
-                    value = llvm_utils->create_gep(value, 0);
+                    value = llvm_utils->create_gep_deprecated(value, 0);
                     is_value_data_only_array = true;
                 }
                 if( is_target_fixed_sized_array ) {
-                    target = llvm_utils->create_gep(target, 0);
+                    target = llvm_utils->create_gep_deprecated(target, 0);
                     is_target_data_only_array = true;
                 }
                 llvm::Value *target_data = nullptr, *value_data = nullptr, *llvm_size = nullptr;
