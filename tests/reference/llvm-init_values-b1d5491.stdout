@@ -4,12 +4,12 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 %complex_4 = type <{ float, float }>
 
+@s_data = private global [4 x i8] c"left"
+@s = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @s_data, i32 0, i32 0), i64 4 }>
 @s1_data = private global [1 x i8] c"l"
 @s1 = private global %string_descriptor <{ i8* getelementptr inbounds ([1 x i8], [1 x i8]* @s1_data, i32 0, i32 0), i64 1 }>
 @s2_data = private global [3 x i8] c"eft"
 @s2 = private global %string_descriptor <{ i8* getelementptr inbounds ([3 x i8], [3 x i8]* @s2_data, i32 0, i32 0), i64 3 }>
-@s_data = private global [4 x i8] c"left"
-@s = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @s_data, i32 0, i32 0), i64 4 }>
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [36 x i8] c"I4,I4,R4,{R4,R4},I4,L,L,R4,S-DESC-4\00", align 1
 @string_const_data = private constant [4 x i8] c"left"
