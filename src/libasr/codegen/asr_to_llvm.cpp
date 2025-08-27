@@ -4963,8 +4963,7 @@ public:
                 }
             } else if(ASRUtils::is_string_only(v->m_type)){
                 if(v->m_storage == ASR::Save || v->m_storage == ASR::Parameter){
-                    if(v->m_storage == ASR::Parameter) LCOMPILERS_ASSERT(v->m_symbolic_value)
-
+                    if(v->m_storage == ASR::Parameter) {LCOMPILERS_ASSERT(v->m_symbolic_value)}
                     std::string str_initial_value_string {};
                     if(v->m_symbolic_value){ // Get initial value if exist.
                         char* str_inital_value{};
@@ -11337,7 +11336,10 @@ public:
 
         /* STOP MSG ("ERROR STOP") */
         {
-            llvm::Value* STOP_MSG = builder->CreateGlobalStringPtr(stop_msg);
+            llvm::Value* STOP_MSG {};
+            STOP_MSG = module->getNamedGlobal(stop_msg);
+            if(!STOP_MSG) {STOP_MSG = builder->CreateGlobalString(stop_msg, stop_msg);} 
+            STOP_MSG = builder->CreateBitCast(STOP_MSG, llvm::Type::getInt8Ty(context)->getPointerTo());
             fmt += "%s";
             args.push_back(STOP_MSG); // Null-Terminated String
         }
@@ -11371,7 +11373,11 @@ public:
         }
 
         /* PRINT ERROR */
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt);
+        llvm::Value *fmt_ptr {};
+        fmt_ptr = module->getNamedGlobal(fmt);
+        if(!fmt_ptr) {fmt_ptr = builder->CreateGlobalString(fmt);}
+        fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+
         args[0] = fmt_ptr;
         print_error(context, *module, *builder, args);
 

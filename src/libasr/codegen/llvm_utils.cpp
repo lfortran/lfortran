@@ -1987,8 +1987,14 @@ namespace LCompilers {
         llvm::Value* is_not_null = builder->CreateICmpNE(str_data, null_ptr);
 
         create_if_else(is_not_null, [&]() {
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("runtime error: Attempting to allocate already allocated variable!\n");
-            print_error(context, *module, *builder, {fmt_ptr});
+            llvm::Value *fmt_ptr {};
+            {
+                const std::string GLOBAL_ERROR_ID = "__Wrong_allocation";
+                fmt_ptr = module->getNamedGlobal(GLOBAL_ERROR_ID);
+                if(!fmt_ptr){fmt_ptr = builder->CreateGlobalString("runtime error: Attempting to allocate already allocated variable!\n", GLOBAL_ERROR_ID);}
+                fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+                print_error(context, *module, *builder, {fmt_ptr});
+            }
             const int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context, llvm::APInt(32, exit_code_int));
             exit(context, *module, *builder, exit_code);

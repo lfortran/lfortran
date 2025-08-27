@@ -4806,9 +4806,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 {
     int width = -1;
     // Parse format string: supports (a) and (aw)
-    if (is_streql_NCS(fmt, fmt_len, "(a)", 3)) {
+    if (is_streql_NCS((char*)fmt, fmt_len, "(a)", 3)) {
         width = -1;
-    } else if ((fmt_len > 2) && is_streql_NCS(fmt, 2, "(a", 2)) {
+    } else if ((fmt_len > 2) && is_streql_NCS((char*)fmt, 2, "(a", 2)) {
         int i = 2;
         while ((i < fmt_len) && isdigit((unsigned char)fmt[i])) i++;
         if (fmt[i] == ')' && i > 2) {
@@ -4871,7 +4871,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 
     // Determine iostat
     if (streql(buffer, "\n") ||
-        (is_streql_NCS(advance, advance_length, "no", 2) 
+        (is_streql_NCS((char*)advance, advance_length, "no", 2) 
         &&
         strcspn(buffer, "\n") != (size_t) str_len)) {
         *iostat = -2;
