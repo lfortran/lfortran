@@ -6440,28 +6440,29 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value* i = llvm_utils->CreateLoad(idx);
+            llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context) , idx);
             llvm::Value* cnd = builder->CreateICmpSLT(i, a_len);
             cnd = builder->CreateAnd(cnd, builder->CreateICmpSLT(i, b_len));
-            cnd = builder->CreateAnd(cnd, llvm_utils->CreateLoad(equality_holds));
+            cnd = builder->CreateAnd(
+                cnd, llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds));
             builder->CreateCondBr(cnd, loopbody, loopend);
         }
 
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            llvm::Value* i = llvm_utils->CreateLoad(idx);
+            llvm::Value* i = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx);
             llvm::Value* left_arg = llvm_utils->list_api->read_item_using_ttype(item_type, l1, i,
                     false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* right_arg = llvm_utils->list_api->read_item_using_ttype(item_type, l2, i,
                     false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* res = llvm_utils->is_ineq_by_value(left_arg, right_arg, module,
                                     item_type, overload_id);
-            res = builder->CreateOr(llvm_utils->CreateLoad(inequality_holds), res);
+            res = builder->CreateOr(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), inequality_holds), res);
             LLVM::CreateStore(*builder, res, inequality_holds);
             res = llvm_utils->is_equal_by_value(left_arg, right_arg, module,
                                     item_type);
-            res = builder->CreateAnd(llvm_utils->CreateLoad(equality_holds), res);
+            res = builder->CreateAnd(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds), res);
             LLVM::CreateStore(*builder, res, equality_holds);
             i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                     llvm::APInt(32, 1)));
@@ -6473,11 +6474,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // end
         llvm_utils->start_new_block(loopend);
 
-        llvm::Value* cond = builder->CreateICmpEQ(llvm_utils->CreateLoad(idx),
-                                                  a_len);
+        llvm::Value* cond = builder->CreateICmpEQ(
+            llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx), a_len);
         cond = builder->CreateOr(cond, builder->CreateICmpEQ(
-                                 llvm_utils->CreateLoad(idx), b_len));
-        cond = builder->CreateAnd(cond, llvm_utils->CreateLoad(equality_holds));
+                                 llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx), b_len));
+        cond = builder->CreateAnd(cond, llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds));
         llvm_utils->create_if_else(cond, [&]() {
             LLVM::CreateStore(*builder, llvm_utils->is_ineq_by_value(a_len, b_len,
                 module, int32_type, overload_id), inequality_holds);
@@ -6486,7 +6487,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             //     context, llvm::APInt(1, 0)), inequality_holds);
         });
 
-        return llvm_utils->CreateLoad(inequality_holds);
+        return llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), inequality_holds);
     }
 
     void LLVMList::list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
@@ -6508,7 +6509,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loophead);
         {
             llvm::Value *cond = builder->CreateICmpSGT(num_times,
-                                                       llvm_utils->CreateLoad(i));
+                                                       llvm_utils->CreateLoad2(pos_type, i));
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -6526,21 +6527,21 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->start_new_block(loop2head);
             {
                 llvm::Value *cond2 = builder->CreateICmpSGT(init_list_len,
-                                                            llvm_utils->CreateLoad(j));
+                                                            llvm_utils->CreateLoad2(pos_type, j));
                 builder->CreateCondBr(cond2, loop2body, loop2end);
             }
 
             // body
             llvm_utils->start_new_block(loop2body);
             {
-                tmp = builder->CreateMul(init_list_len, llvm_utils->CreateLoad(i));
-                tmp = builder->CreateAdd(tmp, llvm_utils->CreateLoad(j));
+                tmp = builder->CreateMul(init_list_len, llvm_utils->CreateLoad2(pos_type, i));
+                tmp = builder->CreateAdd(tmp, llvm_utils->CreateLoad2(pos_type, j));
                 write_item_using_ttype(list_type->m_type, repeat_list, tmp,
-                           read_item_using_ttype(list_type->m_type, init_list, llvm_utils->CreateLoad(j),
+                           read_item_using_ttype(list_type->m_type, init_list, llvm_utils->CreateLoad2(pos_type, j),
                                      false, module, false),
                            false, module);
                 tmp = builder->CreateAdd(
-                            llvm_utils->CreateLoad(j),
+                            llvm_utils->CreateLoad2(pos_type, j),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 LLVM::CreateStore(*builder, tmp, j);
             }
@@ -6550,7 +6551,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm_utils->start_new_block(loop2end);
 
             tmp = builder->CreateAdd(
-                        llvm_utils->CreateLoad(i),
+                        llvm_utils->CreateLoad2(pos_type, i),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             LLVM::CreateStore(*builder, tmp, i);
         }
