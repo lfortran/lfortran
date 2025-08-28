@@ -2869,48 +2869,161 @@ public:
         }
     }
 
-    void visit_ArraySection(const ASR::ArraySection_t& x) {
-        if (x.m_value) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+    // Evaluate LHS array pointer
+    this->visit_expr(*x.m_v);
+    llvm::Value *lhs_array = tmp;
+
+    ASR::ttype_t *lhs_type = ASRUtils::type_get_past_allocatable(
+        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_v))
+     );
+    ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(lhs_type);
+
+    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(
+        x.m_v, array_type->m_type, module.get()
+     );
+
+    size_t n_dims = array_type->n_dims;
+    if (n_dims != (size_t)x.n_args) {
+        throw CodeGenError("Mismatch in dimension count in ArraySection");
+     }
+
+    // Prepare RHS pointer
+    llvm::Value *rhs_array = nullptr;
+    if (x.m_value) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
+            auto *arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+            size_t n_vals = arr_const->m_n_data;
+            ASR::expr_t **data = reinterpret_cast<ASR::expr_t **>(arr_const->m_data);
+            std::vector<llvm::Constant *> const_vals;
+
+            for (size_t i = 0; i < n_vals; i++) {
+                this->visit_expr(*data[i]);
+                llvm::Constant *cval = llvm::dyn_cast<llvm::Constant>(tmp);
+                LCOMPILERS_ASSERT(cval);
+                const_vals.push_back(cval);
+            }
+
+            llvm::ArrayType *array_ty = llvm::ArrayType::get(el_type, const_vals.size());
+            llvm::Constant *const_array = llvm::ConstantArray::get(array_ty, const_vals);
+            llvm::GlobalVariable *rhs_global = new llvm::GlobalVariable(
+                *module,
+                array_ty,
+                true,
+                llvm::GlobalValue::PrivateLinkage,
+                const_array,
+                ".const_array_section"
+            );
+
+            llvm::Value *zero = builder->getInt32(0);
+            llvm::Value *indices[2] = {zero, zero};
+            rhs_array = builder->CreateInBoundsGEP(array_ty, rhs_global, indices);
+        } else {
+            this->visit_expr(*x.m_value);
+            rhs_array = tmp;
         }
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 0;
-        this->visit_expr(*x.m_v);
-        ptr_loads = ptr_loads_copy;
-        llvm::Value* array = tmp;
-        ASR::dimension_t* m_dims;
-        [[maybe_unused]] int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(x.m_v), m_dims);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_v)) &&
-                        n_dims == 0);
-        // String indexing:
-        if (x.n_args == 1) {
-            throw CodeGenError("Only string(a:b) supported for now.", x.base.base.loc);
+     } else {
+        throw CodeGenError("Missing RHS for ArraySection assignment");
+     }
+
+    // Get slice bounds
+    std::vector<llvm::Value *> lower_bounds, upper_bounds, extents;
+    for (size_t i = 0; i < (size_t)x.n_args; i++) {
+        this->visit_expr_wrapper(x.m_args[i].m_left, false);
+        lower_bounds.push_back(tmp);
+        this->visit_expr_wrapper(x.m_args[i].m_right, false);
+        upper_bounds.push_back(tmp);
+
+        llvm::Value *extent = builder->CreateAdd(
+            builder->CreateSub(upper_bounds[i], lower_bounds[i]),
+            builder->getInt32(1)
+        );
+        extents.push_back(extent);
+     }
+
+    // Prepare induction variables for the loop
+    std::vector<llvm::AllocaInst *> idx_vars;
+    for (size_t i = 0; i < n_dims; i++) {
+        llvm::AllocaInst *idx_ptr = builder->CreateAlloca(builder->getInt32Ty());
+        builder->CreateStore(builder->getInt32(0), idx_ptr);
+        idx_vars.push_back(idx_ptr);
+     }
+
+    // Setup loop basic blocks (cond, body, inc, end)
+    auto *loop_cond = llvm::BasicBlock::Create(context, "loop_cond", builder->GetInsertBlock()->getParent());
+    auto *loop_body = llvm::BasicBlock::Create(context, "loop_body", builder->GetInsertBlock()->getParent());
+    auto *loop_inc = llvm::BasicBlock::Create(context, "loop_inc", builder->GetInsertBlock()->getParent());
+    auto *loop_end = llvm::BasicBlock::Create(context, "loop_end", builder->GetInsertBlock()->getParent());
+
+    builder->CreateBr(loop_cond);
+
+    // Loop condition: check all indices < extents
+    builder->SetInsertPoint(loop_cond);
+    llvm::Value *cond = nullptr;
+    for (size_t i = 0; i < n_dims; i++) {
+        llvm::Value *idx_val = builder->CreateLoad(idx_vars[i]);
+        llvm::Value *c = builder->CreateICmpULT(idx_val, extents[i]);
+        cond = cond ? builder->CreateAnd(cond, c) : c;
+     }
+    builder->CreateCondBr(cond, loop_body, loop_end);
+
+    // Loop body: calculate offsets and copy elements
+    builder->SetInsertPoint(loop_body);
+
+    llvm::Value *lhs_offset = builder->getInt32(0);
+    llvm::Value *rhs_offset = builder->getInt32(0);
+    llvm::Value *multiplier = builder->getInt32(1);
+    for (size_t i = 0; i < n_dims; i++) {
+        llvm::Value *idx_val = builder->CreateLoad(idx_vars[i]);
+        llvm::Value *lhs_idx = builder->CreateAdd(idx_val, lower_bounds[i]);
+        lhs_offset = builder->CreateAdd(lhs_offset, builder->CreateMul(lhs_idx, multiplier));
+        rhs_offset = builder->CreateAdd(rhs_offset, builder->CreateMul(idx_val, multiplier));
+        multiplier = builder->CreateMul(multiplier, builder->CreateAdd(upper_bounds[i], builder->getInt32(1)));
+     }
+
+    llvm::Value *lhs_ptr = builder->CreateInBoundsGEP(el_type, lhs_array, lhs_offset);
+    llvm::Value *rhs_ptr = builder->CreateInBoundsGEP(el_type, rhs_array, rhs_offset);
+    llvm::Value *rhs_val = builder->CreateLoad(el_type, rhs_ptr);
+    builder->CreateStore(rhs_val, lhs_ptr);
+
+    // Increment the innermost index
+    llvm::Value *idx0_val = builder->CreateLoad(idx_vars[0]);
+    llvm::Value *inc_idx0 = builder->CreateAdd(idx0_val, builder->getInt32(1));
+    builder->CreateStore(inc_idx0, idx_vars[0]);
+    builder->CreateBr(loop_inc);
+
+    // Loop increment and carry for multidim indices
+    builder->SetInsertPoint(loop_inc);
+    size_t dim = 0;
+    while (dim < n_dims) {
+        llvm::Value *idx_val = builder->CreateLoad(idx_vars[dim]);
+        llvm::Value *carry_cond = builder->CreateICmpEQ(idx_val, extents[dim]);
+        llvm::BasicBlock *carry_block = llvm::BasicBlock::Create(context, "carry_block_" + std::to_string(dim), builder->GetInsertBlock()->getParent());
+        llvm::BasicBlock *no_carry_block = llvm::BasicBlock::Create(context, "no_carry_block_" + std::to_string(dim), builder->GetInsertBlock()->getParent());
+        builder->CreateCondBr(carry_cond, carry_block, no_carry_block);
+
+        builder->SetInsertPoint(carry_block);
+        builder->CreateStore(builder->getInt32(0), idx_vars[dim]);
+        if (dim + 1 < n_dims) {
+            llvm::Value *next_idx_val = builder->CreateLoad(idx_vars[dim + 1]);
+            builder->CreateStore(builder->CreateAdd(next_idx_val, builder->getInt32(1)), idx_vars[dim + 1]);
+            builder->CreateBr(loop_inc);
+            builder->SetInsertPoint(no_carry_block);
+            builder->CreateBr(loop_cond);
+            break;
+        } else {
+            builder->CreateBr(loop_end);
         }
 
-        LCOMPILERS_ASSERT(x.m_args[0].m_left)
-        LCOMPILERS_ASSERT(x.m_args[0].m_right)
-        //throw CodeGenError("Only string(a:b) for a,b variables for now.", x.base.base.loc);
-        // Use the "right" index for now
-        this->visit_expr_wrapper(x.m_args[0].m_right, true);
-        llvm::Value *idx2 = tmp;
-        this->visit_expr_wrapper(x.m_args[0].m_left, true);
-        llvm::Value *idx1 = tmp;
-        // idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-        //std::vector<llvm::Value*> idx_vec = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx};
-        // std::vector<llvm::Value*> idx_vec = {idx};
-        llvm::Value *str_data, *str_len;
-        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_v), array);
-        // llvm::Value *p = CreateGEP(str, idx_vec);
-        // TODO: Currently the string starts at the right location, but goes to the end of the original string.
-        // We have to allocate a new string, copy it and add null termination.
-        llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-        llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
-        llvm::Value *p = lfortran_str_slice(str_data, str_len, idx1, idx2, step, present, present);
-        tmp = llvm_utils->CreateAlloca(*builder, character_type);
-        builder->CreateStore(p, tmp);
+        builder->SetInsertPoint(no_carry_block);
+        builder->CreateBr(loop_cond);
+        ++dim;
+     }
+
+       builder->SetInsertPoint(loop_end);
+       tmp = lhs_array;  // Return LHS pointer as result
     }
+
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         this->visit_expr(*x.m_array);
