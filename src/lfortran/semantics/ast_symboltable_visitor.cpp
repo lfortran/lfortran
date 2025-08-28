@@ -864,6 +864,14 @@ public:
             }
         }
 
+        if (proc_interface == nullptr) {
+            diag.add(diag::Diagnostic(
+                "Procedure '" + to_lower(std::string(x.m_name)) + "' must be declared within a generic module interface",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
