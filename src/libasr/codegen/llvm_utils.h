@@ -219,6 +219,10 @@ namespace LCompilers {
             llvm::PointerType *character_type;
             llvm::Type* string_descriptor;
 
+            // Maps an `ASR::Struct_t` symbol to it's `vtable` in LLVM.
+            // The `vtable` looks like - `%__new_vtab_<struct_name> = { i64 }`
+            std::map<ASR::symbol_t*, llvm::Type*> struct_vtable;
+
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,
                 std::map<std::string, llvm::StructType*>& name2dertype_,
@@ -231,8 +235,8 @@ namespace LCompilers {
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<llvm::Value *, llvm::Type *> &ptr_type_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
-            llvm::Value* create_gep(llvm::Value* ds, int idx);
-            llvm::Value* create_gep(llvm::Value* ds, llvm::Value* idx);
+            llvm::Value* create_gep_deprecated(llvm::Value* ds, int idx);
+            llvm::Value* create_gep_deprecated(llvm::Value* ds, llvm::Value* idx);
 
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);

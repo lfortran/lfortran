@@ -5203,7 +5203,7 @@ public:
                                 Label("",{loc})
                             }));
                         throw SemanticAbort();
-                    } else if (this->is_derived_type && is_pointer) {
+                    } else if (this->is_derived_type && (is_pointer || is_allocatable)) {
                         // Placeholder symbol for StructType type
                         // Derived type can be used before its actually defined
                         v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
@@ -8388,6 +8388,80 @@ public:
                                                                          type_vec.p, type_vec.n)));
     }
 
+    ASR::asr_t* create_CastToStr(const AST::FuncCallOrArray_t& x){
+        if(x.n_keywords > 0 || x.n_args != 1) throw LCompilersException("Unexpected arguments");
+
+        /* Visit Argument */
+        ASR::expr_t* argument {};
+        {
+            AST::BaseVisitor<Derived>::visit_expr(*(x.m_args[0].m_end));
+            argument = ASRUtils::EXPR(tmp);
+            tmp = nullptr;
+        }
+
+        /* Set `cast_kind` + `compile_time_value` (If Exist) */
+        int cast_kind = INT32_MAX;
+        std::string compile_time_value {};
+
+        switch (ASRUtils::expr_type(argument)->type)
+        {
+            case ASR::Integer:
+                cast_kind = ASR::cast_kindType::IntegerToString;
+                if(ASRUtils::is_value_constant(argument)){ // Set value
+                    int64_t i_val {};
+                    ASRUtils::extract_value_(ASRUtils::expr_value(argument), i_val);
+                    compile_time_value = std::to_string(i_val);
+                }
+            break;
+            case ASR::Real:
+                cast_kind = ASR::cast_kindType::RealToString;
+                if(ASRUtils::is_value_constant(argument)){ // Set value
+                    double d_val {};
+                    ASRUtils::extract_value_(ASRUtils::expr_value(argument), d_val);
+                    compile_time_value = std::to_string(d_val);
+                }
+            break;
+            default:
+                throw LCompilersException("Unhandled case");
+            break;
+        }
+
+        /* Set Value Expression + Set string type */
+        ASR::expr_t*  value    {};
+        ASR::ttype_t* str_type {};
+
+        if(!compile_time_value.empty()){
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+
+            Str c_style_string;
+            c_style_string.from_str_view(compile_time_value);
+            value = b.StringConstant(
+                c_style_string.c_str(al),
+                b.String(
+                    b.i64(compile_time_value.size()),
+                    ASR::ExpressionLength));
+
+            str_type = b.String(
+                b.i64(compile_time_value.size()),
+                ASR::ExpressionLength);
+        } else {
+            value = nullptr;
+
+            str_type = 
+                ASRUtils::ASRBuilder(al, x.base.base.loc)
+                    .String(nullptr, ASR::DeferredLength);
+        }
+
+        /* Create Cast + Return it */
+        return ASR::make_Cast_t(
+            al, x.base.base.loc,
+            argument,
+            (ASR::cast_kindType)cast_kind, 
+            str_type,
+            value);
+    }
+    
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
@@ -9195,6 +9269,9 @@ public:
                     tmp = create_DictConstant(x);
                 else if ( var_name == "_lfortran_tuple_constant")
                     tmp = create_TupleConstant(x);
+                else if (var_name == "_lfortran_str"){
+                    tmp = create_CastToStr(x);
+                }
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
