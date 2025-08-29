@@ -130,6 +130,11 @@ namespace LCompilers {
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            llvm::Type *i32Ty = llvm::Type::getInt32Ty(context);
+            llvm::FunctionType *fnTy = llvm::FunctionType::get(i32Ty, {}, true);
+            llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+            llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+            vptr_type = fnPtrPtrTy;  // i32 (...)**
             string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor", true);
         }
 
@@ -245,7 +250,9 @@ namespace LCompilers {
                 }
                 // Add `vptr` as the first element inside the polymorphic struct. The `vptr` is
                 // a pointer to the `vtable` created for the struct.
-                member_types.push_back(struct_vtable.at(&der_type->base)->getPointerTo());
+                if (der_type->m_parent == nullptr) {
+                    member_types.push_back(vptr_type);
+                }
             }
             int member_idx = 0;
             if( der_type->m_parent != nullptr ) {
@@ -2914,7 +2921,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         std::string mem_name = struct_sym->m_members[i];
                         ASR::symbol_t *mem_sym = struct_sym->m_symtab->get_symbol(mem_name);
                         int mem_idx = 0;
-                        if (compiler_options.new_classes) {
+                        if (compiler_options.new_classes && struct_sym->m_parent == nullptr) {
                             // Offset by 1 to bypass `vptr` at index 0.
                             mem_idx = name2memidx[der_type_name][mem_name] + 1;
                         } else {

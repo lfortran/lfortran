@@ -173,9 +173,11 @@ public:
 
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
     std::map<ASR::symbol_t*, std::map<SymbolTable*, std::vector<llvm::Value*>>> class2vtab;
+    std::map<ASR::symbol_t*, llvm::Value*> newclass2vtab;
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
+    std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
     // Stores the map of pointer and associated type, map<ptr, i32>, Used by Load or GEP
     std::map<llvm::Value *, llvm::Type *> ptr_type;
     llvm::Type* current_select_type_block_type;
@@ -4491,26 +4493,40 @@ public:
 
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
     {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
+        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()) {
+            return ;
+        }
+        llvm::Type *i8Ty = llvm::Type::getInt8Ty(context);
+        llvm::PointerType *i8PtrTy = llvm::PointerType::get(i8Ty, 0);
+        std::vector<llvm::Function*> impls;
+        collect_vtable_function_impls(struct_sym, impls);
 
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        std::vector<llvm::Constant*> slots;
+        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));
+        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));
 
-        if (llvm_utils->struct_vtable.find(struct_sym) == llvm_utils->struct_vtable.end()) {
-            // Create the `vtable` if it does not exist.
-            llvm::StructType* vtable = llvm::StructType::create(
-                context,
-                { llvm_utils->getIntType(8) },
-                std::string("__new_vtab_") + std::string(struct_t->m_name));
-            llvm_utils->struct_vtable.insert(std::make_pair(struct_sym, vtable));
+        for (llvm::Function *F : impls) {
+            llvm::Constant *casted = llvm::ConstantExpr::getBitCast(F, i8PtrTy);
+            slots.push_back(casted);
         }
 
-        llvm::Type* vtable_type = llvm_utils->struct_vtable.at(struct_sym);
-        llvm::Value* vtable_obj = llvm_utils->CreateAlloca(*builder, vtable_type);
+        llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
+        llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
+        std::string gv_name = "_VTable_" + std::string(ASRUtils::symbol_name(struct_sym));
+        llvm::StructType *outerStructTy = llvm::StructType::create(context, { arrTy }, gv_name + ".type");
+        llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
 
-        llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep2(vtable_type, vtable_obj, 0);
-        llvm::Value* struct_type_hash = llvm::ConstantInt::get(
-            llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
-        builder->CreateStore(struct_type_hash, struct_type_hash_ptr);
+        llvm::GlobalVariable *gv = new llvm::GlobalVariable(
+            *module,
+            outerStructTy,
+            /*isConstant*/ true,
+            llvm::GlobalValue::LinkOnceODRLinkage,
+            structInit,
+            gv_name
+        );
+        gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); // unnamed_addr
+        gv->setAlignment(llvm::MaybeAlign(8));
+        newclass2vtab[struct_sym] = gv;
     }
 
     void collect_variable_types_and_struct_types(
