@@ -3235,7 +3235,8 @@ public:
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = 0;
-        if (compiler_options.new_classes) {
+        if (compiler_options.new_classes && 
+            dertype2parent.find(current_der_type_name) == dertype2parent.end()) {
             // Offset by 1 to bypass `vptr` at index 0.
             member_idx = name2memidx[current_der_type_name][member_name] + 1;
         } else {
@@ -4186,6 +4187,29 @@ public:
         }
     }
 
+    void store_class_vptr(ASR::Variable_t* v, llvm::Value* ptr) {
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+            // Store Default vptr (Points to first Virtual function)
+            ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+            if (LLVM::is_llvm_pointer(*v->m_type)) {
+                ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                    v->m_type, v->m_type_declaration, module.get()), ptr);
+            }
+            llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
+            llvm::Value* vtable = newclass2vtab[struct_sym];
+            llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+            llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
+
+            llvm::Value* gep = builder->CreateInBoundsGEP(
+                vtable->getType()->getPointerElementType(), // element type: [3 x i8*]
+                vtable,                                    // base pointer
+                {zero, zero, two}                                // indices
+            );
+            vtable = builder->CreateBitCast(gep, llvm_utils->vptr_type);
+            builder->CreateStore(vtable, v_ptr);
+        }
+    }
+    
     void set_pointer_variable_to_null(ASR::Variable_t* v, llvm::Value* null_value, llvm::Value* ptr) {
         if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) ||
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) &&
@@ -4240,7 +4264,8 @@ public:
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
                 int idx = 0;
-                if (compiler_options.new_classes) {
+                if (compiler_options.new_classes && 
+                    dertype2parent.find(struct_type_name) == dertype2parent.end()) {
                     // Offset by 1 to bypass `vptr` at index 0;
                     idx = name2memidx[struct_type_name][item.first] + 1;
                 } else {
@@ -4824,6 +4849,10 @@ public:
             }
             set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                 static_cast<llvm::PointerType*>(type)), ptr);
+            if (compiler_options.new_classes && !LLVM::is_llvm_pointer(*v->m_type) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+                store_class_vptr(v, ptr);
+            }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(

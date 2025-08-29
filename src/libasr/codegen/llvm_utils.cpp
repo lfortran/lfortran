@@ -240,14 +240,6 @@ namespace LCompilers {
             der_type_llvm = &name2dercontext[der_type_name];
             std::vector<llvm::Type*> member_types;
             if (compiler_options.new_classes) {
-                if (struct_vtable.find(&der_type->base) == struct_vtable.end()) {
-                    // Create the `vtable` if it does not exist.
-                    llvm::StructType* vtable = llvm::StructType::create(
-                                                    context,
-                                                    { getIntType(8) },
-                                                    std::string("__new_vtab_") + der_type_name);
-                    struct_vtable.insert(std::make_pair(&der_type->base, vtable));
-                }
                 // Add `vptr` as the first element inside the polymorphic struct. The `vptr` is
                 // a pointer to the `vtable` created for the struct.
                 if (der_type->m_parent == nullptr) {
