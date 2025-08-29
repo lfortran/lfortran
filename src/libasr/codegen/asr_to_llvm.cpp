@@ -174,6 +174,7 @@ public:
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
     std::map<ASR::symbol_t*, std::map<SymbolTable*, std::vector<llvm::Value*>>> class2vtab;
     std::map<ASR::symbol_t*, llvm::Value*> newclass2vtab;
+    std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
@@ -4192,12 +4193,13 @@ public:
             }
             llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
             llvm::Value* vtable = newclass2vtab[struct_sym];
+            llvm::Type* vtab_type = newclass2vtabtype[struct_sym];
             llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
             llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
 
             llvm::Value* gep = builder->CreateInBoundsGEP(
-                vtable->getType()->getPointerElementType(), // element type: [3 x i8*]
-                vtable,                                    // base pointer
+                vtab_type,                                      // element type: [N x i8*]
+                vtable,                                          // base pointer
                 {zero, zero, two}                                // indices
             );
             vtable = builder->CreateBitCast(gep, llvm_utils->vptr_type);
@@ -4557,6 +4559,7 @@ public:
         gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); // unnamed_addr
         gv->setAlignment(llvm::MaybeAlign(8));
         newclass2vtab[struct_sym] = gv;
+        newclass2vtabtype[struct_sym] = outerStructTy;
     }
 
     void collect_variable_types_and_struct_types(
@@ -12551,7 +12554,9 @@ public:
             // Get VTable pointer
             llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
             vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[vtable_ptr] = fnPtrPtrTy;
+#endif
             // Get function pointer from VTable
             llvm::Value* fn = (llvm_utils->create_ptr_gep(
                 vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
