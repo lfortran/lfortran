@@ -163,7 +163,7 @@ class ASRBuilder {
                 al, loc,
                 type,
                 arr_dimensions.p, arr_dimensions.n,
-                ASR::UnboundedPointerToDataArray));
+                ASR::UnboundedPointerToDataArray, false));
         return array_type;
     }
 

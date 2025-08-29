@@ -13262,7 +13262,7 @@ public:
                     if(arr->m_physical_type != ASR::array_physical_typeType::PointerToDataArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
-                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
+                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray, false));
                         ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
                                                                 ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
                                                                 x.m_args[i],arr->m_physical_type,
