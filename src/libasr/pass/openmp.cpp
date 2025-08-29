@@ -804,8 +804,9 @@ class ParallelRegionVisitor :
             file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
             file.in_newlines0.push_back(0);
             lm.files.push_back(file);
+            std::set<std::string> empty_set;
             ASR::symbol_t* module_sym = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
-                module_name, loc, false, pass_options, true,
+                module_name, loc, false, empty_set, pass_options, true,
                 [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
                 ));
             LCOMPILERS_ASSERT(module_sym != nullptr && ASR::is_a<ASR::Module_t>(*module_sym));
@@ -828,8 +829,9 @@ class ParallelRegionVisitor :
             file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
             file.in_newlines0.push_back(0);
             lm.files.push_back(file);
+            std::set<std::string> empty_set;
             ASR::symbol_t* iso_c_binding = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
-                "iso_c_binding", loc, false, pass_options, true,
+                "iso_c_binding", loc, false, empty_set, pass_options, true,
                 [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
                 ));
             LCOMPILERS_ASSERT(iso_c_binding != nullptr && ASR::is_a<ASR::Module_t>(*iso_c_binding));
@@ -1995,9 +1997,9 @@ class ParallelRegionVisitor :
             file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
             file.in_newlines0.push_back(0);
             lm.files.push_back(file);
-            
+            std::set<std::string> empty_set;
             ASR::symbol_t* iso_c_binding = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
-                "iso_c_binding", loc, false, pass_options, true,
+                "iso_c_binding", loc, false, empty_set, pass_options, true,
                 [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
                 ));
             LCOMPILERS_ASSERT(iso_c_binding != nullptr && ASR::is_a<ASR::Module_t>(*iso_c_binding));

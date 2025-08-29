@@ -2484,6 +2484,7 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
+                            std::set<std::string> &loaded_submodules,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
