@@ -3226,12 +3226,7 @@ public:
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
-            if (compiler_options.new_classes) {
-                // Offset by 1 to bypass `vptr` at index 0.
-                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 1);
-            } else {
-                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
-            }
+            tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = 0;
@@ -4382,12 +4377,7 @@ public:
                 }
             }
             if (struct_type_t->m_parent) {
-                if (compiler_options.new_classes) {
-                    // Offset by 1 to bypass `vptr`at index 0.
-                    ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 1);
-                } else {
-                    ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 0);
-                }
+                ptr = llvm_utils->create_gep2(name2dertype[struct_type_t->m_name], ptr, 0);
                 struct_type_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
             } else {
                 struct_type_t = nullptr;
@@ -4516,7 +4506,7 @@ public:
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
     }
 
-    void collect_vtable_function_impls(ASR::symbol_t *struct_sym, std::vector<llvm::Function*>& impls) {
+    void collect_vtable_function_impls(ASR::symbol_t *struct_sym, std::vector<llvm::Constant*>& impls) {
         // TODO: Current we simply take functions from struct symtab but
         // Struct_sym here can be extended itself so we need to
         // traverse the inheritance tree to collect all functions
@@ -4526,10 +4516,18 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
                 ASR::StructMethodDeclaration_t* method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
                 ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(method_decl->m_proc);
-                uint32_t h = get_hash((ASR::asr_t*)impl_sym);
-                llvm::Function* F = llvm_symtab_fn[h];
-                struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size();
-                impls.push_back(F);
+                if (method_decl->m_is_deferred) {
+                    llvm::FunctionType *func_type = llvm_utils->get_function_type(
+                        *(ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(method_decl->m_proc))),
+                        module.get());
+                    impls.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(func_type)));
+                } else {
+                    uint32_t h = get_hash((ASR::asr_t*)impl_sym);
+                    llvm::Function* F = llvm_symtab_fn[h];
+                    struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
+                    impls.push_back(F);
+                }
             }
         }
     }
@@ -4541,17 +4539,11 @@ public:
         }
         llvm::Type *i8Ty = llvm::Type::getInt8Ty(context);
         llvm::PointerType *i8PtrTy = llvm::PointerType::get(i8Ty, 0);
-        std::vector<llvm::Function*> impls;
-        collect_vtable_function_impls(struct_sym, impls);
 
         std::vector<llvm::Constant*> slots;
-        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));
-        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));
-
-        for (llvm::Function *F : impls) {
-            llvm::Constant *casted = llvm::ConstantExpr::getBitCast(F, i8PtrTy);
-            slots.push_back(casted);
-        }
+        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Reserved null ptr
+        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Type Info
+        collect_vtable_function_impls(struct_sym, slots);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -4559,14 +4551,9 @@ public:
         llvm::StructType *outerStructTy = llvm::StructType::create(context, { arrTy }, gv_name + ".type");
         llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
 
-        llvm::GlobalVariable *gv = new llvm::GlobalVariable(
-            *module,
-            outerStructTy,
-            /*isConstant*/ true,
-            llvm::GlobalValue::LinkOnceODRLinkage,
-            structInit,
-            gv_name
-        );
+        llvm::GlobalVariable *gv = new llvm::GlobalVariable(*module, 
+            outerStructTy, true, llvm::GlobalValue::LinkOnceODRLinkage,
+            structInit, gv_name);
         gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); // unnamed_addr
         gv->setAlignment(llvm::MaybeAlign(8));
         newclass2vtab[struct_sym] = gv;

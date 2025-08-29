@@ -5,7 +5,7 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 %base = type <{ i32 (...)**, i32 }>
 
-@_VTable_base = linkonce_odr unnamed_addr constant %_VTable_base.type { [3 x i8*] [i8* null, i8* null, i8* bitcast (void (%base*)* @__module_xx_show_x to i8*)] }, align 8
+@_VTable_base = linkonce_odr unnamed_addr constant %_VTable_base.type { [3 x i8*] [i8* null, i8* null, i8* @__module_xx_show_x] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
