@@ -10212,9 +10212,9 @@ public:
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc, diag);
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
-
+        std::set<std::string> empty_set;
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, compiler_options.po, true,
+                loc, true, empty_set, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();

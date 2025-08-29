@@ -520,10 +520,11 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            std::set<std::string> empty_set;
             LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
-                                            pass_options, false,
+                                            empty_set, pass_options, false,
                                             [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
                                             loc_manager
                                             );
@@ -560,10 +561,11 @@ namespace LCompilers {
             // We tell `load_module` not to run verify, since the ASR might
             // not be in valid state. We run verify at the end of this pass
             // anyway, so verify will be run no matter what.
+            std::set<std::string> empty_set;
             LCompilers::LocationManager loc_manager;
             ASR::Module_t *m = ASRUtils::load_module(al, current_scope,
                                             module_name, loc, true,
-                                            pass_options, false,
+                                            empty_set, pass_options, false,
                                             [&](const std::string &msg, const Location &) { throw LCompilersException(msg); },
                                             loc_manager);
 

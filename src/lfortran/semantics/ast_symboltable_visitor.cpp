@@ -285,7 +285,7 @@ public:
         ASR::asr_t *tmp0 = nullptr;
         if( x.class_type == AST::modType::Submodule ) {
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
-                                                parent_name, x.base.base.loc, false,
+                                                parent_name, x.base.base.loc, false, loaded_submodules,
                                                 compiler_options.po, true,
                                                 [&](const std::string &msg, const Location &loc) {
                                                     diag.add(diag::Diagnostic(
@@ -3361,7 +3361,7 @@ public:
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, compiler_options.po, true,
+                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
                     diag.add(diag::Diagnostic(
                         msg, diag::Level::Error, diag::Stage::Semantic, {

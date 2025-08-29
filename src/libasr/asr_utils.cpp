@@ -891,6 +891,7 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
+                            std::set<std::string> &loaded_submodules,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
@@ -942,25 +943,6 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         mod2->m_symtab->mark_all_variables_external(al);
     }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
-
-    // Load all the Submodules of loaded parent module
-    if (load_submodules && mod2->m_has_submodules) {
-        std::vector<ASR::TranslationUnit_t*> submods;
-        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
-            = find_and_load_submodules(al, module_name, *symtab, pass_options, lm);
-        if (res.ok) {
-            submods = res.result;
-        } else {
-            error_message = res.error.message;
-            err(error_message, loc);
-        }
-        for (size_t i=0;i<submods.size();i++) {
-            ASR::Module_t *submod = extract_module(*submods[i]);
-            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-            submod->m_symtab->parent = symtab;
-            submod->m_loaded_from_mod = true;
-        }
-    }
 
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
@@ -1021,6 +1003,12 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 rerun = true;
             }
         }
+    }
+
+    if (load_submodules) {
+        load_dependent_submodules(al, symtab, mod2, loc,
+                                  loaded_submodules, pass_options,
+                                  run_verify, err, lm);
     }
 
     // Check that all modules are included in ASR now
