@@ -1262,7 +1262,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
-                bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
+                bool is_pointer_;
                 if (compiler_options.new_classes) {
                     is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
                 } else {

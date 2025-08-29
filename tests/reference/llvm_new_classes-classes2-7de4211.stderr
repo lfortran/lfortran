@@ -1,0 +1,41 @@
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start[0m
+[2m  File "[0m[1m[35m./csu/../csu/libc-start.c[39m[0m[2m", line 360, in __libc_start_main[0m
+[2m  File "[0m[1m[35m./csu/../sysdeps/nptl/libc_start_call_main.h[39m[0m[2m", line 58, in __libc_start_call_main[0m
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2739, in main[0m
+    return main_app(argc, argv);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2555, in main_app(int, char**)[0m
+    return emit_llvm(opts.arg_file, lfortran_pass_manager,
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1061, in (anonymous namespace)::emit_llvm(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::PassManager&, LCompilers::CompilerOptions&)[0m
+    = fe.get_llvm(input, lm, pass_manager, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 315, in LCompilers::FortranEvaluator::get_llvm(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&)[0m
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, pass_manager, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 337, in LCompilers::FortranEvaluator::get_llvm2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&)[0m
+    diagnostics, lm.files.back().in_filename, nullptr);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 393, in LCompilers::FortranEvaluator::get_llvm3(LCompilers::ASR::TranslationUnit_t&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int*)[0m
+    compiler_options, run_fn, "", infile);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 13484, in LCompilers::asr_to_llvm(LCompilers::ASR::TranslationUnit_t&, LCompilers::diag::Diagnostics&, llvm::LLVMContext&, Allocator&, LCompilers::PassManager&, LCompilers::CompilerOptions&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)[0m
+    v.visit_asr((ASR::asr_t&)asr);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 348, in LCompilers::ASR::BaseVisitor<LCompilers::ASRToLLVMVisitor>::visit_asr(LCompilers::ASR::asr_t const&)[0m
+    void visit_asr(const asr_t &b) { visit_asr_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 323, in void LCompilers::ASR::visit_asr_t<LCompilers::ASRToLLVMVisitor>(LCompilers::ASR::asr_t const&, LCompilers::ASRToLLVMVisitor&)[0m
+    case asrType::unit: { v.visit_unit((const unit_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 349, in LCompilers::ASR::BaseVisitor<LCompilers::ASRToLLVMVisitor>::visit_unit(LCompilers::ASR::unit_t const&)[0m
+    void visit_unit(const unit_t &b) { visit_unit_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 22, in void LCompilers::ASR::visit_unit_t<LCompilers::ASRToLLVMVisitor>(LCompilers::ASR::unit_t const&, LCompilers::ASRToLLVMVisitor&)[0m
+    case unitType::TranslationUnit: { v.visit_TranslationUnit((const TranslationUnit_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 1213, in LCompilers::ASRToLLVMVisitor::visit_TranslationUnit(LCompilers::ASR::TranslationUnit_t const&)[0m
+    visit_symbol(*item.second);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 351, in LCompilers::ASR::BaseVisitor<LCompilers::ASRToLLVMVisitor>::visit_symbol(LCompilers::ASR::symbol_t const&)[0m
+    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 30, in void LCompilers::ASR::visit_symbol_t<LCompilers::ASRToLLVMVisitor>(LCompilers::ASR::symbol_t const&, LCompilers::ASRToLLVMVisitor&)[0m
+    case symbolType::Program: { v.visit_Program((const Program_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 4090, in LCompilers::ASRToLLVMVisitor::visit_Program(LCompilers::ASR::Program_t const&)[0m
+    declare_vars(x);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 5019, in void LCompilers::ASRToLLVMVisitor::declare_vars<LCompilers::ASR::Program_t>(LCompilers::ASR::Program_t const&, bool)[0m
+    create_new_vtable_for_struct_type(
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 4552, in LCompilers::ASRToLLVMVisitor::create_new_vtable_for_struct_type(LCompilers::ASR::symbol_t*)[0m
+    llvm::Constant *casted = llvm::ConstantExpr::getBitCast(F, i8PtrTy);
+[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in llvm::ConstantExpr::getBitCast(llvm::Constant*, llvm::Type*, bool)[0m
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", in <invalid>[0m
+Segfault: Signal SIGSEGV (segmentation fault) received
