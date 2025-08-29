@@ -1127,7 +1127,7 @@ namespace LCompilers {
         llvm::Type* llvm_type = nullptr;
 
         #define handle_llvm_pointers1()                                     \
-            llvm_type = get_type_from_ttype_t(arg_expr, t2, nullptr, m_storage,       \
+            llvm_type = get_type_from_ttype_t(arg_expr, t2, type_declaration, m_storage,       \
                 is_array_type, is_malloc_array_type, is_list, m_dims,       \
                 n_dims, a_kind, module, m_abi);                             \
             if( !is_pointer_ ) {                                            \
@@ -1262,8 +1262,13 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
-                bool is_pointer_ = (ASRUtils::is_class_type(t2) ||
-                    (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC) );
+                bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
+                if (compiler_options.new_classes) {
+                    is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
+                } else {
+                    is_pointer_ = (ASRUtils::is_class_type(t2) ||
+                        (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC) );
+                }
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
                 break;
