@@ -130,6 +130,11 @@ namespace LCompilers {
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            llvm::Type *i32Ty = llvm::Type::getInt32Ty(context);
+            llvm::FunctionType *fnTy = llvm::FunctionType::get(i32Ty, {}, true);
+            llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+            llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+            vptr_type = fnPtrPtrTy;  // i32 (...)**
             string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor", true);
         }
 
@@ -235,17 +240,11 @@ namespace LCompilers {
             der_type_llvm = &name2dercontext[der_type_name];
             std::vector<llvm::Type*> member_types;
             if (compiler_options.new_classes) {
-                if (struct_vtable.find(&der_type->base) == struct_vtable.end()) {
-                    // Create the `vtable` if it does not exist.
-                    llvm::StructType* vtable = llvm::StructType::create(
-                                                    context,
-                                                    { getIntType(8) },
-                                                    std::string("__new_vtab_") + der_type_name);
-                    struct_vtable.insert(std::make_pair(&der_type->base, vtable));
-                }
                 // Add `vptr` as the first element inside the polymorphic struct. The `vptr` is
                 // a pointer to the `vtable` created for the struct.
-                member_types.push_back(struct_vtable.at(&der_type->base)->getPointerTo());
+                if (der_type->m_parent == nullptr) {
+                    member_types.push_back(vptr_type);
+                }
             }
             int member_idx = 0;
             if( der_type->m_parent != nullptr ) {
@@ -1128,7 +1127,7 @@ namespace LCompilers {
         llvm::Type* llvm_type = nullptr;
 
         #define handle_llvm_pointers1()                                     \
-            llvm_type = get_type_from_ttype_t(arg_expr, t2, nullptr, m_storage,       \
+            llvm_type = get_type_from_ttype_t(arg_expr, t2, type_declaration, m_storage,       \
                 is_array_type, is_malloc_array_type, is_list, m_dims,       \
                 n_dims, a_kind, module, m_abi);                             \
             if( !is_pointer_ ) {                                            \
@@ -1263,8 +1262,13 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
-                bool is_pointer_ = (ASRUtils::is_class_type(t2) ||
-                    (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC) );
+                bool is_pointer_;
+                if (compiler_options.new_classes) {
+                    is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
+                } else {
+                    is_pointer_ = (ASRUtils::is_class_type(t2) ||
+                        (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC) );
+                }
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
                 break;
@@ -2914,7 +2918,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         std::string mem_name = struct_sym->m_members[i];
                         ASR::symbol_t *mem_sym = struct_sym->m_symtab->get_symbol(mem_name);
                         int mem_idx = 0;
-                        if (compiler_options.new_classes) {
+                        if (compiler_options.new_classes && struct_sym->m_parent == nullptr) {
                             // Offset by 1 to bypass `vptr` at index 0.
                             mem_idx = name2memidx[der_type_name][mem_name] + 1;
                         } else {

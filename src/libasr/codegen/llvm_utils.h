@@ -218,6 +218,7 @@ namespace LCompilers {
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
             llvm::Type* string_descriptor;
+            llvm::Type* vptr_type;
 
             // Maps an `ASR::Struct_t` symbol to it's `vtable` in LLVM.
             // The `vtable` looks like - `%__new_vtab_<struct_name> = { i64 }`

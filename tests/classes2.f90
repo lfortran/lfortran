@@ -41,5 +41,6 @@ implicit none
     type(point2d), target :: p2d = point2d( 3, 4 )
 
     ptr => p2d
-    ! res = ptr%radius()
+    res = ptr%radius()
+    if (res /= 5.0) error stop
 end program main
