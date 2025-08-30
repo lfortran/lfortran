@@ -16,7 +16,6 @@ class ASRPickleVisitor :
 {
 public:
     bool show_intrinsic_modules;
-    bool clojure;
 
     std::string get_str() {
         return s;
