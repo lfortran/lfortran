@@ -7172,17 +7172,19 @@ public:
                     return ASR::make_ComplexIm_t(al, loc, desc_arr, complex_arr_ret_type, nullptr);
                 }
             } else {
+                ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
+                
                 if (var_name == "re") {
-                    ASR::expr_t *val = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, loc, v));
-                    int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
-                    ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Real_t(al, loc, kind));
-                    ImplicitCastRules::set_converted_value(
-                        al, loc, &val, v_variable_m_type, dest_type, diag);
-                    return (ASR::asr_t*)val;
+                    ASR::expr_t *complex_value = ASRUtils::expr_value(val);
+                    ASR::expr_t *re_value = nullptr;
+                    if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
+                        ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(complex_value);
+                        re_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, c->m_re, real_type));
+                    }
+                    return ASR::make_ComplexRe_t(al, loc, val, real_type, re_value);
                 } else {
-                    ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
-                    ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
-                        ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
                     ASR::expr_t *complex_value = ASRUtils::expr_value(val);
                     ASR::expr_t *im_value = nullptr;
                     if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
