@@ -198,6 +198,7 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s);
 LFORTRAN_API char* _lfortran_str_chr(uint8_t c);
 LFORTRAN_API int _lfortran_str_to_int(char** s);
 LFORTRAN_API void* _lfortran_malloc(int64_t size);
+LFORTRAN_API void* _lfortran_string_malloc(int64_t length);
 LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size);
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
