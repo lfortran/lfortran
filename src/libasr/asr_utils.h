@@ -6729,6 +6729,9 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
             ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))))
         ASR::expr_t* i32one = i32j(1);
         for( size_t i = 0; i < n_args; i++ ) {
+            if (a_args[i].m_value == nullptr)
+                continue;
+
             ASR::ttype_t* type = ASRUtils::expr_type(a_args[i].m_value);
             if (ASRUtils::is_array(type)) {
                 ASR::dimension_t* m_dims = nullptr;
