@@ -5350,7 +5350,7 @@ LFORTRAN_API int32_t _lfortran_get_command_length() {
     for(int i=0; i<_argc; i++){
         total_length += strlen(_argv[i]);
     }
-    total_length += (strlen(sep_space) * (_argc - 1));
+    total_length += (strlen(sep_space) * MAX((_argc - 1), 0));
     return total_length;
 }
 
