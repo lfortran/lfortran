@@ -105,6 +105,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
+        app.add_flag("--clojure", compiler_options.po.clojure, "Print ASR in clojure format")->group(group_output_debugging_options);
         app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format")->group(group_output_debugging_options);
         app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization")->group(group_output_debugging_options);
         app.add_flag("--show-llvm", opts.show_llvm, "Show LLVM IR for the given file and exit")->group(group_output_debugging_options);

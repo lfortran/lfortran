@@ -9,6 +9,7 @@ filename = "subroutine1.f90"
 tokens = true
 ast_indent = true
 asr_indent = true
+asr_clojure = true
 ast = true
 julia = true
 

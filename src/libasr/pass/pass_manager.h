@@ -383,7 +383,7 @@ namespace LCompilers {
                     }
                     std::ofstream outfile ("pass_" + str_i + "_" + passes[i] + ".clj");
                     outfile << ";; ASR after applying the pass: " << passes[i]
-                        << "\n" << pickle(*asr, false, true, pass_options.with_intrinsic_mods) << "\n";
+                        << "\n" << pickle(*asr, false, true, pass_options.with_intrinsic_mods, false) << "\n";
                     outfile.close();
                 }
                 if (pass_options.dump_fortran) {

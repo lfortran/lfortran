@@ -69,6 +69,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
+    asr_clojure = is_included("asr_clojure")
     asr_openmp = is_included("asr_openmp")
     c_target_omp = is_included("c_target_omp")
     c_target_cuda = is_included("c_target_cuda")
@@ -540,6 +541,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr_json",
             "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_clojure:
+        run_test(
+            filename,
+            "asr_clojure",
+            "lfortran --show-asr --no-color --no-indent --clojure {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
