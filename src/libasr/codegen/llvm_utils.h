@@ -248,7 +248,7 @@ namespace LCompilers {
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
-            llvm::Value* CreateLoad(llvm::Value *x, bool is_volatile = false);
+            llvm::Value* CreateLoadDeprecated(llvm::Value *x, bool is_volatile = false);
 
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
 

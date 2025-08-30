@@ -1484,7 +1484,7 @@ namespace LCompilers {
         return alloca;
     }
 
-    llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x, bool is_volatile) {
+    llvm::Value *LLVMUtils::CreateLoadDeprecated(llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
         LCOMPILERS_ASSERT(t->isPointerTy());
