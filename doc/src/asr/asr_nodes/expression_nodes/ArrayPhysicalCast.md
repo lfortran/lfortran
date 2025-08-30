@@ -35,7 +35,7 @@ The return value is an array expression in the _new_ physical type. It's a messa
 
 ### Physical Types
 
-**PointerArray** : This type is used for `bind(c)`; represented by just a pointer, the compiler knows expressions dimensions at compile time. We know the expression for all dimensions. The expression can contain runtime parameters. It is represented by just a pointer. The compiler knows the dimensions at compile time, but they are not stored at runtime explicitly. You can call size(A), the compiler will determine the size expression at compile time (using runtime variables).
+**PointerArray** : The size is not known at compile time, but we know an expression for it at runtime. This type is used for `bind(c)`; represented by just a pointer, the compiler knows expressions dimensions at compile time. We know the expression for all dimensions. The expression can contain runtime parameters. It is represented by just a pointer. The compiler knows the dimensions at compile time, but they are not stored at runtime explicitly. You can call size(A), the compiler will determine the size expression at compile time (using runtime variables).
 
 ```fortran
 subroutine f(n, m, A) bind(c)
@@ -51,19 +51,26 @@ real, intent(in) :: A(n, 2*m)
 end subroutine
 ```
 
+Note: this is currently PointerArray, but it could also be FixedSizeArray.
 ```fortran
 subroutine f(A)
 real, intent(in) :: A(10, 20)
 end subroutine
 ```
 
+LHS is PointerArray (can also be FixedSizeArray), RHS is FixedSizeArray
 ```fortran
 real :: x(3), a, b, c
-x = [a, b, c]  ! Both LHS and RHS are PointerArray, RHS is
+x = [a, b, c] ! LHS is PointerArray, RHS is FixedSizeArray
 ArrayConstructor
 ```
 
-**FixedSizeArray**: An array that is fully known at compile time: both size and elements. ArrayConstant. In LLVM backend we can store such an array as a variable with known size (say 10). (This type might in principle be possible to use for `A(10, 20)`, but currently we don't. It cannot be used for `A(n, m)`.). It seems we cannot change elements at runtime, they are all constant.
+**FixedSizeArray**: The size is known at compile time. It can contain constant or runtime elements (like variables). An array that is fully known at compile time: both size and elements. ArrayConstant. In LLVM backend we can store such an array as a variable with known size (say 10). (This type might in principle be possible to use for `A(10, 20)`, but currently we don't. It cannot be used for `A(n, m)`.). It seems we cannot change elements at runtime, they are all constant.
+
+Note: any FixedSizeArray can be cast to PointerArray, and so PointerArray can
+be used in all places where FixedSizeArray is used (but not vice versa). In
+LFortran for historical reaons we currently sometimes use PointerArray when we
+could use FixedSizeArray.
 
 ```fortran
 program main
@@ -72,8 +79,15 @@ end program
 ```
 
 ```fortran
+subroutine f(A)
+real, intent(in) :: A(10, 20)
+end subroutine
+```
+
+```fortran
 real :: x(3), a, b, c
-x = [1, 2, 3]  ! LHS is PointerArray, RHS is FixedSizeArray (ArrayConstant)
+x = [1, 2, 3]  ! LHS is FixedSizeArray, RHS is FixedSizeArray (ArrayConstant)
+x = [a, b, c]  ! LHS is FixedSizeArray, RHS is FixedSizeArray (ArrayConstructor)
 ```
 
 **DescriptorArray**: Array is represented by an array descriptor (struct that contains the pointer to data, dimensions, strides, etc.)
@@ -94,7 +108,7 @@ end subroutine
 real, allocatable :: x(:)
 real :: a, b, c
 allocate(x(3))
-x = [a, b, c]  ! LHS is DescriptorArray, RHS is PointerArray (ArrayConstructor)
+x = [a, b, c]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstructor)
 x = [1, 2, 3]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
