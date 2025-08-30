@@ -3630,7 +3630,6 @@ pad_with_spaces(char* dest, int64_t orig_len, int64_t total_len)
     for (int64_t i = orig_len; i < total_len; i++) {
         dest[i] = ' ';
     }
-    dest[total_len] = '\0';
 }
 
 LFORTRAN_API int64_t
