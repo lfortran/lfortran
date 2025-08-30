@@ -54,6 +54,7 @@ struct PassOptions {
     bool fortran_mangling = false;
     bool mangle_underscore = false;
     bool json = false;
+    bool clojure = false;
     bool no_loc = false;
     bool visualize = false;
     bool tree = false;

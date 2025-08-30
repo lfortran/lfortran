@@ -765,7 +765,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
         LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, output_pos);
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
-                compiler_options.po.with_intrinsic_mods) << std::endl;
+                compiler_options.po.with_intrinsic_mods, compiler_options.po.clojure) << std::endl;
         return 0;
     }
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
@@ -777,7 +777,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
-            compiler_options.use_colors) << std::endl;
+            compiler_options.use_colors, compiler_options.po.with_intrinsic_mods) << std::endl;
     } else if (compiler_options.po.json) {
         std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods) << std::endl;
     } else if (compiler_options.po.visualize) {
@@ -785,7 +785,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
-                compiler_options.po.with_intrinsic_mods) << std::endl;
+                compiler_options.po.with_intrinsic_mods, compiler_options.po.clojure) << std::endl;
     }
     return has_error_w_cc;
 }
@@ -2414,7 +2414,7 @@ int main_app(int argc, char *argv[]) {
             Allocator al(1024*1024);
             LCompilers::ASR::TranslationUnit_t *asr;
             asr = LCompilers::LFortran::mod_to_asr(al, opts.arg_mod_file);
-            std::cout << LCompilers::pickle(*asr, !opts.arg_mod_no_color) << std::endl;
+            std::cout << LCompilers::pickle(*asr, !opts.arg_mod_no_color, false, false, false) << std::endl;
             return 0;
         }
         return 0;
