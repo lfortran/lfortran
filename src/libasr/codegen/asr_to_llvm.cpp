@@ -9265,7 +9265,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        if (ASRUtils::is_array(x.m_type)) {
+        if (ASRUtils::is_array(x.m_type) && ASRUtils::is_array(ASRUtils::expr_type(x.m_arg))) {
             handle_arr_for_complex_im_re(x);
             return;
         }
@@ -9302,44 +9302,36 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        if (ASRUtils::is_array(x.m_type)) {
+        if (ASRUtils::is_array(x.m_type) && ASRUtils::is_array(ASRUtils::expr_type(x.m_arg))) {
             handle_arr_for_complex_im_re(x);
             return;
         }
+        this->visit_expr_wrapper(x.m_arg, true);
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-        llvm::Function *fn = nullptr;
-        llvm::Type *ret_type = nullptr, *complex_type = nullptr;
-        llvm::AllocaInst *arg = nullptr;
-        std::string runtime_func_name = "";
-        if (arg_kind == 4) {
-            runtime_func_name = "_lfortran_complex_aimag_32";
-            ret_type = llvm::Type::getFloatTy(context);
-            complex_type = complex_type_4;
-            arg = llvm_utils->CreateAlloca(*builder, complex_type_4,
-                nullptr);
+        int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        llvm::Value *im;
+        if (arg_kind == 4 && dest_kind == 4) {
+            // complex(4) -> real(4)
+            im = complex_im(tmp, complex_type_4);
+            tmp = im;
+        } else if (arg_kind == 4 && dest_kind == 8) {
+            // complex(4) -> real(8)
+            im = complex_im(tmp, complex_type_4);
+            tmp = builder->CreateFPExt(im, llvm::Type::getDoubleTy(context));
+        } else if (arg_kind == 8 && dest_kind == 4) {
+            // complex(8) -> real(4)
+            im = complex_im(tmp, complex_type_8);
+            tmp = builder->CreateFPTrunc(im, llvm::Type::getFloatTy(context));
+        } else if (arg_kind == 8 && dest_kind == 8) {
+            // complex(8) -> real(8)
+            im = complex_im(tmp, complex_type_8);
+            tmp = im;
         } else {
-            runtime_func_name = "_lfortran_complex_aimag_64";
-            ret_type = llvm::Type::getDoubleTy(context);
-            complex_type = complex_type_8;
-            arg = llvm_utils->CreateAlloca(*builder, complex_type_8);
+            std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                              " to " + std::to_string(dest_kind) + " not implemented yet.";
+            throw CodeGenError(msg);
         }
-        fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        complex_type->getPointerTo(),
-                        ret_type->getPointerTo(),
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
-        }
-        this->visit_expr_wrapper(x.m_arg, true);
-        builder->CreateStore(tmp, arg);
-        llvm::AllocaInst *result = llvm_utils->CreateAlloca(*builder, ret_type);
-        std::vector<llvm::Value*> args = {arg, result};
-        builder->CreateCall(fn, args);
-        tmp = llvm_utils->CreateLoad2(ret_type, result);
     }
 
     void visit_BitCast(const ASR::BitCast_t& x) {

@@ -3398,6 +3398,16 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
                 return get_expr_size_expr(func_call->m_dt);
             }
         }
+    } else if (ASR::is_a<ASR::ComplexRe_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::ComplexRe_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::ComplexIm_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::ComplexIm_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
     } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
         ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x);
         if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
