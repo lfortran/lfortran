@@ -13,15 +13,15 @@ ArrayPhysicalCast(expr arg,
     expr? value)
 ```
 
-> array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
+> array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 
 ### Arguments
 
 | Argument Name | Argument Description                                                                                                        |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `arg`         | Array expression argument                                                                                                  |
-| `old`         | Current physical array type of the array expression `arg`. <br>**Possible values** : `PointerToDataArray`, `DescriptorArray`, etc |
-| `new`         | The target physical array type to cast to.<br>**Possible values** : `PointerToDataArray`, `DescriptorArray`, etc                   |
+| `old`         | Current physical array type of the array expression `arg`. <br>**Possible values** : `PointerArray`, `DescriptorArray`, etc |
+| `new`         | The target physical array type to cast to.<br>**Possible values** : `PointerArray`, `DescriptorArray`, etc                   |
 | `type`        | Type of expression (It's always an array with physical type equivalent to `new` ArrayPhysicalType)                         |
 | `value`       | The type of the expression. It is always an array type corresponding to the new ArrayPhysicalType.                         |
 
@@ -35,7 +35,7 @@ The return value is an array expression in the _new_ physical type. It's a messa
 
 ### Physical Types
 
-**PointerToDataArray** : This type is used for `bind(c)`; represented by just a pointer, the compiler knows expressions dimensions at compile time. We know the expression for all dimensions. The expression can contain runtime parameters. It is represented by just a pointer. The compiler knows the dimensions at compile time, but they are not stored at runtime explicitly. You can call size(A), the compiler will determine the size expression at compile time (using runtime variables).
+**PointerArray** : This type is used for `bind(c)`; represented by just a pointer, the compiler knows expressions dimensions at compile time. We know the expression for all dimensions. The expression can contain runtime parameters. It is represented by just a pointer. The compiler knows the dimensions at compile time, but they are not stored at runtime explicitly. You can call size(A), the compiler will determine the size expression at compile time (using runtime variables).
 
 ```fortran
 subroutine f(n, m, A) bind(c)
@@ -59,7 +59,7 @@ end subroutine
 
 ```fortran
 real :: x(3), a, b, c
-x = [a, b, c]  ! Both LHS and RHS are PointerToDataArray, RHS is
+x = [a, b, c]  ! Both LHS and RHS are PointerArray, RHS is
 ArrayConstructor
 ```
 
@@ -73,7 +73,7 @@ end program
 
 ```fortran
 real :: x(3), a, b, c
-x = [1, 2, 3]  ! LHS is PointerToDataArray, RHS is FixedSizeArray (ArrayConstant)
+x = [1, 2, 3]  ! LHS is PointerArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
 **DescriptorArray**: Array is represented by an array descriptor (struct that contains the pointer to data, dimensions, strides, etc.)
@@ -94,11 +94,11 @@ end subroutine
 real, allocatable :: x(:)
 real :: a, b, c
 allocate(x(3))
-x = [a, b, c]  ! LHS is DescriptorArray, RHS is PointerToDataArray (ArrayConstructor)
+x = [a, b, c]  ! LHS is DescriptorArray, RHS is PointerArray (ArrayConstructor)
 x = [1, 2, 3]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
-**UnboundedPointerToDataArray**: Used for `A(*)`. Represented by just a pointer. The compiler does *not* know the size of the array at compile time, and there is no information about it at runtime. So you cannot call size(A). The `A(*)` usage deprecated, one should use either `A(:)` or `A(n)`. The compiler can check this in Debug mode by passing the expression for the dimension as an argument (the NAG compiler does this, for example).
+**UnboundedPointerArray**: Used for `A(*)`. Represented by just a pointer. The compiler does *not* know the size of the array at compile time, and there is no information about it at runtime. So you cannot call size(A). The `A(*)` usage deprecated, one should use either `A(:)` or `A(n)`. The compiler can check this in Debug mode by passing the expression for the dimension as an argument (the NAG compiler does this, for example).
 
 ```fortran
 subroutine f(n, A)

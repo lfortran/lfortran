@@ -3578,7 +3578,7 @@ public:
         if( shape && ASR::is_a<ASR::ArrayConstant_t>(*shape) ) {
             ASR::ttype_t* array_constant_type = ASRUtils::expr_type(shape);
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(array_constant_type);
-            array_t->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+            array_t->m_physical_type = ASR::array_physical_typeType::PointerArray;
         }
         ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
         bool is_fptr_array = ASRUtils::is_array(fptr_type);
@@ -3651,7 +3651,7 @@ public:
                     dims.push_back(al, dim);
                     ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, dim.loc,
                         ASRUtils::expr_type(lbs[0]), dims.p, dims.size(), ASR::abiType::Source,
-                        false, ASR::array_physical_typeType::PointerToDataArray, true);
+                        false, ASR::array_physical_typeType::PointerArray, true);
                     lower_bounds = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                         x.base.base.loc, lbs.p, lbs.size(), type,
                         ASR::arraystorageType::RowMajor));

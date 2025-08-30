@@ -3519,7 +3519,7 @@ public:
                                     args.push_back(al, size);
                                 }
 
-                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerToDataArray));
+                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
@@ -4012,7 +4012,7 @@ public:
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                                     if(ASRUtils::is_string_only(type)){
-                                        array_type->m_physical_type = ASR::PointerToDataArray; // Making sure it's PointerToDataArray
+                                        array_type->m_physical_type = ASR::PointerArray; // Making sure it's PointerArray
                                     }
                                     array_type->m_type = type;
                                 } else {
@@ -5111,7 +5111,7 @@ public:
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerToDataArray :
+                                ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
                                 ASR::array_physical_typeType::DescriptorArray,
                 dims.size() > 0 ? true : false);
             if (is_pointer) {
@@ -6769,8 +6769,8 @@ public:
                     ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                 bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
                 if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
-                    // create array type with empty dimensions and physical type as PointerToDataArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerToDataArray, true);
+                    // create array type with empty dimensions and physical type as PointerArray
+                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
                     f_type->m_arg_types[it.first] = new_type;
                     // visit_required = true;
@@ -9440,8 +9440,8 @@ public:
                         ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var_type))
                     );
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
-                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray ) ?
-                        array_type->m_physical_type : ASR::array_physical_typeType::PointerToDataArray, true);
+                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
+                        array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -11836,7 +11836,7 @@ public:
                 array_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, array_section->base.base.loc,
                     tmp2->m_type, dims.p, dims.size(),
-                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerToDataArray : ASR::FixedSizeArray));
+                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }

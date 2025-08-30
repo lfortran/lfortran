@@ -395,7 +395,7 @@ namespace LCompilers {
             /*
                 Gets the desired string element within array
             */
-            llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerToDataArray*/, llvm::Value* arr_idx);
+            llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerArray*/, llvm::Value* arr_idx);
 
             /*
                 Corresponds to the process of allocating a string.

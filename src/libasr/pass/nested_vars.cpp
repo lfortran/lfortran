@@ -510,7 +510,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
                         if ( prev_sym != new_sym ) {
                             // need to convert this to a pointer
-                            array->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                            array->m_physical_type = ASR::array_physical_typeType::PointerArray;
                         }
                         current_expr = current_expr_copy_3;
                         visit_expr(*m_dims[i].m_length);
