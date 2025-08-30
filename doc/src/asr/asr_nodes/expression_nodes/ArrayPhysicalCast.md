@@ -35,7 +35,24 @@ The return value is an array expression in the _new_ physical type. It's a messa
 
 ### Physical Types
 
-**PointerArray** : This type is used for `bind(c)`; represented by just a pointer, the compiler knows expressions dimensions at compile time. We know the expression for all dimensions. The expression can contain runtime parameters. It is represented by just a pointer. The compiler knows the dimensions at compile time, but they are not stored at runtime explicitly. You can call size(A), the compiler will determine the size expression at compile time (using runtime variables).
+**PointerArray** : The size is not known at compile time, but we know an
+expression for it at runtime. This type is used for `bind(c)`; represented by
+just a pointer, the compiler knows expressions dimensions at compile time. We
+know the expression for all dimensions. The expression can contain runtime
+parameters. It is represented by just a pointer. The compiler knows the
+dimensions at compile time, but they are not stored at runtime explicitly. You
+can call size(A), the compiler will determine the size expression at compile
+time (using runtime variables).
+
+Any PointerArray can be cast to a DescriptorArray and DescriptorArray can in
+general be used without any additional code/logic in all places where
+PointerArray is used.
+
+The other direction is more complicated: It is possible to cast a
+DescriptorArray to a PointerArray, but sometimes a temporary copy is needed
+unless the DescriptorArray was contiguous. Also in order to obtain expressions
+for the dimensions, one often requires to create a temporary and then use
+ArraySize on the temporary as dimension expressions for the PointerArray.
 
 ```fortran
 subroutine f(n, m, A) bind(c)
@@ -51,19 +68,42 @@ real, intent(in) :: A(n, 2*m)
 end subroutine
 ```
 
+Note: this is currently PointerArray, but it could also be FixedSizeArray.
 ```fortran
 subroutine f(A)
 real, intent(in) :: A(10, 20)
 end subroutine
 ```
 
+LHS is PointerArray (can also be FixedSizeArray), RHS is FixedSizeArray
 ```fortran
 real :: x(3), a, b, c
-x = [a, b, c]  ! Both LHS and RHS are PointerArray, RHS is
+x = [a, b, c] ! LHS is PointerArray/FixedSizeArray, RHS is FixedSizeArray
 ArrayConstructor
 ```
 
-**FixedSizeArray**: An array that is fully known at compile time: both size and elements. ArrayConstant. In LLVM backend we can store such an array as a variable with known size (say 10). (This type might in principle be possible to use for `A(10, 20)`, but currently we don't. It cannot be used for `A(n, m)`.). It seems we cannot change elements at runtime, they are all constant.
+**FixedSizeArray**: The size is known at compile time. The array elements are
+either runtime (expressions) or compile time.
+
+Any FixedSizeArray can be cast to PointerArray, and PointerArray can in general
+be used in all places where FixedSizeArray is used (but not vice versa). The
+advantage of FixedSizeArray is that the size is known at compile time and it is
+enforced at the type level, so if both PointerArray adn FixedSizeArray can be
+used, we generally prefer to use FixedSizeArray. By knowing the size at compile
+time, the backend has the option to represent the array as a struct of a known
+number of elements, and even pass this struct by value. The PointerArray on the
+other hand can naturally only be passed as a pointer, because the size is not
+known at compile time.
+
+We enforce FixedSizeArray over PointerArray in the following
+cases:
+
+* Both ArrayConstant and ArrayConstructor should always be FixedSizeArray.
+
+In other cases we currently allow both. Maybe in the future we can restrict
+things more.
+
+Examples of what can be a FixedSizeArray type:
 
 ```fortran
 program main
@@ -72,9 +112,19 @@ end program
 ```
 
 ```fortran
-real :: x(3), a, b, c
-x = [1, 2, 3]  ! LHS is PointerArray, RHS is FixedSizeArray (ArrayConstant)
+subroutine f(A)
+real, intent(in) :: A(10, 20)
+end subroutine
 ```
+
+```fortran
+real :: x(3), a, b, c
+x = [1, 2, 3]  ! LHS is FixedSizeArray, RHS is FixedSizeArray (ArrayConstant)
+x = [a, b, c]  ! LHS is FixedSizeArray, RHS is FixedSizeArray (ArrayConstructor)
+```
+
+In the above currently only the ArrayConstant/Constructor is enforced, the
+other cases can also be a PointerArray, and usually it is.
 
 **DescriptorArray**: Array is represented by an array descriptor (struct that contains the pointer to data, dimensions, strides, etc.)
 
@@ -94,7 +144,7 @@ end subroutine
 real, allocatable :: x(:)
 real :: a, b, c
 allocate(x(3))
-x = [a, b, c]  ! LHS is DescriptorArray, RHS is PointerArray (ArrayConstructor)
+x = [a, b, c]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstructor)
 x = [1, 2, 3]  ! LHS is DescriptorArray, RHS is FixedSizeArray (ArrayConstant)
 ```
 
