@@ -1385,14 +1385,14 @@ namespace LCompilers {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateGEP(ds, idx_vec);
+        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         idx};
-        return LLVMUtils::CreateGEP(ds, idx_vec);
+        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
@@ -1412,12 +1412,12 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEPDeprecated(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
-        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEPDeprecated(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
@@ -1538,7 +1538,7 @@ namespace LCompilers {
         return builder->CreateLoad(t, x, is_volatile);
     }
 
-    llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
+    llvm::Value* LLVMUtils::CreateGEPDeprecated(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
@@ -1570,7 +1570,7 @@ namespace LCompilers {
         return LLVMUtils::CreateGEP2(type, x, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::CreateInBoundsGEP(llvm::Value *x,
+    llvm::Value* LLVMUtils::CreateInBoundsGEPDeprecated(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
