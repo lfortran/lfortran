@@ -11256,7 +11256,8 @@ public:
                                     // Local variable of type
                                     // CPtr is a void**, so we
                                     // have to load it
-                                    tmp = llvm_utils->CreateLoadDeprecated(tmp);
+                                    llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                                    tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
@@ -11301,11 +11302,8 @@ public:
                                             // Local variable or Dummy out argument
                                             // of type CPtr is a void**, so we
                                             // have to load it
-                                            // TODO: Convert this into createload2
-                                            // llvm::Type* cptr_type = llvm::PointerType::get(
-                                            //         llvm::Type::getInt8Ty(context), 0);
-                                            // tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
-                                            tmp = llvm_utils->CreateLoadDeprecated(tmp);
+                                            llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                                            tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
                                         if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
