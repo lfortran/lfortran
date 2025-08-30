@@ -5306,9 +5306,6 @@ LFORTRAN_API void _lfortran_get_command_argument_value(int n, char* receiver) {
     if (n >= 0 && n < _argc) {
         int32_t arg_len = strlen(_argv[n]);
         memcpy(receiver, _argv[n], arg_len); 
-        receiver[arg_len] = '\0';
-    } else {
-        receiver[0] = '\0';
     }
 }
 
@@ -5342,7 +5339,6 @@ LFORTRAN_API void _lfortran_get_command_command(char* receiver) {
         memcpy(receiver + receiver_idx, sep_space, strlen(sep_space));
         receiver_idx += strlen(sep_space);
     }
-    receiver[receiver_idx] = '\0';
 }
 
 LFORTRAN_API int32_t _lfortran_get_command_length() {
