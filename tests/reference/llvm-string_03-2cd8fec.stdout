@@ -36,7 +36,7 @@ define %string_descriptor @_lcompilers_stringconcat(%string_descriptor* %s1, %st
   %10 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
   %11 = load i64, i64* %10, align 4
   %12 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %13 = call i8* @_lfortran_malloc(i64 %11)
+  %13 = call i8* @_lfortran_string_malloc(i64 %11)
   store i8* %13, i8** %12, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
   %15 = load i64, i64* %14, align 4
@@ -84,6 +84,8 @@ return:                                           ; preds = %.entry
 }
 
 declare i8* @_lfortran_malloc(i64)
+
+declare i8* @_lfortran_string_malloc(i64)
 
 declare i8* @_lfortran_str_slice_assign(i8*, i64, i8*, i64, i32, i32, i32, i1, i1)
 

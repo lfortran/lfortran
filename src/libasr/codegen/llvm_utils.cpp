@@ -28,6 +28,30 @@ namespace LCompilers {
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
         }
+        /* 
+            -- Handles Allocation Of Strings --
+
+        * Makes sure to allocate a minimum length of `1`.
+
+            --> USE THIS WHEN LENGTH IS RUNTIME <--
+        * CompileTime length should be handled at compile-time + call `malloc` directly
+        */
+        llvm::Value* lfortran_string_malloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* arg_size) {
+            std::string func_name = "_lfortran_string_malloc";
+            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                            llvm::Type::getInt64Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, module);
+            }
+            std::vector<llvm::Value*> args = {arg_size};
+            return builder.CreateCall(fn, args);
+        }
 
         llvm::Value* lfortran_calloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size) {
@@ -1825,8 +1849,10 @@ namespace LCompilers {
     }
 
     void LLVMUtils::set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type,
-        llvm::Value* str , llvm::Value* len /*null-char not included*/){
-        llvm::Value *str_data{};
+        llvm::Value* str , llvm::Value* len){
+
+        /* Fetch String Data Based On PhysicalType */
+        llvm::Value *str_data {};
         switch (str_physical_type) {
             case ASR::DescriptorString: {
                 str_data = CreateGEP2(string_descriptor, str, 0);
@@ -1835,13 +1861,33 @@ namespace LCompilers {
             default:
                 throw LCompilersException("Unhandled string physical type");
         }
-        llvm::Value* mem_allocted = LLVM::lfortran_malloc(
-                                        context, *module, *builder,
-                                        convert_kind(len, llvm::Type::getInt64Ty(context)));
-        builder->CreateStore(mem_allocted, str_data);
+
+        /* Call Proper `malloc` Depending On Length  */
+        llvm::Value* mem_allocated {};
+        if( llvm::isa<llvm::Constant>(len) ){ 
+            /*
+                --> Handle CompileTime Length <--
+                * Max(length, 1)
+                * Call `malloc` directly
+            */
+            const int64_t compileTime_len = llvm::dyn_cast<llvm::ConstantInt>(len)->getValue().getSExtValue();
+            if(compileTime_len < 0) {throw LCompilersException("String length cannot be negative.");}
+            len = llvm::ConstantInt::get(context,
+                    llvm::APInt(64, std::max(compileTime_len, (int64_t) 1)));
+            mem_allocated = LLVM::lfortran_malloc(context, *module, *builder, len);
+        } else {
+            /*
+                --> Handle RunTime Length <--
+                * Call `_lfortran_string_malloc`. It handles proper length at runtime.
+            */
+            mem_allocated = LLVM::lfortran_string_malloc(context, *module, *builder, len);
+        }
+
+        /* Store Allocated Memory */
+        builder->CreateStore(mem_allocated, str_data);
     }
     void LLVMUtils::set_string_memory_on_stack(ASR::string_physical_typeType str_physical_type,
-        llvm::Value* str /*StringDescritptor*/, llvm::Value* len /*null-char not included*/){
+        llvm::Value* str, llvm::Value* len){
 
         llvm::Value* str_len{}, *str_data{};
         if(str_physical_type == ASR::DescriptorString){
@@ -1989,12 +2035,12 @@ namespace LCompilers {
         create_if_else(is_not_null, [&]() {
             llvm::Value *fmt_ptr {};
             {
-                const std::string GLOBAL_ERROR_ID = "__Wrong_allocation";
+                static const std::string GLOBAL_ERROR_ID = "__Wrong_allocation";
                 fmt_ptr = module->getNamedGlobal(GLOBAL_ERROR_ID);
                 if(!fmt_ptr){fmt_ptr = builder->CreateGlobalString("runtime error: Attempting to allocate already allocated variable!\n", GLOBAL_ERROR_ID);}
                 fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
-                print_error(context, *module, *builder, {fmt_ptr});
             }
+            print_error(context, *module, *builder, {fmt_ptr});
             const int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context, llvm::APInt(32, exit_code_int));
             exit(context, *module, *builder, exit_code);

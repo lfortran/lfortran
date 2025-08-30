@@ -13811,6 +13811,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         Error error;
         return error;
+    } catch (...){
+        std::cout<<"UNKNOWN EXCEPTION CAUGHT WHILE VISITING ASR WITH LLVM BACKEND (ASR->LLVM)\n";
+        std::exit(1);
     }
     std::string msg;
     llvm::raw_string_ostream err(msg);

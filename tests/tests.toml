@@ -4620,7 +4620,7 @@ filename = "errors/string_assignment_01.f90"
 run = true
 
 [[test]]
-filename = "errors/string_assignment_02.f90"
+filename = "errors/string_allocation_01.f90"
 run = true
 
 [[test]]

@@ -127,6 +127,7 @@ struct Stacktrace {
 #endif
 
 #define MIN(x, y) ((x < y) ? x : y)
+#define MAX(x, y) ((x < y) ? y : x)
 
 // This function performs case insensitive string comparison
 bool streql(const char *s1, const char* s2) {
@@ -2793,7 +2794,6 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* rhs, int64_t rhs_len){
 
     lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string")
-    if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string");
 
     for (int64_t i = 0; i < lhs_len; i++) {
         if (i < rhs_len) {
@@ -2812,12 +2812,12 @@ LFORTRAN_API void _lfortran_strcpy(
         if(*lhs == NULL){lfortran_error("Runtime Error : Non-allocatable string isn't allocted");}
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (!is_lhs_deferred && is_lhs_allocatable){ // Automatic Allocation
-        if(*lhs == NULL) *lhs = (char*)malloc((*lhs_len) * sizeof(char));
+        if (rhs == NULL) {free(*lhs); *lhs = NULL; return;} // We copy the allocation state from RHS to LHS
+        if (*lhs == NULL) *lhs = (char*)malloc(MAX((*lhs_len), 1) * sizeof(char));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
-        if (rhs == NULL)
-            return;
-        *lhs = (char*)realloc(*lhs, (rhs_len) * sizeof(char));
+        if (rhs == NULL) {free(*lhs); *lhs = NULL; *lhs_len = 0; return;} // We copy the allocation state from RHS to LHS
+        *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
         *lhs_len = rhs_len;
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
     } else if(is_lhs_deferred && !is_lhs_allocatable) {
@@ -3131,6 +3131,19 @@ LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size) {
 
 LFORTRAN_API void* _lfortran_malloc(int64_t size) {
     return malloc((size_t)size);
+}
+
+/* 
+    -- Handles Allocation Of Strings --
+
+ * Makes sure to allocate a minimum length of `1`.
+
+ * USE THIS WHEN LENGTH IS RUNTIME
+ * Compile-Time should be handled at compile-time + call `malloc` directly
+*/
+LFORTRAN_API void* _lfortran_string_malloc(int64_t length) {
+    if(length < 0) lfortran_error("Allocating string with length < 0");
+    return malloc(MAX((size_t)length, (size_t)1));
 }
 
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size) {

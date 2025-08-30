@@ -1,0 +1,13 @@
+{
+    "basename": "run-string_allocation_01-8484aaf",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/string_allocation_01.f90",
+    "infile_hash": "cd0f6232a42aa948f55971480a8894730237824e112755a510b37317",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-string_allocation_01-8484aaf.stderr",
+    "stderr_hash": "798d42b98a53bf914ee8d9bb8714e1bc4fdf04128ec7028805b8eaed",
+    "returncode": 1
+}
