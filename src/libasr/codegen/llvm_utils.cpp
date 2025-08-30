@@ -103,12 +103,12 @@ namespace LCompilers {
         CompilerOptions &compiler_options_,
         std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
         std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
-        std::map<llvm::Value *, llvm::Type *> &ptr_type_, std::map<uint64_t, llvm::Value*> &llvm_symtab_):
+        std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_):
         context(context), builder(std::move(_builder)), str_cmp_itr(nullptr), der_type_name(der_type_name_),
         name2dertype(name2dertype_), name2dercontext(name2dercontext_),
         struct_type_stack(struct_type_stack_), dertype2parent(dertype2parent_),
         name2memidx(name2memidx_), arr_arg_type_cache(arr_arg_type_cache_), fname2arg_type(fname2arg_type_),
-        ptr_type(ptr_type_), dict_api_lp(nullptr), dict_api_sc(nullptr),
+        ptr_type_deprecated(ptr_type_deprecated_), dict_api_lp(nullptr), dict_api_sc(nullptr),
         set_api_lp(nullptr), set_api_sc(nullptr), compiler_options(compiler_options_), llvm_symtab(llvm_symtab_) {
             std::vector<llvm::Type*> els_4 = {
             llvm::Type::getFloatTy(context),
@@ -169,13 +169,13 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Allocatable: {
-                ASR::Allocatable_t* ptr_type = ASR::down_cast<ASR::Allocatable_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
+                ASR::Allocatable_t* ptr_type_deprecated = ASR::down_cast<ASR::Allocatable_t>(mem_type);
+                llvm_mem_type = getMemberType(ptr_type_deprecated->m_type, member, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Pointer: {
-                ASR::Pointer_t* ptr_type = ASR::down_cast<ASR::Pointer_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
+                ASR::Pointer_t* ptr_type_deprecated = ASR::down_cast<ASR::Pointer_t>(mem_type);
+                llvm_mem_type = getMemberType(ptr_type_deprecated->m_type, member, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Complex: {
@@ -1385,14 +1385,14 @@ namespace LCompilers {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateGEP(ds, idx_vec);
+        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         idx};
-        return LLVMUtils::CreateGEP(ds, idx_vec);
+        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
@@ -1412,12 +1412,12 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEPDeprecated(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
-        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEPDeprecated(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
@@ -1454,7 +1454,7 @@ namespace LCompilers {
             alloca = builder0.CreateAlloca(type_, size);
         }
 #if LLVM_VERSION_MAJOR > 16
-        ptr_type[alloca] = type;
+        ptr_type_deprecated[alloca] = type;
 #endif
         return alloca;
     }
@@ -1479,12 +1479,12 @@ namespace LCompilers {
             alloca = builder.CreateAlloca(type_, size);
         }
 #if LLVM_VERSION_MAJOR > 16
-        ptr_type[alloca] = type;
+        ptr_type_deprecated[alloca] = type;
 #endif
         return alloca;
     }
 
-    llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x, bool is_volatile) {
+    llvm::Value *LLVMUtils::CreateLoadDeprecated(llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
         LCOMPILERS_ASSERT(t->isPointerTy());
@@ -1494,8 +1494,8 @@ namespace LCompilers {
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
         bool is_type_pointer = false;
-        if (ptr_type.find(x) != ptr_type.end()) {
-            type_copy = type = ptr_type[x];
+        if (ptr_type_deprecated.find(x) != ptr_type_deprecated.end()) {
+            type_copy = type = ptr_type_deprecated[x];
         }
         LCOMPILERS_ASSERT(type);
         // getPointerTo() is used for allocatable or pointer
@@ -1528,7 +1528,7 @@ namespace LCompilers {
 
         llvm::Value *load = builder->CreateLoad(type, x, is_volatile);
         if (is_type_pointer) {
-            ptr_type[load] = type_copy;
+            ptr_type_deprecated[load] = type_copy;
         }
         return load;
 #endif
@@ -1538,7 +1538,7 @@ namespace LCompilers {
         return builder->CreateLoad(t, x, is_volatile);
     }
 
-    llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
+    llvm::Value* LLVMUtils::CreateGEPDeprecated(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
@@ -1548,8 +1548,8 @@ namespace LCompilers {
         return builder->CreateGEP(t2, x, idx);
 #else
         llvm::Type *type = nullptr;
-        auto it = ptr_type.find(x);
-        if (it != ptr_type.end()) {
+        auto it = ptr_type_deprecated.find(x);
+        if (it != ptr_type_deprecated.end()) {
             type = it->second;
         }
         LCOMPILERS_ASSERT(type);
@@ -1570,7 +1570,7 @@ namespace LCompilers {
         return LLVMUtils::CreateGEP2(type, x, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::CreateInBoundsGEP(llvm::Value *x,
+    llvm::Value* LLVMUtils::CreateInBoundsGEPDeprecated(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
@@ -1580,8 +1580,8 @@ namespace LCompilers {
         return builder->CreateInBoundsGEP(t2, x, idx);
 #else
         llvm::Type *type = nullptr;
-        if (ptr_type.find(x) != ptr_type.end()) {
-            type = ptr_type[x];
+        if (ptr_type_deprecated.find(x) != ptr_type_deprecated.end()) {
+            type = ptr_type_deprecated[x];
         }
         LCOMPILERS_ASSERT(type);
         return builder->CreateInBoundsGEP(type, x, idx);
