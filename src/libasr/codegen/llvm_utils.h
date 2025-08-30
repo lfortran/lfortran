@@ -203,7 +203,7 @@ namespace LCompilers {
             std::map<std::string, std::map<std::string, int>>& name2memidx;
             std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
-            std::map<llvm::Value *, llvm::Type *> &ptr_type;
+            std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated;
 
             LLVMDictInterface* dict_api_lp;
             LLVMDictInterface* dict_api_sc;
@@ -234,7 +234,7 @@ namespace LCompilers {
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
-                std::map<llvm::Value *, llvm::Type *> &ptr_type_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
+                std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
             llvm::Value* create_gep_deprecated(llvm::Value* ds, int idx);
             llvm::Value* create_gep_deprecated(llvm::Value* ds, llvm::Value* idx);
