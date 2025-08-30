@@ -12558,7 +12558,7 @@ public:
             ptr_type[vtable_ptr] = fnPtrPtrTy;
 #endif
             // Get function pointer from VTable
-            llvm::Value* fn = (llvm_utils->create_ptr_gep(
+            llvm::Value* fn = (llvm_utils->create_ptr_gep_deprecated(
                 vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
 

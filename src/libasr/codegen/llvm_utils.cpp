@@ -1409,13 +1409,13 @@ namespace LCompilers {
         return LLVMUtils::CreateGEP2(t, ds, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
+    llvm::Value* LLVMUtils::create_ptr_gep_deprecated(llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
         return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, llvm::Value* idx) {
+    llvm::Value* LLVMUtils::create_ptr_gep_deprecated(llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
         return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
     }
@@ -4617,7 +4617,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(
-            llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep(key_mask, key_hash));
+            llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep_deprecated(key_mask, key_hash));
         llvm::Value* is_prob_not_neeeded = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         builder->CreateCondBr(is_prob_not_neeeded, thenBB, elseBB);
@@ -4741,7 +4741,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
         llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(kv_struct_type->getPointerTo(), get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
-        llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep(key_value_pairs, key_hash);
+        llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep_deprecated(key_value_pairs, key_hash);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         this->resolve_collision(dict_expr, capacity, key_hash, key, key_value_pair_linked_list,
                                 kv_struct_type, key_mask, module, key_asr_type);
@@ -4751,7 +4751,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
         tmp_value_ptr = llvm_utils->CreateAlloca(value_type);
-        llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep(key_mask, key_hash));
+        llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep_deprecated(key_mask, key_hash));
         llvm::Value* does_kv_exists = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         does_kv_exists = builder->CreateAnd(does_kv_exists,
@@ -5652,7 +5652,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
 
             llvm_utils->create_if_else(is_key_set, [&]() {
-                llvm::Value* dict_i = llvm_utils->create_ptr_gep(key_value_pairs, idx);
+                llvm::Value* dict_i = llvm_utils->create_ptr_gep_deprecated(key_value_pairs, idx);
                 llvm::Value* kv_ll_i8 = builder->CreateBitCast(dict_i, llvm::Type::getInt8Ty(context)->getPointerTo());
                 LLVM::CreateStore(*builder, kv_ll_i8, chain_itr);
 
@@ -7655,7 +7655,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
 
             llvm_utils->create_if_else(is_el_set, [&]() {
-                llvm::Value* srci = llvm_utils->create_ptr_gep(old_elems_value, itr);
+                llvm::Value* srci = llvm_utils->create_ptr_gep_deprecated(old_elems_value, itr);
                 write_el_linked_list(set_expr, srci, set, capacity, el_asr_type, module, name2memidx);
             }, [=]() {
             });
@@ -7973,7 +7973,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         this->resolve_collision_for_read_with_bound_check(set, el_hash, el, module, el_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set));
-        llvm::Value* el_mask_i = llvm_utils->create_ptr_gep(el_mask, pos);
+        llvm::Value* el_mask_i = llvm_utils->create_ptr_gep_deprecated(el_mask, pos);
         llvm::Value* tombstone_marker = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 3));
         LLVM::CreateStore(*builder, tombstone_marker, el_mask_i);
 
@@ -8039,7 +8039,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             LLVM::CreateStore(
                 *builder,
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
-                llvm_utils->create_ptr_gep(el_mask, el_hash)
+                llvm_utils->create_ptr_gep_deprecated(el_mask, el_hash)
             );
             llvm::Value* num_buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(set);
             llvm::Value* num_buckets_filled = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), num_buckets_filled_ptr);
