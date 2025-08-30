@@ -29,6 +29,20 @@ module submodule_13_mod
     end function bracket
   end interface
 
+  contains
+
+    elemental module function bracket(self, opening, closing) result(bracketed_self)
+      class(string_t), intent(in) :: self
+      character(len=*), intent(in), optional :: opening, closing
+      type(string_t) :: bracketed_self
+
+      if (present(opening) .and. present(closing)) then
+          bracketed_self%string_ = opening // self%string_ // closing
+      else
+          bracketed_self%string_ = self%string_
+      end if
+    end function bracket
+
 end module submodule_13_mod
 
 
