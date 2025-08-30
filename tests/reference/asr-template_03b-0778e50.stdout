@@ -672,7 +672,7 @@
                                                                         (Integer 4)
                                                                         ()
                                                                     ))]
-                                                                    PointerToDataArray
+                                                                    PointerArray
                                                                 )
                                                                 ()
                                                                 ()
@@ -686,7 +686,7 @@
                                                                     (Integer 4)
                                                                     ()
                                                                 ))]
-                                                                PointerToDataArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                             ()

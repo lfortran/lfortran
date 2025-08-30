@@ -185,7 +185,7 @@
                                                 (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                             ColMajor
                                         )
@@ -206,13 +206,13 @@
                                         ((ArrayPhysicalCast
                                             (Var 8 littlefile)
                                             DescriptorArray
-                                            PointerToDataArray
+                                            PointerArray
                                             (Allocatable
                                                 (Array
                                                     (String 1 () DeferredLength DescriptorString)
                                                     [(()
                                                     ())]
-                                                    PointerToDataArray
+                                                    PointerArray
                                                 )
                                             )
                                             ()
@@ -391,7 +391,7 @@
                                                         (String 1 () AssumedLength DescriptorString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 10 __1data))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -437,7 +437,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         (Integer 4)]
                                         ()

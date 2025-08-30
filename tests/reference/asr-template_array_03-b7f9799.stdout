@@ -267,7 +267,7 @@
                                                                         (Var 18 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 j))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -298,7 +298,7 @@
                                                                         (Var 18 j))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 k))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -415,7 +415,7 @@
                                                                         (Var 18 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 k))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -513,7 +513,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -531,7 +531,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -549,7 +549,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )]
                                                         ()
                                                         Source
@@ -1329,7 +1329,7 @@
                                                                         (Var 20 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 j))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -1358,7 +1358,7 @@
                                                                         (Var 20 j))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 k))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -1471,7 +1471,7 @@
                                                                         (Var 20 i))
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 k))]
-                                                                        PointerToDataArray
+                                                                        PointerArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -1567,7 +1567,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )
                                                         (Array
                                                             (Integer 4)
@@ -1583,7 +1583,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )
                                                         (Array
                                                             (Integer 4)
@@ -1599,7 +1599,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )]
                                                         ()
                                                         Source
@@ -1858,42 +1858,42 @@
                                         ((ArrayPhysicalCast
                                             (Var 19 arr)
                                             FixedSizeArray
-                                            PointerToDataArray
+                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 19 arr)
                                             FixedSizeArray
-                                            PointerToDataArray
+                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 19 r)
                                             FixedSizeArray
-                                            PointerToDataArray
+                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                             ()
                                         ))]
