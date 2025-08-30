@@ -16,5 +16,6 @@ program test
     if (abs(y_im(1) - 0.3) > 1e-5) error stop "Imaginary part 1 failed"
     if (abs(y_im(2) - 0.3) > 1e-5) error stop "Imaginary part 2 failed"
     
+    print *, x%re, x%im
     print *, "All tests passed!"
 end
