@@ -1034,7 +1034,9 @@ public:
          return res;
     }
 
-    llvm::Value* lfortran_dynamic_cast(llvm::Value* static_ptr, llvm::Value* dst_type)
+    llvm::Value* lfortran_dynamic_cast(llvm::Value* static_ptr,
+                                       llvm::Value* dst_type,
+                                       bool match_exact_type)
     {
         static_ptr = builder->CreateBitCast(static_ptr, llvm_utils->i8_ptr);
         dst_type = builder->CreateBitCast(dst_type, llvm_utils->i8_ptr);
@@ -1043,11 +1045,17 @@ public:
         llvm::Function* fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType* function_type = llvm::FunctionType::get(
-                llvm_utils->i8_ptr, { llvm_utils->i8_ptr, llvm_utils->i8_ptr }, false);
+                llvm_utils->i8_ptr,
+                { llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context) },
+                false);
             fn = llvm::Function::Create(
                 function_type, llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        std::vector<llvm::Value*> args = { static_ptr, dst_type };
+        std::vector<llvm::Value*> args
+            = { static_ptr,
+                dst_type,
+                match_exact_type ? llvm::ConstantInt::getTrue(context)
+                                 : llvm::ConstantInt::getFalse(context) };
         return builder->CreateCall(fn, args);
     }
 
@@ -1290,10 +1298,18 @@ public:
                             context, *module, *builder, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                        builder->CreateStore(builder->CreateBitCast(
-                            malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
+                        llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(
+                                            malloc_ptr, llvm_arg_type->getPointerTo());
+                        builder->CreateStore(bitcasted_malloc_ptr, x_arr);
 
                         x_arr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
+
+                        // TODO: Uncomment after supporting vtable creation for structures with no
+                        // member functions
+                        // store_class_vptr(ASRUtils::symbol_get_past_external(
+                        //         ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)),
+                        //     bitcasted_malloc_ptr);
+
                         allocate_array_members_of_struct(
                             ASR::down_cast<ASR::Struct_t>(
                                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(tmp_expr))),
@@ -1315,6 +1331,9 @@ public:
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
                         ASR::symbol_t* dest_class_sym = nullptr;
                         llvm::Value* malloc_size = nullptr;
+                        ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)));
+                        llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
                         // If no type specified then use curr_arg_m_a_type as default
                         if (m_source && !m_source_is_class) {
                             if(ASRUtils::is_character(*ASRUtils::expr_type(m_source))){ //hackish (clean dest_type + src_type passed to deepcopy)
@@ -1348,32 +1367,27 @@ public:
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                     malloc_size, llvm::MaybeAlign());
 
-                        // Set class hash in polymorphic struct
-                        llvm::Value* class_hash = nullptr;
-                        if (dest_class_sym) {
-                            class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
-                                llvm::APInt(64, get_class_hash(dest_class_sym)));
-                        } else {
-                            class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
-                                llvm::APInt(64, -((int) dest_asr_type->type) -
-                                    ASRUtils::extract_kind_from_ttype_t(dest_asr_type), true));
-                        }
-                        llvm::Type* src_class_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr, curr_arg_m_a_type, module.get());
                         if (!compiler_options.new_classes) {
+                            // Set class hash in polymorphic struct
+                            llvm::Value* class_hash = nullptr;
+                            if (dest_class_sym) {
+                                class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                                    llvm::APInt(64, get_class_hash(dest_class_sym)));
+                            } else {
+                                class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                                    llvm::APInt(64, -((int) dest_asr_type->type) -
+                                        ASRUtils::extract_kind_from_ttype_t(dest_asr_type), true));
+                            }
+                            llvm::Type* src_class_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr, curr_arg_m_a_type, module.get());
                             llvm::Value* t = llvm_utils->create_gep2(src_class_type, x_arr, 0);
                             builder->CreateStore(class_hash, t);
-                        }
-
-                        // Store and bitcast allocated memory into polymorphic struct's struct pointer
-                        ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)));
-                        llvm::Type* src_struct_type = get_llvm_struct_data_type(
-                            src_struct_sym,
-                            true);
-                        if (!compiler_options.new_classes) {
+    
+                            // Store and bitcast allocated memory into polymorphic struct's struct pointer
                             x_arr = llvm_utils->create_gep2(src_class_type, x_arr, 1);
                         }
-                        builder->CreateStore(builder->CreateBitCast(
-                                        malloc_ptr, src_struct_type), x_arr);
+
+                        llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(malloc_ptr, src_struct_type);
+                        builder->CreateStore(bitcasted_malloc_ptr, x_arr);
 
                         // Initialize members
                         llvm::Type* dest_type = nullptr;
@@ -1386,6 +1400,15 @@ public:
                         }
                         x_arr = llvm_utils->CreateLoad2(src_struct_type, x_arr);
                         x_arr = builder->CreateBitCast(x_arr, dest_type->getPointerTo());
+
+                        if (compiler_options.new_classes) {
+                            // Store vptr after allocation
+                            if (dest_class_sym) {
+                                store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr, false);
+                            } else {
+                                store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr, false);
+                            }
+                        }
 
                         if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
                             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(dest_class_sym), x_arr, dest_asr_type);
@@ -4222,7 +4245,7 @@ public:
         }
     }
 
-    inline bool contains_methods(ASR::Struct_t* st) {
+       inline bool contains_methods(ASR::Struct_t* st) {
         for (auto& item: st->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
                 return true;
@@ -4236,17 +4259,17 @@ public:
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
         if (!contains_methods(struct_t)) { 
-            // Temporarily: don't set vptr if there are no virtual functions
-            return ;
-        }
+                // Temporarily: don't set vptr if there are no virtual functions
+                return ;
+            }
         // Store Default vptr (Points to first Virtual function)
         llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 struct_t->m_struct_signature, struct_sym, module.get());
         if (LLVM::is_llvm_pointer(*struct_t->m_struct_signature)) {
             if (is_unallocated) {
-                llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
-                builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
-            }
+                    llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
+                    builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
+                }
             ptr = llvm_utils->CreateLoad2(v_llvm_type, ptr);
         }
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
@@ -4335,7 +4358,8 @@ public:
                     if (compiler_options.new_classes &&
                             !ASRUtils::is_pointer(v->m_type) && !ASRUtils::is_array(v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                        store_class_vptr(v, ptr_member, ASRUtils::is_allocatable(v->m_type));
+                        store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
+                            ptr_member, ASRUtils::is_allocatable(v->m_type));
                     } else {
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -5027,7 +5051,8 @@ public:
             }
             if (compiler_options.new_classes && !ASRUtils::is_pointer(v->m_type) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                store_class_vptr(v, ptr, ASRUtils::is_allocatable(v->m_type));
+                store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
+                    ptr, ASRUtils::is_allocatable(v->m_type));
             } else {
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
@@ -7635,73 +7660,99 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             switch( select_type_stmts[i]->type ) {
                 case ASR::type_stmtType::TypeStmtName: {
-                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
-                    if( ASRUtils::is_array(selector_var_type) ) {
-                        vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(i64, vptr_int_hash, 0));
-                    }
                     ASR::TypeStmtName_t* type_stmt_name = ASR::down_cast<ASR::TypeStmtName_t>(select_type_stmts[i]);
                     ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(type_stmt_name->m_sym);
-                    if( ASR::is_a<ASR::Struct_t>(*type_sym) ) {
+                    if (ASR::is_a<ASR::Struct_t>(*type_sym)) {
                         current_select_type_block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(type_sym)->m_name;
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
-                    if ((type2vtab.find(type_sym) == type2vtab.end()) ||
-                        (type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end())) {
-                        if (compiler_options.new_classes) {
-                            create_new_vtable_for_struct_type(type_sym);
-                        } else {
-                            create_vtab_for_struct_type(type_sym, current_scope);
+                    if (compiler_options.new_classes) {
+                        llvm::Value* static_ptr = llvm_selector;
+                        if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                            static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
+                        // Use `lfortran_dynamic_cast()` to compare runtime type-info of a class
+                        // variable passed as selector variable. We need to compare the exact type
+                        // instead of inheritance here.
+                        llvm::Value* val = lfortran_dynamic_cast(
+                            static_ptr, newclass2typeinfo.at(type_sym), true);
+                        cond = builder->CreateICmpNE(
+                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                    } else {
+                        ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                        llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
+                        if( ASRUtils::is_array(selector_var_type) ) {
+                            vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(i64, vptr_int_hash, 0));
+                        }
+                        if ((type2vtab.find(type_sym) == type2vtab.end()) ||
+                            (type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end())) {
+                            if (compiler_options.new_classes) {
+                                create_new_vtable_for_struct_type(type_sym);
+                            } else {
+                                create_vtab_for_struct_type(type_sym, current_scope);
+                            }
+                        }
+                        llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
+                        llvm::Type* vtab_struct_type = llvm_utils->getStructType(
+                            ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
+                        llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, vtab_struct_type->getPointerTo());
+                        cond = builder->CreateICmpEQ(
+                                vptr_int_hash,
+                                llvm_utils->CreateLoad2( i64, llvm_utils->create_gep2(vtab_struct_type, vtab_obj_casted, 0) ) );
                     }
-                    llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
-                    llvm::Type* vtab_struct_type = llvm_utils->getStructType(
-                        ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
-                    llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, vtab_struct_type->getPointerTo());
-                    cond = builder->CreateICmpEQ(
-                            vptr_int_hash,
-                            llvm_utils->CreateLoad2( i64, llvm_utils->create_gep2(vtab_struct_type, vtab_obj_casted, 0) ) );
                     type_block = type_stmt_name->m_body;
                     n_type_block = type_stmt_name->n_body;
                     break ;
                 }
                 case ASR::type_stmtType::ClassStmt: {
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
                     ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(select_type_stmts[i]);
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
-                    if( ASR::is_a<ASR::Struct_t>(*class_sym) ) {
+                    if (ASR::is_a<ASR::Struct_t>(*class_sym)) {
                         current_select_type_block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(class_sym), module.get(), false);
-                        current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(class_sym)->m_name;
+                        current_select_type_block_der_type
+                            = ASR::down_cast<ASR::Struct_t>(class_sym)->m_name;
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
-
-                    std::vector<llvm::Value*>& class_sym_vtabs = class2vtab[class_sym][current_scope];
-                    std::vector<llvm::Value*> conds;
-                    if (class_sym_vtabs.size() == 0) {
-                        if ((type2vtab.find(class_sym) == type2vtab.end()) ||
-                            (type2vtab[class_sym].find(current_scope) == type2vtab[class_sym].end())) {
-                            if (compiler_options.new_classes) {
-                                create_new_vtable_for_struct_type(class_sym);
-                            } else {
-                                create_vtab_for_struct_type(class_sym, current_scope);
-                            }
+                    if (compiler_options.new_classes) {
+                        llvm::Value* static_ptr = llvm_selector;
+                        if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                            static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
-                        class_sym_vtabs.push_back(type2vtab[class_sym][current_scope]);
+                        llvm::Value* val = lfortran_dynamic_cast(
+                            static_ptr, newclass2typeinfo.at(class_sym), false);
+                        cond = builder->CreateICmpNE(
+                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                    } else {
+                        llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
+
+                        std::vector<llvm::Value*>& class_sym_vtabs = class2vtab[class_sym][current_scope];
+                        std::vector<llvm::Value*> conds;
+                        if (class_sym_vtabs.size() == 0) {
+                            if ((type2vtab.find(class_sym) == type2vtab.end()) ||
+                                (type2vtab[class_sym].find(current_scope) == type2vtab[class_sym].end())) {
+                                if (compiler_options.new_classes) {
+                                    create_new_vtable_for_struct_type(class_sym);
+                                } else {
+                                    create_vtab_for_struct_type(class_sym, current_scope);
+                                }
+                            }
+                            class_sym_vtabs.push_back(type2vtab[class_sym][current_scope]);
+                        }
+                        conds.reserve(class_sym_vtabs.size());
+                        for( size_t i = 0; i < class_sym_vtabs.size(); i++ ) {
+                            llvm::Value* vtab_obj_casted = builder->CreateBitCast(
+                                class_sym_vtabs[i], current_select_type_block_type->getPointerTo());
+                            conds.push_back(builder->CreateICmpEQ(
+                                vptr_int_hash,
+                                llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(current_select_type_block_type, vtab_obj_casted, 0)) ));
+                        }
+                        cond = builder->CreateOr(conds);
                     }
-                    conds.reserve(class_sym_vtabs.size());
-                    for( size_t i = 0; i < class_sym_vtabs.size(); i++ ) {
-                        llvm::Value* vtab_obj_casted = builder->CreateBitCast(
-                            class_sym_vtabs[i], current_select_type_block_type->getPointerTo());
-                        conds.push_back(builder->CreateICmpEQ(
-                            vptr_int_hash,
-                            llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(current_select_type_block_type, vtab_obj_casted, 0)) ));
-                    }
-                    cond = builder->CreateOr(conds);
                     type_block = class_stmt->m_body;
                     n_type_block = class_stmt->n_body;
                     break ;
