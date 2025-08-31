@@ -11828,7 +11828,7 @@ public:
                 llvm::Value* polymorphic_data = llvm_utils->CreateLoad2(array_data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(abstract_array));
                 llvm::Value* polymorphic_data_addr = llvm_utils->create_gep2(array_data_type, polymorphic_data, 1);
-                llvm::Value* dt_data = llvm_utils->CreateLoad2(dt_array_data_type->getPointerTo(), arr_descr->get_pointer_to_data(dt));
+                llvm::Value* dt_data = llvm_utils->CreateLoad2(dt_array_data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg_expr, arg_type, dt, module.get()));
                 builder->CreateStore(
                     builder->CreateBitCast(dt_data, llvm::Type::getVoidTy(context)->getPointerTo()),
                     polymorphic_data_addr);
