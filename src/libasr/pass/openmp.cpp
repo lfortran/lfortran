@@ -1239,7 +1239,7 @@ class ParallelRegionVisitor :
                                 ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, ASRUtils::symbol_name(sym),
                                         ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                 ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                                array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                                array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, false)))),
                                             check_is_argument(current_scope, ASRUtils::symbol_name(sym)) ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
                                 /*
@@ -1339,7 +1339,7 @@ class ParallelRegionVisitor :
                                     ASR::expr_t* array_expr = b.VariableOverwrite(prog->m_symtab, ASRUtils::symbol_name(sym),
                                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, false)))),
                                                 ASR::intentType::Local);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
                                     new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
@@ -1470,7 +1470,7 @@ class ParallelRegionVisitor :
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, false)))),
                                 is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
                     bool already_allocated = true;
@@ -2182,7 +2182,7 @@ class ParallelRegionVisitor :
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, false)))),
                                 is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
                     

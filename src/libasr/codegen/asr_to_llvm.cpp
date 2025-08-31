@@ -13356,14 +13356,14 @@ public:
                 int64_t ptr_load_copy = ptr_loads;
                 ptr_loads = (ASR::is_a<ASR::Var_t>(*x.m_args[i]) && !ASRUtils::is_character(*expr_type(x.m_args[i]))) ? 0 : 1;
                 // Special Hanlding to pass appropriate pointer to the backend.
-                if(ASRUtils::is_array(expr_type(x.m_args[i]))){ // Arrays need a cast to pointerToDataArray physicalType.
+                if(ASRUtils::is_array(expr_type(x.m_args[i]))){ // Arrays need a cast to PointerArray physicalType.
                     ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(x.m_args[i])));
                     if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
-                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
+                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray, false));
                         ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
                                                                 ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
                                                                 x.m_args[i],arr->m_physical_type,

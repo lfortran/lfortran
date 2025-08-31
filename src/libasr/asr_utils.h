@@ -3103,7 +3103,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* type, ASR::dimension_t* m_dims, size_t n_dims,
     ASR::abiType abi=ASR::abiType::Source, bool is_argument=false,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
-    bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true) {
+    bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true, bool is_assumed_rank = false) {
     if( n_dims == 0 ) {
         return type;
     }
@@ -3138,7 +3138,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
 
     return ASRUtils::TYPE(ASR::make_Array_t(
-        al, loc, type, m_dims, n_dims, physical_type));
+        al, loc, type, m_dims, n_dims, physical_type, is_assumed_rank));
 }
 
 ASR::ttype_t* make_StructType_t_util(Allocator& al,
@@ -6415,7 +6415,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                         ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
-            dims.p, dims.n, a_type_->m_physical_type));
+            dims.p, dims.n, a_type_->m_physical_type, false));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
@@ -6561,7 +6561,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             dim_.loc = arg->base.loc;
                             dim.push_back(al, dim_);
                             arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                            dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray);
+                            dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray, false);
                         }
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
@@ -6604,7 +6604,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dim_.loc = arg->base.loc;
                         dim.push_back(al, dim_);
 
-                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray, false));
                         ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, arg->base.loc, args_.p, args_.size(), array_type, ASR::arraystorageType::ColMajor);
 
                         ASR::asr_t* cptr_to_pointer = ASR::make_CPtrToPointer_t(al, arg->base.loc, ASRUtils::EXPR(pointer_to_cptr), cast_expr, ASRUtils::EXPR(array_constant), nullptr);
@@ -6621,7 +6621,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray);
+                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray, false);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
                                                         ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
@@ -6878,7 +6878,7 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type)));
                 a_type = TYPE(ASR::make_Array_t(al, a_type->base.loc, underlying_type,
-                                    e->m_dims, e->n_dims, e->m_physical_type));
+                                    e->m_dims, e->n_dims, e->m_physical_type, false));
             }
         }
     }

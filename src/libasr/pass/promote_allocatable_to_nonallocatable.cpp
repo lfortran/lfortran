@@ -259,7 +259,7 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
                 }
                 x->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, x->base.base.loc,
                     ASRUtils::extract_type(x->m_type), empty_dims.p, empty_dims.size(),
-                    ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::array_physical_typeType::FixedSizeArray, false));
             }
         }
 };
