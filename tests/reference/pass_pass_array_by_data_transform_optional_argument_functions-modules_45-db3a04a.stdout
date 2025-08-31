@@ -167,6 +167,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                 )
                                                 (Allocatable
@@ -187,6 +188,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                     )
                                     7 profile_config_t
@@ -481,6 +483,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -723,6 +726,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        .false.
                                                                     )
                                                                 )
                                                                 (Allocatable
@@ -743,6 +747,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     2 profile_config_t
@@ -831,6 +836,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     (Allocatable
@@ -851,6 +857,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                .false.
                                             )
                                         )
                                         (Integer 4)
@@ -901,6 +908,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                 )
                                                 (Allocatable
@@ -1038,6 +1046,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                 )
                                                 (Allocatable
@@ -1166,6 +1175,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -1418,6 +1428,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                .false.
                                                             )
                                                         )
                                                         (Allocatable
@@ -1491,6 +1502,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                         (Logical 4)
                                         (Logical 4)
@@ -1516,6 +1528,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    .false.
                                                 )
                                             )
                                             (Allocatable
@@ -1661,6 +1674,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -1808,6 +1822,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                .false.
                                             )
                                         )
                                         (Allocatable

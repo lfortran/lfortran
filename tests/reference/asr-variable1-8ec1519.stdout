@@ -47,6 +47,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     BindC
@@ -94,6 +95,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     BindC
@@ -198,6 +200,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Array
@@ -205,6 +208,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            .false.
                                         )
                                         (Complex 4)
                                         (Complex 4)
@@ -356,6 +360,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 m))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -382,6 +387,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                     Source

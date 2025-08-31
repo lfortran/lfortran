@@ -259,6 +259,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        .false.
                                     )
                                     8 string_t
                                     Source
@@ -433,6 +434,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    .false.
                                 )
                                 ()
                             ))
@@ -465,6 +467,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    .false.
                                 )
                                 ()
                             ))
@@ -523,6 +526,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    .false.
                                 )
                                 ()
                             ))
@@ -611,6 +615,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    .false.
                                 )
                                 ()
                             ))
@@ -990,6 +995,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                     2 string_t
                                                     Source
@@ -1038,6 +1044,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                         (Integer 8)]
                                         (Integer 8)
@@ -1631,6 +1638,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                     2 string_t
                                                     Source
@@ -1658,6 +1666,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                         (String 1 () AssumedLength DescriptorString)]
                                         (Allocatable

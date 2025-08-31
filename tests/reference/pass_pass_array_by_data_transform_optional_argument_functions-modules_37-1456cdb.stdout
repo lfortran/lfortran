@@ -192,6 +192,7 @@
                                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     ())]
                                                                     DescriptorArray
+                                                                    .false.
                                                                 )
                                                             )
                                                             ()
@@ -223,6 +224,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     2 string_t
@@ -330,6 +332,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 13 __1targets))]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     2 build_target_ptr
                                                     Source
@@ -415,6 +418,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            .false.
                                         )
                                         (Integer 4)
                                         (StructType
@@ -702,6 +706,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     2 build_target_ptr
@@ -763,6 +768,7 @@
                                                     [(()
                                                     ())]
                                                     PointerArray
+                                                    .false.
                                                 )
                                             )
                                             ()

@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -47,6 +48,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -78,6 +80,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     BindC
@@ -104,6 +107,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     BindC
@@ -124,12 +128,14 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            .false.
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             PointerArray
+                                            .false.
                                         )]
                                         ()
                                         BindC
@@ -186,6 +192,7 @@
                                 ()
                             ))]
                             PointerArray
+                            .false.
                         )
                         (Array
                             (Integer 4)
@@ -196,6 +203,7 @@
                                 ()
                             ))]
                             PointerArray
+                            .false.
                         )
                         (Integer 4)]
                         ()

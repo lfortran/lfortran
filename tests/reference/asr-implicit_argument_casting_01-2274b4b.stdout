@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -97,6 +98,7 @@
                                 ()
                             ))]
                             PointerArray
+                            .false.
                         )]
                         ()
                         Source
@@ -129,6 +131,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    .false.
                                 )
                                 ()
                             )
@@ -137,6 +140,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 2 n))]
                                 PointerArray
+                                .false.
                             )
                             ()
                         )
@@ -245,6 +249,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -272,6 +277,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -294,6 +300,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -345,6 +352,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                .false.
                                             )
                                             ColMajor
                                         )
@@ -370,6 +378,7 @@
                                                     [(()
                                                     ())]
                                                     PointerArray
+                                                    .false.
                                                 )
                                             )
                                             ()
@@ -469,6 +478,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -497,6 +507,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 DescriptorArray
+                                .false.
                             )
                             ()
                         ))]
