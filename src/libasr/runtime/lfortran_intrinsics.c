@@ -234,11 +234,12 @@ char* append_to_string(char* str, const char* append) {
 
 /*
     -- Append String (Null-Termination Independent) --
-    * It allocates 1 additional character in the destination string while enlarging.
+    * It returns null-terminated string.
 */
 char* append_to_string_NTI(char* dest, int64_t dest_len, const char* src, int64_t src_len) {
     dest = (char*)realloc(dest, (dest_len + src_len + 1 /* \0 */) * sizeof(char));
     memcpy(dest + dest_len, src, src_len);
+    dest[dest_len + src_len] = '\0';
     return dest;
 }
 
@@ -1784,7 +1785,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     if (strlen(value) == 1) {
                         int64_t res_len = (int64_t)strlen(result);
                         result = append_to_string_NTI(result, res_len, arg, s_info.current_arg_info.current_string_len);
-                        result[res_len + s_info.current_arg_info.current_string_len] = '\0';
                     } else {
                         char* str = (char*)malloc((strlen(value)) * sizeof(char));
                         memmove(str, value+1, strlen(value));
@@ -3084,8 +3084,8 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, i
         return s;
     }
 
-    char* dest_char = (char*)malloc(s_len + 1 /* \0 */);
-    memcpy(dest_char, s, s_len + 1 /* \0 */);
+    char* dest_char = (char*)malloc(s_len);
+    memcpy(dest_char, s, s_len);
     int s_i = idx1, d_i = 0;
     while((step > 0 && s_i >= idx1 && s_i < idx2) ||
         (step < 0 && s_i <= idx1 && s_i > idx2)) {
