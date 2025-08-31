@@ -58,6 +58,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_disable_warnings = is_included("asr_disable_warnings")
     asr_disable_style_suggestion_and_warnings = is_included("asr_disable_style_suggestion_and_warnings")
     asr_enable_style_suggestion = is_included("asr_enable_style_suggestion")
+    enable_disable_style_suggestion = is_included("enable_disable_style_suggestion")
     continue_compilation = is_included("continue_compilation")
     fixed_form_cc_asr = is_included("fixed_form_cc_asr")
     semantics_only_cc = is_included("semantics_only_cc")
@@ -293,6 +294,19 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 filename,
                 "asr_enable_style_suggestion",
                 "lfortran --std=f23 --style-suggestions --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+    
+    if enable_disable_style_suggestion:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "enable_disable_style_suggestion",
+                "lfortran --style-suggestions --no-style-suggestions --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
