@@ -2636,6 +2636,78 @@ public:
             // data x / 1 /             ! x must be a scalar (integer)
             // data x, y, z / 1, 2, 3 / ! x, y, z must be a scalar (integer)
             // data x, (y(i),i = 1,3) /1, 2, 3, 4/ ! x must be a scalar (integer) and y must be an array
+
+            // Validate element count: Check if total LHS elements match RHS values
+            // Else, throw error
+            size_t total_lhs_elements = 0;
+            bool can_validate = true;
+            for (size_t j = 0; j < a->n_object; j++) {
+                // Convert AST expression to ASR to get type information
+                this->visit_expr(*a->m_object[j]);
+                ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                if (ASRUtils::is_array(obj_type)) {
+                    // Get array size from ASR
+                    int64_t array_size = ASRUtils::get_fixed_size_of_array(obj_type);
+                    if (array_size > 0) {
+                        total_lhs_elements += array_size;
+                    } else {
+                        // Cannot determine array size at compile time
+                        can_validate = false;
+                        break;
+                    }
+                } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
+                    // Calculate implied do loop iterations
+                    ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
+                    ASR::expr_t* start_expr_value = ASRUtils::expr_value(implied_do_loop->m_start);
+                    ASR::expr_t* end_expr_value = ASRUtils::expr_value(implied_do_loop->m_end);
+                    ASR::expr_t* increment_expr = implied_do_loop->m_increment;
+                    
+                    if (!start_expr_value || !end_expr_value) {
+                        // Cannot evaluate at compile time
+                        can_validate = false;
+                        break;
+                    }
+                    // Default increment is 1 if not specified
+                    int64_t increment = 1;
+                    if (increment_expr) {
+                        ASR::expr_t* increment_value = ASRUtils::expr_value(increment_expr);
+                        if (!increment_value) {
+                            can_validate = false;
+                            break;
+                        }
+                        increment = ASR::down_cast<ASR::IntegerConstant_t>(increment_value)->m_n;
+                    }
+                    
+                    int64_t start = ASR::down_cast<ASR::IntegerConstant_t>(start_expr_value)->m_n;
+                    int64_t end = ASR::down_cast<ASR::IntegerConstant_t>(end_expr_value)->m_n;
+                    // Calculate number of iterations
+                    int64_t iterations = 0;
+                    if (increment > 0) {
+                        iterations = (end - start) / increment + 1;
+                        if (iterations < 0) iterations = 0;
+                    } else {
+                        can_validate = false;
+                        break;
+                    }
+                    // Each iteration contributes n_values elements
+                    total_lhs_elements += iterations * implied_do_loop->n_values;
+                } else {
+                    // Scalar variable adds 1 element
+                    total_lhs_elements += 1;
+                }
+            }
+            // Perform validation if we can determine element counts
+            if (can_validate && total_lhs_elements != a->n_value) {
+                diag.add(Diagnostic(
+                    "DATA statement element count mismatch: " + std::to_string(total_lhs_elements) + 
+                    " elements on left-hand side, " + std::to_string(a->n_value) + " values on right-hand side",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+
             if (a->n_object != a->n_value) {
                 // This is the first case:
                 // data x / 1, 2, 3 /       ! x must be an array
@@ -2664,8 +2736,6 @@ public:
                 } else {
                     // This is fourth case:
                     // data x, (y(i),i = 1,3) /1, 2, 3, 4/ ! x can be array or scalar and y must be an array
-                    // TODO: check if n_objects == n_values after unrolling implied do loops and length of arrays
-
                     size_t curr_value = 0;
 
                     for (size_t j = 0; j < a->n_object; j++) {
