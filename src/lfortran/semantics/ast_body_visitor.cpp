@@ -3394,6 +3394,25 @@ public:
                     al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
+        } else if ( ASR::is_a<ASR::ComplexRe_t>(*target) ) {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(target);
+            /*
+                Case: x % re = y
+                we do: x = cmplx(y, x%im)
+                i.e. target = x, value = cmplx(y, x%im)
+            */
+            target = re->m_arg;
+            ASR::expr_t* y = value;
+            const Location& loc = x.base.base.loc;
+            ASR::expr_t *val = target;
+
+            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+            ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
+                val, real_type, nullptr));
+            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
+                al, loc, y, im, ASRUtils::expr_type(target), nullptr));
+            value = cmplx;
         } else if ( ASR::is_a<ASR::ComplexIm_t>(*target) ) {
             ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(target);
             /*
@@ -3416,7 +3435,10 @@ public:
             target->type != ASR::exprType::StringSection &&
             target->type != ASR::exprType::StringItem &&
             target->type != ASR::exprType::StructInstanceMember &&
-            target->type != ASR::exprType::UnionInstanceMember)
+            target->type != ASR::exprType::UnionInstanceMember &&
+            target->type != ASR::exprType::ComplexRe &&
+            target->type != ASR::exprType::ComplexIm
+        )
         {
             diag.add(Diagnostic(
                 "The LHS of assignment can only be a variable or an array reference",

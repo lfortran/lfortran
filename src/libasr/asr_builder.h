@@ -427,8 +427,12 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        // TODO: handle value
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(value)->m_re;
+            value = f_t(re, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, value));
     }
 
     inline ASR::expr_t* t2t(ASR::expr_t* x, ASR::ttype_t* t1, ASR::ttype_t* t2) {
