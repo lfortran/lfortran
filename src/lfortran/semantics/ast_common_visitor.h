@@ -7817,7 +7817,7 @@ public:
         // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
         // 'array' and 'newshape' are ArrayConstant's we can set 'value'
         // as well
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr, pad_expr);
     }
 
     ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
