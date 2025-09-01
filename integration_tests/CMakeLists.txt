@@ -1687,7 +1687,7 @@ RUN(NAME automatic_allocation_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc E
 RUN(NAME block_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME block_02 LABELS gfortran llvm fortran)
 RUN(NAME block_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME block_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME block_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME block_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME block_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME block_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
