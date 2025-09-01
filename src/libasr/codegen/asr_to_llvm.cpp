@@ -3169,7 +3169,11 @@ public:
         } else {
             ptr_loads = 2 - LLVM::is_llvm_pointer(*x_m_v_type);
         }
-        this->visit_expr(*x.m_v);
+        if (compiler_options.new_classes) {
+            this->visit_expr_wrapper(x.m_v, LLVM::is_llvm_pointer(*x_m_v_type));
+        } else {
+            this->visit_expr(*x.m_v);
+        }
         ptr_loads = ptr_loads_copy;
         if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( current_select_type_block_type ) {
@@ -3182,8 +3186,10 @@ public:
                                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)), true);
                 llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, wrapped_struct_type, module.get())->getPointerTo();
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type, module.get());
-                tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
-                tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
+                if (!compiler_options.new_classes) {
+                    tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
+                    tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
+                }
             } else {
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
@@ -12376,6 +12382,57 @@ public:
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name, llvm::Value *llvm_polymorphic) {
+        if (compiler_options.new_classes) {
+            bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_dt, is_pointer);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* llvm_dt = tmp;
+            ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
+            llvm::FunctionType* fnTy = llvm_utils->get_function_type(
+                *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
+                module.get());
+            llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+            llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+            llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+
+            // Get VTable pointer
+            llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type_deprecated[vtable_ptr] = fnPtrPtrTy;
+#endif
+            // Get function pointer from VTable
+            llvm::Value* fn = (llvm_utils->create_ptr_gep_deprecated(
+                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
+            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+
+            // Convert function args
+            std::vector<llvm::Value*> args;
+            ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
+            ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
+            if (!class_proc->m_is_nopass) {
+                // TODO: we need to take care of below
+                // add the self argument only when the class procedure has the `pass` attribute
+                // llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                // // llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
+                // llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_dt_type);
+                // // llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
+                // // builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
+                // // llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
+                // builder->CreateStore(llvm_dt, target_dt);
+                args.push_back(llvm_dt);
+            }
+            std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
+            args.insert(args.end(), args2.begin(), args2.end());
+            builder->CreateCall(fnTy, fn, args);
+            return;
+        }
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
         ASR::Struct_t* dt_sym_type = nullptr;
         ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
