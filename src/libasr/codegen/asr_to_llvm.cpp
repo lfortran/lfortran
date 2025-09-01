@@ -2927,6 +2927,11 @@ public:
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
         llvm::Value* shape = tmp;
+        llvm::Value* pad = nullptr;
+        if (x.m_default_value) {
+            this->visit_expr(*x.m_default_value);
+            pad = tmp;
+        }
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(x_m_array_type);
         switch( array_physical_type ) {
@@ -2953,17 +2958,73 @@ public:
                 llvm::Value *target = llvm_utils->CreateAlloca(
                     target_type, nullptr, "fixed_size_reshaped_array");
                 llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
-                ASR::dimension_t* asr_dims = nullptr;
-                size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
-                int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
+                int64_t total_size = ASRUtils::get_fixed_size_of_array(x.m_type);
+                int64_t original_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_array));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
-                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-                llvm_size = builder->CreateMul(llvm_size,
+                llvm::Value* llvm_original_size = llvm::ConstantInt::get(context, llvm::APInt(32, original_size));
+                llvm::Value* llvm_original_array = builder->CreateMul(llvm_original_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
-                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_original_array);
+                if (x.m_default_value) {
+                    ASR::array_physical_typeType pad_physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_default_value));
+                    int64_t pad_elements = total_size - original_size;
+                    switch (pad_physical_type) {
+                        case ASR::array_physical_typeType::FixedSizeArray: {
+                            if (pad_elements > 0) {
+                                int pad_array_size_val = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_default_value));
+                                llvm::Value* pad_array_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), pad_array_size_val);
+                                llvm::Value* pad_start_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), original_size);
+                                llvm::Value* pad_ptr = builder->CreateGEP(llvm_data_type, target_, pad_start_idx);
+
+                                llvm::Function* func = builder->GetInsertBlock()->getParent();
+                                llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "loop.cond", func);
+                                llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "loop.body", func);
+                                llvm::BasicBlock* loop_end  = llvm::BasicBlock::Create(context, "loop.end", func);
+
+                                llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                                llvm::Value* pad_elements_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), pad_elements);
+
+                                llvm::AllocaInst* i_alloc = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
+                                builder->CreateStore(zero, i_alloc);
+
+                                builder->CreateBr(loop_cond);
+
+                                builder->SetInsertPoint(loop_cond);
+                                llvm::Value* i_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), i_alloc, "i_val");
+                                llvm::Value* cond = builder->CreateICmpSLT(i_val, pad_elements_val);
+                                builder->CreateCondBr(cond, loop_body, loop_end);
+
+                                builder->SetInsertPoint(loop_body);
+
+                                llvm::Value* dst_ptr = builder->CreateGEP(llvm_data_type, pad_ptr, i_val);
+                                llvm::Value* pad_idx = builder->CreateSRem(i_val, pad_array_size);
+                                llvm::Value* zero_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                                llvm::Value* gep_indices[] = { zero_idx, pad_idx };
+
+                                llvm::Value* pad_elem_ptr = builder->CreateGEP(
+                                    pad->getType()->getPointerElementType(), pad, gep_indices, "pad_elem_ptr");
+
+                                llvm::Value* pad_val = builder->CreateLoad(llvm_data_type, pad_elem_ptr);
+                                builder->CreateStore(pad_val, dst_ptr);
+
+                                llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                                builder->CreateStore(i_next, i_alloc);
+                                builder->CreateBr(loop_cond);
+
+                                builder->SetInsertPoint(loop_end);
+                            }
+                            break;
+                        }
+                        case ASR::array_physical_typeType::DescriptorArray: {
+                            throw CodeGenError("Reshape with descriptor array padding is not supported.");
+                        }
+                        default:
+                            throw CodeGenError("Unsupported pad physical type for reshaped array.");
+                    }
+                }
                 tmp = target;
                 break;
             }
