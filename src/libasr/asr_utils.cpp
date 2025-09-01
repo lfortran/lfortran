@@ -1085,6 +1085,9 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
             symtab, nullptr, 0));
 
+    // Keeps track of loaded dependent modules whose submodules are not loaded
+    std::vector<ASR::Module_t*> dependent_modules_with_unloaded_submodules;
+
     // Load any dependent modules recursively
     bool rerun = true;
     while (rerun) {
@@ -1126,9 +1129,16 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
+                dependent_modules_with_unloaded_submodules.push_back(mod2);
                 rerun = true;
             }
         }
+    }
+
+    // Load all the submodules of dependent modules recursively
+    for (size_t i=0;i<dependent_modules_with_unloaded_submodules.size();i++) {
+        load_dependent_submodules(al, symtab, dependent_modules_with_unloaded_submodules[i],
+                                  loc, loaded_submodules, pass_options, run_verify, err, lm);
     }
 
     // Fix all external symbols
