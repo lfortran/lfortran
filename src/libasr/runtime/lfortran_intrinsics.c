@@ -191,24 +191,24 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
-LFORTRAN_API void _lfortran_printf(const char* format, const char* str, uint32_t str_len, const char* end, uint32_t end_len)
+LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len)
 {
     if (str == NULL) {
-        str = " "; // dummy output
+        str = (fchar*)" "; // dummy output
         str_len = 1; // length of dummy output
     }
     // Detect "\b" to raise error (only if still null-terminated)
-    if (str_len > 0 && str[0] == '\b') {
+    if (str_len > 0 && ((char*)str)[0] == '\b') {
         str++;
         str_len--;
-        fwrite(str, 1, str_len, stderr);
+        fwrite((char*)str, 1, str_len, stderr);
         fputc('\n', stderr);
         exit(1);
     }
 
     // Printing without depending on null termination:
-    fprintf(stdout, "%.*s", (int) str_len, str);
-    fprintf(stdout, "%.*s", (int) end_len, end);
+    fwrite((char*)str, sizeof(char), str_len, stdout);
+    fwrite((char*)end, sizeof(char), end_len, stdout);
     fflush(stdout);
 }
 
