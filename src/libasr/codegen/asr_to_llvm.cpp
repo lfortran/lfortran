@@ -4194,10 +4194,24 @@ public:
         }
     }
 
+    inline bool contains_methods(ASR::Struct_t* st) {
+        for (auto& item: st->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void store_class_vptr(ASR::Variable_t* v, llvm::Value* ptr) {
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
             // Store Default vptr (Points to first Virtual function)
             ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            if (!contains_methods(st)) { 
+                // Temporarily: don't set vptr if there are no virtual functions
+                return ;
+            }
             if (LLVM::is_llvm_pointer(*v->m_type)) {
                 ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
                     v->m_type, v->m_type_declaration, module.get()), ptr);
@@ -4544,7 +4558,7 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)impl_sym);
                     llvm::Function* F = llvm_symtab_fn[h];
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
-                    impls.push_back(F);
+                    impls.push_back(llvm::ConstantExpr::getBitCast(F, character_type));
                 }
             }
         }
