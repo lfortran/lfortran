@@ -17,6 +17,7 @@ reference how to contribute to the project.
 - Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang.
 - Generators: re2c, bison (needed for build0/codegen).
 - Libraries: zlib; optional: LLVM dev, libunwind, RapidJSON, fmt, xeus/xeus-zmq, Pandoc.
+- Pre-commit hooks: see `.pre-commit-config.yaml`; activate with `pre-commit install`.
 
 ## Build, Test, and Development Commands
 - Typical dev config (Ninja + LLVM) is specified in `./build1.sh`:
@@ -132,3 +133,4 @@ References
  - Use Draft PRs while iterating; click “Ready for review” only when satisfied.
  - Use plain Markdown in PR descriptions (no escaped `\n`). Keep it clean, minimal, and follow simple headings (Summary, Scope, Verification, Rationale).
  - Before marking ready: ensure all local tests pass (unit + integration) and include evidence.
+ - Major reformatting: put formatting-only changes in a dedicated PR; do not mix with behavior changes.
