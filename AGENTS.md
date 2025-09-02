@@ -20,7 +20,7 @@ reference how to contribute to the project.
 
 ## Build, Test, and Development Commands
 - Typical dev config (Ninja + LLVM) is specified in `./build1.sh`:
-  - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON`
+  - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`
   - `cmake --build build -j`
 - Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
 - Tests: `./run_tests.py` (compiler); `cd integration_tests && ./run_tests.py -j16`
