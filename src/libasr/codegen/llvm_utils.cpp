@@ -1275,9 +1275,13 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Allocatable) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Allocatable_t>(asr_type)->m_type;
-                bool is_pointer_ = ((ASR::is_a<ASR::String_t>(*t2) ||
-                                     ASRUtils::is_class_type(t2))
-                                    && m_abi != ASR::abiType::BindC);
+                bool is_pointer_;
+                if (compiler_options.new_classes) {
+                    is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
+                } else {
+                    is_pointer_ = ((ASRUtils::is_class_type(t2) ||
+                        ASR::is_a<ASR::String_t>(*t2)) && m_abi != ASR::abiType::BindC);
+                }
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
                 break;
