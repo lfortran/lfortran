@@ -3987,6 +3987,101 @@ public:
                                             ASRUtils::symbol_get_past_external(sym_));
                                         v->m_presence = ASR::presenceType::Optional;
                                     }
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        if (compiler_options.implicit_typing) {
+                                            std::string fl = std::string(1, sym[0]);
+                                            if (implicit_dictionary.find(fl)
+                                                != implicit_dictionary.end()) {
+                                                ASR::ttype_t* t = implicit_dictionary[fl];
+                                                if (t == nullptr) {
+                                                    diag.add(Diagnostic(
+                                                        "Parameter `" + sym
+                                                            + "` has no IMPLICIT Type",
+                                                        Level::Error,
+                                                        Stage::Semantic,
+                                                        { Label("", { x.base.base.loc }) }));
+                                                    throw SemanticAbort();
+                                                }
+                                                sym_ = declare_implicit_variable2(
+                                                    x.m_syms[i].loc,
+                                                    sym,
+                                                    ASR::intentType::Local,
+                                                    t);
+                                            } else {
+                                                sym_ = declare_implicit_variable(
+                                                    x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                            }
+                                            ASR::Variable_t* v
+                                                = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_storage = ASR::storage_typeType::Parameter;
+                                            if (s.m_initializer) {
+                                                this->visit_expr(*s.m_initializer);
+                                                ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
+                                                ASRUtils::ASRBuilder b(al, x.m_syms[i].loc);
+                                                ASR::ttype_t* value_type
+                                                    = ASRUtils::expr_type(init_val);
+                                                init_val = b.t2t(init_val, value_type, v->m_type);
+                                                v->m_symbolic_value = init_val;
+                                                v->m_value = ASRUtils::expr_value(init_val);
+                                                SetChar variable_dependencies_vec;
+                                                variable_dependencies_vec.reserve(al, 1);
+                                                ASRUtils::collect_variable_dependencies(
+                                                    al,
+                                                    variable_dependencies_vec,
+                                                    v->m_type,
+                                                    v->m_symbolic_value,
+                                                    v->m_value);
+                                                v->m_dependencies = variable_dependencies_vec.p;
+                                                v->n_dependencies
+                                                    = variable_dependencies_vec.size();
+                                            }
+                                        } else {
+                                            diag.add(Diagnostic(
+                                                "Parameter `" + sym
+                                                    + "` has no IMPLICIT Type, use `--implicit-typing`",
+                                                Level::Error,
+                                                Stage::Semantic,
+                                                { Label("", { x.base.base.loc }) }));
+                                            throw SemanticAbort();
+                                        }
+                                    } else {
+                                        this->visit_expr(*s.m_initializer);
+                                        ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                            ASR::Variable_t* v
+                                                = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_storage = ASR::storage_typeType::Parameter;
+                                            if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
+                                                ASR::RealConstant_t* rc
+                                                    = ASR::down_cast<ASR::RealConstant_t>(init_val);
+                                                init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                                                    al, x.base.base.loc, rc->m_r, v->m_type));
+                                            } else if (ASR::is_a<ASR::IntegerConstant_t>(
+                                                           *init_val)) {
+                                                ASR::IntegerConstant_t* ic
+                                                    = ASR::down_cast<ASR::IntegerConstant_t>(
+                                                        init_val);
+                                                init_val
+                                                    = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                        al, x.base.base.loc, ic->m_n, v->m_type));
+                                            }
+                                            v->m_symbolic_value = init_val;
+                                            v->m_value = ASRUtils::expr_value(init_val);
+                                            SetChar variable_dependencies_vec;
+                                            variable_dependencies_vec.reserve(al, 1);
+                                            ASRUtils::collect_variable_dependencies(
+                                                al,
+                                                variable_dependencies_vec,
+                                                v->m_type,
+                                                v->m_symbolic_value,
+                                                v->m_value);
+                                            v->m_dependencies = variable_dependencies_vec.p;
+                                            v->n_dependencies = variable_dependencies_vec.size();
+                                        }
+                                    }
                                 } else if (sa->m_attr
                                            == AST::simple_attributeType ::AttrIntrinsic) {
                                     explicit_intrinsic_procedures.push_back(sym);
