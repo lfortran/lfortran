@@ -1,7 +1,8 @@
+subroutine f()
+  parameter (NL=100,NP=60)
+  implicit double precision (a-h,o-z)
+end subroutine f
+
 program parameter_16
-  implicit real (a-h,o-z)
-  parameter (x = 42)
-  real :: r
-  r = x
-  if (abs(r - 42.0) > 1e-8) error stop
+  call f()
 end program parameter_16
