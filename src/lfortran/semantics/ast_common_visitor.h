@@ -2053,58 +2053,6 @@ public:
             }
         }
         if (!v) {
-            // If there was a prior PARAMETER attribute without explicit type, declare implicitly
-            // now
-            auto it_param = assgnd_storage.find(var_name);
-            if (it_param != assgnd_storage.end()
-                && it_param->second.first == ASR::storage_typeType::Parameter) {
-                if (compiler_options.implicit_typing) {
-                    bool implicit_none = false;
-                    if (!in_Subroutine) {
-                        if (implicit_mapping.size() != 0) {
-                            implicit_dictionary
-                                = implicit_mapping[get_hash(current_scope->asr_owner)];
-                            if (implicit_dictionary.size() == 0 && is_implicit_interface) {
-                                implicit_dictionary = implicit_mapping[get_hash(
-                                    implicit_interface_parent_scope->asr_owner)];
-                            }
-                        }
-                    }
-                    auto itimp = implicit_dictionary.find(std::string(1, var_name[0]));
-                    if (itimp != implicit_dictionary.end() && itimp->second == nullptr) {
-                        implicit_none = true;
-                    }
-                    if (!implicit_none) {
-                        ASR::intentType intent = ASRUtils::intent_local;
-                        v = declare_implicit_variable(loc, var_name, intent);
-                        ASR::Variable_t* vv = ASR::down_cast<ASR::Variable_t>(v);
-                        vv->m_storage = ASR::storage_typeType::Parameter;
-                        if (it_param->second.second) {
-                            this->visit_expr(*it_param->second.second);
-                            ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
-                            ASRUtils::ASRBuilder b(al, loc);
-                            ASR::ttype_t* value_type = ASRUtils::expr_type(init_val);
-                            init_val = b.t2t(init_val, value_type, vv->m_type);
-                            vv->m_symbolic_value = init_val;
-                            vv->m_value = ASRUtils::expr_value(init_val);
-                            SetChar variable_dependencies_vec;
-                            variable_dependencies_vec.reserve(al, 1);
-                            ASRUtils::collect_variable_dependencies(al,
-                                                                    variable_dependencies_vec,
-                                                                    vv->m_type,
-                                                                    vv->m_symbolic_value,
-                                                                    vv->m_value);
-                            vv->m_dependencies = variable_dependencies_vec.p;
-                            vv->n_dependencies = variable_dependencies_vec.size();
-                        }
-                    } else {
-                        diag.semantic_error_label("Variable '" + var_name + "' is not declared",
-                                                  { loc },
-                                                  "'" + var_name + "' is undeclared");
-                        throw SemanticAbort();
-                    }
-                }
-            }
             if (compiler_options.implicit_typing) {
                 std::string first_letter = std::string(1, var_name[0]);
                 if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
@@ -3995,73 +3943,8 @@ public:
                                            == AST::simple_attributeType ::AttrParameter) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (!sym_) {
-                                        if (compiler_options.implicit_typing) {
-                                            bool implicit_none = false;
-                                            if (!in_Subroutine) {
-                                                if (implicit_mapping.size() != 0) {
-                                                    implicit_dictionary = implicit_mapping[get_hash(
-                                                        current_scope->asr_owner)];
-                                                    if (implicit_dictionary.size() == 0
-                                                        && is_implicit_interface) {
-                                                        implicit_dictionary
-                                                            = implicit_mapping[get_hash(
-                                                                implicit_interface_parent_scope
-                                                                    ->asr_owner)];
-                                                    }
-                                                }
-                                            }
-                                            auto it
-                                                = implicit_dictionary.find(std::string(1, sym[0]));
-                                            if (it != implicit_dictionary.end()
-                                                && it->second == nullptr) {
-                                                implicit_none = true;
-                                            }
-                                            if (!implicit_none) {
-                                                // Declare implicitly-typed parameter variable
-                                                // (default implicit if no mapping)
-                                                sym_ = declare_implicit_variable(
-                                                    s.loc, sym, ASR::intentType::Local);
-                                                ASR::Variable_t* v
-                                                    = ASR::down_cast<ASR::Variable_t>(sym_);
-                                                v->m_storage = ASR::storage_typeType::Parameter;
-                                                if (s.m_initializer) {
-                                                    this->visit_expr(*s.m_initializer);
-                                                    ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
-                                                    ASRUtils::ASRBuilder b(al, x.base.base.loc);
-                                                    ASR::ttype_t* value_type
-                                                        = ASRUtils::expr_type(init_val);
-                                                    init_val
-                                                        = b.t2t(init_val, value_type, v->m_type);
-                                                    v->m_symbolic_value = init_val;
-                                                    v->m_value = ASRUtils::expr_value(init_val);
-                                                    SetChar variable_dependencies_vec;
-                                                    variable_dependencies_vec.reserve(al, 1);
-                                                    ASRUtils::collect_variable_dependencies(
-                                                        al,
-                                                        variable_dependencies_vec,
-                                                        v->m_type,
-                                                        v->m_symbolic_value,
-                                                        v->m_value);
-                                                    v->m_dependencies = variable_dependencies_vec.p;
-                                                    v->n_dependencies
-                                                        = variable_dependencies_vec.size();
-                                                }
-                                            } else {
-                                                // There exists an `implicit none` statement for
-                                                // this identifier
-                                                diag.add(Diagnostic("Parameter `" + sym
-                                                                        + "` has no IMPLICIT Type",
-                                                                    Level::Error,
-                                                                    Stage::Semantic,
-                                                                    { Label("", { s.loc }) }));
-                                                throw SemanticAbort();
-                                            }
-                                        } else {
-                                            // No implicit typing allowed, remember storage &
-                                            // initializer
-                                            assgnd_storage[sym] = std::make_pair(
-                                                ASR::storage_typeType::Parameter, s.m_initializer);
-                                        }
+                                        assgnd_storage[sym] = std::make_pair(
+                                            ASR::storage_typeType::Parameter, s.m_initializer);
                                     } else {
                                         this->visit_expr(*s.m_initializer);
                                         ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
@@ -4070,10 +3953,20 @@ public:
                                             ASR::Variable_t* v
                                                 = ASR::down_cast<ASR::Variable_t>(sym_);
                                             v->m_storage = ASR::storage_typeType::Parameter;
-                                            ASRUtils::ASRBuilder b(al, x.base.base.loc);
-                                            ASR::ttype_t* value_type
-                                                = ASRUtils::expr_type(init_val);
-                                            init_val = b.t2t(init_val, value_type, v->m_type);
+                                            if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
+                                                ASR::RealConstant_t* rc
+                                                    = ASR::down_cast<ASR::RealConstant_t>(init_val);
+                                                init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                                                    al, x.base.base.loc, rc->m_r, v->m_type));
+                                            } else if (ASR::is_a<ASR::IntegerConstant_t>(
+                                                           *init_val)) {
+                                                ASR::IntegerConstant_t* ic
+                                                    = ASR::down_cast<ASR::IntegerConstant_t>(
+                                                        init_val);
+                                                init_val
+                                                    = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                        al, x.base.base.loc, ic->m_n, v->m_type));
+                                            }
                                             v->m_symbolic_value = init_val;
                                             v->m_value = ASRUtils::expr_value(init_val);
                                             SetChar variable_dependencies_vec;
