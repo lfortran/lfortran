@@ -19,7 +19,7 @@ reference how to contribute to the project.
 - Libraries: zlib; optional: LLVM dev, libunwind, RapidJSON, fmt, xeus/xeus-zmq, Pandoc.
 
 ## Build, Test, and Development Commands
-- Typical dev config (Ninja + LLVM):
+- Typical dev config (Ninja + LLVM) is specified in `./build1.sh`:
   - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON`
   - `cmake --build build -j`
 - Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
