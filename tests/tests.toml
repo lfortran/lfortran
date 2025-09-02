@@ -3084,6 +3084,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_10.f90"
 asr = true
+asr_clojure = true
 
 [[test]]
 filename = "../integration_tests/functions_12.f90"

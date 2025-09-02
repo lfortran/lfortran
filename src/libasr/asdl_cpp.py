@@ -1705,6 +1705,13 @@ class PickleVisitorVisitor(ASDLVisitor):
         self.emit(      "LCOMPILERS_ASSERT(indent_level >= 0);", 2)
         self.emit(      "indented = std::string(indent_level*indent_spaces, ' ');",2)
         self.emit(  "}",1)
+        # Helper to make symbols clojure compatible
+        self.emit(  "std::string make_sym_clojure_compatible(std::string name) {", 1)
+        self.emit(      "for (size_t i = 0; i < name.size(); i++) {", 2)
+        self.emit(      "    if (name[i] == '@') name[i] = '/';", 3)
+        self.emit(      "}", 2)
+        self.emit(      "return name;", 2)
+        self.emit(  "}", 1)
         self.mod = mod
         super(PickleVisitorVisitor, self).visitModule(mod)
         self.emit("};")
@@ -1842,7 +1849,11 @@ class PickleVisitorVisitor(ASDLVisitor):
                     level = 2
                     self.emit('s.append("[");', level)
                     self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
-                    self.emit("    s.append(x.m_%s[i]);" % (field.name), level)
+                    self.emit("    if (clojure) {", level)
+                    self.emit("        s.append(self().make_sym_clojure_compatible(x.m_%s[i]));" % (field.name), level)
+                    self.emit("    } else {", level)
+                    self.emit("        s.append(x.m_%s[i]);" % (field.name), level)
+                    self.emit("    }", level)
                     self.emit('    if (i < x.n_%s-1) {' % (field.name), level)
                     self.emit('        if (indent) s.append("\\n" + indented);', level)
                     self.emit('        else s.append(" ");', level)
@@ -1852,12 +1863,20 @@ class PickleVisitorVisitor(ASDLVisitor):
                 else:
                     if field.opt:
                         self.emit("if (x.m_%s) {" % field.name, 2)
-                        self.emit(    's.append(x.m_%s);' % field.name, 3)
+                        self.emit(    "if (clojure) {", 3)
+                        self.emit(        's.append(self().make_sym_clojure_compatible(x.m_%s));' % field.name, 4)
+                        self.emit(    "} else {", 3)
+                        self.emit(        's.append(x.m_%s);' % field.name, 4)
+                        self.emit(    "}", 3)
                         self.emit("} else {", 2)
                         self.emit(    's.append("()");', 3)
                         self.emit("}", 2)
                     else:
-                        self.emit('s.append(x.m_%s);' % field.name, 2)
+                        self.emit('if (clojure) {', 2)
+                        self.emit(    's.append(self().make_sym_clojure_compatible(x.m_%s));' % field.name, 3)
+                        self.emit('} else {', 2)
+                        self.emit(    's.append(x.m_%s);' % field.name, 3)
+                        self.emit('}', 2)
             elif field.type == "node":
                 assert not field.opt
                 assert field.seq
@@ -1906,7 +1925,7 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit('    size_t i = 0;', level)
                     self.emit('    for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit('        if (clojure) {', level)
-                    self.emit('            s.append(":" + a.first);', level)
+                    self.emit('            s.append(":" + self().make_sym_clojure_compatible(a.first));', level)
                     self.emit('        } else {', level)
                     self.emit('            s.append(a.first + ":");', level)
                     self.emit('        }', level)
