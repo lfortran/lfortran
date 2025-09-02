@@ -12,9 +12,11 @@
 
 #include <lfortran/pickle.h>
 
-namespace LCompilers::LFortran {
-
-bool is_program_needed(AST::TranslationUnit_t &ast) {
+namespace LCompilers::LFortran
+{
+bool
+is_program_needed(AST::TranslationUnit_t& ast)
+{
     for (size_t i = 0; i < ast.n_items; i++) {
         if (!AST::is_a<AST::mod_t>(*ast.m_items[i])
             && !AST::is_a<AST::program_unit_t>(*ast.m_items[i])) {
@@ -24,7 +26,9 @@ bool is_program_needed(AST::TranslationUnit_t &ast) {
     return false;
 }
 
-bool is_program_end(AST::Name_t* name) {
+bool
+is_program_end(AST::Name_t* name)
+{
     // "end program" should not be a name. Ideally, it should be a special entity.
     // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
     // can all be handled together and this simplifies the code logic.
@@ -32,13 +36,23 @@ bool is_program_end(AST::Name_t* name) {
             || to_lower(name->m_id) == "end program");
 }
 
-void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
-    Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
-    Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
-    Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
-    Vec<AST::unit_decl2_t*> decl; decl.reserve(al, 0);
-    Vec<AST::stmt_t*> body; body.reserve(al, 0);
-    Vec<AST::program_unit_t*> contains_body; contains_body.reserve(al, 0);
+void
+fix_program_without_program_line(Allocator& al,
+                                 AST::TranslationUnit_t& ast,
+                                 diag::Diagnostics& diagnostics)
+{
+    Vec<AST::ast_t*> global_items;
+    global_items.reserve(al, 0);
+    Vec<AST::unit_decl1_t*> use;
+    use.reserve(al, 0);
+    Vec<AST::implicit_statement_t*> implicit;
+    implicit.reserve(al, 0);
+    Vec<AST::unit_decl2_t*> decl;
+    decl.reserve(al, 0);
+    Vec<AST::stmt_t*> body;
+    body.reserve(al, 0);
+    Vec<AST::program_unit_t*> contains_body;
+    contains_body.reserve(al, 0);
     bool contains = false, program_added = false;
     for (size_t i = 0; i < ast.n_items; i++) {
         if (program_added) {
@@ -46,10 +60,12 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 || ast.m_items[i]->type == AST::astType::mod) {
                 global_items.push_back(al, ast.m_items[i]);
             } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Only function, subroutine, procedure, module, submodule or"
-                    " block data allowed in global scope in non-interactive mode",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                diagnostics.add(
+                    diag::Diagnostic("Only function, subroutine, procedure, module, submodule or"
+                                     " block data allowed in global scope in non-interactive mode",
+                                     diag::Level::Error,
+                                     diag::Stage::Parser,
+                                     { diag::Label("", { ast.m_items[i]->loc }) }));
                 throw parser_local::ParserAbort();
             }
         } else if (contains) {
@@ -60,28 +76,45 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 if (AST::is_a<AST::Name_t>(*expr)) {
                     AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                     if (is_program_end(name)) {
-                        AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                            use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                            body.p, body.size(), contains_body.p, contains_body.size());
+                        AST::ast_t* program_ast = AST::make_Program_t(al,
+                                                                      ast.base.base.loc,
+                                                                      s2c(al, "__xx_main"),
+                                                                      nullptr,
+                                                                      use.p,
+                                                                      use.size(),
+                                                                      implicit.p,
+                                                                      implicit.size(),
+                                                                      decl.p,
+                                                                      decl.size(),
+                                                                      body.p,
+                                                                      body.size(),
+                                                                      contains_body.p,
+                                                                      contains_body.size());
 
                         global_items.push_back(al, program_ast);
                         program_added = true;
                     } else {
                         diagnostics.add(diag::Diagnostic(
                             "Expected function, subroutine, procedure in program contains",
-                            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {name->base.base.loc})}));
+                            diag::Level::Error,
+                            diag::Stage::Parser,
+                            { diag::Label("", { name->base.base.loc }) }));
                         throw parser_local::ParserAbort();
                     }
                 } else {
                     diagnostics.add(diag::Diagnostic(
                         "Expected function, subroutine, procedure in program contains",
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {expr->base.loc})}));
+                        diag::Level::Error,
+                        diag::Stage::Parser,
+                        { diag::Label("", { expr->base.loc }) }));
                     throw parser_local::ParserAbort();
                 }
             } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Expected function, subroutine, procedure in program contains",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                diagnostics.add(
+                    diag::Diagnostic("Expected function, subroutine, procedure in program contains",
+                                     diag::Level::Error,
+                                     diag::Stage::Parser,
+                                     { diag::Label("", { ast.m_items[i]->loc }) }));
                 throw parser_local::ParserAbort();
             }
         } else if (ast.m_items[i]->type == AST::astType::stmt) {
@@ -92,31 +125,48 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
         } else if (ast.m_items[i]->type == AST::astType::implicit_statement) {
             implicit.push_back(al, AST::down_cast<AST::implicit_statement_t>(ast.m_items[i]));
         } else if (ast.m_items[i]->type == AST::astType::unit_decl2) {
-            // Declaration, Interface, DerivedType, Template, Enum, Instantiate, Requirement, Requires
+            // Declaration, Interface, DerivedType, Template, Enum, Instantiate, Requirement,
+            // Requires
             decl.push_back(al, AST::down_cast<AST::unit_decl2_t>(ast.m_items[i]));
         } else if (ast.m_items[i]->type == AST::astType::expr) {
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                 if (to_lower(name->m_id) == "stop") {
-                    AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
+                    AST::ast_t* stop_ast
+                        = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
                 } else if (to_lower(name->m_id) == "return") {
-                    AST::ast_t* return_ast = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
+                    AST::ast_t* return_ast
+                        = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(return_ast));
                 } else if (to_lower(name->m_id) == "exit") {
-                    AST::ast_t* exit_ast = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
+                    AST::ast_t* exit_ast
+                        = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(exit_ast));
                 } else if (to_lower(name->m_id) == "cycle") {
-                    AST::ast_t* cycle_ast = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
+                    AST::ast_t* cycle_ast
+                        = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(cycle_ast));
                 } else if (to_lower(name->m_id) == "continue") {
-                    AST::ast_t* continue_ast = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
+                    AST::ast_t* continue_ast
+                        = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(continue_ast));
                 } else if (is_program_end(name)) {
-                    AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                    use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                    body.p, body.size(), contains_body.p, contains_body.size());
+                    AST::ast_t* program_ast = AST::make_Program_t(al,
+                                                                  ast.base.base.loc,
+                                                                  s2c(al, "__xx_main"),
+                                                                  nullptr,
+                                                                  use.p,
+                                                                  use.size(),
+                                                                  implicit.p,
+                                                                  implicit.size(),
+                                                                  decl.p,
+                                                                  decl.size(),
+                                                                  body.p,
+                                                                  body.size(),
+                                                                  contains_body.p,
+                                                                  contains_body.size());
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
@@ -125,98 +175,109 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 } else {
                     diagnostics.add(diag::Diagnostic(
                         "Statement or Declaration expected inside program, found Variable name",
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                        diag::Level::Error,
+                        diag::Stage::Parser,
+                        { diag::Label("", { ast.m_items[i]->loc }) }));
                     throw parser_local::ParserAbort();
                 }
             } else if (AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
-                AST::FuncCallOrArray_t* func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(expr);
+                AST::FuncCallOrArray_t* func_call_or_array
+                    = AST::down_cast<AST::FuncCallOrArray_t>(expr);
                 if (to_lower(func_call_or_array->m_func) == "allocate") {
-                    AST::ast_t* allocate_ast = AST::make_Allocate_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    func_call_or_array->m_args,
-                                                    func_call_or_array->n_args,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                    AST::ast_t* allocate_ast
+                        = AST::make_Allocate_t(al,
+                                               func_call_or_array->base.base.loc,
+                                               0,
+                                               func_call_or_array->m_args,
+                                               func_call_or_array->n_args,
+                                               func_call_or_array->m_keywords,
+                                               func_call_or_array->n_keywords,
+                                               nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(allocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "deallocate") {
-                    AST::ast_t* deallocate_ast = AST::make_Deallocate_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    func_call_or_array->m_args,
-                                                    func_call_or_array->n_args,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                    AST::ast_t* deallocate_ast
+                        = AST::make_Deallocate_t(al,
+                                                 func_call_or_array->base.base.loc,
+                                                 0,
+                                                 func_call_or_array->m_args,
+                                                 func_call_or_array->n_args,
+                                                 func_call_or_array->m_keywords,
+                                                 func_call_or_array->n_keywords,
+                                                 nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(deallocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "open") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    Vec<AST::expr_t*> args;
+                    args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
                         args.push_back(al, func_call_or_array->m_args[j].m_end);
                     }
                     AST::ast_t* open_ast = AST::make_Open_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                                                            func_call_or_array->base.base.loc,
+                                                            0,
+                                                            args.p,
+                                                            args.n,
+                                                            func_call_or_array->m_keywords,
+                                                            func_call_or_array->n_keywords,
+                                                            nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(open_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "close") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    Vec<AST::expr_t*> args;
+                    args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
                         args.push_back(al, func_call_or_array->m_args[j].m_end);
                     }
                     AST::ast_t* close_ast = AST::make_Close_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                                                              func_call_or_array->base.base.loc,
+                                                              0,
+                                                              args.p,
+                                                              args.n,
+                                                              func_call_or_array->m_keywords,
+                                                              func_call_or_array->n_keywords,
+                                                              nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(close_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "nullify") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    Vec<AST::expr_t*> args;
+                    args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
                         args.push_back(al, func_call_or_array->m_args[j].m_end);
                     }
                     AST::ast_t* nullify_ast = AST::make_Nullify_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                                                                  func_call_or_array->base.base.loc,
+                                                                  0,
+                                                                  args.p,
+                                                                  args.n,
+                                                                  func_call_or_array->m_keywords,
+                                                                  func_call_or_array->n_keywords,
+                                                                  nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(nullify_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "flush") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    Vec<AST::expr_t*> args;
+                    args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
                         args.push_back(al, func_call_or_array->m_args[j].m_end);
                     }
                     AST::ast_t* flush_ast = AST::make_Flush_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
+                                                              func_call_or_array->base.base.loc,
+                                                              0,
+                                                              args.p,
+                                                              args.n,
+                                                              func_call_or_array->m_keywords,
+                                                              func_call_or_array->n_keywords,
+                                                              nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
                 }
             } else {
                 diagnostics.add(diag::Diagnostic(
                     "Statement or Declaration expected inside program, found Expression",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                    diag::Level::Error,
+                    diag::Stage::Parser,
+                    { diag::Label("", { ast.m_items[i]->loc }) }));
                 throw parser_local::ParserAbort();
             }
         } else {
@@ -224,17 +285,21 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
         }
     }
     if (!program_added) {
-        diagnostics.add(diag::Diagnostic(
-            "Expected program end",
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.base.base.loc})}));
+        diagnostics.add(diag::Diagnostic("Expected program end",
+                                         diag::Level::Error,
+                                         diag::Stage::Parser,
+                                         { diag::Label("", { ast.base.base.loc }) }));
         throw parser_local::ParserAbort();
     }
     ast.m_items = global_items.p;
     ast.n_items = global_items.size();
 }
 
-Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co)
+Result<AST::TranslationUnit_t*>
+parse(Allocator& al,
+      const std::string& s,
+      diag::Diagnostics& diagnostics,
+      const CompilerOptions& co)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
     try {
@@ -243,24 +308,24 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
                 return Error();
             }
         };
-    } catch (const parser_local::ParserAbort &) {
+    } catch (const parser_local::ParserAbort&) {
         Error error;
         return error;
     }
     Location l;
     if (p.result.size() == 0) {
-        l.first=0;
-        l.last=0;
+        l.first = 0;
+        l.last = 0;
     } else {
-        l.first=p.result[0]->loc.first;
-        l.last=p.result[p.result.size()-1]->loc.last;
+        l.first = p.result[0]->loc.first;
+        l.last = p.result[p.result.size() - 1]->loc.last;
     }
-    AST::TranslationUnit_t* ast = (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
-        p.result.p, p.result.size());
+    AST::TranslationUnit_t* ast
+        = (AST::TranslationUnit_t*) AST::make_TranslationUnit_t(al, l, p.result.p, p.result.size());
     if (!co.interactive && !co.fixed_form && is_program_needed(*ast)) {
         try {
             fix_program_without_program_line(al, *ast, diagnostics);
-        }  catch (const parser_local::ParserAbort &) {
+        } catch (const parser_local::ParserAbort&) {
             Error error;
             if (!co.continue_compilation) {
                 return error;
@@ -270,11 +335,13 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
     return ast;
 }
 
-bool Parser::parse(const std::string &input)
+bool
+Parser::parse(const std::string& input)
 {
     inp = input;
     if (inp.size() > 0) {
-        if (inp[inp.size()-1] != '\n') inp.append("\n");
+        if (inp[inp.size() - 1] != '\n')
+            inp.append("\n");
     } else {
         inp.append("\n");
     }
@@ -286,12 +353,13 @@ bool Parser::parse(const std::string &input)
                     return false;
                 return true;
             }
-        } catch (const parser_local::TokenizerAbort &e) {
+        } catch (const parser_local::TokenizerAbort& e) {
             return false;
         }
     } else {
         f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation)) return false;
+        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation))
+            return false;
         if (yyparse(*this) == 0) {
             if (diag.has_error())
                 return false;
@@ -301,25 +369,29 @@ bool Parser::parse(const std::string &input)
 
     if (!diag.has_error()) {
         if (this->continue_compilation) {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
+            diag.add(diag::Diagnostic("Parsing unsuccessful (internal compiler error)",
+                                      diag::Level::Error,
+                                      diag::Stage::Parser,
+                                      { diag::Label("", {}) }));
         } else {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
+            diag.add(diag::Diagnostic("Parsing unsuccessful (internal compiler error)",
+                                      diag::Level::Error,
+                                      diag::Stage::Parser,
+                                      { diag::Label("", {}) }));
             throw parser_local::ParserAbort();
         }
     }
     return false;
 }
 
-Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
-        diag::Diagnostics &diagnostics,
-        std::vector<YYSTYPE> *stypes,
-        std::vector<Location> *locations,
-        bool fixed_form,
-        bool continue_compilation)
+Result<std::vector<int>>
+tokens(Allocator& al,
+       const std::string& input,
+       diag::Diagnostics& diagnostics,
+       std::vector<YYSTYPE>* stypes,
+       std::vector<Location>* locations,
+       bool fixed_form,
+       bool continue_compilation)
 {
     if (fixed_form) {
         FixedFormTokenizer t;
@@ -327,12 +399,12 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         if (t.tokenize_input(diagnostics, al, false)) {
             LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
-                for(const auto & el : t.stypes) {
+                for (const auto& el : t.stypes) {
                     stypes->push_back(el);
                 }
             }
             if (locations) {
-                for(const auto & el : t.locations) {
+                for (const auto& el : t.locations) {
                     locations->push_back(el);
                 }
             }
@@ -344,24 +416,28 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         Tokenizer t;
         t.set_string(input);
         std::vector<int> tst;
-        int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
+        int token = yytokentype::END_OF_FILE + 1;  // Something different from EOF
         while (token != yytokentype::END_OF_FILE) {
             YYSTYPE y;
             Location l;
             try {
                 token = t.lex(al, y, l, diagnostics, continue_compilation);
-            } catch (const parser_local::TokenizerAbort &e) {
+            } catch (const parser_local::TokenizerAbort& e) {
                 return Error();
             }
             tst.push_back(token);
-            if (stypes) stypes->push_back(y);
-            if (locations) locations->push_back(l);
+            if (stypes)
+                stypes->push_back(y);
+            if (locations)
+                locations->push_back(l);
         }
         return tst;
     }
 }
 
-char previous_nonspace_character(const std::string &s, size_t pos) {
+char
+previous_nonspace_character(const std::string& s, size_t pos)
+{
     while (pos > 0) {
         --pos;
         if (s[pos] != ' ' && s[pos] != '\t') {
@@ -371,7 +447,9 @@ char previous_nonspace_character(const std::string &s, size_t pos) {
     return '\0';
 }
 
-char next_nonspace_character(const std::string &s, size_t pos) {
+char
+next_nonspace_character(const std::string& s, size_t pos)
+{
     pos++;
     while (pos < s.size()) {
         if (s[pos] != ' ' && s[pos] != '\t') {
@@ -383,13 +461,10 @@ char next_nonspace_character(const std::string &s, size_t pos) {
 }
 
 
-void is_within_string(
-    const std::string &s,
-    size_t pos,
-    char &quote,
-    const bool in_comment,
-    bool &in_string
-) {
+void
+is_within_string(
+    const std::string& s, size_t pos, char& quote, const bool in_comment, bool& in_string)
+{
     // when in a comment, as everything is ignored, wearen't in string
     if (in_comment) {
         return;
@@ -405,13 +480,9 @@ void is_within_string(
     }
 }
 
-void cont1(
-    const std::string &s,
-    size_t &pos,
-    bool &in_string,
-    char &quote,
-    bool &ws_or_comment
-) {
+void
+cont1(const std::string& s, size_t& pos, bool& in_string, char& quote, bool& ws_or_comment)
+{
     ws_or_comment = true;
     bool in_comment = false;
     while (s[pos] != '\n') {
@@ -432,21 +503,30 @@ void cont1(
     pos++;
 }
 
-bool is_digit(unsigned char ch) {
+bool
+is_digit(unsigned char ch)
+{
     return (ch >= '0' && ch <= '9');
 }
 
 enum LineType {
-    Comment, Statement, LabeledStatement, Continuation, EndOfFile,
-    ContinuationTab, StatementTab, Include,
+    Comment,
+    Statement,
+    LabeledStatement,
+    Continuation,
+    EndOfFile,
+    ContinuationTab,
+    StatementTab,
+    Include,
 };
 
 // Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
 // The line ends with either `\n` or `\0`.  Only used for fixed-form
-LineType determine_line_type(const unsigned char *pos)
+LineType
+determine_line_type(const unsigned char* pos)
 {
-    int col=1;
+    int col = 1;
     if (*pos == '\n') {
         // Empty line => classified as comment
         return LineType::Comment;
@@ -467,17 +547,16 @@ LineType determine_line_type(const unsigned char *pos)
                 // A statement line after a tab
                 return LineType::StatementTab;
             }
-
         }
     } else {
         while (*pos == ' ') {
             pos++;
-            col+=1;
+            col += 1;
         }
-        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')
-	    || col > 72)
-	  return LineType::Comment;
-        if (*pos == '!' && col != 6) return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos + 1) == '\n') || col > 72)
+            return LineType::Comment;
+        if (*pos == '!' && col != 6)
+            return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
                 return LineType::Statement;
@@ -495,17 +574,18 @@ LineType determine_line_type(const unsigned char *pos)
     }
 }
 
-void skip_rest_of_line(const std::string &s, size_t &pos)
+void
+skip_rest_of_line(const std::string& s, size_t& pos)
 {
     while (pos < s.size() && s[pos] != '\n') {
         pos++;
     }
-    pos++; // Skip the last '\n'
+    pos++;  // Skip the last '\n'
 }
 
 // Parses string, including possible continuation lines
-void parse_string(std::string &out, const std::string &s, size_t &pos,
-    bool fixed_form, int &col)
+void
+parse_string(std::string& out, const std::string& s, size_t& pos, bool fixed_form, int& col)
 {
     char quote = s[pos];
     LCOMPILERS_ASSERT(quote == '"' || quote == '\'');
@@ -515,17 +595,18 @@ void parse_string(std::string &out, const std::string &s, size_t &pos,
 
     while (pos < s.size()) {
         if (fixed_form) {
-	    if (col > 72) {
-		skip_rest_of_line(s, pos);
-		col = 7;
-		pos += 6;
-		continue;
-	    } else if (s[pos] == quote && (col == 72 || s[pos+1] != quote)) {
-		break;
-	    }
+            if (col > 72) {
+                skip_rest_of_line(s, pos);
+                col = 7;
+                pos += 6;
+                continue;
+            } else if (s[pos] == quote && (col == 72 || s[pos + 1] != quote)) {
+                break;
+            }
         } else {
-	    if (s[pos] == quote && s[pos+1] != quote) break;
-	}
+            if (s[pos] == quote && s[pos + 1] != quote)
+                break;
+        }
         if (s[pos] == '\n') {
             pos++;
             if (fixed_form) {
@@ -536,8 +617,8 @@ void parse_string(std::string &out, const std::string &s, size_t &pos,
             }
             continue;
         }
-        if (s[pos] == quote && s[pos+1] == quote && (!fixed_form || col < 72)) {
-	    // Emit a doubled quote
+        if (s[pos] == quote && s[pos + 1] == quote && (!fixed_form || col < 72)) {
+            // Emit a doubled quote
             out += s[pos];
             pos++;
             col++;
@@ -547,18 +628,20 @@ void parse_string(std::string &out, const std::string &s, size_t &pos,
         col++;
     }
     if (pos < s.size()) {
-	out += s[pos]; // Copy the last quote
-	pos++;
-	col++;
+        out += s[pos];  // Copy the last quote
+        pos++;
+        col++;
     }
 }
 
-bool is_num(char c)
+bool
+is_num(char c)
 {
     return '0' <= c && c <= '9';
 }
 
-void copy_label(std::string &out, const std::string &s, size_t &pos)
+void
+copy_label(std::string& out, const std::string& s, size_t& pos)
 {
     size_t col = 1;
     while (pos < s.size() && s[pos] != '\n' && col <= 6) {
@@ -569,8 +652,9 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
 }
 
 // Only used in fixed-form
-void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
-		       LocationManager &lm, int &col)
+void
+copy_rest_of_line(
+    std::string& out, const std::string& s, size_t& pos, LocationManager& lm, int& col)
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (col > 72) {
@@ -611,22 +695,31 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
 }
 
 // Checks that newlines are computed correctly
-bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines) {
+bool
+check_newlines(const std::string& s, const std::vector<uint32_t>& newlines)
+{
     std::vector<uint32_t> newlines2;
-    for (uint32_t pos=0; pos < s.size(); pos++) {
-        if (s[pos] == '\n') newlines2.push_back(pos);
+    for (uint32_t pos = 0; pos < s.size(); pos++) {
+        if (s[pos] == '\n')
+            newlines2.push_back(pos);
     }
-    if (newlines2.size() != newlines.size()) return false;
-    for (size_t i=0; i < newlines2.size(); i++) {
-        if (newlines2[i] != newlines[i]) return false;
+    if (newlines2.size() != newlines.size())
+        return false;
+    for (size_t i = 0; i < newlines2.size(); i++) {
+        if (newlines2[i] != newlines[i])
+            return false;
     }
     return true;
 }
 
-void process_include(std::string& out, const std::string& s,
-                     LocationManager& lm, size_t& pos, bool fixed_form,
-                     std::vector<std::filesystem::path> &include_dirs,
-                     int &col)
+void
+process_include(std::string& out,
+                const std::string& s,
+                LocationManager& lm,
+                size_t& pos,
+                bool fixed_form,
+                std::vector<std::filesystem::path>& include_dirs,
+                int& col)
 {
     std::string include_filename;
     parse_string(include_filename, s, pos, fixed_form, col);
@@ -635,8 +728,8 @@ void process_include(std::string& out, const std::string& s,
     bool file_found = false;
     std::string include = "";
     if (is_relative_path(include_filename)) {
-        for (auto &path:include_dirs) {
-            std::string filepath = join_paths({path.generic_string(), include_filename});
+        for (auto& path : include_dirs) {
+            std::string filepath = join_paths({ path.generic_string(), include_filename });
             file_found = read_file(filepath, include);
             if (file_found) {
                 include_filename = filepath;
@@ -649,8 +742,8 @@ void process_include(std::string& out, const std::string& s,
 
     if (!file_found) {
         throw LCompilersException("Include file '" + include_filename
-            + "' not found. If an include path "
-            "is available, please use the `-I` option to specify it.");
+                                  + "' not found. If an include path "
+                                    "is available, please use the `-I` option to specify it.");
     }
 
     LocationManager lm_tmp;
@@ -664,16 +757,21 @@ void process_include(std::string& out, const std::string& s,
     // Possible it goes here
     // lm.files.back().out_start.push_back(out.size());
     out += include;
-    while (pos < s.size() && s[pos] != '\n') pos++;
+    while (pos < s.size() && s[pos] != '\n')
+        pos++;
     lm.files.back().out_start.push_back(out.size());
     lm.files.back().in_start.push_back(pos);
 }
 
-bool is_include(const std::string &s, uint32_t pos) {
-    while (pos < s.size() && s[pos] == ' ') pos++;
+bool
+is_include(const std::string& s, uint32_t pos)
+{
+    while (pos < s.size() && s[pos] == ' ')
+        pos++;
     if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
         pos += 7;
-        while (pos < s.size() && s[pos] == ' ') pos++;
+        while (pos < s.size() && s[pos] == ' ')
+            pos++;
         if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
             return true;
         } else {
@@ -693,8 +791,11 @@ The prescan phase includes:
 - Conversion to lowercase (fixed-form only)
 - Handling of fixed-form column rules (columns 1–6 for labels/comments)
 */
-std::string prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, std::vector<std::filesystem::path> &include_dirs)
+std::string
+prescan(const std::string& s,
+        LocationManager& lm,
+        bool fixed_form,
+        std::vector<std::filesystem::path>& include_dirs)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -724,18 +825,18 @@ std::string prescan(const std::string &s, LocationManager &lm,
          * parser can parse it correctly.
          */
         while (true) {
-            const char *p = &s[pos];
+            const char* p = &s[pos];
             int col = 7;  // Valid after p is advanced to code begin
-            LineType lt = determine_line_type((const unsigned char*)p);
+            LineType lt = determine_line_type((const unsigned char*) p);
             switch (lt) {
-                case LineType::Comment : {
+                case LineType::Comment: {
                     // Skip
                     skip_rest_of_line(s, pos);
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
                     break;
                 }
-                case LineType::Statement : {
+                case LineType::Statement: {
                     // Copy from column 7
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
@@ -743,7 +844,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
-                case LineType::StatementTab : {
+                case LineType::StatementTab: {
                     // Copy from column 2
                     pos += 1;
                     lm.files.back().out_start.push_back(out.size());
@@ -751,7 +852,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
-                case LineType::LabeledStatement : {
+                case LineType::LabeledStatement: {
                     // Copy the label
                     copy_label(out, s, pos);
                     // Copy from column 7
@@ -760,18 +861,18 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
-                case LineType::Continuation : {
+                case LineType::Continuation: {
                     // Append from column 7 to previous line
-                    out = out.substr(0, out.size()-1); // Remove the last '\n'
+                    out = out.substr(0, out.size() - 1);  // Remove the last '\n'
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
-                case LineType::ContinuationTab : {
+                case LineType::ContinuationTab: {
                     // Append from column 3 to previous line
-                    out = out.substr(0, out.size()-1); // Remove the last '\n'
+                    out = out.substr(0, out.size() - 1);  // Remove the last '\n'
                     pos += 2;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
@@ -779,27 +880,29 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     break;
                 }
                 case LineType::Include: {
-                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
                     LCOMPILERS_ASSERT(s.substr(pos, 7) == "include");
                     pos += 7;
-                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
-                        process_include(out, s, lm, pos, fixed_form,
-                            include_dirs, col);
+                        process_include(out, s, lm, pos, fixed_form, include_dirs, col);
                     }
                     break;
                 }
-                case LineType::EndOfFile : {
+                case LineType::EndOfFile: {
                     break;
                 }
             };
-            if (lt == LineType::EndOfFile) break;
+            if (lt == LineType::EndOfFile)
+                break;
         }
         lm.files.back().in_start.push_back(pos);
         lm.files.back().out_start.push_back(out.size());
         return out;
     } else {
-         // `pos` is the position in the original code `s`
+        // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
         lm.files.back().out_start.push_back(0);
         lm.files.back().in_start.push_back(0);
@@ -814,49 +917,58 @@ std::string prescan(const std::string &s, LocationManager &lm,
         while (pos < s.size()) {
             is_within_string(s, pos, quote, in_comment, in_string);
             if (newline && is_include(s, pos)) {
-                int col = 0; // doesn't matter
-                while (pos < s.size() && s[pos] == ' ') pos++;
+                int col = 0;  // doesn't matter
+                while (pos < s.size() && s[pos] == ' ')
+                    pos++;
                 LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
-                while (pos < s.size() && s[pos] == ' ') pos++;
+                while (pos < s.size() && s[pos] == ' ')
+                    pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
                 process_include(out, s, lm, pos, fixed_form, include_dirs, col);
             }
             newline = false;
-            if (s[pos] == '!' && !in_string) in_comment = true;
-            if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
-                size_t pos2=pos+1;
+            if (s[pos] == '!' && !in_string)
+                in_comment = true;
+            if (in_comment && s[pos] == '\n')
+                in_comment = false;
+            if (!in_comment && s[pos] == '&'
+                && (next_nonspace_character(s, pos) == '\n'
+                    || next_nonspace_character(s, pos) == '!')) {
+                size_t pos2 = pos + 1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
-                if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
+                if (ws_or_comment)
+                    lm.files.back().in_newlines.push_back(pos2 - 1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
                         cont1(s, pos2, in_string, quote, ws_or_comment);
-                        if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
-                    }}
-                    // `pos` will move by more than 1, close the old interval
-                    //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
-                    // Move `pos`
-                    pos = pos2;
-                    // Start a new interval (just the starts, the size will be
-                    // filled in later)
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
-                
+                        if (ws_or_comment)
+                            lm.files.back().in_newlines.push_back(pos2 - 1);
+                    }
+                }
+                // `pos` will move by more than 1, close the old interval
+                // lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+                // Move `pos`
+                pos = pos2;
+                // Start a new interval (just the starts, the size will be
+                // filled in later)
+                lm.files.back().out_start.push_back(out.size());
+                lm.files.back().in_start.push_back(pos);
+
             } else {
                 if (s[pos] == '\n') {
                     lm.files.back().in_newlines.push_back(pos);
                     newline = true;
                 }
             }
-            if (!(s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n')){
+            if (!(s[pos] == '&' && previous_nonspace_character(s, pos) == '\n')) {
                 out += s[pos];
             }
             pos++;
         }
         // set the size of the last interval
-    //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+        //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
 
         LCOMPILERS_ASSERT(check_newlines(s, lm.files.back().in_newlines))
 
@@ -869,10 +981,12 @@ std::string prescan(const std::string &s, LocationManager &lm,
 }
 
 
+#define T(tk, name)                                                                                \
+    case (yytokentype::tk):                                                                        \
+        return name;
 
-#define T(tk, name) case (yytokentype::tk) : return name;
-
-std::string token2text(const int token)
+std::string
+token2text(const int token)
 {
     if (0 < token && token < 256) {
         char t = token;
@@ -1133,14 +1247,15 @@ std::string token2text(const int token)
         T(KW_WHERE, "where")
         T(KW_WHILE, "while")
         T(KW_WRITE, "write")
-        default : {
+        default: {
             std::cout << "TOKEN: " << token << std::endl;
             throw LCompilersException("Token conversion not implemented yet.");
         }
     }
 }
 
-void Parser::handle_yyerror(const Location &loc, const std::string &msg)
+void
+Parser::handle_yyerror(const Location& loc, const std::string& msg)
 {
     std::string message;
     if (msg == "syntax is ambiguous") {
@@ -1154,13 +1269,15 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
                 if (this->continue_compilation) {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+                    diag.add(diag::Diagnostic(message,
+                                              diag::Level::Error,
+                                              diag::Stage::Parser,
+                                              { diag::Label("", { loc }) }));
                 } else {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+                    diag.add(diag::Diagnostic(message,
+                                              diag::Level::Error,
+                                              diag::Stage::Parser,
+                                              { diag::Label("", { loc }) }));
                     throw parser_local::ParserAbort();
                 }
             }
@@ -1174,20 +1291,22 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;
             this->m_tokenizer.cur = this->m_tokenizer.tok;
-            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
+            token = this->m_tokenizer.lex(
+                this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
             token_str = this->m_tokenizer.token();
         }
         // Create a nice error message
         if (token == yytokentype::END_OF_FILE) {
-            message =  "End of file is unexpected here";
+            message = "End of file is unexpected here";
         } else if (token == yytokentype::TK_NEWLINE) {
-            message =  "Newline is unexpected here";
+            message = "Newline is unexpected here";
         } else {
             std::string token_type = token2text(token);
             if (token_str == token_type || token_str.size() == 0) {
-                message =  "Token '" + token_type + "' is unexpected here";
+                message = "Token '" + token_type + "' is unexpected here";
             } else {
-                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
+                message = "Token '" + token_str + "' (of type '" + token2text(token)
+                          + "') is unexpected here";
             }
         }
     } else {
@@ -1195,14 +1314,12 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     }
     if (this->continue_compilation) {
         diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+            message, diag::Level::Error, diag::Stage::Parser, { diag::Label("", { loc }) }));
     } else {
         diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+            message, diag::Level::Error, diag::Stage::Parser, { diag::Label("", { loc }) }));
         throw parser_local::ParserAbort();
     }
 }
 
-} // namespace LCompilers::LFortran
+}  // namespace LCompilers::LFortran
