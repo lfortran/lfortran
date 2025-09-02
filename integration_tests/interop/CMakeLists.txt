@@ -36,5 +36,3 @@ message("Fortran compiler flags: ${CMAKE_Fortran_FLAGS_${BTYPE}}")
 message("C++ compiler flags    : ${CMAKE_CXX_FLAGS_${BTYPE}}")
 message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
-
-

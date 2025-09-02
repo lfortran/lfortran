@@ -53,4 +53,3 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-
