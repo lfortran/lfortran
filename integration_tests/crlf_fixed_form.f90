@@ -3,4 +3,4 @@ C Fixed-form CRLF test with label
   10  continue
       print *, 'hello
      * world'
-      end
+      end
