@@ -3,6 +3,7 @@
 #include <iostream>
 #include <regex>
 #include <stdlib.h>
+#include <cstring>
 #include <filesystem>
 #include <random>
 #ifndef CLI11_HAS_FILESYSTEM
@@ -2320,7 +2321,25 @@ int main_app(int argc, char *argv[]) {
 
     LCompilers::PassManager lfortran_pass_manager;
 
-    lcli::LFortranCommandLineParser parser(argc, argv);
+    // For gfortran compatibility, preprocess -cpp and -nocpp flags
+    // We manually check for these flags and enable/disable cpp mode
+    bool force_cpp = false;
+    bool force_no_cpp = false;
+    std::vector<char*> new_argv;
+    for (int i = 0; i < argc; i++) {
+        if (std::strcmp(argv[i], "-cpp") == 0) {
+            force_cpp = true;
+            // Skip this argument
+        } else if (std::strcmp(argv[i], "-nocpp") == 0) {
+            force_no_cpp = true;
+            // Skip this argument  
+        } else {
+            new_argv.push_back(argv[i]);
+        }
+    }
+    int new_argc = new_argv.size();
+    
+    lcli::LFortranCommandLineParser parser(new_argc, new_argv.data());
     try {
         parser.parse();
     } catch (const CLI::ParseError &e) {
@@ -2341,6 +2360,14 @@ int main_app(int argc, char *argv[]) {
 
     lcli::LFortranCommandLineOpts &opts = parser.opts;
     CompilerOptions &compiler_options = opts.compiler_options;
+    
+    // Apply the force_cpp flags after parsing
+    if (force_cpp) {
+        opts.cpp = true;
+    }
+    if (force_no_cpp) {
+        opts.no_cpp = true;
+    }
 
     lcompilers_commandline_options = "";
     for (int i=0; i<argc; i++) {
