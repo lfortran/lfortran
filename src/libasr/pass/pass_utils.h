@@ -455,14 +455,11 @@ namespace LCompilers {
 
                 // Override visit_dimension to handle null dimension bounds in ArrayPhysicalCast types
                 void visit_dimension(const ASR::dimension_t &x) {
-                    // Check for null before visiting - dimensions in ArrayPhysicalCast types
-                    // can have null bounds (deferred-shape arrays from allocatables/pointers)
-                    if (x.m_start) {
-                        visit_expr(*x.m_start);
-                    }
-                    if (x.m_length) {
-                        visit_expr(*x.m_length);
-                    }
+                    // DO NOT visit dimension expressions - they can have garbage pointers for
+                    // assumed-size arrays in ArrayPhysicalCast types
+                    // The UpdateDependenciesVisitor only tracks module dependencies, not
+                    // variable dependencies within functions, so skipping this is safe
+                    (void)x;
                 } 
 
                 void visit_Module(const ASR::Module_t& x) {
