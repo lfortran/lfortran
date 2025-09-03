@@ -1,14 +1,16 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%_VTable_point.type = type { [3 x i8*] }
 %point = type <{ i32 (...)** }>
-%_VTable_point2d.type = type { [3 x i8*] }
 %string_descriptor = type <{ i8*, i64 }>
 %point2d = type <{ %point, float, float }>
 
-@_VTable_point = linkonce_odr unnamed_addr constant %_VTable_point.type { [3 x i8*] [i8* null, i8* null, i8* null] }, align 8
-@_VTable_point2d = linkonce_odr unnamed_addr constant %_VTable_point2d.type { [3 x i8*] [i8* null, i8* null, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
+@_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
+@_Type_Info_point = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0) }, align 8
+@_VTable_point = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_point, i8* null] }, align 8
+@_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
+@_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* bitcast ({ i8*, i8* }* @_Type_Info_point to i8*) }, align 8
+@_VTable_point2d = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_point2d, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
 @string_const_data = private constant [11 x i8] c"ERROR STOP\00"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
 @string_const_data.1 = private constant [2 x i8] c"\0A\00"
@@ -42,7 +44,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %p2d = alloca %point2d, align 8
   %2 = bitcast %point2d* %p2d to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds (%_VTable_point2d.type, %_VTable_point2d.type* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
   %3 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
   %4 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
   %5 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 0
