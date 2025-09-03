@@ -433,6 +433,11 @@ struct FixedFormRecursiveDescent {
 
     void next_line(unsigned char *&cur) {
         while (*cur != '\n' && *cur != '\0') {
+            // Skip CR characters (treat as whitespace like free-form tokenizer)
+            if (*cur == '\r') {
+                cur++;
+                continue;
+            }
             cur++;
         }
         if (*cur == '\n') cur++;
