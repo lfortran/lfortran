@@ -449,7 +449,9 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
-        replacer.replace_expr(*current_expr);
+        if (current_expr && *current_expr) {
+            replacer.replace_expr(*current_expr);
+        }
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
