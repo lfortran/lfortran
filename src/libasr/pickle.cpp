@@ -26,7 +26,11 @@ public:
         if (use_colors) {
             s.append(color(fg::yellow));
         }
-        s.append(ASRUtils::symbol_name(&x));
+        if (clojure) {
+            s.append(make_sym_clojure_compatible(ASRUtils::symbol_name(&x)));
+        } else {
+            s.append(ASRUtils::symbol_name(&x));
+        }
         if (use_colors) {
             s.append(color(fg::reset));
         }
