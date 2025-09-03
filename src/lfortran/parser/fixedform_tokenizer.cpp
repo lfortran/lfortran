@@ -434,7 +434,6 @@ struct FixedFormRecursiveDescent {
 
     void next_line(unsigned char *&cur) {
         while (*cur != '\n' && *cur != '\0') {
-            // Skip CR characters (treat as whitespace like free-form tokenizer)
             if (*cur == '\r') {
                 cur++;
                 continue;
@@ -629,7 +628,6 @@ struct FixedFormRecursiveDescent {
                 // String is ended by delim
                 return true;
             }
-            // Skip CR characters (treat as whitespace like free-form tokenizer)
             if (*cur == '\r') {
                 cur++;
                 continue;
@@ -751,7 +749,6 @@ struct FixedFormRecursiveDescent {
                     y2.int_suffix.int_kind);
             } else if (token == yytokentype::TK_STRING) {
                 std::string tk{tostr(t.tok+1, t.tok + len-1)};
-                // Filter out CR characters (treat as whitespace like free-form tokenizer)
                 tk.erase(std::remove(tk.begin(), tk.end(), '\r'), tk.end());
                 y2.string.from_str(m_a, tk);
             } else {
