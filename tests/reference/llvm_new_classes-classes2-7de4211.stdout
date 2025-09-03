@@ -1,14 +1,14 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%_VTable_point2d.type = type { [3 x i8*] }
 %_VTable_point.type = type { [3 x i8*] }
 %point = type <{ i32 (...)** }>
+%_VTable_point2d.type = type { [3 x i8*] }
 %string_descriptor = type <{ i8*, i64 }>
 %point2d = type <{ %point, float, float }>
 
-@_VTable_point2d = linkonce_odr unnamed_addr constant %_VTable_point2d.type { [3 x i8*] [i8* null, i8* null, i8* @__module_defs_r2d] }, align 8
 @_VTable_point = linkonce_odr unnamed_addr constant %_VTable_point.type { [3 x i8*] [i8* null, i8* null, i8* null] }, align 8
+@_VTable_point2d = linkonce_odr unnamed_addr constant %_VTable_point2d.type { [3 x i8*] [i8* null, i8* null, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
 @string_const_data = private constant [11 x i8] c"ERROR STOP\00"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
 @string_const_data.1 = private constant [2 x i8] c"\0A\00"
