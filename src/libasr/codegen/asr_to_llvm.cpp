@@ -4203,7 +4203,7 @@ public:
         return false;
     }
 
-    void store_class_vptr(ASR::Variable_t* v, llvm::Value* ptr) {
+    void store_class_vptr(ASR::Variable_t* v, llvm::Value* ptr, bool is_unallocated) {
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
             // Store Default vptr (Points to first Virtual function)
             ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
@@ -4212,9 +4212,14 @@ public:
                 // Temporarily: don't set vptr if there are no virtual functions
                 return ;
             }
+            llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    v->m_type, v->m_type_declaration, module.get());
             if (LLVM::is_llvm_pointer(*v->m_type)) {
-                ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
-                    v->m_type, v->m_type_declaration, module.get()), ptr);
+                if (is_unallocated) {
+                    llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
+                    builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
+                }
+                ptr = llvm_utils->CreateLoad2(v_llvm_type, ptr);
             }
             llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
             llvm::Value* vtable = newclass2vtab[struct_sym];
@@ -4302,7 +4307,7 @@ public:
                     if (compiler_options.new_classes &&
                             !ASRUtils::is_pointer(v->m_type) && !ASRUtils::is_array(v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                        store_class_vptr(v, ptr_member);
+                        store_class_vptr(v, ptr_member, ASRUtils::is_allocatable(v->m_type));
                     } else {
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -4912,7 +4917,7 @@ public:
                 static_cast<llvm::PointerType*>(type)), ptr);
             if (compiler_options.new_classes && !LLVM::is_llvm_pointer(*v->m_type) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                store_class_vptr(v, ptr);
+                store_class_vptr(v, ptr, ASRUtils::is_allocatable(v->m_type));
             }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             // Initialize non-primitve types
