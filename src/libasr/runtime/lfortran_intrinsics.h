@@ -293,6 +293,29 @@ LFORTRAN_API int32_t _lfortran_get_command_length();
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);
 
+
+typedef struct type_info {
+    char* name;  // Pointer to a null-terminated string representing the type name
+} type_info;
+
+typedef struct __si_class_type_info {
+    type_info base;                               // Inherits from type_info
+    const struct __class_type_info* __base_type;  // Pointer to base class' type info
+} __si_class_type_info;
+
+static inline bool
+is_equal(const struct type_info* x, const struct type_info* y);
+
+static inline bool
+search_dst_type(const struct __si_class_type_info* dynamic_type,
+                const struct __si_class_type_info* dst_type);
+
+LFORTRAN_API void*
+__lfortran_dynamic_cast(const void* static_ptr,
+                        const struct __si_class_type_info* dst_type,
+                        bool match_exact_type);
+
+
 #ifdef __cplusplus
 }
 #endif

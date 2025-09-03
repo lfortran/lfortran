@@ -187,13 +187,6 @@ public:
     std::string current_select_type_block_der_type;
     std::string current_selector_var_name;
 
-    // External pointer to vtable of `__class_type_info` which is used for
-    // no inheritance.
-    llvm::GlobalVariable* __class_type_info_vptr = nullptr;
-    // External pointer to vtable of `__si_class_type_info` which is used for
-    // single-inheritance.
-    llvm::GlobalVariable* __si_class_type_info_vptr = nullptr;
-
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMList> list_api;
@@ -4697,34 +4690,10 @@ public:
 
         std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr, llvm_utils->i8_ptr };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 2 members.
+        type_info_member_values.reserve(1); // A type-info object has minimum 1 member.
 
         if (struct_t->m_parent) {
-            if (!__si_class_type_info_vptr) {
-                __si_class_type_info_vptr = new llvm::GlobalVariable(*module,
-                    llvm_utils->i8_ptr, true, llvm::GlobalValue::ExternalLinkage,
-                    nullptr, "_ZTV20__si_class_type_info");
-            }
-            type_info_member_types.push_back(llvm_utils->i8_ptr);
-            type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
-                llvm::ConstantExpr::getInBoundsGetElementPtr(
-                    llvm_utils->i8_ptr,
-                    __si_class_type_info_vptr,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2)),
-                llvm_utils->i8_ptr));
             create_type_info_for_struct(struct_t->m_parent);
-        } else {
-            if (!__class_type_info_vptr) {
-                 __class_type_info_vptr = new llvm::GlobalVariable(*module,
-                    llvm_utils->i8_ptr, true, llvm::GlobalValue::ExternalLinkage,
-                    nullptr, "_ZTV17__class_type_info");
-            }
-            type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
-                llvm::ConstantExpr::getInBoundsGetElementPtr(
-                    llvm_utils->i8_ptr,
-                    __class_type_info_vptr,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2)),
-                llvm_utils->i8_ptr));
         }
 
         // Struct name
