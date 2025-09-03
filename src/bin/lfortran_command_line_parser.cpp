@@ -217,32 +217,9 @@ namespace LCompilers::CommandLineInterface {
         app.require_subcommand(0, 1);
 
         if (argv != nullptr) {
-            // Convert gfortran-style flags to LFortran style for compatibility
-            std::vector<std::string> converted_args;
-            for (int i = 0; i < argc; i++) {
-                std::string arg = argv[i];
-                if (arg == "-cpp") {
-                    converted_args.push_back("--cpp");
-                } else if (arg == "-nocpp") {
-                    converted_args.push_back("--no-cpp");
-                } else {
-                    converted_args.push_back(arg);
-                }
-            }
-            app.parse(converted_args);
+            app.parse(argc, argv);
         } else {
-            // Also handle conversion for the vector<string> case
-            std::vector<std::string> converted_args;
-            for (const auto& arg : args) {
-                if (arg == "-cpp") {
-                    converted_args.push_back("--cpp");
-                } else if (arg == "-nocpp") {
-                    converted_args.push_back("--no-cpp");
-                } else {
-                    converted_args.push_back(arg);
-                }
-            }
-            app.parse(converted_args);
+            app.parse(args);
         }
 
         if (opts.disable_style_suggestions) {
