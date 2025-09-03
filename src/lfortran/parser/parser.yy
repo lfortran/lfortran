@@ -1883,6 +1883,7 @@ read_statement
     | KW_READ TK_INTEGER "," expr_list { $$ = READ2($2, $4, @$); }
     | KW_READ "*" "," expr_list { $$ = READ3($4, @$); }
     | KW_READ TK_INTEGER { $$ = READ4($2, @$); }
+    | KW_READ TK_STRING "," expr_list { $$ = READ5($2, $4, @$); }
     ;
 
 nullify_statement
