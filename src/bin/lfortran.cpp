@@ -2321,8 +2321,8 @@ int main_app(int argc, char *argv[]) {
 
     LCompilers::PassManager lfortran_pass_manager;
 
-    // For gfortran/CMake compatibility, preprocess certain flags
-    // We manually check for these flags and convert/apply them
+    // For gfortran compatibility, preprocess -cpp and -nocpp flags
+    // We manually check for these flags and enable/disable cpp mode
     bool force_cpp = false;
     bool force_no_cpp = false;
     std::vector<char*> new_argv;
@@ -2333,9 +2333,6 @@ int main_app(int argc, char *argv[]) {
         } else if (std::strcmp(argv[i], "-nocpp") == 0) {
             force_no_cpp = true;
             // Skip this argument
-        } else if (std::strcmp(argv[i], "--generate-object-code") == 0) {
-            // Convert CMake's flag to LFortran's equivalent
-            new_argv.push_back(const_cast<char*>("--separate-compilation"));
         } else {
             new_argv.push_back(argv[i]);
         }
