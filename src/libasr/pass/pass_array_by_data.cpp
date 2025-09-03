@@ -454,6 +454,14 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         }
     }
 
+    // Override visit_dimension to prevent crashes when visiting dimensions in type structures
+    void visit_dimension(const ASR::dimension_t &x) {
+        // Skip visiting dimensions entirely - they can have null bounds in
+        // ArrayPhysicalCast types (deferred-shape arrays from allocatables/pointers)
+        // and this pass doesn't need to modify them
+        (void)x; // Suppress unused parameter warning
+    }
+
     void visit_BlockCall(const ASR::BlockCall_t& x) {
         ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
         edit_symbol_reference(m)
@@ -871,6 +879,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
             visit_Call(x);
+        }
+
+        // Override visit_dimension to prevent crashes when visiting dimensions in type structures
+        void visit_dimension(const ASR::dimension_t &x) {
+            // Skip visiting dimensions entirely - they can have null bounds in
+            // ArrayPhysicalCast types (deferred-shape arrays from allocatables/pointers)
+            (void)x; // Suppress unused parameter warning
         }
 
         void visit_Variable(const ASR::Variable_t &x) {

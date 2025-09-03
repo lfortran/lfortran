@@ -451,6 +451,18 @@ namespace LCompilers {
                     current_scope = x.m_symtab;
                     BaseWalkVisitor::visit_Program(x);
                     current_scope = current_scope_copy;
+                }
+
+                // Override visit_dimension to handle null dimension bounds in ArrayPhysicalCast types
+                void visit_dimension(const ASR::dimension_t &x) {
+                    // Check for null before visiting - dimensions in ArrayPhysicalCast types
+                    // can have null bounds (deferred-shape arrays from allocatables/pointers)
+                    if (x.m_start) {
+                        visit_expr(*x.m_start);
+                    }
+                    if (x.m_length) {
+                        visit_expr(*x.m_length);
+                    }
                 } 
 
                 void visit_Module(const ASR::Module_t& x) {
