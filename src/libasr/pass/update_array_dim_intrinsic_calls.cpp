@@ -141,6 +141,7 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
     private:
 
         ReplaceArrayDimIntrinsicCalls replacer;
+        bool inside_array_physical_cast = false;
 
     public:
 
@@ -149,6 +150,22 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.replace_expr(*current_expr);
+        }
+
+        void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+            bool inside_array_physical_cast_copy = inside_array_physical_cast;
+            inside_array_physical_cast = true;
+            ASR::CallReplacerOnExpressionsVisitor<ArrayDimIntrinsicCallsVisitor>::visit_ArrayPhysicalCast(x);
+            inside_array_physical_cast = inside_array_physical_cast_copy;
+        }
+
+        void visit_dimension(const ASR::dimension_t& x) {
+            if (inside_array_physical_cast) {
+                // Skip visiting dimensions when inside ArrayPhysicalCast to avoid 
+                // accessing uninitialized dimension pointers
+                return;
+            }
+            ASR::CallReplacerOnExpressionsVisitor<ArrayDimIntrinsicCallsVisitor>::visit_dimension(x);
         }
 
 };

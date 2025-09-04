@@ -6748,8 +6748,17 @@ public:
                         ASR::array_index_t section_arg;
                         section_arg.loc = loc;
                         section_arg.m_left = idx;   // start index
-                        section_arg.m_right = nullptr; // no end index (means to end of array)  
-                        section_arg.m_step = nullptr;  // no step
+                        
+                        // Create size() intrinsic call for upper bound
+                        Vec<ASR::expr_t*> size_args;
+                        size_args.reserve(al, 2);
+                        size_args.push_back(al, array_expr);  // array
+                        size_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));  // dimension 1
+                        ASR::symbol_t* size_sym = resolve_intrinsic_function(loc, "size");
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                        section_arg.m_right = ASRUtils::EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc, 
+                            static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::Size), size_args.p, size_args.size(), 0, int_type, nullptr));
+                        section_arg.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));  // default step of 1
                         section_args.push_back(al, section_arg);
                         
                         // Use the original array's type instead of expected_arg_type to avoid empty dimensions
