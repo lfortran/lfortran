@@ -558,6 +558,15 @@ namespace LCompilers {
                 type = type->getPointerTo(); \
             } \
 
+        #define handle_llvm_pointers_new_classes() bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
+            type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
+                        m_storage, arg_m_value_attr, n_dims, a_kind, \
+                        is_array_type, arg_intent, module, get_pointer); \
+            if( !is_pointer_ ) { \
+                type = type->getPointerTo(); \
+            } \
+
+
         switch (asr_type->type) {
             case ASR::ttypeType::Array: {
                 ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(asr_type);
@@ -657,12 +666,20 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
-                handle_llvm_pointers2()
+                if (compiler_options.new_classes) {
+                    handle_llvm_pointers_new_classes()
+                } else {
+                    handle_llvm_pointers2()
+                }
                 break;
             }
             case (ASR::ttypeType::Allocatable) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_allocatable(asr_type);
-                handle_llvm_pointers2()
+                if (compiler_options.new_classes) {
+                    handle_llvm_pointers_new_classes()
+                } else {
+                    handle_llvm_pointers2()
+                }
                 break;
             }
             case (ASR::ttypeType::Real) : {

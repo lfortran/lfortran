@@ -11623,30 +11623,16 @@ public:
                                             al, arg->base.base.loc, &arg->base)), arg->m_type, module.get()), tmp);
                                     }
                                 }
-                                if (compiler_options.new_classes) {
-                                    if( orig_arg &&
-                                        (!LLVM::is_llvm_pointer(*orig_arg->m_type) ||
-                                        ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) &&
-                                        LLVM::is_llvm_pointer(*arg->m_type) &&
-                                        !ASRUtils::is_character(*arg->m_type)) {
-                                        // TODO: Remove call to ASRUtils::check_equal_type
-                                        // pass(rhs) is not respected in integration_tests/class_08.f90
+                                if( orig_arg &&
+                                    !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                    LLVM::is_llvm_pointer(*arg->m_type) &&
+                                    !ASRUtils::is_character(*arg->m_type) &&
+                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
+                                    // TODO: Remove call to ASRUtils::check_equal_type
+                                    // pass(rhs) is not respected in integration_tests/class_08.f90
 
-                                        llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
-                                        tmp = llvm_utils->CreateLoad2(load_type, tmp);
-                                    }
-                                } else {
-                                    if( orig_arg &&
-                                        !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                                        LLVM::is_llvm_pointer(*arg->m_type) &&
-                                        !ASRUtils::is_character(*arg->m_type) &&
-                                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
-                                        // TODO: Remove call to ASRUtils::check_equal_type
-                                        // pass(rhs) is not respected in integration_tests/class_08.f90
-
-                                        llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
-                                        tmp = llvm_utils->CreateLoad2(load_type, tmp);
-                                    }
+                                    llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
+                                    tmp = llvm_utils->CreateLoad2(load_type, tmp);
                                 }
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable_pointer(arg->m_type))
