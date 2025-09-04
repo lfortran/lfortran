@@ -4238,7 +4238,7 @@ public:
         }
     }
 
-       inline bool contains_methods(ASR::Struct_t* st) {
+    inline bool contains_methods(ASR::Struct_t* st) {
         for (auto& item: st->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
                 return true;
@@ -4252,17 +4252,15 @@ public:
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
         if (!contains_methods(struct_t)) { 
-                // Temporarily: don't set vptr if there are no virtual functions
-                return ;
-            }
+            // Temporarily: don't set vptr if there are no virtual functions
+            return ;
+        }
         // Store Default vptr (Points to first Virtual function)
         llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                struct_t->m_struct_signature, struct_sym, module.get());
-        if (LLVM::is_llvm_pointer(*struct_t->m_struct_signature)) {
-            if (is_unallocated) {
-                    llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
-                    builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
-                }
+                struct_t->m_struct_signature, struct_sym, module.get())->getPointerTo();
+        if (is_unallocated) {
+            llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
+            builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
             ptr = llvm_utils->CreateLoad2(v_llvm_type, ptr);
         }
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
