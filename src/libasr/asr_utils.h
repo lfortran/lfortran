@@ -6,6 +6,7 @@
 #include <set>
 #include <limits>
 #include <optional>
+#include <cstring>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
