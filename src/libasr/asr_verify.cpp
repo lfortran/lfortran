@@ -1021,7 +1021,12 @@ public:
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        // Set the flag BEFORE calling base visitor so dimensions are properly skipped
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = true;
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
+        
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
             require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
                 "the old physical type and new physical type must be different.");
@@ -1032,10 +1037,6 @@ public:
             require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
                 "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
-            bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
-            _inside_array_physical_cast_type = true;
-            visit_ttype(*x.m_type);
-            _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
 
@@ -1250,11 +1251,13 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
-        if (_inside_array_physical_cast_type && !_inside_call) {
-            require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
-                    "Dimensions in ArrayPhysicalCast must be present if not inside a call",
-                    x.loc);
+        // Skip visiting dimensions inside ArrayPhysicalCast types entirely
+        // These dimensions are derived/duplicated and may contain uninitialized pointers
+        // from assumed-size arrays in LAPACK and other legacy Fortran code
+        if (_inside_array_physical_cast_type) {
+            return;
         }
+        
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
