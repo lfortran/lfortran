@@ -7,12 +7,12 @@ module stdlib_logger
 contains
 subroutine format_output_string( self)
     class(logger_type) :: self
-    ! call format_first_line() ! Does not work yet
+    call format_first_line()
+    if (self%max_width /= 15) error stop
 contains
     subroutine format_first_line()
-        if ( self % max_width == 5  ) then
-            print *, "works"
-        end if
+        if (self%max_width /= 10) error stop
+        self%max_width = 15
     end subroutine format_first_line
 end subroutine
 
@@ -22,5 +22,6 @@ program class_16
     use stdlib_logger
     implicit none
     type(logger_type) :: logger
+    logger%max_width = 10
     call format_output_string(logger)
 end program
