@@ -1915,7 +1915,7 @@ RUN(NAME class_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes
 RUN(NAME class_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
-RUN(NAME class_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
