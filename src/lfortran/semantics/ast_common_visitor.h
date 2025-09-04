@@ -9544,25 +9544,39 @@ public:
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
                         ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
                         array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
+                } else if (ASR::is_a<ASR::ArraySection_t>(*var_expr) && compiler_options.legacy_array_sections) {
+                    // Handle ArraySection for assumed-size arrays (e.g., B(PERM(I), 1))
+                    // Create an assumed-size array type with one dimension
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    empty_dims.push_back(al, empty_dim);
+                    // Use the base type of the array section (which is the element type of the array)
+                    ASR::ttype_t* base_type = ASRUtils::type_get_past_array(var_type);
+                    var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc, base_type,
+                        empty_dims.p, empty_dims.size(), ASR::array_physical_typeType::DescriptorArray));
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
-                    ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
-                    ASR::Function_t* func = nullptr;
-                    if (func_sym) {
-                        func = ASR::down_cast<ASR::Function_t>(func_sym);
-                    }
-                    if (func && func->n_args > 0 && func->n_args <= x.n_args && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
-                        size_t n_dims = array_item->n_args;
+                    // For ArrayItem, if it's being passed to a function expecting an array,
+                    // treat it as an array starting from that element (assumed-size array)
+                    // Get the type of the array being indexed, not the ArrayItem itself
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
+                    ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
+                    if (ASRUtils::is_array(array_type)) {
+                        // Create assumed-size array from the indexed element
                         Vec<ASR::dimension_t> empty_dims;
-                        empty_dims.reserve(al, n_dims);
-                        for( size_t i = 0; i < n_dims; i++ ) {
-                            ASR::dimension_t empty_dim;
-                            empty_dim.loc = var_type->base.loc;
-                            empty_dim.m_start = nullptr;
-                            empty_dim.m_length = nullptr;
-                            empty_dims.push_back(al, empty_dim);
-                        }
-                        var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
+                        empty_dims.reserve(al, 1);
+                        ASR::dimension_t empty_dim;
+                        empty_dim.loc = var_type->base.loc;
+                        empty_dim.m_start = nullptr;
+                        empty_dim.m_length = nullptr;
+                        empty_dims.push_back(al, empty_dim);
+                        // Get the element type of the array
+                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(array_type);
+                        var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc, elem_type,
+                            empty_dims.p, empty_dims.size(), ASR::array_physical_typeType::DescriptorArray));
                     }
                 }
                 SetChar variable_dependencies_vec;
