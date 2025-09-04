@@ -4303,7 +4303,11 @@ namespace Cmplx {
                 body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0],  args[1], return_type, nullptr))));
             }
         } else if (is_complex(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, b.c2c_t(args[0], return_type)));
+            if (ASRUtils::check_equal_type(ASRUtils::expr_type(args[0]), return_type, args[0], nullptr)) {
+                body.push_back(al, b.Assignment(result, args[0]));
+            } else {
+                body.push_back(al, b.Assignment(result, b.c2c_t(args[0], return_type)));
+            }
         } else {
             throw LCompilersException("Invalid argument to `cmplx` intrinsic");
         }
