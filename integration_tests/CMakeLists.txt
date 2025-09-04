@@ -451,6 +451,7 @@ RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c f
 RUN(NAME while_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
 RUN(NAME while_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --fixed-form fortran)
 RUN(NAME assumed_size_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface GFORTRAN_ARGS -ffixed-form)
+RUN(NAME slals0_01 LABELS gfortran)
 
 RUN(NAME doloop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm fortran)
 RUN(NAME doloop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm mlir fortran)
