@@ -1,11 +1,12 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%_VTable_base.type = type { [3 x i8*] }
 %string_descriptor = type <{ i8*, i64 }>
 %base = type <{ i32 (...)**, i32 }>
 
-@_VTable_base = linkonce_odr unnamed_addr constant %_VTable_base.type { [3 x i8*] [i8* null, i8* null, i8* bitcast (void (%base*)* @__module_xx_show_x to i8*)] }, align 8
+@_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
+@_Type_Info_base = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0) }, align 8
+@_VTable_base = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_base, i8* bitcast (void (%base*)* @__module_xx_show_x to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -30,7 +31,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %b = alloca %base, align 8
   %2 = bitcast %base* %b to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds (%_VTable_base.type, %_VTable_base.type* @_VTable_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
   %3 = getelementptr %base, %base* %b, i32 0, i32 1
   %4 = getelementptr %base, %base* %b, i32 0, i32 1
   store i32 10, i32* %4, align 4

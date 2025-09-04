@@ -1,0 +1,13 @@
+{
+    "basename": "llvm_new_classes-select_type_13-cafec20",
+    "cmd": "lfortran --no-color --show-llvm --new-classes {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/select_type_13.f90",
+    "infile_hash": "8413deaa6aa9c492fa66fded9921b523764270cbc670d08a3a3c6ab0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm_new_classes-select_type_13-cafec20.stdout",
+    "stdout_hash": "ddf97f8502438ab89f2fbb54643a7cf253cd0884f75eebd7593b78d8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

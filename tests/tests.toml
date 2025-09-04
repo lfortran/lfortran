@@ -4790,3 +4790,7 @@ run = true
 [[test]]
 filename = "errors/submodule_01.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_13.f90"
+llvm_new_classes = true

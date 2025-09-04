@@ -12,6 +12,7 @@
 #include <errno.h>  
 #include <limits.h>
 #include <stdint.h>
+#include <stddef.h>  /* ptrdiff_t */
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -5683,4 +5684,77 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
 
 LFORTRAN_API int _lfortran_exec_command(char *cmd) {
     return system(cmd);
+}
+
+
+
+
+/*
+    Section below contains code for Run-Time Type Information (RTTI)
+    implementation used by LFortran.
+
+    For general runtime functions, please add them above this section. 
+    Please do not add any unrelated changes below.
+*/ 
+
+
+/*
+    =================================================================================
+    
+        `clang` like implementation of Run-Time Type Information (RTTI) based on
+        the standard defined by the Itanium CXX ABI.
+
+        Reference: https://itanium-cxx-abi.github.io/cxx-abi/abi.html#rtti
+
+    =================================================================================
+*/
+
+
+// Compare equality of two type-info objects.
+static inline bool
+is_equal(const type_info* x, const type_info* y)
+{
+    return x == y;
+}
+
+
+static inline bool
+search_dst_type(const struct __si_class_type_info* dynamic_type,
+                const struct __si_class_type_info* dst_type)
+{    
+    // Walk up the inheritance chain
+    const __si_class_type_info* base_type = (const __si_class_type_info*) dynamic_type->__base_type;
+    // Check each type for equality with `dst_type` until we reach a parent type
+    while (base_type != NULL) {
+        if (is_equal((const type_info*) base_type, (const type_info*) dst_type)) {
+            return true;
+        }
+        base_type = (const __si_class_type_info*) base_type->__base_type;
+    }
+
+    return false;
+}
+
+
+LFORTRAN_API void*
+__lfortran_dynamic_cast(const void* static_ptr,
+                        const __si_class_type_info* dst_type,
+                        bool match_exact_type)
+{
+    void** vtable = *(void* const*) static_ptr;
+    ptrdiff_t offset_to_derived = (ptrdiff_t) (intptr_t) vtable[-2];
+    const void* dynamic_ptr = (const char*) static_ptr + offset_to_derived;
+    const __si_class_type_info* dynamic_type = (const __si_class_type_info*) vtable[-1];
+
+    const void* dst_ptr = NULL;
+
+    if (is_equal((const type_info*) dynamic_type, (const type_info*) dst_type)) {
+        dst_ptr = dynamic_ptr;
+    } else if (!match_exact_type) {
+        if (search_dst_type((const __si_class_type_info*) dynamic_type, dst_type)) {
+            dst_ptr = dynamic_ptr;
+        }
+    }
+
+    return (void*) dst_ptr;
 }

@@ -221,9 +221,11 @@ namespace LCompilers {
             llvm::Type* string_descriptor;
             llvm::Type* vptr_type;
 
-            // Maps an `ASR::Struct_t` symbol to it's `vtable` in LLVM.
-            // The `vtable` looks like - `%__new_vtab_<struct_name> = { i64 }`
-            std::map<ASR::symbol_t*, llvm::Type*> struct_vtable;
+#if LLVM_VERSION_MAJOR >= 17
+            llvm::PointerType* i8_ptr = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+#else
+            llvm::PointerType* i8_ptr = llvm::Type::getInt8PtrTy(context);
+#endif
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,
