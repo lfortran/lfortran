@@ -6743,23 +6743,35 @@ public:
                         ASR::expr_t* idx = first_arg.m_right;
 
                         // For assumed-size arrays, create an ArraySection directly instead of Array with invalid dimensions
-                        Vec<ASR::array_index_t> section_args;
-                        section_args.reserve(al, 1);
-                        ASR::array_index_t section_arg;
-                        section_arg.loc = loc;
-                        section_arg.m_left = idx;   // start index
+                        // We need to create section arguments for all dimensions
+                        ASR::ttype_t* array_type = ASRUtils::expr_type(array_expr);
+                        int n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
                         
-                        // Create size() intrinsic call for upper bound
-                        Vec<ASR::expr_t*> size_args;
-                        size_args.reserve(al, 2);
-                        size_args.push_back(al, array_expr);  // array
-                        size_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));  // dimension 1
-                        ASR::symbol_t* size_sym = resolve_intrinsic_function(loc, "size");
+                        Vec<ASR::array_index_t> section_args;
+                        section_args.reserve(al, n_dims);
+                        
+                        // First dimension: use the provided index as starting point
+                        ASR::array_index_t first_section_arg;
+                        first_section_arg.loc = loc;
+                        first_section_arg.m_left = idx;   // start index
+                        
+                        // Create ArraySize node for upper bound
                         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                        section_arg.m_right = ASRUtils::EXPR(ASR::make_IntrinsicScalarFunction_t(al, loc, 
-                            static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::Size), size_args.p, size_args.size(), 0, int_type, nullptr));
-                        section_arg.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));  // default step of 1
-                        section_args.push_back(al, section_arg);
+                        ASR::expr_t* dim1_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                        first_section_arg.m_right = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, array_expr, dim1_expr, int_type, nullptr));
+                        first_section_arg.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));  // default step of 1
+                        section_args.push_back(al, first_section_arg);
+                        
+                        // For remaining dimensions (if any), use full slice (1:size(array,dim))
+                        for (int i = 1; i < n_dims; i++) {
+                            ASR::array_index_t section_arg;
+                            section_arg.loc = loc;
+                            section_arg.m_left = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                            ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, int_type));
+                            section_arg.m_right = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, array_expr, dim_expr, int_type, nullptr));
+                            section_arg.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                            section_args.push_back(al, section_arg);
+                        }
                         
                         // Use the original array's type instead of expected_arg_type to avoid empty dimensions
                         ASR::ttype_t* array_section_type = ASRUtils::expr_type(array_expr);
