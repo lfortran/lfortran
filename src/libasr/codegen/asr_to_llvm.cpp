@@ -3269,9 +3269,15 @@ public:
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
-            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+        if (compiler_options.new_classes) {
+            if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
+                tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+            }
+        } else {
+            if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
+                tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+            }
         }
 
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
