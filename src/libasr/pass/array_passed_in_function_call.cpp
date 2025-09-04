@@ -920,6 +920,24 @@ public:
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
         (void)x;
     }
+
+    bool inside_array_physical_cast = false;
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        bool inside_array_physical_cast_copy = inside_array_physical_cast;
+        inside_array_physical_cast = true;
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_ArrayPhysicalCast(x);
+        inside_array_physical_cast = inside_array_physical_cast_copy;
+    }
+
+    void visit_dimension(const ASR::dimension_t& x) {
+        if (inside_array_physical_cast) {
+            // Skip visiting dimensions when inside ArrayPhysicalCast to avoid 
+            // accessing uninitialized dimension pointers
+            return;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_dimension(x);
+    }
 };
 
 void pass_replace_array_passed_in_function_call(Allocator &al, ASR::TranslationUnit_t &unit,
