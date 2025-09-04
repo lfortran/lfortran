@@ -1,5 +1,6 @@
-! Test case derived from LAPACK's slals0.f subroutine
-! This tests assumed-size array handling with complex array indexing patterns
+! Test case for assumed-size array type mismatch bug
+! Demonstrates issue with 2D array element B(i,j) passed as 1D array starting point
+! Derived from LAPACK's slals0.f subroutine where this pattern causes compilation failure
 !
 ! License Information (from original LAPACK):
 ! -- LAPACK is a software package provided by Univ. of Tennessee,    --
