@@ -12032,7 +12032,7 @@ public:
                     ptr_type_deprecated[tmp] = arr_type;
 #endif
                     ASR::dimension_t* m_dims = nullptr;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_cast->m_arg), m_dims);
                     llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
