@@ -4271,7 +4271,25 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
+                // Always use array section conversion for assumed-size arrays, even without legacy flag
+                bool old_legacy_flag = compiler_options.legacy_array_sections;
+                if (!old_legacy_flag) {
+                    // Check if this function has assumed-size array parameters
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        ASR::ttype_t* arg_type = ASRUtils::expr_type(f->m_args[i]);
+                        if (ASRUtils::is_array(arg_type)) {
+                            ASR::dimension_t* dims = nullptr;
+                            int n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, dims);
+                            if (n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims)) {
+                                compiler_options.legacy_array_sections = true;
+                                break;
+                            }
+                        }
+                    }
+                }
                 legacy_array_sections_helper(final_sym, args, x.base.base.loc);
+                compiler_options.legacy_array_sections = old_legacy_flag;
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
