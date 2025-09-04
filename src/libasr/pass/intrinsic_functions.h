@@ -170,6 +170,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Popcnt,
     Poppar,
     Real,
+    Cmplx,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -3617,7 +3618,6 @@ namespace Maskl {
         *    end if
         *end if
         */
-    //    std::cout<<ASRUtils::extract_kind_from_ttype_t(return_type)<<" "<<ASRUtils::extract_kind_from_ttype_t(arg_types[0])<<std::endl;
        if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
             body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
                 b.Assignment(result, b.i_t(-1, return_type))
@@ -4185,6 +4185,136 @@ namespace Real {
     }
 
 } // namespace Real
+
+namespace Cmplx {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args > 3)  {
+            ASRUtils::require_impl(false, "Unexpected number of args, `cmplx` takes atleast 1 and atmost 3 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        ASRUtils::ASRBuilder b(al, loc);
+        double arg1_val = 0.0;
+        double arg2_val = 0.0;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            return args[0];
+        } else {
+            append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
+            return nullptr;
+        }
+
+        if (ASR::is_a<ASR::RealConstant_t>(*args[1])) {
+            arg2_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r;
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+            arg2_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[1])) {
+           arg2_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
+        } else {
+            append_error(diag, "Invalid second argument to `cmplx` intrinsic", loc);
+            return nullptr;
+        }
+        return b.complex_t(arg1_val, arg2_val, t1);
+    }
+
+    static inline ASR::asr_t* create_Cmplx(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASRUtils::ASRBuilder b(al, loc);
+        if (args[0] == nullptr) {
+                append_error(diag, "The first argument of `cmplx` intrinsic must be present", loc);
+                return nullptr;
+        } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(args[0]))) {
+            if (args[1]) {
+                append_error(diag, "The first argument of `cmplx` intrinsic is of complex type, the second argument in this case must be absent", loc);
+                return nullptr;
+            }
+        }
+       
+        ASR::ttype_t *return_type = complex32;
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, args[0]);
+        if (args[1])  m_args.push_back(al, args[1]);
+        else m_args.push_back(al, b.f32(0.0));
+        m_args.push_back(al, args[2]);
+        if ( args[2] != nullptr ) {
+            int kind = -1;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[2])) || !extract_value(ASRUtils::expr_value(args[2]), kind)) {
+                append_error(diag, "`kind` argument of the `Cmplx` function must be a scalar Integer constant", args[2]->base.loc);
+                return nullptr;
+            }
+            set_kind_to_ttype_t(return_type, kind);
+        }
+        for( size_t i = 0; i < 1; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);
+                break;
+            }
+        }
+
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
+            args_values.push_back(al, expr_value(m_args[0]));
+            args_values.push_back(al, expr_value(m_args[1]));
+            args_values.push_back(al, expr_value(m_args[2]));
+            m_value = eval_Cmplx(al, loc, return_type, args_values, diag);
+            if (diag.has_error()) {
+                return nullptr;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx), m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Cmplx(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_cmplx_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("kind", int32);
+                
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function cmplx(a) result(result)
+            any :: a
+            cmplx :: result
+            result = a
+        end function
+        */
+        if (is_integer(*arg_types[0])) {
+            if (is_integer(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  b.i2r_t(args[1], real32), return_type, nullptr))));
+            } else if (is_real(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  args[1], return_type, nullptr))));
+            }
+        } else if (is_real(*arg_types[0])) {
+            if (is_integer(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0], b.i2r_t(args[1], real32), return_type, nullptr))));
+            } else if (is_real(*arg_types[0])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0],  args[1], return_type, nullptr))));
+            }
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, b.c2c_t(args[0], return_type)));
+        } else {
+            throw LCompilersException("Invalid argument to `cmplx` intrinsic");
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Cmplx
 
 namespace Mergebits {
 
