@@ -173,7 +173,7 @@ public:
 
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
     std::map<ASR::symbol_t*, std::map<SymbolTable*, std::vector<llvm::Value*>>> class2vtab;
-    std::map<ASR::symbol_t*, llvm::Value*> newclass2vtab;
+    std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
     std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
@@ -229,7 +229,7 @@ public:
     current_scope(nullptr),
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
-        dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
+        dertype2parent, name2memidx, compiler_options, arr_arg_type_cache, newclass2vtab,
         fname2arg_type, ptr_type_deprecated, llvm_symtab)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
@@ -3578,10 +3578,11 @@ public:
             bool is_class = !struct_t->m_is_cstruct;
             if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
                 std::vector<llvm::Constant*> field_values;
+                create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(x.m_type_declaration));
                 llvm_utils->get_type_default_field_values(x.m_type_declaration, module.get(), field_values);
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
-                if (is_class) {
+                if (is_class && !compiler_options.new_classes) {
                     // llvm_struct_type = %toml_lexer_polymorphic {i64, %toml_lexer*}
                     ASR::ttype_t* inner_struct_type = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
                             ASRUtils::symbol_get_past_external(x.m_type_declaration), true);

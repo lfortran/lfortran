@@ -202,6 +202,7 @@ namespace LCompilers {
             std::map<std::string, std::string>& dertype2parent;
             std::map<std::string, std::map<std::string, int>>& name2memidx;
             std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
+            std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
             std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated;
 
@@ -233,6 +234,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx_,
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
+                std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
