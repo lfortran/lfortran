@@ -12033,6 +12033,11 @@ public:
 #endif
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_cast->m_arg), m_dims);
+                    
+                    // Skip bounds checking for assumed-size arrays (empty dimensions)
+                    if (n_dims > 0 && ASRUtils::is_dimension_empty(m_dims, n_dims)) {
+                        continue;
+                    }
                     llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -13084,7 +13089,21 @@ public:
         }
     }
 
+    bool has_valid_dimensions(ASR::expr_t* x) {
+        if (!x) return false;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x)) {
+            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x);
+            ASR::dimension_t* dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(cast->m_type, dims);
+            return !(n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims));
+        }
+        return true;
+    }
+
     void load_array_size_deep_copy(ASR::expr_t* x) {
+        if (!has_valid_dimensions(x)) {
+            throw CodeGenError("Cannot compute array size for assumed-size array");
+        }
         if (x != nullptr &&  ASR::is_a<ASR::Var_t>(*x)) {
             ASR::Var_t* x_var = ASR::down_cast<ASR::Var_t>(x);
             ASR::symbol_t* x_sym = ASRUtils::symbol_get_past_external(x_var->m_v);

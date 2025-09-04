@@ -6752,8 +6752,10 @@ public:
                         section_arg.m_step = nullptr;  // no step
                         section_args.push_back(al, section_arg);
                         
+                        // Use the original array's type instead of expected_arg_type to avoid empty dimensions
+                        ASR::ttype_t* array_section_type = ASRUtils::expr_type(array_expr);
                         arg.m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, array_expr,
-                            section_args.p, section_args.size(), expected_arg_type, nullptr));
+                            section_args.p, section_args.size(), array_section_type, nullptr));
                         args_with_array_section.push_back(al, arg);
                         continue;
 
