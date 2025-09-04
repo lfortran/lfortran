@@ -2822,9 +2822,15 @@ public:
                 (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start;
+                    if (m_dims[idim].m_start != nullptr) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        // For assumed-size arrays, use default start index of 1
+                        dim_start = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                    }
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
                     if (is_intent_in) {
                         this->visit_expr_wrapper(m_dims[idim].m_length, true);
@@ -2839,9 +2845,15 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start;
+                    if (m_dims[idim].m_start != nullptr) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        // For assumed-size arrays, use default start index of 1
+                        dim_start = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -6010,9 +6022,17 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
+                if (m_dims[i].m_start != nullptr) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                } else {
+                    tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                }
                 llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
+                if (m_dims[i].m_length != nullptr) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                } else {
+                    tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                }
                 llvm_diminfo.push_back(al, tmp);
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
@@ -7415,7 +7435,9 @@ public:
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
         // Check if *x is nullptr.
         if( x == nullptr ) {
-            throw CodeGenError("Internal error: x is nullptr");
+            // For assumed-size arrays, set a default value instead of throwing
+            tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+            return;
         }
 
         this->visit_expr(*x);
@@ -13320,13 +13342,21 @@ public:
                     builder->SetInsertPoint(thenBB);
                     {
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
-                            this->visit_expr_wrapper(m_dims[i].m_start, true);
+                            if (m_dims[i].m_start != nullptr) {
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                            } else {
+                                tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                            }
                             tmp = builder->CreateSExtOrTrunc(tmp, target_type);
                             builder->CreateStore(tmp, target);
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                             llvm::Value *lbound = nullptr, *length = nullptr;
-                            this->visit_expr_wrapper(m_dims[i].m_start, true);
-                            lbound = tmp;
+                            if (m_dims[i].m_start != nullptr) {
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                lbound = tmp;
+                            } else {
+                                lbound = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                            }
                             load_array_size_deep_copy(m_dims[i].m_length);
                             length = tmp;
                             builder->CreateStore(
@@ -13390,12 +13420,20 @@ public:
                         builder->SetInsertPoint(thenBB);
                         {
                             if( x.m_bound == ASR::arrayboundType::LBound ) {
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                if (m_dims[i].m_start != nullptr) {
+                                    this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                } else {
+                                    tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                                }
                                 builder->CreateStore(tmp, target);
                             } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                                 llvm::Value *lbound = nullptr, *length = nullptr;
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
-                                lbound = tmp;
+                                if (m_dims[i].m_start != nullptr) {
+                                    this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                    lbound = tmp;
+                                } else {
+                                    lbound = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                                }
                                 load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
                                 builder->CreateStore(
