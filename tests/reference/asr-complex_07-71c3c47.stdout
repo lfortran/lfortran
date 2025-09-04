@@ -103,20 +103,15 @@
                                     x
                                     [real_part]
                                     Local
-                                    (ComplexConstructor
-                                        (Cast
-                                            (Var 2 real_part)
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                42.000000
-                                                (Real 4)
-                                            )
-                                        )
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 real_part)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
                                         )
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         (ComplexConstant
                                             42.000000
@@ -196,12 +191,15 @@
                                     y
                                     [img_part]
                                     Local
-                                    (ComplexConstructor
-                                        (Var 2 img_part)
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 img_part)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
                                         )
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         (ComplexConstant
                                             3.140000
@@ -255,17 +253,12 @@
                                     [real_part
                                     img_part]
                                     Local
-                                    (ComplexConstructor
-                                        (Cast
-                                            (Var 2 real_part)
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                42.000000
-                                                (Real 4)
-                                            )
-                                        )
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 real_part)
                                         (Var 2 img_part)
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         (ComplexConstant
                                             42.000000
@@ -338,14 +331,12 @@
                     []
                     [(Assignment
                         (Var 2 z1)
-                        (ComplexConstructor
-                            (Cast
-                                (Var 2 i)
-                                IntegerToReal
-                                (Real 4)
-                                ()
-                            )
+                        (IntrinsicElementalFunction
+                            Cmplx
+                            [(Var 2 i)
                             (Var 2 x1)
+                            (IntegerConstant 4 (Integer 4) Decimal)]
+                            0
                             (Complex 4)
                             ()
                         )
@@ -390,20 +381,15 @@
                     (Assignment
                         (Var 2 x2)
                         (Cast
-                            (ComplexConstructor
-                                (Cast
-                                    (Var 2 real_part)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        42.000000
-                                        (Real 4)
-                                    )
-                                )
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 real_part)
                                 (RealConstant
                                     0.000000
                                     (Real 4)
                                 )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 (ComplexConstant
                                     42.000000
@@ -425,12 +411,15 @@
                     (Assignment
                         (Var 2 y2)
                         (Cast
-                            (ComplexConstructor
-                                (Var 2 img_part)
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 img_part)
                                 (RealConstant
                                     0.000000
                                     (Real 4)
                                 )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 (ComplexConstant
                                     3.140000
@@ -452,17 +441,12 @@
                     (Assignment
                         (Var 2 z2)
                         (Cast
-                            (ComplexConstructor
-                                (Cast
-                                    (Var 2 real_part)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        42.000000
-                                        (Real 4)
-                                    )
-                                )
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 real_part)
                                 (Var 2 img_part)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 (ComplexConstant
                                     42.000000
@@ -763,17 +747,15 @@
                     (Print
                         (StringFormat
                             ()
-                            [(ComplexConstructor
-                                (Cast
-                                    (Var 2 i)
-                                    IntegerToReal
-                                    (Real 4)
-                                    ()
-                                )
+                            [(IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 i)
                                 (RealConstant
                                     0.000000
                                     (Real 4)
                                 )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 ()
                             )]
@@ -790,17 +772,15 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
-                                    (ComplexConstructor
-                                        (Cast
-                                            (Var 2 i)
-                                            IntegerToReal
-                                            (Real 4)
-                                            ()
-                                        )
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 i)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
                                         )
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         ()
                                     )
@@ -844,12 +824,15 @@
                     (Print
                         (StringFormat
                             ()
-                            [(ComplexConstructor
-                                (Var 2 x1)
+                            [(IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 x1)
                                 (RealConstant
                                     0.000000
                                     (Real 4)
                                 )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 ()
                             )]
@@ -866,12 +849,15 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
-                                    (ComplexConstructor
-                                        (Var 2 x1)
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 x1)
                                         (RealConstant
                                             0.000000
                                             (Real 4)
                                         )
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         ()
                                     )
@@ -915,7 +901,18 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 2 z1)]
+                            [(IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 z1)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Complex 4)
+                                ()
+                            )]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -929,7 +926,18 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
-                                    (Var 2 z1)
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 z1)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
+                                        (Complex 4)
+                                        ()
+                                    )
                                     Sub
                                     (ComplexConstructor
                                         (RealConstant
@@ -970,14 +978,12 @@
                     (Print
                         (StringFormat
                             ()
-                            [(ComplexConstructor
-                                (Var 2 x1)
-                                (Cast
-                                    (Var 2 i)
-                                    IntegerToReal
-                                    (Real 4)
-                                    ()
-                                )
+                            [(IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 x1)
+                                (Var 2 i)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
                                 (Complex 4)
                                 ()
                             )]
@@ -994,14 +1000,12 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(ComplexBinOp
-                                    (ComplexConstructor
-                                        (Var 2 x1)
-                                        (Cast
-                                            (Var 2 i)
-                                            IntegerToReal
-                                            (Real 4)
-                                            ()
-                                        )
+                                    (IntrinsicElementalFunction
+                                        Cmplx
+                                        [(Var 2 x1)
+                                        (Var 2 i)
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
+                                        0
                                         (Complex 4)
                                         ()
                                     )

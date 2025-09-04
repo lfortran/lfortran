@@ -102,14 +102,12 @@
                     []
                     [(Assignment
                         (Var 2 z1)
-                        (ComplexConstructor
-                            (Cast
-                                (Var 2 i)
-                                IntegerToReal
-                                (Real 4)
-                                ()
-                            )
+                        (IntrinsicElementalFunction
+                            Cmplx
+                            [(Var 2 i)
                             (Var 2 x)
+                            (IntegerConstant 4 (Integer 4) Decimal)]
+                            0
                             (Complex 4)
                             ()
                         )
@@ -120,17 +118,15 @@
                         (StringFormat
                             ()
                             [(Var 2 z1)
-                            (ComplexConstructor
-                                (Cast
-                                    (Var 2 x)
-                                    RealToReal
-                                    (Real 8)
-                                    ()
-                                )
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 x)
                                 (RealConstant
                                     0.000000
-                                    (Real 8)
+                                    (Real 4)
                                 )
+                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                0
                                 (Complex 8)
                                 ()
                             )]
@@ -144,9 +140,15 @@
                     (Assignment
                         (Var 2 z2)
                         (Cast
-                            (Cast
-                                (Var 2 z2)
-                                ComplexToComplex
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 z2)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                0
                                 (Complex 8)
                                 ()
                             )

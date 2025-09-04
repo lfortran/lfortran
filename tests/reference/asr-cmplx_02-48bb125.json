@@ -2,12 +2,12 @@
     "basename": "asr-cmplx_02-48bb125",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/cmplx_02.f90",
-    "infile_hash": "4bc293fe7261129d487b3058234cb9ec644c7d91a6e984cb0984a29c",
+    "infile_hash": "2638b55f2204102e3c6df348aba6ab5405453fc87f2db6c8b5b6b28e",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-cmplx_02-48bb125.stderr",
-    "stderr_hash": "6903dfab9abef1f469ce7a2042a3f733d4feae49a578327e7bfdcff4",
-    "returncode": 2
+    "stdout": "asr-cmplx_02-48bb125.stdout",
+    "stdout_hash": "ac4ba70f6eda0e09e57834045a44409b2bfd2cd26e048309319e4831",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }
