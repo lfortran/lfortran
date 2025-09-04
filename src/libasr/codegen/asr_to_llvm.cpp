@@ -2828,8 +2828,8 @@ public:
                         this->visit_expr_wrapper(m_dims[idim].m_start, true);
                         dim_start = tmp;
                     } else {
-                        // For assumed-size arrays, use default start index of 1
-                        dim_start = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                        // For assumed-size arrays, use default start index
+                        dim_start = get_default_dimension_value();
                     }
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
                     if (is_intent_in) {
@@ -2851,8 +2851,8 @@ public:
                         this->visit_expr_wrapper(m_dims[idim].m_start, true);
                         dim_start = tmp;
                     } else {
-                        // For assumed-size arrays, use default start index of 1
-                        dim_start = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                        // For assumed-size arrays, use default start index
+                        dim_start = get_default_dimension_value();
                     }
                     llvm_diminfo.push_back(al, dim_start);
                 }
@@ -6025,13 +6025,13 @@ public:
                 if (m_dims[i].m_start != nullptr) {
                     visit_expr_wrapper(m_dims[i].m_start, true);
                 } else {
-                    tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                    tmp = get_default_dimension_value();
                 }
                 llvm_diminfo.push_back(al, tmp);
                 if (m_dims[i].m_length != nullptr) {
                     visit_expr_wrapper(m_dims[i].m_length, true);
                 } else {
-                    tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                    tmp = get_default_dimension_value();
                 }
                 llvm_diminfo.push_back(al, tmp);
             }
@@ -7432,11 +7432,16 @@ public:
         current_scope = current_scope_copy;
     }
 
+    // Helper for getting default dimension value for assumed-size arrays
+    llvm::Value* get_default_dimension_value() {
+        return llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+    }
+
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
         // Check if *x is nullptr.
         if( x == nullptr ) {
             // For assumed-size arrays, set a default value instead of throwing
-            tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+            tmp = get_default_dimension_value();
             return;
         }
 
@@ -13124,8 +13129,8 @@ public:
 
     void load_array_size_deep_copy(ASR::expr_t* x) {
         if (x == nullptr) {
-            // For assumed-size arrays, return size 1 as a safe default
-            tmp = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+            // For assumed-size arrays, return default dimension value
+            tmp = get_default_dimension_value();
             return;
         }
         if (ASR::is_a<ASR::Var_t>(*x)) {
