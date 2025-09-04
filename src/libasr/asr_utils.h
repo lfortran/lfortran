@@ -6458,6 +6458,73 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
     
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
+        
+        // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
+        if (passed_arg_expr && i < f->n_args) {
+            // Check for INTENT(OUT/INOUT) - but safely
+            // We need to check if this is a regular argument (not a procedure)
+            // by looking at whether we can safely call EXPR2VAR
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
+                    // Check if it's not a procedure (procedures don't have regular intent)
+                    if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
+                        if (callee_param->m_intent == ASR::intentType::Out ||
+                            callee_param->m_intent == ASR::intentType::InOut) {
+                            
+                            // For intent(out) and intent(inout), the actual argument must be a variable
+                            bool is_valid_variable = false;
+                            switch (passed_arg_expr->type) {
+                                case ASR::exprType::Var:
+                                case ASR::exprType::ArrayItem:
+                                case ASR::exprType::ArraySection:
+                                case ASR::exprType::StringItem:
+                                case ASR::exprType::StringSection:
+                                case ASR::exprType::StructInstanceMember:
+                                case ASR::exprType::IntrinsicArrayFunction:
+                                case ASR::exprType::ListItem:
+                                    // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
+                                    is_valid_variable = true;
+                                    break;
+                                case ASR::exprType::FunctionCall: {
+                                    // Only allow specific intrinsic functions that return modifiable references
+                                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(passed_arg_expr);
+                                    if (func_call->m_name) {
+                                        ASR::symbol_t* func_sym = func_call->m_name;
+                                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+                                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                                            std::string func_name = func->m_name;
+                                            // Allow list access functions that return modifiable references
+                                            if (func_name == "_lfortran_get_item") {
+                                                is_valid_variable = true;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                default:
+                                    is_valid_variable = false;
+                                    break;
+                            }
+                            
+                            if (!is_valid_variable) {
+                                diag.add(diag::Diagnostic(
+                                    "Non-variable expression in variable definition context "
+                                    "(actual argument to INTENT = OUT/INOUT)",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {passed_arg_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Now handle the original intent(in) -> intent(out/inout) mismatch check
+        // This only applies when passed_arg_expr is a Var_t
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {

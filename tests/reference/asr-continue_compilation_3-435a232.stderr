@@ -22,6 +22,30 @@ semantic error: Module 'continue_compilation_3_fake_module' modfile was not foun
 48 |     use continue_compilation_3_fake_module
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_3.f90:68:26
+   |
+68 |     call intent_out_test(1)  ! Error: literal constant with intent(out)
+   |                          ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_3.f90:69:26
+   |
+69 |     call intent_out_test(x + 1)  ! Error: expression with intent(out)
+   |                          ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_3.f90:70:28
+   |
+70 |     call intent_inout_test(2)  ! Error: literal constant with intent(inout)
+   |                            ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_3.f90:71:28
+   |
+71 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
+   |                            ^^^^^ 
+
 semantic error: Empty array constructor is not allowed
   --> tests/errors/continue_compilation_3.f90:91:9
    |

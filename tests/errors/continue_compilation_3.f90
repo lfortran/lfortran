@@ -13,17 +13,17 @@ module continue_compilation_3_mod
 
 
 
+contains
 
+    subroutine intent_out_test(x)
+        integer, intent(out) :: x
+        x = 42
+    end subroutine intent_out_test
 
-
-
-
-
-
-
-
-
-
+    subroutine intent_inout_test(y)
+        integer, intent(inout) :: y
+        y = y + 1
+    end subroutine intent_inout_test
 
 
 
@@ -65,10 +65,10 @@ program continue_compilation_3
     integer :: merge_i = 4, merge_j = 5
     integer(8) :: merge_k = 8
 
-
-
-
-
+    call intent_out_test(1)  ! Error: literal constant with intent(out)
+    call intent_out_test(x + 1)  ! Error: expression with intent(out)
+    call intent_inout_test(2)  ! Error: literal constant with intent(inout)
+    call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
 
 
 
