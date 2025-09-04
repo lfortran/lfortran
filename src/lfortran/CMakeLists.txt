@@ -94,10 +94,6 @@ if (WITH_LLVM)
         target_link_libraries(lfortran_lib p::mlir)
     endif()
     target_link_libraries(lfortran_lib p::llvm)
-    # Add dynamic zlib to resolve LLVM's zlib dependency conflicts
-    if (WITH_ZLIB)
-        target_link_libraries(lfortran_lib z)
-    endif()
 endif()
 #install(TARGETS lfortran_lib
 #    RUNTIME DESTINATION bin
