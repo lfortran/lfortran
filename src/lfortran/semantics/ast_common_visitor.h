@@ -195,6 +195,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         {ASRUtils::IntrinsicElementalFunctions::OutOfRange, 3},
         {ASRUtils::IntrinsicElementalFunctions::StringLenTrim, 2},
         {ASRUtils::IntrinsicElementalFunctions::Int, 2},
+        {ASRUtils::IntrinsicElementalFunctions::Cmplx, 3},
     };
 
     ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, ASR::expr_t* value_,
@@ -1314,6 +1315,7 @@ public:
         {"verify", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
         {"scan", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
         {"index", IntrinsicSignature({"string", "substring", "back", "kind"}, 2, 4)},
+        {"cmplx", IntrinsicSignature({"x", "y", "kind"}, 1, 3)},
         {"hypot", IntrinsicSignature({"x", "y"}, 2, 2)},
         {"shiftr", IntrinsicSignature({"i", "shift"}, 2, 2)},
         {"rshift", IntrinsicSignature({"i", "shift"}, 2, 2)},
@@ -1493,7 +1495,7 @@ public:
         {"max1", {"max", {"real"}}},
         {"amax1", {"max", {"real4"}}},
         {"dmax1", {"max", {"real"}}},
-        {"dcmplx", {"cmplx", {"any"}}},
+        {"dcmplx", {"cmplx", {"any", "any", "int4"}}},
         {"dacos", {"acos", {"real8"}}},
         {"dacosh", {"acosh", {"real8"}}},
         {"dint", {"aint", {"real8"}}},
@@ -8693,77 +8695,6 @@ public:
                                      size, type, transfer_value);
     }
 
-    ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"x", "y", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
-        ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
-        if (x_ == nullptr) {
-            diag.add(diag::Diagnostic("The first argument of `cmplx` intrinsic"
-                    " must be present",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-        if( ASRUtils::is_complex(*ASRUtils::expr_type(x_)) ) {
-            if( y_ != nullptr ) {
-                diag.add(diag::Diagnostic(
-                    "The first argument of `cmplx` intrinsic"
-                    " is of complex type, the second argument "
-                    "in this case must be absent",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            if (!ASR::is_a<ASR::Var_t>(*x_)) {
-                const ASR::ComplexConstructor_t* complex_expr = ASR::down_cast<ASR::ComplexConstructor_t>(x_);
-                const ASR::expr_t* real_part_expr = complex_expr->m_re;
-                const ASR::expr_t* imag_part_expr = complex_expr->m_im;
-
-                if (!ASR::is_a<ASR::RealConstant_t>(*real_part_expr)) {
-                    diag.add(diag::Diagnostic("Expected a real constant for the real part",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                } else if (!ASR::is_a<ASR::RealConstant_t>(*imag_part_expr)) {
-                    diag.add(diag::Diagnostic("Expected a real constant for the imaginary part",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-            int64_t kind_value = handle_kind(kind);
-            if (kind_value != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x_))) {
-                return ASR::make_Cast_t(al, x.base.base.loc, x_, ASR::cast_kindType::ComplexToComplex, 
-                                                            ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, kind_value)), nullptr);
-            }
-            return (ASR::asr_t*) x_;
-        }
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
-                                x.base.base.loc, kind_value));
-        if( y_ == nullptr ) {
-            y_ = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                         0.0, real_type));
-        }
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
-                                kind_value));
-        ASR::expr_t* x_value = ASRUtils::expr_value(x_);
-        ASR::expr_t* y_value = ASRUtils::expr_value(y_);
-        ASR::expr_t* cc_expr = nullptr;
-        double x_value_ = 0.0;
-        double y_value_ = 0.0;
-        if (x_value && y_value && ASRUtils::extract_value(x_value, x_value_) && ASRUtils::extract_value(y_value, y_value_)) {
-            cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
-                                                                 x_value_, y_value_, type));
-        }
-        // Cast x_ or y_ as necessary
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &x_,
-                                            ASRUtils::extract_type(ASRUtils::expr_type(x_)), real_type, diag);
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y_,
-                                            ASRUtils::extract_type(ASRUtils::expr_type(y_)), real_type, diag);
-        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
-    }
 
     ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
@@ -8900,9 +8831,9 @@ public:
             {"logical", 1}, {"storage_size", 1}, {"anint", 1}, {"nint", 1}, {"aint", 1},
             {"floor", 1}, {"ceiling", 1}, {"aimag", 1}, {"maskl", 1}, {"maskr", 1},
             {"ichar", 1}, {"char", 1}, {"achar", 1}, {"iachar", 1}, {"real", 1},
-            {"int", 1}, {"cmplx", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1},
+            {"int", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1},
             {"ieee_real", 1}, {"ieee_int", 2}, {"lbound", 2}, {"ubound", 2}, {"size", 2},
-            {"verify", 3}, {"index", 3}, {"scan", 3}
+            {"verify", 3}, {"index", 3}, {"scan", 3}, {"cmplx", 2}
         };
 
         auto it = kind_arg_index_map.find(name);
@@ -8955,6 +8886,19 @@ public:
             }
             if (args[3] == nullptr) {
                 args.p[3] = four;
+            }
+        } else if (intrinsic_name == "cmplx") {
+            if (args[1] == nullptr && !is_complex(*ASRUtils::expr_type(args[0]))) {
+                ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                ASR::expr_t* zero = ASRUtils::EXPR(
+                    ASR::make_RealConstant_t(al, loc, 0.0, real_type));
+                args.p[1] = zero;
+            }
+            if (args[2] == nullptr) {
+                int kind = 4;
+                ASR::expr_t* val = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, kind, int_type));
+                args.p[2] = val;
             }
         } else if (intrinsic_name == "real") {
             if (args[1] == nullptr) {
@@ -9300,8 +9244,6 @@ public:
                 tmp = create_ArrayBound(x, var_name);
             } else if( var_name == "transfer" ) {
                 tmp = create_BitCast(x);
-            } else if( var_name == "cmplx" ) {
-                tmp = create_Cmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "iachar" ) {
