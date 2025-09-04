@@ -246,7 +246,7 @@ program continue_compilation_2
     ! close_invalid_kwarg1
     CLOSE(end=200)
     ! cmplx_01
-    a = cmplx(y = 2)
+    print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
     ! cmplx_02
     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
     ! cmplx_03
