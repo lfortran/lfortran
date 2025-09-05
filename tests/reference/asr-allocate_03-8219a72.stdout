@@ -139,6 +139,7 @@
                                         (IntegerConstant 99 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -367,11 +368,13 @@
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 4 r)
@@ -541,6 +544,7 @@
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -598,6 +602,7 @@
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Allocate
                         [((Var 2 c)
@@ -647,6 +652,7 @@
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (ImplicitDeallocate
                         [(Var 2 c)]
@@ -668,6 +674,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (If

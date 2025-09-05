@@ -211,6 +211,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         9 1_intvector_resize
@@ -243,6 +244,7 @@
                                                         (Var 9 item)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -253,6 +255,7 @@
                                                         )
                                                         (Var 9 new_size)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -535,6 +538,7 @@
                                                             )
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -594,6 +598,7 @@
                                                         )
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -961,6 +966,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         5 1_vector_resize
@@ -997,6 +1003,7 @@
                                                         (Var 5 item)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -1007,6 +1014,7 @@
                                                         )
                                                         (Var 5 new_size)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -1321,6 +1329,7 @@
                                                             )
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -1386,6 +1395,7 @@
                                                         )
                                                         (Var 6 tmp)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()

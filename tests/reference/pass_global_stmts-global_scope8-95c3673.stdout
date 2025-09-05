@@ -51,11 +51,13 @@
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f1)
                         (Var 1 x)
                         ()
+                        .false.
                         .false.
                     )]
                     (Var 2 f1)

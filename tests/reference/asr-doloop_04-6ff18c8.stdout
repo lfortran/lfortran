@@ -78,11 +78,13 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 k)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
@@ -101,6 +103,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )]
                         []
@@ -135,6 +138,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 k)
@@ -144,6 +148,7 @@
                             (IntegerConstant -2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
@@ -162,6 +167,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )]
                         []
@@ -196,6 +202,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (DoLoop
                         a
@@ -213,6 +220,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )
                         (If
@@ -250,6 +258,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (DoLoop
                         b
@@ -267,6 +276,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )
                         (If
@@ -304,11 +314,13 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (WhileLoop
@@ -327,6 +339,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )
                         (If
@@ -354,6 +367,7 @@
                             )
                             ()
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -375,6 +389,7 @@
                         (Var 2 k)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
