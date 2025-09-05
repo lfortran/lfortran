@@ -3187,8 +3187,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateStore(initial_capacity, get_pointer_to_current_capacity_using_type(list_type, list));
     }
 
-    llvm::Value* LLVMDict::get_key_list(llvm::Value* dict) {
-        return llvm_utils->create_gep_deprecated(dict, 1);
+    llvm::Value* LLVMDict::get_key_list(llvm::Type* type, llvm::Value* dict) {
+        return llvm_utils->create_gep2(type, dict, 1);
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_key_value_pairs_using_type(ASR::ttype_t* key_type,
@@ -3198,15 +3198,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                           0, 0, nullptr, nullptr), dict, 3);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::get_key_list(llvm::Value* /*dict*/) {
+    llvm::Value* LLVMDictSeparateChaining::get_key_list(llvm::Type* /*type*/, llvm::Value* /*dict*/) {
         return nullptr;
     }
 
-    llvm::Value* LLVMDict::get_value_list(llvm::Value* dict) {
-        return llvm_utils->create_gep_deprecated(dict, 2);
+    llvm::Value* LLVMDict::get_value_list(llvm::Type* type, llvm::Value* dict) {
+        return llvm_utils->create_gep2(type, dict, 2);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::get_value_list(llvm::Value* /*dict*/) {
+    llvm::Value* LLVMDictSeparateChaining::get_value_list(llvm::Type* /*type*/, llvm::Value* /*dict*/) {
         return nullptr;
     }
 
@@ -3253,12 +3253,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return llvm_utils->create_gep_deprecated(dict, 1);
     }
 
-    llvm::Value* LLVMDict::get_pointer_to_capacity_using_type(ASR::ttype_t* /*key_type*/, ASR::ttype_t* value_type,
+    llvm::Value* LLVMDict::get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type,
                               llvm::Value* dict) {
         std::string value_type_code = ASRUtils::get_type_code(value_type);
+        std::string key_type_code = ASRUtils::get_type_code(key_type);
+        llvm::Type* dict_type = get_dict_type(key_type_code, value_type_code, 0, 0, nullptr, nullptr);
         return llvm_utils->list_api->get_pointer_to_current_capacity_using_type(
                             llvm_utils->list_api->get_list_type(nullptr, value_type_code, 0),
-                            get_value_list(dict));
+                            get_value_list(dict_type, dict));
     }
 
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type,
@@ -3278,8 +3280,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* n_ptr = get_pointer_to_occupancy(dict);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                            llvm::APInt(32, 0)), n_ptr);
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_type_ = get_dict_type(key_type_code, value_type_code,
+                                               0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_type_, dict);
+        llvm::Value* value_list = get_value_list(dict_type_, dict);
         llvm_utils->list_api->list_init(key_type_code, key_list, module,
                                         initial_capacity, initial_capacity);
         llvm_utils->list_api->list_init(value_type_code, value_list, module,
@@ -3442,15 +3446,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(src));
         llvm::Value* dest_occupancy_ptr = get_pointer_to_occupancy(dest);
         LLVM::CreateStore(*builder, src_occupancy, dest_occupancy_ptr);
-
-        llvm::Value* src_key_list = get_key_list(src);
-        llvm::Value* dest_key_list = get_key_list(dest);
+        llvm::Type* dict_Type_ = get_dict_type(ASRUtils::get_type_code(dict_type->m_key_type), ASRUtils::get_type_code(dict_type->m_value_type), 0, 0, nullptr, nullptr);
+        llvm::Value* src_key_list = get_key_list(dict_Type_, src);
+        llvm::Value* dest_key_list = get_key_list(dict_Type_,dest);
         llvm_utils->list_api->list_deepcopy(src_expr, src_key_list, dest_key_list,
                                             dict_type->m_key_type, module,
                                             name2memidx);
 
-        llvm::Value* src_value_list = get_value_list(src);
-        llvm::Value* dest_value_list = get_value_list(dest);
+        llvm::Value* src_value_list = get_value_list(dict_Type_, src);
+        llvm::Value* dest_value_list = get_value_list(dict_Type_, dest);
         llvm_utils->list_api->list_deepcopy(src_expr, src_value_list, dest_value_list,
                                             dict_type->m_value_type, module, name2memidx);
 
@@ -4131,8 +4135,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Module* module, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(dict_expr));
+        llvm::Type* dict_type_ = get_dict_type(ASRUtils::get_type_code(dict_type->m_key_type), ASRUtils::get_type_code(dict_type->m_value_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_type_, dict);
+        llvm::Value* value_list = get_value_list(dict_type_, dict);
 
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
@@ -4186,9 +4192,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * key_mask[pos] = set_max_2;
          *
          */
-
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4359,9 +4365,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
-
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4377,8 +4383,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4430,8 +4437,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
         llvm::Value* def_value) {
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4481,9 +4489,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * return value_list[pos];
          */
 
-
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4557,9 +4565,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
-
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
@@ -4610,8 +4618,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
         llvm::Value *def_value) {
-        llvm::Value* key_list = get_key_list(dict);
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* key_mask
             = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
@@ -4999,13 +5008,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                                        llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, capacity, capacity_ptr);
 
-
-        llvm::Value* key_list = get_key_list(dict);
+        llvm::Type* dict_Type = get_dict_type(key_type_code, value_type_code, 0, 0, key_llvm_type, value_llvm_type);
+        llvm::Value* key_list = get_key_list(dict_Type, dict);
         llvm::Value* new_key_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(key_llvm_type,
                                                           key_type_code, key_type_size));
         llvm_utils->list_api->list_init(key_type_code, new_key_list, module, capacity, capacity);
 
-        llvm::Value* value_list = get_value_list(dict);
+        llvm::Value* value_list = get_value_list(dict_Type, dict);
         llvm::Value* new_value_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(value_llvm_type,
                                                             value_type_code, value_type_size));
         llvm_utils->list_api->list_init(value_type_code, new_value_list, module, capacity, capacity);
@@ -5574,7 +5583,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(),
             get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
-        llvm::Value* el_list = key_or_value == 0 ? get_key_list(dict) : get_value_list(dict);
+        llvm::Type* dict_type = get_dict_type(key_type_code, value_type_code, 0, 0, nullptr, nullptr);
+        llvm::Value* el_list = key_or_value == 0 ? get_key_list(dict_type, dict) : get_value_list(dict_type, dict);
         ASR::ttype_t* el_asr_type = key_or_value == 0 ? key_asr_type : value_asr_type;
 
         idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
@@ -6802,11 +6812,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) {
         return llvm_utils->list_api->get_pointer_to_current_capacity_using_type(
-                            el_list_type, get_el_list(set));
+            el_list_type, get_el_list(el_list_type, set));
     }
 
-    llvm::Value* LLVMSetLinearProbing::get_el_list(llvm::Value* set) {
-        return llvm_utils->create_gep_deprecated(set, 1);
+    llvm::Value* LLVMSetLinearProbing::get_el_list(llvm::Type* type, llvm::Value* set) {
+        return llvm_utils->create_gep2(type, set, 1);
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set) {
@@ -6814,16 +6824,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_capacity_using_typecode(std::string& type_code, llvm::Value* set) {
+        llvm::Type* set_type = get_set_type(type_code, 0, nullptr);
         return llvm_utils->list_api->get_pointer_to_current_capacity_using_type(
                             llvm_utils->list_api->get_list_type(nullptr, type_code, 0),
-                            get_el_list(set));
+                            get_el_list(set_type, set));
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_mask(llvm::Value* set) {
         return llvm_utils->create_gep_deprecated(set, 2);
     }
 
-    llvm::Value* LLVMSetSeparateChaining::get_el_list(llvm::Value* /*set*/) {
+    llvm::Value* LLVMSetSeparateChaining::get_el_list(llvm::Type* /*set_type*/, llvm::Value* /*set*/) {
         return nullptr;
     }
 
@@ -6904,7 +6915,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* n_ptr = get_pointer_to_occupancy(set);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                            llvm::APInt(32, 0)), n_ptr);
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* el_type = std::get<2>(typecode2settype[type_code]);
+        llvm::Type* set_type = get_set_type(type_code, 0, el_type);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm_utils->list_api->list_init(type_code, el_list, module,
                                         initial_capacity, initial_capacity);
         llvm::DataLayout data_layout(module->getDataLayout());
@@ -7297,8 +7310,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * el_mask[pos] = set_max_2;
          *
          */
-
-        llvm::Value* el_list = get_el_list(set);
+        std::string type_code = ASRUtils::get_type_code(el_asr_type);
+        llvm::Type* set_type = get_set_type(type_code, 0, nullptr);
+        llvm::Value* el_list = get_el_list(set_type, set);
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
                                                        get_pointer_to_mask(set));
@@ -7487,8 +7501,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                                        llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, capacity, capacity_ptr);
 
-
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* set_type = get_set_type(el_type_code, 0, el_llvm_type);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm::Value* new_el_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(el_llvm_type,
                                                           el_type_code, el_type_size));
         llvm_utils->list_api->list_init(el_type_code, new_el_list, module, capacity, capacity);
@@ -7863,7 +7877,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* set_type = get_set_type(el_type_code, 0, nullptr);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm::Type* el_list_type = llvm_utils->list_api->get_list_type(nullptr, el_type_code, 0);
 
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set));
@@ -8079,8 +8094,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dest_occupancy_ptr = get_pointer_to_occupancy(dest);
         LLVM::CreateStore(*builder, src_occupancy, dest_occupancy_ptr);
 
-        llvm::Value* src_el_list = get_el_list(src);
-        llvm::Value* dest_el_list = get_el_list(dest);
+        llvm::Value* src_el_list = get_el_list(set_type_, src);
+        llvm::Value* dest_el_list = get_el_list(set_type_, dest);
         llvm_utils->list_api->list_deepcopy(set_expr, src_el_list, dest_el_list,
                                             set_type->m_type, module,
                                             name2memidx);

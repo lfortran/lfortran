@@ -844,10 +844,10 @@ namespace LCompilers {
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity) = 0;
 
             virtual
-            llvm::Value* get_key_list(llvm::Value* dict) = 0;
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_value_list(llvm::Value* dict) = 0;
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict) = 0;
@@ -960,9 +960,9 @@ namespace LCompilers {
 
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_key_list(llvm::Value* dict);
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_value_list(llvm::Value* dict);
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
 
@@ -1127,9 +1127,9 @@ namespace LCompilers {
 
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_key_list(llvm::Value* dict);
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_value_list(llvm::Value* dict);
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
 
@@ -1238,7 +1238,7 @@ namespace LCompilers {
                 llvm::Module* module, size_t initial_capacity) = 0;
 
             virtual
-            llvm::Value* get_el_list(llvm::Value* set) = 0;
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set) = 0;
@@ -1322,7 +1322,7 @@ namespace LCompilers {
             void set_init(std::string type_code, llvm::Value* set,
                 llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_el_list(llvm::Value* set);
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
 
@@ -1413,7 +1413,7 @@ namespace LCompilers {
             void set_init(std::string type_code, llvm::Value* set,
                 llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_el_list(llvm::Value* set);
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
 
