@@ -6193,6 +6193,18 @@ public:
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
+            } else if (compiler_options.new_classes &&
+                    (is_target_class || is_value_class)) {
+                if (LLVM::is_llvm_pointer(*value_type)) {
+                    llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_value, value_type, module.get());
+                    llvm_value = llvm_utils->CreateLoad2(value_llvm_type, llvm_value);
+                }
+
+                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, target_type, module.get());
+                llvm_value = builder->CreateBitCast(llvm_value, target_llvm_type);
+                builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class && !is_value_class) {
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
                 if ( compiler_options.new_classes ) {
