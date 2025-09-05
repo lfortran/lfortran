@@ -84,6 +84,7 @@
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -92,6 +93,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (If
@@ -118,6 +120,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )]
                         []
@@ -163,6 +166,7 @@
                         (IntegerConstant 124 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -171,6 +175,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (If
@@ -197,6 +202,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )]
                         []

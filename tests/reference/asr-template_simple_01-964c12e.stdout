@@ -132,6 +132,7 @@
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     (Var 7 res)
                                     Private
@@ -321,6 +322,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 8 res)
@@ -653,6 +655,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 12 res)
@@ -667,6 +670,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )
                                                     (If
@@ -692,6 +696,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (DoLoop
@@ -724,6 +729,7 @@
                                                                     ()
                                                                 )
                                                                 ()
+                                                                .false.
                                                                 .false.
                                                             )]
                                                             []
@@ -1149,6 +1155,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 15 res)
@@ -1161,6 +1168,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )
                                                     (If
@@ -1184,6 +1192,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (DoLoop
@@ -1212,6 +1221,7 @@
                                                                     ()
                                                                 )
                                                                 ()
+                                                                .false.
                                                                 .false.
                                                             )]
                                                             []
@@ -1352,6 +1362,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 17 res)
@@ -1364,6 +1375,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )
                                                     (If
@@ -1387,6 +1399,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                         )
                                                         (DoLoop
@@ -1415,6 +1428,7 @@
                                                                     ()
                                                                 )
                                                                 ()
+                                                                .false.
                                                                 .false.
                                                             )]
                                                             []
@@ -1597,6 +1611,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 14 ret)
                                                     Public
@@ -1703,6 +1718,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 16 ret)
                                                     Public
@@ -1752,6 +1768,7 @@
                                             (Var 13 i)
                                             ()
                                             .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (ArrayItem
@@ -1770,6 +1787,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -1797,6 +1815,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 13 s_r)
@@ -1820,6 +1839,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Print

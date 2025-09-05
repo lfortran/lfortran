@@ -177,6 +177,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b4)
@@ -187,6 +188,7 @@
                             (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -199,6 +201,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b8)
@@ -209,6 +212,7 @@
                             (IntegerConstant 4 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (If

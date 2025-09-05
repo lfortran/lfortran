@@ -87,6 +87,7 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         5 foo_sub
@@ -183,6 +184,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 3 ret)
