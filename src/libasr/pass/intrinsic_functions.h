@@ -4468,38 +4468,52 @@ namespace ToLowerCase {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lfortran_tolowercase");
-        fill_func_arg("s", b.String(nullptr, ASR::AssumedLength));
+        fill_func_arg("str", b.String(nullptr, ASR::AssumedLength));
         ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
             ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)), 
             ASR::ExpressionLength, ASR::DescriptorString));
-        auto result = declare(fn_name, char_type, ReturnVar);
+        auto result = declare("result", char_type, ReturnVar);
         auto itr = declare("i", int32, Local);
+        auto str_len = declare("str_len", int32, Local);
 
         /*
         function toLowerCase(str) result(result)
-            character(len=5) :: str
+            character(*) :: str
             character(len=len(str)) :: result
-            integer :: i, ln
+            integer :: i, str_len
             i = 1
-            ln = len(str)
-            result = str
-            do while (i < ln)
+            str_len = len(str)
+            do while (i < str_len)
                 if (result(i:i) >= 'A' .and. result(i:i) <= 'Z') then
                     result(i:i) = char(ichar(result(i:i)) + ichar('a') - ichar('A'))
+                else
+                    result(i:i) = str(i:i)
                 end if
                 i = i + 1
             end do
-            print*, result
         end function
         */
 
         body.push_back(al, b.Assignment(itr, b.i32(1)));
-        body.push_back(al, b.While(b.LtE(itr, b.StringLen(args[0])), {
+        body.push_back(al, b.Assignment(str_len, b.StringLen(args[0] /* str */)));
+        body.push_back(al, b.While(b.LtE(itr, str_len), {
             b.If(b.And(b.GtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.LtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
-                b.Assignment(b.StringItem(result, itr), ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
-             b.i2i_t(b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
-            b.Ichar("A", arg_types[0], int32)), int8), return_type, nullptr)))
+                b.Assignment(b.StringItem(result, itr), 
+                                b.BitCast(
+                                    b.i2i_t(
+                                        b.Sub(
+                                            b.Add(
+                                                ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)),
+                                                b.Ichar("a", arg_types[0], int32)
+                                            ),
+                                            b.Ichar("A", arg_types[0], int32)
+                                        ),
+                                        int8
+                                    ), 
+                                    b.StringItem(result, itr)
+                                )
+                            )
             }, {
                 b.Assignment(b.StringItem(result, itr), ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)))
             }),
@@ -5190,14 +5204,29 @@ namespace Char {
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
+        declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+
+        /* Declare Arguments + Return Variable */
+        fill_func_arg("i", arg_types[0]);
+        auto result = declare("result", character(1), ReturnVar);
+
+        /* Body */
+        /*
+            function _lcompilers_char_#####(i) result(result)
+                integer, intent(in) :: i
+                character(1) :: result
+                result = transfer(i, result)
+            end function
+        */
+        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+
+        /* Create Function + Add Into SymTable*/
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
+
+        /* Return Call To The Function */
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -5215,15 +5244,29 @@ namespace Achar {
     static inline ASR::expr_t* instantiate_Achar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+
+        /* Declare Arguments + Return Variable */
         fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", return_type, ReturnVar);
+        auto result = declare("result", character(1), ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
+        /* Body */
+        /*
+            function _lcompilers_achar_#####(i) result(result)
+                integer, intent(in) :: i
+                character(1) :: result
+                result = transfer(i, result)
+            end function
+        */
+        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
 
+        /* Create Function + Add Into SymTable*/
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
+
+        /* Return Call To The Function */
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 

@@ -9576,10 +9576,34 @@ public:
             source_ptr = llvm_utils->CreateAlloca(source_type, nullptr, "bitcast_source");
             builder->CreateStore(source, source_ptr);
         }
+
+        /* Handle The Return Of The Expression (String, Array, Integer_8, etc.) */
+        switch(ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_mold))->type){
+            case(ASR::String) : {
+                llvm::Value* str;
+                { // Create String Based On PhysicalType + Setup
+                    str = llvm_utils->create_string(ASRUtils::get_string_type(x.m_mold), "bit_cast_expr_return");
+                    setup_string(str, ASRUtils::expr_type(x.m_mold));
+                }
+
+                { // Cast Ptr + Store In String
+                    llvm::Value* casted_to_i8 /* i8* */  = builder->CreateBitCast(source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+                    llvm::Value* str_data_ptr /* i8** */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_mold), str, true);
+                    builder->CreateStore(casted_to_i8, str_data_ptr); // Observe that we didn't allocate memory, We used the casted ptr.
+                }
+
+                tmp = str;
+            break;
+            } default : {
+                // Do nothing for now.
+            }
+        }
+
+
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(const_cast<ASR::expr_t*>(&x.base), ASRUtils::type_get_past_array(x.m_type), module.get());
         llvm::Type* target_llvm_type = target_base_type->getPointerTo();
         if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
-             x.m_source, const_cast<ASR::expr_t*>(&x.base), false) &&
+             x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && !ASRUtils::is_string_only(expr_type(x.m_mold)) &&
                 !( ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) && ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
                 ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1 ) /*Workaround (Refer to : `transfer_05`, `array_06_transfer`), scalar mold shold have scalar LHS*/ ) {
             tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
