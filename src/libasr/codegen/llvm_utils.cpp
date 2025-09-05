@@ -6812,11 +6812,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) {
         return llvm_utils->list_api->get_pointer_to_current_capacity_using_type(
-                            el_list_type, get_el_list(set));
+            el_list_type, get_el_list(el_list_type, set));
     }
 
-    llvm::Value* LLVMSetLinearProbing::get_el_list(llvm::Value* set) {
-        return llvm_utils->create_gep_deprecated(set, 1);
+    llvm::Value* LLVMSetLinearProbing::get_el_list(llvm::Type* type, llvm::Value* set) {
+        return llvm_utils->create_gep2(type, set, 1);
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set) {
@@ -6824,16 +6824,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_capacity_using_typecode(std::string& type_code, llvm::Value* set) {
+        llvm::Type* set_type = get_set_type(type_code, 0, nullptr);
         return llvm_utils->list_api->get_pointer_to_current_capacity_using_type(
                             llvm_utils->list_api->get_list_type(nullptr, type_code, 0),
-                            get_el_list(set));
+                            get_el_list(set_type, set));
     }
 
     llvm::Value* LLVMSetLinearProbing::get_pointer_to_mask(llvm::Value* set) {
         return llvm_utils->create_gep_deprecated(set, 2);
     }
 
-    llvm::Value* LLVMSetSeparateChaining::get_el_list(llvm::Value* /*set*/) {
+    llvm::Value* LLVMSetSeparateChaining::get_el_list(llvm::Type* /*set_type*/, llvm::Value* /*set*/) {
         return nullptr;
     }
 
@@ -6914,7 +6915,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* n_ptr = get_pointer_to_occupancy(set);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                            llvm::APInt(32, 0)), n_ptr);
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* el_type = std::get<2>(typecode2settype[type_code]);
+        llvm::Type* set_type = get_set_type(type_code, 0, el_type);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm_utils->list_api->list_init(type_code, el_list, module,
                                         initial_capacity, initial_capacity);
         llvm::DataLayout data_layout(module->getDataLayout());
@@ -7307,8 +7310,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * el_mask[pos] = set_max_2;
          *
          */
-
-        llvm::Value* el_list = get_el_list(set);
+        std::string type_code = ASRUtils::get_type_code(el_asr_type);
+        llvm::Type* set_type = get_set_type(type_code, 0, nullptr);
+        llvm::Value* el_list = get_el_list(set_type, set);
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
                                                        get_pointer_to_mask(set));
@@ -7497,8 +7501,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                                        llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, capacity, capacity_ptr);
 
-
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* set_type = get_set_type(el_type_code, 0, el_llvm_type);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm::Value* new_el_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(el_llvm_type,
                                                           el_type_code, el_type_size));
         llvm_utils->list_api->list_init(el_type_code, new_el_list, module, capacity, capacity);
@@ -7873,7 +7877,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
-        llvm::Value* el_list = get_el_list(set);
+        llvm::Type* set_type = get_set_type(el_type_code, 0, nullptr);
+        llvm::Value* el_list = get_el_list(set_type, set);
         llvm::Type* el_list_type = llvm_utils->list_api->get_list_type(nullptr, el_type_code, 0);
 
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set));
@@ -8089,8 +8094,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dest_occupancy_ptr = get_pointer_to_occupancy(dest);
         LLVM::CreateStore(*builder, src_occupancy, dest_occupancy_ptr);
 
-        llvm::Value* src_el_list = get_el_list(src);
-        llvm::Value* dest_el_list = get_el_list(dest);
+        llvm::Value* src_el_list = get_el_list(set_type_, src);
+        llvm::Value* dest_el_list = get_el_list(set_type_, dest);
         llvm_utils->list_api->list_deepcopy(set_expr, src_el_list, dest_el_list,
                                             set_type->m_type, module,
                                             name2memidx);
