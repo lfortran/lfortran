@@ -3344,7 +3344,7 @@ public:
             // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
             // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
             // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
-            elements.push_back(llvm::Constant::getNullValue(llvm_utils->i8_ptr));
+            elements.push_back(newclass2vtab.at(ASRUtils::symbol_get_past_external(x.m_dt_sym)));
         }
 
         LCOMPILERS_ASSERT(x.n_args == n_members);
