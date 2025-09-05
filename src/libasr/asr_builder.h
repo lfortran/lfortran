@@ -480,6 +480,10 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::LBitRShift, bits, t, nullptr));
     }
 
+    ASR::expr_t* BitCast(ASR::expr_t* src, ASR::expr_t* mold /*Dest*/, ASR::expr_t* size = nullptr){
+        return EXPR(ASR::make_BitCast_t(al, loc, src, mold, size, ASRUtils::duplicate_type(al, expr_type(mold)), nullptr));
+    }
+
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
         ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
