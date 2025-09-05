@@ -3346,7 +3346,7 @@ public:
             // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
             // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
             // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
-            elements.push_back(llvm::Constant::getNullValue(llvm_utils->i8_ptr));
+            elements.push_back(newclass2vtab.at(ASRUtils::symbol_get_past_external(x.m_dt_sym)));
         }
 
         LCOMPILERS_ASSERT(x.n_args == n_members);
@@ -11649,7 +11649,8 @@ public:
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
-                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
+                                    (!ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) || 
+                                    compiler_options.new_classes)) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
