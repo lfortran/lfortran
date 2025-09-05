@@ -6680,6 +6680,17 @@ public:
             llvm::Value* val_obj = value_struct;
             llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
+
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+                LLVM::is_llvm_pointer(*asr_target_type)) {
+                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
+                target_struct = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), target_struct);
+            }
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
+                LLVM::is_llvm_pointer(*asr_value_type)) {
+                value_struct = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), value_struct);
+            }
             target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
             if (!ASR::is_a<ASR::StructConstant_t>(*x.m_value)) {
                 val_obj = llvm_utils->CreateLoad2(value_llvm_type, value_struct);
