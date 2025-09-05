@@ -2369,8 +2369,9 @@ public:
             if (size_of_array == -1) {
                 throw LCompilersException("ICE: Array size could not be computed");
             }
+            int tmp_curr_value = (int) curr_value;
             curr_value += size_of_array;
-            for (int j=0; j < size_of_array; j++) {
+            for (int j= tmp_curr_value; j < (int) curr_value; j++) {
                 // Get the Type of Object
                 // If object is Real, set current_variable_type to Real
                 // This type flag is passed to Visit_BOZ, 
