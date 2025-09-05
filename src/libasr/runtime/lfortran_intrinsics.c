@@ -2793,7 +2793,8 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* lhs, int64_t lhs_len,
     char* rhs, int64_t rhs_len){
 
-    lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string")
+    lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string.")
+    if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
 
     for (int64_t i = 0; i < lhs_len; i++) {
         if (i < rhs_len) {
@@ -2809,19 +2810,17 @@ LFORTRAN_API void _lfortran_strcpy(
     bool is_lhs_allocatable, bool is_lhs_deferred,
     char* rhs, int64_t rhs_len){
     if(!is_lhs_deferred && !is_lhs_allocatable){
-        if(*lhs == NULL){lfortran_error("Runtime Error : Non-allocatable string isn't allocted");}
+        lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (!is_lhs_deferred && is_lhs_allocatable){ // Automatic Allocation
-        if (rhs == NULL) {free(*lhs); *lhs = NULL; return;} // We copy the allocation state from RHS to LHS
         if (*lhs == NULL) *lhs = (char*)malloc(MAX((*lhs_len), 1) * sizeof(char));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
-        if (rhs == NULL) {free(*lhs); *lhs = NULL; *lhs_len = 0; return;} // We copy the allocation state from RHS to LHS
         *lhs = (char*)realloc(*lhs, MAX(rhs_len, 1) * sizeof(char));
         *lhs_len = rhs_len;
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
     } else if(is_lhs_deferred && !is_lhs_allocatable) {
-        if(*lhs == NULL){lfortran_error("Runtime Error : Non-allocatable string isn't allocted");}
+        lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     }
 }

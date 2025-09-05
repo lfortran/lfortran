@@ -2,22 +2,14 @@
 
 program string_70
     implicit none
-    character(10), allocatable :: a
-    character(:), allocatable :: b
-    character(:), allocatable :: c
+    character(:), allocatable :: STR
 
-    !-----------------------------------------------!
+    allocate(character(0) :: STR)
+    if(.not. allocated(STR)) error stop
+    if(len(STR) /= 0) error stop
 
-    a = "HelloWorld"
-    if(.not. allocated(a)) error stop
-    a = b
-    if(allocated(a)) error stop
-
-    !-----------------------------------------------!
-
-    b = "HelloWorld"
-    if(.not. allocated(b) .or. len(b) /= 10 ) error stop
-    b = c
-    if(allocated(b)) error stop
+    deallocate(STR)
+    
+    if(allocated(STR)) error stop
 
 end program

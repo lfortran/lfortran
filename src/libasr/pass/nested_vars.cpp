@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <set>
 
 namespace LCompilers {
@@ -409,11 +410,10 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                         ASRUtils::type_get_past_allocatable(var_type)));
                 }
-                // Create proper string type (a ointer deferred-length string)
-                if(ASRUtils::is_string_only(var_type)){ // e.g -> `character(len=foo()) :: str`
+                // Create proper string type (a pointer deferred-length string)
+                if(ASRUtils::is_string_only(var_type)){ // Any non-allocatable string variable .
                     ASR::String_t* str = ASRUtils::get_string_type(var_type);
-                    if(str->m_len_kind == ASR::AssumedLength ||
-                        (str->m_len && !ASRUtils::is_value_constant(str->m_len))){
+                    if(!ASRUtils::is_allocatable(var->m_type)){
                         var_type = 
                             ASRUtils::TYPE(
                                 ASR::make_Pointer_t(al, str->base.base.loc,
@@ -627,6 +627,45 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 };
 
 class AssignNestedVars: public PassUtils::PassVisitor<AssignNestedVars> {
+private : 
+
+    /*
+    Creates an if block with call to `allocated` intrinsic
+    to check if RHS is allocated or not before doing an assignment.
+    That's needed with allocatable RHS as the Fortran standard requires 
+    to not reference non-allocated variables.
+
+    #### Example:
+
+    ```fortran
+        if(allocated(RHS)) then
+            LHS = RHS ! assignment_stmt
+        end if
+    ```
+    */
+    ASR::stmt_t* create_if_allocated_block(ASR::expr_t* RHS, ASR::stmt_t* assignment_stmt) {
+        /* Some Assertions */
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Assignment_t>(*assignment_stmt))
+        LCOMPILERS_ASSERT(ASR::down_cast<ASR::Assignment_t>(assignment_stmt)->m_value == RHS)
+
+        /* Create Call To ImpureIntrinsic `allocated()` */
+        ASR::expr_t* allocated_intrinsic_call {};
+        {
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, RHS);
+            diag::Diagnostics diag_instance;
+            allocated_intrinsic_call = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(al, RHS->base.loc, args, diag_instance));
+            if(diag_instance.has_error()) throw diag_instance;
+        }
+        /* Create If Body */
+        Vec<ASR::stmt_t*> if_body {};
+        {
+            if_body.reserve(al, 1);
+            if_body.push_back(al, assignment_stmt);
+        }
+        return ASRUtils::STMT(ASR::make_If_t(al, RHS->base.loc, nullptr, allocated_intrinsic_call, if_body.p, if_body.size(), nullptr, 0));
+    }
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
@@ -754,12 +793,22 @@ public:
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                         target, val, nullptr, false));
-                            body.push_back(al, assignment);
+                            /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */
+                            if(ASRUtils::is_allocatable(ASRUtils::expr_type(val))){
+                                body.push_back(al, create_if_allocated_block(val, assignment));
+                            } else { // Otherwise Assign Directly.
+                                body.push_back(al, assignment);
+                            }
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                     ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In) {
                                 assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                 val, target, nullptr, false));
-                                assigns_at_end.push_back(assignment);
+                                /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */
+                                if(ASRUtils::is_allocatable(ASRUtils::expr_type(target))){
+                                    assigns_at_end.push_back(create_if_allocated_block(target, assignment));
+                                } else { // Otherwise Assign Directly.
+                                    assigns_at_end.push_back(assignment);
+                                }
                             }
                         }
                     }
