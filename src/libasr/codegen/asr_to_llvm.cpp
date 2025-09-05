@@ -3328,7 +3328,28 @@ public:
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
 
-        LCOMPILERS_ASSERT(x.n_args == struct_->n_members);
+        size_t n_members = struct_->n_members;
+        if (struct_->m_parent) {
+            ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_->m_parent));
+            while (parent_struct) {
+                n_members += parent_struct->n_members;
+                if (parent_struct->m_parent) {
+                    parent_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(parent_struct->m_parent));
+                } else {
+                    parent_struct = nullptr;
+                }
+            }
+        } else if (compiler_options.new_classes) {
+            // For constant structs with no parent, push a i8* pointer as the first value to make up
+            // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
+            // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
+            // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
+            elements.push_back(llvm::Constant::getNullValue(llvm_utils->i8_ptr));
+        }
+
+        LCOMPILERS_ASSERT(x.n_args == n_members);
         for (size_t i = 0; i < x.n_args; ++i) {
             ASR::expr_t *value = x.m_args[i].m_value;
             llvm::Constant* initializer = nullptr;
@@ -4690,7 +4711,7 @@ public:
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
         const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
 
-        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr, llvm_utils->i8_ptr };
+        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr };
         std::vector<llvm::Constant*> type_info_member_values;
         type_info_member_values.reserve(1); // A type-info object has minimum 1 member.
 
@@ -4705,6 +4726,7 @@ public:
             llvm_utils->i8_ptr));
         if (struct_t->m_parent) {
             // Pointer to parent struct's type-info
+            type_info_member_types.push_back(llvm_utils->i8_ptr);
             type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
                 newclass2typeinfo.at(ASRUtils::symbol_get_past_external(struct_t->m_parent)), llvm_utils->i8_ptr));
         }
