@@ -17,7 +17,7 @@ source_filename = "LFortran"
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [15 x i8] c"I4,I4,I4,I4,I4\00", align 1
+@serialization_info = private unnamed_addr constant [18 x i8] c"I4,I4,I4,I4,I4,R4\00", align 1
 @13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
@@ -33,11 +33,13 @@ define i32 @main(i32 %0, i8** %1) {
   %boz_33 = alloca i32, align 4
   %boz_44 = alloca i32, align 4
   %boz_55 = alloca i32, align 4
+  %boz_6 = alloca float, align 4
   store i32 93, i32* %boz_11, align 4
   store i32 1255, i32* %boz_22, align 4
   store i32 2748, i32* %boz_33, align 4
   store i32 180150001, i32* %boz_44, align 4
   store i32 180150001, i32* %boz_55, align 4
+  store float 0x36DA000000000000, float* %boz_6, align 4
   %2 = load i32, i32* %boz_44, align 4
   %3 = load i32, i32* %boz_55, align 4
   %4 = icmp ne i32 %2, %3
@@ -117,7 +119,7 @@ else19:                                           ; preds = %ifcont17
   br label %ifcont20
 
 ifcont20:                                         ; preds = %else19, %then18
-  %15 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %boz_11, i32* %boz_22, i32* %boz_33, i32* %boz_44, i32* %boz_55)
+  %15 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %boz_11, i32* %boz_22, i32* %boz_33, i32* %boz_44, i32* %boz_55, float* %boz_6)
   %16 = call i64 @_lfortran_str_len(i8* %15)
   %17 = call i8* @_lfortran_malloc(i64 16)
   %stringFormat_desc = bitcast i8* %17 to %string_descriptor*
