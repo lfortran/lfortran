@@ -5,13 +5,13 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [11 x i8] c"S-DESC-5,L\00", align 1
-@string_const_data = private constant [6 x i8] c"tf=0:\00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([6 x i8], [6 x i8]* @string_const_data, i32 0, i32 0), i64 5 }>
+@string_const_data = private constant [5 x i8] c"tf=0:"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data, i32 0, i32 0), i64 5 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [11 x i8] c"S-DESC-5,L\00", align 1
-@string_const_data.2 = private constant [6 x i8] c"tf=1:\00"
-@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([6 x i8], [6 x i8]* @string_const_data.2, i32 0, i32 0), i64 5 }>
+@string_const_data.2 = private constant [5 x i8] c"tf=1:"
+@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.2, i32 0, i32 0), i64 5 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %i) {

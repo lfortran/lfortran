@@ -722,7 +722,7 @@ public:
             setup_string_length(str, t, t->m_len);
             // Handle Memory
             if(!ASRUtils::is_allocatable_or_pointer(type)){
-                llvm_utils->initialize_string_stack(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
             }
         } else {
             throw LCompilersException("Unhandled string physicalType");
@@ -4962,14 +4962,15 @@ public:
                     ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                 }
             } else if(ASRUtils::is_string_only(v->m_type)){
-                if(v->m_storage == ASR::storage_typeType::Save){
-                    std::string str_initial_value_string{};
+                if(v->m_storage == ASR::Save || v->m_storage == ASR::Parameter){
+                    if(v->m_storage == ASR::Parameter) {LCOMPILERS_ASSERT(v->m_symbolic_value)}
+                    std::string str_initial_value_string {};
                     if(v->m_symbolic_value){ // Get initial value if exist.
                         char* str_inital_value{};
-                        ASRUtils::extract_value(v->m_symbolic_value, str_inital_value);
+                        ASRUtils::extract_value(ASRUtils::expr_value(v->m_symbolic_value), str_inital_value);
                         int str_initial_value_len{};
-                        ASRUtils::extract_value(
-                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value))->m_len,
+                        ASRUtils::extract_value(ASRUtils::expr_value(
+                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value))->m_len),
                             str_initial_value_len);
                         str_initial_value_string = std::string(str_inital_value, str_initial_value_len);
                     }
@@ -5099,7 +5100,9 @@ public:
             }
             if( init_expr != nullptr && !is_list && !is_dict) {
                 target_var = ptr;
-                if (v->m_storage == ASR::storage_typeType::Save &&
+                if ((v->m_storage == ASR::Save   ||
+                    v->m_storage == ASR::Parameter)
+                    && 
                     ASRUtils::is_string_only(v->m_type)) {
                     // DO Nothing
                     // (String + Save) variable is declared as global llvm variable with the intended inital value
@@ -10362,6 +10365,7 @@ public:
             args.push_back(advance_length);
             this->visit_expr_wrapper(x.m_fmt, true);
             args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
+            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values * 2 /*(str_data, str_len)*/)));
             for (size_t i=0; i<x.n_values; i++) {
                 this->visit_expr_load_wrapper(x.m_values[i], 0);
@@ -10378,13 +10382,14 @@ public:
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            character_type, // advance
-                            llvm::Type::getInt64Ty(context), // advance_length
-                            character_type,
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt32Ty(context),                 // Unit
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                            character_type,                                  // advance
+                            llvm::Type::getInt64Ty(context),                 // advance_length
+                            character_type,                                  // fmt
+                            llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt32Ty(context)                  // no_of_args
                         }, true);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -11324,44 +11329,59 @@ public:
     }
 
 
-    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
-        std::string fmt_str;
-        std::vector<std::string> fmt;
+    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/) {
+        std::string fmt {};
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
-        ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, stop_msg.size(),
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    ASR::string_length_kindType::ExpressionLength,
-                    ASR::string_physical_typeType::DescriptorString));
-        ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-            s2c(al, stop_msg), str_type_len_msg));
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-        ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-            s2c(al, "\n"), str_type_len_1));
-        compute_fmt_specifier_and_arg(fmt, args, STOP_MSG, loc);
-        if (stop_code) {
-            ASR::expr_t* SPACE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
-                s2c(al, " "), str_type_len_1));
-            compute_fmt_specifier_and_arg(fmt, args, SPACE, loc);
-            compute_fmt_specifier_and_arg(fmt, args, stop_code, loc);
-        }
-        compute_fmt_specifier_and_arg(fmt, args, NEWLINE, loc);
 
-        for (auto ch:fmt) {
-            fmt_str += ch;
+        /* STOP MSG ("ERROR STOP") */
+        {
+            llvm::Value* STOP_MSG {};
+            STOP_MSG = module->getNamedGlobal(stop_msg);
+            if(!STOP_MSG) {STOP_MSG = builder->CreateGlobalString(stop_msg, stop_msg);} 
+            STOP_MSG = builder->CreateBitCast(STOP_MSG, llvm::Type::getInt8Ty(context)->getPointerTo());
+            fmt += "%s";
+            args.push_back(STOP_MSG); // Null-Terminated String
         }
 
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        /* SPACE + STOP CODE */
+        if (stop_code && ASR::is_a<ASR::Integer_t>(*expr_type(stop_code))) {
+            if(ASRUtils::extract_kind_from_ttype_t(expr_type(stop_code)) != 4) throw LCompilersException("Kind in Stop code should be = 4");
+            fmt += " %d";
+            visit_expr(*stop_code);
+            llvm::Value* stop_code_int = tmp; tmp = nullptr;
+            args.push_back(stop_code_int);
+        } else if(stop_code && ASRUtils::is_string_only(expr_type(stop_code))){
+            fmt += " %.*s";
+            visit_expr_load_wrapper(stop_code, 0);
+            llvm::Value* stop_code_str = tmp; tmp = nullptr;
+            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(stop_code), stop_code_str));
+            args.push_back(llvm_utils->get_string_data  (ASRUtils::get_string_type(stop_code), stop_code_str));
+        } else if (stop_code){
+            throw LCompilersException(
+                "Stop Code should be of type [String, Integer].\n"
+                "CurrentType : "+ASRUtils::type_to_str_fortran_expr(expr_type(stop_code), stop_code));
+        } else if(!stop_code){
+            // Do Nothing. Stop With No Error Message.
+        }
+        
+        /* NEWLINE */
+        {
+            llvm::Value* NEWLINE = builder->CreateGlobalStringPtr("\n");
+            fmt += "%s";
+            args.push_back(NEWLINE); // Null-Terminated
+        }
+
+        /* PRINT ERROR */
+        llvm::Value *fmt_ptr {};
+        fmt_ptr = module->getNamedGlobal(fmt);
+        if(!fmt_ptr) {fmt_ptr = builder->CreateGlobalString(fmt);}
+        fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+
         args[0] = fmt_ptr;
         print_error(context, *module, *builder, args);
 
+        /* EXIT WITH CODE */
         if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
             this->visit_expr(*stop_code);
             exit_code = tmp;
@@ -13152,10 +13172,7 @@ public:
                 h = get_hash((ASR::asr_t*)proc_sym);
             } else {
                 if (func_name == "len") {
-                    args = convert_call_args(x, is_method);
-                    LCOMPILERS_ASSERT(args.size() == 3)
-                    tmp = lfortran_str_len(args[0]);
-                    return;
+                    throw LCompilersException("Unhandled");
                 } else if (func_name == "command_argument_count") {
                     llvm::Function *fn = module->getFunction("_lfortran_get_argc");
                     if(!fn) {

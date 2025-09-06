@@ -2,7 +2,6 @@
 source_filename = "LFortran"
 
 %point = type <{ i32 (...)** }>
-%string_descriptor = type <{ i8*, i64 }>
 %point2d = type <{ %point, float, float }>
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
@@ -11,11 +10,9 @@ source_filename = "LFortran"
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
 @_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* bitcast ({ i8*, i8* }* @_Type_Info_point to i8*) }, align 8
 @_VTable_point2d = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_point2d, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
-@string_const_data = private constant [11 x i8] c"ERROR STOP\00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
-@string_const_data.1 = private constant [2 x i8] c"\0A\00"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.1, i32 0, i32 0), i64 1 }>
-@0 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @__module_defs_r2d(%point2d* %this) {
 .entry:
@@ -69,9 +66,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %16, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @0, i32 0, i32 0), i8* %17, i8* %18)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 

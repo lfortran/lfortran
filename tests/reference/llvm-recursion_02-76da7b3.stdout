@@ -6,27 +6,27 @@ source_filename = "LFortran"
 @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x = global i32 0
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-7,I4\00", align 1
-@string_const_data = private constant [8 x i8] c"before:\00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data, i32 0, i32 0), i64 7 }>
+@string_const_data = private constant [7 x i8] c"before:"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data, i32 0, i32 0), i64 7 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [12 x i8] c"S-DESC-6,I4\00", align 1
-@string_const_data.2 = private constant [7 x i8] c"after:\00"
-@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.2, i32 0, i32 0), i64 6 }>
+@string_const_data.2 = private constant [6 x i8] c"after:"
+@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([6 x i8], [6 x i8]* @string_const_data.2, i32 0, i32 0), i64 6 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.4 = private unnamed_addr constant [12 x i8] c"S-DESC-9,I4\00", align 1
-@string_const_data.5 = private constant [10 x i8] c"x in getx\00"
-@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data.5, i32 0, i32 0), i64 9 }>
+@string_const_data.5 = private constant [9 x i8] c"x in getx"
+@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.5, i32 0, i32 0), i64 9 }>
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data.7 = private constant [8 x i8] c"in sub1\00"
-@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.7, i32 0, i32 0), i64 7 }>
+@string_const_data.7 = private constant [7 x i8] c"in sub1"
+@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.7, i32 0, i32 0), i64 7 }>
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.9 = private unnamed_addr constant [12 x i8] c"S-DESC-3,I4\00", align 1
-@string_const_data.10 = private constant [4 x i8] c"r =\00"
-@string_const.11 = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.10, i32 0, i32 0), i64 3 }>
+@string_const_data.10 = private constant [3 x i8] c"r ="
+@string_const.11 = private global %string_descriptor <{ i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.10, i32 0, i32 0), i64 3 }>
 @9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @__module_recursion_02_solver(i32 ()* %f, i32* %iter) {
