@@ -246,6 +246,9 @@ public:
                         }
                     }
                 }
+                if (arr_type->m_is_assumed_rank) {
+                    bounds = "..";
+                }
                 r = get_type(arr_type->m_type, type_decl) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {

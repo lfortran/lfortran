@@ -120,6 +120,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -196,6 +197,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                .false.
                                             )
                                             ColMajor
                                         )
@@ -362,6 +364,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -404,6 +407,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )]
                                         ()
                                         Source
