@@ -109,6 +109,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 list_logical)
@@ -124,6 +125,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -158,6 +160,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                         .false.
                     )]
                 )

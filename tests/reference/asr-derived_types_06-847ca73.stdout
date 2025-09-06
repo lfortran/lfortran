@@ -482,6 +482,7 @@
                                                 )
                                                 ()
                                                 .false.
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -564,6 +565,7 @@
                                                     ))]
                                                     ()
                                                 )
+                                                .false.
                                                 .false.
                                             )]
                                             []
@@ -827,6 +829,7 @@
                                             (Var 13 hour)
                                             ()
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -849,6 +852,7 @@
                                             (Var 13 minute)
                                             ()
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -870,6 +874,7 @@
                                             )
                                             (Var 13 second)
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -895,6 +900,7 @@
                                             (Var 13 millisec)
                                             ()
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -918,6 +924,7 @@
                                             )
                                             (Var 13 zone)
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -1242,6 +1249,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -2024,6 +2032,7 @@
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -2058,6 +2067,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 stat)
@@ -2069,6 +2079,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 5 stat)

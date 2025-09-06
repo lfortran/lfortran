@@ -200,6 +200,7 @@
                             (Var 2 i)
                             ()
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -208,11 +209,13 @@
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 last)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
@@ -248,6 +251,7 @@
                             )
                             ()
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -269,6 +273,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )
                         (SubroutineCall
@@ -297,6 +302,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )
                         (If
