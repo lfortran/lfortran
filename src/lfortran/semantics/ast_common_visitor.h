@@ -7282,7 +7282,16 @@ public:
             args.push_back(al, nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
+            // Handle BOZ constants in real() function
+            ASR::ttype_t* temp_current_variable_type = current_variable_type_;
+            if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
+                AST::is_a<AST::BOZ_t>(*x.m_args[i].m_end)) {
+                // Set current_variable_type to Real for BOZ conversion in real() function
+                current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 
+                    compiler_options.po.default_integer_kind));
+            }
             this->visit_expr(*x.m_args[i].m_end);
+            current_variable_type_ = temp_current_variable_type;
             args.p[i] = ASRUtils::EXPR(tmp);
             if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind"
             || intrinsic_name == "selected_real_kind" || intrinsic_name == "selected_char_kind") {
