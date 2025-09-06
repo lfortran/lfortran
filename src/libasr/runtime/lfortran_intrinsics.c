@@ -1553,6 +1553,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     va_start(args, string_lengths_cnt);
     char* result = (char*)malloc(sizeof(char)); //TODO : the consumer of this string needs to free it.
     result[0] = '\0';
+    (*result_size) = 0;
 
     // Setup s_info
     struct serialization_info s_info;
@@ -1601,10 +1602,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
         return NULL;
     }
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
-    strncpy(modified_input_string, cleaned_format, len);          //TODO: refactor strncpy
+    strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
-    format_values = parse_fortran_format((const fchar*)modified_input_string, strlen(modified_input_string), &format_values_count, &item_start_idx); //TODO: refactor strlen
+    format_values = parse_fortran_format((const fchar*)modified_input_string, strlen(modified_input_string), &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1621,7 +1622,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             char* value;
             if(format_values[i] == NULL) continue;
             value = format_values[i];
-            int64_t value_len = strlen(value);   //TODO: refactor strlen
+            int64_t value_len = strlen(value);
             if (value_len >= 2 && value[0] == '(' && value[value_len - 1] == ')') {
                 value[value_len - 1] = '\0';
                 int64_t new_fmt_val_count = 0;
@@ -1660,22 +1661,22 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
                 char temp[3] = {value[0],value[1],'\0'};
                 scale = atoi(temp);
-            } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||     //TODO: refactor strlen
-                (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {     //TODO: refactor strlen
+            } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
+                (value[0] == '\'' && value[strlen(value) - 1] == '\'')) {
                 // String
-                value = substring(value, 1, strlen(value) - 1);     //TODO: refactor strlen
+                value = substring(value, 1, strlen(value) - 1);
                 result = append_to_string(result, value);
                 free(value);
-            } else if (tolower(value[strlen(value) - 1]) == 'x') {     //TODO: refactor strlen
+            } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 's') {
-                is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&     //TODO: refactor strlen
+                is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier
                     int tab_left_pos = atoi(value + 2);
-                    int current_length = strlen(result);     //TODO: refactor strlen
+                    int current_length = strlen(result);
                     if (tab_left_pos > current_length) {
                         result[0] = '\0';
                     } else {
@@ -1684,7 +1685,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[1]) == 'r') {
                     // handle "TR" format specifier
                     int tab_right_pos = atoi(value + 2);
-                    int current_length = strlen(result);     //TODO: refactor strlen
+                    int current_length = strlen(result);
                     int spaces_needed = tab_right_pos;
                     if (spaces_needed > 0) {
                         char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
@@ -1696,7 +1697,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else {
                     if (!move_to_next_element(&s_info, true)) break;
                     int tab_position = atoi(value + 1);
-                    int current_length = strlen(result);     //TODO: refactor strlen
+                    int current_length = strlen(result);
                     int spaces_needed = tab_position - current_length - 1;
                     if (spaces_needed > 0) {
                         char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
@@ -1735,7 +1736,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     }
                     free(result);
                     result = (char*)malloc(150 * sizeof(char));
-                    sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n", type, value[0]);     //TODO: refactor strlen
+                    sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n", type, value[0]);
                     // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
                     result[0] = '\b';
                     BreakWhileLoop = true;
@@ -1785,17 +1786,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     }
                     char* arg = *(char**)s_info.current_arg_info.current_arg;
                     if (arg == NULL) continue;
-                    if (strlen(value) == 1) {     //TODO: refactor strlen
-                        int64_t res_len = (int64_t)strlen(result);     //TODO: refactor strlen
+                    if (strlen(value) == 1) {
+                        int64_t res_len = (int64_t)strlen(result);
                         result = append_to_string_NTI(result, res_len, arg, s_info.current_arg_info.current_string_len);
                     } else {
-                        char* str = (char*)malloc((strlen(value)) * sizeof(char));     //TODO: refactor strlen
-                        memmove(str, value+1, strlen(value));     //TODO: refactor strlen
+                        char* str = (char*)malloc((strlen(value)) * sizeof(char));
+                        memmove(str, value+1, strlen(value));
                         int buffer_size = 20;
                         char* s = (char*)malloc(buffer_size * sizeof(char));
-                        snprintf(s, buffer_size, "%%%s.%"PRId64"s", str,  MIN(s_info.current_arg_info.current_string_len, (int64_t)atoi(str)));     //TODO: refactor strlen
+                        snprintf(s, buffer_size, "%%%s.%"PRId64"s", str,  MIN(s_info.current_arg_info.current_string_len, (int64_t)atoi(str)));
                         char* string = (char*)malloc((atoi(str) + 1) * sizeof(char));
-                        sprintf(string, s, arg);     //TODO: refactor strlen
+                        sprintf(string, s, arg);
                         result = append_to_string(result, string);
                         free(str);
                         free(s);
@@ -1807,10 +1808,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[0]) == 'b') {
                     int width = 0;
                     int min_digit_cnt = 0;
-                    if (strlen(value) > 1) {     //TODO: refactor strlen
+                    if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'B'
                     }
-                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'     //TODO: refactor strlen
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
                     if (dot != NULL) {
                         min_digit_cnt = atoi(dot + 1); // get digits after '.'
                     }
@@ -1864,7 +1865,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     }
                     binary_str[idx] = '\0';
 
-                    int bin_len = strlen(binary_str);     //TODO: refactor strlen
+                    int bin_len = strlen(binary_str);
 
                     if (width == 0) {
                         result = append_to_string(result, binary_str);
@@ -1881,12 +1882,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             memset(zeros, '0', zero_padding);
                             zeros[zero_padding] = '\0';
                             char* tmp = (char*)malloc((min_digit_cnt + 1) * sizeof(char));
-                            strcpy(tmp, zeros);     //TODO: refactor strlen
-                            strcat(tmp, binary_str);     //TODO: refactor strlen
-                            strcpy(binary_str, tmp);     //TODO: refactor strlen
+                            strcpy(tmp, zeros);
+                            strcat(tmp, binary_str);
+                            strcpy(binary_str, tmp);
                             free(tmp);
                             free(zeros);
-                            bin_len = strlen(binary_str);     //TODO: refactor strlen
+                            bin_len = strlen(binary_str);
                         }
                         // Step 2: Pad with spaces to meet width
                         int padding_needed = width - bin_len;
@@ -1902,10 +1903,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[0]) == 'g') {
                     int width = 0;
                     int precision = 0;
-                    if (strlen(value) > 1) {     //TODO: refactor strlen
+                    if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
                     } 
-                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'     //TODO: refactor strlen
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
                     if (dot != NULL) {
                         precision = atoi(dot + 1); // get digits after '.'
                     }
@@ -1914,8 +1915,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
                         if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
-                            snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);     //TODO: refactor strlen
-                            snprintf(formatted, sizeof(formatted), format_spec, double_val);     //TODO: refactor strlen
+                            snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
+                            snprintf(formatted, sizeof(formatted), format_spec, double_val);
                         } else {
                             int exp = 0;
                             double abs_val = fabs(double_val);
@@ -1925,30 +1926,30 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             double scale = pow(10.0, -exp);
                             double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
-                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);     //TODO: refactor strlen
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
                             if (width > 0) {
-                                snprintf(exponent, sizeof(exponent), "E%+03d", exp);      //TODO: refactor strlen
+                                snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
-                                snprintf(exponent, sizeof(exponent), "E%+d", exp);     //TODO: refactor strlen
+                                snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
-                            snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);     //TODO: refactor strlen
+                            snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
                         }
-                        int len = strlen(formatted);     //TODO: refactor strlen
+                        int len = strlen(formatted);
                         if (width > len) {
                             int padding = width - len;
-                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);     //TODO: refactor strlen
+                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);
                         } else {
-                            strcpy(buffer, formatted);     //TODO: refactor strlen
+                            strcpy(buffer, formatted);
                         }
                         result = append_to_string(result, buffer);
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
                                s_info.current_element_type == INTEGER_64_TYPE) {
-                        snprintf(result, sizeof(buffer), "%"PRId64, integer_val);     //TODO: refactor strlen
+                        snprintf(result, sizeof(buffer), "%"PRId64, integer_val);
                     } else if (s_info.current_element_type == CHAR_PTR_TYPE ||
                         s_info.current_element_type == STRING_DESCRIPTOR_TYPE) {
-                        result = append_to_string_NTI (result, strlen(result), char_val, s_info.current_arg_info.current_string_len);     //TODO: refactor strlen
+                        result = append_to_string_NTI (result, strlen(result), char_val, s_info.current_arg_info.current_string_len);
                     } else if (s_info.current_element_type == LOGICAL_TYPE) {
                         result = append_to_string(result, bool_val ? "T" : "F");
                     } else {
@@ -1978,7 +1979,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                 } else if (tolower(value[0]) == 'l') {
                     bool val = *(bool*)s_info.current_arg_info.current_arg;
                     handle_logical(value, val, &result);
-                } else if (strlen(value) != 0) {     //TODO: refactor strlen
+                } else if (strlen(value) != 0) {
                     printf("Printing support is not available for %s format.\n",value);
                 }
 
@@ -2001,6 +2002,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     va_end(args);
     free(format_values);
     free_serialization_info(&s_info);
+    (*result_size) = strlen(result);
     return result;
 }
 
