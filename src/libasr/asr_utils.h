@@ -2481,6 +2481,8 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
+void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify);
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,

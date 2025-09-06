@@ -888,6 +888,21 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
     throw LCompilersException("ICE: Module not found");
 }
 
+void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify) {
+    fix_external_symbols(*tu, *symtab);
+    PassUtils::UpdateDependenciesVisitor v(al);
+    v.visit_TranslationUnit(*tu);
+    if (run_verify) {
+#if defined(WITH_LFORTRAN_ASSERT)
+        diag::Diagnostics diagnostics;
+        if (!asr_verify(*tu, true, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed");
+        };
+#endif
+    }
+}
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
@@ -1020,19 +1035,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
 
-    // Fix all external symbols
-    fix_external_symbols(*tu, *symtab);
-    PassUtils::UpdateDependenciesVisitor v(al);
-    v.visit_TranslationUnit(*tu);
-    if (run_verify) {
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
-    }
+    // Fix all external symbols and update dependencies
+    fix_translation_unit(al, tu, symtab, run_verify);
     symtab->asr_owner = orig_asr_owner;
 
     return mod2;
@@ -1141,19 +1145,6 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                   loc, loaded_submodules, pass_options, run_verify, err, lm);
     }
 
-    // Fix all external symbols
-    fix_external_symbols(*tu, *symtab);
-    PassUtils::UpdateDependenciesVisitor v(al);
-    v.visit_TranslationUnit(*tu);
-    if (run_verify) {
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
-    }
     symtab->asr_owner = orig_asr_owner;
 }
 
