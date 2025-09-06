@@ -546,7 +546,11 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+
+             // New block: Wrap based on m_is_cstruct
+            if (ASR::is_a<ASR::StructType_t>(*v->m_type)) {
+
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_typ
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
