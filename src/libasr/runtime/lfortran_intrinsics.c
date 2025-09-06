@@ -1396,8 +1396,8 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
     }
 }
 
-
-void print_into_string(Serialization_Info* s_info,  char* result){
+// Returns the length of the string that is printed inside result
+int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
         case INTEGER_64_TYPE:
@@ -1458,6 +1458,7 @@ void print_into_string(Serialization_Info* s_info,  char* result){
                         char_ptr,
                         s_info->current_arg_info.current_string_len);
                     *(result + s_info->current_arg_info.current_string_len) = '\0';
+                    return s_info->current_arg_info.current_string_len;
                 }
                 break;
         }
@@ -1469,6 +1470,7 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             exit(1);
     }
 
+    return strlen(result);
 }
 
 void strip_outer_parenthesis(const char* str, int len, char* output) {
@@ -1499,7 +1501,7 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
     }
 }
 
-void default_formatting(char** result, struct serialization_info* s_info){
+void default_formatting(char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
     const int default_spacing_len = 4;
@@ -1530,10 +1532,11 @@ void default_formatting(char** result, struct serialization_info* s_info){
             strcpy((*result)+result_size, default_spacing);
             result_size+=default_spacing_len;
         }
-        print_into_string(s_info,  (*result) + result_size);
-        int64_t printed_arg_size = strlen((*result) + result_size);
+        int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
         result_size += printed_arg_size;
     }
+
+    (*result_size_ptr) = result_size;
 }
 void free_serialization_info(Serialization_Info* s_info){
     free(s_info->array_sizes.ptr);
@@ -1543,13 +1546,14 @@ void free_serialization_info(Serialization_Info* s_info){
     va_end(*s_info->current_arg_info.args);
 }
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, 
-    int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...)
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string,
+    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...)
 {
     va_list args;
     va_start(args, string_lengths_cnt);
     char* result = (char*)malloc(sizeof(char)); //TODO : the consumer of this string needs to free it.
     result[0] = '\0';
+    (*result_size) = 0;
 
     // Setup s_info
     struct serialization_info s_info;
@@ -1583,7 +1587,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
     if(format == NULL){
-        default_formatting(&result, &s_info);
+        default_formatting(&result, result_size, &s_info);
         free_serialization_info(&s_info);
         return result;
     }
@@ -1924,7 +1928,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
                             if (width > 0) {
-                                snprintf(exponent, sizeof(exponent), "E%+03d", exp); 
+                                snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
@@ -1998,6 +2002,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     va_end(args);
     free(format_values);
     free_serialization_info(&s_info);
+    (*result_size) = strlen(result);
     return result;
 }
 
