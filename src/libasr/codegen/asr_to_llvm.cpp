@@ -13649,6 +13649,10 @@ public:
             llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
             args.push_back(serialization_info);
 
+            // Create and Push a pointer to int64 to store the result size in
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            args.push_back(result_size_ptr);
+
             //Push serialization of sizes and n_size
             size_t ArraySizesCnt = 0;
             for (size_t i=0; i<x.n_args; i++) {
@@ -13736,7 +13740,11 @@ public:
                 ptr_loads = ptr_load_copy;
             }
             tmp = string_format_fortran(context, *module, *builder, args);
-            tmp = llvm_utils->create_string_descriptor(tmp, lfortran_str_len(tmp),"stringFormat_desc");
+
+            // Load result size
+            llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);
+
+            tmp = llvm_utils->create_string_descriptor(tmp, result_size,"stringFormat_desc");
         } else {
             throw CodeGenError("Only FormatFortran string formatting implemented so far.");
         }

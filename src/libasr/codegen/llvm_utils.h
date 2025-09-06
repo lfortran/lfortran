@@ -95,6 +95,7 @@ namespace LCompilers {
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context)}, true);
             fn_printf = llvm::Function::Create(function_type,
