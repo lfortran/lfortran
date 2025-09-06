@@ -3394,6 +3394,16 @@ public:
                                                                 diag::Label("", {loc})}));
                                                         throw SemanticAbort();
                                                     }, lm);
+
+                // Create a temporary TranslationUnit just for fixing the symbols
+                ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
+                ASR::TranslationUnit_t *tu
+                    = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, x.base.base.loc,
+                        tu_symtab, nullptr, 0));
+
+                // Fix all external symbols and update dependencies
+                ASRUtils::fix_translation_unit(al, tu, tu_symtab, true);
+                tu_symtab->asr_owner = orig_asr_owner;
             }
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
