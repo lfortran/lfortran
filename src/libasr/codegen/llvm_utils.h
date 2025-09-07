@@ -838,7 +838,7 @@ namespace LCompilers {
             llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict) = 0;
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) = 0;
@@ -915,7 +915,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            llvm::Value* len(llvm::Value* dict) = 0;
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
             bool is_dict_present();
@@ -952,7 +952,7 @@ namespace LCompilers {
 
             llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
@@ -1016,7 +1016,7 @@ namespace LCompilers {
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* len(llvm::Value* dict);
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
             void get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
                 llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
@@ -1119,7 +1119,7 @@ namespace LCompilers {
 
             llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
@@ -1179,7 +1179,7 @@ namespace LCompilers {
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* len(llvm::Value* dict);
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
             void get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
                 llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
@@ -1229,7 +1229,7 @@ namespace LCompilers {
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set) = 0;
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) = 0;
@@ -1282,7 +1282,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            llvm::Value* len(llvm::Value* set);
+            llvm::Value* len(llvm::Type* type, llvm::Value* set);
 
             virtual
             bool is_set_present();
@@ -1312,7 +1312,7 @@ namespace LCompilers {
 
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
@@ -1367,7 +1367,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_elems(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_rehash_flag(llvm::Value* set);
+            llvm::Value* get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set);
 
             void set_init_given_initial_capacity(std::string el_type_code,
                 llvm::Value* set, llvm::Module* module, llvm::Value* initial_capacity);
@@ -1403,7 +1403,7 @@ namespace LCompilers {
 
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 

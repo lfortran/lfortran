@@ -2185,7 +2185,8 @@ public:
         llvm::Value* pdict = tmp;
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(x.m_arg));
         llvm_utils->set_dict_api(x_dict);
-        tmp = llvm_utils->dict_api->len(pdict);
+        llvm::Type* dict_type = llvm_utils->get_dict_type(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
+        tmp = llvm_utils->dict_api->len(dict_type, pdict);
     }
 
     void visit_SetLen(const ASR::SetLen_t& x) {
@@ -2201,7 +2202,8 @@ public:
         llvm::Value* pset = tmp;
         ASR::Set_t* x_set = ASR::down_cast<ASR::Set_t>(ASRUtils::expr_type(x.m_arg));
         llvm_utils->set_set_api(x_set);
-        tmp = llvm_utils->set_api->len(pset);
+        llvm::Type* set_type = llvm_utils->get_set_type(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
+        tmp = llvm_utils->set_api->len(set_type, pset);
     }
 
     void visit_ListInsert(const ASR::ListInsert_t& x) {
