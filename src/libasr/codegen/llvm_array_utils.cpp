@@ -558,6 +558,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
@@ -640,6 +643,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
