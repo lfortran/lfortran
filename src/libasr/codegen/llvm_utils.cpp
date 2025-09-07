@@ -3294,7 +3294,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     void LLVMDictSeparateChaining::dict_init(ASR::Dict_t* dict_type,
         llvm::Value* dict, llvm::Module* module, size_t initial_capacity) {
         llvm::Value* llvm_capacity = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, initial_capacity));
-        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(dict);
+        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag_using_type(dict_type->m_key_type, dict_type->m_value_type, dict);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), llvm::APInt(1, 1)), rehash_flag_ptr);
         dict_init_given_initial_capacity(dict_type->m_key_type, dict_type->m_value_type, dict, module, llvm_capacity);
     }
@@ -3304,8 +3304,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm::Module* module, llvm::Value* llvm_capacity) {
         std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
         std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
-
-        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(dict);
+        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag_using_type(key_asr_type, value_asr_type, dict);
         llvm::Value* rehash_flag = llvm_utils->CreateLoad2(
             llvm::Type::getInt1Ty(context), rehash_flag_ptr);
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
@@ -3654,7 +3653,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* src_key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict_type->m_key_type, dict_type->m_value_type, src));
         llvm::Value* src_rehash_flag = llvm_utils->CreateLoad2(
-            llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag(src));
+            llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag_using_type(dict_type->m_key_type, dict_type->m_value_type, src));
         LLVM::CreateStore(*builder, src_occupancy, get_pointer_to_occupancy_using_type(dict_type->m_key_type, dict_type->m_value_type, dest));
         LLVM::CreateStore(*builder, src_filled_buckets, get_pointer_to_number_of_filled_buckets_using_type(
                 dict_type->m_key_type, dict_type->m_value_type, dest));
@@ -5153,7 +5152,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *elseBB_rehash = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB_rehash = llvm::BasicBlock::Create(context, "ifcont");
         llvm::Value* rehash_flag = llvm_utils->CreateLoad2(
-            llvm::Type::getInt1Ty(context),get_pointer_to_rehash_flag(dict));
+            llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag_using_type(key_asr_type, value_asr_type, dict));
         builder->CreateCondBr(rehash_flag, thenBB_rehash, elseBB_rehash);
         builder->SetInsertPoint(thenBB_rehash);
         old_key_value_pairs_value = llvm_utils->CreateLoad2(kv_pair_type->getPointerTo(), old_key_value_pairs);
@@ -5284,7 +5283,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* buckets_filled = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_number_of_filled_buckets(dict));
         llvm::Value* rehash_condition = llvm_utils->CreateLoad2(
-            llvm::Type::getInt1Ty(context),get_pointer_to_rehash_flag(dict));
+            llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag_using_type(key_asr_type, value_asr_type, dict));
         llvm::Value* buckets_filled_times_2 = builder->CreateMul(buckets_filled, llvm::ConstantInt::get(
                                 llvm::Type::getInt32Ty(context), llvm::APInt(32, 2)));
         rehash_condition = builder->CreateAnd(rehash_condition,
@@ -6864,8 +6863,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return llvm_utils->create_gep_deprecated(set, 4);
     }
 
-    llvm::Value* LLVMSetSeparateChaining::get_pointer_to_rehash_flag(llvm::Value* set) {
-        return llvm_utils->create_gep_deprecated(set, 5);
+    llvm::Value* LLVMSetSeparateChaining::get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set) {
+        return llvm_utils->create_gep2(type, set, 5);
     }
 
     llvm::Type* LLVMSetLinearProbing::get_set_type(std::string type_code, int32_t type_size,
@@ -6932,7 +6931,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Module* module, size_t initial_capacity) {
         llvm::Value* llvm_capacity = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                         llvm::APInt(32, initial_capacity));
-        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(set);
+        llvm::Type* el_type = typecode2elstruct[el_type_code];
+        llvm::Type* set_type = get_set_type(el_type_code, 0, el_type);
+        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(set_type, set);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context),
                             llvm::APInt(1, 1)), rehash_flag_ptr);
         set_init_given_initial_capacity(el_type_code, set, module, llvm_capacity);
@@ -6943,7 +6944,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Module* module, llvm::Value* llvm_capacity) {
         llvm::Type* el_type = typecode2elstruct[el_type_code];
         llvm::Type* set_type = get_set_type(el_type_code, 0, el_type);
-        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(set);
+        llvm::Value* rehash_flag_ptr = get_pointer_to_rehash_flag(set_type, set);
         llvm::Value* rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), rehash_flag_ptr);
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(set_type, set);
@@ -7644,7 +7645,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *thenBB_rehash = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB_rehash = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB_rehash = llvm::BasicBlock::Create(context, "ifcont");
-        llvm::Value* rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_rehash_flag(set));
+        llvm::Value* rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_rehash_flag(set_type, set));
         builder->CreateCondBr(rehash_flag, thenBB_rehash, elseBB_rehash);
 
         builder->SetInsertPoint(thenBB_rehash);
@@ -7825,7 +7826,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* set_type = get_set_type(ASRUtils::get_type_code(el_asr_type), 0, el_type);
         llvm::Value* occupancy = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(set_type, set));
         llvm::Value* buckets_filled = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_number_of_filled_buckets(set));
-        llvm::Value* rehash_condition = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag(set));
+        llvm::Value* rehash_condition = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), get_pointer_to_rehash_flag(set_type, set));
         llvm::Value* buckets_filled_times_2 = builder->CreateMul(buckets_filled,
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 2)));
         rehash_condition = builder->CreateAnd(rehash_condition,
@@ -8129,11 +8130,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* src_filled_buckets = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_number_of_filled_buckets(src));
         llvm::Value* src_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(el_list_type, src));
         llvm::Value* src_el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(src));
-        llvm::Value* src_rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_rehash_flag(src));
+        llvm::Value* src_rehash_flag = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_rehash_flag(set_type_, src));
         LLVM::CreateStore(*builder, src_occupancy, get_pointer_to_occupancy(set_type_, dest));
         LLVM::CreateStore(*builder, src_filled_buckets, get_pointer_to_number_of_filled_buckets(dest));
         LLVM::CreateStore(*builder, src_capacity, get_pointer_to_capacity_using_type(el_list_type, dest));
-        LLVM::CreateStore(*builder, src_rehash_flag, get_pointer_to_rehash_flag(dest));
+        LLVM::CreateStore(*builder, src_rehash_flag, get_pointer_to_rehash_flag(set_type_, dest));
         llvm::DataLayout data_layout(module->getDataLayout());
         size_t mask_size = data_layout.getTypeAllocSize(llvm::Type::getInt8Ty(context));
         llvm::Value* llvm_mask_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),

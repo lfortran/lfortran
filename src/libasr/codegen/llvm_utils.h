@@ -1367,7 +1367,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_elems(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_rehash_flag(llvm::Value* set);
+            llvm::Value* get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set);
 
             void set_init_given_initial_capacity(std::string el_type_code,
                 llvm::Value* set, llvm::Module* module, llvm::Value* initial_capacity);
