@@ -3111,6 +3111,10 @@ ASR::asr_t* make_ArraySize_t_util(
                 size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
                     ASR::binopType::Mul, plus1, a_type, nullptr);
             }
+            // ArraySize should not be negative
+            ASR::expr_t* const0 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, 0, a_type));
+            ASRBuilder builder(al, a_loc);
+            size = (ASR::asr_t *)builder.Max(const0, ASRUtils::EXPR(size));
             return size;
         } else if( is_dimension_constant ) {
             ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
