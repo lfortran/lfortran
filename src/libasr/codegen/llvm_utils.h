@@ -1229,7 +1229,7 @@ namespace LCompilers {
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set) = 0;
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) = 0;
@@ -1282,7 +1282,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            llvm::Value* len(llvm::Value* set);
+            llvm::Value* len(llvm::Type* type, llvm::Value* set);
 
             virtual
             bool is_set_present();
@@ -1312,7 +1312,7 @@ namespace LCompilers {
 
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
@@ -1403,7 +1403,7 @@ namespace LCompilers {
 
             llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
