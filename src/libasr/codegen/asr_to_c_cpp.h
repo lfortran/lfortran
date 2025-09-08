@@ -1625,7 +1625,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         LCOMPILERS_ASSERT(target_rank > 0);
 
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
-        if( ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::PointerArray ||
+        if( ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::PointerToDataArray ||
             ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = value_desc + "->data";
             ASR::dimension_t* m_dims = nullptr;

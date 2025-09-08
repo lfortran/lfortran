@@ -630,11 +630,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 if( ASRUtils::is_array(orig_arg_type) ) {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_arg_type)));
-                    if( array_t->m_physical_type != ASR::array_physical_typeType::PointerArray ) {
+                    if( array_t->m_physical_type != ASR::array_physical_typeType::PointerToDataArray ) {
                         ASR::expr_t* physical_cast = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                             al, orig_arg_i->base.loc, orig_arg_i, array_t->m_physical_type,
-                            ASR::array_physical_typeType::PointerArray, ASRUtils::duplicate_type(al, orig_arg_type,
-                            nullptr, ASR::array_physical_typeType::PointerArray, true), nullptr));
+                            ASR::array_physical_typeType::PointerToDataArray, ASRUtils::duplicate_type(al, orig_arg_type,
+                            nullptr, ASR::array_physical_typeType::PointerToDataArray, true), nullptr));
                         ASR::call_arg_t physical_cast_arg;
                         physical_cast_arg.loc = orig_arg_i->base.loc;
                         physical_cast_arg.m_value = physical_cast;

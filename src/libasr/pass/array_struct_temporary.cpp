@@ -147,7 +147,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray));
                 value_type = logical_array_type;
             } else {
-                ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray));
+                ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerToDataArray));
                 value_type = logical_array_type;
             }
         } else if (ASR::is_a<ASR::Array_t>(*right_type)) {
@@ -161,7 +161,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray));
                 value_type = logical_array_type;
             } else {
-                ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray));
+                ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerToDataArray));
                 value_type = logical_array_type;
             }
         }

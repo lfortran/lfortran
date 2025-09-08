@@ -577,7 +577,7 @@ namespace LCompilers {
                         type = arr_api->get_array_type(arg_expr, asr_type, el_type, get_pointer);
                         break;
                     }
-                    case ASR::array_physical_typeType::PointerArray: {
+                    case ASR::array_physical_typeType::PointerToDataArray: {
                         type = nullptr;
                         if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
                             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
@@ -590,7 +590,7 @@ namespace LCompilers {
                         }
                         break;
                     }
-                    case ASR::array_physical_typeType::UnboundedPointerArray: {
+                    case ASR::array_physical_typeType::UnboundedPointerToDataArray: {
                         type = nullptr;
                         if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
                             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
@@ -1189,8 +1189,8 @@ namespace LCompilers {
                         llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                         break;
                     }
-                    case ASR::array_physical_typeType::PointerArray:
-                    case ASR::array_physical_typeType::UnboundedPointerArray : {
+                    case ASR::array_physical_typeType::PointerToDataArray:
+                    case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
                         llvm_type = get_el_type(arg_expr, v_type->m_type, module);
                         llvm_type = ASRUtils::is_character(*v_type->m_type) ? llvm_type
                             : llvm_type->getPointerTo();
@@ -1821,7 +1821,7 @@ namespace LCompilers {
                         throw LCompilersException("Unhandled String Physical type");
                 }
             }
-            case ASR::PointerArray:{
+            case ASR::PointerToDataArray:{
                 switch (str_type->m_physical_type){
                     // `string_descriptor*` and `char*`
                     case ASR::DescriptorString :
@@ -2179,7 +2179,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(arr_ptr));
                 return get_string_data(str, str_desc);
             }
-            case ASR::PointerArray:{
+            case ASR::PointerToDataArray:{
                 return get_string_data(str, arr_ptr);
             }
             default:
@@ -2198,7 +2198,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(arr_ptr));
                 return get_string_length(str, str_desc);
             }
-            case ASR::PointerArray:{
+            case ASR::PointerToDataArray:{
                 return get_string_length(str, arr_ptr);
             }
             default:
@@ -2223,7 +2223,7 @@ namespace LCompilers {
                         get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
                         arr_api->get_pointer_to_data(expr, type, array_of_strings, module));
                     break;
-                case ASR::PointerArray:
+                case ASR::PointerToDataArray:
                     str = array_of_strings;
                     break;
                 default:
@@ -2300,7 +2300,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const){
-        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerArray)
+        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerToDataArray)
         /*
             Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
             We'll create fake duplicate-string type with length = OriginalStringLengthInArray * ArraySize
@@ -2401,7 +2401,7 @@ namespace LCompilers {
 // Ugly function
 // Refactor this (Try to use exisiting functinoalities)
 llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t, ASR::ArrayConstant_t* arrayConst_t, std::string name){
-    LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerArray)
+    LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerToDataArray)
     /*
         Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
         We'll create fake duplicate-string type with length = OriginalStringLengthInArray * ArraySize

@@ -549,8 +549,6 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
 
              // New block: Wrap based on m_is_cstruct
             if (ASR::is_a<ASR::StructType_t>(*v->m_type)) {
-
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type)))
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
@@ -3125,24 +3123,24 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerArray;
+            physical_type = ASR::array_physical_typeType::PointerToDataArray;
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument || (type && ASRUtils::is_character(*type)) ) {
-                    physical_type = ASR::array_physical_typeType::PointerArray;
+                    physical_type = ASR::array_physical_typeType::PointerToDataArray;
                 } else {
                     physical_type = ASR::array_physical_typeType::FixedSizeArray;
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-                physical_type = ASR::array_physical_typeType::PointerArray;
+                physical_type = ASR::array_physical_typeType::PointerToDataArray;
             } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
-                physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
             }
         }
     }
 
-    // Compile-time-know-size Array of strings must be `PointerArray` physical type
-    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
+    // Compile-time-know-size Array of strings must be `PointerToDataArray` physical type
+    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerToDataArray;}
 
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
@@ -3298,7 +3296,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                (physical_type == ASR::array_physical_typeType::PointerArray && 
+                (physical_type == ASR::array_physical_typeType::PointerToDataArray && 
                 dims != nullptr) || 
                 (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
@@ -6380,7 +6378,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         dims.push_back(al, dim);
         a_type = ASRUtils::make_Array_t_util(al, dim.loc,
             a_type, dims.p, dims.size(), ASR::abiType::Source,
-            false, ASR::array_physical_typeType::PointerArray, true);
+            false, ASR::array_physical_typeType::PointerToDataArray, true);
     } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
@@ -6695,10 +6693,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray);
+                        dims.p, dims.size(), ASR::array_physical_typeType::PointerToDataArray);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
+                                                        ASR::array_physical_typeType::PointerToDataArray, pointer_array_t, nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }
