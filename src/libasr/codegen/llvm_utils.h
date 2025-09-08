@@ -1364,7 +1364,7 @@ namespace LCompilers {
 
             std::map<std::string, llvm::Type*> typecode2elstruct;
 
-            llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Value* set);
+            llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_elems(llvm::Value* set);
 
