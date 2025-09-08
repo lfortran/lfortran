@@ -3453,11 +3453,11 @@ public:
                                     }
                                     sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                                         al, x.m_syms[i].loc, current_scope,
-                                        x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
+                                        s2c(al, to_lower(x.m_syms[i].m_name)), nullptr, 0, ASR::intentType::Local,
                                         init_expr, init_expr_value, ASR::storage_typeType::Parameter,
                                         init_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false, false));
-                                    current_scope->add_symbol(x.m_syms[i].m_name, sym);
+                                    current_scope->add_symbol(s2c(al, to_lower(x.m_syms[i].m_name)), sym);
                                     enum_init_val++;
                                 } else {
                                     diag.add(Diagnostic(
