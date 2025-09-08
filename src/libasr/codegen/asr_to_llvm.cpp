@@ -1300,7 +1300,7 @@ public:
                         if (compiler_options.new_classes) {
                             store_class_vptr(ASRUtils::symbol_get_past_external(
                                     ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)),
-                                bitcasted_malloc_ptr, ASRUtils::is_allocatable(curr_arg.m_a));
+                                bitcasted_malloc_ptr, false);
                         }
 
                         allocate_array_members_of_struct(
@@ -1746,14 +1746,15 @@ public:
                         llvm::Value* class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                             llvm::APInt(64, get_class_hash(struct_sym)));
 
-                        // Store back the original hash
-                        llvm::Value* t = llvm_utils->create_gep2(class_type, class_ptr, 0);
-                        builder->CreateStore(class_hash, t);
+                        if (!compiler_options.new_classes) {
+                            // Store back the original hash
+                            llvm::Value* t = llvm_utils->create_gep2(class_type, class_ptr, 0);
+                            builder->CreateStore(class_hash, t);
 
-                        t = llvm_utils->create_gep2(class_type, class_ptr, 1);
+                            tmp_ = llvm_utils->create_gep2(class_type, class_ptr, 1);
+                        }
                         llvm_data_type = get_llvm_struct_data_type(st, false);
-                        tmp_ = t;
-                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), t);
+                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), tmp_);
                     } else {
                         llvm_data_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                             ASRUtils::type_get_past_array(
@@ -11661,7 +11662,8 @@ public:
                                         ASRUtils::type_get_past_allocatable_pointer(arg->m_type))
                                     && !ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value)
                                     && !ASRUtils::is_class_type(
-                                        ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                                        ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) 
+                                    && !compiler_options.new_classes) {
                                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                                 }
