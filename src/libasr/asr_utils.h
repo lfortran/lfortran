@@ -558,6 +558,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
                     res = "class(" + res + ")";
                 }
             }
+            
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 res += ", parameter";
