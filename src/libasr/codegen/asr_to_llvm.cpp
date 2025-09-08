@@ -4613,10 +4613,12 @@ public:
     }
 
     void collect_vtable_function_impls(ASR::symbol_t *struct_sym, std::vector<llvm::Constant*>& impls) {
-        // TODO: Current we simply take functions from struct symtab but
-        // Struct_sym here can be extended itself so we need to
-        // traverse the inheritance tree to collect all functions
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+        if (struct_t->m_parent) {
+            collect_vtable_function_impls(struct_t->m_parent, impls);
+        }
         for (auto &item : struct_t->m_symtab->get_scope()) {
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
@@ -4627,6 +4629,7 @@ public:
                         *(ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(method_decl->m_proc))),
                         module.get());
+                    struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;
                     impls.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(func_type)));
                 } else {
                     uint32_t h = get_hash((ASR::asr_t*)impl_sym);
@@ -4639,6 +4642,16 @@ public:
                         llvm_symtab_fn[h] = fn;
                     }
                     llvm::Function* F = llvm_symtab_fn[h];
+                    if (struct_t->m_parent) {
+                        ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
+                        // Case: If current method is overriding any methods from parent class
+                        if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
+                              (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
+                            impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
+                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];  // -2 to account for reserved null ptr and type info
+                            continue;
+                        }
+                    }
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
                     impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
                 }
