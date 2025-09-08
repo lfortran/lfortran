@@ -1561,7 +1561,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 25 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -1628,7 +1628,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Real 8)
                                         BindC
@@ -1670,7 +1670,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -1733,7 +1733,7 @@
                                             (Real 8)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Real 8)
                                         BindC
@@ -2250,7 +2250,7 @@
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 24 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -2317,7 +2317,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Real 4)
                                         BindC
@@ -2359,7 +2359,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -2422,7 +2422,7 @@
                                             (Real 4)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Real 4)
                                         BindC
@@ -2464,7 +2464,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 23 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -2531,7 +2531,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Integer 4)
                                         BindC
@@ -2573,7 +2573,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -2636,7 +2636,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         (Integer 4)
                                         BindC
@@ -4018,7 +4018,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 40 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -4085,7 +4085,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         (Real 8)]
                                         ()
@@ -4517,7 +4517,7 @@
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 39 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -4584,7 +4584,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         (Real 4)]
                                         ()
@@ -4628,7 +4628,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 38 n))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -4695,7 +4695,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         (Integer 4)]
                                         ()

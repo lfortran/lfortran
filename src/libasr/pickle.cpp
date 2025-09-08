@@ -26,7 +26,11 @@ public:
         if (use_colors) {
             s.append(color(fg::yellow));
         }
-        s.append(ASRUtils::symbol_name(&x));
+        if (clojure) {
+            s.append(make_sym_clojure_compatible(ASRUtils::symbol_name(&x)));
+        } else {
+            s.append(ASRUtils::symbol_name(&x));
+        }
         if (use_colors) {
             s.append(color(fg::reset));
         }
@@ -197,17 +201,18 @@ public:
 };
 
 std::string pickle(ASR::asr_t &asr, bool colors, bool indent,
-        bool show_intrinsic_modules) {
+        bool show_intrinsic_modules, bool clojure) {
     ASRPickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
     v.show_intrinsic_modules = show_intrinsic_modules;
+    v.clojure = clojure;
     v.visit_asr(asr);
     return v.get_str();
 }
 
-std::string pickle(ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules) {
-    return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
+std::string pickle(ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules, bool clojure) {
+    return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules, clojure);
 }
 
 /********************** ASR Pickle Tree *******************/

@@ -4,12 +4,12 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data = private constant [27 x i8] c"Line 1 - Condition is true\00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([27 x i8], [27 x i8]* @string_const_data, i32 0, i32 0), i64 26 }>
+@string_const_data = private constant [26 x i8] c"Line 1 - Condition is true"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([26 x i8], [26 x i8]* @string_const_data, i32 0, i32 0), i64 26 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data.1 = private constant [28 x i8] c"Line 1 - Condition is false\00"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([28 x i8], [28 x i8]* @string_const_data.1, i32 0, i32 0), i64 27 }>
+@string_const_data.1 = private constant [27 x i8] c"Line 1 - Condition is false"
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([27 x i8], [27 x i8]* @string_const_data.1, i32 0, i32 0), i64 27 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {

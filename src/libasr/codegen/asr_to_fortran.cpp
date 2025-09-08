@@ -823,7 +823,47 @@ public:
 
     // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}
 
-    // void visit_Block(const ASR::Block_t &x) {}
+    void visit_Block(const ASR::Block_t &x) {
+        // Generate Fortran for a Block symbol in place
+        std::string r = indent;
+        if (x.m_name) {
+            r += std::string(x.m_name) + " : ";
+        }
+        r += "block\n";
+
+        inc_indent();
+        // Emit any use statements from this scope
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+        // Emit local variable declarations
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+
+        // Emit the block body
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += src;
+        }
+        dec_indent();
+
+        r += indent;
+        r += "end block";
+        if (x.m_name) {
+            r += " " + std::string(x.m_name);
+        }
+        r += "\n";
+        src = r;
+    }
 
     // void visit_Requirement(const ASR::Requirement_t &x) {}
 
@@ -1397,13 +1437,122 @@ public:
 
     // void visit_Flush(const ASR::Flush_t &x) {}
 
-    // void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {}
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
+        ASR::AssociateBlock_t* ab = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+
+        // Build the association header from leading Associate statements
+        std::vector<std::pair<std::string, std::string>> assoc_pairs;
+        size_t body_start = 0;
+        for (; body_start < ab->n_body; body_start++) {
+            ASR::stmt_t* s = ab->m_body[body_start];
+            if (ASR::is_a<ASR::Associate_t>(*s)) {
+                ASR::Associate_t* as = ASR::down_cast<ASR::Associate_t>(s);
+                visit_expr(*as->m_target);
+                std::string t = src;
+                visit_expr(*as->m_value);
+                std::string v = src;
+                assoc_pairs.emplace_back(std::move(t), std::move(v));
+            } else {
+                break;
+            }
+        }
+
+        std::string r = indent;
+        if (ab->m_name) {
+            r += std::string(ab->m_name) + " : ";
+        }
+        r += "associate (";
+        for (size_t i = 0; i < assoc_pairs.size(); i++) {
+            r += assoc_pairs[i].first + " => " + assoc_pairs[i].second;
+            if (i + 1 < assoc_pairs.size()) r += ", ";
+        }
+        r += ")\n";
+
+        inc_indent();
+
+        // Emit any use statements from this scope
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+        // Emit variable declarations that are not associate names
+        std::set<std::string> assoc_names;
+        for (auto &p: assoc_pairs) assoc_names.insert(p.first);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(ab->m_symtab);
+        for (auto &item : var_order) {
+            if (assoc_names.find(item) != assoc_names.end()) continue;
+            ASR::symbol_t* var_sym = ab->m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+
+        // Emit the rest of the body (after the Associate statements)
+        for (size_t i = body_start; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+            r += src;
+        }
+        dec_indent();
+        r += indent + "end associate";
+        if (ab->m_name) {
+            r += " " + std::string(ab->m_name);
+        }
+        r += "\n";
+        src = r;
+    }
 
     // void visit_SelectType(const ASR::SelectType_t &x) {}
 
     // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
 
-    // void visit_BlockCall(const ASR::BlockCall_t &x) {}
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        std::string r = indent;
+        if (block->m_name) {
+            r += std::string(block->m_name) + " : ";
+        }
+        r += "block\n";
+
+        inc_indent();
+        // Declarations from this block's scope
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(block->m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = block->m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+        // If this block is a goto target (used by select-case lowering), emit the label target
+        if (x.m_label != -1) {
+            r += std::to_string(x.m_label) + " continue\n";
+        }
+        // Emit body
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+            r += src;
+        }
+        dec_indent();
+
+        r += indent;
+        r += "end block";
+        if (block->m_name) {
+            r += " " + std::string(block->m_name);
+        }
+        r += "\n";
+        src = r;
+    }
 
     // void visit_Expr(const ASR::Expr_t &x) {}
 

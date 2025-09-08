@@ -152,7 +152,7 @@
                                 ) ExpressionLength DescriptorString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
-                                PointerToDataArray
+                                PointerArray
                             )
                             ()
                             ColMajor

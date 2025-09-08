@@ -4,12 +4,12 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data = private constant [5 x i8] c"Dr. \00"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
+@string_const_data = private constant [4 x i8] c"Dr. "
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data.1 = private constant [8 x i8] c"Fortran\00"
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.1, i32 0, i32 0), i64 7 }>
+@string_const_data.1 = private constant [7 x i8] c"Fortran"
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.1, i32 0, i32 0), i64 7 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_dr_fortran_cb_print_dr() {

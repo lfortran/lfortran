@@ -75,7 +75,7 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
 
 /*
     This pass is responsible to convert non-contiguous ( DescriptorArray, arrays with stride != 1  )
-    arrays passed to functions by casting to contiguous ( PointerToDataArray ) arrays.
+    arrays passed to functions by casting to contiguous ( PointerArray ) arrays.
 
     For example:
 
@@ -118,7 +118,7 @@ public:
         if ( ASRUtils::is_array(ASRUtils::expr_type(expr) ) &&
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
-            return cast->m_new == ASR::array_physical_typeType::PointerToDataArray &&
+            return cast->m_new == ASR::array_physical_typeType::PointerArray &&
                    cast->m_old == ASR::array_physical_typeType::DescriptorArray;
         }
         return false;
@@ -214,7 +214,7 @@ public:
                     ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerToDataArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray));
                     value_type = logical_array_type;
                 }
             } else if (ASR::is_a<ASR::Array_t>(*right_type)) {
@@ -228,7 +228,7 @@ public:
                     ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerToDataArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray));
                     value_type = logical_array_type;
                 }
             }
@@ -798,7 +798,7 @@ public:
                 array_var_temporary_arg.loc = loc;
                 if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
                     ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
-                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerToDataArray,
+                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerArray,
                         array_physical_cast->m_type, nullptr));
                     array_var_temporary_arg.m_value = casted_array_var_temporary_arg;
                     x_m_args_vec.push_back(al, array_var_temporary_arg);

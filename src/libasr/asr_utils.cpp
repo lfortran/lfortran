@@ -888,9 +888,25 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
     throw LCompilersException("ICE: Module not found");
 }
 
+void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify) {
+    fix_external_symbols(*tu, *symtab);
+    PassUtils::UpdateDependenciesVisitor v(al);
+    v.visit_TranslationUnit(*tu);
+    if (run_verify) {
+#if defined(WITH_LFORTRAN_ASSERT)
+        diag::Diagnostics diagnostics;
+        if (!asr_verify(*tu, true, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed");
+        };
+#endif
+    }
+}
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
+                            std::set<std::string> &loaded_submodules,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
@@ -942,25 +958,6 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         mod2->m_symtab->mark_all_variables_external(al);
     }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
-
-    // Load all the Submodules of loaded parent module
-    if (load_submodules && mod2->m_has_submodules) {
-        std::vector<ASR::TranslationUnit_t*> submods;
-        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
-            = find_and_load_submodules(al, module_name, *symtab, pass_options, lm);
-        if (res.ok) {
-            submods = res.result;
-        } else {
-            error_message = res.error.message;
-            err(error_message, loc);
-        }
-        for (size_t i=0;i<submods.size();i++) {
-            ASR::Module_t *submod = extract_module(*submods[i]);
-            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-            submod->m_symtab->parent = symtab;
-            submod->m_loaded_from_mod = true;
-        }
-    }
 
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
@@ -1023,6 +1020,12 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
 
+    if (load_submodules) {
+        load_dependent_submodules(al, symtab, mod2, loc,
+                                  loaded_submodules, pass_options,
+                                  run_verify, err, lm);
+    }
+
     // Check that all modules are included in ASR now
     std::vector<std::string> modules_list
         = determine_module_dependencies(*tu);
@@ -1032,19 +1035,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
 
-    // Fix all external symbols
-    fix_external_symbols(*tu, *symtab);
-    PassUtils::UpdateDependenciesVisitor v(al);
-    v.visit_TranslationUnit(*tu);
-    if (run_verify) {
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
-    }
+    // Fix all external symbols and update dependencies
+    fix_translation_unit(al, tu, symtab, run_verify);
     symtab->asr_owner = orig_asr_owner;
 
     return mod2;
@@ -1097,19 +1089,62 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, loc,
             symtab, nullptr, 0));
 
-    // Fix all external symbols
-    fix_external_symbols(*tu, *symtab);
-    PassUtils::UpdateDependenciesVisitor v(al);
-    v.visit_TranslationUnit(*tu);
-    if (run_verify) {
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
+    // Keeps track of loaded dependent modules whose submodules are not yet loaded
+    std::vector<ASR::Module_t*> dependent_modules_with_not_yet_loaded_submodules;
+
+    // Load any dependent modules recursively
+    bool rerun = true;
+    while (rerun) {
+        rerun = false;
+        std::vector<std::string> modules_list
+            = determine_module_dependencies(*tu);
+        for (auto &item : modules_list) {
+            if (symtab->get_symbol(item)
+                    == nullptr) {
+                bool is_intrinsic = startswith(item, "lfortran_intrinsic");
+                ASR::TranslationUnit_t *mod1 = nullptr;
+                Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                    = find_and_load_module(al, item, *symtab, is_intrinsic, pass_options, lm);
+                std::string error_message = "Module '" + item + "' modfile was not found";
+                if (res.ok) {
+                    mod1 = res.result;
+                } else {
+                    error_message =  res.error.message;
+                    if (!is_intrinsic) {
+                        // Module not found as a regular module. Try intrinsic module
+                        if (item == "iso_c_binding"
+                            ||item == "iso_fortran_env") {
+                            Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                                = find_and_load_module(al, "lfortran_intrinsic_" + item,
+                                *symtab, true, pass_options, lm);
+                            if (res.ok) {
+                                mod1 = res.result;
+                            } else {
+                                error_message =  res.error.message;
+                            }
+                        }
+                    }
+                }
+
+                if (mod1 == nullptr) {
+                    err(error_message, loc);
+                }
+                ASR::Module_t *mod2 = extract_module(*mod1);
+                symtab->add_symbol(item, (ASR::symbol_t*)mod2);
+                mod2->m_symtab->parent = symtab;
+                mod2->m_loaded_from_mod = true;
+                dependent_modules_with_not_yet_loaded_submodules.push_back(mod2);
+                rerun = true;
+            }
+        }
     }
+
+    // Load all the submodules of dependent modules recursively
+    for (size_t i=0;i<dependent_modules_with_not_yet_loaded_submodules.size();i++) {
+        load_dependent_submodules(al, symtab, dependent_modules_with_not_yet_loaded_submodules[i],
+                                  loc, loaded_submodules, pass_options, run_verify, err, lm);
+    }
+
     symtab->asr_owner = orig_asr_owner;
 }
 
@@ -2648,7 +2683,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array ? ASR::array_physical_typeType::PointerToDataArray: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
@@ -3363,6 +3398,16 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
             if (func_call->m_dt && ASRUtils::is_array(ASRUtils::expr_type(func_call->m_dt))) {
                 return get_expr_size_expr(func_call->m_dt);
             }
+        }
+    } else if (ASR::is_a<ASR::ComplexRe_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::ComplexRe_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
+        }
+    } else if (ASR::is_a<ASR::ComplexIm_t>(*x)) {
+        ASR::expr_t* arg = ASR::down_cast<ASR::ComplexIm_t>(x)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            return get_expr_size_expr(arg);
         }
     } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
         ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(x);

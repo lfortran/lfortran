@@ -2485,9 +2485,12 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
+void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify);
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
+                            std::set<std::string> &loaded_submodules,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
@@ -3121,24 +3124,24 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerToDataArray;
+            physical_type = ASR::array_physical_typeType::PointerArray;
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument || (type && ASRUtils::is_character(*type)) ) {
-                    physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                    physical_type = ASR::array_physical_typeType::PointerArray;
                 } else {
                     physical_type = ASR::array_physical_typeType::FixedSizeArray;
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-                physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                physical_type = ASR::array_physical_typeType::PointerArray;
             } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
-                physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
+                physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
             }
         }
     }
 
-    // Compile-time-know-size Array of strings must be `PointerToDataArray` physical type
-    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerToDataArray;}
+    // Compile-time-know-size Array of strings must be `PointerArray` physical type
+    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
 
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
@@ -3294,7 +3297,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                (physical_type == ASR::array_physical_typeType::PointerToDataArray && 
+                (physical_type == ASR::array_physical_typeType::PointerArray && 
                 dims != nullptr) || 
                 (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
@@ -6376,7 +6379,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         dims.push_back(al, dim);
         a_type = ASRUtils::make_Array_t_util(al, dim.loc,
             a_type, dims.p, dims.size(), ASR::abiType::Source,
-            false, ASR::array_physical_typeType::PointerToDataArray, true);
+            false, ASR::array_physical_typeType::PointerArray, true);
     } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
@@ -6461,6 +6464,73 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
     
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
+        
+        // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
+        if (passed_arg_expr && i < f->n_args) {
+            // Check for INTENT(OUT/INOUT) - but safely
+            // We need to check if this is a regular argument (not a procedure)
+            // by looking at whether we can safely call EXPR2VAR
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
+                    // Check if it's not a procedure (procedures don't have regular intent)
+                    if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
+                        if (callee_param->m_intent == ASR::intentType::Out ||
+                            callee_param->m_intent == ASR::intentType::InOut) {
+                            
+                            // For intent(out) and intent(inout), the actual argument must be a variable
+                            bool is_valid_variable = false;
+                            switch (passed_arg_expr->type) {
+                                case ASR::exprType::Var:
+                                case ASR::exprType::ArrayItem:
+                                case ASR::exprType::ArraySection:
+                                case ASR::exprType::StringItem:
+                                case ASR::exprType::StringSection:
+                                case ASR::exprType::StructInstanceMember:
+                                case ASR::exprType::IntrinsicArrayFunction:
+                                case ASR::exprType::ListItem:
+                                    // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
+                                    is_valid_variable = true;
+                                    break;
+                                case ASR::exprType::FunctionCall: {
+                                    // Only allow specific intrinsic functions that return modifiable references
+                                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(passed_arg_expr);
+                                    if (func_call->m_name) {
+                                        ASR::symbol_t* func_sym = func_call->m_name;
+                                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+                                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                                            std::string func_name = func->m_name;
+                                            // Allow list access functions that return modifiable references
+                                            if (func_name == "_lfortran_get_item") {
+                                                is_valid_variable = true;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                default:
+                                    is_valid_variable = false;
+                                    break;
+                            }
+                            
+                            if (!is_valid_variable) {
+                                diag.add(diag::Diagnostic(
+                                    "Non-variable expression in variable definition context "
+                                    "(actual argument to INTENT = OUT/INOUT)",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {passed_arg_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Now handle the original intent(in) -> intent(out/inout) mismatch check
+        // This only applies when passed_arg_expr is a Var_t
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
@@ -6624,10 +6694,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                        dims.p, dims.size(), ASR::array_physical_typeType::PointerToDataArray);
+                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerToDataArray, pointer_array_t, nullptr);
+                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }
@@ -6732,6 +6802,10 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
             ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))))
         ASR::expr_t* i32one = i32j(1);
         for( size_t i = 0; i < n_args; i++ ) {
+            if (a_args[i].m_value == nullptr) {
+                continue;
+            }
+
             ASR::ttype_t* type = ASRUtils::expr_type(a_args[i].m_value);
             if (ASRUtils::is_array(type)) {
                 ASR::dimension_t* m_dims = nullptr;

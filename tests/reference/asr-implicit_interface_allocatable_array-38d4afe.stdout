@@ -103,7 +103,7 @@
                                                             (Real 4)
                                                             [(()
                                                             ())]
-                                                            PointerToDataArray
+                                                            PointerArray
                                                         )
                                                     )
                                                     ()
@@ -126,7 +126,7 @@
                                                 (Real 4)
                                                 [(()
                                                 ())]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                         )]
                                         ()
@@ -190,7 +190,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -211,7 +211,7 @@
                                             (Real 4)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            PointerArray
                                         )]
                                         ()
                                         BindC
@@ -260,12 +260,12 @@
                         ((ArrayPhysicalCast
                             (Var 2 r_g)
                             DescriptorArray
-                            PointerToDataArray
+                            PointerArray
                             (Array
                                 (Real 4)
                                 [(()
                                 ())]
-                                PointerToDataArray
+                                PointerArray
                             )
                             ()
                         ))]
@@ -278,13 +278,13 @@
                         ((ArrayPhysicalCast
                             (Var 2 r_t)
                             DescriptorArray
-                            PointerToDataArray
+                            PointerArray
                             (Pointer
                                 (Array
                                     (Real 4)
                                     [(()
                                     ())]
-                                    PointerToDataArray
+                                    PointerArray
                                 )
                             )
                             ()

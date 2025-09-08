@@ -74,7 +74,7 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed);
 LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
-LFORTRAN_API void _lfortran_printf(const char* format, const char* str, uint32_t str_len, const char* end, uint32_t end_len);
+LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
@@ -198,11 +198,11 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s);
 LFORTRAN_API char* _lfortran_str_chr(uint8_t c);
 LFORTRAN_API int _lfortran_str_to_int(char** s);
 LFORTRAN_API void* _lfortran_malloc(int64_t size);
+LFORTRAN_API void* _lfortran_string_malloc(int64_t length);
 LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size);
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
-LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one, char *s);
 LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx);
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end);
 LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int64_t idx2, int64_t step,
@@ -244,7 +244,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len);
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t advance_length, char* fmt, int32_t no_of_args, ...);
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num);
@@ -285,13 +285,36 @@ LFORTRAN_API char *_lpython_get_argv(int32_t index);
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]);
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 LFORTRAN_API char *_lfortran_get_env_variable(char *name);
-LFORTRAN_API void _lfortran_get_environment_variable(char *name, char* receiver);
+LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver);
 LFORTRAN_API int _lfortran_exec_command(char *cmd);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);
+
+
+typedef struct type_info {
+    char* name;  // Pointer to a null-terminated string representing the type name
+} type_info;
+
+typedef struct __si_class_type_info {
+    type_info base;                               // Inherits from type_info
+    const struct __class_type_info* __base_type;  // Pointer to base class' type info
+} __si_class_type_info;
+
+static inline bool
+is_equal(const struct type_info* x, const struct type_info* y);
+
+static inline bool
+search_dst_type(const struct __si_class_type_info* dynamic_type,
+                const struct __si_class_type_info* dst_type);
+
+LFORTRAN_API void*
+__lfortran_dynamic_cast(const void* static_ptr,
+                        const struct __si_class_type_info* dst_type,
+                        bool match_exact_type);
+
 
 #ifdef __cplusplus
 }

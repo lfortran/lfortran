@@ -2,12 +2,12 @@
     "basename": "llvm-boz_01-def9db5",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/boz_01.f90",
-    "infile_hash": "c39ee395eba975ffba7c003260ba1b67393a5b06bb519c9e3a5f2442",
+    "infile_hash": "58477e3f0fbdc7b41b5892cc6f876abfc5b434abe4884789d60b2d68",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-boz_01-def9db5.stdout",
-    "stdout_hash": "2ed013125f71c145fda72962e9d06f8cc8b656cde7e346a08eb1abdf",
+    "stdout_hash": "0fd7ff7331df1cdc55f713e7cb1c750048bb3e1692f2a6f09cd4f5cc",
     "stderr": "llvm-boz_01-def9db5.stderr",
-    "stderr_hash": "e47b37976e07fa74de67cbf8929d0974adaba30e067be31729bb6426",
+    "stderr_hash": "2c1014e4f04672dfbcc83dde266587a98d7dc9651f6401dcaab51839",
     "returncode": 0
 }

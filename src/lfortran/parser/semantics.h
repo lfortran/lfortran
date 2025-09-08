@@ -1296,6 +1296,8 @@ ast_t* builtin3(Allocator &al,
         nullptr, nullptr, 0, nullptr, 0, EXPRS(args), args.size(), nullptr)
 #define READ4(arg, l) make_Read_t(p.m_a, l, 0, \
         EXPR(INTEGER(arg, l)), nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
+#define READ5(arg, args, l) make_Read_t(p.m_a, l, 0, \
+        EXPR(STRING(arg, l)), nullptr, 0, nullptr, 0, EXPRS(args), args.size(), nullptr)
 
 #define OPEN(args0, l) builtin1(p.m_a, args0, l, make_Open_t)
 #define CLOSE(args0, l) builtin1(p.m_a, args0, l, make_Close_t)

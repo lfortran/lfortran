@@ -139,10 +139,10 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-1
+  git checkout lf-3
   micromamba install -c conda-forge fpm
-  git checkout c5a272475772526343cf1d6864411b233c7d7c05
-  fpm --compiler=$FC build
+  git checkout 5dbce529fe5ec3b1a917c658d8e7829433c06304
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs --use-loop-variable-after-loop"
   print_success "Done with jonquil"
   cd ..
 '
@@ -219,8 +219,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-21
-  git checkout ec78a3c86c7f3971bcee7ca0241c4abb85b26749
+  git checkout n-lf-22
+  git checkout ae4c42431b31f8ad8f6fdd40bcc9e08a88f8b373
   micromamba install -c conda-forge fypp
 
   git clean -fdx

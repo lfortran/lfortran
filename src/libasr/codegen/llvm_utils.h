@@ -95,6 +95,7 @@ namespace LCompilers {
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context)}, true);
             fn_printf = llvm::Function::Create(function_type,
@@ -202,8 +203,9 @@ namespace LCompilers {
             std::map<std::string, std::string>& dertype2parent;
             std::map<std::string, std::map<std::string, int>>& name2memidx;
             std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
+            std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
-            std::map<llvm::Value *, llvm::Type *> &ptr_type;
+            std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated;
 
             LLVMDictInterface* dict_api_lp;
             LLVMDictInterface* dict_api_sc;
@@ -218,10 +220,13 @@ namespace LCompilers {
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
             llvm::Type* string_descriptor;
+            llvm::Type* vptr_type;
 
-            // Maps an `ASR::Struct_t` symbol to it's `vtable` in LLVM.
-            // The `vtable` looks like - `%__new_vtab_<struct_name> = { i64 }`
-            std::map<ASR::symbol_t*, llvm::Type*> struct_vtable;
+#if LLVM_VERSION_MAJOR >= 17
+            llvm::PointerType* i8_ptr = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+#else
+            llvm::PointerType* i8_ptr = llvm::Type::getInt8PtrTy(context);
+#endif
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,
@@ -232,8 +237,9 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx_,
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
+                std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
-                std::map<llvm::Value *, llvm::Type *> &ptr_type_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
+                std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
             llvm::Value* create_gep_deprecated(llvm::Value* ds, int idx);
             llvm::Value* create_gep_deprecated(llvm::Value* ds, llvm::Value* idx);
@@ -241,22 +247,22 @@ namespace LCompilers {
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
-            llvm::Value* create_ptr_gep(llvm::Value* ptr, int idx);
-            llvm::Value* create_ptr_gep(llvm::Value* ptr, llvm::Value* idx);
+            llvm::Value* create_ptr_gep_deprecated(llvm::Value* ptr, int idx);
+            llvm::Value* create_ptr_gep_deprecated(llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
-            llvm::Value* CreateLoad(llvm::Value *x, bool is_volatile = false);
+            llvm::Value* CreateLoadDeprecated(llvm::Value *x, bool is_volatile = false);
 
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
 
-            llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateGEPDeprecated(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *type, llvm::Value *x, int idx);
 
-            llvm::Value* CreateInBoundsGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateInBoundsGEPDeprecated(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(ASR::ttype_t *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
@@ -323,12 +329,6 @@ namespace LCompilers {
                 }
                 start_new_block(mergeBB);
             }
-
-            /*
-             * Initialize string with empty characters.
-            */
-            void string_init(llvm::Value* arg_size, llvm::Value* arg_string);
-
             /*
                 * Checker for the desired type while operating on array of strings.
                 To make sure of consistency while working, to avoid llvm IR opaque errors.
@@ -353,8 +353,9 @@ namespace LCompilers {
 
             /*
              * Allocate stack memory for string.
+             * Notice : It doesn't set the length.
             */
-            void initialize_string_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+            void set_string_memory_on_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
 
             /*
                 Create a string based on the physical type.
@@ -394,7 +395,7 @@ namespace LCompilers {
             /*
                 Gets the desired string element within array
             */
-            llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerToDataArray*/, llvm::Value* arr_idx);
+            llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerArray*/, llvm::Value* arr_idx);
 
             /*
                 Corresponds to the process of allocating a string.
@@ -438,13 +439,6 @@ namespace LCompilers {
             */
             void set_array_of_strings_memory_on_stack(ASR::String_t* str_type,llvm::Value* str, llvm::Value* str_len, llvm::Value* array_size);
 
-            /*
-                - Gets the llvm Variable for different strings representations (standalone or array)
-                    e.g. --> (character, allocatable-character, array of strings, etc.)
-                - Returns a pointer to the string container
-                    e.g. --> (string_descriptor*, array_descriptor*, i8**)
-            */
-            llvm::Value* fetch_string_llvm_var(ASR::Variable_t* x);
 
             /*
                 * Gets the data pointer of an array of strings
@@ -839,13 +833,13 @@ namespace LCompilers {
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity) = 0;
 
             virtual
-            llvm::Value* get_key_list(llvm::Value* dict) = 0;
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_value_list(llvm::Value* dict) = 0;
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict) = 0;
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) = 0;
@@ -922,7 +916,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            llvm::Value* len(llvm::Value* dict) = 0;
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
             bool is_dict_present();
@@ -955,11 +949,11 @@ namespace LCompilers {
 
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_key_list(llvm::Value* dict);
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_value_list(llvm::Value* dict);
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
@@ -1023,7 +1017,7 @@ namespace LCompilers {
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* len(llvm::Value* dict);
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
             void get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
                 llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
@@ -1122,11 +1116,11 @@ namespace LCompilers {
 
             void dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_key_list(llvm::Value* dict);
+            llvm::Value* get_key_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_value_list(llvm::Value* dict);
+            llvm::Value* get_value_list(llvm::Type* type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
@@ -1186,7 +1180,7 @@ namespace LCompilers {
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* len(llvm::Value* dict);
+            llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
             void get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
                 llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
@@ -1233,10 +1227,10 @@ namespace LCompilers {
                 llvm::Module* module, size_t initial_capacity) = 0;
 
             virtual
-            llvm::Value* get_el_list(llvm::Value* set) = 0;
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set) = 0;
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) = 0;
@@ -1289,7 +1283,7 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            llvm::Value* len(llvm::Value* set);
+            llvm::Value* len(llvm::Type* type, llvm::Value* set);
 
             virtual
             bool is_set_present();
@@ -1317,9 +1311,9 @@ namespace LCompilers {
             void set_init(std::string type_code, llvm::Value* set,
                 llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_el_list(llvm::Value* set);
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
@@ -1374,7 +1368,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_elems(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_rehash_flag(llvm::Value* set);
+            llvm::Value* get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set);
 
             void set_init_given_initial_capacity(std::string el_type_code,
                 llvm::Value* set, llvm::Module* module, llvm::Value* initial_capacity);
@@ -1408,9 +1402,9 @@ namespace LCompilers {
             void set_init(std::string type_code, llvm::Value* set,
                 llvm::Module* module, size_t initial_capacity);
 
-            llvm::Value* get_el_list(llvm::Value* set);
+            llvm::Value* get_el_list(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 

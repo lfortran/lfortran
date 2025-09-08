@@ -530,7 +530,7 @@
                                                         (Integer 4)
                                                         ()
                                                     ))]
-                                                    PointerToDataArray
+                                                    PointerArray
                                                 )
                                                 ()
                                             )
