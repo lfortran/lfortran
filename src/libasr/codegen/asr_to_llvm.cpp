@@ -1553,7 +1553,8 @@ public:
 
             llvm::Type* dest_type = tp->getPointerTo();
             if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(tmp_sym)) ||
-                ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::symbol_type(tmp_sym)))) {
+                (ASRUtils::is_class_type(ASRUtils::extract_type(
+                    ASRUtils::symbol_type(tmp_sym))) && !compiler_options.new_classes)) {
                 // functions are pointers in LLVM, so we do not need to get the pointer to it
                 // Class type target is already pointer, so we dont need to get the pointer for dest
                 dest_type = tp;
@@ -1652,7 +1653,8 @@ public:
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(sm->m_v));
                 int64_t ptr_loads_copy = ptr_loads;
-                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type)) &&
+                        !compiler_options.new_classes) {
                     ptr_loads = 0;
                 } else {
                     ptr_loads = 1;
@@ -1667,7 +1669,7 @@ public:
                     module.get());
                 struct_sym = ASRUtils::symbol_get_past_external(
                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(sm->m_v)));
-                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type)) && !compiler_options.new_classes) {
                     llvm::Type* dt_type_poly = llvm_utils->get_type_from_ttype_t_util(sm->m_v,
                         ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(caller_type)),
                         module.get());
@@ -5975,7 +5977,7 @@ public:
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(p_type)), module.get());
 #endif
-        if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type)) && !compiler_options.new_classes) {
             // If the pointer is class, get its type pointer
             ptr = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get()), ptr, 1);
             ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get())->getPointerTo(), ptr);
@@ -12660,15 +12662,23 @@ public:
         ASR::ttype_t* asr_type = ASRUtils::expr_type(arg);
         int64_t ptr_loads_copy = ptr_loads;
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
-            ptr_loads = 0;
-            visit_expr_wrapper(arg, false);
+            bool ref = false;
+            if (compiler_options.new_classes) {
+                ptr_loads = 1;
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*arg)) {
+                    ref = true;
+                }
+            } else {
+                ptr_loads = 0;
+            }
+            visit_expr_wrapper(arg, ref);
         } else {
             ptr_loads = 1;
             visit_expr_wrapper(arg, true);
         }
         ptr_loads = ptr_loads_copy;
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
-        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type)) && !compiler_options.new_classes) {
             // If the pointer is class, get its type pointer
             llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
             tmp = llvm_utils->create_gep2(class_type, tmp, 1);
