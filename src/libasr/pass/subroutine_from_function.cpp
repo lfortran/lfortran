@@ -182,10 +182,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         bool is_function_call_returning_aggregate_type(ASR::expr_t* m_value) {
             bool is_function_call = ASR::is_a<ASR::FunctionCall_t>(*m_value);
-            bool is_aggregate_type = (ASRUtils::is_aggregate_type(
-                ASRUtils::expr_type(m_value)) ||
-                PassUtils::is_aggregate_or_array_type(m_value));
-            return is_function_call && is_aggregate_type;
+            if (!is_function_call)
+                return false;
+
+            ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(m_value);
+            if (ASRUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type)) {
+                ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(fc->m_type);
+
+                // Check if the type of elements in the array is aggregate or not
+                return ASRUtils::is_aggregate_type(array_t->m_type) ||
+                    PassUtils::is_aggregate_or_array_type(array_t->m_type);
+            }
+
+            return (ASRUtils::is_aggregate_type(ASRUtils::expr_type(m_value)) ||
+                    PassUtils::is_aggregate_or_array_type(m_value));
         }
 
         void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
@@ -214,9 +224,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                         return; // Skip transformation for bind(C) functions
                     }
                 }
-            }
-            if( ASRUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
-                return ;
             }
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
