@@ -6699,6 +6699,9 @@ public:
         } else if (compiler_options.new_classes &&
                     (is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {
+            if (x.m_realloc_lhs && ASRUtils::is_allocatable(asr_target_type)) {
+                check_and_allocate(x.m_target, x.m_value, asr_value_type);
+            }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
             this->visit_expr(*x.m_value);
@@ -7304,14 +7307,18 @@ public:
                 value_struct_type = wrapped_struct_type;
             }
             llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, wrapped_struct_type, module.get());
-            llvm::Value* target_struct_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(),
-                                            llvm_utils->create_gep2(target_llvm_type, tmp, 1));
+            llvm::Value* target_struct_ptr = tmp;
+            if (!compiler_options.new_classes) {
+                target_struct_ptr = llvm_utils->create_gep2(target_llvm_type, tmp, 1);
+            }
+            target_struct_ptr = llvm_utils->CreateLoad2(
+                wrapper_struct_llvm_type->getPointerTo(), target_struct_ptr);
             llvm::Value* null_cond = builder->CreateICmpEQ(
                         target_struct_ptr,
                         llvm::ConstantPointerNull::get(wrapper_struct_llvm_type->getPointerTo()));
 
             // consider the class hash only if the assignment value is a struct type
-            if (ASR::is_a<ASR::StructType_t>(*value_struct_type)) {
+            if (ASR::is_a<ASR::StructType_t>(*value_struct_type) && !compiler_options.new_classes) {
                 ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value_expr));
                 llvm::Value* value_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 llvm::APInt(64, get_class_hash(value_struct_sym)));
