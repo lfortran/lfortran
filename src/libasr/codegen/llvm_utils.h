@@ -1317,7 +1317,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_mask(llvm::Value* set);
+            llvm::Value* get_pointer_to_mask(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
 
@@ -1408,7 +1408,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_mask(llvm::Value* set);
+            llvm::Value* get_pointer_to_mask(llvm::Type* type, llvm::Value* set);
 
 
             llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
