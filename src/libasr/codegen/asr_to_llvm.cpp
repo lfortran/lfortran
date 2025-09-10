@@ -9541,15 +9541,15 @@ public:
             des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_arr));
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_arr));
+        llvm::Type* des_real_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg, t.m_type, module.get());
         if (std::is_same<T, ASR::ComplexIm_t>::value) {
-            llvm::Type* des_real_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg, t.m_type, module.get());
             llvm::Value* incremented_offset = builder->CreateAdd(
                 arr_descr->get_offset(des_real_type, des_real_arr, true),
                 llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(incremented_offset, arr_descr->get_offset(des_real_type, des_real_arr, false));
         }
         int n_dims = ASRUtils::extract_n_dims_from_ttype(t.m_type);
-        llvm::Value* dim_des_real_arr = arr_descr->get_pointer_to_dimension_descriptor_array(des_real_arr, true);
+        llvm::Value* dim_des_real_arr = arr_descr->get_pointer_to_dimension_descriptor_array(des_real_type, des_real_arr, true);
         for (int i = 0; i < n_dims; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
             llvm::Value* dim_des_real_arr_idx = arr_descr->get_pointer_to_dimension_descriptor(dim_des_real_arr, dim_idx);
@@ -13639,7 +13639,7 @@ public:
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
                 if (ASRUtils::is_dimension_empty(m_dims, n_dims)) {
                     // treat it as DescriptorArray
-                    llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+                    llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                     llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                     dim_val = builder->CreateSub(dim_val, const_1);
                     llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
