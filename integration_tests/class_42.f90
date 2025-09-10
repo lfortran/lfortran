@@ -1,6 +1,6 @@
 module class_42_mod
 
-   type, abstract, public :: AbsType
+   type, public :: AbsType
    contains
       procedure :: abs_method
    end type AbsType
@@ -33,7 +33,6 @@ contains
    subroutine caller(self)
       class(Client), intent(in) :: self
 
-      allocate(self%wrapped%obj)
       call self%wrapped%c_obj%abs_method(37)
       call self%wrapped%obj%abs_method(42)
    end subroutine caller
@@ -54,6 +53,7 @@ program class_42
    
    allocate(var)
    allocate(ConcreteType :: var%wrapped%c_obj)
+   allocate(var%wrapped%obj)
    
    call var%caller()
   

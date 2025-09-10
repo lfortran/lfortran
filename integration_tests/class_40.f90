@@ -30,11 +30,9 @@ contains
 
       integer :: i
 
-      allocate(self%wrapped%obj)
       i = self%wrapped%obj%abs_method(42)
       if (i /= 1) error stop
       i = 0
-      allocate(self%wrapped%obj%nested_obj)
       i = self%wrapped%obj%nested_obj%abs_nested_method(101)
       if (i /= 1) error stop
       i = 0
@@ -68,6 +66,7 @@ program class_40
 
    allocate(var)
    allocate(var%wrapped%obj)
+   allocate(var%wrapped%obj%nested_obj)
 
    call var%caller()
 end program class_40

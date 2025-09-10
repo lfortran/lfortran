@@ -12982,7 +12982,7 @@ public:
             llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
                 vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-            tmp = builder->CreateCall(fnTy, fn, args));
+            tmp = builder->CreateCall(fnTy, fn, args);
             return;
         }
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
