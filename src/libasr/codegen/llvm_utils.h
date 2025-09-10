@@ -1366,7 +1366,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_elems(llvm::Value* set);
+            llvm::Value* get_pointer_to_elems(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set);
 
