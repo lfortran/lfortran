@@ -24,5 +24,6 @@ program class_19
    implicit none
 
    type(toml_node) :: tmp
+   allocate(tmp%val)
    call tmp%val%destroy(42)
 end program class_19

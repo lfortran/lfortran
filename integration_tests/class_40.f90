@@ -66,6 +66,7 @@ program class_40
 
    allocate(var)
    allocate(var%wrapped%obj)
+   allocate(var%wrapped%obj%nested_obj)
 
    call var%caller()
 end program class_40
