@@ -1300,7 +1300,7 @@ public:
                         if (compiler_options.new_classes) {
                             store_class_vptr(ASRUtils::symbol_get_past_external(
                                     ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)),
-                                bitcasted_malloc_ptr, false);
+                                bitcasted_malloc_ptr);
                         }
 
                         allocate_array_members_of_struct(
@@ -1397,9 +1397,9 @@ public:
                         if (compiler_options.new_classes) {
                             // Store vptr after allocation
                             if (dest_class_sym) {
-                                store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr, false);
+                                store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr);
                             } else {
-                                store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr, false);
+                                store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr);
                             }
                         }
 
@@ -4277,18 +4277,11 @@ public:
         return false;
     }
     
-    void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, bool is_unallocated) {
+    void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(struct_sym)));
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
         // Store Default vptr (Points to first Virtual function)
-        llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                struct_t->m_struct_signature, struct_sym, module.get())->getPointerTo();
-        if (is_unallocated) {
-            llvm::Value* vptr = builder->CreateAlloca(llvm_utils->vptr_type);
-            builder->CreateStore(builder->CreateBitCast(vptr, v_llvm_type), ptr);
-            ptr = llvm_utils->CreateLoad2(v_llvm_type, ptr);
-        }
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
         llvm::Value* vtable = newclass2vtab[&struct_t->base];
         llvm::Type* vtab_type = newclass2vtabtype[&struct_t->base];
@@ -4373,10 +4366,10 @@ public:
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (compiler_options.new_classes &&
-                            !ASRUtils::is_pointer(v->m_type) && !ASRUtils::is_array(v->m_type) &&
+                            !LLVM::is_llvm_pointer(*v->m_type) && !ASRUtils::is_array(v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                         store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
-                            ptr_member, ASRUtils::is_allocatable(v->m_type));
+                            ptr_member);
                     } else {
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -5057,10 +5050,10 @@ public:
 #endif
                 }
             }
-            if (compiler_options.new_classes && !ASRUtils::is_pointer(v->m_type) &&
+            if (compiler_options.new_classes && !LLVM::is_llvm_pointer(*v->m_type) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
-                    ptr, ASRUtils::is_allocatable(v->m_type));
+                    ptr);
             } else {
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
@@ -12943,37 +12936,36 @@ public:
             llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
             llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
-            // Get VTable pointer
-            llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
-            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[vtable_ptr] = fnPtrPtrTy;
-#endif
-            // Get function pointer from VTable
-            llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
-            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
 
             // Convert function args
             std::vector<llvm::Value*> args;
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-            ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
+            ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
+            while(!s_class_proc && struct_type_t->m_parent) {
+                struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
+                s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
+            }
             ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(class_proc->m_proc));
             if (!class_proc->m_is_nopass) {
-                // TODO: we need to take care of below
-                // add the self argument only when the class procedure has the `pass` attribute
-                // llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
-                // // llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
-                // llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_dt_type);
-                // // llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
-                // // builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                // // llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
-                // builder->CreateStore(llvm_dt, target_dt);
+                llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0], 
+                    ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
+                llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
                 args.push_back(llvm_dt);
             }
             std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
             args.insert(args.end(), args2.begin(), args2.end());
-            tmp = builder->CreateCall(fnTy, fn, args);
+
+            // Get Runtime VTable Pointer
+            llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+            // Get function pointer from VTable
+            llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
+                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
+            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+            tmp = builder->CreateCall(fnTy, fn, args));
             return;
         }
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;

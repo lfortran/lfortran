@@ -28,6 +28,8 @@ contains
       class(Client), intent(in) :: self
       type(Client) :: type_s
 
+      allocate(self%wrapped%obj)
+      allocate(self%wrapped%obj%nested_obj)
       call self%wrapped%obj%abs_method(42)
       call self%wrapped%obj%nested_obj%abs_nested_method(101)
       call type_s%wrapped%t_obj%abs_method(42)

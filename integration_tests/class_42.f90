@@ -33,6 +33,7 @@ contains
    subroutine caller(self)
       class(Client), intent(in) :: self
 
+      allocate(self%wrapped%obj)
       call self%wrapped%c_obj%abs_method(37)
       call self%wrapped%obj%abs_method(42)
    end subroutine caller
