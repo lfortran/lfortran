@@ -4280,13 +4280,17 @@ public:
     }
     
     void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(struct_sym)));
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
 
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
+        if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
+            create_new_vtable_for_struct_type(struct_sym);
+        }
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         // Store Default vptr (Points to first Virtual function)
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
-        llvm::Value* vtable = newclass2vtab[&struct_t->base];
-        llvm::Type* vtab_type = newclass2vtabtype[&struct_t->base];
+        llvm::Value* vtable = newclass2vtab.at(&struct_t->base);
+        llvm::Type* vtab_type = newclass2vtabtype.at(&struct_t->base);
         llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
         llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
 
@@ -5522,15 +5526,17 @@ public:
 
                 if (ASRUtils::is_class_type(symbol_type)) {
                     // TODO: Make this work for extended types too
-                    llvm::Type* src_class_type = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym.second)),
-                        symbol_type, module.get());
-                    st_desc = llvm_utils->create_gep2(src_class_type, st_desc, 1);
+                    if (!compiler_options.new_classes) {
+                        llvm::Type* src_class_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym.second)),
+                            symbol_type, module.get());
+                        st_desc = llvm_utils->create_gep2(src_class_type, st_desc, 1);
 
-                    ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym.second)))));
-                    llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
-                    st_desc = llvm_utils->CreateLoad2(src_struct_type, st_desc);
+                        ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym.second)))));
+                        llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
+                        st_desc = llvm_utils->CreateLoad2(src_struct_type, st_desc);
+                    }
 
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
                 } else {
@@ -11665,7 +11671,8 @@ public:
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
-                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
+                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
+                                    !(compiler_options.new_classes && ASRUtils::is_struct(*arg->m_type))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
@@ -11968,11 +11975,15 @@ public:
     llvm::Value *convert_class_to_type(ASR::expr_t *arg, ASR::expr_t* dest_arg, ASR::ttype_t *dest_type, llvm::Value *class_value) {
         // if the required argument is of struct type, we need to pass
         // in the struct pointer to it
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
-            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg)) &&
+            if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
+                check_and_allocate(arg, dest_arg, dest_type);
+            }
+            if (LLVM::is_llvm_pointer(*arg_type) &&
                     !LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg))) {
                 llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, ASRUtils::expr_type(arg), module.get());
+                    arg, arg_type, module.get());
                 class_value = llvm_utils->CreateLoad2(arg_llvm_type, class_value);
             }
             llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -11980,7 +11991,6 @@ public:
             return builder->CreateBitCast(class_value, dest_llvm_type->getPointerTo());
         }
         llvm::Value *value = nullptr;
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t* ext_arg_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
         LCOMPILERS_ASSERT(ASRUtils::is_class_type(ext_arg_type) &&
                           !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(dest_type)));
