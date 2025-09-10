@@ -11671,7 +11671,8 @@ public:
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
-                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
+                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
+                                    !(compiler_options.new_classes && ASRUtils::is_struct(*arg->m_type))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
@@ -11974,11 +11975,15 @@ public:
     llvm::Value *convert_class_to_type(ASR::expr_t *arg, ASR::expr_t* dest_arg, ASR::ttype_t *dest_type, llvm::Value *class_value) {
         // if the required argument is of struct type, we need to pass
         // in the struct pointer to it
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
-            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg)) &&
+            if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
+                check_and_allocate(arg, dest_arg, dest_type);
+            }
+            if (LLVM::is_llvm_pointer(*arg_type) &&
                     !LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg))) {
                 llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, ASRUtils::expr_type(arg), module.get());
+                    arg, arg_type, module.get());
                 class_value = llvm_utils->CreateLoad2(arg_llvm_type, class_value);
             }
             llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -11986,7 +11991,6 @@ public:
             return builder->CreateBitCast(class_value, dest_llvm_type->getPointerTo());
         }
         llvm::Value *value = nullptr;
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t* ext_arg_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
         LCOMPILERS_ASSERT(ASRUtils::is_class_type(ext_arg_type) &&
                           !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(dest_type)));
