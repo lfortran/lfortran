@@ -3240,10 +3240,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                       0, 0, nullptr, nullptr), dict, 0);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::get_pointer_to_rehash_flag(llvm::Value* dict) {
-        return llvm_utils->create_gep_deprecated(dict, 5);
-    }
-
     llvm::Value* LLVMDictSeparateChaining::get_pointer_to_rehash_flag_using_type(
                             ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict) {
         return llvm_utils->create_gep2(
@@ -3256,10 +3252,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return llvm_utils->create_gep2(
                       get_dict_type(ASRUtils::get_type_code(key_type), ASRUtils::get_type_code(value_type),
                                       0, 0, nullptr, nullptr), dict, 1);
-    }
-
-    llvm::Value* LLVMDictSeparateChaining::get_pointer_to_number_of_filled_buckets(llvm::Value* dict) {
-        return llvm_utils->create_gep_deprecated(dict, 1);
     }
 
     llvm::Value* LLVMDict::get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type,

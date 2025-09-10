@@ -1069,16 +1069,12 @@ namespace LCompilers {
         protected:
 
             std::map<std::pair<std::string, std::string>, llvm::Type*> typecode2kvstruct;
-
-            llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Value* dict);
     
             llvm::Value* get_pointer_to_number_of_filled_buckets_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_key_value_pairs_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
-
-            llvm::Value* get_pointer_to_rehash_flag(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_rehash_flag_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
