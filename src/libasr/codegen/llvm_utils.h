@@ -1124,7 +1124,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
+            llvm::Value* get_pointer_to_capacity(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 

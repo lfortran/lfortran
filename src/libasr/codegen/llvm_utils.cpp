@@ -3279,8 +3279,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                       0, 0, nullptr, nullptr), dict, 2);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::get_pointer_to_capacity(llvm::Value* dict) {
-        return llvm_utils->create_gep_deprecated(dict, 2);
+    llvm::Value* LLVMDictSeparateChaining::get_pointer_to_capacity(llvm::Type* type, llvm::Value* dict) {
+        return llvm_utils->create_gep2(type, dict, 2);
     }
 
     void LLVMDict::dict_init(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module, size_t initial_capacity) {
@@ -3355,7 +3355,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     );
         LLVM::CreateStore(*builder, key_mask, get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
 
-        llvm::Value* capacity_ptr = get_pointer_to_capacity(dict);
+        llvm::Value* capacity_ptr = get_pointer_to_capacity(dict_type_, dict);
         LLVM::CreateStore(*builder, llvm_capacity, capacity_ptr);
         LLVM::CreateStore(*builder, rehash_flag, rehash_flag_ptr);
     }
@@ -4285,9 +4285,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * key_mask[key_hash] = 1;
          *
          */
-
+        llvm::Type* dict_typ = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
         llvm::Value* capacity = llvm_utils->CreateLoad2(
-            llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+            llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_typ, dict));
         llvm::Type* kv_pair_type = get_key_value_pair_type(key_asr_type, value_asr_type);
         llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(kv_pair_type->getPointerTo(),
                                                                get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
@@ -4766,7 +4766,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value *def_value) {
-        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_Type, dict));
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
         llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(kv_struct_type->getPointerTo(), get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
         llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep_deprecated(key_value_pairs, key_hash);
@@ -5135,7 +5136,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         old_key_mask = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         llvm::Type* dict_type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
         llvm::Type* kv_pair_type = get_key_value_pair_type(key_asr_type, value_asr_type);
-        llvm::Value* capacity_ptr = get_pointer_to_capacity(dict);
+        llvm::Value* capacity_ptr = get_pointer_to_capacity(dict_type, dict);
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(dict_type, dict);
         llvm::Value* number_of_buckets_filled_ptr = get_pointer_to_number_of_filled_buckets_using_type(key_asr_type, value_asr_type, dict);
 
@@ -5177,7 +5178,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             get_key_value_pair_type(key_asr_type, value_asr_type)->getPointerTo());
         old_key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_key_mask);
         old_capacity_value = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity);
-        capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_type, dict));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)), idx_ptr);
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
@@ -5221,7 +5222,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         {
             LLVM::CreateStore(*builder,
                 llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity),
-                get_pointer_to_capacity(dict)
+                get_pointer_to_capacity(dict_type, dict)
             );
             LLVM::CreateStore(*builder,
                 llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_occupancy),
@@ -5405,7 +5406,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     llvm::Value* LLVMDictSeparateChaining::get_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
         llvm::Module* module, ASR::Dict_t* dict_type, llvm::Value* def_value, bool get_pointer) {
-        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Type* dict_Type = get_dict_type(ASRUtils::get_type_code(dict_type->m_key_type), ASRUtils::get_type_code(dict_type->m_value_type), 0, 0, nullptr, nullptr);
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_Type, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr = this->resolve_collision_for_read_with_default(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type,
@@ -5493,8 +5495,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * occupancy--;
          *
          */
-
-        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Type* dict_type_llvm = get_dict_type(ASRUtils::get_type_code(dict_type->m_key_type), ASRUtils::get_type_code(dict_type->m_value_type), 0, 0, nullptr, nullptr);
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_type_llvm, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
@@ -5537,8 +5539,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     llvm_utils->create_ptr_gep2(kv_struct_type, key_value_pairs, key_hash));
             });
         });
-        llvm::Type* dict_type_llvm = get_dict_type(ASRUtils::get_type_code(dict_type->m_key_type),
-                                                ASRUtils::get_type_code(dict_type->m_value_type), 0, 0, nullptr, nullptr);
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(dict_type_llvm, dict);
         llvm::Value* occupancy = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), occupancy_ptr);
         occupancy = builder->CreateSub(occupancy, llvm::ConstantInt::get(
@@ -5656,8 +5656,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         chain_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                             llvm::APInt(32, 0)), idx_ptr);
-
-        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Type* dict_type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
+        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict_type, dict));
         llvm::Value* key_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(get_key_value_pair_type(key_asr_type, value_asr_type)->getPointerTo(), get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
         llvm::Type* kv_pair_type = get_key_value_pair_type(key_asr_type, value_asr_type);
