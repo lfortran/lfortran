@@ -268,8 +268,6 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Type *type, llvm::Value* arr, bool load=true) = 0;
 
-                virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true) = 0;
 
                 /*
                 * Returns pointer to the dimension descriptor
@@ -463,9 +461,6 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load=true);
-
-                virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true);
 
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor(llvm::Value* dim_des_arr,

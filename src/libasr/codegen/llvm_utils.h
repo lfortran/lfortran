@@ -1069,16 +1069,12 @@ namespace LCompilers {
         protected:
 
             std::map<std::pair<std::string, std::string>, llvm::Type*> typecode2kvstruct;
-
-            llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Value* dict);
     
             llvm::Value* get_pointer_to_number_of_filled_buckets_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_key_value_pairs_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
-
-            llvm::Value* get_pointer_to_rehash_flag(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_rehash_flag_using_type(ASR::ttype_t* key_type, 
                 ASR::ttype_t* value_type, llvm::Value* dict);
@@ -1124,7 +1120,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_occupancy_using_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict);
 
-            llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
+            llvm::Value* get_pointer_to_capacity(llvm::Type* type, llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type, llvm::Value* dict);
 
@@ -1317,7 +1313,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_mask(llvm::Value* set);
+            llvm::Value* get_pointer_to_mask(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
 
@@ -1366,7 +1362,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_number_of_filled_buckets(llvm::Type* type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_elems(llvm::Value* set);
+            llvm::Value* get_pointer_to_elems(llvm::Type* type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_rehash_flag(llvm::Type* type, llvm::Value* set);
 
@@ -1408,7 +1404,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
-            llvm::Value* get_pointer_to_mask(llvm::Value* set);
+            llvm::Value* get_pointer_to_mask(llvm::Type* type, llvm::Value* set);
 
 
             llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
