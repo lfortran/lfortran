@@ -22,6 +22,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                     )
                                     ()
@@ -50,6 +51,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                     )
                                     ()
@@ -78,6 +80,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            .false.
                                         )
                                     )
                                     ()
@@ -103,6 +106,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                .false.
                             )
                             ()
                             ColMajor
@@ -119,6 +123,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                .false.
                             )
                             ()
                             ColMajor
@@ -153,6 +158,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 PointerArray
+                                .false.
                             )
                             ()
                             ColMajor

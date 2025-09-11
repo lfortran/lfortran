@@ -31,6 +31,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        .false.
                                     )
                                     ()
                                     Source
@@ -61,6 +62,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         PointerArray
+                                        .false.
                                     )
                                     ()
                                 ))]
@@ -69,6 +71,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    .false.
                                 )
                                 ()
                                 ()
@@ -112,6 +115,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -138,6 +142,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -158,12 +163,14 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerArray
+                                            .false.
                                         )]
                                         (Array
                                             (Real 8)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -204,6 +211,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                                         PointerArray
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -224,6 +232,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerArray
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -251,6 +260,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    .false.
                                                 )
                                                 ()
                                                 ()
