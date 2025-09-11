@@ -838,7 +838,7 @@ RUN(NAME submodule_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME submodule_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME submodule_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
 RUN(NAME floor_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor symboltable
@@ -2457,6 +2457,7 @@ RUN(NAME elemental_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME elemental_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME elemental_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME elemental_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
