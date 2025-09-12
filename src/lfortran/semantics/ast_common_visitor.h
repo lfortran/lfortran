@@ -7341,6 +7341,16 @@ public:
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);
         }
         fill_optional_args(intrinsic_name, args, x.base.base.loc);
+        // "Missing actual argument 'string' in call to 'index'"
+        for (size_t i = 0; i < min_args; ++i) {
+            if (args[i] == nullptr) {
+                std::string missing_name = (i < kwarg_names.size() && !kwarg_names[i].empty()) ? kwarg_names[i] : ("argument(" + std::to_string(i+1) + ")");
+                diag.add(Diagnostic(
+                    "Missing actual argument '" + missing_name + "' in call to '" + intrinsic_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         return true;
     }
 
