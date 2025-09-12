@@ -401,7 +401,7 @@ time_section "🧪 Testing PRIMA" '
   fi
 
   print_subsection "Building PRIMA"
-  FC="$FC --cpp --realloc-lhs" cmake -S . -B build \
+  FC="$FC --cpp" cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
     -DCMAKE_Fortran_FLAGS="" \
     -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
@@ -424,17 +424,17 @@ time_section "🧪 Testing PRIMA" '
 
   if [[ "$RUNNER_OS" == "macos-latest" ]]; then
     cd fortran
-    test_name=test_bobyqa.f90 FC="$FC --realloc-lhs" ./script.sh
-    test_name=test_newuoa.f90 FC="$FC --realloc-lhs" ./script.sh
-    test_name=test_uobyqa.f90 FC="$FC --realloc-lhs" ./script.sh
-    test_name=test_cobyla.f90 FC="$FC --realloc-lhs" ./script.sh
-    test_name=test_lincoa.f90 FC="$FC --realloc-lhs" ./script.sh
+    test_name=test_bobyqa.f90 FC="$FC" ./script.sh
+    test_name=test_newuoa.f90 FC="$FC" ./script.sh
+    test_name=test_uobyqa.f90 FC="$FC" ./script.sh
+    test_name=test_cobyla.f90 FC="$FC" ./script.sh
+    test_name=test_lincoa.f90 FC="$FC" ./script.sh
     cd ..
   fi
 
   if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
     cd fortran
-    test_name=test_uobyqa.f90 FC="$FC --realloc-lhs" ./script.sh
+    test_name=test_uobyqa.f90 FC="$FC" ./script.sh
     cd ..
   fi
 
@@ -506,7 +506,7 @@ time_section "🧪 Testing PRIMA" '
   git restore .
   git checkout -t origin/lf-prima-sc-1
   git checkout 52b863fcd3bb694045e50884fbb689a1ca75298d
-  FC="$FC --separate-compilation --cpp --realloc-lhs" cmake -S . -B build \
+  FC="$FC --separate-compilation --cpp" cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
     -DCMAKE_Fortran_FLAGS="" \
     -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
@@ -529,11 +529,11 @@ time_section "🧪 Testing PRIMA" '
 
   if [[ "$RUNNER_OS" == "macos-latest" ]]; then
     cd fortran
-    name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation --realloc-lhs" ./script_sc.sh
-    name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation --realloc-lhs" ./script_sc.sh
-    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation --realloc-lhs" ./script_sc.sh
-    name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation --realloc-lhs" ./script_sc.sh
-    name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation --realloc-lhs" ./script_sc.sh
+    name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
     cd ..
   fi
 
