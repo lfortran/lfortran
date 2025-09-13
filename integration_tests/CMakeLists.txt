@@ -1956,13 +1956,14 @@ RUN(NAME class_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes
 RUN(NAME class_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 RUN(NAME class_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
-RUN(NAME class_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
 RUN(NAME class_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes EXTRA_ARGS --realloc-lhs)
 RUN(NAME class_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -c --cpp EXTRAFILES class_63_module_1.f90 class_63_module_2.f90)
+RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes EXTRA_ARGS -c --cpp EXTRAFILES class_63_module_1.f90 class_63_module_2.f90)
 RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm_new_classes)
+RUN(NAME class_65 LABELS gfortran llvm_new_classes)
 
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
