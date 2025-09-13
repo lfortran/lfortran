@@ -6,10 +6,10 @@ source_filename = "LFortran"
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_point = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0) }, align 8
-@_VTable_point = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_point, i8* null] }, align 8
+@_VTable_point = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* @_Type_Info_point, i8* null, i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*)] }, align 8
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
 @_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_point to i8*) }, align 8
-@_VTable_point2d = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* @_Type_Info_point2d, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
+@_VTable_point2d = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* @_Type_Info_point2d, i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -33,6 +33,24 @@ return:                                           ; preds = %.entry
   ret float %6
 }
 
+define void @_copy_defs_point(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %point*
+  %3 = bitcast i8* %1 to %point*
+  %4 = load %point, %point* %2, align 1
+  store %point %4, %point* %3, align 1
+  ret void
+}
+
+define void @_copy_defs_point2d(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %point2d*
+  %3 = bitcast i8* %1 to %point2d*
+  %4 = load %point2d, %point2d* %2, align 1
+  store %point2d %4, %point2d* %3, align 1
+  ret void
+}
+
 ; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.sqrt.f32(float) #0
 
@@ -41,7 +59,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %p2d = alloca %point2d, align 8
   %2 = bitcast %point2d* %p2d to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
   %3 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
   %4 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
   %5 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 0
