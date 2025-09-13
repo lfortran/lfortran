@@ -13159,13 +13159,14 @@ public:
                         continue;
                     }
 
-                    // 2. An array can be passed where a scalar is expected
-                    //    The first element of the array is passed
+                    // 2. Arrays of different ranks can be passed to each other
+                    //    with assumed-size arrays (sequence association)
                     if (compiler_options.implicit_interface &&
-                        ASR::is_a<ASR::Var_t>(*passed_arg) &&
                         ASR::is_a<ASR::Array_t>(*passed_arg_type) &&
-                        !ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
-                        // Skip type check - this is valid sequence association
+                        ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                        // With implicit interfaces, allow rank/shape mismatches
+                        // for sequence association with assumed-size arrays
+                        // This is standard Fortran behavior
                         continue;
                     }
 
