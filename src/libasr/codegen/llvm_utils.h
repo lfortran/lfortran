@@ -221,6 +221,7 @@ namespace LCompilers {
             llvm::PointerType *character_type;
             llvm::Type* string_descriptor;
             llvm::Type* vptr_type;
+            llvm::FunctionType* struct_copy_functype;
 
 #if LLVM_VERSION_MAJOR >= 17
             llvm::PointerType* i8_ptr = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
