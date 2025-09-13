@@ -4801,3 +4801,6 @@ llvm_new_classes = true
 
 [[test]]
 filename = "errors/missing_index_arg.f90"
+
+[[test]]
+filename = "test_list_directed.f90"
