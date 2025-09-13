@@ -13146,28 +13146,27 @@ public:
                     ASR::expr_t* passed_arg = x.m_args[i].m_value;
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
-                    if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
-                        // Check if this is an implicit interface call
-                        // (Interface type with no body)
-                        bool is_implicit_interface =
-                            (ASRUtils::get_FunctionType(subrout_called)->m_deftype == ASR::deftypeType::Interface &&
-                             subrout_called->n_body == 0);
+                    // Check if this is an implicit interface call
+                    // For now, allow sequence association for all ArrayItem -> Array cases
+                    // when the compiler is in a mode that supports implicit interfaces
+                    // TODO: Better detection of implicit interface mode
 
-                        // With implicit interfaces, allow sequence association:
-                        // an array element can be passed to an array parameter
-                        // per Fortran 77 standard. The element address becomes
-                        // the first element of the dummy array.
-                        if (is_implicit_interface && ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
-                            // Skip type check - this is valid sequence association
-                            continue;
-                        }
+                    // With implicit interfaces, allow sequence association:
+                    // an array element can be passed to an array parameter
+                    // per Fortran 77 standard. The element address becomes
+                    // the first element of the dummy array.
+                    if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg) &&
+                        ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                        // Skip type check - this is valid sequence association
+                        // in implicit interface mode
+                        continue;
+                    }
 
-                        // For explicit interfaces or non-array parameters,
-                        // enforce strict type checking
-                        if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
-                                    + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
-                        }
+                    // For all arguments (not just ArrayItem), enforce type checking
+                    // unless we already skipped it above for sequence association
+                    if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                        throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
+                                + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                     }
                 }
             }

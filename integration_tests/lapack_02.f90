@@ -24,6 +24,17 @@
       RETURN
       END
 
+      SUBROUTINE SUB1D( N, ARR )
+      IMPLICIT NONE
+      INTEGER            N
+      REAL               ARR( * )
+
+      IF( N .GT. 0 ) THEN
+         ARR(1) = 2.71
+      END IF
+      RETURN
+      END
+
       PROGRAM TEST
       REAL A(100), B(10, 10)
       INTEGER LDB
@@ -32,8 +43,16 @@
       B = 2.0
       CALL STFSM(3, 3, A, B, LDB)
       IF (ABS(A(1) - 3.14) .LT. 0.001) THEN
-         PRINT *, 'PASS'
+         PRINT *, 'PASS A(0) test'
       ELSE
          PRINT *, 'FAIL: A(1) =', A(1)
+      END IF
+
+      A = 1.0
+      CALL SUB1D(20, A(3))
+      IF (ABS(A(3) - 2.71) .LT. 0.001) THEN
+         PRINT *, 'PASS A(3) test'
+      ELSE
+         PRINT *, 'FAIL: A(3) =', A(3)
       END IF
       END PROGRAM TEST
