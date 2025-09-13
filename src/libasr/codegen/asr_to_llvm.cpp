@@ -13181,6 +13181,16 @@ public:
                         continue;
                     }
 
+                    // 4. If expected type is array (possibly inferred from ArrayItem),
+                    //    allow scalar to be passed (inverse of case 3)
+                    if (compiler_options.implicit_interface &&
+                        ASR::is_a<ASR::Array_t>(*expected_arg_type) &&
+                        !ASR::is_a<ASR::Array_t>(*passed_arg_type)) {
+                        // Expected array could have been inferred from ArrayItem
+                        // which is ambiguous - could accept scalar or array
+                        continue;
+                    }
+
                     // For all arguments (not just ArrayItem), enforce type checking
                     // unless we already skipped it above for sequence association
                     if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
