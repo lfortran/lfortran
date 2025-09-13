@@ -13146,49 +13146,22 @@ public:
                     ASR::expr_t* passed_arg = x.m_args[i].m_value;
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
-                    // Check if this is an implicit interface call
-                    // Allow sequence association when compiler is in implicit interface mode
-
-                    // With implicit interfaces, allow sequence association per Fortran standard:
-                    // 1. An array element can be passed to an array parameter
-                    //    The element address becomes the first element of the dummy array
-                    if (compiler_options.implicit_interface &&
-                        ASR::is_a<ASR::ArrayItem_t>(*passed_arg) &&
-                        ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
-                        // Skip type check - this is valid sequence association
-                        continue;
-                    }
-
-                    // 2. Arrays of different ranks can be passed to each other
-                    //    with assumed-size arrays (sequence association)
-                    if (compiler_options.implicit_interface &&
-                        ASR::is_a<ASR::Array_t>(*passed_arg_type) &&
-                        ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
-                        // With implicit interfaces, allow rank/shape mismatches
-                        // for sequence association with assumed-size arrays
-                        // This is standard Fortran behavior
-                        continue;
-                    }
-
-                    // 3. ArrayItem could be scalar OR array start (ambiguous)
-                    //    With implicit interfaces, C(i,j) could mean:
-                    //    - Pass the scalar value at C(i,j)
-                    //    - Pass C(i,j) as the start of an array
-                    //    We cannot know which without explicit interface
-                    if (compiler_options.implicit_interface &&
-                        ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
-                        // Skip type check - ambiguous case
-                        continue;
-                    }
-
-                    // 4. If expected type is array (possibly inferred from ArrayItem),
-                    //    allow scalar to be passed (inverse of case 3)
-                    if (compiler_options.implicit_interface &&
-                        ASR::is_a<ASR::Array_t>(*expected_arg_type) &&
-                        !ASR::is_a<ASR::Array_t>(*passed_arg_type)) {
-                        // Expected array could have been inferred from ArrayItem
-                        // which is ambiguous - could accept scalar or array
-                        continue;
+                    // With implicit interfaces, relax type checking for sequence association:
+                    if (compiler_options.implicit_interface) {
+                        // 1. ArrayItem passed - ambiguous (scalar or array start)
+                        if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
+                            continue;
+                        }
+                        // 2. Array-to-array with different ranks/shapes
+                        if (ASR::is_a<ASR::Array_t>(*passed_arg_type) &&
+                            ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                            continue;
+                        }
+                        // 3. Scalar passed where array expected (from ambiguous inference)
+                        if (ASR::is_a<ASR::Array_t>(*expected_arg_type) &&
+                            !ASR::is_a<ASR::Array_t>(*passed_arg_type)) {
+                            continue;
+                        }
                     }
 
                     // For all arguments (not just ArrayItem), enforce type checking
