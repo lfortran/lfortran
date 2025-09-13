@@ -1504,36 +1504,55 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
 void default_formatting(char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
-    const int default_spacing_len = 4;
-    const char* default_spacing = "    ";
+    const int default_spacing_len = 1;
+    const char* default_spacing = " ";
     ASSERT(default_spacing_len == strlen(default_spacing));
-    *result = realloc(*result, result_capacity + 1 /*Null Character*/ );
+
+    *result = realloc(*result, result_capacity + 1 );
+    if (*result == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+
+    (*result)[0] = ' ';
+    (*result)[1] = '\0';
+    result_size = 1;
+
+    bool prev_was_char = false;
 
     while(move_to_next_element(s_info, false)){
         int size_to_allocate;
-        if((s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE) && 
-            *(char**)s_info->current_arg_info.current_arg != NULL){
-            size_to_allocate = (s_info->current_arg_info.current_string_len
-                                 + default_spacing_len + 1) * sizeof(char);
+        bool current_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
+                                s_info->current_element_type == STRING_DESCRIPTOR_TYPE);
+
+        if(current_is_char && *(char**)s_info->current_arg_info.current_arg != NULL){
+            size_to_allocate = (s_info->current_arg_info.current_string_len + default_spacing_len + 1) * sizeof(char);
         } else {
             size_to_allocate = (60 + default_spacing_len) * sizeof(char);
         }
         int64_t old_capacity = result_capacity;
-        while(result_capacity <= size_to_allocate + result_size){ // Check if string extension is needed.
+        while(result_capacity <= size_to_allocate + result_size){ 
             if(result_size + size_to_allocate > result_capacity*2){
                 result_capacity = size_to_allocate + result_size ;
             } else {
-                result_capacity *=2;
+                result_capacity *= 2;
             }
         }
-        if(result_capacity != old_capacity){*result = (char*)realloc(*result, result_capacity + 1);}
-        if(result_size > 0){
-            strcpy((*result)+result_size, default_spacing);
-            result_size+=default_spacing_len;
+        if(result_capacity != old_capacity){
+            *result = (char*)realloc(*result, result_capacity + 1);
+            if (*result == NULL) {
+                fprintf(stderr, "Memory allocation failed\n");
+                exit(1);
+            }
         }
-        int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
+        if(result_size > 1 && !(prev_was_char && current_is_char)){
+            strcpy((*result) + result_size, default_spacing);
+            result_size += default_spacing_len;
+        }
+
+        int64_t printed_arg_size = print_into_string(s_info, (*result) + result_size);
         result_size += printed_arg_size;
+        prev_was_char = current_is_char;
     }
 
     (*result_size_ptr) = result_size;
