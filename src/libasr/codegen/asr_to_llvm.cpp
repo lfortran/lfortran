@@ -13147,18 +13147,25 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     // Check if this is an implicit interface call
-                    // For now, allow sequence association for all ArrayItem -> Array cases
-                    // when the compiler is in a mode that supports implicit interfaces
-                    // TODO: Better detection of implicit interface mode
+                    // Allow sequence association when compiler is in implicit interface mode
 
-                    // With implicit interfaces, allow sequence association:
-                    // an array element can be passed to an array parameter
-                    // per Fortran 77 standard. The element address becomes
-                    // the first element of the dummy array.
-                    if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg) &&
+                    // With implicit interfaces, allow sequence association per Fortran standard:
+                    // 1. An array element can be passed to an array parameter
+                    //    The element address becomes the first element of the dummy array
+                    if (compiler_options.implicit_interface &&
+                        ASR::is_a<ASR::ArrayItem_t>(*passed_arg) &&
                         ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
                         // Skip type check - this is valid sequence association
-                        // in implicit interface mode
+                        continue;
+                    }
+
+                    // 2. An array can be passed where a scalar is expected
+                    //    The first element of the array is passed
+                    if (compiler_options.implicit_interface &&
+                        ASR::is_a<ASR::Var_t>(*passed_arg) &&
+                        ASR::is_a<ASR::Array_t>(*passed_arg_type) &&
+                        !ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                        // Skip type check - this is valid sequence association
                         continue;
                     }
 

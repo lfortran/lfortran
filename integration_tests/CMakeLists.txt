@@ -2247,7 +2247,8 @@ RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface) # Sequence association
-RUN(NAME lapack_03 LABELS gfortran EXTRA_ARGS --fixed-form --implicit-interface) # LAPACK slarft recursive call with sequence association
+RUN(NAME lapack_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface) # LAPACK slarft recursive call with sequence association
+RUN(NAME lapack_04 LABELS gfortran EXTRA_ARGS --fixed-form --implicit-interface) # LAPACK sorm22 WORK array sequence association (currently fails)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

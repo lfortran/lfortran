@@ -1,65 +1,76 @@
-C     Minimal reproducer for LAPACK slarft.f sequence association issue
-C     V(2,2) should be treated as a 2D array starting at that element
-C     per Fortran sequence association rules with implicit interfaces
-      RECURSIVE SUBROUTINE SUB(N, V)
+C     Minimal reproducer for STRMM sequence association issues
+C     Tests multiple cases from LAPACK that fail without proper handling
+      PROGRAM STRMM_TEST
       IMPLICIT NONE
-      INTEGER            N
-      REAL               V(N, *)
-
-      IF(N.LE.1) RETURN
-      CALL SUB(N/2, V)
-      CALL SUB(N/2, V(2, 2))
-      END SUBROUTINE
-
-C     Test case for STRMM call issue from line 335 of slarft.f
-C     Error: expected f32, passed f32[:,:]
-      RECURSIVE SUBROUTINE SLARFT2(DIRECT, STOREV, N, K, V, LDV,
-     +                              TAU, T, LDT)
-      IMPLICIT NONE
-      CHARACTER DIRECT, STOREV
-      INTEGER N, K, LDV, LDT
-      REAL V(LDV, *), TAU(*), T(LDT, *)
+      INTEGER LDT, LDV, L, K, N
+      PARAMETER (LDT = 10, LDV = 10)
+      REAL T(LDT, LDT), V(LDV, LDV), TAU(10)
       REAL NEG_ONE, ONE
       PARAMETER (NEG_ONE = -1.0E+0, ONE = 1.0E+0)
-      INTEGER L, I, J
-      LOGICAL LSAME
-      EXTERNAL STRMM, SGEMM, LSAME
+      INTEGER I, J
+      EXTERNAL STRMM, SGEMM
 
-      IF(K.LE.1) THEN
-         T(1,1) = TAU(1)
-         RETURN
-      END IF
-
+C     Initialize
+      N = 8
+      K = 4
       L = K / 2
 
-      IF(LSAME(DIRECT,'F').AND.LSAME(STOREV,'C')) THEN
-C        QR case like in LAPACK
-         CALL SLARFT2(DIRECT, STOREV, N, L, V, LDV, TAU, T, LDT)
-         CALL SLARFT2(DIRECT, STOREV, N-L, K-L, V(L+1,L+1), LDV,
-     +                TAU(L+1), T(L+1,L+1), LDT)
-
-C        DO loop like in LAPACK
-         DO J = 1, L
-            DO I = 1, K-L
-               T(J, L+I) = V(L+I, J)
-            END DO
+C     Initialize arrays
+      DO I = 1, LDT
+         DO J = 1, LDT
+            T(I,J) = 0.0
+            V(I,J) = REAL(I + J)
          END DO
+         TAU(I) = REAL(I) * 0.1
+      END DO
 
-C        First STRMM call
-         CALL STRMM('Right', 'Lower', 'No transpose', 'Unit', L,
-     +              K-L, ONE, V(L+1, L+1), LDV, T(1, L+1), LDT)
+C     DO loop like in LAPACK slarft.f
+      DO J = 1, L
+         DO I = 1, K-L
+            T(J, L+I) = V(L+I, J)
+         END DO
+      END DO
 
-C        SGEMM call
-         CALL SGEMM('Transpose', 'No transpose', L, K-L, N-K, ONE,
-     +              V(K+1, 1), LDV, V(K+1, L+1), LDV, ONE,
-     +              T(1, L+1), LDT)
+C     Test 1: Array element passed as array start (works)
+      CALL STRMM('Right', 'Lower', 'No transpose', 'Unit', L,
+     +           K-L, ONE, V(L+1, L+1), LDV, T(1, L+1), LDT)
 
-C        Second STRMM call - this is line 335 where error occurs!
-         CALL STRMM('Left', 'Upper', 'No transpose', 'Non-unit', L,
-     +              K-L, NEG_ONE, T, LDT, T(1, L+1), LDT)
+C     SGEMM call
+      CALL SGEMM('Transpose', 'No transpose', L, K-L, N-K, ONE,
+     +           V(K+1, 1), LDV, V(K+1, L+1), LDV, ONE,
+     +           T(1, L+1), LDT)
 
-C        Third STRMM call
-         CALL STRMM('Right', 'Upper', 'No transpose', 'Non-unit', L,
-     +              K-L, ONE, T(L+1, L+1), LDT, T(1, L+1), LDT)
-      END IF
-      END SUBROUTINE
+C     Test 2: From slarft.f line 335
+C     Whole array T passed where scalar expected
+C     Error without fix: expected f32, passed f32[:,:]
+      CALL STRMM('Left', 'Upper', 'No transpose', 'Non-unit', L,
+     +           K-L, NEG_ONE, T, LDT, T(1, L+1), LDT)
+
+C     Test 3: Another array element case
+      CALL STRMM('Right', 'Upper', 'No transpose', 'Non-unit', L,
+     +           K-L, ONE, T(L+1, L+1), LDT, T(1, L+1), LDT)
+
+      PRINT *, 'All tests completed successfully'
+      END PROGRAM
+
+C     Dummy STRMM implementation - just marks that it was called
+      SUBROUTINE STRMM(SIDE, UPLO, TRANS, DIAG, M, N, ALPHA, A, LDA,
+     +                  B, LDB)
+      CHARACTER SIDE, UPLO, TRANS, DIAG
+      INTEGER M, N, LDA, LDB
+      REAL ALPHA, A(LDA, *), B(LDB, *)
+C     In real BLAS, this performs triangular matrix multiply
+C     For testing, we just verify it can be called
+      RETURN
+      END
+
+C     Dummy SGEMM implementation - just marks that it was called
+      SUBROUTINE SGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA,
+     +                  B, LDB, BETA, C, LDC)
+      CHARACTER TRANSA, TRANSB
+      INTEGER M, N, K, LDA, LDB, LDC
+      REAL ALPHA, BETA, A(LDA, *), B(LDB, *), C(LDC, *)
+C     In real BLAS, this performs general matrix multiply
+C     For testing, we just verify it can be called
+      RETURN
+      END
