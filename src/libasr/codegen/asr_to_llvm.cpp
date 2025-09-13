@@ -13147,7 +13147,10 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     // With implicit interfaces, relax type checking for sequence association:
-                    if (compiler_options.implicit_interface) {
+                    // Only for external functions (Interface deftype) that are truly implicit (not explicitly declared)
+                    if (compiler_options.implicit_interface &&
+                        ASRUtils::get_FunctionType(subrout_called)->m_deftype == ASR::deftypeType::Interface &&
+                        !ASRUtils::get_FunctionType(subrout_called)->m_module) {
                         // 1. ArrayItem passed - ambiguous (scalar or array start)
                         if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
                             continue;
