@@ -354,7 +354,7 @@ namespace LCompilers::CommandLineInterface {
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
+        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 
