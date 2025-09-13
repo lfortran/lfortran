@@ -251,7 +251,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 assignment->m_value = target;
                 // We are using a temporary so make this assignment a move assignment
-                assignment->m_move = true;
+                assignment->m_move_allocation = true;
                 remove_original_statement = false;
             } else {
                 remove_original_statement = true;

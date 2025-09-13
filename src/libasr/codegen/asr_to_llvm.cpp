@@ -7323,8 +7323,8 @@ public:
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
-                if (x.m_move) {
-                    arr_descr->copy_array_move(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
+                if (x.m_move_allocation) {
+                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
                 } else {
                     arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
                 }
@@ -7399,7 +7399,7 @@ public:
 #endif
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
                     // With move don't throw error when target is unallocated
-                    if (!x.m_move) {
+                    if (!x.m_move_allocation) {
                         llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                         llvm_utils->generate_runtime_error(is_not_allocated,
                             "Runtime Error: Array '%s' is not allocated.\n",

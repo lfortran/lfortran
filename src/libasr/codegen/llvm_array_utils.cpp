@@ -1052,7 +1052,7 @@ namespace LCompilers {
         // Copy destination's descriptor to the source descriptor
         // Move the data pointer from dest to src
         // And set the src's data pointer to null to prevent double deallocation
-        void SimpleCMODescriptor::copy_array_move(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
+        void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest);
