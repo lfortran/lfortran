@@ -827,7 +827,7 @@ public:
                     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
                     dealloc_args.push_back(al, array_var_temporary);
                     ASR::expr_t* is_contiguous = ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc,
-                        arg_expr_past_cast, ASRUtils::expr_type(array_var_temporary), nullptr));
+                        arg_expr_past_cast, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                     ASR::expr_t* not_is_contiguous = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, is_contiguous,
                         ASRUtils::expr_type(is_contiguous), nullptr));
                     ASR::dimension_t* array_dims = nullptr;
