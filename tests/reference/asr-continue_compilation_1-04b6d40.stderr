@@ -798,3 +798,9 @@ semantic error: Class type `NonExistingType` is not defined
     |
 344 |     arr = [NonExistingType :: v1, v2, v3]
     |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: DATA statement element count mismatch: 8 elements on left-hand side, 10 values on right-hand side
+   --> tests/errors/continue_compilation_1.f90:347:5
+    |
+347 |     data j2, x2, (y2(i2), i2=1,3), k2 / 1,2,3,4,5,6,7,3*8 /
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

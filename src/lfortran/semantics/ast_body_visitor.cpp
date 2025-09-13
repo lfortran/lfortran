@@ -3394,6 +3394,25 @@ public:
                     al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
+        } else if ( ASR::is_a<ASR::ComplexRe_t>(*target) ) {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(target);
+            /*
+                Case: x % re = y
+                we do: x = cmplx(y, x%im)
+                i.e. target = x, value = cmplx(y, x%im)
+            */
+            target = re->m_arg;
+            ASR::expr_t* y = value;
+            const Location& loc = x.base.base.loc;
+            ASR::expr_t *val = target;
+
+            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
+            ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
+                val, real_type, nullptr));
+            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
+                al, loc, y, im, ASRUtils::expr_type(target), nullptr));
+            value = cmplx;
         } else if ( ASR::is_a<ASR::ComplexIm_t>(*target) ) {
             ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(target);
             /*
@@ -3416,7 +3435,10 @@ public:
             target->type != ASR::exprType::StringSection &&
             target->type != ASR::exprType::StringItem &&
             target->type != ASR::exprType::StructInstanceMember &&
-            target->type != ASR::exprType::UnionInstanceMember)
+            target->type != ASR::exprType::UnionInstanceMember &&
+            target->type != ASR::exprType::ComplexRe &&
+            target->type != ASR::exprType::ComplexIm
+        )
         {
             diag.add(Diagnostic(
                 "The LHS of assignment can only be a variable or an array reference",
@@ -3578,7 +3600,7 @@ public:
         if( shape && ASR::is_a<ASR::ArrayConstant_t>(*shape) ) {
             ASR::ttype_t* array_constant_type = ASRUtils::expr_type(shape);
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(array_constant_type);
-            array_t->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+            array_t->m_physical_type = ASR::array_physical_typeType::PointerArray;
         }
         ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
         bool is_fptr_array = ASRUtils::is_array(fptr_type);
@@ -3651,7 +3673,7 @@ public:
                     dims.push_back(al, dim);
                     ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, dim.loc,
                         ASRUtils::expr_type(lbs[0]), dims.p, dims.size(), ASR::abiType::Source,
-                        false, ASR::array_physical_typeType::PointerToDataArray, true);
+                        false, ASR::array_physical_typeType::PointerArray, true);
                     lower_bounds = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                         x.base.base.loc, lbs.p, lbs.size(), type,
                         ASR::arraystorageType::RowMajor));
@@ -3929,46 +3951,6 @@ public:
         return nullptr;
     }
 
-    void handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
-        if (to_lower(var_name) == "mvbits") {
-            if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                if( !signature_matched ) {
-                    diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (ASRUtils::expr_value(args[3]) != nullptr) {
-                    diag.add(Diagnostic(
-                        "`to` argument of `mvbits` must be a variable",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{args[3]->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    fill_optional_kind_arg(var_name, args);
-
-                    ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
-                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[3], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    current_body->push_back(al, ASRUtils::STMT(tmp));
-                    tmp = nullptr;
-                }
-            }
-        }
-    }
-
     /*
         Function to convert 'FLUSH' subroutine call to 'FLUSH' ASR node
     */
@@ -4168,10 +4150,6 @@ public:
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
         if( intrinsic_subroutine ) {
             tmp = intrinsic_subroutine;
-            return;
-        }
-        if (sub_name == "mvbits") {
-            handle_Mvbits(x, sub_name);
             return;
         }
         if (x.n_temp_args > 0) {
@@ -4699,7 +4677,8 @@ public:
 
             tmp = ASR::make_Print_t(al, x.base.base.loc, string_format);
         } else if (!fmt && body.size() == 1
-                        && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))) {
+                        && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
+                        && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])) {
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,

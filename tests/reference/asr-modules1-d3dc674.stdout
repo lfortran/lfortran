@@ -162,10 +162,10 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_f:
+                                            1_t1_f:
                                                 (ExternalSymbol
                                                     6
-                                                    1_f
+                                                    1_t1_f
                                                     9 f
                                                     t1
                                                     []
@@ -248,7 +248,7 @@
                                     [(If
                                         ()
                                         (FunctionCall
-                                            6 1_f
+                                            6 1_t1_f
                                             ()
                                             []
                                             (Logical 4)

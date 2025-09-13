@@ -113,6 +113,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedCharKind,
     Adjustl,
     Adjustr,
+    StringConcat,
     StringLenTrim,
     StringTrim,
     Ichar,
@@ -4175,8 +4176,7 @@ namespace Real {
         } else if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
         } else if (is_complex(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc,
-            args[0], return_type, nullptr))));
+            body.push_back(al, b.Assignment(result, b.c2r_t(args[0], return_type)));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4468,38 +4468,52 @@ namespace ToLowerCase {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lfortran_tolowercase");
-        fill_func_arg("s", b.String(nullptr, ASR::AssumedLength));
+        fill_func_arg("str", b.String(nullptr, ASR::AssumedLength));
         ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
             ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)), 
             ASR::ExpressionLength, ASR::DescriptorString));
-        auto result = declare(fn_name, char_type, ReturnVar);
+        auto result = declare("result", char_type, ReturnVar);
         auto itr = declare("i", int32, Local);
+        auto str_len = declare("str_len", int32, Local);
 
         /*
         function toLowerCase(str) result(result)
-            character(len=5) :: str
+            character(*) :: str
             character(len=len(str)) :: result
-            integer :: i, ln
+            integer :: i, str_len
             i = 1
-            ln = len(str)
-            result = str
-            do while (i < ln)
+            str_len = len(str)
+            do while (i < str_len)
                 if (result(i:i) >= 'A' .and. result(i:i) <= 'Z') then
                     result(i:i) = char(ichar(result(i:i)) + ichar('a') - ichar('A'))
+                else
+                    result(i:i) = str(i:i)
                 end if
                 i = i + 1
             end do
-            print*, result
         end function
         */
 
         body.push_back(al, b.Assignment(itr, b.i32(1)));
-        body.push_back(al, b.While(b.LtE(itr, b.StringLen(args[0])), {
+        body.push_back(al, b.Assignment(str_len, b.StringLen(args[0] /* str */)));
+        body.push_back(al, b.While(b.LtE(itr, str_len), {
             b.If(b.And(b.GtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.LtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
-                b.Assignment(b.StringItem(result, itr), ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
-             b.i2i_t(b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
-            b.Ichar("A", arg_types[0], int32)), int8), return_type, nullptr)))
+                b.Assignment(b.StringItem(result, itr), 
+                                b.BitCast(
+                                    b.i2i_t(
+                                        b.Sub(
+                                            b.Add(
+                                                ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)),
+                                                b.Ichar("a", arg_types[0], int32)
+                                            ),
+                                            b.Ichar("A", arg_types[0], int32)
+                                        ),
+                                        int8
+                                    ), 
+                                    b.StringItem(result, itr)
+                                )
+                            )
             }, {
                 b.Assignment(b.StringItem(result, itr), ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)))
             }),
@@ -4887,6 +4901,150 @@ namespace Adjustr {
 
 } // namespace Adjustr
 
+namespace StringConcat {
+    
+
+    inline void check_args(ASR::expr_t** m_args, size_t n_args, const Location& loc, diag::Diagnostics& diag){
+        if(n_args == 2){
+            ASR::ttype_t* arg0 = expr_type(m_args[0]);
+            ASR::ttype_t* arg1 = expr_type(m_args[1]);
+            require_impl(   is_character(*arg0) && is_character(*arg1),
+                            "Unexpected arg types. StringConcat expects (char, char)",
+                            loc, diag);
+        } else {
+            require_impl(   false,
+                            "Unexpected number of args, StringConcat takes 2 arguments, found "+ std::to_string(n_args),
+                            loc, diag);
+        }   
+    }
+
+    inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics){
+        ASRUtils::require_impl( x.m_overload_id == 0,
+                                "Overload is expected to be 0 while the overload is "+std::to_string(x.m_overload_id),
+                                x.base.base.loc,
+                                diagnostics);
+        check_args(x.m_args, x.n_args, x.base.base.loc, diagnostics);
+    }
+
+    inline ASR::expr_t *eval_StringConcat(Allocator &al, const Location &loc,
+            ASR::ttype_t* value_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/){
+        char* result {};
+        int64_t s0_length, s1_length;
+        { // Allocate result memory
+            ASR::String_t* s0 = get_string_type(args[0]);
+            ASR::String_t* s1 = get_string_type(args[1]);
+            extract_value_(expr_value(s0->m_len), s0_length);
+            extract_value_(expr_value(s1->m_len), s1_length);
+            result =al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
+        }
+        { // Concat strings
+            char* s0_char {}, *s1_char {};
+            extract_value_(expr_value(args[0]), s0_char);
+            extract_value_(expr_value(args[1]), s1_char);
+            memcpy(result, s0_char, s0_length);
+            memcpy(result + s0_length, s1_char, s1_length);
+        }
+        return make_ConstantWithType(make_StringConstant_t, result, value_type, loc);
+    }
+
+    inline ASR::asr_t* create_StringConcat(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag){
+        check_args(args.p, args.size(), loc, diag);
+        Vec<ASR::expr_t*> m_args;
+        m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        
+        ASR::ttype_t* return_type {};
+        { // Create String return type
+            ASRBuilder b(al, loc);
+            ASR::String_t* s1 = get_string_type(args[0]);
+            ASR::String_t* s2 = get_string_type(args[1]);
+            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){ // Sum both lengths
+                int64_t s1_len, s2_len;
+                extract_value(s1->m_len, s1_len);
+                extract_value(s2->m_len, s2_len);
+                return_type = b.String(b.i64(s1_len + s2_len), ASR::ExpressionLength);
+            } else {
+                return_type = b.String(nullptr, ASR::DeferredLength);
+            }
+        }
+
+        { // Handle Array Type
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = 0;
+            if( ASRUtils::is_array(ASRUtils::expr_type(args[0])) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), m_dims);
+            } else if( ASRUtils::is_array(ASRUtils::expr_type(args[1])) ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(args[1]), m_dims);
+            }
+            return_type = ASRUtils::make_Array_t_util(al, return_type->base.loc,
+                    ASRUtils::extract_type(return_type), m_dims, n_dims);
+        }
+
+        ASR::expr_t* value {};
+        if(all_args_evaluated(m_args)){
+            value = eval_StringConcat(al, loc, return_type, args, diag);
+        }
+        return ASR::make_IntrinsicElementalFunction_t(  al, loc,
+                                                        static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
+                                                        m_args.p, m_args.n,
+                                                        0, return_type, value);
+    }
+
+    
+    inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
+        char intrinsic_fn_name[] = "_lcompilers_stringconcat";
+        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
+            ASRBuilder b(al, loc);
+            return b.Call(f_sym, new_args, b.String(nullptr, ASR::DeferredLength), nullptr);
+        }
+        
+        declare_basic_variables(intrinsic_fn_name)
+
+        /* Args */
+        fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
+        fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
+
+        /* Return Variable */
+        ASR::expr_t* ret_var = declare(
+                                "concat_result",
+                                b.String(b.Add(b.StringLen(args[0]) /* s1 */, b.StringLen(args[1]) /* s2 */), ASR::ExpressionLength),
+                                ReturnVar);
+
+        /* Body */
+        /*
+            function lcompilers_stringconcat(s1, s2) result(concat_result)
+                character(*) :: s1
+                character(*) :: s2
+                character(len(s1) + len(s2)) :: concat_result
+                concat_result(1 : len(s1)) = s1
+                concat_result(len(s1) + 1 : len(concat_result)) = s2
+            end function
+        */
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), b.StringLen(args[0]/*s1*/)), args[0]));
+        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(b.StringLen(args[0]/*s1*/), b.i32(1)), b.StringLen(ret_var)), args[1]));
+
+        /* Create The function symbol */
+        ASR::symbol_t *f_sym = make_ASR_Function_t( 
+                                fn_name, fn_symtab,
+                                dep, args,
+                                body,
+                                ret_var,
+                                ASR::abiType::Source,
+                                ASR::deftypeType::Implementation,
+                                nullptr);
+        scope->add_or_overwrite_symbol(fn_name, f_sym);
+
+        /* Create Call + Replace FuncParams */
+        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        FuncParamToArgReplacer::replace(al, ASR::down_cast<ASR::FunctionCall_t>(f_call));
+        return f_call;
+    }
+
+}
+
 namespace StringLenTrim {
 
     static ASR::expr_t *eval_StringLenTrim(Allocator &al, const Location &loc,
@@ -5046,14 +5204,29 @@ namespace Char {
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
+        declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+
+        /* Declare Arguments + Return Variable */
+        fill_func_arg("i", arg_types[0]);
+        auto result = declare("result", character(1), ReturnVar);
+
+        /* Body */
+        /*
+            function _lcompilers_char_#####(i) result(result)
+                integer, intent(in) :: i
+                character(1) :: result
+                result = transfer(i, result)
+            end function
+        */
+        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
+
+        /* Create Function + Add Into SymTable*/
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
+
+        /* Return Call To The Function */
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -5071,15 +5244,29 @@ namespace Achar {
     static inline ASR::expr_t* instantiate_Achar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+
+        /* Declare Arguments + Return Variable */
         fill_func_arg("i", arg_types[0]);
-        auto result = declare("result", return_type, ReturnVar);
+        auto result = declare("result", character(1), ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
+        /* Body */
+        /*
+            function _lcompilers_achar_#####(i) result(result)
+                integer, intent(in) :: i
+                character(1) :: result
+                result = transfer(i, result)
+            end function
+        */
+        body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
 
+        /* Create Function + Add Into SymTable*/
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
+
+        /* Return Call To The Function */
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -5217,8 +5404,8 @@ namespace Repeat {
 
     static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        char* str = ASR::down_cast<ASR::StringConstant_t>(expr_value(args[0]))->m_s;
+        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
         size_t len = std::strlen(str);
         size_t new_len = len*n;
         char* result = new char[new_len+1];
@@ -5286,6 +5473,53 @@ namespace Repeat {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, ASRUtils::duplicate_type(al, ASRUtils::expr_type(result)), nullptr);
+    }
+
+        static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 2)  {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for Repeat expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+            ASRUtils::require_impl((is_character(*arg_type0) && is_integer(*arg_type1)), "Unexpected args, Repeat expects (char, int) as arguments", x.base.base.loc, diagnostics);
+        }
+        else {
+            ASRUtils::require_impl(false, "Unexpected number of args, Repeat takes 2 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Repeat(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() == 2)  {
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+            if(!((is_character(*arg_type0) && is_integer(*arg_type1)))) {
+                append_error(diag, "Unexpected args, Repeat expects (char, int) as arguments", loc);
+                return nullptr;
+            }
+        }
+        else {
+            append_error(diag, "Unexpected number of args, Repeat takes 2 arguments, found " + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+        ASR::expr_t  *m_value     {};
+        ASR::ttype_t *return_type {};
+        if (all_args_evaluated(args)) {
+            m_value = eval_Repeat(al, loc, return_type, args, diag);
+            if (diag.has_error()) return nullptr;
+            return_type = expr_type(m_value);
+        } else {
+            return_type = allocatable_deferred_string();
+        }
+        
+        for( size_t i = 0; i < 2; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);
+                break;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Repeat), args.p, args.n, 0, return_type, m_value);
     }
 
 } // namespace Repeat

@@ -218,10 +218,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_circle_area:
+                                            1_circle_circle_area:
                                                 (ExternalSymbol
                                                     5
-                                                    1_circle_area
+                                                    1_circle_circle_area
                                                     3 circle_area
                                                     circle
                                                     []
@@ -311,7 +311,7 @@
                                     [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
-                                            5 1_circle_area
+                                            5 1_circle_circle_area
                                             ()
                                             []
                                             (Real 4)
@@ -357,10 +357,10 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_circle_print:
+                                            1_circle_circle_print:
                                                 (ExternalSymbol
                                                     6
-                                                    1_circle_print
+                                                    1_circle_circle_print
                                                     3 circle_print
                                                     circle
                                                     []
@@ -455,7 +455,7 @@
                                         .false.
                                     )
                                     (SubroutineCall
-                                        6 1_circle_print
+                                        6 1_circle_circle_print
                                         ()
                                         []
                                         (Var 6 c)

@@ -192,16 +192,6 @@
                                                                     version
                                                                     Public
                                                                 ),
-                                                            1_to_string:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_to_string
-                                                                    11 to_string
-                                                                    1_version_t
-                                                                    []
-                                                                    to_string
-                                                                    Public
-                                                                ),
                                                             1_version_t:
                                                                 (ExternalSymbol
                                                                     6
@@ -210,6 +200,16 @@
                                                                     fpm_versioning_modules_34
                                                                     []
                                                                     version_t
+                                                                    Public
+                                                                ),
+                                                            1_version_t_to_string:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    1_version_t_to_string
+                                                                    11 to_string
+                                                                    1_version_t
+                                                                    []
+                                                                    to_string
                                                                     Public
                                                                 ),
                                                             ii:
@@ -253,7 +253,7 @@
                                                         )
                                                     )
                                                     (SubroutineCall
-                                                        6 1_to_string
+                                                        6 1_version_t_to_string
                                                         ()
                                                         [((Var 5 version))]
                                                         (StructInstanceMember
@@ -437,10 +437,10 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_to_string:
+                                            1_version_t_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_to_string
+                                                    1_version_t_to_string
                                                     11 to_string
                                                     version_t
                                                     []
@@ -536,7 +536,7 @@
                                     []
                                     [(Var 12 self)]
                                     [(SubroutineCall
-                                        12 1_to_string
+                                        12 1_version_t_to_string
                                         ()
                                         [((Var 12 string))]
                                         (Var 12 self)

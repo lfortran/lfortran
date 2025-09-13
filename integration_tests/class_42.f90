@@ -1,6 +1,6 @@
 module class_42_mod
 
-   type, abstract, public :: AbsType
+   type, public :: AbsType
    contains
       procedure :: abs_method
    end type AbsType
@@ -53,6 +53,7 @@ program class_42
    
    allocate(var)
    allocate(ConcreteType :: var%wrapped%c_obj)
+   allocate(var%wrapped%obj)
    
    call var%caller()
   

@@ -330,6 +330,9 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         case ASR::ttypeType::Allocatable: {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
         }
+        case ASR::ttypeType::StructType: {
+            return 4;
+        }
         default : {
             return -1;
         }
@@ -538,24 +541,35 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR:
 
 static inline char *symbol_name(const ASR::symbol_t *f);
 
-static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
+static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers) {
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+                if (stype->m_is_cstruct) {
+                    res = "type(" + res + ")";
+                } else {
+                    res = "class(" + res + ")";
+                }
+            }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 res += ", parameter";
             }
-            if (v->m_access == ASR::accessType::Private) {
-                res += ", private";
-            } else if (v->m_access == ASR::accessType::Public) {
-                res += ", public";
+            if (add_symbol_access_specifiers) {
+                if (v->m_access == ASR::accessType::Private) {
+                    res += ", private";
+                } else if (v->m_access == ASR::accessType::Public) {
+                    res += ", public";
+                }
             }
             if (v->m_presence == ASR::presenceType::Optional) {
                 res += ", optional";
             }
-            if (v->m_intent != ASR::intentType::Unspecified) {
+            if (v->m_intent != ASR::intentType::Unspecified
+                && v->m_intent != ASR::intentType::ReturnVar) {
                 res += ", intent(" + intent_to_str(v->m_intent) + ")";
             }
             res += " :: " + std::string(v->m_name);
@@ -600,12 +614,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                 ASR::symbol_t *arg_sym = f->m_symtab->get_symbol(arg_name);
                 if (arg_sym && ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                     const ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    std::string arg_decl = type_to_str_fortran_symbol(arg_var->m_type, arg_var->m_type_declaration);
-                    if (arg_var->m_intent != ASR::intentType::Unspecified) {
-                        arg_decl += ", intent(" + intent_to_str(arg_var->m_intent) + ")";
-                    }
-                    arg_decl += " :: " + arg_name;
-                    res += "    " + arg_decl + "\n";
+                    res += "    " + symbol_to_str_fortran(arg_var->base, false) + "\n";
                 }
             }
             // Add return variable declaration
@@ -616,8 +625,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
                     const ASR::symbol_t *v_sym = var->m_v;
                     if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                         const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
-                        std::string ret_type = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration);
-                        res += "    " + ret_type + " :: " + std::string(v->m_name) + "\n";
+                        res += "    " + symbol_to_str_fortran(v->base, false) + "\n";
                     }
                 }
             }
@@ -641,7 +649,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
             const ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(&s);
             ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(ext->m_external);
             if (orig_sym) {
-                std::string orig_str = symbol_to_str_fortran(*orig_sym);
+                std::string orig_str = symbol_to_str_fortran(*orig_sym, true);
                 return orig_str + "  ! from module " + std::string(ext->m_module_name);
             } else {
                 return "external symbol " + std::string(ext->m_name);
@@ -1802,7 +1810,7 @@ template <typename T,
     typename = typename std::enable_if<
         std::is_same<T, std::complex<double>>::value == false &&
         std::is_same<T, std::complex<float>>::value == false>::type>
-static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
+static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns extraction state.
     if( !is_value_constant(value_expr) ) {
         return false;
     }
@@ -1865,6 +1873,15 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
             return false;
     }
     return true;
+}
+
+template <typename T,
+    typename = typename std::enable_if<
+        std::is_same<T, std::complex<double>>::value == false &&
+        std::is_same<T, std::complex<float>>::value == false>::type>
+inline void extract_value_(ASR::expr_t* value_expr, T& value) { // Raises error if expr doesn't have value.
+    bool extracted = extract_value(value_expr, value);
+    if (!extracted) LCompilersException("Expr value can't be extracted");
 }
 
 static inline std::string extract_dim_value(ASR::expr_t* dim) {
@@ -2464,9 +2481,12 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
+void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify);
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
+                            std::set<std::string> &loaded_submodules,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
@@ -3051,6 +3071,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type);
+ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop = false);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
@@ -3099,24 +3120,24 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerToDataArray;
+            physical_type = ASR::array_physical_typeType::PointerArray;
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument || (type && ASRUtils::is_character(*type)) ) {
-                    physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                    physical_type = ASR::array_physical_typeType::PointerArray;
                 } else {
                     physical_type = ASR::array_physical_typeType::FixedSizeArray;
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-                physical_type = ASR::array_physical_typeType::PointerToDataArray;
+                physical_type = ASR::array_physical_typeType::PointerArray;
             } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
-                physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
+                physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
             }
         }
     }
 
-    // Compile-time-know-size Array of strings must be `PointerToDataArray` physical type
-    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerToDataArray;}
+    // Compile-time-know-size Array of strings must be `PointerArray` physical type
+    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
 
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
@@ -3272,7 +3293,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                (physical_type == ASR::array_physical_typeType::PointerToDataArray && 
+                (physical_type == ASR::array_physical_typeType::PointerArray && 
                 dims != nullptr) || 
                 (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
@@ -3354,6 +3375,51 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         override_physical_type);
 }
 
+
+/*
+    -- This class is responsible of replacing FuncParam in Function's type
+        into the actual argument passed in the FunctionCall. --
+    -------------------------------------------------------------------------
+    * - It duplicates the FunctionReturn type; No need to duplicate it yourself.
+    * - Only used through static `replace` to prevent further usages.
+    * - If used frequently, You can create a static instance in `replace` and reuse it instaed.
+    --------------------------------------------------------------------------
+    * EXAMPLE - Length Of String Type:
+    
+    (String ( FunctionParam 0 (Integer 4) ) ExpressionLength DescriptorString )
+        |
+        INTO
+        |
+        V
+    (String ( var 1 arg )                   ExpressionLength DescriptorString )
+*/
+class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplacer> {
+    private :
+    ASR::FunctionCall_t* f_call_;
+    Allocator &al_;
+    FuncParamToArgReplacer(Allocator& al, ASR::FunctionCall_t* f_call): f_call_(f_call), al_(al) {}
+    void replace_(){
+        /* 
+            Duplicate, As we assume passed type is Function's node;
+            If not duplicated, Changes will reflect on original node.
+        */
+        ASR::ttype_t* const f_call_t_dup = ASRUtils::duplicate_type(al_, f_call_->m_type);
+        f_call_->m_type = f_call_t_dup;
+        replace_ttype(f_call_->m_type);
+
+    }
+    public : 
+    void replace_FunctionParam(ASR::FunctionParam_t* x){
+        /* Replace FuncParam With Correspondent Arg */
+        LCOMPILERS_ASSERT(x->m_param_number < (int64_t)f_call_->n_args)
+        *current_expr = f_call_->m_args[x->m_param_number].m_value;
+    }
+
+    inline static void replace(Allocator& al, ASR::FunctionCall_t* f_call){
+        auto instance = FuncParamToArgReplacer(al, f_call);
+        instance.replace_();
+    }
+};
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
     ASR::expr_t* dt=nullptr, bool nopass = false) {
@@ -5950,7 +6016,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             }
         }
         case ASR::ttypeType::UnsignedInteger: {
-            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            ASR::UnsignedIntegerConstant_t* value_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value);
             switch (kind) {
                 case 1: ((uint8_t*)x->m_data)[i] = value_int->m_n; break;
                 case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
@@ -6109,13 +6175,13 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 1: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 2: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 4: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
+                case 8: value = EXPR(ASR::make_UnsignedIntegerConstant_t(al, loc,
                                     ((uint64_t*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
@@ -6178,6 +6244,14 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 }
 
 template<typename T>
+T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+    }
+    return data;
+}
+
+template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
         data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
@@ -6217,10 +6291,10 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: return set_data_int(new uint8_t[n_args], a_args, n_args);
-                case 2: return set_data_int(new uint16_t[n_args], a_args, n_args);
-                case 4: return set_data_int(new uint32_t[n_args], a_args, n_args);
-                case 8: return set_data_int(new uint64_t[n_args], a_args, n_args);
+                case 1: return set_data_uint(new uint8_t[n_args], a_args, n_args);
+                case 2: return set_data_uint(new uint16_t[n_args], a_args, n_args);
+                case 4: return set_data_uint(new uint32_t[n_args], a_args, n_args);
+                case 8: return set_data_uint(new uint64_t[n_args], a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
@@ -6301,7 +6375,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         dims.push_back(al, dim);
         a_type = ASRUtils::make_Array_t_util(al, dim.loc,
             a_type, dims.p, dims.size(), ASR::abiType::Source,
-            false, ASR::array_physical_typeType::PointerToDataArray, true);
+            false, ASR::array_physical_typeType::PointerArray, true);
     } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
@@ -6313,6 +6387,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
@@ -6385,6 +6460,73 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
     
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
+        
+        // First, handle our new check for non-variable expressions with INTENT(OUT/INOUT)
+        if (passed_arg_expr && i < f->n_args) {
+            // Check for INTENT(OUT/INOUT) - but safely
+            // We need to check if this is a regular argument (not a procedure)
+            // by looking at whether we can safely call EXPR2VAR
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
+                    // Check if it's not a procedure (procedures don't have regular intent)
+                    if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
+                        if (callee_param->m_intent == ASR::intentType::Out ||
+                            callee_param->m_intent == ASR::intentType::InOut) {
+                            
+                            // For intent(out) and intent(inout), the actual argument must be a variable
+                            bool is_valid_variable = false;
+                            switch (passed_arg_expr->type) {
+                                case ASR::exprType::Var:
+                                case ASR::exprType::ArrayItem:
+                                case ASR::exprType::ArraySection:
+                                case ASR::exprType::StringItem:
+                                case ASR::exprType::StringSection:
+                                case ASR::exprType::StructInstanceMember:
+                                case ASR::exprType::IntrinsicArrayFunction:
+                                case ASR::exprType::ListItem:
+                                    // IntrinsicArrayFunction and ListItem (_lfortran_get_item) return modifiable references
+                                    is_valid_variable = true;
+                                    break;
+                                case ASR::exprType::FunctionCall: {
+                                    // Only allow specific intrinsic functions that return modifiable references
+                                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(passed_arg_expr);
+                                    if (func_call->m_name) {
+                                        ASR::symbol_t* func_sym = func_call->m_name;
+                                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+                                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                                            std::string func_name = func->m_name;
+                                            // Allow list access functions that return modifiable references
+                                            if (func_name == "_lfortran_get_item") {
+                                                is_valid_variable = true;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                default:
+                                    is_valid_variable = false;
+                                    break;
+                            }
+                            
+                            if (!is_valid_variable) {
+                                diag.add(diag::Diagnostic(
+                                    "Non-variable expression in variable definition context "
+                                    "(actual argument to INTENT = OUT/INOUT)",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {passed_arg_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Now handle the original intent(in) -> intent(out/inout) mismatch check
+        // This only applies when passed_arg_expr is a Var_t
         if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
@@ -6548,10 +6690,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                        dims.p, dims.size(), ASR::array_physical_typeType::PointerToDataArray);
+                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerToDataArray, pointer_array_t, nullptr);
+                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }
@@ -6656,6 +6798,10 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
             ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))))
         ASR::expr_t* i32one = i32j(1);
         for( size_t i = 0; i < n_args; i++ ) {
+            if (a_args[i].m_value == nullptr) {
+                continue;
+            }
+
             ASR::ttype_t* type = ASRUtils::expr_type(a_args[i].m_value);
             if (ASRUtils::is_array(type)) {
                 ASR::dimension_t* m_dims = nullptr;

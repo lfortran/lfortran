@@ -1,0 +1,13 @@
+{
+    "basename": "asr_clojure-subroutine1-be16026",
+    "cmd": "lfortran --show-asr --no-color --no-indent --clojure {infile} -o {outfile}",
+    "infile": "tests/subroutine1.f90",
+    "infile_hash": "e209c22328b423e75d6801f3c0ef19bc120936196435dff2cb19df31",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_clojure-subroutine1-be16026.stdout",
+    "stdout_hash": "6e9e24a5fbb748f826a3ea5aad027a8dbc38b2fdff6962bc3ac7fa3d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

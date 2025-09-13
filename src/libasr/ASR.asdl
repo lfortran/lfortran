@@ -33,6 +33,7 @@ stmt
     | ReAlloc(alloc_arg* args)
     | Assign(int label, identifier variable)
     | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs)
+    | DebugCheckArrayBounds(expr target, expr value)
     | Associate(expr target, expr value)
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars)
@@ -238,7 +239,7 @@ case_stmt = CaseStmt(expr* test, stmt* body, bool fall_through) | CaseStmt_Range
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
-array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
+array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 string_physical_type = DescriptorString | CChar
 string_length_kind = AssumedLength | DeferredLength | ExpressionLength | ImplicitLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift

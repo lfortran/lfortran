@@ -163,7 +163,7 @@ class ASRBuilder {
                 al, loc,
                 type,
                 arr_dimensions.p, arr_dimensions.n,
-                ASR::UnboundedPointerToDataArray));
+                ASR::UnboundedPointerArray));
         return array_type;
     }
 
@@ -427,8 +427,12 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        // TODO: handle value
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(value)->m_re;
+            value = f_t(re, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, value));
     }
 
     inline ASR::expr_t* t2t(ASR::expr_t* x, ASR::ttype_t* t1, ASR::ttype_t* t2) {
@@ -474,6 +478,10 @@ class ASRBuilder {
 
     inline ASR::expr_t* LBitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::LBitRShift, bits, t, nullptr));
+    }
+
+    ASR::expr_t* BitCast(ASR::expr_t* src, ASR::expr_t* mold /*Dest*/, ASR::expr_t* size = nullptr){
+        return EXPR(ASR::make_BitCast_t(al, loc, src, mold, size, ASRUtils::duplicate_type(al, expr_type(mold)), nullptr));
     }
 
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
@@ -1247,6 +1255,7 @@ class ASRBuilder {
             ASR::ttype_t* return_type) {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        LCOMPILERS_ASSERT( (size_t)n_args == arg_types.size())
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
                 ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));

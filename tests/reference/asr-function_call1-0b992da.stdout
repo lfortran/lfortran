@@ -30,7 +30,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -128,7 +128,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         Source
                                         Implementation
@@ -156,10 +156,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_eval_1d:
+                                            1_softmax_eval_1d:
                                                 (ExternalSymbol
                                                     5
-                                                    1_eval_1d
+                                                    1_softmax_eval_1d
                                                     3 eval_1d
                                                     softmax
                                                     []
@@ -184,7 +184,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -282,7 +282,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         Source
                                         Implementation
@@ -301,7 +301,7 @@
                                     [(Assignment
                                         (Var 5 res)
                                         (FunctionCall
-                                            5 1_eval_1d
+                                            5 1_softmax_eval_1d
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 5 x)
@@ -324,7 +324,7 @@
                                                     (Integer 4)
                                                     ()
                                                 ))]
-                                                PointerToDataArray
+                                                PointerArray
                                             )
                                             ()
                                             (Var 5 self)

@@ -463,7 +463,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
-                                                        PointerToDataArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -513,7 +513,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         Source
                                         Implementation
@@ -615,7 +615,7 @@
                                                         (Integer 4)
                                                         ()
                                                     ))]
-                                                    PointerToDataArray
+                                                    PointerArray
                                                 )
                                                 ()
                                                 ()

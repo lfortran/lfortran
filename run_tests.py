@@ -53,10 +53,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
+    enable_disable_implicit_argument_casting = is_included("enable_disable_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_disable_warnings = is_included("asr_disable_warnings")
     asr_disable_style_suggestion_and_warnings = is_included("asr_disable_style_suggestion_and_warnings")
     asr_enable_style_suggestion = is_included("asr_enable_style_suggestion")
+    enable_disable_style_suggestion = is_included("enable_disable_style_suggestion")
     continue_compilation = is_included("continue_compilation")
     fixed_form_cc_asr = is_included("fixed_form_cc_asr")
     semantics_only_cc = is_included("semantics_only_cc")
@@ -68,6 +70,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
+    asr_clojure = is_included("asr_clojure")
     asr_openmp = is_included("asr_openmp")
     c_target_omp = is_included("c_target_omp")
     c_target_cuda = is_included("c_target_cuda")
@@ -181,6 +184,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
+    if enable_disable_implicit_argument_casting:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --implicit-argument-casting --disable-implicit-argument-casting --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
     if ast_json:
         run_test(
             filename,
@@ -195,7 +208,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "ast_disable_style_suggestion",
-            "lfortran --show-ast --no-style-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-ast --no-style-suggestions --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -267,7 +280,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_disable_style_suggestion_and_warnings",
-            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --no-style-suggestions --no-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -280,7 +293,20 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "asr_enable_style_suggestion",
-                "lfortran --std=f23 --style-warnings --no-color {infile}",
+                "lfortran --std=f23 --style-suggestions --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+    
+    if enable_disable_style_suggestion:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "enable_disable_style_suggestion",
+                "lfortran --style-suggestions --no-style-suggestions --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
@@ -529,6 +555,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr_json",
             "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_clojure:
+        run_test(
+            filename,
+            "asr_clojure",
+            "lfortran --show-asr --no-color --no-indent --clojure {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,

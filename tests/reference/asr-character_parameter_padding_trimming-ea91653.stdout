@@ -20,7 +20,7 @@
                                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         ColMajor
                                     )
@@ -31,7 +31,7 @@
                                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         ColMajor
                                     )
@@ -40,7 +40,7 @@
                                         (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                        PointerToDataArray
+                                        PointerArray
                                     )
                                     ()
                                     Source
@@ -66,7 +66,7 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         ColMajor
                                     )
@@ -77,7 +77,7 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            PointerToDataArray
+                                            PointerArray
                                         )
                                         ColMajor
                                     )
@@ -86,7 +86,7 @@
                                         (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                        PointerToDataArray
+                                        PointerArray
                                     )
                                     ()
                                     Source
@@ -214,21 +214,25 @@
                                     [x_pad
                                     y_pad]
                                     Local
-                                    (StringConcat
-                                        (StringConcat
-                                            (Var 2 x_pad)
-                                            (Var 2 y_pad)
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(IntrinsicElementalFunction
+                                            StringConcat
+                                            [(Var 2 x_pad)
+                                            (Var 2 y_pad)]
+                                            0
                                             (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             (StringConstant
                                                 "apple   Ball      "
-                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
-                                        (Var 2 x_pad)
+                                        (Var 2 x_pad)]
+                                        0
                                         (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "apple   Ball      apple   "
-                                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
@@ -255,21 +259,25 @@
                                     [x_trim
                                     y_trim]
                                     Local
-                                    (StringConcat
-                                        (StringConcat
-                                            (Var 2 x_trim)
-                                            (Var 2 y_trim)
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(IntrinsicElementalFunction
+                                            StringConcat
+                                            [(Var 2 x_trim)
+                                            (Var 2 y_trim)]
+                                            0
                                             (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             (StringConstant
                                                 "apBal"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
-                                        (Var 2 x_trim)
+                                        (Var 2 x_trim)]
+                                        0
                                         (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "apBalap"
-                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
@@ -293,27 +301,31 @@
                     character_parameter_padding_trimming
                     []
                     [(Print
-                        (StringConcat
-                            (StringConcat
-                                (StringConstant
+                        (IntrinsicElementalFunction
+                            StringConcat
+                            [(IntrinsicElementalFunction
+                                StringConcat
+                                [(StringConstant
                                     "|"
                                     (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
-                                (Var 2 x_pad)
+                                (Var 2 x_pad)]
+                                0
                                 (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                 (StringConstant
                                     "|apple   "
-                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                 )
                             )
                             (StringConstant
                                 "|"
                                 (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                            )
+                            )]
+                            0
                             (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength DescriptorString)
                             (StringConstant
                                 "|apple   |"
-                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                     )

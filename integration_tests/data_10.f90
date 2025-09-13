@@ -1,5 +1,5 @@
 program data_10
-    integer :: i, j, x(5), y(5)
+    integer :: a, i, j, x(5), y(5), z(5)
     real :: k, l
     data x, j / 1, 2, 3, 4, 5, 3 /
     print *, x, j
@@ -17,4 +17,12 @@ program data_10
     if (y(4) /= 4) error stop
     if (y(5) /= 5) error stop
     if (abs(k - 10.0) > 1e-8) error stop
+    data a, z / 1, 2, 3,4, 2*5 /
+    print *, a, z
+    if (a /= 1) error stop
+    if (z(1) /= 2) error stop
+    if (z(2) /= 3) error stop
+    if (z(3) /= 4) error stop
+    if (z(4) /= 5) error stop
+    if (z(5) /= 5) error stop
 end program

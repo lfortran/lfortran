@@ -1421,7 +1421,7 @@ R"(    // Initialise Numpy
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*x_mv_type_));
         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x_mv_type_);
         std::vector<std::string> diminfo;
-        if( array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
+        if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
             for( size_t idim = 0; idim < x.n_args; idim++ ) {
                 this->visit_expr(*m_dims[idim].m_start);
@@ -1429,7 +1429,7 @@ R"(    // Initialise Numpy
                 this->visit_expr(*m_dims[idim].m_length);
                 diminfo.push_back(src);
             }
-        } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray ) {
+        } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
             for( size_t idim = 0; idim < x.n_args; idim++ ) {
                 this->visit_expr(*m_dims[idim].m_start);
                 diminfo.push_back(src);
@@ -1437,7 +1437,7 @@ R"(    // Initialise Numpy
         }
 
         LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-        if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
+        if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
             src = arr_get_single_element(array, indices, x.n_args,
                                                 true,
                                                 false,
@@ -1445,7 +1445,7 @@ R"(    // Initialise Numpy
                                                 true);
         } else {
             src = arr_get_single_element(array, indices, x.n_args,
-                                                array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
+                                                array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
                                                 diminfo, false);
         }

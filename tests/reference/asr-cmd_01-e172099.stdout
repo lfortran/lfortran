@@ -104,7 +104,7 @@
                         GetCommandArgument
                         [(Var 2 i)
                         (Var 2 arg)]
-                        0
+                        1
                     )
                     (Print
                         (StringFormat

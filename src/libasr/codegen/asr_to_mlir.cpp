@@ -458,7 +458,7 @@ public:
         this->visit_expr(*x.m_arg);
         switch (x.m_old) {
             case (ASR::array_physical_typeType::FixedSizeArray): {
-                if (x.m_new == ASR::array_physical_typeType::PointerToDataArray) {
+                if (x.m_new == ASR::array_physical_typeType::PointerArray) {
                     mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
                         builder->getI64Type(), builder->getIndexAttr(0));
                     mlir::Type type = getType(x.m_type);
@@ -631,7 +631,7 @@ public:
         mlir::Type baseType;
         mlir::ValueRange gepIdx;
         if (ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_v))
-                == ASR::array_physical_typeType::PointerToDataArray) {
+                == ASR::array_physical_typeType::PointerArray) {
             gepIdx = {idx};
             baseType = getType(x.m_type);
         } else {

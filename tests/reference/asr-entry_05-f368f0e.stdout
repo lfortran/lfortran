@@ -166,13 +166,13 @@
                         ((ArrayPhysicalCast
                             (Var 3 r)
                             DescriptorArray
-                            PointerToDataArray
+                            PointerArray
                             (Pointer
                                 (Array
                                     (Real 4)
                                     [(()
                                     ())]
-                                    PointerToDataArray
+                                    PointerArray
                                 )
                             )
                             ()
@@ -266,7 +266,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
-                                        PointerToDataArray
+                                        PointerArray
                                     )
                                     ()
                                     Source
@@ -333,7 +333,7 @@
                                 (Integer 4)
                                 ()
                             ))]
-                            PointerToDataArray
+                            PointerArray
                         )]
                         ()
                         Source
@@ -550,7 +550,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 4 n))]
-                                        PointerToDataArray
+                                        PointerArray
                                     )
                                     ()
                                     Source
@@ -618,7 +618,7 @@
                                 (Integer 4)
                                 ()
                             ))]
-                            PointerToDataArray
+                            PointerArray
                         )]
                         ()
                         Source
@@ -700,7 +700,7 @@
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 4 n))]
-                                PointerToDataArray
+                                PointerArray
                             )
                             ()
                         )
@@ -781,12 +781,12 @@
                         ((ArrayPhysicalCast
                             (Var 5 r)
                             FixedSizeArray
-                            PointerToDataArray
+                            PointerArray
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
-                                PointerToDataArray
+                                PointerArray
                             )
                             ()
                         ))]

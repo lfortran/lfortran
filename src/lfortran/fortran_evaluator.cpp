@@ -106,7 +106,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     if (verbose) {
-        result.asr = pickle(*asr, true);
+        result.asr = pickle(*asr, true, false, false, false);
     }
 
     // ASR -> LLVM
@@ -236,12 +236,12 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
         if (compiler_options.po.tree) {
-            return pickle_tree(*asr.result, compiler_options.use_colors);
+            return pickle_tree(*asr.result, compiler_options.use_colors, false);
         } else if (compiler_options.po.json) {
             return pickle_json(*asr.result, lm, compiler_options.po.no_loc, false);
         }
         return pickle(*asr.result,
-            compiler_options.use_colors, compiler_options.indent);
+            compiler_options.use_colors, compiler_options.indent, false, false);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

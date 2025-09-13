@@ -694,7 +694,7 @@ public:
                 array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
             }
 
-            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+            if (array_construct && array_construct->n_args > 0) {
                 for (size_t j = 0; j < array_construct->n_args; j++) {
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
@@ -947,6 +947,35 @@ public:
                 "ArraySize::m_v must be an array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
+    }
+
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
+        if (check_external) {
+            if (ASR::is_a<ASR::ArraySize_t>(*x.m_target)) {
+                ASR::expr_t* target_v = ASR::down_cast<ASR::ArraySize_t>(x.m_target)->m_v;
+                require(ASR::is_a<ASR::Var_t>(*target_v) ||
+                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*target_v) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*target_v) ||
+                        ASR::is_a<ASR::BitCast_t>(*target_v) ||
+                        ASR::is_a<ASR::ArrayConstant_t>(*target_v), "DebugCheckArrayBounds::m_target::m_v must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                require(ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(target_v))), "DebugCheckArrayBounds::m_target::m_v must have an Array type");
+            } else {
+                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Integer type")
+            }
+
+            if (ASR::is_a<ASR::ArraySize_t>(*x.m_value)) {
+                ASR::expr_t* value_v = ASR::down_cast<ASR::ArraySize_t>(x.m_value)->m_v;
+                require(ASR::is_a<ASR::Var_t>(*value_v) ||
+                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*value_v) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*value_v) ||
+                        ASR::is_a<ASR::BitCast_t>(*value_v) ||
+                        ASR::is_a<ASR::ArrayConstant_t>(*value_v), "DebugCheckArrayBounds::m_value::m_v must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                require(ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value_v))), "DebugCheckArrayBounds::m_value::m_v must have an Array type");
+            } else {
+                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_value)), "DebugCheckArrayBounds::m_value must have an Integer type")
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
     }
 
     void visit_ArraySection(const ArraySection_t &x) {

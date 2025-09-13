@@ -1,0 +1,13 @@
+{
+    "basename": "run-implied_do_loop2-a8638e0",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/implied_do_loop2.f90",
+    "infile_hash": "9f1322fbfc43cf221a57e13012a98248cd6c507ae07b15388d5958d1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-implied_do_loop2-a8638e0.stdout",
+    "stdout_hash": "56f680f2dc3802df62021dbd4fc18a2470cd6737c1f726578670814c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

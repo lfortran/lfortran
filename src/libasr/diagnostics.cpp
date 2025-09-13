@@ -95,7 +95,7 @@ std::string Diagnostics::render(LocationManager &lm,
         }
     }
     if (compiler_options.error_format == "human") {
-        if (this->diagnostics.size() > 0 && !compiler_options.no_error_banner) {
+        if (this->diagnostics.size() > 0 && compiler_options.show_error_banner) {
             if ((compiler_options.show_style_suggestions && has_style()) || (compiler_options.show_warnings && has_warning()) || has_error()) {
                 std::string bold  = ColorsANSI::BOLD;
                 std::string reset = ColorsANSI::RESET;
