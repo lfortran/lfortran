@@ -2246,6 +2246,9 @@ RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES
 
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# LAPACK stfsm minimal reproducer - demonstrates sequence association with implicit interface
+# Tests that A(0) can be passed as array to implicit interface (Fortran 77 standard)
+RUN(NAME lapack_stfsm_min LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2700,6 +2703,3 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
-# LAPACK stfsm minimal reproducer - demonstrates sequence association with implicit interface
-# Tests that A(0) can be passed as array to implicit interface (Fortran 77 standard)
-RUN(NAME lapack_stfsm_min LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface)
