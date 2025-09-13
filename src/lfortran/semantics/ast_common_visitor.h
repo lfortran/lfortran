@@ -9567,7 +9567,26 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
-                if (ASRUtils::is_array(var_type)) {
+
+                // With implicit interfaces, ArrayItem is ambiguous
+                if (compiler_options.implicit_interface &&
+                    ASR::is_a<ASR::ArrayItem_t>(*var_expr)) {
+                    // ArrayItem like C(i,j) could be:
+                    // 1. A scalar value
+                    // 2. The start of an array (sequence association)
+                    // Create assumed-size array to accept both
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    empty_dims.push_back(al, empty_dim);
+                    var_type = ASRUtils::make_Array_t_util(al, var_type->base.loc,
+                        ASRUtils::extract_type(var_type), empty_dims.p, 1,
+                        ASR::abiType::Source, false,
+                        ASR::array_physical_typeType::PointerArray, true);
+                } else if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(

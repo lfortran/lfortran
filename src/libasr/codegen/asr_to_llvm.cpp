@@ -13170,6 +13170,17 @@ public:
                         continue;
                     }
 
+                    // 3. ArrayItem could be scalar OR array start (ambiguous)
+                    //    With implicit interfaces, C(i,j) could mean:
+                    //    - Pass the scalar value at C(i,j)
+                    //    - Pass C(i,j) as the start of an array
+                    //    We cannot know which without explicit interface
+                    if (compiler_options.implicit_interface &&
+                        ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
+                        // Skip type check - ambiguous case
+                        continue;
+                    }
+
                     // For all arguments (not just ArrayItem), enforce type checking
                     // unless we already skipped it above for sequence association
                     if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
