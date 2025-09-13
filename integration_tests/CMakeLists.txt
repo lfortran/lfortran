@@ -2700,5 +2700,6 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
-# LAPACK stfsm minimal reproducer - triggers LLVM codegen failure with nested branches
-RUN(NAME lapack_stfsm_min FAIL LABELS llvm EXTRA_ARGS --fixed-form --implicit-interface --separate-compilation --legacy-array-sections --skip-pass=pass_array_by_data --cpp)
+# LAPACK stfsm minimal reproducer - demonstrates sequence association with implicit interface
+# Tests that A(0) can be passed as array to implicit interface (Fortran 77 standard)
+RUN(NAME lapack_stfsm_min LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface)
