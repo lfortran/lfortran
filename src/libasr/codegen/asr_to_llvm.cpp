@@ -4372,7 +4372,7 @@ public:
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (compiler_options.new_classes &&
-                            !LLVM::is_llvm_pointer(*v->m_type) && !ASRUtils::is_array(v->m_type) &&
+                            !LLVM::is_llvm_pointer(*v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                         store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member);
@@ -12096,7 +12096,8 @@ public:
             }
             ASR::ttype_t* arg_type_ = ASRUtils::expr_type(arg_expr);
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type_))) {
-                if (ASRUtils::is_array(arg_type_)) {
+                if (ASRUtils::is_array(arg_type_) && 
+                    ASRUtils::extract_physical_type(arg_type_) == ASR::array_physical_typeType::DescriptorArray) {
                     // TODO: Convert Descriptor arrays here
                     return dt;
                 }
@@ -12104,7 +12105,8 @@ public:
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true);
                 if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0))) {
                     return builder->CreateBitCast(dt, target_struct_type->getPointerTo());
-                } else if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr))) {
+                } else if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                             !ASRUtils::is_array(ASRUtils::expr_type(s_m_args0))) {
                     llvm::Type* original_struct_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr))), module.get(), true);
                     dt = llvm_utils->CreateLoad2(original_struct_type, dt);
