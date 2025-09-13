@@ -399,7 +399,7 @@ public:
             require(is_allocatable,
                 "Reallocation of non allocatable variable is not allowed");
         }
-        if (x.m_move) {
+        if (x.m_move_allocation) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
