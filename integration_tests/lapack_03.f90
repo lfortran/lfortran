@@ -6,6 +6,7 @@ C     per Fortran sequence association rules with implicit interfaces
       INTEGER            N
       REAL               V(N, *)
 
-      CALL SUB(N, V)
-      CALL SUB(N, V(2, 2))
+      IF(N.LE.1) RETURN
+      CALL SUB(N/2, V)
+      CALL SUB(N/2, V(2, 2))
       END SUBROUTINE
