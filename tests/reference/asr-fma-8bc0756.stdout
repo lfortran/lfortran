@@ -272,6 +272,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -289,6 +290,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (If
@@ -406,6 +408,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 r)
@@ -419,6 +422,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -461,6 +465,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print
@@ -533,6 +538,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print

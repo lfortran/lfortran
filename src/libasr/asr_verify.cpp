@@ -399,6 +399,23 @@ public:
             require(is_allocatable,
                 "Reallocation of non allocatable variable is not allowed");
         }
+        if (x.m_move_allocation) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+
+            bool is_target_allocatable_array = ASRUtils::is_array(target_type) &&
+                                            ASRUtils::is_allocatable(target_type) &&
+                                            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
+
+            bool is_value_allocatable_array = ASRUtils::is_array(value_type) &&
+                                            ASRUtils::is_allocatable(value_type) &&
+                                            ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+
+            require(is_target_allocatable_array,
+                "Move assignment target must be an allocatable array");
+            require(is_value_allocatable_array,
+                "Move assignment value must be an allocatable array");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 

@@ -99,17 +99,20 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
@@ -128,6 +131,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                         )]
                         []
@@ -161,6 +165,7 @@
                         (Var 2 a)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (DoLoop
@@ -203,6 +208,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                                 .false.
                             )]
                             []
@@ -251,6 +257,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -274,6 +281,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                                 .false.
                             )]
                             []

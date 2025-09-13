@@ -103,17 +103,20 @@
                         (IntegerConstant 30 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 sum)
                         (Var 2 zero)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (GoToTarget
@@ -191,6 +194,7 @@
                         (Var 2 next)
                         (IntegerConstant 50 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (GoToTarget

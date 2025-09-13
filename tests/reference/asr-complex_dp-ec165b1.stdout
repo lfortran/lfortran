@@ -90,6 +90,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 v)
@@ -120,6 +121,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -149,6 +151,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print

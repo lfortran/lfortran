@@ -7,6 +7,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/array_struct_temporary.h>
 
 namespace LCompilers {
 
@@ -187,7 +188,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return is_function_call && is_aggregate_type;
         }
 
-        void subroutine_call_from_function(const Location &loc, ASR::expr_t* value, ASR::expr_t* target) {
+        void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
+            ASR::expr_t* value = nullptr;
+            ASR::expr_t* target = nullptr;
+            if (ASR::is_a<ASR::Assignment_t>(xx)) {
+                ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
+                value = assignment->m_value;
+                target = assignment->m_target;
+            } else if (ASR::is_a<ASR::Associate_t>(xx)) {
+                ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
+                value = associate->m_value;
+                target = associate->m_target;
+            } else {
+                LCOMPILERS_ASSERT("Only Assignment_t and Associate_t allowed.");
+            }
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(value);
 
             ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
@@ -209,8 +223,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
             }
-            if(ASRUtils::is_allocatable(value) &&
-               ASRUtils::is_allocatable(target)){ // Make sure to deallocate the argument that will hold the return of function.
+            bool value_and_target_allocatable_array = false;
+            if (ASRUtils::is_allocatable(value) && ASRUtils::is_allocatable(target)) {
+                // Pass in a temporary instead of the target, this is done for bounds checking in assignment to an array from a FunctionCall
+                if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(value)) &&
+                    ASR::is_a<ASR::Assignment_t>(xx)) {
+                    target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                    value_and_target_allocatable_array = true;
+                }
+                // Make sure to deallocate the temporary that will hold the return of function.
                 Vec<ASR::expr_t*> to_be_deallocated;
                 to_be_deallocated.reserve(al, 1);
                 to_be_deallocated.push_back(al, target);
@@ -225,14 +247,23 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope));
             pass_result.push_back(al, subrout_call);
-            remove_original_statement = true;
+            if (value_and_target_allocatable_array) {
+                ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
+                assignment->m_value = target;
+                // We are using a temporary so make this assignment a move assignment
+                assignment->m_move_allocation = true;
+                remove_original_statement = false;
+            } else {
+                remove_original_statement = true;
+            }
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
             ASR::CallReplacerOnExpressionsVisitor \
             <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
             if(is_function_call_returning_aggregate_type(x.m_value)) {
-                subroutine_call_from_function(x.base.base.loc, x.m_value, x.m_target);
+                ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
             }
         }
 
@@ -241,7 +272,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Associate(x);
             ASR::ttype_t* t = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
             if(is_function_call_returning_aggregate_type(x.m_value) && ASR::is_a<ASR::StructType_t>(*t)) {
-                subroutine_call_from_function(x.base.base.loc, x.m_value, x.m_target);
+                ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
+                subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
             }
         }
 };

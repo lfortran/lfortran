@@ -198,6 +198,7 @@
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f2)
@@ -209,6 +210,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -228,6 +230,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f4)
@@ -246,6 +249,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f5)
@@ -257,6 +261,7 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -270,6 +275,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f7)
@@ -282,6 +288,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f8)
@@ -293,6 +300,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )]
                     (Var 2 f8)

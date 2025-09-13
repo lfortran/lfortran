@@ -371,6 +371,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     bool realloc_lhs;
     bool bounds_checking;
     bool remove_original_stmt;
+    inline static std::set<const ASR::Assignment_t*> debug_inserted;
 
     public:
 
@@ -1039,7 +1040,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 d_target, nullptr, type32, nullptr));
             ASR::expr_t* d_value_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
                 d_value, nullptr, type32, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size)));
+            if (debug_inserted.find(&x) == debug_inserted.end()) {
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size, x.m_move_allocation)));
+                if (!x.m_move_allocation) {
+                    debug_inserted.insert(&x);
+                }
+            }
+        }
+
+        // Don't generate a loop for a move assignment
+        // The assignment should be handled in the backend
+        if (x.m_move_allocation) {
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
+            pass_result.push_back(al, stmt);
+            debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
+            return;
         }
 
         Vec<ASR::expr_t**> fix_type_args;
