@@ -3259,12 +3259,7 @@ public:
             std::string member_name = member_struct->m_name;
             while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
                         (current_der_type_name != member_name)) {
-                if (compiler_options.new_classes) {
-                    // Offset by 1 to bypass `vptr` at index 0.
-                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 1);
-                } else {
-                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
-                }
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
                 current_der_type_name = dertype2parent[current_der_type_name];
             }
             return;
@@ -4044,23 +4039,40 @@ public:
         mangle_prefix = "__module_" + std::string(x.m_name) + "_";
 
         start_module_init_function_prototype(x);
+        std::vector<ASR::symbol_t*> variables;
+        std::vector<ASR::symbol_t*> functions;
+        std::vector<ASR::symbol_t*> structs;
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = down_cast<ASR::Variable_t>(
-                        item.second);
-                if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                    visit_Variable(*v);
-                }
+                variables.push_back(item.second);
             } else if (is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *v = down_cast<ASR::Function_t>(
-                        item.second);
-                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-                if (x.m_parent_module && func_type->m_module) {
-                    mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
-                }
-                instantiate_function(*v);
-                mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+                functions.push_back(item.second);
+            } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                structs.push_back(item.second);
+            }
+        }
+        // Visit in order: Function --> Struct --> Variables
+        for (auto &sym: functions) {
+            ASR::Function_t *v = down_cast<ASR::Function_t>(
+                        sym);
+            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
+            if (x.m_parent_module && func_type->m_module) {
+                mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
+            }
+            instantiate_function(*v);
+            mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+        }
+        if (compiler_options.new_classes) {
+            for (auto &sym: structs) {
+                create_new_vtable_for_struct_type(sym);
+            }
+        }
+        for (auto &sym: variables) {
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(
+                    sym);
+            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                visit_Variable(*v);
             }
         }
         finish_module_init_function_prototype(x);
@@ -4668,16 +4680,6 @@ public:
             // First create VTable for parent
             create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(
                 struct_t->m_parent));
-        }
-        for (auto &item : struct_t->m_symtab->get_scope()) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type))) {
-                    create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(
-                        var->m_type_declaration));
-                }
-            }
         }
     }
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
@@ -7697,13 +7699,15 @@ public:
         }
 
         this->visit_expr(*x);
+
         if (compiler_options.new_classes && load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
-               LLVM::is_llvm_pointer(*ASRUtils::expr_type(x))) {
+                ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
             tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             return;
         }
+
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
@@ -11747,7 +11751,8 @@ public:
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
-                                    !(compiler_options.new_classes && ASRUtils::is_struct(*arg->m_type))) {
+                                    !(compiler_options.new_classes &&
+                                     ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
@@ -12828,7 +12833,7 @@ public:
         if (compiler_options.new_classes) {
             bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = is_pointer;
             this->visit_expr_wrapper(x.m_dt, is_pointer);
             ptr_loads = ptr_loads_copy;
             llvm::Value* llvm_dt = tmp;
@@ -13025,7 +13030,7 @@ public:
         if (compiler_options.new_classes) {
             bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = is_pointer;
             this->visit_expr_wrapper(x.m_dt, is_pointer);
             ptr_loads = ptr_loads_copy;
             llvm::Value* llvm_dt = tmp;
