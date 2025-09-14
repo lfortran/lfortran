@@ -1,6 +1,8 @@
 #include <libasr/exception.h>
 #include <libasr/string_utils.h>
 
+#include <iostream>
+
 #include <lfortran/utils.h>
 
 #ifndef CLI11_HAS_FILESYSTEM
@@ -52,11 +54,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("files", opts.arg_files, "Source files");
         app.add_flag("-S", opts.arg_S, "Emit assembly, do not assemble or link");
         app.add_flag("-c", opts.arg_c, "Compile and assemble, do not link");
-        // Legacy compatibility for CMake's FortranCInterface (pre-v0.55 naming)
-        // Historically `--generate-object-code` was renamed to `--separate-compilation`.
-        // Accept it as an alias to enable separate compilation mode.
-        app.add_flag("--generate-object-code", compiler_options.separate_compilation,
-            "Legacy alias for --separate-compilation");
+        // TODO(2025-09-14; CMake <= 4.1.1; https://gitlab.kitware.com/cmake/cmake/-/issues/27225): remove legacy alias when fix is widely available.
+        CLI::Option *legacy_generate_object_code = app.add_flag(
+            "--generate-object-code", compiler_options.separate_compilation,
+            "DEPRECATED: legacy alias for --separate-compilation");
         app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
         app.add_flag("-v", opts.arg_v, "Be more verbose");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
@@ -239,6 +240,14 @@ namespace LCompilers::CommandLineInterface {
 
         if (disable_error_banner) {
             compiler_options.show_error_banner = false;
+        }
+
+        // Emit deprecation warning for legacy flag alias, unless warnings are disabled
+        if (legacy_generate_object_code && legacy_generate_object_code->count() > 0) {
+            if (!disable_warnings) {
+                std::cerr << "warning: `--generate-object-code` is deprecated and will be "
+                          << "removed in a future release; use `--separate-compilation` instead.\n";
+            }
         }
 
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
