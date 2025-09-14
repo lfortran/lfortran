@@ -618,7 +618,9 @@ public:
 
     void visit_Array(const ASR::Array_t &x) {
         if (!current_scope) return;
-        
+        if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+            return;
+        }
         if (is_function_call_or_intrinsic_array_function(x.m_dims->m_length)) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_dims->m_length));
