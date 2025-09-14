@@ -1,58 +1,47 @@
-      SUBROUTINE STFSM( M, N, A, B, LDB )
+C     Minimal reproducer for SGEJSV scalar-to-array issue
+C     Error: expected `f32[:]`, passed `f32`
+      SUBROUTINE SGEJSV_MINIMAL(M, N, A, LDA, SVA, WORK)
       IMPLICIT NONE
-      INTEGER            LDB, M, N
-      REAL               A( 0: * ), B( 0: LDB-1, 0: * )
-      EXTERNAL           STRSM
+      INTEGER M, N, LDA
+      REAL A(LDA, *), SVA(*), WORK(*)
+      REAL AAPP, TEMP1, SCALEM
+      INTEGER IERR
+      EXTERNAL SLASCL
 
-      IF( M.EQ.1 ) THEN
-         CALL STRSM( M, N, A, M, B, LDB )
-      ELSE
-         CALL STRSM( M, N, A( 0 ), M, B, LDB )
-      END IF
+C     The key issue: SLASCL is first called with array element A(1,1)
+C     which gets inferred as array type, then called with scalar AAPP
+      AAPP = 1.0
+      TEMP1 = 2.0
+      SCALEM = 0.5
 
-      RETURN
-      END
+C     FIRST call - line 690 from sgejsv.f - with ARRAY ELEMENT
+C     This causes SLASCL's 4th param to be inferred as array
+      CALL SLASCL('G', 0, 0, SVA(1), SCALEM, M, 1, A(1,1), LDA, IERR)
 
-      SUBROUTINE STRSM( M1, N, ARR, M, B, LDB )
-      IMPLICIT NONE
-      INTEGER            M1, N, M, LDB
-      REAL               ARR( 0: * ), B( 0: LDB-1, 0: * )
+C     SECOND call - line 856 from sgejsv.f - with SCALAR
+C     This fails because AAPP is scalar but array was expected
+      CALL SLASCL('G', 0, 0, AAPP, TEMP1, N, 1, SVA, N, IERR)
 
-      IF( M1 .GT. 0 ) THEN
-         ARR(0) = 3.14
-      END IF
-      RETURN
-      END
+C     Third call - line 863 from sgejsv.f
+      CALL SLASCL('G', 0, 0, AAPP, TEMP1, M, N, A, LDA, IERR)
 
-      SUBROUTINE SUB1D( N, ARR )
-      IMPLICIT NONE
-      INTEGER            N
-      REAL               ARR( * )
-
-      IF( N .GT. 0 ) THEN
-         ARR(1) = 2.71
-      END IF
       RETURN
       END
 
       PROGRAM TEST
-      REAL A(100), B(10, 10)
-      INTEGER LDB
-      LDB = 10
-      A = 1.0
-      B = 2.0
-      CALL STFSM(3, 3, A, B, LDB)
-      IF (ABS(A(1) - 3.14) .LT. 0.001) THEN
-         PRINT *, 'PASS A(0) test'
-      ELSE
-         PRINT *, 'FAIL: A(1) =', A(1)
-      END IF
+      IMPLICIT NONE
+      INTEGER M, N, LDA
+      PARAMETER (M = 10, N = 10, LDA = 10)
+      REAL A(LDA, N), SVA(N), WORK(100)
 
-      A = 1.0
-      CALL SUB1D(20, A(3))
-      IF (ABS(A(3) - 2.71) .LT. 0.001) THEN
-         PRINT *, 'PASS A(3) test'
-      ELSE
-         PRINT *, 'FAIL: A(3) =', A(3)
-      END IF
-      END PROGRAM TEST
+      CALL SGEJSV_MINIMAL(M, N, A, LDA, SVA, WORK)
+      PRINT *, 'Done'
+      END PROGRAM
+
+C     Dummy SLASCL routine
+      SUBROUTINE SLASCL(TYPE, KL, KU, CFROM, CTO, M, N, A, LDA, INFO)
+      CHARACTER TYPE
+      INTEGER KL, KU, M, N, LDA, INFO
+      REAL CFROM, CTO, A(LDA, *)
+      RETURN
+      END
