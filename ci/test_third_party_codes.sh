@@ -868,6 +868,39 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 '
 
+##########################
+# Section 12: Reference-LAPACK
+##########################
+time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
+  git clone https://github.com/Reference-LAPACK/lapack.git reference-lapack
+  cd reference-lapack
+
+  # Use latest stable release
+  git checkout v3.12.0
+
+  print_subsection "Building Reference-LAPACK with LFortran"
+  mkdir build && cd build
+
+  cmake -DCMAKE_Fortran_COMPILER=$FC \
+        -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface" \
+        -DBUILD_INDEX64_EXT_API=OFF \
+        -DBUILD_COMPLEX=OFF \
+        -DBUILD_COMPLEX16=OFF \
+        -DBUILD_TESTING=OFF \
+        -DCBLAS=OFF \
+        -DLAPACKE=OFF \
+        ..
+
+  make -j8
+
+  print_success "Successfully built Reference-LAPACK with LFortran"
+
+  # Optional: Run some basic tests if enabled
+  # ctest --output-on-failure -j8
+
+  cd ../..
+  rm -rf reference-lapack
+'
 
 ##################################
 # Final Summary and Cleanup
