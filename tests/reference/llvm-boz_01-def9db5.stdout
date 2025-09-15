@@ -122,18 +122,17 @@ ifcont20:                                         ; preds = %else19, %then18
   %15 = alloca i64, align 8
   %16 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @serialization_info, i32 0, i32 0), i64* %15, i32 0, i32 0, i32* %boz_11, i32* %boz_22, i32* %boz_33, i32* %boz_44, i32* %boz_55, float* %boz_6)
   %17 = load i64, i64* %15, align 4
-  %18 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc = bitcast i8* %18 to %string_descriptor*
-  %19 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %16, i8** %19, align 8
-  %20 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %17, i64* %20, align 4
-  %21 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %22 = load i8*, i8** %21, align 8
-  %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %24 = load i64, i64* %23, align 4
-  %25 = trunc i64 %24 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %22, i32 %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %16, i8** %18, align 8
+  %19 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %17, i64* %19, align 4
+  %20 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %21 = load i8*, i8** %20, align 8
+  %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %23 = load i64, i64* %22, align 4
+  %24 = trunc i64 %23 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %21, i32 %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -148,8 +147,6 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @exit(i32)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
-
-declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
