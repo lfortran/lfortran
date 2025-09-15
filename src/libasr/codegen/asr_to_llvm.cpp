@@ -8622,7 +8622,7 @@ public:
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
-            str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, {idx});
+            str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, idx);
         }
 
         /* Create StringView */
