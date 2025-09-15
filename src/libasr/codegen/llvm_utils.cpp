@@ -2293,7 +2293,7 @@ namespace LCompilers {
                 );
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len);
-                // [len x i8] c "DATA HERE\"
+                // [len x i8] c "DATA HERE"
                 llvm::Constant* const_data_as_array {};
                 {
                     std::string initial_data_padded = std::string(initial_data);
