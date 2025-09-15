@@ -1950,20 +1950,7 @@ namespace LCompilers {
 
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
-
-        llvm::DataLayout data_layout_inst(module->getDataLayout());
-        llvm::Value* str_desc = builder->CreateBitCast(
-            LLVMArrUtils::lfortran_malloc(context,
-                *module, *builder,
-                llvm::ConstantInt::get(context, llvm::APInt(64, data_layout_inst.getTypeAllocSize(string_descriptor)))),
-            string_descriptor->getPointerTo(), name);
-
-        return str_desc;
-
-// TODO :: Remove code above.
-
-        llvm::Value* str_descriptor = builder->CreateAlloca(string_descriptor, nullptr, name);
-        return str_descriptor;
+        return builder->CreateAlloca(string_descriptor, nullptr, name);
     }
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
