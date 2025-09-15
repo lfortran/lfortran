@@ -1394,6 +1394,7 @@ RUN(NAME select_type_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23
 RUN(NAME select_type_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

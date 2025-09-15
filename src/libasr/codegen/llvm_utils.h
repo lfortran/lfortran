@@ -282,14 +282,6 @@ namespace LCompilers {
 
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
-            // Converts a constant ASR expression into an equivalent LLVM Constant.
-            // Supports integer, logical, and real constants used in struct initializers.
-            // Throws an exception for unsupported expression types.
-            void get_type_default_field_values(ASR::symbol_t* struct_sym,
-                llvm::Module* module, std::vector<llvm::Constant*>& field_values);
-
-            llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
-                                                               llvm::Module* module);
 
             template<typename... Args>
             void generate_runtime_error(llvm::Value* cond, std::string message, Args... args)

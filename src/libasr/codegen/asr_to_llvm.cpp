@@ -3259,12 +3259,7 @@ public:
             std::string member_name = member_struct->m_name;
             while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
                         (current_der_type_name != member_name)) {
-                if (compiler_options.new_classes) {
-                    // Offset by 1 to bypass `vptr` at index 0.
-                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 1);
-                } else {
-                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
-                }
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
                 current_der_type_name = dertype2parent[current_der_type_name];
             }
             return;
@@ -3649,12 +3644,10 @@ public:
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             bool is_class = !struct_t->m_is_cstruct;
-            if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
+            if (init_value == nullptr) {
                 std::vector<llvm::Constant*> field_values;
-                if (compiler_options.new_classes) {
-                    create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(x.m_type_declaration));
-                }
-                llvm_utils->get_type_default_field_values(x.m_type_declaration, module.get(), field_values);
+                get_type_default_field_values(x.m_type_declaration, field_values,
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration));
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
                 if (is_class && !compiler_options.new_classes) {
@@ -4044,23 +4037,40 @@ public:
         mangle_prefix = "__module_" + std::string(x.m_name) + "_";
 
         start_module_init_function_prototype(x);
+        std::vector<ASR::symbol_t*> variables;
+        std::vector<ASR::symbol_t*> functions;
+        std::vector<ASR::symbol_t*> structs;
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = down_cast<ASR::Variable_t>(
-                        item.second);
-                if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                    visit_Variable(*v);
-                }
+                variables.push_back(item.second);
             } else if (is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *v = down_cast<ASR::Function_t>(
-                        item.second);
-                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-                if (x.m_parent_module && func_type->m_module) {
-                    mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
-                }
-                instantiate_function(*v);
-                mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+                functions.push_back(item.second);
+            } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                structs.push_back(item.second);
+            }
+        }
+        // Visit in order: Function --> Struct --> Variables
+        for (auto &sym: functions) {
+            ASR::Function_t *v = down_cast<ASR::Function_t>(
+                        sym);
+            ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
+            if (x.m_parent_module && func_type->m_module) {
+                mangle_prefix = "__module_" + std::string(x.m_parent_module) + "_";
+            }
+            instantiate_function(*v);
+            mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+        }
+        if (compiler_options.new_classes) {
+            for (auto &sym: structs) {
+                create_new_vtable_for_struct_type(sym);
+            }
+        }
+        for (auto &sym: variables) {
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(
+                    sym);
+            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                visit_Variable(*v);
             }
         }
         finish_module_init_function_prototype(x);
@@ -4669,16 +4679,6 @@ public:
             create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(
                 struct_t->m_parent));
         }
-        for (auto &item : struct_t->m_symtab->get_scope()) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type))) {
-                    create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(
-                        var->m_type_declaration));
-                }
-            }
-        }
     }
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
     {
@@ -4766,6 +4766,82 @@ public:
 
         newclass2typeinfo.insert(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
+    }
+
+    void get_type_default_field_values(ASR::symbol_t* struct_sym,
+            std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+        if (compiler_options.new_classes) {
+            create_new_vtable_for_struct_type(struct_sym);
+            if (struct_t->m_parent != nullptr) {
+                std::vector<llvm::Constant*> tmp_field_values;
+                get_type_default_field_values(struct_t->m_parent, tmp_field_values, orig_struct_sym);
+                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::symbol_type(
+                        struct_t->m_parent), struct_t->m_parent, module.get()));
+                field_values.push_back(llvm::ConstantStruct::get(llvm_struct_type, tmp_field_values));
+            } else {
+                // Add vptr
+                llvm::Constant* vtab = newclass2vtab.at(orig_struct_sym);
+                field_values.push_back(llvm::ConstantExpr::getBitCast(vtab, llvm_utils->vptr_type));
+            }
+        }
+        for (size_t i = 0; i < struct_t->n_members; i++) {
+            std::string member_name = struct_t->m_members[i];
+            ASR::symbol_t* sym = struct_t->m_symtab->get_symbol(member_name);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
+                continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_value != nullptr) {
+                llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, orig_struct_sym);
+                field_values.push_back(c);
+            } else {
+                llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(var->m_type, struct_sym, module.get());
+                field_values.push_back(llvm::Constant::getNullValue(member_type));
+            }
+        }
+    }
+
+    llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+            ASR::symbol_t* orig_struct_sym = nullptr) {
+        switch (expr->type) {
+            case ASR::exprType::IntegerConstant: {
+                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, ic->m_type, module.get());
+                return llvm::ConstantInt::get(llvm_type, ic->m_n, true);
+            }
+            case ASR::exprType::LogicalConstant: {
+                ASR::LogicalConstant_t* lc = ASR::down_cast<ASR::LogicalConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, lc->m_type, module.get());
+                return llvm::ConstantInt::get(llvm_type, lc->m_value ? 1 : 0, false);
+            }
+            case ASR::exprType::RealConstant: {
+                ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, rc->m_type, module.get());
+                if (llvm_type->isFloatTy()) {
+                    return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
+                } else if (llvm_type->isDoubleTy()) {
+                    return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                }
+                break;
+            }
+            case ASR::exprType::StructConstant: {
+                std::vector<llvm::Constant*> field_values;
+                ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+                if (orig_struct_sym == nullptr) {
+                    orig_struct_sym = struct_sym;
+                }
+                get_type_default_field_values(struct_sym, field_values, orig_struct_sym);
+                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                    llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get()));
+                return llvm::ConstantStruct::get(llvm_struct_type, field_values);
+            }
+            default:
+                throw LCompilersException( "Unsupported constant expression in struct default initializer.");
+        }
+        return nullptr;
     }
 
     void collect_variable_types_and_struct_types(
@@ -7697,13 +7773,15 @@ public:
         }
 
         this->visit_expr(*x);
+
         if (compiler_options.new_classes && load_ref &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
-               LLVM::is_llvm_pointer(*ASRUtils::expr_type(x))) {
+                ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
             tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             return;
         }
+
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
@@ -11747,7 +11825,8 @@ public:
                                     LLVM::is_llvm_pointer(*arg->m_type) &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
-                                    !(compiler_options.new_classes && ASRUtils::is_struct(*arg->m_type))) {
+                                    !(compiler_options.new_classes &&
+                                     ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
@@ -12828,7 +12907,7 @@ public:
         if (compiler_options.new_classes) {
             bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = is_pointer;
             this->visit_expr_wrapper(x.m_dt, is_pointer);
             ptr_loads = ptr_loads_copy;
             llvm::Value* llvm_dt = tmp;
@@ -13025,7 +13104,7 @@ public:
         if (compiler_options.new_classes) {
             bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = is_pointer;
             this->visit_expr_wrapper(x.m_dt, is_pointer);
             ptr_loads = ptr_loads_copy;
             llvm::Value* llvm_dt = tmp;
