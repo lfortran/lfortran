@@ -1886,7 +1886,37 @@ namespace LCompilers {
         return str_desc;
     }
 
+    bool LLVMUtils::is_string_length_setable(ASR::String_t* string_t){
+        switch(string_t->m_physical_type){
+            case ASR::DescriptorString:{
+                return true;
+            }
+            case ASR::CChar:{
+                return false;
+            }
+            default:
+                throw LCompilersException("Unhandled string physical type");
+        }
+    }
+    llvm::Value* LLVMUtils::create_stringView(ASR::String_t* string_t, llvm::Value* data, llvm::Value* len, std::string name){
+        /* Assertions */
+        LCOMPILERS_ASSERT(!len->getType()->isPointerTy())
+        LCOMPILERS_ASSERT(len->getType()->isIntegerTy(64))
+        LCOMPILERS_ASSERT(data->getType() == character_type)
 
+        /* Create String Based On PhsyicalType */
+        llvm::Value* string = create_string(string_t, name);
+
+        /* Store Data */
+        builder->CreateStore(data, get_string_data(string_t, string, true));
+
+        /* Store Length */
+        if(is_string_length_setable(string_t)){
+            builder->CreateStore(len, get_string_length(string_t, string, true));
+        }
+
+        return string;
+    }
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
         return builder->CreateAlloca(string_descriptor, nullptr, name);

@@ -373,6 +373,21 @@ namespace LCompilers {
             */
             llvm::Value* create_string_descriptor(std::string name);
 
+            /*
+                Creates A StringView
+                - It doesn't allocate its own memory.
+                - Creates String based on physicalType of ASR::String node.
+                - Must provide data of the string on which the view is created.
+                - Must provide a length.
+            */
+            llvm::Value* create_stringView(ASR::String_t* string_t, llvm::Value* data, llvm::Value* len, std::string name);
+            
+            /*
+                Checks if the string length is setable.
+                - TRUE if the PhysicalType preserves information about the length (at runtime).
+            */
+            bool is_string_length_setable(ASR::String_t* string_t);
+
             llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
             llvm::Value* get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len=false);
 
