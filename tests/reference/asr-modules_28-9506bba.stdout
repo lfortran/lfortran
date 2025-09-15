@@ -491,6 +491,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            .false.
                                                         )
                                                     )
                                                     4 dependency_config_t
@@ -613,6 +614,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                .false.
                                             )
                                         )
                                         (StructType
