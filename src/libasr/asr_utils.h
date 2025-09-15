@@ -444,6 +444,9 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
             return ASRUtils::expr_type(
                 ASR::down_cast<ASR::Function_t>(f)->m_return_var);
         }
+        case ASR::symbolType::Struct: {
+            return ASR::down_cast<ASR::Struct_t>(f)->m_struct_signature;
+        }
         default: {
             throw LCompilersException("Cannot return type of, " +
                                     std::to_string(f->type) + " symbol.");

@@ -160,6 +160,9 @@ namespace LCompilers {
             llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
             llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
             vptr_type = fnPtrPtrTy;  // i32 (...)**
+            fnTy = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {character_type, character_type}, false);
+            struct_copy_functype = fnTy;  // void (i8*, i8*)
             string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor", true);
         }
 

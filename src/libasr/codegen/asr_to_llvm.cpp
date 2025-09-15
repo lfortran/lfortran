@@ -4372,7 +4372,7 @@ public:
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (compiler_options.new_classes &&
-                            !LLVM::is_llvm_pointer(*v->m_type) && !ASRUtils::is_array(v->m_type) &&
+                            !LLVM::is_llvm_pointer(*v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                         store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member);
@@ -4682,6 +4682,7 @@ public:
     }
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
     {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         if (newclass2vtab.find(struct_sym) != newclass2vtab.end()) {
             return ;
         }
@@ -4696,6 +4697,11 @@ public:
         slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Reserved null ptr
         slots.push_back(newclass2typeinfo.at(struct_sym));             // Type Info
         collect_vtable_function_impls(struct_sym, slots);
+
+        // create and add copy funciton
+        llvm::Function* copy_function = define_struct_copy_function(struct_sym);
+        struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
+        slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -5658,6 +5664,57 @@ public:
             }
             builder->CreateRetVoid();
         }
+    }
+
+    /* Case: We don't know type of obj at compile time. 
+    We use this runtime function from runtime vptr to deep copy properly
+    subroutine describe(obj)
+        class(base_t), intent(in) :: obj
+        class(base_t), allocatable :: obj_tmp
+        obj_tmp = obj
+    end subroutine
+    Example: `class_65.f90`
+    */
+    llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym) {
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
+            false
+        );
+
+        // Create the function in the module
+        std::string func_name = "_copy_";
+        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
+                            + "_" + ASRUtils::symbol_name(struct_sym);
+        llvm::Function *func = llvm::Function::Create(
+            funcType,
+            llvm::Function::ExternalLinkage,
+            func_name,
+            module.get()
+        );
+
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        // Get function arguments
+        std::vector<llvm::Value*> argsVec;
+        for (llvm::Argument &arg : func->args()) {
+            argsVec.push_back(&arg);
+        }
+        llvm::Type *struct_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::symbol_type(struct_sym), struct_sym, module.get());
+        llvm::Value *src = builder->CreateBitCast(argsVec[0], struct_type->getPointerTo());
+        llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
+        llvm::Value *val = llvm_utils->CreateLoad2(struct_type, src);
+        builder->CreateStore(val, dst);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+        return func;
     }
 
     void generate_function(const ASR::Function_t &x) {
@@ -6722,7 +6779,6 @@ public:
             llvm::Value* target_struct = tmp;
             ptr_loads = ptr_loads_copy;
 
-            llvm::Value* val_obj = value_struct;
             llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 x.m_value, ASRUtils::extract_type(asr_value_type), module.get());
 
@@ -6736,11 +6792,30 @@ public:
                 LLVM::is_llvm_pointer(*asr_value_type)) {
                 value_struct = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), value_struct);
             }
-            target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
-            if (!ASR::is_a<ASR::StructConstant_t>(*x.m_value)) {
-                val_obj = llvm_utils->CreateLoad2(value_llvm_type, value_struct);
+            if (is_target_class && is_value_class) {
+                // Use runtime copy function for class to class assignments
+                // As we don't know the type of value
+                llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+                llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+                llvm::Value* vtable_ptr = builder->CreateBitCast(value_struct, fnPtrPtrPtrTy);
+                vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+                ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
+                llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
+                    vtable_ptr, struct_vtab_function_offset[value_struct_sym]["_lfortran_struct_copy"]));
+                fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+                value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
+                target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
+                builder->CreateCall(fnTy, fn, {value_struct, target_struct});
+            } else {
+                target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
+                if (!ASR::is_a<ASR::StructConstant_t>(*x.m_value)) {
+                    value_struct = llvm_utils->CreateLoad2(value_llvm_type, value_struct);
+                }
+                builder->CreateStore(value_struct, target_struct);
             }
-            builder->CreateStore(val_obj, target_struct);
             return;
         } else if( is_target_struct && is_value_struct ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -12096,7 +12171,8 @@ public:
             }
             ASR::ttype_t* arg_type_ = ASRUtils::expr_type(arg_expr);
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type_))) {
-                if (ASRUtils::is_array(arg_type_)) {
+                if (ASRUtils::is_array(arg_type_) && 
+                    ASRUtils::extract_physical_type(arg_type_) == ASR::array_physical_typeType::DescriptorArray) {
                     // TODO: Convert Descriptor arrays here
                     return dt;
                 }
@@ -12104,7 +12180,8 @@ public:
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(s_m_args0))), module.get(), true);
                 if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0))) {
                     return builder->CreateBitCast(dt, target_struct_type->getPointerTo());
-                } else if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr))) {
+                } else if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                             !ASRUtils::is_array(ASRUtils::expr_type(s_m_args0))) {
                     llvm::Type* original_struct_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr))), module.get(), true);
                     dt = llvm_utils->CreateLoad2(original_struct_type, dt);
