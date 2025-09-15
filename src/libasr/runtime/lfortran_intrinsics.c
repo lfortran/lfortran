@@ -5736,6 +5736,31 @@ is_equal(const type_info* x, const type_info* y)
 }
 
 
+/*
+ * Checks inheritance chain of `dynamic_type` for `dst_type`.
+ *
+ * `dynamic_type` is the type-info object of the  current runtime type of the selector variable in
+ * `select type`.
+ * `dst_type` is the type-info object of the class specified in a `class is()` block.
+ *
+ * Our type-info object in LLVM looks like:
+ *
+ *     `@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8* } {
+ *         i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0),
+ *         i8* bitcast ({ i8* }* @_Type_Info_shape to i8*)
+ *      }, align 8`
+ *
+ * The `__si_class_type_info` struct portrays this layout, with field `__base_type == NULL` for
+ * type-info objects of a base class.
+ *
+ * The search starts from the base class of `dynamic_type`, checks if it is non-null and compares
+ * the type-info objects for equality. If they match, the search returns `true`, else continues
+ * until a base class is encountered or the type-info objects match.
+ *
+ * If we reach a base class and it's type-info object does not match `dst_type`, the search stops
+ * and we return `false`.
+ *
+ */
 static inline bool
 search_dst_type(const struct __si_class_type_info* dynamic_type,
                 const struct __si_class_type_info* dst_type)
@@ -5754,6 +5779,37 @@ search_dst_type(const struct __si_class_type_info* dynamic_type,
 }
 
 
+/*
+ * Checks whether `dst_type` is the same class as that of `static_ptr` or a parent of it.
+ *
+ * The function takes a pointer to the selector variable in `select type` - `static_ptr`, extracts
+ * its runtime type information - `dynamic_type` from the vtable, and checks it's inheritance chain
+ * for the class/type specified in a `class is()`/`type is()` block - `dst_type`.
+ *
+ * For a `type is()` block, we check the exact type. For `class is()`, the inheritance chain is
+ * checked.
+ *
+ * Our vtable in LLVM looks like:
+ *
+ *     `@_VTable_circle = linkonce_odr unnamed_addr constant { [3 x i8*] } {
+ *          [3 x i8*] [
+ *            i8* null,
+ *            i8* @_Type_Info_circle,
+ *            i8* bitcast (float (%circle*)* @__module_select_type_13_module_circle_area to i8*)
+ *          ]
+ *      }, align 8`
+ *
+ * `static_ptr` points to the first virtual function inside the vtable, so `vtable[-1]` is the
+ * type-info pointer. Here, it points to `@__module_select_type_13_module_circle_area`, so
+ * `vtable[-1]` gives us `@_Type_Info_circle`.
+ *
+ * Similarly `vtable[-2]` gives us `offset_to_derived` which is currently null in our
+ * implementation.
+ *
+ * We return a pointer to the same object if the type is found, else return a null
+ * pointer.
+ *
+ */
 LFORTRAN_API void*
 __lfortran_dynamic_cast(const void* static_ptr,
                         const __si_class_type_info* dst_type,
@@ -5767,8 +5823,12 @@ __lfortran_dynamic_cast(const void* static_ptr,
     const void* dst_ptr = NULL;
 
     if (is_equal((const type_info*) dynamic_type, (const type_info*) dst_type)) {
+        // Types are already equal, exit early.
         dst_ptr = dynamic_ptr;
     } else if (!match_exact_type) {
+        // We are handling a `class is()` block and `dst_type` is not equal to the currently
+        // allocated type of `static_ptr`. Start searching the inheritance chain of `dynamic_type`
+        // for `dst_type`.
         if (search_dst_type((const __si_class_type_info*) dynamic_type, dst_type)) {
             dst_ptr = dynamic_ptr;
         }
