@@ -3644,12 +3644,10 @@ public:
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             bool is_class = !struct_t->m_is_cstruct;
-            if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
+            if (init_value == nullptr) {
                 std::vector<llvm::Constant*> field_values;
-                if (compiler_options.new_classes) {
-                    create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(x.m_type_declaration));
-                }
-                llvm_utils->get_type_default_field_values(x.m_type_declaration, module.get(), field_values);
+                get_type_default_field_values(x.m_type_declaration, field_values,
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration));
                 llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get()));
                 if (is_class && !compiler_options.new_classes) {
@@ -4768,6 +4766,82 @@ public:
 
         newclass2typeinfo.insert(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
+    }
+
+    void get_type_default_field_values(ASR::symbol_t* struct_sym,
+            std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+        if (compiler_options.new_classes) {
+            create_new_vtable_for_struct_type(struct_sym);
+            if (struct_t->m_parent != nullptr) {
+                std::vector<llvm::Constant*> tmp_field_values;
+                get_type_default_field_values(struct_t->m_parent, tmp_field_values, orig_struct_sym);
+                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::symbol_type(
+                        struct_t->m_parent), struct_t->m_parent, module.get()));
+                field_values.push_back(llvm::ConstantStruct::get(llvm_struct_type, tmp_field_values));
+            } else {
+                // Add vptr
+                llvm::Constant* vtab = newclass2vtab.at(orig_struct_sym);
+                field_values.push_back(llvm::ConstantExpr::getBitCast(vtab, llvm_utils->vptr_type));
+            }
+        }
+        for (size_t i = 0; i < struct_t->n_members; i++) {
+            std::string member_name = struct_t->m_members[i];
+            ASR::symbol_t* sym = struct_t->m_symtab->get_symbol(member_name);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
+                continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_value != nullptr) {
+                llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, orig_struct_sym);
+                field_values.push_back(c);
+            } else {
+                llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(var->m_type, struct_sym, module.get());
+                field_values.push_back(llvm::Constant::getNullValue(member_type));
+            }
+        }
+    }
+
+    llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+            ASR::symbol_t* orig_struct_sym = nullptr) {
+        switch (expr->type) {
+            case ASR::exprType::IntegerConstant: {
+                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, ic->m_type, module.get());
+                return llvm::ConstantInt::get(llvm_type, ic->m_n, true);
+            }
+            case ASR::exprType::LogicalConstant: {
+                ASR::LogicalConstant_t* lc = ASR::down_cast<ASR::LogicalConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, lc->m_type, module.get());
+                return llvm::ConstantInt::get(llvm_type, lc->m_value ? 1 : 0, false);
+            }
+            case ASR::exprType::RealConstant: {
+                ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(expr);
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, rc->m_type, module.get());
+                if (llvm_type->isFloatTy()) {
+                    return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
+                } else if (llvm_type->isDoubleTy()) {
+                    return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                }
+                break;
+            }
+            case ASR::exprType::StructConstant: {
+                std::vector<llvm::Constant*> field_values;
+                ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+                if (orig_struct_sym == nullptr) {
+                    orig_struct_sym = struct_sym;
+                }
+                get_type_default_field_values(struct_sym, field_values, orig_struct_sym);
+                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                    llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get()));
+                return llvm::ConstantStruct::get(llvm_struct_type, field_values);
+            }
+            default:
+                throw LCompilersException( "Unsupported constant expression in struct default initializer.");
+        }
+        return nullptr;
     }
 
     void collect_variable_types_and_struct_types(
