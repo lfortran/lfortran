@@ -2083,7 +2083,7 @@ public:
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, true);
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, !compiler_options.new_classes);
                             selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             selector_m_type_declaration = sym;
                         } else {
@@ -2124,8 +2124,10 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_ClassStmt_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
-                    assoc_variable->m_type = selector_variable_type;
-                    assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                    if (!compiler_options.new_classes || x.m_assoc_name == nullptr) {
+                        assoc_variable->m_type = selector_variable_type;
+                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                    }
                     break;
                 }
                 case AST::type_stmtType::TypeStmtName: {
@@ -2177,8 +2179,10 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
-                    assoc_variable->m_type = selector_variable_type;
-                    assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                    if (!compiler_options.new_classes || x.m_assoc_name == nullptr) {
+                        assoc_variable->m_type = selector_variable_type;
+                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
+                    }
                     break;
                 }
                 case AST::type_stmtType::TypeStmtType: {
