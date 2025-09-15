@@ -353,6 +353,7 @@ namespace LCompilers {
             llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
             llvm::Module* module, bool realloc) {
+            LCOMPILERS_ASSERT_MSG(n_dims > 0, "Error : n_dims <= 0")
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
 #if LLVM_VERSION_MAJOR > 16
             llvm_utils->ptr_type_deprecated[arr] = arr_type;

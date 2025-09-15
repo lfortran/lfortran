@@ -1269,6 +1269,14 @@ public:
                         amount_to_allocate = nullptr;
                     }
                     llvm_utils->allocate_allocatable_string(str, x_arr, amount_to_allocate);
+                    if(m_source){
+                        visit_expr_load_wrapper(m_source, 0);
+                        llvm::Value* source_str = tmp;
+                        llvm_utils->lfortran_str_copy(
+                            x_arr, source_str,
+                            str  , ASRUtils::get_string_type(m_source),
+                            ASRUtils::is_allocatable(ASRUtils::expr_type(tmp_expr)));
+                    }
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
@@ -1421,6 +1429,9 @@ public:
                     }
                 }
             } else {
+                if(x.m_args[i].n_dims == 0 && m_source){
+                    continue; // This is handled by `array_op` (realloc + arrayitem-loop assignment)
+                }
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());

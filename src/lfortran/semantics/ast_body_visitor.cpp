@@ -1733,7 +1733,13 @@ public:
                                         stat, errmsg, source)));
             // Pushing assignment statements to source
             for (size_t i = 0; i < alloc_args_vec.n ; i++) {
-                if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                if (auto exp_type = ASRUtils::expr_type(alloc_args_vec[i].m_a);
+                    !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(exp_type)) && 
+                    !ASRUtils::is_array(exp_type) && 
+                    !ASRUtils::is_string_only(exp_type) 
+                    /*Above cases handled by the backend. 
+                    TODO: All should be in the backend*/)
+                {
                     ASR::stmt_t* assign_stmt = ASRUtils::STMT(
                         ASRUtils::make_Assignment_t_util(
                             al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs
