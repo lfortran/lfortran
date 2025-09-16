@@ -1,0 +1,18 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            cmplx_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    cmplx_02
+                    []
+                    []
+                )
+        })
+    []
+)
