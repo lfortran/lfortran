@@ -219,7 +219,7 @@ namespace LCompilers {
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
-            llvm::Type* string_descriptor;
+            llvm::Type* string_descriptor; /* <{ i8* --DATA-- , i64 --LENGTH-- }> */
             llvm::Type* vptr_type;
             llvm::FunctionType* struct_copy_functype;
 
