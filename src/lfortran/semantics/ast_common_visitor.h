@@ -2108,9 +2108,10 @@ public:
             != generic_procedures.end());
     }
 
-    void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
-        bool is_char_type, bool is_argument, char* var_name) {  
+	void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
+		AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
+		bool is_char_type, bool is_argument, char* var_name,
+		bool is_parameter=false) {  
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         _processing_dimensions = true;
@@ -2164,6 +2165,11 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
+		if (!dim.m_start && m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
+				&& !is_parameter) {
+			ASR::ttype_t* default_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4));
+			dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, default_int_type));
+		}
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
             }
@@ -3937,7 +3943,8 @@ public:
                             dims_attr_loc = ad->base.base.loc;
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name,
+                                storage_type == ASR::storage_typeType::Parameter);
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
@@ -4023,7 +4030,8 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                        s_intent == ASRUtils::intent_inout), s.m_name);
+                        s_intent == ASRUtils::intent_inout), s.m_name,
+                        storage_type == ASR::storage_typeType::Parameter);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
