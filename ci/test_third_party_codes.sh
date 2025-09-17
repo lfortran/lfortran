@@ -864,7 +864,7 @@ time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
   mkdir build && cd build
 
   cmake -DCMAKE_Fortran_COMPILER=$FC \
-        -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface" \
+        -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections" \
         -DBUILD_INDEX64_EXT_API=OFF \
         -DBUILD_COMPLEX=OFF \
         -DBUILD_COMPLEX16=OFF \
