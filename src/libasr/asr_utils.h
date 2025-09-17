@@ -4058,6 +4058,12 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
+            case (ASR::ttypeType::Dict) : {
+                ASR::Dict_t *a2 = ASR::down_cast<ASR::Dict_t>(a);
+                ASR::Dict_t *b2 = ASR::down_cast<ASR::Dict_t>(b);
+                return types_equal(a2->m_key_type, b2->m_key_type, nullptr, nullptr, check_for_dimensions)
+                    && types_equal(a2->m_value_type, b2->m_value_type, nullptr, nullptr, check_for_dimensions);
+            }
             case (ASR::ttypeType::StructType) : {
                 ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
@@ -4195,6 +4201,12 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
+            }
+            case (ASR::ttypeType::Dict) : {
+                ASR::Dict_t *a2 = ASR::down_cast<ASR::Dict_t>(a);
+                ASR::Dict_t *b2 = ASR::down_cast<ASR::Dict_t>(b);
+                return types_equal_with_substitution(a2->m_key_type, b2->m_key_type, subs, nullptr, nullptr)
+                    && types_equal_with_substitution(a2->m_value_type, b2->m_value_type, subs, nullptr, nullptr);
             }
             case (ASR::ttypeType::StructType) : {          
                 ASR::Struct_t* x_struct = nullptr;
