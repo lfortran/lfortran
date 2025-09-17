@@ -2239,6 +2239,9 @@ RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES
 
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME lapack_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections)
+RUN(NAME lapack_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections)
+RUN(NAME lapack_04 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
