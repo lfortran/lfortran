@@ -1,4 +1,5 @@
 #include <iostream>
+#include <llvm/IR/Value.h>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -1143,10 +1144,18 @@ public:
     llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
         std::string struct_name = (std::string)st->m_name;
         if (struct_name == "~unlimited_polymorphic_type") {
-            if (is_pointer) {
-                return llvm::Type::getVoidTy(context)->getPointerTo();
+            if (!compiler_options.new_classes) {
+                if (is_pointer) {
+                    return llvm::Type::getVoidTy(context)->getPointerTo();
+                } else {
+                    return llvm::Type::getVoidTy(context);
+                }
             } else {
-                return llvm::Type::getVoidTy(context);
+                if (is_pointer) {
+                    return llvm_utils->getClassType(st)->getPointerTo();
+                } else {
+                    return llvm_utils->getClassType(st);
+                }
             }
         } else {
             return llvm_utils->getStructType(st, module.get(), is_pointer);
@@ -4328,7 +4337,6 @@ public:
                 llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), v->m_type, module.get());
                 if ( compiler_options.new_classes ) {
-                    // ptr = llvm_utils->CreateLoad2(v_llvm_type->getPointerTo(), ptr);
                     ptr = builder->CreateBitCast(ptr, llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(struct_sym)), module.get(), true)->getPointerTo());
                     builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), ptr);
@@ -4683,7 +4691,8 @@ public:
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
     {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()) {
+        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()
+            || ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
             return ;
         }
         create_new_vtab_for_struct_dependencies(struct_sym);
@@ -7991,7 +8000,7 @@ public:
             builder->CreateCondBr(cond, thenBB, elseBB);
             builder->SetInsertPoint(thenBB);
             // TODO: change symtab for arrays too
-            bool change_symtab = ASRUtils::is_unlimited_polymorphic_type(x.m_selector)
+            bool change_symtab = !compiler_options.new_classes && ASRUtils::is_unlimited_polymorphic_type(x.m_selector)
                 && !ASRUtils::is_array(ASRUtils::expr_type(x.m_selector));
             // For class(*) selector variables cast to current select block type and update llvm_symtab temporarily
             // while executing blocks.

@@ -5645,6 +5645,12 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
                    == std::string("~unlimited_polymorphic_type"));
 }
 
+static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
+{
+    return (ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym))
+            == std::string("~unlimited_polymorphic_type"));
+}
+
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
         SymbolTable *scope) {
     int8_t IntegerConsecutiveFromZero = 1;
