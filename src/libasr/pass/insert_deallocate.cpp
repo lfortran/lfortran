@@ -173,10 +173,125 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
 };
 
+// Collect temporary variables which are inside Assignment targets
+class CollectTempVarsVisitor : public ASR::BaseWalkVisitor<CollectTempVarsVisitor>
+{
+    Allocator &al;
+    Vec<ASR::expr_t*>& res;
+    public:
+        CollectTempVarsVisitor(Allocator& al_, Vec<ASR::expr_t*>& res_) : al(al_), res{res_} {}
+
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+            if (target_variable &&
+                ASRUtils::is_allocatable_or_pointer(target_variable->m_type) &&
+                ASRUtils::symbol_StorageType((ASR::symbol_t *)target_variable) == ASR::storage_typeType::Default) {
+                if (std::string(target_variable->m_name).rfind("__libasr_created") != std::string::npos) {
+                    res.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.m_target->base.loc, (ASR::symbol_t *)target_variable)));
+                }
+            }
+        }
+
+        // Don't nest into other loops
+        void visit_WhileLoop(const ASR::WhileLoop_t &/*x*/){
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &/*x*/){
+        }
+};
+
+// Insert implicit deallocate before Cycle, Return, or Exit in a loop
+class LoopDeallocateInserter : public ASR::CallReplacerOnExpressionsVisitor<LoopDeallocateInserter>
+{
+    Allocator &al;
+    ASR::stmt_t* node;
+    public:
+        LoopDeallocateInserter(Allocator& al_, ASR::stmt_t* node_) : al(al_), node(node_) {}
+
+        void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+            Vec<ASR::stmt_t*> new_body;
+            new_body.reserve(al, 1);
+            for (size_t i = 0; i < n_body; i++){
+                if (ASR::is_a<ASR::Cycle_t>(*m_body[i]) ||
+                    ASR::is_a<ASR::Return_t>(*m_body[i]) ||
+                    ASR::is_a<ASR::Exit_t>(*m_body[i])) {
+                    new_body.push_back(al, node);
+                }
+                new_body.push_back(al, m_body[i]);
+            }
+            m_body = new_body.p;
+            n_body = new_body.size();
+        }
+
+        // Don't nest into other loops
+        void visit_WhileLoop(const ASR::WhileLoop_t &/*x*/){
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &/*x*/){
+        }
+};
+
+// Collects temporary variables in assignment targets inside loops and deallocates them when going out of the loop body
+class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>
+{
+    Allocator &al;
+    public:
+        LoopTempVarDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+        template<typename T>
+        void collect_temp_vars_and_insert_deallocate_in_loop(T& xx) {
+            Vec<ASR::expr_t*> v;
+            v.reserve(al, 1);
+            CollectTempVarsVisitor c(al, v);
+            for (size_t i = 0; i < xx.n_body; i++) {
+                c.visit_stmt(*xx.m_body[i]);
+            }
+            if (v.size() > 0) {
+                ASR::stmt_t* implicit_deallocation_node = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                    al, xx.base.base.loc, v.p, v.size()));
+
+                // Insert ImplicitDeallocate after Cycle, Return, or Exit
+                LoopDeallocateInserter I(al, implicit_deallocation_node);
+                for (size_t i = 0; i < xx.n_body; i++) {
+                    I.visit_stmt(*xx.m_body[i]);
+                }
+
+                // Insert ImplicitDeallocate at the end of the loop body
+                Vec<ASR::stmt_t*> new_body;
+                new_body.reserve(al, 1);
+                for (size_t i = 0; i < xx.n_body; i++) {
+                    new_body.push_back(al, xx.m_body[i]);
+                }
+                new_body.push_back(al, implicit_deallocation_node);
+
+                xx.m_body = new_body.p;
+                xx.n_body = new_body.n;
+            }
+        }
+
+        void visit_WhileLoop(const ASR::WhileLoop_t &x){
+            ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
+            collect_temp_vars_and_insert_deallocate_in_loop(xx);
+
+            ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>::visit_WhileLoop(x);
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &x){
+            ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
+            collect_temp_vars_and_insert_deallocate_in_loop(xx);
+
+            ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>::visit_DoLoop(x);
+        }
+};
+
+
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
     InsertDeallocate v(al);
     v.visit_TranslationUnit(unit);
+
+    LoopTempVarDeallocateVisitor m(al);
+    m.visit_TranslationUnit(unit);
 }
 
 

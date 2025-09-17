@@ -265,7 +265,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr, false)));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr, false, false)));
         }
     }
 
@@ -347,7 +347,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr, false)));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, y_i, x_i, nullptr, false, false)));
         }
     }
 
@@ -371,6 +371,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     bool realloc_lhs;
     bool bounds_checking;
     bool remove_original_stmt;
+    inline static std::set<const ASR::Assignment_t*> debug_inserted;
 
     public:
 
@@ -453,7 +454,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::expr_t* plus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, index_var,
                 ASR::binopType::Add, step, ASRUtils::expr_type(index_var), nullptr));
             ASR::stmt_t* increment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, index_var, plus_one, nullptr, false));
+                al, loc, index_var, plus_one, nullptr, false, false));
             do_loop_body.push_back(al, increment);
         }
     }
@@ -472,7 +473,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
                 loop_depth + 1, "lbound", al);
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, index_var, lbound, nullptr, false));
+                al, loc, index_var, lbound, nullptr, false, false));
             dest_vec.push_back(al, set_index_var);
         }
     }
@@ -505,7 +506,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     index2var[index_var].first, bound_dim, "lbound", al);
             }
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, index_var, lbound, nullptr, false));
+                al, loc, index_var, lbound, nullptr, false, false));
             dest_vec.push_back(al, set_index_var);
         }
     }
@@ -919,7 +920,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     continue;
                 }
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs));
+                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs, false));
                 ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
                 Vec<ASR::expr_t**> fix_type_args;
                 fix_type_args.reserve(al, 2);
@@ -1039,7 +1040,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 d_target, nullptr, type32, nullptr));
             ASR::expr_t* d_value_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
                 d_value, nullptr, type32, nullptr));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size)));
+            if (debug_inserted.find(&x) == debug_inserted.end()) {
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size, x.m_move_allocation)));
+                if (!x.m_move_allocation) {
+                    debug_inserted.insert(&x);
+                }
+            }
+        }
+
+        // Don't generate a loop for a move assignment
+        // The assignment should be handled in the backend
+        if (x.m_move_allocation) {
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
+            pass_result.push_back(al, stmt);
+            debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
+            return;
         }
 
         Vec<ASR::expr_t**> fix_type_args;

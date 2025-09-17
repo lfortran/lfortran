@@ -370,6 +370,7 @@
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -398,11 +399,13 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -418,11 +421,13 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -434,6 +439,7 @@
                             (IntegerConstant 4 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -449,6 +455,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i)
@@ -463,6 +470,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -476,6 +484,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -492,6 +501,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 o)
@@ -506,6 +516,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -522,6 +533,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 q)
@@ -536,6 +548,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 r)
@@ -549,6 +562,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )]
                     (Var 2 a)

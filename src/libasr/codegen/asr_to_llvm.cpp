@@ -7169,7 +7169,7 @@ public:
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_value_descriptor_based_array && is_target_fixed_sized_array ) {
-                value = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), arr_descr->get_pointer_to_data(value));
+                value = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), arr_descr->get_pointer_to_data(x.m_value, value_type, value, module.get()));
                 llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
                 target = llvm_utils->create_gep2(target_llvm_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
@@ -7315,12 +7315,19 @@ public:
                 ptr_type_deprecated[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
+                ptr_type_deprecated[value] = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                    ASRUtils::type_get_past_allocatable_pointer(value_type),
+                    module.get());
 #endif
                 llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
-                arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
+                if (x.m_move_allocation) {
+                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
+                } else {
+                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), target_type, false);
+                }
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
             ASR::DictItem_t* dict_item_t = ASR::down_cast<ASR::DictItem_t>(x.m_target);
@@ -7380,12 +7387,51 @@ public:
             // TODO: Try to reserve the target Var, ArraySize can get replaced by IntegerBinOp
             ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(target_expr);
             if (target_variable) {
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                    "Runtime Error: Size mismatch in assignment to '%s'\n\n"
-                                                    "LHS size is %d and RHS size is %d\n",
-                                                    builder->CreateGlobalStringPtr(target_variable->m_name),
-                                                    target_size,
-                                                    value_size);
+                ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
+                if (ASRUtils::is_array(target_variable->m_type) &&
+                    ASRUtils::is_allocatable(target_variable->m_type) &&
+                    ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
+                    visit_expr_load_wrapper(v, 1);
+                    llvm::Value* target_desc = tmp;
+                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(v, ASRUtils::type_get_past_allocatable_pointer(target_variable->m_type), module.get(), ASRUtils::expr_abi(v));
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type_deprecated[target_desc] = type;
+#endif
+                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
+                    // With move don't throw error when target is unallocated
+                    if (!x.m_move_allocation) {
+                        llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
+                        llvm_utils->generate_runtime_error(is_not_allocated,
+                            "Runtime Error: Array '%s' is not allocated.\n",
+                                builder->CreateGlobalStringPtr(target_variable->m_name));
+                    }
+
+                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock *thenBB = nullptr;
+                    llvm::BasicBlock *mergeBB = nullptr;
+                    thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                    mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                    builder->CreateCondBr(is_allocated, thenBB, mergeBB);
+                    builder->SetInsertPoint(thenBB); {
+                        llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                            "Runtime Error: Size mismatch in assignment to '%s'\n\n"
+                                                            "LHS size is %d and RHS size is %d\n",
+                                                            builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                            target_size,
+                                                            value_size);
+                    }
+                    builder->CreateBr(mergeBB);
+
+                    start_new_block(mergeBB);
+                } else {
+                    llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                        "Runtime Error: Size mismatch in assignment to '%s'\n\n"
+                                                        "LHS size is %d and RHS size is %d\n",
+                                                        builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                        target_size,
+                                                        value_size);
+                }
             } else {
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                     "Runtime Error: Size mismatch in assignment\n\n"

@@ -167,6 +167,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (If
                         ()
@@ -212,11 +213,13 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ()
                             .false.
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 info)
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ()
+                            .false.
                             .false.
                         )]
                     )
