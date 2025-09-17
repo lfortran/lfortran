@@ -7022,7 +7022,6 @@ public:
 
         llvm::Value *target, *value;
         uint32_t h;
-        bool lhs_is_string_arrayref = false;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::StringItem ||
             x.m_target->type == ASR::exprType::ArraySection ||
@@ -7034,46 +7033,7 @@ public:
             this->visit_expr(*x.m_target);
             is_assignment_target = false;
             target = tmp;
-            if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
-                ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
-                if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
-                    ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
-                    int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
-                    if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
-                        if (n_dims == 0) {
-                            llvm::Type* string_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
-                            target = llvm_utils->CreateLoad2(string_type, target);
-                            lhs_is_string_arrayref = true;
-                        }
-                    }
-                }
-            } else if( ASR::is_a<ASR::StringItem_t>(*x.m_target) ) {
-                ASR::StringItem_t *asr_target0 = ASR::down_cast<ASR::StringItem_t>(x.m_target);
-                if (is_a<ASR::Var_t>(*asr_target0->m_arg)) {
-                    ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_arg);
-                    if ( ASRUtils::is_character(*asr_target->m_type) ) {
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
-                        if (n_dims == 0) {
-                            lhs_is_string_arrayref = true;
-                        }
-                    }
-                } else if(is_a<ASR::StringPhysicalCast_t>(*asr_target0->m_arg)){ // implies that target is character + n_dim = 0.
-                    lhs_is_string_arrayref = true;
-                }
-            } else if (is_a<ASR::ArraySection_t>(*x.m_target)) {
-                ASR::ArraySection_t *asr_target0 = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-                if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
-                    ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
-                    if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
-                        if (n_dims == 0) {
-                            llvm::Type* string_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
-                            target = llvm_utils->CreateLoad2(string_type, target);
-                            lhs_is_string_arrayref = true;
-                        }
-                    }
-                }
-            } else if( ASR::is_a<ASR::ListItem_t>(*x.m_target) ) {
+            if( ASR::is_a<ASR::ListItem_t>(*x.m_target) ) {
                 ASR::ListItem_t* asr_target0 = ASR::down_cast<ASR::ListItem_t>(x.m_target);
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -7174,18 +7134,11 @@ public:
             }
         }
         if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value))) {
-            if (lhs_is_string_arrayref) { // Hackish (remove later)
-                value = llvm_utils->get_string_data(
-                    ASRUtils::get_string_type(asr_value_type), value);
-                value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
-                builder->CreateStore(value, target);
-            } else {
-                llvm_utils->lfortran_str_copy(target, value,
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
-                    ASRUtils::is_allocatable(asr_target_type));
-                tmp = nullptr;
-            }
+            llvm_utils->lfortran_str_copy(target, value,
+                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
+                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
+                ASRUtils::is_allocatable(asr_target_type));
+            tmp = nullptr;
             return;
         }
         if( ASRUtils::is_array(target_type) &&
@@ -8647,34 +8600,37 @@ public:
     }
 
     void visit_StringItem(const ASR::StringItem_t& x) {
-        if (x.m_value) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
-        }
+        if (x.m_value) { return this->visit_expr_wrapper(x.m_value, true); }
+
+        /*
+            Create A StringView Over The Specified StringItem From Original String
+        */
+
+        /* Visit String + Visit Index */
         llvm::Value *idx {};
         llvm::Value *str {};
-        { // Set proper load + Visit + Revert load
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1; this->visit_expr_wrapper(x.m_idx, true);
-            idx = tmp;
-            ptr_loads = 0; this->visit_expr_wrapper(x.m_arg, true);
-            str = tmp;
-            ptr_loads = ptr_loads_copy;
+        this->visit_expr_load_wrapper(x.m_idx, LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1, true);
+        idx = tmp;
+        this->visit_expr_load_wrapper(x.m_arg, 0, true);
+        str = tmp;
+
+        /* Get StringItem */
+        llvm::Value *str_item {};
+        {
+            llvm::Value* str_data /*  i8*  */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            llvm::Value* idx_INT64 = llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context));
+            llvm::Value* idx /* 0-based */ = builder->CreateSub(
+                                                idx_INT64,
+                                                llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, idx);
         }
-        if( is_assignment_target ) { // Hackish
-            idx = builder->CreateSub(builder->CreateSExtOrTrunc(idx, llvm::Type::getInt32Ty(context)),
-                llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            std::vector<llvm::Value*> idx_vec = {idx};
-            llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
-            tmp = llvm_utils->CreateGEP2(llvm::Type::getInt8Ty(context), str_data, idx_vec);
-        } else {
-            // TODO : Create a string (depending on the physicalType) of length 1 using LLVM, instead of calling runtime C function
-            llvm::Value* str_data{}, *str_len{};
-            std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_arg), str);
-            tmp = lfortran_str_item(str_data, str_len, idx);
-            tmp = llvm_utils->create_string_descriptor(tmp,
-                llvm::ConstantInt::get(context, llvm::APInt(64, 1)), "stringItem_desc");
-        }
+
+        /* Create StringView */
+        tmp = llvm_utils->create_stringView(
+            ASRUtils::get_string_type(x.m_type),
+            str_item,
+            llvm::ConstantInt::get(context, llvm::APInt(64, 1)),
+            "StringItem");
     }
 
     void stringSection_helper_python(const ASR::StringSection_t &x){
