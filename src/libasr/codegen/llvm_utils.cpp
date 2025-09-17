@@ -333,15 +333,26 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
-        std::string der_type_name = std::string(der_type->m_name) + std::string("_polymorphic");
+        std::string der_type_name = std::string(der_type->m_name);
+        if (!compiler_options.new_classes) {
+            der_type_name += "_polymorphic";
+        }
         llvm::StructType* der_type_llvm = nullptr;
         if( name2dertype.find(der_type_name) != name2dertype.end() ) {
             der_type_llvm = name2dertype[der_type_name];
         } else {
             if ( compiler_options.new_classes ) {
-                // we already have `%<std::string(der_type->m_name)> = type <{ i32 }>` declared
-                // globally, just fetch it
-                llvm::Type* struct_type = getStructType(der_type, module, is_pointer);
+                llvm::Type* struct_type = nullptr;
+                if (der_type_name == "~unlimited_polymorphic_type" 
+                    && name2dertype.find(der_type_name) == name2dertype.end()) {
+                    struct_type = llvm::StructType::create(context, { vptr_type, i8_ptr }, der_type_name, true);
+                } else {
+                    // we already have `%<std::string(der_type->m_name)> = type <{ i32 }>` declared
+                    // globally, just fetch it
+                    struct_type = getStructType(der_type, module, is_pointer);
+                }
+                name2dertype.insert(std::make_pair(
+                    der_type_name, llvm::dyn_cast<llvm::StructType>(struct_type)));
                 LCOMPILERS_ASSERT(struct_type != nullptr);
                 return struct_type;
             } else {
