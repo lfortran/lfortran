@@ -321,7 +321,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             } else {
                 init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                     al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                    x->m_args[i].m_value, nullptr, false
+                    x->m_args[i].m_value, nullptr, false, false
                 ));
             }
             current_body->push_back(al, init_stmt);
@@ -334,7 +334,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 != function_locals2init_expr.end() ) {
                 ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                     al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym.first)),
-                    function_locals2init_expr[sym.first], nullptr, false
+                    function_locals2init_expr[sym.first], nullptr, false, false
                 ));
                 current_body->push_back(al, init_stmt);
             }

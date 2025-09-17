@@ -991,7 +991,7 @@ class ASRBuilder {
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs), lhs, rhs),
             type_to_str_python_expr(expr_type(lhs), lhs) + ", " + type_to_str_python_expr(expr_type(rhs), rhs));
-        return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false));
+        return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false, false));
     }
 
     ASR::stmt_t* CPtrToPointer(ASR::expr_t* cptr, ASR::expr_t* ptr, ASR::expr_t* shape = nullptr, ASR::expr_t* lower_bounds = nullptr) {
