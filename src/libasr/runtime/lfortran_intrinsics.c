@@ -1508,7 +1508,7 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
     const char* default_spacing = " ";
     ASSERT(default_spacing_len == strlen(default_spacing));
 
-    *result = realloc(*result, result_capacity + 1);
+    *result = realloc(*result, result_capacity + 1 /*Null Character*/ );
     if (*result == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         exit(1);
@@ -1517,11 +1517,7 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
         (*result)[0] = ' ';
         (*result)[1] = '\0';
         result_size = 1;
-    } else {
-        (*result)[0] = '\0';
-        result_size = 0;
     }
-
     bool prev_was_char = false;
 
     while(move_to_next_element(s_info, false)){
@@ -1536,7 +1532,7 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
         }
 
         int64_t old_capacity = result_capacity;
-        while(result_capacity <= size_to_allocate + result_size){
+        while(result_capacity <= size_to_allocate + result_size){ // Check if string extension is needed.
             if(result_size + size_to_allocate > result_capacity*2){
                 result_capacity = result_size + size_to_allocate;
             } else {
