@@ -289,6 +289,9 @@ program continue_compilation_1
 
     print *, count(1)
     print *, count([2])
+    
+    ! index_missing_required_arg
+    print *, index(substring = "de", back = .true.)
 
     a_real = [logical::]
     print *,size(a_real)
