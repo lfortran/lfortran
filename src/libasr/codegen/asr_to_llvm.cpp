@@ -13174,7 +13174,20 @@ public:
 
                     // For all arguments (not just ArrayItem), enforce type checking
                     // unless we already skipped it above for sequence association
-                    if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                    bool skip_type_check = false;
+                    if (ASRUtils::is_array_of_strings(expected_arg_type) &&
+                        ASRUtils::is_character(*ASRUtils::expr_type(passed_arg))) {
+                        ASR::String_t *expected_str = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(expected_arg_type));
+                        ASR::String_t *passed_str = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(ASRUtils::expr_type(passed_arg)));
+                        if (expected_str->m_physical_type == passed_str->m_physical_type) {
+                            skip_type_check = true;
+                        }
+                    }
+
+                    if (!skip_type_check &&
+                        !ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
                         throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
                                 + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                     }
