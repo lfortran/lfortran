@@ -7169,7 +7169,7 @@ public:
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_value_descriptor_based_array && is_target_fixed_sized_array ) {
-                value = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), arr_descr->get_pointer_to_data(value));
+                value = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), arr_descr->get_pointer_to_data(x.m_value, value_type, value, module.get()));
                 llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
                 target = llvm_utils->create_gep2(target_llvm_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
