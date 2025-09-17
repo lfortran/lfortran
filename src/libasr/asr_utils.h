@@ -5486,6 +5486,15 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             return false;
         }
 
+        if( !ASR::is_a<ASR::Array_t>(*argi->m_type) ) {
+            continue;
+        }
+
+        ASR::Array_t* arg_array_type = ASR::down_cast<ASR::Array_t>(argi->m_type);
+        if( arg_array_type->m_physical_type != ASR::array_physical_typeType::DescriptorArray ) {
+            continue;
+        }
+
         // The following if check determines whether the i-th argument
         // can be called by just passing the data pointer and
         // dimensional information spearately via extra arguments.
@@ -6566,6 +6575,16 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
+    auto allow_legacy_array_equivalence = [](ASR::ttype_t* lhs, ASR::ttype_t* rhs) -> bool {
+        if (!ASRUtils::is_array(lhs) || !ASRUtils::is_array(rhs)) {
+            return false;
+        }
+        ASR::ttype_t *lhs_elem = ASRUtils::type_get_past_array(lhs);
+        ASR::ttype_t *rhs_elem = ASRUtils::type_get_past_array(rhs);
+        return (ASR::is_a<ASR::Integer_t>(*lhs_elem) && ASR::is_a<ASR::Real_t>(*rhs_elem)) ||
+               (ASR::is_a<ASR::Real_t>(*lhs_elem) && ASR::is_a<ASR::Integer_t>(*rhs_elem));
+    };
+
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ) {
             continue;
@@ -6702,6 +6721,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     }
                 }
             } else {
+                if (allow_legacy_array_equivalence(arg_type, orig_arg_type)) {
+                    continue;
+                }
                 // TODO: Make this a regular error. The current asr_utils.h is
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.

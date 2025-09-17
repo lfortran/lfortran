@@ -2891,6 +2891,7 @@ public:
                         this->visit_expr_wrapper(m_dims[idim].m_start, true);
                         dim_start = tmp;
                     } else {
+                        LCOMPILERS_ASSERT(compiler_options.legacy_array_sections);
                         dim_start = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
                     }
                     llvm_diminfo.push_back(al, dim_start);
@@ -6223,13 +6224,15 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
-#if LLVM_VERSION_MAJOR > 16
-        ptr_type_deprecated[value_desc] = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
-            ASRUtils::type_get_past_allocatable_pointer(value_array_type),
-            module.get());
-#endif
         llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
+#if LLVM_VERSION_MAJOR > 16
+        if (compiler_options.legacy_array_sections) {
+            ptr_type_deprecated[value_desc] = arr_descr->get_array_type(array_section->m_v,
+                ASRUtils::type_get_past_allocatable_pointer(value_array_type),
+                value_el_type, false);
+        }
+#endif
         ptr_loads = 0;
         visit_expr(*x.m_target);
         llvm::Value* target_desc = tmp;
@@ -7586,6 +7589,7 @@ public:
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
+            compiler_options.legacy_array_sections &&
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -7606,6 +7610,7 @@ public:
                 tmp = llvm_utils->CreateGEP2(m_arg_llvm_type, tmp, 0);
             }
         } else if(
+            compiler_options.legacy_array_sections &&
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -13765,6 +13770,60 @@ public:
                     res = arr_descr->get_upper_bound(dim_struct);
                 }
                 tmp = res;
+                break;
+            }
+            case ASR::array_physical_typeType::UnboundedPointerArray: {
+                LCOMPILERS_ASSERT(compiler_options.legacy_array_sections);
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x.m_type)), module.get());
+                llvm::AllocaInst *target = llvm_utils->CreateAlloca(
+                    target_type, nullptr, "array_bound");
+                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+                for( int i = 0; i < n_dims; i++ ) {
+                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
+                    llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                    llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+
+                    llvm::Value* cond = builder->CreateICmpEQ(dim_val,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, i + 1)));
+                    builder->CreateCondBr(cond, thenBB, elseBB);
+                    builder->SetInsertPoint(thenBB);
+                    {
+                        llvm::Value* lbound = nullptr;
+                        if( m_dims[i].m_start ) {
+                            this->visit_expr_wrapper(m_dims[i].m_start, true);
+                            lbound = builder->CreateSExtOrTrunc(tmp, target_type);
+                        } else {
+                            lbound = builder->CreateSExtOrTrunc(
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 1)),
+                                target_type);
+                        }
+                        if( x.m_bound == ASR::arrayboundType::LBound ) {
+                            builder->CreateStore(lbound, target);
+                        } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                            if( m_dims[i].m_length ) {
+                                load_array_size_deep_copy(m_dims[i].m_length);
+                                llvm::Value* length = builder->CreateSExtOrTrunc(tmp, target_type);
+                                builder->CreateStore(
+                                    builder->CreateSub(builder->CreateAdd(length, lbound),
+                                          builder->CreateSExtOrTrunc(llvm::ConstantInt::get(context,
+                                              llvm::APInt(32, 1)), target_type)),
+                                    target);
+                            } else {
+                                builder->CreateStore(lbound, target);
+                            }
+                        }
+                    }
+                    builder->CreateBr(mergeBB);
+
+                    start_new_block(elseBB);
+                }
+                start_new_block(mergeBB);
+                tmp = llvm_utils->CreateLoad2(target_type, target);
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:

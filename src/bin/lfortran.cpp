@@ -2357,6 +2357,15 @@ int main_app(int argc, char *argv[]) {
         compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
+    if (compiler_options.legacy_array_sections) {
+        if (opts.skip_pass.find("pass_array_by_data") == std::string::npos) {
+            if (!opts.skip_pass.empty()) {
+                opts.skip_pass += ",";
+            }
+            opts.skip_pass += "pass_array_by_data";
+        }
+    }
+
     if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;
         std::cout << "LFortran version: " << version << std::endl;

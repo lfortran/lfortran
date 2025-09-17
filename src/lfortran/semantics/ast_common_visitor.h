@@ -2167,8 +2167,9 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
-		if (!dim.m_start && m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
-				&& !is_parameter) {
+		if (compiler_options.legacy_array_sections && !dim.m_start &&
+			m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar &&
+			!is_parameter) {
 			ASR::ttype_t* default_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4));
 			dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, default_int_type));
 		}
@@ -6727,6 +6728,17 @@ public:
                                 "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
                             throw SemanticAbort();
+                        }
+                    }
+                }
+
+                if (compiler_options.legacy_array_sections) {
+                    if (ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type)) {
+                        ASR::ttype_t *arg_elem_type = ASRUtils::type_get_past_array(arg_type);
+                        ASR::ttype_t *orig_elem_type = ASRUtils::type_get_past_array(orig_arg_type);
+                        if ((ASR::is_a<ASR::Integer_t>(*arg_elem_type) && ASR::is_a<ASR::Real_t>(*orig_elem_type)) ||
+                            (ASR::is_a<ASR::Real_t>(*arg_elem_type) && ASR::is_a<ASR::Integer_t>(*orig_elem_type))) {
+                            continue;
                         }
                     }
                 }
