@@ -40,20 +40,24 @@ define %string_descriptor @_lcompilers_stringconcat(%string_descriptor* %s1, %st
   %13 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
   %14 = load i64, i64* %13, align 4
   %15 = trunc i64 %14 to i32
-  %16 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %17 = load i8*, i8** %16, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %19 = load i64, i64* %18, align 4
-  %20 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 0
-  %21 = load i8*, i8** %20, align 8
-  %22 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
-  %23 = load i64, i64* %22, align 4
-  %24 = call i8* @_lfortran_str_slice_assign(i8* %17, i64 %19, i8* %21, i64 %23, i32 1, i32 %15, i32 1, i1 true, i1 true)
-  %25 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
+  %16 = sext i32 %15 to i64
+  %17 = sub i64 %16, 1
+  %18 = add i64 %17, 1
+  %19 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  %StrSliceGEP = getelementptr i8, i8* %20, i64 0
+  %StrSlice_StrView = alloca %string_descriptor, align 8
+  %21 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %21, align 8
+  %22 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 %18, i64* %22, align 4
+  %23 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %24 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %25 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 0
   %26 = load i8*, i8** %25, align 8
-  %27 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
+  %27 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
   %28 = load i64, i64* %27, align 4
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %26, i8* align 8 %24, i64 %28, i1 false)
+  call void @_lfortran_strcpy(i8** %23, i64* %24, i8 0, i8 0, i8* %26, i64 %28)
   %29 = getelementptr %string_descriptor, %string_descriptor* %s1, i32 0, i32 1
   %30 = load i64, i64* %29, align 4
   %31 = trunc i64 %30 to i32
@@ -61,33 +65,37 @@ define %string_descriptor @_lcompilers_stringconcat(%string_descriptor* %s1, %st
   %33 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
   %34 = load i64, i64* %33, align 4
   %35 = trunc i64 %34 to i32
-  %36 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %37 = load i8*, i8** %36, align 8
-  %38 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %39 = load i64, i64* %38, align 4
-  %40 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 0
+  %36 = sext i32 %32 to i64
+  %37 = sext i32 %35 to i64
+  %38 = sub i64 %37, %36
+  %39 = add i64 %38, 1
+  %40 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
   %41 = load i8*, i8** %40, align 8
-  %42 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 1
-  %43 = load i64, i64* %42, align 4
-  %44 = call i8* @_lfortran_str_slice_assign(i8* %37, i64 %39, i8* %41, i64 %43, i32 %32, i32 %35, i32 1, i1 true, i1 true)
-  %45 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
-  %46 = load i8*, i8** %45, align 8
-  %47 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
-  %48 = load i64, i64* %47, align 4
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %46, i8* align 8 %44, i64 %48, i1 false)
+  %42 = sext i32 %32 to i64
+  %43 = sub i64 %42, 1
+  %StrSliceGEP1 = getelementptr i8, i8* %41, i64 %43
+  %StrSlice_StrView2 = alloca %string_descriptor, align 8
+  %44 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 0
+  store i8* %StrSliceGEP1, i8** %44, align 8
+  %45 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 1
+  store i64 %39, i64* %45, align 4
+  %46 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 0
+  %47 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 1
+  %48 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 0
+  %49 = load i8*, i8** %48, align 8
+  %50 = getelementptr %string_descriptor, %string_descriptor* %s2, i32 0, i32 1
+  %51 = load i64, i64* %50, align 4
+  call void @_lfortran_strcpy(i8** %46, i64* %47, i8 0, i8 0, i8* %49, i64 %51)
   br label %return
 
 return:                                           ; preds = %.entry
-  %49 = load %string_descriptor, %string_descriptor* %concat_result, align 1
-  ret %string_descriptor %49
+  %52 = load %string_descriptor, %string_descriptor* %concat_result, align 1
+  ret %string_descriptor %52
 }
 
 declare i8* @_lfortran_string_malloc(i64)
 
-declare i8* @_lfortran_str_slice_assign(i8*, i64, i8*, i64, i32, i32, i32, i1, i1)
-
-; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #0
+declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -179,10 +187,6 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
-
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
-
-attributes #0 = { argmemonly nounwind willreturn }
