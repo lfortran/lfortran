@@ -3200,7 +3200,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_45.f90"
 llvm = true
-options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/automatic_allocation_02.f90"
