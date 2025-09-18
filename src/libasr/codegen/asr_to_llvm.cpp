@@ -7447,7 +7447,6 @@ public:
     }
 
     // Checks if target_expr is allocated and if not then allocate
-    // Used for compiler_options.po.realloc_lhs
     void check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr, ASR::ttype_t *value_struct_type = nullptr) {
         ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
