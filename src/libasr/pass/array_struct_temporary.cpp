@@ -2911,9 +2911,9 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     init_expr_with_target.visit_TranslationUnit(unit);
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
-    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs);
+    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays);
     b.visit_TranslationUnit(unit);
-    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
+    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs_arrays);
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
