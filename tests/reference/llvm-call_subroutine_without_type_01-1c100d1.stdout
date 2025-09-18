@@ -120,39 +120,60 @@ define i32 @main(i32 %0, i8** %1) {
   %11 = getelementptr %mytype, %mytype* %10, i32 0, i32 0
   %12 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
   %13 = load %mytype*, %mytype** %12, align 8
-  %14 = getelementptr %mytype, %mytype* %13, i32 0, i32 0
-  store float 1.000000e+00, float* %14, align 4
-  %15 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 0
-  %16 = load i64, i64* %15, align 4
-  %17 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
-  %18 = load %mytype*, %mytype** %17, align 8
-  %19 = bitcast %__vtab_mytype* %2 to <{ i64 }>*
-  %20 = getelementptr <{ i64 }>, <{ i64 }>* %19, i32 0, i32 0
-  %21 = load i64, i64* %20, align 4
-  %22 = icmp eq i64 %16, %21
-  br i1 %22, label %then, label %else
+  %14 = icmp eq %mytype* %13, null
+  br i1 %14, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %23 = alloca %mytype_polymorphic, align 8
-  %24 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %23, i32 0, i32 0
-  store i64 %16, i64* %24, align 4
-  %25 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %23, i32 0, i32 1
-  store %mytype* %18, %mytype** %25, align 8
-  %26 = load i64, i64* %24, align 4
-  %27 = load %mytype*, %mytype** %25, align 8
-  store i64 %26, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
-  store %mytype* %27, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  call void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polymorphic* %23)
+  %15 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %15, i8 0, i32 4, i1 false)
+  %16 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 0
+  store i64 0, i64* %16, align 4
+  %17 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
+  %18 = bitcast i8* %15 to %mytype*
+  store %mytype* %18, %mytype** %17, align 8
+  %19 = load %mytype*, %mytype** %17, align 8
+  %20 = getelementptr %mytype, %mytype* %19, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  %21 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
+  %22 = load %mytype*, %mytype** %21, align 8
+  %23 = getelementptr %mytype, %mytype* %22, i32 0, i32 0
+  store float 1.000000e+00, float* %23, align 4
+  %24 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 0
+  %25 = load i64, i64* %24, align 4
+  %26 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
+  %27 = load %mytype*, %mytype** %26, align 8
+  %28 = bitcast %__vtab_mytype* %2 to <{ i64 }>*
+  %29 = getelementptr <{ i64 }>, <{ i64 }>* %28, i32 0, i32 0
+  %30 = load i64, i64* %29, align 4
+  %31 = icmp eq i64 %25, %30
+  br i1 %31, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  %32 = alloca %mytype_polymorphic, align 8
+  %33 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %32, i32 0, i32 0
+  store i64 %25, i64* %33, align 4
+  %34 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %32, i32 0, i32 1
+  store %mytype* %27, %mytype** %34, align 8
+  %35 = load i64, i64* %33, align 4
+  %36 = load %mytype*, %mytype** %34, align 8
+  store i64 %35, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
+  store %mytype* %36, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  call void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polymorphic* %32)
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %ifcont3
   ret i32 0
 }
 
