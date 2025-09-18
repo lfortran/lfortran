@@ -13245,6 +13245,15 @@ public:
 
                     if (!skip_type_check &&
                         !ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                        if (compiler_options.implicit_interface) {
+                            // Support legacy Fortran sequence association patterns where ranks or
+                            // element types differ. GFortran accepts these when implicit
+                            // interfaces are used (or with -fallow-argument-mismatch), and many
+                            // third-party codes rely on this behaviour. When the implicit
+                            // interface flag is enabled we therefore skip the strict type check
+                            // to match that behaviour.
+                            continue;
+                        }
                         throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
                                 + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                     }
