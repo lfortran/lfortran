@@ -298,6 +298,10 @@ namespace LCompilers::CommandLineInterface {
             );
         }
 
+        if (compiler_options.legacy_array_sections) {
+            compiler_options.implicit_interface = true;
+        }
+
         if (disable_bounds_checking || compiler_options.po.fast) {
             compiler_options.po.bounds_checking = false;
         }
