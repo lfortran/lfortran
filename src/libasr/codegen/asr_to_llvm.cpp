@@ -6422,9 +6422,24 @@ public:
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         int dims = ASRUtils::extract_n_dims_from_ttype(array_type);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
+        bool base_is_unbounded_ptr = false;
+        if( ASR::is_a<ASR::Var_t>(*array_section->m_v) ) {
+            ASR::symbol_t* base_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(array_section->m_v)->m_v);
+            if( base_sym && ASR::is_a<ASR::Variable_t>(*base_sym) ) {
+                ASR::ttype_t* base_type = ASR::down_cast<ASR::Variable_t>(base_sym)->m_type;
+                ASR::array_physical_typeType base_ptype =
+                    ASRUtils::extract_physical_type(base_type);
+                base_is_unbounded_ptr = (base_ptype ==
+                    ASR::array_physical_typeType::UnboundedPointerArray);
+            }
+        }
+
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
+            arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer ||
+            base_is_unbounded_ptr ) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
                 !(is_parameter && dims == 1) ) {
@@ -6441,10 +6456,23 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-                llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                if( m_dims[i].m_start ) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                    llvm_diminfo.push_back(al, tmp);
+                } else {
+                    llvm_diminfo.push_back(al,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1)));
+                }
+
+                if( m_dims[i].m_length ) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    llvm_diminfo.push_back(al, tmp);
+                } else {
+                    llvm_diminfo.push_back(al,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1)));
+                }
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
