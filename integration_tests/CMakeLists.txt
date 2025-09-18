@@ -1813,6 +1813,7 @@ RUN(NAME string_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --re
 RUN(NAME string_70 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_71 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_72 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

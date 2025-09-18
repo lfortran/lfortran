@@ -8810,10 +8810,12 @@ public:
         llvm::Value *start {};
         llvm::Value *end   {};
         {
-            const int load = LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1;
-            this->visit_expr_load_wrapper(x.m_start, load, true);
+            const int start_load = LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1;
+            this->visit_expr_load_wrapper(x.m_start, start_load, true);
             start = tmp;
-            this->visit_expr_load_wrapper(x.m_end  , load, true);
+
+            const int end_load = LLVM::is_llvm_pointer(*expr_type(x.m_end)) ? 2 : 1;
+            this->visit_expr_load_wrapper(x.m_end, end_load, true);
             end = tmp;
         }
         
