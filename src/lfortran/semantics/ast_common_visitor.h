@@ -11034,6 +11034,11 @@ public:
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {
+        if (AST::is_a<AST::BOZ_t>(*x.m_left) || AST::is_a<AST::BOZ_t>(*x.m_right)) {
+            diag.add(Diagnostic("BOZ literal constant cannot be used in binary operations",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
