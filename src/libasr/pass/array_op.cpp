@@ -1123,7 +1123,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& pass_options) {
-    ArrayOpVisitor v(al, pass_options.realloc_lhs, pass_options.bounds_checking);
+    ArrayOpVisitor v(al, pass_options.realloc_lhs_arrays, pass_options.bounds_checking);
     v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);

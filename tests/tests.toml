@@ -3200,12 +3200,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_45.f90"
 llvm = true
-options = "--realloc-lhs"
 
 [[test]]
 filename = "../integration_tests/automatic_allocation_02.f90"
 llvm = true
-options = "--realloc-lhs"
+options = "--realloc-lhs-arrays"
 
 # TODO: StructType - Uncomment below test after supporting type-inheritance in type-checking
 # [[test]]

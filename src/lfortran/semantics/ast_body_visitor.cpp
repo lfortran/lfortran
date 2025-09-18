@@ -1463,7 +1463,7 @@ public:
                 body.push_back(al, associate_stmt);
             } else {
                 ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs, false));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                 body.push_back(al, assign_stmt);
             }
         }
@@ -1736,7 +1736,7 @@ public:
                 if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
                     ASR::stmt_t* assign_stmt = ASRUtils::STMT(
                         ASRUtils::make_Assignment_t_util(
-                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs, false
+                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs_arrays, false
                         )
                     );
                     current_body->push_back(al, assign_stmt);
@@ -2540,7 +2540,7 @@ public:
             ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, master_function_sym,
                                 master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr));
 
-            stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs, false));
+            stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs_arrays, false));
 
         } else {
             stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
@@ -2622,7 +2622,7 @@ public:
                             // make an assignment to return variable of master function
                             if (return_var != nullptr) {
                                 ASR::expr_t* lhs = return_var; ASR::expr_t* rhs = assignment->m_value;
-                                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_stmt->base.loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs, false));
+                                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_stmt->base.loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                                 tmp_stmt = stmt;
                             }
                         }
@@ -2973,7 +2973,7 @@ public:
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
         ASR::expr_t* tmp_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int_type));
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target_var, tmp_expr);
-        tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs, false));
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
     }
 
     /* Returns true if `x` is a statement function, false otherwise.
@@ -3166,7 +3166,7 @@ public:
             throw SemanticAbort();
         }
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, to_return, value);
-        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, to_return, value, nullptr, compiler_options.po.realloc_lhs, false)));
+        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, to_return, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)));
 
         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
         fn->m_body = body.p;
@@ -3592,7 +3592,7 @@ public:
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
 
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
-                            overloaded_stmt, compiler_options.po.realloc_lhs, false);
+                            overloaded_stmt, compiler_options.po.realloc_lhs_arrays, false);
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
