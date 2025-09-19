@@ -853,7 +853,7 @@ time_section "🧪 Testing SNAP" '
 ##########################
 # Section 12: Reference-LAPACK
 ##########################
-time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
+time_section "🧪 Testing Reference-LAPACK (Official Repository)" "$(cat <<'BLOCK'
   git clone https://github.com/Reference-LAPACK/lapack.git reference-lapack
   cd reference-lapack
 
@@ -921,7 +921,8 @@ PY
 
   cd ../..
   rm -rf reference-lapack
-'
+BLOCK
+)"
 
 ##################################
 # Final Summary and Cleanup
