@@ -1145,14 +1145,63 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         } else if (ASRUtils::is_complex(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    ASRUtils::expr_value(operand));
-                std::complex<double> op_value(c->m_re, c->m_im);
-                std::complex<double> result;
-                result = -op_value;
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
-                        std::imag(result), operand_type));
+                std::complex<double> op_value;
+                bool have_value = false;
+                ASR::expr_t* operand_const = ASRUtils::expr_value(operand);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*operand_const)) {
+                    ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(operand_const);
+                    op_value = std::complex<double>(c->m_re, c->m_im);
+                    have_value = true;
+                } else if (ASR::is_a<ASR::ComplexConstructor_t>(*operand_const)) {
+                    ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(operand_const);
+                    if (cc->m_value && ASR::is_a<ASR::ComplexConstant_t>(*cc->m_value)) {
+                        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(cc->m_value);
+                        op_value = std::complex<double>(c->m_re, c->m_im);
+                        have_value = true;
+                    } else {
+                        double re_val = 0.0, im_val = 0.0;
+                        ASR::expr_t* re_expr = ASRUtils::expr_value(cc->m_re);
+                        if (!re_expr) re_expr = cc->m_re;
+                        if (ASR::is_a<ASR::RealConstant_t>(*re_expr)) {
+                            re_val = ASR::down_cast<ASR::RealConstant_t>(re_expr)->m_r;
+                        } else if (ASR::is_a<ASR::IntegerConstant_t>(*re_expr)) {
+                            re_val = ASR::down_cast<ASR::IntegerConstant_t>(re_expr)->m_n;
+                        }
+                        ASR::expr_t* im_expr = nullptr;
+                        if (cc->m_im) {
+                            im_expr = ASRUtils::expr_value(cc->m_im);
+                            if (!im_expr) im_expr = cc->m_im;
+                        }
+                        if (im_expr) {
+                            if (ASR::is_a<ASR::RealConstant_t>(*im_expr)) {
+                                im_val = ASR::down_cast<ASR::RealConstant_t>(im_expr)->m_r;
+                                have_value = true;
+                            } else if (ASR::is_a<ASR::IntegerConstant_t>(*im_expr)) {
+                                im_val = ASR::down_cast<ASR::IntegerConstant_t>(im_expr)->m_n;
+                                have_value = true;
+                            }
+                        } else {
+                            have_value = true;
+                        }
+                        if (have_value) {
+                            op_value = std::complex<double>(re_val, im_val);
+                        }
+                    }
+                } else if (ASR::is_a<ASR::RealConstant_t>(*operand_const)) {
+                    double re = ASR::down_cast<ASR::RealConstant_t>(operand_const)->m_r;
+                    op_value = std::complex<double>(re, 0.0);
+                    have_value = true;
+                } else if (ASR::is_a<ASR::IntegerConstant_t>(*operand_const)) {
+                    double re = ASR::down_cast<ASR::IntegerConstant_t>(operand_const)->m_n;
+                    op_value = std::complex<double>(re, 0.0);
+                    have_value = true;
+                }
+                if (have_value) {
+                    std::complex<double> result = -op_value;
+                    value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                            std::real(result), std::imag(result), operand_type));
+                }
             }
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
