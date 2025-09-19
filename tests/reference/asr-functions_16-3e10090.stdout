@@ -174,6 +174,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     (Var 8 less)
                                     Public
@@ -643,6 +644,7 @@
                                             (Var 6 low)
                                             ()
                                             .false.
+                                            .false.
                                         )
                                         (DoLoop
                                             ()
@@ -724,6 +726,7 @@
                                                     )
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                                 (SubroutineCall
                                                     2 swap
@@ -779,6 +782,7 @@
                                             (Var 6 pivot)
                                             (Var 6 last)
                                             ()
+                                            .false.
                                             .false.
                                         )
                                         (SubroutineCall
@@ -1197,6 +1201,7 @@
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 high)
@@ -1208,11 +1213,13 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 sorted)
                                         (Var 5 list)
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Allocate
@@ -1266,6 +1273,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (If
@@ -1347,6 +1355,7 @@
                                             )
                                             ()
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -1363,6 +1372,7 @@
                                             (Var 5 idx)
                                             (Var 5 indexarray)
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -1466,17 +1476,20 @@
                                         (Var 7 lhs)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 7 lhs)
                                         (Var 7 rhs)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 7 rhs)
                                         (Var 7 tmp)
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     ()

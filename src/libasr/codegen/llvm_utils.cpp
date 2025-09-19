@@ -333,15 +333,26 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
-        std::string der_type_name = std::string(der_type->m_name) + std::string("_polymorphic");
+        std::string der_type_name = std::string(der_type->m_name);
+        if (!compiler_options.new_classes) {
+            der_type_name += "_polymorphic";
+        }
         llvm::StructType* der_type_llvm = nullptr;
         if( name2dertype.find(der_type_name) != name2dertype.end() ) {
             der_type_llvm = name2dertype[der_type_name];
         } else {
             if ( compiler_options.new_classes ) {
-                // we already have `%<std::string(der_type->m_name)> = type <{ i32 }>` declared
-                // globally, just fetch it
-                llvm::Type* struct_type = getStructType(der_type, module, is_pointer);
+                llvm::Type* struct_type = nullptr;
+                if (der_type_name == "~unlimited_polymorphic_type" 
+                    && name2dertype.find(der_type_name) == name2dertype.end()) {
+                    struct_type = llvm::StructType::create(context, { vptr_type, i8_ptr }, der_type_name, true);
+                } else {
+                    // we already have `%<std::string(der_type->m_name)> = type <{ i32 }>` declared
+                    // globally, just fetch it
+                    struct_type = getStructType(der_type, module, is_pointer);
+                }
+                name2dertype.insert(std::make_pair(
+                    der_type_name, llvm::dyn_cast<llvm::StructType>(struct_type)));
                 LCOMPILERS_ASSERT(struct_type != nullptr);
                 return struct_type;
             } else {
@@ -1738,67 +1749,6 @@ namespace LCompilers {
         return builder->CreateCall(fn, args);
     }
 
-    void LLVMUtils::get_type_default_field_values(ASR::symbol_t* struct_sym,
-            llvm::Module* module, std::vector<llvm::Constant*>& field_values) {
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        if (compiler_options.new_classes && struct_t->m_parent == nullptr) {
-            // Add vptr
-            llvm::Constant* vtab = newclass2vtab[ASRUtils::symbol_get_past_external(struct_sym)];
-            field_values.push_back(llvm::ConstantExpr::getBitCast(vtab, vptr_type));
-        }
-        for (size_t i = 0; i < struct_t->n_members; i++) {
-            std::string member_name = struct_t->m_members[i];
-            ASR::symbol_t* sym = struct_t->m_symtab->get_symbol(member_name);
-            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
-                continue;
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (var->m_value != nullptr) {
-                llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, module);
-                field_values.push_back(c);
-            } else {
-                llvm::Type* member_type = get_type_from_ttype_t_util(var->m_type, struct_sym, module);
-                field_values.push_back(llvm::Constant::getNullValue(member_type));
-            }
-        }
-    }
-
-    llvm::Constant* LLVMUtils::create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
-                                                        llvm::Module* module) {
-        switch (expr->type) {
-            case ASR::exprType::IntegerConstant: {
-                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, ic->m_type, module);
-                return llvm::ConstantInt::get(llvm_type, ic->m_n, true);
-            }
-            case ASR::exprType::LogicalConstant: {
-                ASR::LogicalConstant_t* lc = ASR::down_cast<ASR::LogicalConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, lc->m_type, module);
-                return llvm::ConstantInt::get(llvm_type, lc->m_value ? 1 : 0, false);
-            }
-            case ASR::exprType::RealConstant: {
-                ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, rc->m_type, module);
-                if (llvm_type->isFloatTy()) {
-                    return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
-                } else if (llvm_type->isDoubleTy()) {
-                    return llvm::ConstantFP::get(llvm_type, rc->m_r);
-                }
-                break;
-            }
-            case ASR::exprType::StructConstant: {
-                std::vector<llvm::Constant*> field_values;
-                ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
-                get_type_default_field_values(struct_sym, module, field_values);
-                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
-                    get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module));
-                return llvm::ConstantStruct::get(llvm_struct_type, field_values);
-            }
-            default:
-                throw LCompilersException( "Unsupported constant expression in struct default initializer.");
-        }
-        return nullptr;
-    }
-
     bool LLVMUtils::is_proper_array_of_strings_llvm_var([[maybe_unused]]ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
         LCOMPILERS_ASSERT(ASRUtils::is_array(type))
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
@@ -1947,23 +1897,40 @@ namespace LCompilers {
         return str_desc;
     }
 
+    bool LLVMUtils::is_string_length_setable(ASR::String_t* string_t){
+        switch(string_t->m_physical_type){
+            case ASR::DescriptorString:{
+                return true;
+            }
+            case ASR::CChar:{
+                return false;
+            }
+            default:
+                throw LCompilersException("Unhandled string physical type");
+        }
+    }
+    llvm::Value* LLVMUtils::create_stringView(ASR::String_t* string_t, llvm::Value* data, llvm::Value* len, std::string name){
+        /* Assertions */
+        LCOMPILERS_ASSERT(!len->getType()->isPointerTy())
+        LCOMPILERS_ASSERT(len->getType()->isIntegerTy(64))
+        LCOMPILERS_ASSERT(data->getType() == character_type)
 
+        /* Create String Based On PhsyicalType */
+        llvm::Value* string = create_string(string_t, name);
+
+        /* Store Data */
+        builder->CreateStore(data, get_string_data(string_t, string, true));
+
+        /* Store Length */
+        if(is_string_length_setable(string_t)){
+            builder->CreateStore(len, get_string_length(string_t, string, true));
+        }
+
+        return string;
+    }
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
-
-        llvm::DataLayout data_layout_inst(module->getDataLayout());
-        llvm::Value* str_desc = builder->CreateBitCast(
-            LLVMArrUtils::lfortran_malloc(context,
-                *module, *builder,
-                llvm::ConstantInt::get(context, llvm::APInt(64, data_layout_inst.getTypeAllocSize(string_descriptor)))),
-            string_descriptor->getPointerTo(), name);
-
-        return str_desc;
-
-// TODO :: Remove code above.
-
-        llvm::Value* str_descriptor = builder->CreateAlloca(string_descriptor, nullptr, name);
-        return str_descriptor;
+        return builder->CreateAlloca(string_descriptor, nullptr, name);
     }
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
@@ -2354,7 +2321,7 @@ namespace LCompilers {
                 );
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len);
-                // [len x i8] c "DATA HERE\"
+                // [len x i8] c "DATA HERE"
                 llvm::Constant* const_data_as_array {};
                 {
                     std::string initial_data_padded = std::string(initial_data);

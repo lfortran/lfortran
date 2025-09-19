@@ -835,7 +835,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 void pass_replace_implied_do_loops(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
-    ArrayConstantVisitor v(al, pass_options.realloc_lhs);
+    ArrayConstantVisitor v(al, pass_options.realloc_lhs_arrays);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

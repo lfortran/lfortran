@@ -219,7 +219,7 @@ namespace LCompilers {
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
-            llvm::Type* string_descriptor;
+            llvm::Type* string_descriptor; /* <{ i8* --DATA-- , i64 --LENGTH-- }> */
             llvm::Type* vptr_type;
             llvm::FunctionType* struct_copy_functype;
 
@@ -282,14 +282,6 @@ namespace LCompilers {
 
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
-            // Converts a constant ASR expression into an equivalent LLVM Constant.
-            // Supports integer, logical, and real constants used in struct initializers.
-            // Throws an exception for unsupported expression types.
-            void get_type_default_field_values(ASR::symbol_t* struct_sym,
-                llvm::Module* module, std::vector<llvm::Constant*>& field_values);
-
-            llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
-                                                               llvm::Module* module);
 
             template<typename... Args>
             void generate_runtime_error(llvm::Value* cond, std::string message, Args... args)
@@ -380,6 +372,21 @@ namespace LCompilers {
                 Only allocates it, does not set data or length.
             */
             llvm::Value* create_string_descriptor(std::string name);
+
+            /*
+                Creates A StringView
+                - It doesn't allocate its own memory.
+                - Creates String based on physicalType of ASR::String node.
+                - Must provide data of the string on which the view is created.
+                - Must provide a length.
+            */
+            llvm::Value* create_stringView(ASR::String_t* string_t, llvm::Value* data, llvm::Value* len, std::string name);
+            
+            /*
+                Checks if the string length is setable.
+                - TRUE if the PhysicalType preserves information about the length (at runtime).
+            */
+            bool is_string_length_setable(ASR::String_t* string_t);
 
             llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
             llvm::Value* get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len=false);

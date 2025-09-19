@@ -80,6 +80,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -91,6 +92,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print
@@ -307,6 +309,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -318,6 +321,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print

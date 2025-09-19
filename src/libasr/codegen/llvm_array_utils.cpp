@@ -558,6 +558,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
@@ -640,6 +643,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
@@ -1006,6 +1012,62 @@ namespace LCompilers {
                                   llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
 
+            llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src, true);
+            llvm::Value* n_dims = this->get_rank(src_ty, src, false);
+            llvm::Value* dest_dim_des_val = nullptr;
+            dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest, true);
+            llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+            llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+            llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+
+            // Loop to copy `dimension_descriptor` from src to dest
+            llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
+            // head
+            llvm_utils->start_new_block(loophead);
+            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
+            builder->CreateCondBr(cond, loopbody, loopend);
+
+            // body
+            llvm_utils->start_new_block(loopbody);
+            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
+            llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
+            llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
+            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
+                                    src_dim_val, llvm::MaybeAlign(),
+                                    llvm::ConstantInt::get(
+                                    context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+            r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            builder->CreateStore(r_val, r);
+            builder->CreateBr(loophead);
+
+            // end
+            llvm_utils->start_new_block(loopend);
+
+
+            builder->CreateStore(n_dims, this->get_rank(dest_ty , dest, true));
+        }
+
+        // Copy destination's descriptor to the source descriptor
+        // Move the data pointer from dest to src
+        // And set the src's data pointer to null to prevent double deallocation
+        void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
+            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
+
+            llvm::Value* first_ptr = this->get_pointer_to_data(dest);
+            llvm::Value* src_data_ptr = this->get_pointer_to_data(src);
+            llvm::Type* llvm_data_type =  llvm_utils->get_el_type(array_exp, ASRUtils::extract_type(asr_data_type), module);
+            builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
+
+            // Data pointer has been moved to dest, so set src's data pointer to null
+            builder->CreateStore(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), src_data_ptr);
+
+            llvm::Value* src_offset = this->get_offset(dest_ty, src);
+            llvm::Value* dest_offset = this->get_offset(dest_ty, dest, false);
+            builder->CreateStore(src_offset, dest_offset);
+
+            llvm::DataLayout data_layout(module->getDataLayout());
             llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src, true);
             llvm::Value* n_dims = this->get_rank(src_ty, src, false);
             llvm::Value* dest_dim_des_val = nullptr;

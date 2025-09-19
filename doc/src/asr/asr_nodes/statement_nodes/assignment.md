@@ -7,7 +7,7 @@ Assignment statement, a **statement (stmt)** node.
 ### Syntax
 
 ```fortran
-Assignment(expr target, expr value, stmt? overloaded)
+Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation)
 ```
 
 ### Arguments
@@ -15,6 +15,8 @@ Assignment(expr target, expr value, stmt? overloaded)
 `target` contains expression target.
 `value` expressions giving the value to be assigned.
 `overloaded` denotes if overloaded.
+`realloc_lhs` denotes if target has to be reallocated to the size of value before the assignment.
+`move_allocation` denotes if this is a move assignment for allocatable arrays.
 
 ### Return values
 
@@ -27,6 +29,12 @@ record, or record field.
 
 The value can be a constant or the result of an expression. The kinds of assignment
 statements: are arithmetic, logical, character, and record assignments.
+
+If realloc_lhs is true then before the assignment the target is reallocated to the size of the value.
+
+move_allocation must only be true if both target and value are allocatable arrays of DescriptorArray physical type. The data pointer of value's descriptor
+is copied to the target's descriptor. And rest of the fields of value's descriptor are copied into target's descriptor. After the move, the data pointer of
+value's descriptor is set to null.
 
 ## Types
 

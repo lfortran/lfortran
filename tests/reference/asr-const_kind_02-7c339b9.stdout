@@ -120,6 +120,7 @@
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i3)
@@ -130,6 +131,7 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print

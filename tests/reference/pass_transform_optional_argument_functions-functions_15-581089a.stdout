@@ -247,6 +247,7 @@
                                         (Var 5 is_x_present_)
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     (Var 5 f)
                                     Public
@@ -272,6 +273,7 @@
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -285,6 +287,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (SubroutineCall
@@ -706,61 +709,6 @@
                                             )
                                             ()
                                             .false.
-                                        )
-                                        (If
-                                            ()
-                                            (Var 3 is_e_present_)
-                                            [(Assignment
-                                                (Var 3 b)
-                                                (RealBinOp
-                                                    (RealBinOp
-                                                        (Var 3 b)
-                                                        Mul
-                                                        (Var 3 f)
-                                                        (Real 4)
-                                                        ()
-                                                    )
-                                                    Add
-                                                    (Cast
-                                                        (Var 3 e)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        ()
-                                                    )
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                ()
-                                                .false.
-                                            )]
-                                            [(Assignment
-                                                (Var 3 b)
-                                                (RealBinOp
-                                                    (Var 3 b)
-                                                    Mul
-                                                    (Var 3 f)
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                ()
-                                                .false.
-                                            )]
-                                        )]
-                                        [(Assignment
-                                            (Var 3 a)
-                                            (Cast
-                                                (RealBinOp
-                                                    (Var 3 b)
-                                                    Pow
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                RealToInteger
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            ()
                                             .false.
                                         )
                                         (If
@@ -788,6 +736,7 @@
                                                 )
                                                 ()
                                                 .false.
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -799,6 +748,66 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
+                                                .false.
+                                            )]
+                                        )]
+                                        [(Assignment
+                                            (Var 3 a)
+                                            (Cast
+                                                (RealBinOp
+                                                    (Var 3 b)
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                RealToInteger
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (If
+                                            ()
+                                            (Var 3 is_e_present_)
+                                            [(Assignment
+                                                (Var 3 b)
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (Var 3 b)
+                                                        Mul
+                                                        (Var 3 f)
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (Cast
+                                                        (Var 3 e)
+                                                        IntegerToReal
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                ()
+                                                .false.
+                                                .false.
+                                            )]
+                                            [(Assignment
+                                                (Var 3 b)
+                                                (RealBinOp
+                                                    (Var 3 b)
+                                                    Mul
+                                                    (Var 3 f)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                ()
+                                                .false.
                                                 .false.
                                             )]
                                         )]
