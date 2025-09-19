@@ -13247,11 +13247,7 @@ public:
                             // strict type check here to match that behaviour.
                             continue;
                         }
-                        std::string callee_name = ASRUtils::symbol_name(x.m_name);
-                        std::string mismatch_msg = "Type mismatch in subroutine call `" + callee_name +
-                            "`, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg) +
-                            "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`";
-                        LCOMPILERS_ASSERT_MSG(false, mismatch_msg.c_str());
+                        LCOMPILERS_ASSERT_MSG(false, "Type mismatch in subroutine call");
                     }
                 }
             }
