@@ -13202,7 +13202,8 @@ public:
                                                   !ASRUtils::get_FunctionType(subrout_called)->m_module);
                     bool is_recursive_call = (parent_function != nullptr &&
                                               subrout_called == parent_function);
-                    bool allow_sequence_assoc = compiler_options.legacy_array_sections;
+                    bool allow_sequence_assoc = compiler_options.legacy_array_sections ||
+                                             compiler_options.implicit_interface;
 
                     if (allow_sequence_assoc &&
                         (is_external_implicit || is_recursive_call)) {
@@ -13246,8 +13247,9 @@ public:
                             // strict type check here to match that behaviour.
                             continue;
                         }
-                        std::string mismatch_msg = "Type mismatch in subroutine call, expected `" +
-                            ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg) +
+                        std::string callee_name = ASRUtils::symbol_name(x.m_name);
+                        std::string mismatch_msg = "Type mismatch in subroutine call `" + callee_name +
+                            "`, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg) +
                             "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`";
                         LCOMPILERS_ASSERT_MSG(false, mismatch_msg.c_str());
                     }
