@@ -2110,9 +2110,10 @@ public:
             != generic_procedures.end());
     }
 
-    void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
-        bool is_char_type, bool is_argument, char* var_name) {  
+	void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
+		AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
+		bool is_char_type, bool is_argument, char* var_name,
+		bool is_parameter=false) {  
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         _processing_dimensions = true;
@@ -2166,6 +2167,11 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
+		if (!dim.m_start && m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
+				&& !is_parameter) {
+			ASR::ttype_t* default_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4));
+			dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, default_int_type));
+		}
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
             }
@@ -3940,7 +3946,8 @@ public:
                             dims_attr_loc = ad->base.base.loc;
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name,
+                                storage_type == ASR::storage_typeType::Parameter);
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
@@ -4026,7 +4033,8 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                        s_intent == ASRUtils::intent_inout), s.m_name);
+                        s_intent == ASRUtils::intent_inout), s.m_name,
+                        storage_type == ASR::storage_typeType::Parameter);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
@@ -9535,7 +9543,26 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
-                if (ASRUtils::is_array(var_type)) {
+
+                // With implicit interfaces, ArrayItem is ambiguous
+                if (compiler_options.implicit_interface &&
+                    ASR::is_a<ASR::ArrayItem_t>(*var_expr)) {
+                    // ArrayItem like C(i,j) could be:
+                    // 1. A scalar value
+                    // 2. The start of an array (sequence association)
+                    // Create assumed-size array to accept both
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    empty_dims.push_back(al, empty_dim);
+                    var_type = ASRUtils::make_Array_t_util(al, var_type->base.loc,
+                        ASRUtils::extract_type(var_type), empty_dims.p, 1,
+                        ASR::abiType::Source, false,
+                        ASR::array_physical_typeType::PointerArray, true);
+                } else if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(

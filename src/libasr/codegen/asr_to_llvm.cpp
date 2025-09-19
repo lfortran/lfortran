@@ -2894,9 +2894,14 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start = nullptr;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        dim_start = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -6282,9 +6287,24 @@ public:
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         int dims = ASRUtils::extract_n_dims_from_ttype(array_type);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
+        bool base_is_unbounded_ptr = false;
+        if( ASR::is_a<ASR::Var_t>(*array_section->m_v) ) {
+            ASR::symbol_t* base_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(array_section->m_v)->m_v);
+            if( base_sym && ASR::is_a<ASR::Variable_t>(*base_sym) ) {
+                ASR::ttype_t* base_type = ASR::down_cast<ASR::Variable_t>(base_sym)->m_type;
+                ASR::array_physical_typeType base_ptype =
+                    ASRUtils::extract_physical_type(base_type);
+                base_is_unbounded_ptr = (base_ptype ==
+                    ASR::array_physical_typeType::UnboundedPointerArray);
+            }
+        }
+
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
+            arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer ||
+            base_is_unbounded_ptr ) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
                 !(is_parameter && dims == 1) ) {
@@ -6301,10 +6321,23 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-                llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                if( m_dims[i].m_start ) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                    llvm_diminfo.push_back(al, tmp);
+                } else {
+                    llvm_diminfo.push_back(al,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1)));
+                }
+
+                if( m_dims[i].m_length ) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    llvm_diminfo.push_back(al, tmp);
+                } else {
+                    llvm_diminfo.push_back(al,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1)));
+                }
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
@@ -7587,6 +7620,17 @@ public:
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
+            m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type_deprecated[arg] = arr_type;
+#endif
+            // The unbounded pointer variant already stores a pointer to data,
+            // so no additional adjustment is required here.
+        } else if(
+            m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
             if( ((ASRUtils::expr_value(m_arg) &&
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
@@ -7594,6 +7638,19 @@ public:
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->CreateGEP2(m_arg_llvm_type, tmp, 0);
             }
+        } else if(
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type_deprecated[arg] = arr_type;
+#endif
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),
+                arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp,
+                arr_descr->get_offset(arr_type, arg));
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -12816,11 +12873,59 @@ public:
                     ASR::expr_t* passed_arg = x.m_args[i].m_value;
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
-                    if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
-                        if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
-                                    + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
+                    // With implicit interfaces, relax type checking for sequence association:
+                    // Apply to: 1) External functions (Interface deftype, not from modules)
+                    //           2) Recursive calls (same function calling itself)
+                    bool is_external_implicit = (ASRUtils::get_FunctionType(subrout_called)->m_deftype == ASR::deftypeType::Interface &&
+                                                  !ASRUtils::get_FunctionType(subrout_called)->m_module);
+                    bool is_recursive_call = (parent_function != nullptr &&
+                                              subrout_called == parent_function);
+
+                    if (compiler_options.implicit_interface &&
+                        (is_external_implicit || is_recursive_call)) {
+                        // 1. ArrayItem passed - ambiguous (scalar or array start)
+                        if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
+                            continue;
                         }
+                        // 2. Array-to-array with different ranks/shapes
+                        if (ASR::is_a<ASR::Array_t>(*passed_arg_type) &&
+                            ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                            continue;
+                        }
+                        // 3. Scalar passed where array expected (from ambiguous inference)
+                        if (ASR::is_a<ASR::Array_t>(*expected_arg_type) &&
+                            !ASR::is_a<ASR::Array_t>(*passed_arg_type)) {
+                            continue;
+                        }
+                    }
+
+                    // For all arguments (not just ArrayItem), enforce type checking
+                    // unless we already skipped it above for sequence association
+                    bool skip_type_check = false;
+                    if (ASRUtils::is_array_of_strings(expected_arg_type) &&
+                        ASRUtils::is_character(*ASRUtils::expr_type(passed_arg))) {
+                        ASR::String_t *expected_str = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(expected_arg_type));
+                        ASR::String_t *passed_str = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(ASRUtils::expr_type(passed_arg)));
+                        if (expected_str->m_physical_type == passed_str->m_physical_type) {
+                            skip_type_check = true;
+                        }
+                    }
+
+                    if (!skip_type_check &&
+                        !ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                        if (compiler_options.implicit_interface) {
+                            // Support legacy Fortran sequence association patterns where ranks or
+                            // element types differ. GFortran accepts these when implicit
+                            // interfaces are used (or with -fallow-argument-mismatch), and many
+                            // third-party codes rely on this behaviour. When the implicit
+                            // interface flag is enabled we therefore skip the strict type check
+                            // to match that behaviour.
+                            continue;
+                        }
+                        throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
+                                + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                     }
                 }
             }
