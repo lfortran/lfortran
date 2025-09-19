@@ -861,11 +861,19 @@ time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
   git checkout v3.12.0
 
   extra_fflags="--fixed-form-infer --implicit-interface"
+  cmake_extra_args=()
   if [[ "$FC" == *lfortran* ]]; then
-    extra_fflags+=" --legacy-array-sections"
+    extra_fflags+=" --legacy-array-sections --cpp"
+    cmake_extra_args+=("-DCMAKE_Fortran_PREPROCESS_SOURCE=<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+    cmake_extra_args+=("-DCMAKE_Fortran_CREATE_PREPROCESSED_SOURCE=<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+    cmake_extra_args+=("-DCMAKE_Fortran_CREATE_ASSEMBLY_SOURCE=<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -S <SOURCE> -o <ASSEMBLY_SOURCE>")
+    cmake_extra_args+=("-DCMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON=--cpp")
+    cmake_extra_args+=("-DCMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF=")
+    cmake_extra_args+=("-DCMAKE_Fortran_POSTPROCESS_FLAG=")
     python - <<'PY'
 from pathlib import Path
-path = Path("LAPACKE/include/CMakeLists.txt")
+
+lapacke_cmake = Path("LAPACKE/include/CMakeLists.txt")
 needle = "  FortranCInterface_VERIFY()"
 replacement = (
     "  if (CMAKE_Fortran_COMPILER MATCHES \"lfortran\")\n"
@@ -876,19 +884,26 @@ replacement = (
     "    FortranCInterface_VERIFY()\n"
     "  endif()"
 )
-text = path.read_text()
+text = lapacke_cmake.read_text()
 if needle not in text:
     raise SystemExit("Unable to locate FortranCInterface_VERIFY() for patching")
-path.write_text(text.replace(needle, replacement, 1))
-PY
-    extra_fflags+=" --cpp"
-  fi
+lapacke_cmake.write_text(text.replace(needle, replacement, 1))
 
+flags_cmake = Path("CMAKE/CheckLAPACKCompilerFlags.cmake")
+flags_text = flags_cmake.read_text()
+old = """# GNU Fortran\nif( CMAKE_Fortran_COMPILER_ID STREQUAL \"GNU\" )\n  if( \"${CMAKE_Fortran_FLAGS}\" MATCHES \"-ffpe-trap=[izoupd]\")\n    set( FPE_EXIT TRUE )\n  endif()\n  if( NOT (\"${CMAKE_Fortran_FLAGS}\" MATCHES \"-frecursive\") )\n    set(CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS} -frecursive\"\n      CACHE STRING \"Recursive flag must be set\" FORCE)\n  endif()\n\n"""
+new = """# GNU Fortran\nif( CMAKE_Fortran_COMPILER_ID STREQUAL \"GNU\" )\n  if( CMAKE_Fortran_COMPILER MATCHES \"lfortran\" )\n    message(STATUS \"Skipping GNU-specific flags for LFortran\")\n    if( NOT (\"${CMAKE_Fortran_FLAGS}\" MATCHES \"--cpp\") )\n      set(CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS} --cpp\"\n        CACHE STRING \"Enable preprocessing in LFortran\" FORCE)\n    endif()\n    set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> -o <PREPROCESSED_SOURCE>\"\n      CACHE STRING \"Force preprocessing for LFortran\" FORCE)\n    set(CMAKE_Fortran_CREATE_PREPROCESSED_SOURCE \"<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> -o <PREPROCESSED_SOURCE>\"\n      CACHE STRING \"Custom preprocessing rule for LFortran\" FORCE)\n    set(CMAKE_Fortran_CREATE_ASSEMBLY_SOURCE \"<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -S <SOURCE> -o <ASSEMBLY_SOURCE>\"\n      CACHE STRING \"Custom assembly rule for LFortran\" FORCE)\n    set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON \"--cpp\"\n      CACHE STRING \"Enable preprocessing option for LFortran\" FORCE)\n    set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF \"\"\n      CACHE STRING \"Disable preprocessing option for LFortran\" FORCE)\n    set(CMAKE_Fortran_POSTPROCESS_FLAG \"\"\n      CACHE STRING \"No postprocess flag for LFortran\" FORCE)\n  else()\n    if( \"${CMAKE_Fortran_FLAGS}\" MATCHES \"-ffpe-trap=[izoupd]\")\n      set( FPE_EXIT TRUE )\n    endif()\n    if( NOT (\"${CMAKE_Fortran_FLAGS}\" MATCHES \"-frecursive\") )\n      set(CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS} -frecursive\"\n        CACHE STRING \"Recursive flag must be set\" FORCE)\n    endif()\n  endif()\n\n"""
+if old not in flags_text:
+    raise SystemExit("Unable to locate GNU compiler block for patching")
+flags_cmake.write_text(flags_text.replace(old, new, 1))
+PY
+  fi
   print_subsection "Building Reference-LAPACK with LFortran"
   mkdir build && cd build
 
   cmake -DCMAKE_Fortran_COMPILER=$FC \
         -DCMAKE_Fortran_FLAGS="$extra_fflags" \
+        "${cmake_extra_args[@]}" \
         -DBUILD_INDEX64_EXT_API=OFF \
         -DBUILD_COMPLEX=OFF \
         -DBUILD_COMPLEX16=OFF \
