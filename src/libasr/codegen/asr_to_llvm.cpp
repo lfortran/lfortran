@@ -4691,6 +4691,7 @@ public:
     void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
     {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()) {
         if (newclass2vtab.find(struct_sym) != newclass2vtab.end()
             || ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
             return ;
