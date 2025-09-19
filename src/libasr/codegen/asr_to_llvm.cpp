@@ -3542,6 +3542,10 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+            // Also map by expression key
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
+            llvm_symtab[(uint64_t)var_expr] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Real) {
             int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
             llvm::Type *type;
@@ -5366,6 +5370,9 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
+                    // Also map by expression key for robustness in legacy/extern paths
+                    ASR::expr_t* arg_expr = ASRUtils::EXPR(ASR::make_Var_t(al, arg->base.base.loc, &arg->base));
+                    llvm_symtab[(uint64_t)arg_expr] = llvm_sym;
 #if LLVM_VERSION_MAJOR > 16
                     llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i],
                         ASRUtils::type_get_past_allocatable(
@@ -9580,8 +9587,21 @@ public:
 
     inline void fetch_ptr(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
-        LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
-        llvm::Value* x_v = llvm_symtab[x_h];
+        llvm::Value* x_v = nullptr;
+        if (llvm_symtab.find(x_h) != llvm_symtab.end()) {
+            x_v = llvm_symtab[x_h];
+        } else if (llvm_symtab_fn_arg.find(x_h) != llvm_symtab_fn_arg.end()) {
+            x_v = llvm_symtab_fn_arg[x_h];
+        } else {
+            // Also try lookup by expression key used by get_pointer_to_variable
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, &x->base));
+            uint64_t expr_key = (uint64_t)var_expr;
+            if (llvm_symtab.find(expr_key) != llvm_symtab.end()) {
+                x_v = llvm_symtab[expr_key];
+            } else {
+                throw CodeGenError(std::string("variable not in llvm_symtab (ptr): ") + x->m_name);
+            }
+        }
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
         llvm::Type* type_req = nullptr;
@@ -9605,9 +9625,21 @@ public:
 
     inline void fetch_val(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
-        llvm::Value* x_v;
-        LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
-        x_v = llvm_symtab[x_h];
+        llvm::Value* x_v = nullptr;
+        if (llvm_symtab.find(x_h) != llvm_symtab.end()) {
+            x_v = llvm_symtab[x_h];
+        } else if (llvm_symtab_fn_arg.find(x_h) != llvm_symtab_fn_arg.end()) {
+            x_v = llvm_symtab_fn_arg[x_h];
+        } else {
+            // Also try lookup by expression key used by get_pointer_to_variable
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, &x->base));
+            uint64_t expr_key = (uint64_t)var_expr;
+            if (llvm_symtab.find(expr_key) != llvm_symtab.end()) {
+                x_v = llvm_symtab[expr_key];
+            } else {
+                throw CodeGenError(std::string("variable not in llvm_symtab: ") + x->m_name);
+            }
+        }
         if (x->m_value_attr) {
             // Already a value, such as value argument to bind(c)
             tmp = x_v;
