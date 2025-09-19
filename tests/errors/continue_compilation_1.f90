@@ -290,9 +290,6 @@ program continue_compilation_1
     print *, count(1)
     print *, count([2])
     
-    ! index_missing_required_arg
-    print *, index(substring = "de", back = .true.)
-
     a_real = [logical::]
     print *,size(a_real)
 
@@ -348,4 +345,7 @@ program continue_compilation_1
 
     !Data Statements with different number of arguments on LHS and RHS
     data j2, x2, (y2(i2), i2=1,3), k2 / 1,2,3,4,5,6,7,3*8 /
+
+    ! index_missing_required_arg
+    print *, index(substring = "de", back = .true.)
 end program

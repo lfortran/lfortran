@@ -4800,4 +4800,4 @@ filename = "../integration_tests/select_type_13.f90"
 llvm_new_classes = true
 
 [[test]]
-filename = "misssing_index_arg.f90"
+filename = "../integration_tests/misssing_index_arg.f90"
