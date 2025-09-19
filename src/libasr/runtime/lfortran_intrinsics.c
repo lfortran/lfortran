@@ -1501,7 +1501,7 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
     }
 }
 
-void default_formatting(char** result, int64_t *result_size_ptr, struct serialization_info* s_info, bool print_leading_space){
+void default_formatting(char** result, int64_t *result_size_ptr, struct serialization_info* s_info) {
     int64_t result_capacity = 100;
     int64_t result_size = 0;
     const int default_spacing_len = 1;
@@ -1512,11 +1512,6 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
     if (*result == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         exit(1);
-    }
-    if (print_leading_space) {
-        (*result)[0] = ' ';
-        (*result)[1] = '\0';
-        result_size = 1;
     }
     bool prev_was_char = false;
 
@@ -1546,7 +1541,7 @@ void default_formatting(char** result, int64_t *result_size_ptr, struct serializ
                 exit(1);
             }
         }
-        if(result_size > (print_leading_space ? 1 : 0) && !(prev_was_char && current_is_char)){
+        if(result_size > 0 && !(prev_was_char && current_is_char)){
             strcpy((*result) + result_size, default_spacing);
             result_size += default_spacing_len;
         }
@@ -1608,7 +1603,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
     if(format == NULL){
-        default_formatting(&result, result_size, &s_info, false);
+        default_formatting(&result, result_size, &s_info);
         free_serialization_info(&s_info);
         return result;
     }
