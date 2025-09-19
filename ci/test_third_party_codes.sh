@@ -869,8 +869,8 @@ time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
     cmake_extra_args+=("-DCMAKE_Fortran_CREATE_ASSEMBLY_SOURCE=<CMAKE_Fortran_COMPILER> --cpp <DEFINES> <INCLUDES> <FLAGS> -S <SOURCE> -o <ASSEMBLY_SOURCE>")
     cmake_extra_args+=("-DCMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON=--cpp")
     cmake_extra_args+=("-DCMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF=")
-    cmake_extra_args+=("-DCMAKE_Fortran_POSTPROCESS_FLAG=")
-    python - <<'PY'
+  cmake_extra_args+=("-DCMAKE_Fortran_POSTPROCESS_FLAG=")
+  python - <<PY
 from pathlib import Path
 
 lapacke_cmake = Path("LAPACKE/include/CMakeLists.txt")
