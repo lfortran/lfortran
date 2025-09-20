@@ -1145,14 +1145,63 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         } else if (ASRUtils::is_complex(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    ASRUtils::expr_value(operand));
-                std::complex<double> op_value(c->m_re, c->m_im);
-                std::complex<double> result;
-                result = -op_value;
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
-                        std::imag(result), operand_type));
+                std::complex<double> op_value;
+                bool have_value = false;
+                ASR::expr_t* operand_const = ASRUtils::expr_value(operand);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*operand_const)) {
+                    ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(operand_const);
+                    op_value = std::complex<double>(c->m_re, c->m_im);
+                    have_value = true;
+                } else if (ASR::is_a<ASR::ComplexConstructor_t>(*operand_const)) {
+                    ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(operand_const);
+                    if (cc->m_value && ASR::is_a<ASR::ComplexConstant_t>(*cc->m_value)) {
+                        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(cc->m_value);
+                        op_value = std::complex<double>(c->m_re, c->m_im);
+                        have_value = true;
+                    } else {
+                        double re_val = 0.0, im_val = 0.0;
+                        ASR::expr_t* re_expr = ASRUtils::expr_value(cc->m_re);
+                        if (!re_expr) re_expr = cc->m_re;
+                        if (ASR::is_a<ASR::RealConstant_t>(*re_expr)) {
+                            re_val = ASR::down_cast<ASR::RealConstant_t>(re_expr)->m_r;
+                        } else if (ASR::is_a<ASR::IntegerConstant_t>(*re_expr)) {
+                            re_val = ASR::down_cast<ASR::IntegerConstant_t>(re_expr)->m_n;
+                        }
+                        ASR::expr_t* im_expr = nullptr;
+                        if (cc->m_im) {
+                            im_expr = ASRUtils::expr_value(cc->m_im);
+                            if (!im_expr) im_expr = cc->m_im;
+                        }
+                        if (im_expr) {
+                            if (ASR::is_a<ASR::RealConstant_t>(*im_expr)) {
+                                im_val = ASR::down_cast<ASR::RealConstant_t>(im_expr)->m_r;
+                                have_value = true;
+                            } else if (ASR::is_a<ASR::IntegerConstant_t>(*im_expr)) {
+                                im_val = ASR::down_cast<ASR::IntegerConstant_t>(im_expr)->m_n;
+                                have_value = true;
+                            }
+                        } else {
+                            have_value = true;
+                        }
+                        if (have_value) {
+                            op_value = std::complex<double>(re_val, im_val);
+                        }
+                    }
+                } else if (ASR::is_a<ASR::RealConstant_t>(*operand_const)) {
+                    double re = ASR::down_cast<ASR::RealConstant_t>(operand_const)->m_r;
+                    op_value = std::complex<double>(re, 0.0);
+                    have_value = true;
+                } else if (ASR::is_a<ASR::IntegerConstant_t>(*operand_const)) {
+                    double re = ASR::down_cast<ASR::IntegerConstant_t>(operand_const)->m_n;
+                    op_value = std::complex<double>(re, 0.0);
+                    have_value = true;
+                }
+                if (have_value) {
+                    std::complex<double> result = -op_value;
+                    value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                            std::real(result), std::imag(result), operand_type));
+                }
             }
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
@@ -2110,9 +2159,10 @@ public:
             != generic_procedures.end());
     }
 
-    void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
-        bool is_char_type, bool is_argument, char* var_name) {  
+	void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
+		AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
+		bool is_char_type, bool is_argument, char* var_name,
+		bool is_parameter=false) {  
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         _processing_dimensions = true;
@@ -2166,6 +2216,11 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
+		if (!dim.m_start && m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
+				&& !is_parameter) {
+			ASR::ttype_t* default_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4));
+			dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, default_int_type));
+		}
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
             }
@@ -3940,7 +3995,8 @@ public:
                             dims_attr_loc = ad->base.base.loc;
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name,
+                                storage_type == ASR::storage_typeType::Parameter);
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
@@ -4026,7 +4082,8 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                        s_intent == ASRUtils::intent_inout), s.m_name);
+                        s_intent == ASRUtils::intent_inout), s.m_name,
+                        storage_type == ASR::storage_typeType::Parameter);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
@@ -9535,7 +9592,26 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
-                if (ASRUtils::is_array(var_type)) {
+
+                // Legacy sequence association allows ArrayItem to alias arrays
+                if (compiler_options.legacy_array_sections &&
+                    ASR::is_a<ASR::ArrayItem_t>(*var_expr)) {
+                    // ArrayItem like C(i,j) could be:
+                    // 1. A scalar value
+                    // 2. The start of an array (sequence association)
+                    // Create assumed-size array to accept both
+                    Vec<ASR::dimension_t> empty_dims;
+                    empty_dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    empty_dims.push_back(al, empty_dim);
+                    var_type = ASRUtils::make_Array_t_util(al, var_type->base.loc,
+                        ASRUtils::extract_type(var_type), empty_dims.p, 1,
+                        ASR::abiType::Source, false,
+                        ASR::array_physical_typeType::PointerArray, true);
+                } else if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(

@@ -1762,9 +1762,36 @@ static inline ASR::Variable_t* extract_ExternalSymbol_Variable(ASR::expr_t* a_ex
 static inline bool extract_value(ASR::expr_t* value_expr,
     std::complex<double>& value) {
     if ( ASR::is_a<ASR::ComplexConstructor_t>(*value_expr) ) {
-        value_expr = ASR::down_cast<ASR::ComplexConstructor_t>(value_expr)->m_value;
+        ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(value_expr);
+        value_expr = cc->m_value;
         if (!value_expr) {
-            return false;
+            double re_val = 0.0, im_val = 0.0;
+            ASR::expr_t* re_expr = ASRUtils::expr_value(cc->m_re);
+            if (!re_expr) {
+                re_expr = cc->m_re;
+            }
+            if (ASR::is_a<ASR::RealConstant_t>(*re_expr)) {
+                re_val = ASR::down_cast<ASR::RealConstant_t>(re_expr)->m_r;
+            } else if (ASR::is_a<ASR::IntegerConstant_t>(*re_expr)) {
+                re_val = ASR::down_cast<ASR::IntegerConstant_t>(re_expr)->m_n;
+            } else {
+                return false;
+            }
+            if (cc->m_im) {
+                ASR::expr_t* im_expr = ASRUtils::expr_value(cc->m_im);
+                if (!im_expr) {
+                    im_expr = cc->m_im;
+                }
+                if (ASR::is_a<ASR::RealConstant_t>(*im_expr)) {
+                    im_val = ASR::down_cast<ASR::RealConstant_t>(im_expr)->m_r;
+                } else if (ASR::is_a<ASR::IntegerConstant_t>(*im_expr)) {
+                    im_val = ASR::down_cast<ASR::IntegerConstant_t>(im_expr)->m_n;
+                } else {
+                    return false;
+                }
+            }
+            value = std::complex<double>(re_val, im_val);
+            return true;
         }
     }
     if( !ASR::is_a<ASR::ComplexConstant_t>(*value_expr) ) {
@@ -4054,6 +4081,12 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
+            case (ASR::ttypeType::Dict) : {
+                ASR::Dict_t *a2 = ASR::down_cast<ASR::Dict_t>(a);
+                ASR::Dict_t *b2 = ASR::down_cast<ASR::Dict_t>(b);
+                return types_equal(a2->m_key_type, b2->m_key_type, nullptr, nullptr, check_for_dimensions)
+                    && types_equal(a2->m_value_type, b2->m_value_type, nullptr, nullptr, check_for_dimensions);
+            }
             case (ASR::ttypeType::StructType) : {
                 ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
@@ -4191,6 +4224,12 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
+            }
+            case (ASR::ttypeType::Dict) : {
+                ASR::Dict_t *a2 = ASR::down_cast<ASR::Dict_t>(a);
+                ASR::Dict_t *b2 = ASR::down_cast<ASR::Dict_t>(b);
+                return types_equal_with_substitution(a2->m_key_type, b2->m_key_type, subs, nullptr, nullptr)
+                    && types_equal_with_substitution(a2->m_value_type, b2->m_value_type, subs, nullptr, nullptr);
             }
             case (ASR::ttypeType::StructType) : {          
                 ASR::Struct_t* x_struct = nullptr;

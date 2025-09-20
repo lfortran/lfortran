@@ -919,7 +919,10 @@ public:
 };
 
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
+    const LCompilers::PassOptions& pass_options) {
+    if( pass_options.legacy_array_sections ) {
+        return;
+    }
     NestedVarVisitor v(al);
     v.visit_TranslationUnit(unit);
     ReplaceNestedVisitor w(al, v.nesting_map);

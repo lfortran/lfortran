@@ -400,9 +400,10 @@ namespace GetCommand {
             */
 
             // Create interface `lfortran_get_command_command`
-            ASR::ttype_t* array_type = b.UnboundedArray(b.String(b.i64(1), ASR::ExpressionLength, ASR::CChar), 1);
+            // Accept a CChar string buffer as a scalar (maps to `char*`),
+            // since we pass a physical string cast, not an array section.
             Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al,1);
-            parameter_types.push_back(al, array_type);
+            parameter_types.push_back(al, b.String(b.i64(1), ASR::ExpressionLength, ASR::CChar));
             ASR::symbol_t *lfortran_get_command_command = b.create_c_subroutine_interface(c_func_name_1, fn_symtab, parameter_types, {"receiver"});
 
             fn_symtab->add_symbol(c_func_name_1, lfortran_get_command_command);

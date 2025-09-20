@@ -1090,6 +1090,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
+    if( pass_options.legacy_array_sections ) {
+        return;
+    }
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
     EditProcedureVisitor e(v);

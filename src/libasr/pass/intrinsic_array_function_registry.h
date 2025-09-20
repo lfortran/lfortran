@@ -2243,8 +2243,8 @@ namespace Eoshift {
         ASR::ttype_t *type_array = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
         ASR::ttype_t *type_shift = ASRUtils::type_get_past_allocatable_pointer(expr_type(shift));
         ASR::ttype_t *type_boundary = nullptr;
-        if(is_boundary_present){
-            type_boundary = expr_type(boundary);
+        if (is_boundary_present) {
+            type_boundary = ASRUtils::type_get_past_allocatable_pointer(expr_type(boundary));
         }
         ASR::ttype_t *ret_type = type_array;
         if ( !is_array(type_array) ) {
@@ -2255,9 +2255,19 @@ namespace Eoshift {
             append_error(diag, "The argument `shift` in `eoshift` must be of type Integer", shift->base.loc);
             return nullptr;
         }
-        if( is_boundary_present && (!ASRUtils::check_equal_type(type_boundary, type_array, boundary, array))) {
-            append_error(diag, "'boundary' argument of 'eoshift' intrinsic must be a scalar of same type as array type", boundary->base.loc);
-            return nullptr;
+        if( is_boundary_present ) {
+            ASR::ttype_t *array_element_type = ASRUtils::extract_type(type_array);
+            if( is_array(type_boundary) ) {
+                if( !ASRUtils::check_equal_type(type_boundary, type_array, boundary, array) ) {
+                    append_error(diag, "'boundary' argument of 'eoshift' intrinsic must match the array type when it is an array", boundary->base.loc);
+                    return nullptr;
+                }
+            } else {
+                if( !ASRUtils::check_equal_type(type_boundary, array_element_type, boundary, array) ) {
+                    append_error(diag, "'boundary' argument of 'eoshift' intrinsic must be a scalar of the same type as the array elements", boundary->base.loc);
+                    return nullptr;
+                }
+            }
         }
         ASR::dimension_t* array_dims = nullptr;
         int array_rank = extract_dimensions_from_ttype(type_array, array_dims);
@@ -2336,19 +2346,21 @@ namespace Eoshift {
                 i = i + 1
             end do
         */
-        if( !ASRUtils::is_fixed_size_array(return_type) ) {
+        int result_rank = ASRUtils::extract_n_dims_from_ttype(return_type);
+        if( result_rank > 0 && !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
             Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, 2);
-            for( int idim = 0; idim < 2; idim++ ) {
+            empty_dims.reserve(al, result_rank);
+            for( int idim = 0; idim < result_rank; idim++ ) {
                 ASR::dimension_t empty_dim;
                 empty_dim.loc = loc;
                 empty_dim.m_start = nullptr;
                 empty_dim.m_length = nullptr;
                 empty_dims.push_back(al, empty_dim);
             }
+            ASR::ttype_t *base_type = ASRUtils::extract_type(return_type);
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
-                ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
+                base_type, empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }

@@ -1314,8 +1314,17 @@ public:
         if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x.m_type);
             for (size_t i = 0; i < array_t->n_dims; i++) {
-                require(array_t->m_dims[i].m_start == nullptr &&
-                        array_t->m_dims[i].m_length == nullptr,
+                bool length_is_deferred = array_t->m_dims[i].m_length == nullptr;
+                bool lower_is_deferred = array_t->m_dims[i].m_start == nullptr;
+                if( !lower_is_deferred && array_t->m_dims[i].m_start ) {
+                    ASR::expr_t* start_expr = array_t->m_dims[i].m_start;
+                    if( ASR::is_a<ASR::IntegerConstant_t>(*start_expr) ) {
+                        ASR::IntegerConstant_t* int_const =
+                            ASR::down_cast<ASR::IntegerConstant_t>(start_expr);
+                        lower_is_deferred = (int_const->m_n == 1);
+                    }
+                }
+                require(lower_is_deferred && length_is_deferred,
                         "Array type in pointer must have deferred shape");
             }
         }

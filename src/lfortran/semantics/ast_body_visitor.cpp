@@ -65,6 +65,74 @@ public:
             data_structure, lm
         ), asr{unit}, from_block{false} {}
 
+    void check_call_argument_types(const AST::SubroutineCall_t &x,
+            const ASR::Function_t &subrout, Vec<ASR::call_arg_t> &args,
+            int offset) {
+        if (subrout.n_args <= static_cast<size_t>(offset)) return;
+        size_t usable_formals = static_cast<size_t>(subrout.n_args - offset);
+        size_t max_actual = std::min(args.size(), usable_formals);
+        for (size_t i = 0; i < max_actual; i++) {
+            ASR::expr_t *actual_expr = args[i].m_value;
+            if (!actual_expr) continue;
+            ASR::expr_t *expected_expr = subrout.m_args[i + offset];
+            if (!expected_expr) continue;
+
+            ASR::ttype_t *expected_type = ASRUtils::expr_type(expected_expr);
+            ASR::ttype_t *actual_type = ASRUtils::expr_type(actual_expr);
+            if (!expected_type || !actual_type) continue;
+
+            bool expected_is_array = ASR::is_a<ASR::Array_t>(*expected_type);
+            bool actual_is_array = ASR::is_a<ASR::Array_t>(*actual_type);
+            if (expected_is_array || actual_is_array) {
+                continue;
+            }
+
+            ASR::ttype_t *expected_base = ASRUtils::type_get_past_allocatable_pointer(
+                expected_type);
+            ASR::ttype_t *actual_base = ASRUtils::type_get_past_allocatable_pointer(
+                actual_type);
+
+            auto is_scalar_primitive = [](ASR::ttype_t *t) {
+                if (!t) return false;
+                return ASRUtils::is_integer(*t) || ASRUtils::is_real(*t) ||
+                       ASRUtils::is_complex(*t) || ASRUtils::is_logical(*t) ||
+                       ASRUtils::is_character(*t);
+            };
+
+            if (!is_scalar_primitive(expected_base) ||
+                !is_scalar_primitive(actual_base)) {
+                continue;
+            }
+
+            bool allow_sequence_assoc = false;
+            if (compiler_options.legacy_array_sections) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*actual_expr)) {
+                    allow_sequence_assoc = true;
+                }
+            }
+
+            if (!allow_sequence_assoc &&
+                !ASRUtils::types_equal(expected_type, actual_type,
+                    expected_expr, actual_expr, true)) {
+                Location loc = args[i].loc;
+                if (loc.first == static_cast<uint32_t>(-1) &&
+                    loc.last  == static_cast<uint32_t>(-1)) {
+                    loc = x.base.base.loc;
+                }
+                std::string callee = std::string(subrout.m_name);
+                std::string msg = "Type mismatch in call to '" + callee +
+                    "' for argument " + std::to_string(i + 1) +
+                    ": expected " +
+                    ASRUtils::type_to_str_python_expr(expected_type, expected_expr) +
+                    ", found " +
+                    ASRUtils::type_to_str_python_expr(actual_type, actual_expr);
+                diag.add(diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
             visit_DeclarationUtil(x);
@@ -4542,6 +4610,11 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {args_loc})}));
                     throw SemanticAbort();
+            }
+
+            if (!compiler_options.legacy_array_sections &&
+                ASRUtils::get_FunctionType(f)->m_deftype != ASR::deftypeType::Interface) {
+                check_call_argument_types(x, *f, args, offset);
             }
 
             // Validate required arguments are provided
