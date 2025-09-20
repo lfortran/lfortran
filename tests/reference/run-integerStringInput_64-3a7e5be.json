@@ -2,7 +2,7 @@
     "basename": "run-integerStringInput_64-3a7e5be",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/integerStringInput_64.f90",
-    "infile_hash": "f40dcc9865accd82e719a7aa29f74d7fbd112f142462f194a19dfe5d",
+    "infile_hash": "dbf922c18493b34bb68224d6ff4c636025b8da211276c2fceb6c33c4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

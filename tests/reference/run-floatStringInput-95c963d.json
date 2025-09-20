@@ -2,7 +2,7 @@
     "basename": "run-floatStringInput-95c963d",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/floatStringInput.f90",
-    "infile_hash": "9dcbe836ab20980bd2f2d232dbedafc871b164b5f471c752d1e7a095",
+    "infile_hash": "4db92554a429fc93f7f3eb205946ec7b7539f4f4b3cf7674cb9e3434",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
