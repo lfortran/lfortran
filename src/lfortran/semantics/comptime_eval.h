@@ -35,7 +35,8 @@ struct IntrinsicProceduresAsASRNodes {
                 "_lfortran_list_constant", "_lfortran_list_count",
                 "_lfortran_set_constant",
                 "_lfortran_dict_constant",
-                "_lfortran_tuple_constant", "_lfortran_str"};
+                "_lfortran_tuple_constant", 
+                "_lfortran_str", "_lfortran_ord"};
 
             kind_based_intrinsics = {};
         }

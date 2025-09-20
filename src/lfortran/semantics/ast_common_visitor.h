@@ -8562,6 +8562,39 @@ public:
             str_type,
             value);
     }
+
+    ASR::asr_t* create_StrOrd(const AST::FuncCallOrArray_t& x){
+        if(x.n_keywords > 0 || x.n_args != 1) throw LCompilersException("_lfortran_ord expects exactly one argument");
+
+        /* Visit Argument */
+        ASR::expr_t* argument {};
+        {
+            AST::BaseVisitor<Derived>::visit_expr(*(x.m_args[0].m_end));
+            argument = ASRUtils::EXPR(tmp);
+            tmp = nullptr;
+        }
+
+        ASR::ttype_t *type = ASRUtils::expr_type(argument);
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        ASR::expr_t *value = nullptr;
+        if (!ASRUtils::is_character(*type)) {
+            diag.add(Diagnostic("_lfortran_ord expects a string type",
+                                Level::Error, Stage::Semantic, {}));
+            throw SemanticAbort();
+        }
+
+        if (ASRUtils::expr_value(argument) != nullptr) {
+            char* c = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(argument))->m_s;
+            if (std::string(c).size() != 1) {
+                diag.add(Diagnostic("_lfortran_ord is only supported for `str` of length 1",
+                                    Level::Error, Stage::Semantic, {}));
+                throw SemanticAbort();
+            }
+            value = ASR::down_cast<ASR::expr_t>(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, c[0], to_type));
+        }
+        return ASR::make_StringOrd_t(al, x.base.base.loc, argument, to_type, value);
+    }
     
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -9373,6 +9406,8 @@ public:
                     tmp = create_TupleConstant(x);
                 else if (var_name == "_lfortran_str"){
                     tmp = create_CastToStr(x);
+                } else if (var_name == "_lfortran_ord"){
+                    tmp = create_StrOrd(x);
                 }
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
