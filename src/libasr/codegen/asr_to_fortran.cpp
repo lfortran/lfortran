@@ -516,7 +516,8 @@ public:
                 !ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_return_var)) &&
                 !ASRUtils::is_pointer(ASRUtils::expr_type(x.m_return_var))) {
                 is_return_var_declared = true;
-                r += get_type(ASRUtils::expr_type(x.m_return_var));
+                ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+                r += get_type(return_var->m_type, return_var->m_type_declaration);
                 r += " ";
             }
             r += "function";

@@ -1079,6 +1079,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
+        // If x.m_dt is an array, and the subroutine is elemental, we need to replace the m_dt with an array item
+        // and call the elemental function on each element of the x.m_dt array not on the whole array
+        if (x.m_dt && ASRUtils::is_array(ASRUtils::expr_type(x.m_dt))) {
+            ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+            vars.push_back(al, &(xx.m_dt));
+        }
+
         if( vars.size() == 0 ) {
             return ;
         }
