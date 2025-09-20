@@ -56,7 +56,7 @@ contains
 
       if (_lfortran_len(c) /= 5) error stop
       do i = 0, 4
-         if (iachar(_lfortran_get_item(c, i)) - iachar('a') /= i) error stop
+         if (_lfortran_ord(_lfortran_get_item(c, i)) - _lfortran_ord('a') /= i) error stop
       end do
    end subroutine
 
