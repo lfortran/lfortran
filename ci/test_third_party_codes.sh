@@ -860,31 +860,24 @@ time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
   # Use latest stable release
   git checkout v3.12.0
 
-  if [[ "$FC" != *lfortran* ]]; then
-    print_subsection "Skipping Reference-LAPACK: non-LFortran compiler ($FC)"
-  else
-    extra_fflags="--fixed-form-infer --implicit-interface --legacy-array-sections"
-    print_subsection "Building Reference-LAPACK with $FC and flags: $extra_fflags"
-    mkdir build && cd build
+  extra_fflags="--cpp --fixed-form-infer --implicit-interface --legacy-array-sections"
+  print_subsection "Building Reference-LAPACK with $FC and flags: $extra_fflags"
+  mkdir build && cd build
 
-    cmake -DCMAKE_Fortran_COMPILER=$FC \
-          -DCMAKE_Fortran_FLAGS="$extra_fflags" \
-          -DBUILD_INDEX64_EXT_API=OFF \
-          -DBUILD_COMPLEX=OFF \
-          -DBUILD_COMPLEX16=OFF \
-          -DBUILD_TESTING=OFF \
-          -DCBLAS=OFF \
-          -DLAPACKE=OFF \
-          ..
+  cmake -DCMAKE_Fortran_COMPILER=$FC \
+        -DCMAKE_Fortran_FLAGS="$extra_fflags" \
+        -DBUILD_INDEX64_EXT_API=OFF \
+        -DBUILD_COMPLEX=OFF \
+        -DBUILD_COMPLEX16=OFF \
+        -DBUILD_TESTING=OFF \
+        -DCBLAS=OFF \
+        -DLAPACKE=OFF \
+        ..
 
-    make -j8
+  make -j8
 
-    print_success "Successfully built Reference-LAPACK"
-    cd ..
-  fi
-
-  # Optional: Run some basic tests if enabled
-  # ctest --output-on-failure -j8
+  print_success "Successfully built Reference-LAPACK"
+  cd ..
 
   cd ..
   rm -rf reference-lapack
