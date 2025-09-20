@@ -8633,7 +8633,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_arg, true);
+        tmp = get_string_data(x.m_arg);
         llvm::AllocaInst *parg = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(tmp, parg);
         tmp = lfortran_str_ord(parg);
