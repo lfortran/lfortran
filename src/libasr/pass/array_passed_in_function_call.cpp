@@ -868,7 +868,6 @@ public:
 
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
-        LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         std::vector<bool> is_arg_intent_out;
         if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
