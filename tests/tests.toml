@@ -4805,3 +4805,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/select_type_13.f90"
 llvm_new_classes = true
+
+[[test]]
+filename = "../integration_tests/misssing_index_arg.f90"
