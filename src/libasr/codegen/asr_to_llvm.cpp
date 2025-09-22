@@ -3353,7 +3353,9 @@ public:
             // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
             // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
             // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
-            elements.push_back(newclass2vtab.at(ASRUtils::symbol_get_past_external(x.m_dt_sym)));
+            llvm::Constant* ptr_to_method = get_pointer_to_method(
+                ASRUtils::symbol_get_past_external(x.m_dt_sym));
+            elements.push_back(ptr_to_method);
         }
 
         LCOMPILERS_ASSERT(x.n_args == n_members);
@@ -4288,16 +4290,22 @@ public:
             LLVM::CreateStore(*builder, ptr_, ptr);
         }
     }
-
-    inline bool contains_methods(ASR::Struct_t* st) {
-        for (auto& item: st->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
-                return true;
-            }
-        }
-        return false;
-    }
     
+    inline llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym) {
+        llvm::Constant* vtable = newclass2vtab.at(struct_sym);
+        llvm::Type* vtab_type = newclass2vtabtype.at(struct_sym);
+        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
+
+        llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(
+            vtab_type,
+            vtable,
+            {zero, zero, two}
+        );
+        gep = llvm::ConstantExpr::getBitCast(gep, llvm_utils->vptr_type);
+        return gep;
+    }
+
     void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
@@ -4305,21 +4313,10 @@ public:
         if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
             create_new_vtable_for_struct_type(struct_sym);
         }
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         // Store Default vptr (Points to first Virtual function)
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
-        llvm::Value* vtable = newclass2vtab.at(&struct_t->base);
-        llvm::Type* vtab_type = newclass2vtabtype.at(&struct_t->base);
-        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-        llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
-
-        llvm::Value* gep = builder->CreateInBoundsGEP(
-            vtab_type,                                      // element type: [N x i8*]
-            vtable,                                          // base pointer
-            {zero, zero, two}                                // indices
-        );
-        vtable = builder->CreateBitCast(gep, llvm_utils->vptr_type);
-        builder->CreateStore(vtable, v_ptr);
+        llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
+        builder->CreateStore(ptr_to_method, v_ptr);
     }
     
     void set_pointer_variable_to_null(ASR::Variable_t* v, llvm::Value* null_value, llvm::Value* ptr) {
@@ -4793,8 +4790,8 @@ public:
                 field_values.push_back(llvm::ConstantStruct::get(llvm_struct_type, tmp_field_values));
             } else {
                 // Add vptr
-                llvm::Constant* vtab = newclass2vtab.at(orig_struct_sym);
-                field_values.push_back(llvm::ConstantExpr::getBitCast(vtab, llvm_utils->vptr_type));
+                llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
+                field_values.push_back(ptr_to_method);
             }
         }
         for (size_t i = 0; i < struct_t->n_members; i++) {

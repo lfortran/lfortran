@@ -1969,7 +1969,7 @@ RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_65 LABELS gfortran)
 
 
-RUN(NAME class_procedure_args_01 LABELS gfortran llvm NO_NEW_CLASSES)
+RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
 RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
