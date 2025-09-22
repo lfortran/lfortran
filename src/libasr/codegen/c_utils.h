@@ -334,7 +334,7 @@ namespace CUtils {
                 break;
             }
             default: {
-                throw CodeGenError("Type " + std::to_string(t->type) + " not supported yet.");
+                throw CodeGenError("Type '" + ASRUtils::type_to_str_fortran_expr(t, nullptr) + "' not supported yet.");
             }
         }
         return type_src;
