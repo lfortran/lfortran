@@ -1033,6 +1033,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
+            ASR::expr_t* d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
             ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
 
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
@@ -1041,7 +1042,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::expr_t* d_value_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
                 d_value, nullptr, type32, nullptr));
             if (debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size, x.m_move_allocation)));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size, d_orig_value, x.m_move_allocation)));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
                 }
