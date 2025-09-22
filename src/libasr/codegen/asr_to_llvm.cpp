@@ -3353,7 +3353,9 @@ public:
             // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
             // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
             // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
-            elements.push_back(newclass2vtab.at(ASRUtils::symbol_get_past_external(x.m_dt_sym)));
+            llvm::Constant* ptr_to_method = get_pointer_to_method(
+                ASRUtils::symbol_get_past_external(x.m_dt_sym));
+            elements.push_back(ptr_to_method);
         }
 
         LCOMPILERS_ASSERT(x.n_args == n_members);
@@ -4288,16 +4290,22 @@ public:
             LLVM::CreateStore(*builder, ptr_, ptr);
         }
     }
-
-    inline bool contains_methods(ASR::Struct_t* st) {
-        for (auto& item: st->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
-                return true;
-            }
-        }
-        return false;
-    }
     
+    inline llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym) {
+        llvm::Constant* vtable = newclass2vtab.at(struct_sym);
+        llvm::Type* vtab_type = newclass2vtabtype.at(struct_sym);
+        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
+
+        llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(
+            vtab_type,
+            vtable,
+            {zero, zero, two}
+        );
+        gep = llvm::ConstantExpr::getBitCast(gep, llvm_utils->vptr_type);
+        return gep;
+    }
+
     void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
@@ -4305,21 +4313,10 @@ public:
         if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
             create_new_vtable_for_struct_type(struct_sym);
         }
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         // Store Default vptr (Points to first Virtual function)
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
-        llvm::Value* vtable = newclass2vtab.at(&struct_t->base);
-        llvm::Type* vtab_type = newclass2vtabtype.at(&struct_t->base);
-        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-        llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
-
-        llvm::Value* gep = builder->CreateInBoundsGEP(
-            vtab_type,                                      // element type: [N x i8*]
-            vtable,                                          // base pointer
-            {zero, zero, two}                                // indices
-        );
-        vtable = builder->CreateBitCast(gep, llvm_utils->vptr_type);
-        builder->CreateStore(vtable, v_ptr);
+        llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
+        builder->CreateStore(ptr_to_method, v_ptr);
     }
     
     void set_pointer_variable_to_null(ASR::Variable_t* v, llvm::Value* null_value, llvm::Value* ptr) {
@@ -4793,8 +4790,8 @@ public:
                 field_values.push_back(llvm::ConstantStruct::get(llvm_struct_type, tmp_field_values));
             } else {
                 // Add vptr
-                llvm::Constant* vtab = newclass2vtab.at(orig_struct_sym);
-                field_values.push_back(llvm::ConstantExpr::getBitCast(vtab, llvm_utils->vptr_type));
+                llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
+                field_values.push_back(ptr_to_method);
             }
         }
         for (size_t i = 0; i < struct_t->n_members; i++) {
@@ -7375,8 +7372,81 @@ public:
         }
     }
 
+    template<typename T>
+    void check_binop(ASR::expr_t* x) {
+        ASR::expr_t* left = ASR::down_cast<T>(x)->m_left;
+        ASR::expr_t* right = ASR::down_cast<T>(x)->m_right;
+
+        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
+        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+            left, nullptr, type32, nullptr));
+        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+            right, nullptr, type32, nullptr));
+
+        if (ASRUtils::is_array(ASRUtils::expr_type(left)) &&
+            ASRUtils::is_array(ASRUtils::expr_type(right))) {
+            visit_expr(*left_size);
+            llvm::Value* left_llvm_size = tmp;
+
+            visit_expr(*right_size);
+            llvm::Value* right_llvm_size = tmp;
+
+            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+
+            if (left_var && right_var) {
+                llvm::Value *left_name = builder->CreateGlobalStringPtr(left_var->m_name);
+                llvm::Value *right_name = builder->CreateGlobalStringPtr(right_var->m_name);
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
+                                                    "Size of '%s' is is %d and size of '%s' is %d\n",
+                                                    left_name,
+                                                    right_name,
+                                                    left_name,
+                                                    left_llvm_size,
+                                                    right_name,
+                                                    right_llvm_size);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Size mismatch in binary operation\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    left_llvm_size,
+                                                    right_llvm_size);
+            }
+
+            generate_binop_checks(left);
+            generate_binop_checks(right);
+        }
+    }
+
+    void generate_binop_checks(ASR::expr_t* x) {
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+            check_binop<ASR::IntegerBinOp_t>(x);
+        } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
+            check_binop<ASR::RealBinOp_t>(x);
+        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
+            check_binop<ASR::ComplexBinOp_t>(x);
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
+            check_binop<ASR::LogicalBinOp_t>(x);
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
+            check_binop<ASR::IntegerCompare_t>(x);
+        } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
+            check_binop<ASR::RealCompare_t>(x);
+        } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
+            check_binop<ASR::ComplexCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
+            check_binop<ASR::StringCompare_t>(x);
+        } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
+            check_binop<ASR::OverloadedCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
+            check_binop<ASR::StringConcat_t>(x);
+        }
+    }
+
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
+            generate_binop_checks(x.m_orig_value);
+
             visit_expr(*x.m_target);
             llvm::Value* target_size = tmp;
 
