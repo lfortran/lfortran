@@ -7375,8 +7375,81 @@ public:
         }
     }
 
+    template<typename T>
+    void check_binop(ASR::expr_t* x) {
+        ASR::expr_t* left = ASR::down_cast<T>(x)->m_left;
+        ASR::expr_t* right = ASR::down_cast<T>(x)->m_right;
+
+        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
+        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+            left, nullptr, type32, nullptr));
+        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+            right, nullptr, type32, nullptr));
+
+        if (ASRUtils::is_array(ASRUtils::expr_type(left)) &&
+            ASRUtils::is_array(ASRUtils::expr_type(right))) {
+            visit_expr(*left_size);
+            llvm::Value* left_llvm_size = tmp;
+
+            visit_expr(*right_size);
+            llvm::Value* right_llvm_size = tmp;
+
+            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+
+            if (left_var && right_var) {
+                llvm::Value *left_name = builder->CreateGlobalStringPtr(left_var->m_name);
+                llvm::Value *right_name = builder->CreateGlobalStringPtr(right_var->m_name);
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
+                                                    "Size of '%s' is is %d and size of '%s' is %d\n",
+                                                    left_name,
+                                                    right_name,
+                                                    left_name,
+                                                    left_llvm_size,
+                                                    right_name,
+                                                    right_llvm_size);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Size mismatch in binary operation\n\n"
+                                                    "LHS size is %d and RHS size is %d\n",
+                                                    left_llvm_size,
+                                                    right_llvm_size);
+            }
+
+            generate_binop_checks(left);
+            generate_binop_checks(right);
+        }
+    }
+
+    void generate_binop_checks(ASR::expr_t* x) {
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+            check_binop<ASR::IntegerBinOp_t>(x);
+        } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
+            check_binop<ASR::RealBinOp_t>(x);
+        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
+            check_binop<ASR::ComplexBinOp_t>(x);
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
+            check_binop<ASR::LogicalBinOp_t>(x);
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
+            check_binop<ASR::IntegerCompare_t>(x);
+        } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
+            check_binop<ASR::RealCompare_t>(x);
+        } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
+            check_binop<ASR::ComplexCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
+            check_binop<ASR::StringCompare_t>(x);
+        } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
+            check_binop<ASR::OverloadedCompare_t>(x);
+        } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
+            check_binop<ASR::StringConcat_t>(x);
+        }
+    }
+
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
+            generate_binop_checks(x.m_orig_value);
+
             visit_expr(*x.m_target);
             llvm::Value* target_size = tmp;
 
