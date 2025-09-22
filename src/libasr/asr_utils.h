@@ -980,6 +980,10 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
     }
 }
 
+static inline std::string intrinsic_type_to_str_with_kind(const ASR::ttype_t* t, int kind) {
+    return type_to_str_fortran_symbol(t, nullptr) + "_" + std::to_string(kind);
+}
+
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::expr_t* expr)
 {
     ASR::symbol_t* struct_sym = nullptr;
