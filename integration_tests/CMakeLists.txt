@@ -1759,7 +1759,7 @@ RUN(NAME string_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME string_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # len
 RUN(NAME string_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME string_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_NEW_CLASSES)
+RUN(NAME string_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME string_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

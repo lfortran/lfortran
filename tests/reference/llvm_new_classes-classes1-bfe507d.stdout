@@ -28,8 +28,21 @@ define void @_copy_xx_base(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %base*
   %3 = bitcast i8* %1 to %base*
-  %4 = load %base, %base* %2, align 1
-  store %base %4, %base* %3, align 1
+  %4 = getelementptr %base, %base* %2, i32 0, i32 1
+  %5 = load i32, i32* %4, align 4
+  %6 = getelementptr %base, %base* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %5, i32* %6, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %7 = bitcast %base* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
   ret void
 }
 
