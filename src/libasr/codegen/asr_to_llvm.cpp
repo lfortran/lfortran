@@ -4722,6 +4722,8 @@ public:
         gv->setAlignment(llvm::MaybeAlign(8));
         newclass2vtab[struct_sym] = gv;
         newclass2vtabtype[struct_sym] = outerStructTy;
+        // populate copy function body after creating vtable
+        fill_struct_copy_body(struct_sym, copy_function);
     }
 
     void create_type_info_for_struct(ASR::symbol_t* struct_sym)
@@ -5758,8 +5760,6 @@ public:
     Example: `class_65.f90`
     */
     llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym) {
-        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
-
         llvm::FunctionType *funcType = llvm::FunctionType::get(
             llvm::Type::getVoidTy(context),
             {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
@@ -5776,7 +5776,11 @@ public:
             func_name,
             module.get()
         );
+        return func;
+    }
 
+    void fill_struct_copy_body(ASR::symbol_t* struct_sym, llvm::Function* func) {
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -5789,14 +5793,14 @@ public:
             ASRUtils::symbol_type(struct_sym), struct_sym, module.get());
         llvm::Value *src = builder->CreateBitCast(argsVec[0], struct_type->getPointerTo());
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
-        llvm::Value *val = llvm_utils->CreateLoad2(struct_type, src);
-        builder->CreateStore(val, dst);
+        llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
+            ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module.get(), name2memidx);
+        store_class_vptr(struct_sym, dst);
         builder->CreateRetVoid();
 
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
-        return func;
     }
 
     void generate_function(const ASR::Function_t &x) {
@@ -6892,10 +6896,10 @@ public:
                 builder->CreateCall(fnTy, fn, {value_struct, target_struct});
             } else {
                 target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
-                if (!ASR::is_a<ASR::StructConstant_t>(*x.m_value)) {
-                    value_struct = llvm_utils->CreateLoad2(value_llvm_type, value_struct);
-                }
-                builder->CreateStore(value_struct, target_struct);
+                llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
+                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), name2memidx);
+                ASR::symbol_t* value_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
+                store_class_vptr(value_sym, target_struct);
             }
             return;
         } else if( is_target_struct && is_value_struct ) {
