@@ -1503,6 +1503,21 @@ public:
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type_deprecated[x_arr_] = type;
 #endif
+                    if (compiler_options.new_classes) {
+                        ASR::ttype_t* struct_type = ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr));
+                        llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr, struct_type, module.get());
+                        llvm::Value* ptr_to_data = llvm_utils->create_gep2(type, x_arr_, 0);
+                        ptr_to_data = llvm_utils->CreateLoad2(
+                            struct_llvm_type->getPointerTo(), ptr_to_data);
+                        if (curr_arg.m_sym_subclass) {
+                            store_class_vptr(ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass),
+                                ptr_to_data);
+                        } else {
+                            store_class_vptr(ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(tmp_expr)),
+                                ptr_to_data);
+                        }
+                    }
                     allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
                         ASRUtils::expr_type(tmp_expr));
                 }
@@ -13144,17 +13159,6 @@ public:
             llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
             llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
-            // Get VTable pointer
-            llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
-            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[vtable_ptr] = fnPtrPtrTy;
-#endif
-            // Get function pointer from VTable
-            llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
-            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-
             // Convert function args
             std::vector<llvm::Value*> args;
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -13175,6 +13179,29 @@ public:
             }
             std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
             args.insert(args.end(), args2.begin(), args2.end());
+
+            // Get VTable pointer
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
+                this->visit_expr_wrapper(array_item->m_v, true);
+                llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
+                if (ASRUtils::extract_physical_type(
+                        ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
+                    llvm_dt = llvm_utils->CreateLoad2(
+                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                        array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
+                } else {
+                    llvm_dt = tmp;
+                }
+            }
+            llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+
+            // Get function pointer from VTable
+            llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
+                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
+            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             builder->CreateCall(fnTy, fn, args);
             return;
         }
@@ -13364,8 +13391,23 @@ public:
             args.insert(args.end(), args2.begin(), args2.end());
 
             // Get Runtime VTable Pointer
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
+                this->visit_expr_wrapper(array_item->m_v, true);
+                llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
+                if (ASRUtils::extract_physical_type(
+                        ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
+                    llvm_dt = llvm_utils->CreateLoad2(
+                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                        array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
+                } else {
+                    llvm_dt = tmp;
+                }
+            }
             llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
             vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+
             // Get function pointer from VTable
             llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
                 vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
