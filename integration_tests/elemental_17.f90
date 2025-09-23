@@ -23,9 +23,16 @@ program elemental_17
 
   lines(1)%string_ = "Hello"
   lines(2)%string_ = "World"
+  allocate(character(0) :: lines(3)%string_) ! Allocate empty strings (unallocated variables musn't be referenced)
+
   lines = bracket(lines)
 
   print *, lines(1)%string_
+  if(lines(1)%string_ /= "Hello called func") error stop
+
   print *, lines(2)%string_
+  if(lines(2)%string_ /= "World called func") error stop
+
   print *, lines(3)%string_
+  if(lines(3)%string_ /= " called func") error stop
 end program elemental_17
