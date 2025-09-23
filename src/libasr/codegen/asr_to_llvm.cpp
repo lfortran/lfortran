@@ -13379,12 +13379,8 @@ public:
             llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
             args = convert_call_args(x, false);
-            ASR::symbol_t* func = ASRUtils::symbol_get_past_external(x.m_name);
-            if (ASR::is_a<ASR::Variable_t>(*func)) {
-                func = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::Variable_t>(func)->m_symbolic_value)->m_v);
-            }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                *ASR::down_cast<ASR::Function_t>(func),
+                *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name)),
                 module.get());
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
