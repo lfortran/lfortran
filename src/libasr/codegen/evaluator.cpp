@@ -272,7 +272,11 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     if (v) {
         throw LCompilersException("parse_module(): module failed verification.");
     };
+#if LLVM_VERSION_MAJOR >= 21
+    module->setTargetTriple(llvm::Triple(target_triple));
+#else
     module->setTargetTriple(target_triple);
+#endif
     module->setDataLayout(jit->getDataLayout());
     return module;
 }
@@ -297,7 +301,11 @@ void LLVMEvaluator::add_module(const std::string &source) {
 void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
+#if LLVM_VERSION_MAJOR >= 21
+    mod->setTargetTriple(llvm::Triple(target_triple));
+#else
     mod->setTargetTriple(target_triple);
+#endif
     mod->setDataLayout(jit->getDataLayout());
     llvm::Error err = jit->addModule(std::move(mod), context);
     if (err) {
@@ -379,7 +387,11 @@ void LLVMEvaluator::save_asm_file(llvm::Module &m, const std::string &filename)
 }
 
 void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filename) {
+#if LLVM_VERSION_MAJOR >= 21
+    m.setTargetTriple(llvm::Triple(target_triple));
+#else
     m.setTargetTriple(target_triple);
+#endif
     m.setDataLayout(TM->createDataLayout());
 
     llvm::legacy::PassManager pass;
@@ -407,7 +419,11 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
 }
 
 void LLVMEvaluator::opt(llvm::Module &m) {
+#if LLVM_VERSION_MAJOR >= 21
+    m.setTargetTriple(llvm::Triple(target_triple));
+#else
     m.setTargetTriple(target_triple);
+#endif
     m.setDataLayout(TM->createDataLayout());
 
 #if LLVM_VERSION_MAJOR >= 17

@@ -30,6 +30,10 @@
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
 #endif
 
+#if LLVM_VERSION_MAJOR >= 21
+#include "llvm/ExecutionEngine/Orc/SelfExecutorProcessControl.h"
+#endif
+
 #if LLVM_VERSION_MAJOR >= 16
 #    define RM_OPTIONAL_TYPE std::optional
 #else
@@ -53,8 +57,13 @@ public:
   KaleidoscopeJIT(std::unique_ptr<ExecutionSession> ES, JITTargetMachineBuilder JTMB, DataLayout DL)
       :
         ES(std::move(ES)),
+#if LLVM_VERSION_MAJOR >= 21
+        ObjectLayer(*this->ES,
+                    [](const llvm::MemoryBuffer &) { return std::make_unique<SectionMemoryManager>(); }),
+#else
         ObjectLayer(*this->ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
+#endif
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
         DL(std::move(DL)), Mangle(*this->ES, this->DL),
         JITDL(
