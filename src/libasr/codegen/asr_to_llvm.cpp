@@ -13062,7 +13062,8 @@ public:
                 if (ASRUtils::extract_physical_type(
                         ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
                     llvm_dt = llvm_utils->CreateLoad2(
-                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
+                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                        array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
                 } else {
                     llvm_dt = tmp;
                 }
@@ -13271,7 +13272,8 @@ public:
                 if (ASRUtils::extract_physical_type(
                         ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
                     llvm_dt = llvm_utils->CreateLoad2(
-                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
+                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                        array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
                 } else {
                     llvm_dt = tmp;
                 }
