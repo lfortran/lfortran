@@ -9798,6 +9798,27 @@ public:
                                 tmp = llvm_symtab[h];
                             }
                         } else {
+                            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, (ASR::symbol_t*)x));
+                            ASR::ttype_t* value_type = ASRUtils::expr_type(var_expr);
+                            // Throw runtime error for trying to get value of unallocated allocatable scalars
+                            if (ptr_loads == 2 && // If ptr_loads == 2 then we are trying to read the value
+                                compiler_options.po.bounds_checking &&
+                                ASRUtils::is_allocatable(value_type) && !ASRUtils::is_array(value_type) &&
+                                !ASRUtils::is_string_only(value_type) && !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(value_type))) {
+                                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(var_expr, ASRUtils::expr_type(var_expr), module.get());
+                                int ptr_loads_copy = ptr_loads;
+                                ptr_loads = 1;
+                                fetch_ptr(x);
+                                ptr_loads = ptr_loads_copy;
+                                llvm::Value* cond = builder->CreateICmpEQ(
+                                    builder->CreatePtrToInt(tmp,
+                                        llvm::Type::getInt64Ty(context)),
+                                    builder->CreatePtrToInt(llvm::ConstantPointerNull::get(type->getPointerTo()),
+                                        llvm::Type::getInt64Ty(context)));
+                                llvm_utils->generate_runtime_error(cond,
+                                    "Runtime Error: Variable '%s' is not allocated.\n",
+                                            builder->CreateGlobalStringPtr(x->m_name));
+                            }
                             fetch_ptr(x);
                         }
                         break;
