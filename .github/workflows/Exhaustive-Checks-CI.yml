@@ -386,8 +386,8 @@ jobs:
             ./run_tests.py -b llvm_submodule
             ./run_tests.py -b llvm_submodule -sc
 
-      - name: Test Linux LLVM 17-20
-        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
+      - name: Test Linux LLVM 17-21
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21'))}}
         shell: bash -e -l {0}
         run: |
             ctest --output-on-failure
