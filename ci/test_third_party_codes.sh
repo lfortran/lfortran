@@ -139,9 +139,9 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-3
+  git checkout lf-4
   micromamba install -c conda-forge fpm
-  git checkout 5dbce529fe5ec3b1a917c658d8e7829433c06304
+  git checkout 81ee9efbf265301986d3ab682994f63c1a20f1cc
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with jonquil"
   cd ..

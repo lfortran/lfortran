@@ -6722,13 +6722,6 @@ public:
             ASR::down_cast<ASR::Cast_t>(x.m_value)->m_kind == ASR::cast_kindType::ListToArray);
 
         llvm::Type* asr_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
-        if (ASR::is_a<ASR::StringSection_t>(*x.m_target)) {
-            handle_StringSection_Assignment(x.m_target, x.m_value);
-            if (tmp == strings_to_be_deallocated.back()) {
-                strings_to_be_deallocated.erase(strings_to_be_deallocated.back());
-            }
-            return;
-        }
 
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
@@ -7031,6 +7024,7 @@ public:
         uint32_t h;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::StringItem ||
+            x.m_target->type == ASR::exprType::StringSection ||
             x.m_target->type == ASR::exprType::ArraySection ||
             x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
@@ -8800,37 +8794,57 @@ public:
         }
     }
     void stringSection_helper_fortran(const ASR::StringSection_t &x){
-        this->visit_expr_load_wrapper(x.m_arg, 0);
-        llvm::Value *str = tmp;
-        llvm::Value *left{}, *right{};
-        if (x.m_start) {
-            this->visit_expr_load_wrapper(x.m_start, LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1, true);
-            left = tmp;
-        }
-        if (x.m_end) {
-            this->visit_expr_load_wrapper(x.m_end, LLVM::is_llvm_pointer(*expr_type(x.m_end)) ? 2 : 1, true);
-            right = tmp;
-        }
-        LCOMPILERS_ASSERT(x.m_step)
+        /* Assertions */
+        LCOMPILERS_ASSERT( x.m_step )
+        LCOMPILERS_ASSERT( x.m_start )
+        LCOMPILERS_ASSERT( x.m_end )
         LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*x.m_step))
-        LCOMPILERS_ASSERT(ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1)
-        if(!x.m_start && !x.m_end){
-            tmp = str; // no need for slicing
-        } else {
-            llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
-            llvm::Value* sliced_str = lfortran_str_slice_fortran(str_data, left, right);
-            this->visit_expr_load_wrapper(ASRUtils::get_string_type(x.m_type)->m_len, 1);
-            llvm::Value* resulting_length = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
-            tmp = nullptr;
-            tmp = llvm_utils->create_string_descriptor(sliced_str, resulting_length, "stringSection_desc");
+        LCOMPILERS_ASSERT(ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1 /*Fortran only has step of 1*/)
+
+        /* Evaluate String */
+        llvm::Value *str {};
+        this->visit_expr_load_wrapper(x.m_arg, 0);
+        str = tmp;
+        
+        /* Evaluate Start + End */
+        llvm::Value *start {};
+        llvm::Value *end   {};
+        {
+            const int start_load = LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1;
+            this->visit_expr_load_wrapper(x.m_start, start_load, true);
+            start = tmp;
+
+            const int end_load = LLVM::is_llvm_pointer(*expr_type(x.m_end)) ? 2 : 1;
+            this->visit_expr_load_wrapper(x.m_end, end_load, true);
+            end = tmp;
         }
+        
+        /* Calculate Resulting Length */
+        llvm::Value* str_section_len {};
+        {
+            llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
+            llvm::Value* end_INT64   = llvm_utils->convert_kind(end, llvm::Type::getInt64Ty(context));
+            str_section_len = builder->CreateAdd(
+                                            builder->CreateSub(end_INT64, start_INT64),
+                                            llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+        }
+
+        /* Get Start-String Ptr (GEP) */
+        llvm::Value* str_data {}; // Shifted from Original by value = start
+        {
+            llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
+            llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            str_data = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data_orig, start, "StrSliceGEP");
+        }
+
+        /* Create StringView */
+        tmp = llvm_utils->create_stringView(ASRUtils::get_string_type(x.m_type), str_data, str_section_len, "StrSlice_StrView");
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
-        if (x.m_value) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
-        }
+        if (x.m_value) { return this->visit_expr_wrapper(x.m_value, true); }
+
         // TODO : Find some way to use the helper functions based on the frontend,
         // We are using fortran only for now.
         if(true){ // Fortran
