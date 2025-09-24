@@ -17,18 +17,17 @@ define void @a(float (float*)* %f) {
   %1 = alloca i64, align 8
   %2 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, float* %r)
   %3 = load i64, i64* %1, align 4
-  %4 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc = bitcast i8* %4 to %string_descriptor*
-  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %2, i8** %5, align 8
-  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %3, i64* %6, align 4
-  %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %10 = load i64, i64* %9, align 4
-  %11 = trunc i64 %10 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %4 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %2, i8** %4, align 8
+  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %3, i64* %5, align 4
+  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %7 = load i8*, i8** %6, align 8
+  %8 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %9 = load i64, i64* %8, align 4
+  %10 = trunc i64 %9 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i32 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -49,8 +48,6 @@ return:                                           ; preds = %.entry
 declare float @f.1(float*)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
-
-declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 

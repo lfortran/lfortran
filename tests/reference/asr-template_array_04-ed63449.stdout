@@ -229,6 +229,7 @@
                                                             )
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             4 swap
@@ -368,17 +369,20 @@
                                                         (Var 5 x)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 x)
                                                         (Var 5 y)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 y)
                                                         (Var 5 tmp)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -516,17 +520,20 @@
                                                         (Var 10 x)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 x)
                                                         (Var 10 y)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 y)
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -696,6 +703,7 @@
                                                             )
                                                             ()
                                                             .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             7 __asr_swap
@@ -760,6 +768,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (SubroutineCall

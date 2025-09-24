@@ -195,6 +195,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -297,6 +298,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -310,6 +312,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (SubroutineCall

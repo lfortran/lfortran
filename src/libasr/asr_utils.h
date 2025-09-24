@@ -444,6 +444,9 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
             return ASRUtils::expr_type(
                 ASR::down_cast<ASR::Function_t>(f)->m_return_var);
         }
+        case ASR::symbolType::Struct: {
+            return ASR::down_cast<ASR::Struct_t>(f)->m_struct_signature;
+        }
         default: {
             throw LCompilersException("Cannot return type of, " +
                                     std::to_string(f->type) + " symbol.");
@@ -975,6 +978,10 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         default : throw LCompilersException("Type number " +
               std::to_string(t->type) + " not implemented.");
     }
+}
+
+static inline std::string intrinsic_type_to_str_with_kind(const ASR::ttype_t* t, int kind) {
+    return type_to_str_fortran_symbol(t, nullptr) + "_" + std::to_string(kind);
 }
 
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::expr_t* expr)
@@ -3080,7 +3087,7 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs);
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move);
 
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
@@ -5640,6 +5647,12 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
             && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))))
                    == std::string("~unlimited_polymorphic_type"));
+}
+
+static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
+{
+    return (ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym))
+            == std::string("~unlimited_polymorphic_type"));
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
