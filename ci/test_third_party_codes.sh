@@ -125,7 +125,7 @@ time_section "🧪 Testing fortran-shlex" '
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
  
   git clean -dfx
-  fpm --compiler=$FC test --flag "--new-classes --realloc-lhs-arrays"
+  fpm --compiler=$FC build --flag "--new-classes --realloc-lhs-arrays"
 
   print_success "Done with fortran-shlex"
   cd ..

@@ -1400,6 +1400,7 @@ RUN(NAME select_type_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES)
 RUN(NAME select_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --new-classes)
 
 RUN(NAME program_02 LABELS gfortran llvm)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

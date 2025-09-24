@@ -4718,12 +4718,24 @@ public:
                         if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
                               (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
                             impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
-                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];  // -2 to account for reserved null ptr and type info
+                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];
                             continue;
                         }
                     }
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
                     impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
+                }
+            }
+        }
+
+        // Inherit index of not-overriden methods from parent class
+        if (struct_t->m_parent && 
+                struct_vtab_function_offset.find(
+                    ASRUtils::symbol_get_past_external(struct_t->m_parent)) != struct_vtab_function_offset.end()) {
+            for(auto &item: struct_vtab_function_offset[ASRUtils::symbol_get_past_external(struct_t->m_parent)]) {
+                if (struct_vtab_function_offset[struct_sym].find(item.first) == 
+                        struct_vtab_function_offset[struct_sym].end()) {
+                    struct_vtab_function_offset[struct_sym][item.first] = item.second;
                 }
             }
         }
