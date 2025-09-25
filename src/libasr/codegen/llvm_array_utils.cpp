@@ -121,7 +121,7 @@ namespace LCompilers {
                             llvm::Type* arg_type, bool data_only) {
             if( data_only ) {
                 llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(nullptr, ASRUtils::get_contained_type(asr_arg_type), llvm_utils->module);
-                return llvm_utils->CreateLoad2(t, get_pointer_to_data(tmp));
+                return llvm_utils->CreateLoad2(t, get_pointer_to_data(nullptr, ASRUtils::get_contained_type(asr_arg_type), tmp, llvm_utils->module));
             }
             llvm::Value* arg_struct = llvm_utils->CreateAlloca(*builder, arg_type);
             llvm::Value* first_ele_ptr = nullptr;
@@ -502,7 +502,7 @@ namespace LCompilers {
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank) {
-            llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(value_desc));
+            llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), value_desc, llvm_utils->module));
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -528,7 +528,7 @@ namespace LCompilers {
                 llvm::Value* target_str_data, *target_str_len;
                 std::tie(target_str_data, target_str_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(target_type), 
-                    builder->CreateLoad(llvm_utils->get_StringType(target_type)->getPointerTo(), get_pointer_to_data(nullptr, target_type, target, llvm_utils->module)),
+                    builder->CreateLoad(llvm_utils->get_StringType(target_type)->getPointerTo(), get_pointer_to_data(target_expr, target_type, target, llvm_utils->module)),
                     true, true);
 
                 llvm::Value* value_str_length = llvm_utils->get_string_length(
@@ -539,7 +539,7 @@ namespace LCompilers {
 
             } else {
                 value_desc_data = llvm_utils->create_ptr_gep2(value_el_type, value_desc_data, target_offset);
-                builder->CreateStore(value_desc_data,  get_pointer_to_data(target));
+                builder->CreateStore(value_desc_data,  get_pointer_to_data(target_expr, target_type, target, llvm_utils->module));
             }
             llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), llvm_utils->module);
             builder->CreateStore(
@@ -558,6 +558,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
@@ -607,7 +610,7 @@ namespace LCompilers {
                 llvm::Value* target_str_data, *target_str_len;
                 std::tie(target_str_data, target_str_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(target_type),
-                    builder->CreateLoad(llvm_utils->get_StringType(target_type)->getPointerTo(), get_pointer_to_data(target)),
+                    builder->CreateLoad(llvm_utils->get_StringType(target_type)->getPointerTo(), get_pointer_to_data(target_expr, target_type, target, llvm_utils->module)),
                     true, true);
                     
 
@@ -640,6 +643,9 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
+                    llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    // If dim_length is negative then set it to zero
+                    dim_length = builder->CreateSelect(builder->CreateICmpSLT(dim_length, zero), zero, dim_length);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
@@ -817,7 +823,7 @@ namespace LCompilers {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
                 idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, array_name);
-                llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(array));
+                llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
                 } else {
@@ -852,7 +858,7 @@ namespace LCompilers {
                         str,
                         builder->CreateLoad(load_type, get_pointer_to_data(array)), true);
             } else {
-                memory_holder = get_pointer_to_data(array);
+                memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);
             }
 
             return builder->CreateICmpNE(
@@ -1006,6 +1012,62 @@ namespace LCompilers {
                                   llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
 
+            llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src, true);
+            llvm::Value* n_dims = this->get_rank(src_ty, src, false);
+            llvm::Value* dest_dim_des_val = nullptr;
+            dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest, true);
+            llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+            llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+            llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+
+            // Loop to copy `dimension_descriptor` from src to dest
+            llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
+            // head
+            llvm_utils->start_new_block(loophead);
+            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
+            builder->CreateCondBr(cond, loopbody, loopend);
+
+            // body
+            llvm_utils->start_new_block(loopbody);
+            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
+            llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
+            llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
+            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
+                                    src_dim_val, llvm::MaybeAlign(),
+                                    llvm::ConstantInt::get(
+                                    context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+            r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            builder->CreateStore(r_val, r);
+            builder->CreateBr(loophead);
+
+            // end
+            llvm_utils->start_new_block(loopend);
+
+
+            builder->CreateStore(n_dims, this->get_rank(dest_ty , dest, true));
+        }
+
+        // Copy destination's descriptor to the source descriptor
+        // Move the data pointer from dest to src
+        // And set the src's data pointer to null to prevent double deallocation
+        void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
+            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
+
+            llvm::Value* first_ptr = this->get_pointer_to_data(dest);
+            llvm::Value* src_data_ptr = this->get_pointer_to_data(src);
+            llvm::Type* llvm_data_type =  llvm_utils->get_el_type(array_exp, ASRUtils::extract_type(asr_data_type), module);
+            builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
+
+            // Data pointer has been moved to dest, so set src's data pointer to null
+            builder->CreateStore(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), src_data_ptr);
+
+            llvm::Value* src_offset = this->get_offset(dest_ty, src);
+            llvm::Value* dest_offset = this->get_offset(dest_ty, dest, false);
+            builder->CreateStore(src_offset, dest_offset);
+
+            llvm::DataLayout data_layout(module->getDataLayout());
             llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src, true);
             llvm::Value* n_dims = this->get_rank(src_ty, src, false);
             llvm::Value* dest_dim_des_val = nullptr;

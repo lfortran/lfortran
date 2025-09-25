@@ -1,6 +1,8 @@
 #include <libasr/exception.h>
 #include <libasr/string_utils.h>
 
+#include <iostream>
+
 #include <lfortran/utils.h>
 
 #ifndef CLI11_HAS_FILESYSTEM
@@ -45,12 +47,17 @@ namespace LCompilers::CommandLineInterface {
         bool disable_warnings = false;
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
+        bool disable_realloc_lhs = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
         app.add_option("files", opts.arg_files, "Source files");
         app.add_flag("-S", opts.arg_S, "Emit assembly, do not assemble or link");
         app.add_flag("-c", opts.arg_c, "Compile and assemble, do not link");
+        // TODO(2025-09-14; CMake <= 4.1.1; https://gitlab.kitware.com/cmake/cmake/-/issues/27225): remove legacy alias when fix is widely available.
+        CLI::Option *legacy_generate_object_code = app.add_flag(
+            "--generate-object-code", compiler_options.separate_compilation,
+            "DEPRECATED: legacy alias for --separate-compilation");
         app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
         app.add_flag("-v", opts.arg_v, "Be more verbose");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
@@ -170,7 +177,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
-        app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically")->group(group_miscellaneous_options);
+        app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
+        app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
@@ -234,6 +242,14 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.show_error_banner = false;
         }
 
+        // Emit deprecation warning for legacy flag alias, unless warnings are disabled
+        if (legacy_generate_object_code && legacy_generate_object_code->count() > 0) {
+            if (!disable_warnings) {
+                std::cerr << "warning: `--generate-object-code` is deprecated and will be "
+                          << "removed in a future release; use `--separate-compilation` instead.\n";
+            }
+        }
+
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
             // The default LFortran behavior, do nothing
         } else if (opts.arg_standard == "f23") {
@@ -252,7 +268,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
-            compiler_options.po.realloc_lhs = true;
+            compiler_options.po.realloc_lhs_arrays = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
             compiler_options.show_style_suggestions = false;
@@ -284,6 +300,10 @@ namespace LCompilers::CommandLineInterface {
 
         if (disable_bounds_checking || compiler_options.po.fast) {
             compiler_options.po.bounds_checking = false;
+        }
+
+        if (disable_realloc_lhs) {
+            compiler_options.po.realloc_lhs_arrays = false;
         }
 
         compiler_options.use_colors = !opts.arg_no_color;

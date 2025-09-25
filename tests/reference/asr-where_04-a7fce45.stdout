@@ -92,6 +92,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 absdiff)
@@ -100,6 +101,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Where
@@ -218,6 +220,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                         )]
                                         []
@@ -391,6 +394,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 4 x)

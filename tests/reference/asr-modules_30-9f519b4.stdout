@@ -142,6 +142,7 @@
                                         (Var 9 name)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -158,6 +159,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -173,6 +175,7 @@
                                             (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     ()

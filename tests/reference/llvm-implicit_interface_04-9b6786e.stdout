@@ -120,34 +120,33 @@ define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
   store float 1.000000e+00, float* %1, align 4
   %2 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %0, i32 0, i32 0, float* %1)
   %3 = load i64, i64* %0, align 4
-  %4 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc = bitcast i8* %4 to %string_descriptor*
-  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %2, i8** %5, align 8
-  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %3, i64* %6, align 4
-  %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %10 = load i64, i64* %9, align 4
-  %11 = trunc i64 %10 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  %12 = load i32, i32* %m, align 4
-  %13 = add i32 1, %12
-  %14 = sub i32 %13, 1
-  %15 = icmp sgt i32 3, %14
-  %16 = or i1 false, %15
-  br i1 %16, label %then, label %ifcont
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %4 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %2, i8** %4, align 8
+  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %3, i64* %5, align 4
+  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %7 = load i8*, i8** %6, align 8
+  %8 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %9 = load i64, i64* %8, align 4
+  %10 = trunc i64 %9 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i32 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %11 = load i32, i32* %m, align 4
+  %12 = add i32 1, %11
+  %13 = sub i32 %12, 1
+  %14 = icmp sgt i32 3, %13
+  %15 = or i1 false, %14
+  br i1 %15, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %14)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %13)
   call void @exit(i32 1)
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  %17 = mul i32 1, %12
-  %18 = getelementptr inbounds i32, i32* %arr, i32 2
-  call void %fnc(i32* %arr, i32* %m, i32* %18)
+  %16 = mul i32 1, %11
+  %17 = getelementptr inbounds i32, i32* %arr, i32 2
+  call void %fnc(i32* %arr, i32* %m, i32* %17)
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -275,8 +274,6 @@ return:                                           ; preds = %ifcont18
 }
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
-
-declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 

@@ -377,6 +377,7 @@
                         (IntegerConstant 12 (Integer 4) Decimal)
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -415,6 +416,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (SubroutineCall

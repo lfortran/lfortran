@@ -122,7 +122,7 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
 void pass_replace_class_constructor(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
-    StructConstructorVisitor v(al, pass_options.realloc_lhs);
+    StructConstructorVisitor v(al, pass_options.realloc_lhs_arrays);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);

@@ -116,7 +116,7 @@ program continue_compilation_1
     end type
     type(bspline_3d) :: s3_in_program
     integer :: j2, i2, k2(2), x2(2), y2(3)    
-
+    integer::tt = b'01' * 3
 
 
 

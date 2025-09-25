@@ -3,9 +3,10 @@
 ### Note : This taking in consideration the LLVM backend only.
 ***
 ### General Rules :
-- Allocation with (length = `0`) is fine, and string is considered **allocated** even when the (length = `0`).
+- Allocation with length=`0` (`allocate(character(0) :: str)`) is fine, and string is considered **allocated** even when the length=`0`.
 - We make sure to follow this statement when allocating strings -> `MAX(alloc_len, 1)`; That makes sure that the preceding point is valid and working properly.
-- Allocation with (length < `0`) isn't tolerated in LFortran, It raises error on both compile-time and run-time.
+- Allocation with length<`0` (`allocate(character(-1) :: str)`) isn't tolerated in LFortran, It raises error on both compile-time and run-time.
+- Copying from unallocated string (`str1 = str2`) isn't tolerated and raises run-time error. We don't know how to determine the **allocation** state of the LHS so we don't tolerate that case; In addition, Fortran standards don't allow referencing non-allocated variables.
 
 ## Explicit Allocation
 

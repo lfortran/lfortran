@@ -2343,7 +2343,7 @@ public:
             if (expression_value) {
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
                 ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs));
+                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                 current_body->push_back(al, assignment_stmt);
             } else {
                 diag.add(Diagnostic(
@@ -2521,7 +2521,7 @@ public:
                 current_variable_type_ = temp_current_variable_type_;
                 ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
                 ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                    target, value, nullptr, compiler_options.po.realloc_lhs)
+                                                                                    target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
                                                              );
                 LCOMPILERS_ASSERT(current_body != nullptr)
                 current_body->push_back(al, assignStatement);
@@ -2572,7 +2572,7 @@ public:
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::Var_t>(*object)) {
@@ -2590,7 +2590,7 @@ public:
             v2->n_dependencies = var_deps_vec.size();
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
@@ -2605,7 +2605,7 @@ public:
             // but we can fix that later.
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs));
+                        object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
             LCOMPILERS_ASSERT(current_body != nullptr)
             current_body->push_back(al, assign_stmt);
         } else {
@@ -4251,15 +4251,35 @@ public:
                     } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
                         if (array_init->n_args > 0) {
-                            bool is_correct_type = true;
+                            bool is_correct_type_func = false;
+                            bool is_correct_type_implieddoloop = false;
                             AST::FuncCallOrArray_t* func_call = nullptr;
 
-                            is_correct_type = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
-                            if (is_correct_type) {
+                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
+                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
+                            
+                            if (is_correct_type_func) {
                                 func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
                             }
-
-                            if (!is_correct_type || strcmp(func_call->m_func, sym_type->m_name) != 0) {
+                            else if (is_correct_type_implieddoloop) {
+                                AST::ImpliedDoLoop_t* idoloop = AST::down_cast<AST::ImpliedDoLoop_t>(array_init->m_args[0]);
+                                // Check if the implied do loop values construct the correct type
+                                if (idoloop->n_values > 0) {
+                                    if (AST::is_a<AST::FuncCallOrArray_t>(*idoloop->m_values[0])) {
+                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(idoloop->m_values[0]);
+                                    }
+                                    else if (AST::is_a<AST::Name_t>(*idoloop->m_values[0])){
+                                        // TODO:: Check if Array Type Matches Do Loop Assignment Type, 
+                                        is_correct_type_implieddoloop = true;
+                                    }
+                                    } else {
+                                        is_correct_type_implieddoloop = false;
+                                    }
+                                } else {
+                                    is_correct_type_implieddoloop = false;
+                            }
+                            if ((!is_correct_type_func && !is_correct_type_implieddoloop) ||
+                                (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0)) {
                                 diag.add(Diagnostic(
                                     "Array members must me of the same type as the struct",
                                     Level::Error, Stage::Semantic, {
@@ -8539,6 +8559,39 @@ public:
             str_type,
             value);
     }
+
+    ASR::asr_t* create_StrOrd(const AST::FuncCallOrArray_t& x){
+        if(x.n_keywords > 0 || x.n_args != 1) throw LCompilersException("_lfortran_ord expects exactly one argument");
+
+        /* Visit Argument */
+        ASR::expr_t* argument {};
+        {
+            AST::BaseVisitor<Derived>::visit_expr(*(x.m_args[0].m_end));
+            argument = ASRUtils::EXPR(tmp);
+            tmp = nullptr;
+        }
+
+        ASR::ttype_t *type = ASRUtils::expr_type(argument);
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        ASR::expr_t *value = nullptr;
+        if (!ASRUtils::is_character(*type)) {
+            diag.add(Diagnostic("_lfortran_ord expects a string type",
+                                Level::Error, Stage::Semantic, {}));
+            throw SemanticAbort();
+        }
+
+        if (ASRUtils::expr_value(argument) != nullptr) {
+            char* c = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(argument))->m_s;
+            if (std::string(c).size() != 1) {
+                diag.add(Diagnostic("_lfortran_ord is only supported for `str` of length 1",
+                                    Level::Error, Stage::Semantic, {}));
+                throw SemanticAbort();
+            }
+            value = ASR::down_cast<ASR::expr_t>(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, c[0], to_type));
+        }
+        return ASR::make_StringOrd_t(al, x.base.base.loc, argument, to_type, value);
+    }
     
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -9350,6 +9403,8 @@ public:
                     tmp = create_TupleConstant(x);
                 else if (var_name == "_lfortran_str"){
                     tmp = create_CastToStr(x);
+                } else if (var_name == "_lfortran_ord"){
+                    tmp = create_StrOrd(x);
                 }
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
@@ -10988,7 +11043,7 @@ public:
                     ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
                     ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, value);
                     ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                        target, value, nullptr, compiler_options.po.realloc_lhs));
+                        target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                     body.push_back(al, assignment);
 
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
@@ -11040,6 +11095,11 @@ public:
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {
+        if (AST::is_a<AST::BOZ_t>(*x.m_left) || AST::is_a<AST::BOZ_t>(*x.m_right)) {
+            diag.add(Diagnostic("BOZ literal constant cannot be used in binary operations",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);

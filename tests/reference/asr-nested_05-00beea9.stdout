@@ -88,6 +88,7 @@
                                                         (IntegerConstant 4 (Integer 4) Decimal)
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 3 y)
@@ -96,6 +97,7 @@
                                                             (Real 4)
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                     )]
                                                     ()
@@ -169,6 +171,7 @@
                                         (IntegerConstant 6 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
@@ -177,6 +180,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Print

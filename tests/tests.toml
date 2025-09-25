@@ -3200,12 +3200,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_45.f90"
 llvm = true
-options = "--realloc-lhs"
 
 [[test]]
 filename = "../integration_tests/automatic_allocation_02.f90"
 llvm = true
-options = "--realloc-lhs"
+options = "--realloc-lhs-arrays"
 
 # TODO: StructType - Uncomment below test after supporting type-inheritance in type-checking
 # [[test]]
@@ -3871,6 +3870,10 @@ filename = "errors/intrinsics2.f90"
 asr = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_01.f90"
+run = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -3892,6 +3895,10 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_06.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_07.f90"
 run = true
 
 [[test]]
@@ -4624,6 +4631,10 @@ filename = "errors/string_assignment_01.f90"
 run = true
 
 [[test]]
+filename = "errors/string_assignment_02.f90"
+run = true
+
+[[test]]
 filename = "errors/string_allocation_01.f90"
 run = true
 
@@ -4797,4 +4808,8 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/select_type_13.f90"
+llvm_new_classes = true
+
+[[test]]
+filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
 llvm_new_classes = true

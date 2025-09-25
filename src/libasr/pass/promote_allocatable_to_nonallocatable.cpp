@@ -324,6 +324,32 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
         }
 };
 
+class FixMoveAssignment: public ASR::CallReplacerOnExpressionsVisitor<FixMoveAssignment> {
+    public:
+
+        Allocator& al;
+
+        FixMoveAssignment(Allocator& al_):
+            al(al_) {}
+
+        void visit_Assignment(const ASR::Assignment_t& x) {
+            ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+            bool is_target_allocatable_array = ASRUtils::is_array(target_type) &&
+                                            ASRUtils::is_allocatable(target_type) &&
+                                            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
+            bool is_value_allocatable_array = ASRUtils::is_array(value_type) &&
+                                            ASRUtils::is_allocatable(value_type) &&
+                                            ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+
+            if (x.m_move_allocation && (!is_target_allocatable_array || !is_value_allocatable_array)) {
+                xx.m_move_allocation = false;
+            }
+        }
+};
+
 void pass_promote_allocatable_to_nonallocatable(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &/*pass_options*/) {
@@ -335,6 +361,8 @@ void pass_promote_allocatable_to_nonallocatable(
     promoter.visit_TranslationUnit(unit);
     FixArrayPhysicalCastVisitor fix_array_physical_cast(al);
     fix_array_physical_cast.visit_TranslationUnit(unit);
+    FixMoveAssignment fix_move_assignment(al);
+    fix_move_assignment.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
 }

@@ -175,7 +175,14 @@ namespace LCompilers {
                     || ASRUtils::is_array(ASRUtils::expr_type(var))
                     || ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
-        
+
+        static inline bool is_aggregate_or_array_type(ASR::ttype_t* type) {
+            return (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_allocatable_pointer(type))
+                    || ASRUtils::is_array(type)
+                    || ASR::is_a<ASR::SymbolicExpression_t>(*type));
+        }
+
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
             return  is_aggregate_or_array_type(var) || 
                     is_non_primitive_return_type(ASRUtils::expr_type(var));
@@ -729,7 +736,7 @@ namespace LCompilers {
                     } else {
                         assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref,
-                                                    x_m_args_i, nullptr, realloc_lhs));
+                                                    x_m_args_i, nullptr, realloc_lhs, false));
                     }
                     result_vec->push_back(replacer->al, assign);
                 }
@@ -799,14 +806,14 @@ namespace LCompilers {
                             idoloop_m_values_i, cast_kind, casted_type, nullptr));
                     }
                     ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, arr_var->base.loc,
-                                                    array_ref, idoloop_m_values_i, nullptr, false));
+                                                    array_ref, idoloop_m_values_i, nullptr, false, false));
                     doloop_body.push_back(al, doloop_stmt);
                     if( arr_idx != nullptr ) {
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_var->base.loc, 4))));
                         ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.loc,
                                                     arr_idx, ASR::binopType::Add, one, ASRUtils::expr_type(arr_idx), nullptr));
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, arr_var->base.loc,
-                                                    arr_idx, increment, nullptr, false));
+                                                    arr_idx, increment, nullptr, false, false));
                         doloop_body.push_back(al, assign_stmt);
                     }
                 }
@@ -1109,7 +1116,7 @@ namespace LCompilers {
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(replacer->al, loc, 1,
                                             ASRUtils::expr_type(idx_var)));
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                target_section->base.base.loc, idx_var, lb, nullptr, false));
+                                                target_section->base.base.loc, idx_var, lb, nullptr, false, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); k++ ) {
                     Vec<ASR::array_index_t> args;
@@ -1146,11 +1153,11 @@ namespace LCompilers {
                             x_m_args_k, cast_kind, casted_type, nullptr));
                     }
                     ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
-                                                    array_ref, x_m_args_k, nullptr, false));
+                                                    array_ref, x_m_args_k, nullptr, false, false));
                     result_vec->push_back(replacer->al, assign_stmt);
                     ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
                                                 idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
-                    assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false));
+                    assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false, false));
                     result_vec->push_back(replacer->al, assign_stmt);
                 }
             }
@@ -1173,7 +1180,7 @@ namespace LCompilers {
             ASR::expr_t* idx_var = idx_vars[0];
             ASR::expr_t* lb = PassUtils::get_bound(result_var, 1, "lbound", al);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                                            loc, idx_var, lb, nullptr, false));
+                                            loc, idx_var, lb, nullptr, false, false));
             result_vec->push_back(al, assign_stmt);
             visit_ArrayConstructor(x, al, result_var, result_vec,
                 idx_var, current_scope, perform_cast, cast_kind, casted_type);
@@ -1203,7 +1210,7 @@ namespace LCompilers {
                 ASR::expr_t* idx_var = idx_vars[0];
                 ASR::expr_t* lb = PassUtils::get_bound(replacer->result_var, 1, "lbound", replacer->al);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                loc, idx_var, lb, nullptr, false));
+                                                loc, idx_var, lb, nullptr, false, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 visit_ArrayConstructor(x, replacer->al, replacer->result_var, result_vec,
                                     idx_var, replacer->current_scope,
@@ -1232,7 +1239,7 @@ namespace LCompilers {
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(replacer->al, loc, 1,
                                             ASRUtils::expr_type(idx_var)));
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                target_section->base.base.loc, idx_var, lb, nullptr, false));
+                                                target_section->base.base.loc, idx_var, lb, nullptr, false, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 for( size_t k = 0; k < x->n_args; k++ ) {
                     ASR::expr_t* curr_init = x->m_args[k];
@@ -1273,11 +1280,11 @@ namespace LCompilers {
                                 x_m_args_k, cast_kind, casted_type, nullptr));
                         }
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
-                                                        array_ref, x_m_args_k, nullptr, false));
+                                                        array_ref, x_m_args_k, nullptr, false, false));
                         result_vec->push_back(replacer->al, assign_stmt);
                         ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
                                                     idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
-                        assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false));
+                        assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false, false));
                         result_vec->push_back(replacer->al, assign_stmt);
                     }
                 }

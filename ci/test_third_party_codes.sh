@@ -105,6 +105,9 @@ time_section "🧪 Testing fortran-regex" '
 
   git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
+  
+  git clean -dfx
+  fpm --compiler=$FC build --flag "--new-classes"
 
   print_success "Done with fortran-regex"
   cd ..
@@ -116,9 +119,14 @@ time_section "🧪 Testing fortran-shlex" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-1
   micromamba install -c conda-forge fpm
+
   git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
-  fpm --compiler=$FC build --flag "--realloc-lhs"
-  fpm --compiler=$FC test --flag "--realloc-lhs"
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+ 
+  git clean -dfx
+  fpm --compiler=$FC build --flag "--new-classes --realloc-lhs-arrays"
+
   print_success "Done with fortran-shlex"
   cd ..
 '
@@ -129,8 +137,13 @@ time_section "🧪 Testing toml-f" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-2
   micromamba install -c conda-forge fpm
+
   git checkout 38c294fc5d9cb5fa6a9d3569514da28b8705f3fb
   fpm --compiler=$FC build
+  
+  git clean -dfx
+  fpm --compiler=$FC build --flag "--new-classes"
+
   print_success "Done with toml-f"
   cd ..
 '
@@ -139,10 +152,15 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-3
+  git checkout lf-4
   micromamba install -c conda-forge fpm
-  git checkout 5dbce529fe5ec3b1a917c658d8e7829433c06304
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs --use-loop-variable-after-loop"
+
+  git checkout 81ee9efbf265301986d3ab682994f63c1a20f1cc
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  
+  git clean -dfx
+  fpm --compiler=$FC build --flag "--new-classes --cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+
   print_success "Done with jonquil"
   cd ..
 '
@@ -154,8 +172,8 @@ time_section "🧪 Testing M_CLI2" '
   git checkout lf-6
   micromamba install -c conda-forge fpm
   git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
-  fpm --compiler=$FC build --flag "--realloc-lhs"
-  fpm --compiler=$FC test --flag "--realloc-lhs"
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
   print_success "Done with M_CLI2"
   cd ..
 '
@@ -200,7 +218,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building with optimization flags"
-  # FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
@@ -227,7 +245,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -238,7 +256,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -293,7 +311,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
-  FC="$FC --no-array-bounds-checking --realloc-lhs" make
+  FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
 
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
@@ -337,7 +355,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
-  FC="$FC --separate-compilation --no-array-bounds-checking --realloc-lhs" make
+  FC="$FC --separate-compilation --no-array-bounds-checking --realloc-lhs-arrays" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -704,7 +722,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC="$FC --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -715,7 +733,7 @@ time_section "🧪 Testing fastGPT" '
         # TODO: regression as of `struct refactoring`
         # mkdir lf-goc
         # cd lf-goc
-        # FC="$FC --separate-compilation --rtlib --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        # FC="$FC --separate-compilation --rtlib --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         # make VERBOSE=1
         # ln -s ../model.dat .
         # ./gpt2
@@ -729,7 +747,7 @@ time_section "🧪 Testing fastGPT" '
         git checkout -t origin/lf6
         git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
         echo $CONDA_PREFIX
-        FC="$FC --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
         make
         ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
         file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -740,8 +758,8 @@ time_section "🧪 Testing fastGPT" '
         ldd ./test_more_inputs
 
         git clean -dfx
-        git checkout -t origin/lf36run
-        git checkout c915a244354df2e23b0dc613e302893b496549e2
+        git checkout -t origin/lf37run
+        git checkout 12885a08c9a34cd260f29edc68feddccbc624493
         # NOTE: the release file link below would not necessarily
         # need to be updated if the commit hash above is updated
         curl -f -L -o model.dat \
@@ -750,7 +768,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC="$FC --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -762,7 +780,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --separate-compilation --rtlib --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --separate-compilation --rtlib --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -773,7 +791,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-fast
         cd lf-fast
-        FC="$FC --fast --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --fast --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -787,7 +805,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf
         git clean -dfx
-        FC="$FC --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -797,7 +815,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf-fast
         git clean -dfx
-        FC="$FC --fast --no-array-bounds-checking --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --fast --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -823,7 +841,7 @@ time_section "🧪 Testing stdlib" '
     micromamba install -c conda-forge fypp
 
     git clean -fdx
-    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
     make -j8
     ctest
 '

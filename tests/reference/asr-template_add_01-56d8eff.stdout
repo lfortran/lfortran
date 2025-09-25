@@ -172,6 +172,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 7 z)
                                                     Public
@@ -418,6 +419,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )]
                                     (Var 9 z)
                                     Private
@@ -523,6 +525,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )]
                                     (Var 8 z)
@@ -799,6 +802,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 12 z)
                                                     Public
@@ -907,6 +911,7 @@
                                                         )
                                                         ()
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 11 z)
                                                     Public
@@ -1003,6 +1008,7 @@
                                         )
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 10 y)
@@ -1011,6 +1017,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Print
@@ -1081,11 +1088,13 @@
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 10 b)
                                         (IntegerConstant 9 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                     )
                                     (Print

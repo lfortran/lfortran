@@ -73,6 +73,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -89,6 +90,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Assignment
@@ -107,6 +109,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -124,6 +127,7 @@
                         )
                         ()
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -140,6 +144,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                     )
                     (Print
