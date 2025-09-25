@@ -125,7 +125,7 @@ time_section "🧪 Testing fortran-shlex" '
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
  
   git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--new-classes --realloc-lhs-arrays"
 
   print_success "Done with fortran-shlex"
   cd ..
@@ -159,7 +159,7 @@ time_section "🧪 Testing jonquil" '
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   
   git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC test --flag "--new-classes --cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
   cd ..
