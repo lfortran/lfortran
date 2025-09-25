@@ -789,6 +789,10 @@ namespace LCompilers {
                                            true);
                     }
                 }
+                if (compiler_options.new_classes
+                    && ASRUtils::is_unlimited_polymorphic_type(arg_expr)) {
+                    type = type->getPointerTo();
+                }
                 break;
             }
             case (ASR::ttypeType::CPtr) : {

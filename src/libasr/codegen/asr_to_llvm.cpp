@@ -8182,7 +8182,16 @@ public:
                             create_type_info_for_intrinsic_type(type_stmt_type, kind);
                         }
                         llvm::Value* static_ptr = llvm_selector;
-                        if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                        if (ASRUtils::is_array(selector_var_type)) {
+                            static_ptr = arr_descr->get_pointer_to_data(static_ptr);
+                            static_ptr = llvm_utils->CreateLoad2(
+                                llvm_utils->get_el_type(
+                                    x.m_selector,
+                                    ASRUtils::type_get_past_array(selector_var_type),
+                                    module.get())->getPointerTo(),
+                                static_ptr);
+                        }
+                        if (LLVM::is_llvm_pointer(*selector_var_type)) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
                         llvm::Value* val = lfortran_dynamic_cast(
@@ -12519,10 +12528,9 @@ public:
                     ASRUtils::expr_type(s_m_args0))) ) {
                 return dt;
             }
-            ASR::ttype_t* arg_type_ = ASRUtils::expr_type(arg_expr);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type_))) {
-                if (ASRUtils::is_array(arg_type_) && 
-                    ASRUtils::extract_physical_type(arg_type_) == ASR::array_physical_typeType::DescriptorArray) {
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
+                if (ASRUtils::is_array(arg_type) && 
+                    ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
                     // TODO: Convert Descriptor arrays here
                     return dt;
                 }
@@ -12538,7 +12546,65 @@ public:
                 }
                 return builder->CreateBitCast(dt, target_struct_type);
             } else {
-                return dt;
+                if (ASRUtils::is_unlimited_polymorphic_type(s_m_args0)) {
+                    if (ASRUtils::is_array(arg_type)) {
+                        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                            s_m_args0, s_m_args0_type, module.get());
+                        llvm::Value* unlimited_polymorphic_type_array = llvm_utils->CreateAlloca(*builder, array_type);
+                        llvm::Type* array_data_type = llvm_utils->get_el_type(
+                            s_m_args0, ASRUtils::type_get_past_array(s_m_args0_type), module.get());
+                        llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
+                        builder->CreateStore(
+                            array_data, arr_descr->get_pointer_to_data(unlimited_polymorphic_type_array));
+                        arr_descr->fill_array_details(arg_expr,
+                                                    s_m_args0,
+                                                    dt,
+                                                    unlimited_polymorphic_type_array,
+                                                    arg_type,
+                                                    s_m_args0_type,
+                                                    module.get(),
+                                                    true);
+                        llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateLoad2(
+                            array_data_type->getPointerTo(),
+                            arr_descr->get_pointer_to_data(unlimited_polymorphic_type_array));
+
+                        llvm::Value* data_ptr = llvm_utils->create_gep2(array_data_type, unlimited_polymorphic_struct, 1);
+                        arg_type = ASRUtils::extract_type(arg_type);
+                        if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
+                                arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type)))
+                            == intrinsic_type_vtab.end()) {
+                            create_vtab_for_intrinsic_type(arg_type,
+                                                        ASRUtils::extract_kind_from_ttype_t(arg_type));
+                        }
+                        // Store intrinsic type vptr
+                        store_intrinsic_type_vptr(
+                            arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct);
+                        // Store inrinsic type data ptr
+                        builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr),
+                                            data_ptr);
+                        return unlimited_polymorphic_type_array;
+                    } else {
+                        llvm::Type* unlimited_polymorphic_type = llvm_utils->get_type_from_ttype_t_util(
+                                s_m_args0, s_m_args0_type, module.get());
+                        llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateAlloca(*builder, unlimited_polymorphic_type);
+                        llvm::Value* data_ptr = llvm_utils->create_gep2(unlimited_polymorphic_type, unlimited_polymorphic_struct, 1);
+
+                        // An intrinsic type scalar is passes as argument to a `class(*)` function parameter
+                        if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
+                                arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type)))
+                            == intrinsic_type_vtab.end()) {
+                            create_vtab_for_intrinsic_type(arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type));
+                        }
+                        store_intrinsic_type_vptr(arg_type,
+                                                    ASRUtils::extract_kind_from_ttype_t(arg_type),
+                                                    unlimited_polymorphic_struct);
+                                                    
+                        builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr), data_ptr);
+                        return unlimited_polymorphic_struct;
+                    }
+                } else {
+                    return dt;
+                }
             }
         }
         if( !ASRUtils::is_class_type(ASRUtils::type_get_past_array(s_m_args0_type)) ) {
