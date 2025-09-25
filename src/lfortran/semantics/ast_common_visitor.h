@@ -384,9 +384,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
-        diag.add(Diagnostic("String constant in compiletime evaluation implied do loop not supported",
-                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-        throw SemanticAbort();
+        value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -2303,7 +2301,6 @@ public:
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
-        //printf("a->m_value[] type: %d\n", (*a->m_value[curr_value]).type);
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         bool is_real = 0;
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
@@ -9807,6 +9804,8 @@ public:
             res = ASR::down_cast<ASR::IntegerConstant_t>(visitor.value)->m_n;
         } else if constexpr (std::is_same_v<T,float> || std::is_same_v<T,double>) {
             res = ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r;
+        } else if constexpr (std::is_same_v<T,char*>) {
+            res = ASR::down_cast<ASR::StringConstant_t>(visitor.value)->m_s;
         }
         return res;
     }
@@ -9964,16 +9963,43 @@ public:
                     throw SemanticAbort();
                 }
             }
+            // Add Support for Character Type in Implied Do Loop
+            else if (ASRUtils::is_character(*type)){
+                Vec<char*> array; array.reserve(al, 1);
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                //Get length of Do-Loop Character Type
+                int len = -1;
+                ASRUtils::extract_value(
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type))->m_len, len);
+                char* char_data = new char[len * itr + 1];
+                for (int i = 0; i < itr; i++) {
+                    for (int j = 0; j < len; j++) {
+                        char_data[i*len + j] = array.p[i][j];
+                    }
+                }
+                char_data[len * itr] = '\0';
+                data = (void*) char_data;
+            }
             if (data != nullptr) {
                 Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                 ASR::dimension_t dim; dim.loc = x.base.base.loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
                 dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, itr, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
                 dims.push_back(al, dim);
-
-                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
-
-                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, itr * ASRUtils::extract_kind_from_ttype_t(type), data,
+                ASR::array_physical_typeType physical_type = ASR::array_physical_typeType::FixedSizeArray;
+                if (ASRUtils::is_character(*type)) {
+                    physical_type = ASR::array_physical_typeType::PointerArray;
+                }
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, physical_type));
+                int64_t n_data = itr * ASRUtils::extract_kind_from_ttype_t(type);
+                if (ASRUtils::is_character(*type)) {
+                    int len;
+                    if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type))->m_len, len)){
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    n_data = itr * len;
+                }
+                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, n_data, data,
                         array_type, ASR::arraystorageType::ColMajor));
                 idl->m_value = value;
                 tmp = (ASR::asr_t*) idl;
