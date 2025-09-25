@@ -1740,7 +1740,8 @@ public:
                     curr_struct = dertype2parent[curr_struct];
                 }
                 int dt_idx = 0;
-                if (compiler_options.new_classes) {
+                if (compiler_options.new_classes && 
+                        dertype2parent.find(curr_struct) == dertype2parent.end()) {
                     // Offset by 1 to bypass `vptr` at index 0.
                     dt_idx = name2memidx[curr_struct][member_name] + 1;
                 } else {
@@ -4717,12 +4718,24 @@ public:
                         if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
                               (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
                             impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
-                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];  // -2 to account for reserved null ptr and type info
+                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];
                             continue;
                         }
                     }
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
                     impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
+                }
+            }
+        }
+
+        // Inherit index of not-overriden methods from parent class
+        if (struct_t->m_parent && 
+                struct_vtab_function_offset.find(
+                    ASRUtils::symbol_get_past_external(struct_t->m_parent)) != struct_vtab_function_offset.end()) {
+            for(auto &item: struct_vtab_function_offset[ASRUtils::symbol_get_past_external(struct_t->m_parent)]) {
+                if (struct_vtab_function_offset[struct_sym].find(item.first) == 
+                        struct_vtab_function_offset[struct_sym].end()) {
+                    struct_vtab_function_offset[struct_sym][item.first] = item.second;
                 }
             }
         }
@@ -13182,6 +13195,18 @@ public:
 
             // Convert function args
             std::vector<llvm::Value*> args;
+            if (current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt) &&
+                    ASRUtils::EXPR2VAR(x.m_dt)->m_name == current_selector_var_name) {
+                /*Case: 
+                class(base_t), allocatable :: ptr
+                select type(ptr)
+                    type is(child1_t)
+                        call ptr%describe_child1()    !!! We need `child_t` struct
+                end select
+                */
+                struct_sym = ASRUtils::symbol_get_past_external(
+                    current_scope->resolve_symbol(current_select_type_block_der_type));
+            }
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
             while(!s_class_proc && struct_type_t->m_parent) {
@@ -13389,9 +13414,20 @@ public:
             llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
             llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
-
             // Convert function args
             std::vector<llvm::Value*> args;
+            if (current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_dt) &&
+                    ASRUtils::EXPR2VAR(x.m_dt)->m_name == current_selector_var_name) {
+                /*Case: 
+                class(base_t), allocatable :: ptr
+                select type(ptr)
+                    type is(child1_t)
+                        print *, ptr%describe_child1()   !!! We need `child_t` struct
+                end select
+                */
+                struct_sym = ASRUtils::symbol_get_past_external(
+                    current_scope->resolve_symbol(current_select_type_block_der_type));
+            }
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
             while(!s_class_proc && struct_type_t->m_parent) {
