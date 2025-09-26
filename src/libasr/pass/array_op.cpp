@@ -958,6 +958,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         (void)x;
     }
 
+    bool is_looping_necessary_for_bitcast(ASR::expr_t* value) {
+        if (ASR::is_a<ASR::BitCast_t>(*value)) {
+            ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(value);
+            return !ASRUtils::is_string_only(ASRUtils::expr_type(bit_cast->m_source));
+        } else {
+            return false;
+        }
+    }
+
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         if (ASRUtils::is_simd_array(x.m_target)) {
             if( !(ASRUtils::is_allocatable(x.m_value) ||
@@ -1018,7 +1028,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         var_collector_value.call_replacer();
 
-        if (vars.size() == 1 &&
+        if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
             ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
         ) {
             return ;
