@@ -272,6 +272,24 @@ semantic error: Argument `val_a` with intent(in) passed to a dummy argument with
 73 |         res = inner_func(val_a)
    |                          ^^^^^ 
 
+semantic error: No custom operator exists for this expression
+   --> tests/errors/continue_compilation_2.f90:235:15
+    |
+235 |     str_t_2 = prefix // 10
+    |               ^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:235:5
+    |
+235 |     str_t_2 = prefix // 10
+    |     ^^^^^^^             ^^ type mismatch (string_t and integer)
+
+semantic error: No custom operator exists for this expression
+   --> tests/errors/continue_compilation_2.f90:236:15
+    |
+236 |     str_t_2 = prefix // str_t_1
+    |               ^^^^^^^^^^^^^^^^^ 
+
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
    --> tests/errors/continue_compilation_2.f90:238:38
     |

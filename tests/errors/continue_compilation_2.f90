@@ -206,7 +206,12 @@ program continue_compilation_2
     logical :: min_max = .true.
     integer :: intent_bug_sub_x = 10
     character(len=2) :: lhs
+    type string_t
+        character(:), allocatable :: value
+    end type string_t
     character :: rhs(2)
+    type(string_t) :: str_t_1, str_t_2
+    character(len=10) :: prefix
 
 
 
@@ -225,15 +230,10 @@ program continue_compilation_2
 
 
 
-
-
-
-
-
-
-
-
-
+    str_t_1%value = "world!"
+    prefix = "hello, "
+    str_t_2 = prefix // 10
+    str_t_2 = prefix // str_t_1
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
     ! c_f_pointer_02
