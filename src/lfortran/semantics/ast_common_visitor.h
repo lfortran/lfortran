@@ -11315,7 +11315,7 @@ public:
             tmp = ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("stringconcat")(al, x.base.base.loc, v, diag);
         } else {
             // resolve the intrinsic_op_name to get it's symbol
-            ASR::symbol_t* sym = resolve_custom_operator(intrinsic_op_name, left, right);
+            ASR::symbol_t* sym = resolve_custom_operator(intrinsic_op_name, left, right, x);
 
             LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
 
@@ -12145,7 +12145,7 @@ public:
         return "~~" + op;
     }
 
-    ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t* left, ASR::expr_t* right) {
+    ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right, const AST::StrOp_t &x) {
         ASR::symbol_t* sym = current_scope->resolve_symbol(intrinsic_op_name);
         if (sym != nullptr)
             return sym;
@@ -12159,9 +12159,17 @@ public:
 
         ASR::symbol_t* struct_sym = left_symbol != nullptr ? left_symbol : right_symbol;
 
+        if (struct_sym != nullptr) {
+            ASR::Struct_t* op_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
+            sym = op_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        }
 
-        ASR::Struct_t* op_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        sym = op_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        if (struct_sym == nullptr || sym == nullptr) {
+            diag.add(Diagnostic(
+                "No custom operator exists for this expression",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
 
         return sym;
     }
