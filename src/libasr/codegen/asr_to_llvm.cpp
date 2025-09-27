@@ -1,6 +1,7 @@
 #include "libasr/assert.h"
 #include <iostream>
 #include <llvm/IR/Value.h>
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -7782,6 +7783,17 @@ public:
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
             module.get());
         llvm::Type* m_arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        auto ensure_pointer_type = [&](llvm::Value *value) -> llvm::Value* {
+#if LLVM_VERSION_MAJOR <= 16
+            if (!arr_type->isPointerTy()) return value;
+            llvm::Type *value_type = value->getType();
+            if (value_type != arr_type) {
+                value = builder->CreateBitCast(value, arr_type);
+            }
+#endif
+            return value;
+        };
+
         if( m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -7789,6 +7801,7 @@ public:
             }
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
+            tmp = ensure_pointer_type(tmp);
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -7802,6 +7815,7 @@ public:
                     arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp,
                     arr_descr->get_offset(arr_type, arg));
+            tmp = ensure_pointer_type(tmp);
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -7811,6 +7825,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->CreateGEP2(m_arg_llvm_type, tmp, 0);
             }
+            tmp = ensure_pointer_type(tmp);
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -7820,6 +7835,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
+            tmp = ensure_pointer_type(tmp);
         } else if (
             m_new == ASR::array_physical_typeType::SIMDArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -13195,6 +13211,9 @@ public:
                     ASRUtils::symbol_get_past_external(x.m_name));
             }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+#if LLVM_VERSION_MAJOR <= 16
+            reconcile_typed_pointer_args(fntype, args);
+#endif
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -13374,6 +13393,9 @@ public:
                 }
             }
             args = convert_call_args(x, is_method);
+#if LLVM_VERSION_MAJOR <= 16
+            reconcile_typed_pointer_args(fntype, args);
+#endif
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -13383,6 +13405,9 @@ public:
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
+#if LLVM_VERSION_MAJOR <= 16
+            reconcile_typed_pointer_args(fntype, args);
+#endif
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
@@ -13412,6 +13437,9 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
+#if LLVM_VERSION_MAJOR <= 16
+            reconcile_typed_pointer_args(fn->getFunctionType(), args);
+#endif
             builder->CreateCall(fn, args);
         }
     }
@@ -13476,9 +13504,49 @@ public:
         return pointer_to_struct;
     }
 
+#if LLVM_VERSION_MAJOR <= 16
+    void reconcile_typed_pointer_args(llvm::FunctionType* fnty,
+            std::vector<llvm::Value*>& args) {
+        size_t limit = std::min(args.size(), static_cast<size_t>(fnty->getNumParams()));
+        for (size_t i = 0; i < limit; i++) {
+            llvm::Type *param_type = fnty->getParamType(i);
+            if (!param_type->isPointerTy()) continue;
+            llvm::Value *&arg = args[i];
+            llvm::Type *arg_type = arg->getType();
+            if (!arg_type->isPointerTy()) {
+                arg = builder->CreateBitCast(arg, param_type);
+                continue;
+            }
+            if (arg_type == param_type) continue;
+            llvm::Type *arg_pointee = arg_type->getPointerElementType();
+            if (arg_pointee && arg_pointee->isStructTy()) {
+                llvm::StructType *struct_ty = llvm::cast<llvm::StructType>(arg_pointee);
+                if (struct_ty->getNumElements() > 0 && struct_ty->getElementType(0)->isPointerTy()) {
+                    llvm::Value *data_ptr_gep = builder->CreateStructGEP(arg_pointee, arg, 0);
+                    llvm::Value *data_ptr = builder->CreateLoad(struct_ty->getElementType(0), data_ptr_gep);
+                    if (data_ptr->getType() != param_type) {
+                        data_ptr = builder->CreateBitCast(data_ptr, param_type);
+                    }
+                    arg = data_ptr;
+                    continue;
+                }
+            }
+            if (arg_pointee && arg_pointee->isArrayTy()) {
+                arg = builder->CreateBitCast(arg, param_type);
+                continue;
+            } else {
+                arg = builder->CreateBitCast(arg, param_type);
+            }
+        }
+    }
+#endif
+
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
                                 ASR::ttype_t* asr_return_type) {
+#if LLVM_VERSION_MAJOR <= 16
+        reconcile_typed_pointer_args(fnty, args);
+#endif
         llvm::Value* return_value = builder->CreateCall(fn, args);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
@@ -14111,16 +14179,28 @@ public:
                         if (compiler_options.platform == Platform::Windows) {
                             tmp = llvm_utils->CreateAlloca(*builder, complex_type_8);
                             args.insert(args.begin(), tmp);
+#if LLVM_VERSION_MAJOR <= 16
+                            reconcile_typed_pointer_args(fn->getFunctionType(), args);
+#endif
                             builder->CreateCall(fn, args);
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
+#if LLVM_VERSION_MAJOR <= 16
+                            reconcile_typed_pointer_args(fn->getFunctionType(), args);
+#endif
                             tmp = builder->CreateCall(fn, args);
                         }
                     } else {
+#if LLVM_VERSION_MAJOR <= 16
+                        reconcile_typed_pointer_args(fn->getFunctionType(), args);
+#endif
                         tmp = builder->CreateCall(fn, args);
                     }
                 } else {
+#if LLVM_VERSION_MAJOR <= 16
+                    reconcile_typed_pointer_args(fn->getFunctionType(), args);
+#endif
                     tmp = builder->CreateCall(fn, args);
                 }
             } else {
