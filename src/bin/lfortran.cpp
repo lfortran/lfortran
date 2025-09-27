@@ -774,6 +774,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
+    compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,

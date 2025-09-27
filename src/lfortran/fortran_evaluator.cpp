@@ -528,6 +528,7 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     compiler_options.po.always_run = false;
     compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
+    compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
     pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
@@ -563,6 +564,7 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     LCompilers::PassManager pass_manager;
     if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();
+        compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
             compiler_options.po, diagnostics);
     }
@@ -594,6 +596,7 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     if (asr.ok) {
         LCompilers::PassManager pass_manager;
         pass_manager.use_fortran_passes();
+        compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {

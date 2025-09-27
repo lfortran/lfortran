@@ -14961,6 +14961,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
     auto t1 = std::chrono::high_resolution_clock::now();
+    co.po.legacy_array_sections = co.legacy_array_sections;
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
     auto t2 = std::chrono::high_resolution_clock::now();
 
