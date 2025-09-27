@@ -868,6 +868,57 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 '
 
+##########################
+# Section 12: Reference-LAPACK
+##########################
+time_section "🧪 Testing Reference-LAPACK (Official Repository)" '
+  git clone https://github.com/Reference-LAPACK/lapack.git reference-lapack
+  cd reference-lapack
+
+  # Use latest stable release
+  git checkout v3.12.0
+
+  python - <<PY
+from pathlib import Path
+path = Path("LAPACKE/include/CMakeLists.txt")
+needle = "  FortranCInterface_VERIFY()"
+replacement = (
+    "  if (CMAKE_Fortran_COMPILER MATCHES \"lfortran\")\n"
+    "    message(STATUS \"Skipping FortranCInterface_VERIFY for LFortran\")\n"
+    "    set(FortranCInterface_GLOBAL_FOUND 1)\n"
+    "    set(FortranCInterface_MODULE_FOUND 1)\n"
+    "  else()\n"
+    "    FortranCInterface_VERIFY()\n"
+    "  endif()"
+)
+text = path.read_text()
+if needle not in text:
+    raise SystemExit("Unable to locate FortranCInterface_VERIFY() for patching")
+path.write_text(text.replace(needle, replacement, 1))
+PY
+
+  extra_fflags="--cpp --fixed-form-infer --implicit-interface --legacy-array-sections"
+  print_subsection "Building Reference-LAPACK with $FC and flags: $extra_fflags"
+  mkdir build && cd build
+
+  cmake -DCMAKE_Fortran_COMPILER=$FC \
+        -DCMAKE_Fortran_FLAGS="$extra_fflags" \
+        -DBUILD_INDEX64_EXT_API=OFF \
+        -DBUILD_COMPLEX=OFF \
+        -DBUILD_COMPLEX16=OFF \
+        -DBUILD_TESTING=OFF \
+        -DCBLAS=OFF \
+        -DLAPACKE=OFF \
+        ..
+
+  make -j8
+
+  print_success "Successfully built Reference-LAPACK"
+  cd ..
+
+  cd ..
+  rm -rf reference-lapack
+'
 
 ##################################
 # Final Summary and Cleanup
