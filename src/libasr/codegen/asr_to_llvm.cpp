@@ -7988,99 +7988,13 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            // When converting from FixedSizeArray to UnboundedPointerArray,
-            // we need to create a proper descriptor with dimension information
-            // to avoid NULL pointer dereferences when accessing array elements
-
-            // Create an array descriptor for UnboundedPointerArray
-            // First get the element type
-            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(m_type)), module.get());
-            // Then get the proper descriptor structure type from SimpleCMODescriptor
-            llvm::Type* target_type = arr_descr->get_array_type(m_arg, m_type, el_type, false);
-            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                target_type, nullptr, "unbounded_array_descriptor");
-
-            // Get pointer to the data
-            llvm::Value* data_ptr = tmp;
             if( ((ASRUtils::expr_value(m_arg) &&
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                 ASRUtils::expr_value(m_arg) == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                data_ptr = llvm_utils->create_gep2(arr_type, data_ptr, 0);
+                tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
-            data_ptr = ensure_pointer_type(data_ptr);
-
-            // Store the data pointer
-            builder->CreateStore(data_ptr, arr_descr->get_pointer_to_data(m_arg, m_type, target, module.get()));
-
-            // Set offset to 0
-            builder->CreateStore(
-                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                arr_descr->get_offset(target_type, target, false));
-
-            // Extract dimensions and create dimension descriptors
-            ASR::dimension_t* m_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-
-            if (n_dims > 0) {
-                // Allocate dimension descriptor array
-                llvm::Value* dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                    target_type, target, false);
-                llvm::Value* dim_des_val = llvm_utils->CreateAlloca(
-                    *builder, arr_descr->get_dimension_descriptor_type(false),
-                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims)));
-                builder->CreateStore(dim_des_val, dim_des_ptr);
-
-                // Fill dimension descriptors
-                for (int i = 0; i < n_dims; i++) {
-                    llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val,
-                        llvm::ConstantInt::get(context, llvm::APInt(32, i)));
-
-                    // Set stride (always 1 for now, could be calculated)
-                    builder->CreateStore(
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1),
-                        arr_descr->get_stride(dim_desc, false));
-
-                    // Set lower bound
-                    llvm::Value* lower_bound;
-                    if (m_dims[i].m_start) {
-                        // Use the actual lower bound from dimension info
-                        visit_expr_wrapper(m_dims[i].m_start, true);
-                        lower_bound = tmp;
-                    } else {
-                        // Default to 1 if not specified
-                        lower_bound = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
-                    }
-                    builder->CreateStore(lower_bound, arr_descr->get_lower_bound(dim_desc, false));
-
-                    // Set length/size
-                    llvm::Value* dim_size;
-                    if (m_dims[i].m_length) {
-                        visit_expr_wrapper(m_dims[i].m_length, true);
-                        dim_size = tmp;
-                    } else {
-                        // For assumed-size arrays, use a large value
-                        // This is a workaround - proper solution would track this differently
-                        dim_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1000000);
-                    }
-                    // For SimpleCMODescriptor, we need to store the size, not the upper bound
-                    // The get_upper_bound function computes upper_bound = lower_bound + size - 1
-                    // So we store size in the dimension descriptor's size field (index 2)
-                    llvm::Value* size_ptr = llvm_utils->create_gep2(
-                        arr_descr->get_dimension_descriptor_type(),
-                        dim_desc, 2);
-                    builder->CreateStore(dim_size, size_ptr);
-                }
-            }
-
-            // Set rank
-            builder->CreateStore(
-                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims),
-                arr_descr->get_rank(target_type, target, true));
-
-            tmp = target;
+            tmp = ensure_pointer_type(tmp);
         } else if (
             m_new == ASR::array_physical_typeType::SIMDArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
