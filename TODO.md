@@ -595,10 +595,72 @@ build-llvm21/src/bin/lfortran integration_tests/lapack_06.f90 \
 - [ ] Works with LLVM 11-16 (typed pointers)
 - [ ] Works with LLVM 17+ (opaque pointers)
 
+## Current Status (28 Sep 2025)
+
+### Progress Made:
+1. Identified that temporary variables `__libasr_created__subroutine_call_*` are created for array sections
+2. Implemented fix in LLVM codegen to pass raw pointers for dimension mismatches in legacy mode
+3. Fix partially works - raw pointer is passed from caller side
+
+### Remaining Issue:
+**The callee (STRSM) is still compiled to expect a descriptor, not a raw pointer.**
+
+When examining the LLVM IR for STRSM:
+```llvm
+define void @strsm(ptr %m, ptr %n, ptr %alpha, ptr %a, ptr %lda) {
+  %1 = getelementptr %array, ptr %a, i32 0, i32 2  ; Accessing descriptor fields!
+  ...
+  ; Runtime bounds checking on the descriptor
+}
+```
+
+The function expects `%a` to be a descriptor (struct with data pointer, dims, etc.) but we're passing a raw pointer.
+
+### Root Cause:
+In legacy mode with assumed-size arrays `A(LDA, *)`, the formal parameter should be compiled as:
+- **UnboundedPointerArray** or raw pointer type (no descriptor access)
+- No runtime bounds checking
+- Direct pointer arithmetic for element access
+
+But it's being compiled as:
+- **DescriptorArray** with full descriptor structure
+- Runtime bounds checking enabled
+- Descriptor field access for dimensions
+
+### The Complete Fix Requires:
+1. **Caller side** (DONE): Pass raw pointer instead of descriptor for legacy array sections
+2. **Callee side** (TODO): Compile assumed-size array parameters as raw pointers in legacy mode
+
+### Where to Fix Callee Compilation:
+
+#### Semantic Phase (ASR Generation):
+In the semantic visitor when creating Variable symbols for formal parameters:
+1. Check if `compiler_options.legacy_array_sections` is set
+2. Check if the array dimension has `*` (assumed-size)
+3. If both true, set physical type to UnboundedPointerArray instead of DescriptorArray
+
+**Files to modify:**
+- `src/lfortran/semantics/ast_symboltable_visitor.cpp` or similar
+- Look for where formal parameter Variables are created
+- Specifically where array types are assigned to formal parameters
+
+#### LLVM Codegen Phase:
+The LLVM codegen already handles UnboundedPointerArray correctly - it treats them as raw pointers without descriptor access. So once the ASR has the correct physical type, the LLVM codegen should work.
+
+### Simpler Workaround (Temporary):
+Disable runtime bounds checking for assumed-size arrays in legacy mode:
+1. In `visit_ArrayItem` or bounds checking code
+2. Check if accessing an assumed-size array in legacy mode
+3. Skip bounds checking for these accesses
+
+This would at least allow the code to run without segfaults, though it's not the complete fix.
+
 ## Final Notes
 
-The issue is well-understood: UnboundedPointerArray expects a descriptor but legacy array sections should just pass raw pointers like FORTRAN 77. The semantic transformations are correct, but the codegen needs to be fixed to not create descriptors for legacy mode.
+The issue is well-understood: Both caller AND callee need to agree on the calling convention. In legacy mode:
+- Caller passes raw pointer (fixed)
+- Callee must expect raw pointer (still broken)
 
-The recommended fix (Option 1) is simple, clean, and aligns with the original FORTRAN 77 behavior that `--legacy-array-sections` is meant to emulate. It avoids the complexity of descriptors entirely for legacy code.
+The semantic transformations are correct, but the codegen needs to be fixed on both sides for legacy mode.
 
 This document contains all information needed to implement the fix from scratch without any prior context.
