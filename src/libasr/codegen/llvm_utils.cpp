@@ -1623,7 +1623,6 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-        x = builder->CreateBitCast(x, t->getPointerTo());
         return builder->CreateGEP(t, x, idx);
     }
 
@@ -1649,7 +1648,6 @@ namespace LCompilers {
             type = ptr_type_deprecated[x];
         }
         LCOMPILERS_ASSERT(type);
-        x = builder->CreateBitCast(x, type->getPointerTo());
         return builder->CreateInBoundsGEP(type, x, idx);
 #endif
     }
