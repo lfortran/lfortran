@@ -2298,6 +2298,7 @@ RUN(NAME lapack_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-inter
 RUN(NAME lapack_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK slarft recursive call with sequence association
 RUN(NAME lapack_04 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK sorm22 WORK array sequence association
 RUN(NAME lapack_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK naming and argument passing test
+RUN(NAME lapack_06 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK stfsm complex array patterns with LLVM 11-16 GEP compatibility
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
