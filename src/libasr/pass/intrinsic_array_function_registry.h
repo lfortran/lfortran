@@ -1920,10 +1920,10 @@ namespace Spread {
                     }
                 }
             }
-        return b.ArrayConstant(m_eles, extract_type(type), false);
-    } else {
-        append_error(diag, "`dim` argument of `spread` intrinsic is not a valid dimension index", loc);
-        return nullptr;
+            return b.ArrayConstant(m_eles, extract_type(type), false, type);
+        } else {
+            append_error(diag, "`dim` argument of `spread` intrinsic is not a valid dimension index", loc);
+            return nullptr;
         }
     }
 

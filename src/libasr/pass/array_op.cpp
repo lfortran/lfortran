@@ -251,17 +251,42 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         LCOMPILERS_ASSERT(result_expr != nullptr);
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::extract_type(result_type);
-        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(x->m_type); i++ ) {
+
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
+
+        int64_t size = ASRUtils::get_fixed_size_of_array(x->m_type);
+        int repeat = 1;
+        std::vector<std::vector<int64_t>> rank_indexes(n_dims, std::vector<int64_t>(size));
+        for (size_t i = 0; i < n_dims; i++) {
+            int64_t length, start, ubound;
+            ASRUtils::extract_value(m_dims[i].m_length, length);
+            ASRUtils::extract_value(m_dims[i].m_start, start);
+            ubound = length + start - 1;
+            int64_t c = 0;
+            while (c != size) {
+                for (int64_t j = start; j <= ubound; j++) {
+                    for (int64_t k = 1; k <= repeat; k++) {
+                        rank_indexes[i][c++] = j;
+                    }
+                }
+            }
+            repeat *= length;
+        }
+
+        for (int64_t i = 0; i < size; i++) {
             ASR::expr_t* x_i = ASRUtils::fetch_ArrayConstant_value(al, x, i);
             Vec<ASR::array_index_t> array_index_args;
-            array_index_args.reserve(al, 1);
-            ASR::array_index_t array_index_arg;
-            array_index_arg.loc = loc;
-            array_index_arg.m_left = nullptr;
-            array_index_arg.m_right = make_ConstantWithKind(
-                make_IntegerConstant_t, make_Integer_t, i + 1, 4, loc);
-            array_index_arg.m_step = nullptr;
-            array_index_args.push_back(al, array_index_arg);
+            array_index_args.reserve(al, n_dims);
+            for (size_t j = 0; j < n_dims; j++) {
+                ASR::array_index_t array_index_arg;
+                array_index_arg.loc = loc;
+                array_index_arg.m_left = nullptr;
+                array_index_arg.m_right = make_ConstantWithKind(
+                    make_IntegerConstant_t, make_Integer_t, rank_indexes[j][i], 4, loc);
+                array_index_arg.m_step = nullptr;
+                array_index_args.push_back(al, array_index_arg);
+            }
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                 result_expr, array_index_args.p, array_index_args.size(),
                 result_element_type, ASR::arraystorageType::ColMajor, nullptr));
@@ -339,7 +364,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::array_index_t array_index_arg;
             array_index_arg.loc = loc;
             array_index_arg.m_left = nullptr;
-            // TODO: Make this work with any rank
             array_index_arg.m_right = builder.Add(m_dims[0].m_start, make_ConstantWithKind(
                 make_IntegerConstant_t, make_Integer_t, i, 4, loc));
             array_index_arg.m_step = nullptr;

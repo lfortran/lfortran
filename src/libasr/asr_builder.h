@@ -954,15 +954,18 @@ class ASRBuilder {
         idx_vars, al)
 
     ASR::expr_t *ArrayConstant(std::vector<ASR::expr_t *> elements,
-            ASR::ttype_t *base_type, bool cast2descriptor=true) {
-        // This function only creates array with rank one
-        // TODO: Support other dimensions
+            ASR::ttype_t *base_type, bool cast2descriptor=true, ASR::ttype_t *array_type = nullptr) {
         Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
         for (auto &x: elements) m_eles.push_back(al, x);
 
         ASR::ttype_t *fixed_size_type = Array({(int64_t) elements.size()}, base_type);
         ASR::expr_t *arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
             m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+
+        // Set multi-dimensional type
+        if (array_type) {
+            ASR::down_cast<ASR::ArrayConstant_t>(arr_constant)->m_type = array_type;
+        }
 
         if (cast2descriptor) {
             return cast_to_descriptor(al, arr_constant);
