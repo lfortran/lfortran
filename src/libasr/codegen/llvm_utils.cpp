@@ -1623,6 +1623,14 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR <= 16
+        // Workaround for LLVM 11-16: BitCast to ensure pointer type compatibility
+        // This is needed for legacy array sections where sequence association
+        // can cause type mismatches
+        if (compiler_options.legacy_array_sections) {
+            x = builder->CreateBitCast(x, t->getPointerTo());
+        }
+#endif
         return builder->CreateGEP(t, x, idx);
     }
 
@@ -1641,6 +1649,10 @@ namespace LCompilers {
         LCOMPILERS_ASSERT(t->isPointerTy());
         LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
         llvm::Type *t2 = t->getContainedType(0);
+        // Workaround for LLVM 11-16: BitCast for legacy array sections
+        if (compiler_options.legacy_array_sections) {
+            x = builder->CreateBitCast(x, t2->getPointerTo());
+        }
         return builder->CreateInBoundsGEP(t2, x, idx);
 #else
         llvm::Type *type = nullptr;
