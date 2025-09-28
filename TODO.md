@@ -279,22 +279,62 @@ The issue with the attempted fix was likely:
 3. Missing alignment requirements
 4. Incompatible with SimpleCMODescriptor expectations
 
+## Key Findings from Investigation
+
+### The Real Problem
+The fundamental issue is a **calling convention mismatch** in legacy mode:
+- The caller (with ArrayPhysicalCast) wants to pass array slices as pointers (FORTRAN 77 style)
+- The callee (STRSM subroutine) is compiled expecting descriptors (modern Fortran style)
+- Both sides need to agree on the convention
+
+### Discovery: ArrayPhysicalCast Not Called During LLVM Codegen
+- `visit_ArrayPhysicalCast` is NEVER called for SubroutineCall arguments
+- Instead, ArrayPhysicalCast is handled inline in `convert_call_args` template function (line ~12387)
+- This inline handling just calls `visit_expr_wrapper` which creates a descriptor
+
+### Failed Approach: Semantic Level Fix
+Attempted to use `UnboundedPointerArray` instead of `DescriptorArray` for assumed-size array parameters in legacy mode. This failed because:
+- Using UnboundedPointerArray loses dimension information needed for array access
+- Caused crashes during codegen due to null dimension bounds (m_dims[i].m_start was null)
+- The dimension information is still needed even for assumed-size arrays
+
 ## Implementation Strategy
 
 ### Phase 1: Minimal Reproducer
 ```fortran
-! test_minimal.f90
-PROGRAM TEST
-    REAL A(0:10)
-    A = 1.0
-    CALL SUB(A(1), 10)  ! Pass from index 1
-CONTAINS
-    SUBROUTINE SUB(X, N)
-        INTEGER N
-        REAL X(N)
-        PRINT *, X(1)  ! Should print 1.0
-    END SUBROUTINE
-END PROGRAM
+C     Minimal reproducer for legacy array sections segfault
+C     Matches exact pattern from lapack_06.f90 line 78
+      PROGRAM TEST
+      IMPLICIT NONE
+      REAL A(0:100)
+      INTEGER M, N, LDA
+      REAL ALPHA
+
+      M = 6
+      N = 4
+      LDA = 7  ! This is M+1 from lapack_06
+
+C     Initialize array
+      A = 1.0
+
+C     This matches lapack_06.f90 line 78:
+C     CALL STRSM(..., A(1), M+1, ...)
+C     where A is declared as A(0:*)
+      CALL STRSM(3, N, ALPHA, A(1), LDA)
+
+      PRINT *, 'Test completed successfully'
+      END PROGRAM
+
+      SUBROUTINE STRSM(M, N, ALPHA, A, LDA)
+      IMPLICIT NONE
+      INTEGER M, N, LDA
+      REAL ALPHA
+      REAL A(LDA, *)  ! 2D assumed-size array
+
+C     Try to access A as a 2D array - this is where it should fail
+      PRINT *, 'Accessing A(1,1) =', A(1,1)
+
+      END SUBROUTINE
 ```
 
 Test commands:
@@ -411,6 +451,60 @@ The integration_tests/lapack_06.f90 has been replaced with a minimal reproducer 
 - A 0-based array A(0:100) passed as A(1) to a subroutine expecting a 2D array
 - Currently segfaults with --legacy-array-sections
 - Works correctly with gfortran
+
+## Key Findings from Investigation
+
+### The Problem Flow
+1. **ASR Level**: ArrayPhysicalCast node is correctly created with:
+   - `m_old = FixedSizeArray`
+   - `m_new = DescriptorArray`
+   - Contains ArraySection `A(1:upper)` as expected
+
+2. **LLVM Codegen Issue**:
+   - `visit_ArrayPhysicalCast` is NEVER called during LLVM codegen
+   - Instead, ArrayPhysicalCast arguments are handled inline in `convert_call_args` (line ~12387)
+   - The inline handling just calls `visit_expr_wrapper` which creates a descriptor
+   - This descriptor is then passed to the subroutine
+
+3. **Runtime Failure**:
+   - The subroutine expects and tries to access the argument as a descriptor
+   - But in legacy mode, it should be a raw pointer
+   - Accessing descriptor fields on what should be a pointer causes segfault
+
+### Why Previous Fix Attempts Failed
+1. Modifying `visit_ArrayPhysicalCast` doesn't help because it's never called
+2. Modifying `visit_ArrayPhysicalCastUtil` doesn't help for the same reason
+3. The real handling happens in `convert_call_args` template function
+4. Even when we intercept in `convert_call_args`, we're still left with a mismatch:
+   - Caller wants to pass a pointer
+   - Callee expects a descriptor
+
+### The Real Problem
+The fundamental issue is a **calling convention mismatch** in legacy mode:
+- The caller (with ArrayPhysicalCast) wants to pass array slices as pointers (FORTRAN 77 style)
+- The callee (STRSM subroutine) is compiled expecting descriptors (modern Fortran style)
+- Both sides need to agree on the convention
+
+## Proposed Solution
+
+The fix needs to ensure consistency between caller and callee:
+
+### Option A: Fix at Semantic Level (Recommended)
+Modify the semantic analysis so that when `--legacy-array-sections` is enabled:
+1. Formal array parameters in subroutines should use `UnboundedPointerArray` or `PointerArray` instead of `DescriptorArray`
+2. This ensures both caller and callee agree to use raw pointers
+3. Location: `ast_common_visitor.h` where formal parameters are analyzed
+
+### Option B: Fix at Codegen Level
+Handle both sides in LLVM codegen:
+1. In `convert_call_args`: Pass raw pointer instead of descriptor for legacy mode
+2. In subroutine generation: Accept raw pointer instead of expecting descriptor
+3. More complex as it requires changes in multiple places
+
+### Option C: Hybrid Approach
+1. Keep descriptors but make them compatible
+2. Create minimal descriptors that work as both pointers and descriptors
+3. Risk of compatibility issues
 
 ## Complete Build Instructions
 
