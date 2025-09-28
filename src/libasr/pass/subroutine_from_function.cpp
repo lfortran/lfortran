@@ -239,6 +239,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
             }
 
+            if (check_use_temp_var && fc->m_dt && ASRUtils::expr_equal(target, fc->m_dt)) {       //TODO: Write a utility function that checks if 2 expr are the SAME
+                use_temp_var_for_return = true;
+            }
+
             if (use_temp_var_for_return) {
                 ASR::expr_t *result_var = nullptr;
 
