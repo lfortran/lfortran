@@ -134,6 +134,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
+        int result_counter = 0;
 
 
     public:
@@ -225,11 +226,32 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     }
                 }
             }
+
+            bool use_temp_var_for_return = false;
+            bool check_use_temp_var = !ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(target));          // TODO: Find a way to handle allocatables too
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
+
+                if (check_use_temp_var && ASRUtils::expr_equal(target, fc->m_args[i].m_value)) {      //TODO: Write a utility function that checks if 2 expr are the SAME
+                    use_temp_var_for_return = true;
+                }
             }
+
+            if (use_temp_var_for_return) {
+                ASR::expr_t *result_var = nullptr;
+
+                if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
+                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                } else {
+                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                }
+
+                insert_allocate_stmt_for_array(al, result_var, value, &pass_result);
+                target = result_var;
+            }
+
             bool value_and_target_allocatable_array = false;
             if (ASRUtils::is_allocatable(value) && ASRUtils::is_allocatable(target)) {
                 // Pass in a temporary instead of the target, this is done for bounds checking in assignment to an array from a FunctionCall
@@ -254,11 +276,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope));
             pass_result.push_back(al, subrout_call);
-            if (value_and_target_allocatable_array) {
-                ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
-                assignment->m_value = target;
-                // We are using a temporary so make this assignment a move assignment
-                assignment->m_move_allocation = true;
+
+            if (value_and_target_allocatable_array || use_temp_var_for_return) {
+                if (ASR::is_a<ASR::Assignment_t>(xx)) {
+                    ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
+                    assignment->m_value = target;
+
+                    if (value_and_target_allocatable_array) {
+                        // We are using a temporary so make this assignment a move assignment
+                        assignment->m_move_allocation = true;
+                    }
+                } else {
+                    ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
+                    associate->m_value = target;
+                }
+
                 remove_original_statement = false;
             } else {
                 remove_original_statement = true;
