@@ -405,6 +405,13 @@ cmake -DCMAKE_Fortran_COMPILER=$FC \
 make -j8
 ```
 
+## Minimal Reproducer Status
+
+The integration_tests/lapack_06.f90 has been replaced with a minimal reproducer that isolates the exact problem:
+- A 0-based array A(0:100) passed as A(1) to a subroutine expecting a 2D array
+- Currently segfaults with --legacy-array-sections
+- Works correctly with gfortran
+
 ## Complete Build Instructions
 
 ### LLVM 11 Environment:
