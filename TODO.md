@@ -628,8 +628,15 @@ But it's being compiled as:
 - Descriptor field access for dimensions
 
 ### The Complete Fix Requires:
-1. **Caller side** (DONE): Pass raw pointer instead of descriptor for legacy array sections
-2. **Callee side** (TODO): Compile assumed-size array parameters as raw pointers in legacy mode
+1. **Caller side** (PARTIALLY DONE): Pass raw pointer instead of descriptor for legacy array sections
+   - Implemented detection of `__libasr_created__subroutine_call_*` temporaries
+   - Added raw pointer passing for dimension mismatches
+   - Still segfaults because callee expects descriptor
+
+2. **Callee side** (NOT DONE): Compile assumed-size array parameters as raw pointers
+   - Assumed-size arrays should have `UnboundedPointerArray` physical type
+   - The code already sets this in `make_Array_t_util` when `is_dimension_star` is true
+   - But something is overriding it or the flag isn't being set correctly
 
 ### Where to Fix Callee Compilation:
 
@@ -647,20 +654,54 @@ In the semantic visitor when creating Variable symbols for formal parameters:
 #### LLVM Codegen Phase:
 The LLVM codegen already handles UnboundedPointerArray correctly - it treats them as raw pointers without descriptor access. So once the ASR has the correct physical type, the LLVM codegen should work.
 
-### Simpler Workaround (Temporary):
-Disable runtime bounds checking for assumed-size arrays in legacy mode:
-1. In `visit_ArrayItem` or bounds checking code
-2. Check if accessing an assumed-size array in legacy mode
-3. Skip bounds checking for these accesses
+### Investigation Findings:
 
-This would at least allow the code to run without segfaults, though it's not the complete fix.
+#### Code Analysis:
+1. **ASR Utils** (`src/libasr/asr_utils.h`):
+   - `make_Array_t_util` correctly sets `UnboundedPointerArray` when `is_dimension_star` is true (lines 32-33)
+   - This should handle assumed-size arrays properly
 
-## Final Notes
+2. **LLVM Codegen** (`src/libasr/codegen/asr_to_llvm.cpp`):
+   - `visit_ArrayItem` handles UnboundedPointerArray specially (no bounds checking)
+   - But formal parameters with `*` dimension are still treated as DescriptorArray
 
-The issue is well-understood: Both caller AND callee need to agree on the calling convention. In legacy mode:
-- Caller passes raw pointer (fixed)
-- Callee must expect raw pointer (still broken)
+3. **Array Utils** (`src/libasr/codegen/llvm_array_utils.cpp`):
+   - Bounds checking happens in `cmo_convertor_single_element` (lines 745, 790)
+   - Accesses descriptor fields that don't exist for raw pointers
 
-The semantic transformations are correct, but the codegen needs to be fixed on both sides for legacy mode.
+### Why It's Still Broken:
+The assumed-size array formal parameter `A(LDA, *)` in STRSM is being compiled as DescriptorArray instead of UnboundedPointerArray. Either:
+1. The `is_dimension_star` flag isn't being set during semantic analysis
+2. The physical type is being overridden after initial assignment
+3. Some pass is changing the array physical type
+
+### Simpler Workaround (Not Implemented):
+Disable runtime bounds checking for assumed-size arrays:
+- Would need to detect UnboundedPointerArray in bounds checking code
+- Skip bounds checks for these arrays
+- This would prevent segfaults but is not a proper fix
+
+## Final Status
+
+### What Works:
+- Identified root cause: calling convention mismatch between caller and callee
+- Implemented partial fix for caller side (passes raw pointer for temporaries)
+- Created minimal 33-line reproducer
+- Comprehensive documentation of the issue
+
+### What's Still Broken:
+- Callee side still expects descriptors for assumed-size arrays
+- Runtime segfault when accessing array as 2D in STRSM
+- The `is_dimension_star` logic exists but isn't being applied correctly
+
+### Next Steps:
+1. Debug why assumed-size formal parameters aren't getting `UnboundedPointerArray` type
+2. Trace where `is_dimension_star` is set and used
+3. Check if any ASR passes override the physical type
+4. Ensure bounds checking is skipped for UnboundedPointerArray
+
+## Key Insight
+
+The infrastructure for handling assumed-size arrays (UnboundedPointerArray) already exists in LFortran. The issue is that it's not being activated for formal parameters with `*` dimension. This suggests the fix might be simpler than initially thought - we just need to ensure the existing code path is triggered correctly.
 
 This document contains all information needed to implement the fix from scratch without any prior context.
