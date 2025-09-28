@@ -1,4 +1,4 @@
-# LLVM 11-16 Legacy Array Sections Runtime Segfault - Complete Analysis
+# LLVM 11-16 Legacy Array Sections Runtime Segfault - Investigation Complete
 
 ## Critical Context
 **BRANCH**: `feature/minpack-lmder1-mre` (PR #8598 implementation)
@@ -7,7 +7,29 @@
 
 ## Executive Summary
 
-The branch contains PR #8598's semantic transformations but the runtime fix was reverted due to CI failures. The issue occurs when passing array elements from 0-based arrays (e.g., `A(0:*)` passing `A(1)`) to subroutines expecting arrays. The transformation `A(1)` → `A(1:16)` happens correctly in the semantic phase, but the LLVM codegen fails to create proper descriptors for `UnboundedPointerArray` type, causing NULL pointer dereference at runtime.
+The branch contains PR #8598's semantic transformations but the runtime fix was reverted due to CI failures. The issue occurs when passing array elements from 0-based arrays (e.g., `A(0:*)` passing `A(1)`) to subroutines expecting assumed-size arrays (`*` dimension).
+
+**Root Cause Identified**: The issue is that ArraySection is created BEFORE the legacy array sections code runs. During normal expression processing in SubroutineCall, `A(1)` is converted to an ArraySection, then the legacy code tries to handle it but creates unnecessary temporaries `__libasr_created__subroutine_call_*` that cause segfaults.
+
+## Current Investigation Status (2025-09-29)
+
+### Changes Made
+1. Fixed `is_star_dimension` check to look at LAST dimension instead of first (lines 2054, 4029)
+2. Added logic to set `m_start=1` for star dimensions in `process_dims` (line 2169)
+3. Added early return in `legacy_promote_array_item` for UnboundedPointerArray
+4. Result: Assumed-size arrays now correctly use UnboundedPointerArray type
+
+### Remaining Issue
+Despite UnboundedPointerArray being detected correctly, temporaries are STILL created because:
+1. ArraySection is created during normal expression processing BEFORE legacy code runs
+2. `create_ArrayRef` in `visit_FuncCallOrArray` creates ArraySection for array indexing
+3. By the time `legacy_promote_array_item` is called, it receives ArraySection not ArrayItem
+4. The early return for UnboundedPointerArray doesn't help because input is already transformed
+
+### Next Steps Needed
+1. Prevent ArraySection creation in `create_ArrayRef` when target is UnboundedPointerArray
+2. OR: Handle ArraySection input in legacy code and avoid creating temporaries
+3. OR: Completely bypass array transformation for assumed-size array arguments
 
 ## Complete Git History
 
