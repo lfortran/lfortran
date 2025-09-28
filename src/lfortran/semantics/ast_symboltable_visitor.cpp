@@ -2524,12 +2524,15 @@ public:
                 symbols.push_back(al, x);
             }
             std::string sym_name_str = proc.first;
-            if( current_scope->get_symbol(proc.first) != nullptr ) {
-                ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
-                if( der_type_name->type == ASR::symbolType::Struct ||
-                    der_type_name->type == ASR::symbolType::Function ) {
+            ASR::symbol_t* existing_sym = current_scope->get_symbol(proc.first);
+            if( existing_sym != nullptr ) {
+                if( existing_sym->type == ASR::symbolType::Struct ||
+                    existing_sym->type == ASR::symbolType::Function ) {
                     sym_name_str = "~" + proc.first;
                 }
+            } else {
+                // No existing symbol with this name, use ~ prefix for generic procedure
+                sym_name_str = "~" + proc.first;
             }
             Str s;
             s.from_str_view(sym_name_str);
