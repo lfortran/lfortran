@@ -2053,7 +2053,8 @@ public:
 	    bool is_star_dimension = false;
 
 	    if (s.n_dim > 0) {
-		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+		// For assumed-size arrays, the star is in the LAST dimension
+		is_star_dimension = (s.m_dim[s.n_dim - 1].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
@@ -2166,6 +2167,12 @@ public:
                 }
             } else {
                 dim.m_length = nullptr;
+                // For assumed-size arrays (dimension with *), set default lower bound to 1
+                // This ensures is_only_upper_bound_empty will correctly identify it
+                if (m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar && !dim.m_start) {
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4))));
+                }
             }
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
@@ -4022,7 +4029,8 @@ public:
                         );
                         dims.n = 0;
                     }
-                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                    // Check if the last dimension has a star (assumed-size array)
+                    if (s.n_dim > 0 && s.m_dim[s.n_dim - 1].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
                     for(size_t i=0; i<s.n_dim; i++) {
@@ -6815,6 +6823,14 @@ public:
             return actual;
         }
 
+        // Check for UnboundedPointerArray (assumed-size arrays) FIRST
+        // If the formal parameter is an assumed-size array, pass the raw pointer without transformation
+        ASR::array_physical_typeType formal_phy = ASRUtils::extract_physical_type(formal_type);
+        if (formal_phy == ASR::array_physical_typeType::UnboundedPointerArray) {
+            // Return the original ArrayItem for raw pointer passing - no ArraySection needed
+            return actual;
+        }
+
         ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(actual);
         ASR::expr_t *array_expr = array_item->m_v;
         ASR::ttype_t *array_type = ASRUtils::expr_type(array_expr);
@@ -6878,9 +6894,8 @@ public:
         array_section_node->m_type = section_view_type;
         section_type = section_view_type;
 
-        ASR::array_physical_typeType formal_phy = ASRUtils::extract_physical_type(formal_type);
-        if (formal_phy != ASR::array_physical_typeType::PointerArray &&
-                formal_phy != ASR::array_physical_typeType::UnboundedPointerArray) {
+        // formal_phy already extracted at the beginning of the function
+        if (formal_phy != ASR::array_physical_typeType::PointerArray) {
 
             // Handle sequence association for regular arrays (LAPACK pattern)
             // Transform a(1,j) -> a(1:formal_size,j) based on formal parameter dimensions
