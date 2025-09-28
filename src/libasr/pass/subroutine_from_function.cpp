@@ -134,7 +134,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
-        int result_counter = 0;
 
 
     public:
@@ -228,7 +227,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             bool use_temp_var_for_return = false;
-            bool check_use_temp_var = !ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(target));          // TODO: Find a way to handle allocatables too
+            bool check_use_temp_var = !ASRUtils::is_allocatable(ASRUtils::expr_type(target));          // TODO: Find a way to handle allocatables too
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
