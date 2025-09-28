@@ -3224,10 +3224,13 @@ public:
     }
 
     void visit_ArraySection(const ASR::ArraySection_t& x) {
+        std::cerr << "DEBUG LLVM: visit_ArraySection called\n";
         if (x.m_value) {
+            std::cerr << "DEBUG LLVM: ArraySection has m_value, using that\n";
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        std::cerr << "DEBUG LLVM: ArraySection creating descriptor\n";
 
         ASR::ArraySection_t* nc_x = const_cast<ASR::ArraySection_t*>(&x);
         ASR::expr_t* as_expr = reinterpret_cast<ASR::expr_t*>(nc_x);
@@ -3264,7 +3267,9 @@ public:
             return;
         }
 
+        std::cerr << "DEBUG LLVM: Calling create_array_section_descriptor\n";
         llvm::Value* descriptor = create_array_section_descriptor(x, result_type);
+        std::cerr << "DEBUG LLVM: Descriptor created successfully\n";
         tmp = descriptor;
     }
 
@@ -7988,13 +7993,22 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr) &&
-                !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
+            // For legacy array sections mode, just pass the pointer directly
+            // This matches FORTRAN 77 behavior where no descriptors are used
+            if (compiler_options.legacy_array_sections) {
+                // The pointer is already correctly offset by ArraySection visit
+                // Just ensure it's a pointer type
+                tmp = ensure_pointer_type(tmp);
+            } else {
+                // Original code for non-legacy mode
+                if( ((ASRUtils::expr_value(m_arg) &&
+                    !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
+                    ASRUtils::expr_value(m_arg) == nullptr) &&
+                    !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
+                    tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
+                }
+                tmp = ensure_pointer_type(tmp);
             }
-            tmp = ensure_pointer_type(tmp);
         } else if (
             m_new == ASR::array_physical_typeType::SIMDArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -8103,9 +8117,13 @@ public:
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        std::cerr << "DEBUG LLVM: visit_ArrayPhysicalCast called (this should NOT happen for SubroutineCall args!)\n";
+        std::cerr << "           m_old=" << x.m_old << ", m_new=" << x.m_new << "\n";
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
             LCOMPILERS_ASSERT(x.m_new != x.m_old);
         }
+
+        // Original code path
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_arg));
         this->visit_expr_wrapper(x.m_arg, false);
@@ -12344,6 +12362,29 @@ public:
                         } else {
                             tmp = llvm_symtab[h];
                         }
+
+                        // Special handling for legacy array sections with temporary variables
+                        if (compiler_options.legacy_array_sections &&
+                            ASRUtils::is_array(arg->m_type) &&
+                            std::string(arg->m_name).find("__libasr_created__subroutine_call") != std::string::npos) {
+                            // Check if we're passing a 1D slice to a 2D+ formal parameter
+                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
+
+                            if (orig_arg && ASRUtils::is_array(orig_arg->m_type)) {
+                                ASR::Array_t* formal_array = ASR::down_cast<ASR::Array_t>(
+                                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type));
+                                int formal_dims = formal_array->n_dims;
+                                int actual_dims = array_type->n_dims;
+
+                                if (formal_dims > actual_dims) {
+                                    // Dimension mismatch - pass raw pointer instead of descriptor
+                                    // Extract the data pointer from the descriptor
+                                    tmp = arr_descr->get_pointer_to_data(tmp);
+                                }
+                            }
+                        }
+
                         if (ASRUtils::is_character(*orig_arg->m_type) &&
                             ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_value))) {
                             ASR::String_t* orig_ttype = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(orig_arg->m_type));
@@ -12554,7 +12595,58 @@ public:
                     }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
-                this->visit_expr_wrapper(x.m_args[i].m_value);
+                // Handle ArrayPhysicalCast specially in legacy mode
+                ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i].m_value);
+                std::cerr << "DEBUG: Found ArrayPhysicalCast in convert_call_args\n";
+                std::cerr << "       legacy_array_sections = " << compiler_options.legacy_array_sections << "\n";
+                std::cerr << "       m_old = " << cast->m_old << " (DescriptorArray=" << ASR::array_physical_typeType::DescriptorArray << ")\n";
+                std::cerr << "       m_new = " << cast->m_new << " (UnboundedPointerArray=" << ASR::array_physical_typeType::UnboundedPointerArray << ")\n";
+                // In legacy mode, we need to handle the case where we're casting from
+                // FixedSizeArray to DescriptorArray for array sections
+                if (compiler_options.legacy_array_sections &&
+                    cast->m_old == ASR::array_physical_typeType::FixedSizeArray &&
+                    cast->m_new == ASR::array_physical_typeType::DescriptorArray &&
+                    ASR::is_a<ASR::ArraySection_t>(*cast->m_arg)) {
+                    std::cerr << "DEBUG: MATCH! Passing raw pointer instead of descriptor\n";
+                    // In legacy mode, pass raw pointer directly without descriptor
+                    // This matches FORTRAN 77 sequence association behavior
+                    ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(cast->m_arg);
+
+                    // Visit the base array
+                    this->visit_expr(*array_section->m_v);
+                    llvm::Value* array_ptr = tmp;
+
+                    // Calculate offset if the section doesn't start at index 0
+                    if (array_section->n_args > 0 && array_section->m_args[0].m_left) {
+                        this->visit_expr_wrapper(array_section->m_args[0].m_left, true);
+                        llvm::Value* start_idx = tmp;
+
+                        // Get the array type
+                        ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
+
+                        // Adjust for 0-based vs 1-based indexing
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(array_type);
+                        if (array_t->n_dims > 0 && array_t->m_dims[0].m_start) {
+                            this->visit_expr_wrapper(array_t->m_dims[0].m_start, true);
+                            llvm::Value* lower_bound = tmp;
+                            start_idx = builder->CreateSub(start_idx, lower_bound);
+                        }
+
+                        // Calculate pointer to the start of the section
+                        // Get element type for the GEP
+                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(array_type);
+                        llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                            array_section->m_v, elem_type, module.get());
+                        array_ptr = llvm_utils->create_ptr_gep2(llvm_elem_type, array_ptr, start_idx);
+                    }
+
+                    tmp = array_ptr;
+                    std::cerr << "       Raw pointer calculated successfully\n";
+                } else {
+                    std::cerr << "DEBUG: No match, using original behavior\n";
+                    // Original behavior for non-legacy or other cast types
+                    this->visit_expr_wrapper(x.m_args[i].m_value);
+                }
             } else if( ASR::is_a<ASR::FunctionType_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(
@@ -13333,6 +13425,7 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        // Debug output removed for cleaner execution
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -13358,7 +13451,9 @@ public:
             llvm::Type* func_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_dt, ASRUtils::symbol_type(x.m_name), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
+            std::cerr << "DEBUG LLVM: About to call convert_call_args with " << x.n_args << " args\n";
             args = convert_call_args(x, false);
+            std::cerr << "DEBUG LLVM: convert_call_args returned " << args.size() << " converted args\n";
             ASR::Function_t* func = nullptr;
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(

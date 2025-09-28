@@ -6865,6 +6865,7 @@ public:
         }
 
         ASR::Array_t *formal_array = ASR::down_cast<ASR::Array_t>(formal_array_type);
+
         Vec<ASR::dimension_t> resolved_dims; resolved_dims.reserve(al, formal_array->n_dims);
         if (!legacy_resolve_formal_dims(formal_array, resolved_dims, args)) {
             return array_section;
@@ -6923,6 +6924,7 @@ public:
         }
 
         ASR::array_physical_typeType section_phy = ASRUtils::extract_physical_type(section_type);
+        // std::cerr << "DEBUG SEMANTIC: Creating ArrayPhysicalCast from " << section_phy << " to " << formal_phy << "\n";
         return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
             al, loc, array_section, section_phy, formal_phy, target_type, nullptr));
     }
@@ -6994,6 +6996,7 @@ public:
     void legacy_array_sections_helper(ASR::Function_t *func,
             Vec<ASR::call_arg_t> &args, const Location &loc) {
         if (!compiler_options.legacy_array_sections) return;
+        // std::cerr << "DEBUG SEMANTIC: legacy_array_sections_helper called for function " << func->m_name << "\n";
 
         size_t n_formals = func->n_args;
         size_t count = std::min(args.size(), n_formals);
@@ -7007,7 +7010,11 @@ public:
             ASR::ttype_t *formal_type = ASRUtils::expr_type(formal);
             if (!formal_type || !ASRUtils::is_array(formal_type)) continue;
 
+            // std::cerr << "DEBUG SEMANTIC: Calling legacy_promote_array_expr for arg " << i << "\n";
             args.p[i].m_value = legacy_promote_array_expr(actual, formal_type, args, loc);
+            if (args.p[i].m_value != actual) {
+                // std::cerr << "DEBUG SEMANTIC: Argument " << i << " was transformed\n";
+            }
         }
     }
 
