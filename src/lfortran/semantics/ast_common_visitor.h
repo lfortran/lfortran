@@ -6880,6 +6880,24 @@ public:
         ASR::array_physical_typeType formal_phy = ASRUtils::extract_physical_type(formal_type);
         if (formal_phy != ASR::array_physical_typeType::PointerArray &&
                 formal_phy != ASR::array_physical_typeType::UnboundedPointerArray) {
+
+            // Handle sequence association for regular arrays (LAPACK pattern)
+            // Transform a(1,j) -> a(1:formal_size,j) based on formal parameter dimensions
+            if (formal_array->n_dims >= 1 && indices.size() >= 1) {
+                ASR::dimension_t &first_formal_dim = formal_array->m_dims[0];
+                if (first_formal_dim.m_length) {
+                    // Replace first index with range: index -> index:formal_upper_bound
+                    // This transforms a(1,j) to a(1:16,j) for dimension :: a(16)
+                    indices.p[0].m_right = first_formal_dim.m_length;
+                    // m_left is already set to the starting index
+
+                    // Recreate ArraySection with corrected bounds and proper section type
+                    ASR::expr_t *corrected_section = ASRUtils::EXPR(ASR::make_ArraySection_t(
+                        al, loc, array_expr, indices.p, indices.size(), section_type, nullptr));
+                    return corrected_section;
+                }
+            }
+
             return array_section;
         }
 
