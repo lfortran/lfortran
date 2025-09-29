@@ -4411,6 +4411,10 @@ public:
                                     ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
                                     (void)adjust_array_character_length(
                                                 array_reshape_t->m_array, lhs_len, rhs_len, al);
+                                    if (array_reshape_t->m_value) {
+                                        (void)adjust_array_character_length(
+                                                    array_reshape_t->m_value, lhs_len, rhs_len, al);
+                                    }
                                     {
                                         ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
                                         LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
