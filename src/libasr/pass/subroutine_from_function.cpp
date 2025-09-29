@@ -241,6 +241,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 use_temp_var_for_return = true;
             }
 
+            // Use a temp var for storing result if target is passed as input to the function, then assign the temp var to the target.
             if (use_temp_var_for_return) {
                 ASR::expr_t *result_var = nullptr;
 
@@ -261,6 +262,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                     ASR::is_a<ASR::Assignment_t>(xx)) {
+                    // If we already used a temp var for return don't use it here
                     if (!use_temp_var_for_return) {
                         target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
                     }
