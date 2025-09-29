@@ -31,6 +31,17 @@ Despite UnboundedPointerArray being detected correctly, temporaries are STILL cr
 2. OR: Handle ArraySection input in legacy code and avoid creating temporaries
 3. OR: Completely bypass array transformation for assumed-size array arguments
 
+### Complete Fix Required
+The complete fix requires modifying the C backend (and likely LLVM backend) to:
+1. Detect when an ArraySection is being passed to an UnboundedPointerArray parameter
+2. Instead of creating a temporary descriptor `__libasr_created__subroutine_call_*`
+3. Just pass the raw data pointer directly
+
+This is complex because:
+- The backend doesn't have easy access to the formal parameter types during argument processing
+- The temporary creation happens automatically for all ArraySection arguments
+- Would need significant refactoring of how array arguments are handled in codegen
+
 ## Complete Git History
 
 ### Current Branch Commits (newest to oldest)
