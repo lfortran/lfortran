@@ -1179,7 +1179,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        if( sym_name == interface_name ) {
+        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -1204,7 +1204,7 @@ public:
             nullptr, 0,
             is_requirement, false, false);
         handle_save();
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
