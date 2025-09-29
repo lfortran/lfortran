@@ -227,18 +227,17 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             bool use_temp_var_for_return = false;
-            bool check_use_temp_var = !ASRUtils::is_allocatable(ASRUtils::expr_type(target));          // TODO: Find a way to handle allocatables too
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (check_use_temp_var && ASRUtils::expr_equal(target, fc->m_args[i].m_value)) {      //TODO: Write a utility function that checks if 2 expr are the SAME
+                if (ASRUtils::expr_equal(target, fc->m_args[i].m_value)) {      //TODO: Write a utility function that checks if 2 expr are the SAME
                     use_temp_var_for_return = true;
                 }
             }
 
-            if (check_use_temp_var && fc->m_dt && ASRUtils::expr_equal(target, fc->m_dt)) {       //TODO: Write a utility function that checks if 2 expr are the SAME
+            if (fc->m_dt && ASRUtils::expr_equal(target, fc->m_dt)) {       //TODO: Write a utility function that checks if 2 expr are the SAME
                 use_temp_var_for_return = true;
             }
 
@@ -251,6 +250,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
 
+                // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable
                 insert_allocate_stmt_for_array(al, result_var, value, &pass_result);
                 target = result_var;
             }
@@ -261,7 +261,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                     ASR::is_a<ASR::Assignment_t>(xx)) {
-                    target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                    if (!use_temp_var_for_return) {
+                        target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                    }
                     value_and_target_allocatable_array = true;
                 }
                 // Make sure to deallocate the temporary that will hold the return of function.
