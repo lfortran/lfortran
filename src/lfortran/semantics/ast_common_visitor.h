@@ -6735,136 +6735,31 @@ public:
 
     }
 
-    void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
-        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
-        if (compiler_options.legacy_array_sections) {
-            // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
-            ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-            std::map<int, ASR::ttype_t*> array_arg_idx;
-            for (size_t i = 0; i < f->n_args; i++) {
-                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                    array_arg_idx[i] = f_type->m_arg_types[i];
-                }
-            }
-            Vec<ASR::call_arg_t> args_with_array_section;
-            args_with_array_section.reserve(al, args.size());
-            for (size_t i = 0; i < args.size(); i++) {
-                // check if i is in array_arg_idx
-                if (array_arg_idx.find(i) != array_arg_idx.end()) {
-                    ASR::call_arg_t arg = args[i];
-                    ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
-                    ASR::expr_t* arg_expr = arg.m_value;
-                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                        ASR::expr_t* array_expr = array_item->m_v;
-                        LCOMPILERS_ASSERT(array_item->n_args > 0);
-                        ASR::array_index_t first_arg = array_item->m_args[0];
-                        ASR::expr_t* idx = first_arg.m_right;
+    ASR::expr_t* legacy_make_bounds_step(const Location &loc) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    }
 
-                        Vec<ASR::dimension_t> dims;
-                        dims.reserve(al, 1);
-                        ASR::dimension_t dim;
-                        dim.loc = loc;
-                        dim.m_length = nullptr;
-                        dim.m_start = nullptr;
-                        dims.push_back(al, dim);
-                        ASR::asr_t* descriptor_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
+    void legacy_array_sections_helper(ASR::Function_t *func,
+            Vec<ASR::call_arg_t> & /*args*/, const Location & /*loc*/) {
+        if (!compiler_options.legacy_array_sections) return;
 
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+        // New approach: Use bind(c) style pointer passing for legacy array sections
+        // Instead of complex descriptor transformations, mark the function to use
+        // BindC ABI which will pass raw data pointers instead of descriptors
+        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(func);
+        if (func_type) {
+            func_type->m_abi = ASR::abiType::BindC;
+        }
+    }
 
-                        // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                        SetChar temp_function_dependencies;
-                        ASRUtils::ReplaceFunctionParamWithArg r(al, args.p, args.n);
-                        ASRUtils::CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-                        bool valid_symbols = true;
-                        Vec<ASR::dimension_t> dimensions_; dimensions_.reserve(al, array_t->n_dims);
-                        for (size_t i = 0; i < array_t->n_dims; i++) {
-                            ASR::dimension_t dim;
-                            dim.loc = array_t->m_dims[i].loc;
-                            dim.m_start = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_start);
-                            dim.m_length = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_length);
-                            valid_symbols = c.check_and_update_symbols(dim.m_length) && c.check_and_update_symbols(dim.m_start);
-                            if (!valid_symbols) {
-                                break;
-                            }
-                            dimensions_.push_back(al, dim);
-                        }
-                        if (valid_symbols) {
-                            for (size_t i = 0; i < array_t->n_dims; i++) {
-                                array_t->m_dims[i] = dimensions_[i];
-                            }
-                            for (size_t i = 0; i < temp_function_dependencies.n; i++) {
-                                current_function_dependencies.push_back(al, temp_function_dependencies[i]);
-                            }
-                        }
-
-                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
-
-                        // make ArraySection
-                        Vec<ASR::array_index_t> array_indices;
-                        array_indices.reserve(al, array_item->n_args);
-
-                        for (size_t i = 0; i < array_item->n_args; i++) {
-                            array_indices.push_back(al, array_item->m_args[i]);
-                        }
-
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
-
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
-
-                        ASR::array_index_t array_idx;
-                        array_idx.loc = array_item->base.base.loc;
-                        array_idx.m_left = idx;
-                        array_idx.m_right = array_bound;
-                        array_idx.m_step = one;
-
-                        array_indices.p[0] = array_idx;
-
-                        ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
-                                                    array_expr, array_indices.p, array_indices.size(),
-                                                    ASRUtils::TYPE(descriptor_array), nullptr));
-
-                        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
-
-                        ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
-
-                        arg.m_value = array_section_cast;
-
-                        args_with_array_section.push_back(al, arg);
-                    } else {
-                        args_with_array_section.push_back(al, args[i]);
-                    }
-                } else {
-                    args_with_array_section.push_back(al, args[i]);
-                }
-            }
-            args = args_with_array_section;
-            // There can be a possibility that initially it is ArrayItem and now we realised
-            // that it must be an ArraySection instead.
-            array_arg_idx.clear();
-            for ( size_t i = 0; i < args.size(); i++ ) {
-                ASR::expr_t* arg_expr = args[i].m_value;
-                if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
-                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
-                }
-            }
-            // bool visit_required = false;
-            for ( auto it: array_arg_idx ) {
-                ASR::expr_t* func_arg = f->m_args[it.first];
-                ASR::FunctionType_t* f_type =
-                    ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
-                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
-                    // create array type with empty dimensions and physical type as PointerArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
-                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
-                    f_type->m_arg_types[it.first] = new_type;
-                    // visit_required = true;
-                }
-            }
+    void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t> &args,
+            const Location &loc) {
+        if (!compiler_options.legacy_array_sections) return;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            legacy_array_sections_helper(
+                ASR::down_cast<ASR::Function_t>(sym), args, loc);
         }
     }
 

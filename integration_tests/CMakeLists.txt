@@ -2246,6 +2246,10 @@ RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES
 
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME lapack_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK sgejsv scalar/array ambiguity with SLASCL
+RUN(NAME lapack_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK slarft recursive call with sequence association
+RUN(NAME lapack_04 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections GFORTRAN_ARGS -ffixed-form) # LAPACK sorm22 WORK array sequence association
+RUN(NAME lapack_05 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections) # 0-based array with assumed-size formal (edge case)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2356,6 +2360,7 @@ RUN(NAME cpp_pre_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME minpack_04 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections) # Minpack lmder1 with legacy array sections
 
 RUN(NAME optional_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME optional_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

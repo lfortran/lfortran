@@ -925,11 +925,13 @@ namespace LCompilers {
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-                    is_array_type &&
-                    ASRUtils::is_character(*arg->m_type)) {
+                    is_array_type) {
 
-                    // For bind(c) character arrays, use raw i8* instead of array descriptor
-                    type = llvm::Type::getInt8Ty(context)->getPointerTo();  // i8*
+                    // For bind(c) arrays (including legacy array sections), use raw element pointer
+                    // instead of array descriptor - this matches FORTRAN 77 pointer passing
+                    llvm::Type* el_type = get_type_from_ttype_t_util(x.m_args[i],
+                        ASRUtils::get_contained_type(arg->m_type), module);
+                    type = el_type->getPointerTo();
                     is_array_type = false;  // Prevent further array processing
 
                 } else if( is_array_type ) {

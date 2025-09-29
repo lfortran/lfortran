@@ -7786,6 +7786,19 @@ public:
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type_deprecated[arg] = arr_type;
+#endif
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp,
+                    arr_descr->get_offset(arr_type, arg));
+        } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
             if( ((ASRUtils::expr_value(m_arg) &&
@@ -12195,7 +12208,14 @@ public:
                 this->visit_expr_wrapper(x.m_args[i].m_value);
 
                 if( x_abi == ASR::abiType::BindC ) {
-                    if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                    // For legacy array sections: use bind(c) style pointer passing
+                    // ArrayItem (e.g., A(1)) already produces a pointer after visit, so handle full arrays
+                    if( ASRUtils::is_array(arg_type) && !ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
+                        // For full arrays (not ArrayItem), extract the data pointer from the descriptor
+                        // tmp currently contains the descriptor, extract its data pointer
+                        llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, ASRUtils::get_contained_type(arg_type), module.get());
+                        tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
+                    } else if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
                         (ASR::is_a<ASR::CPtr_t>(*arg_type) &&
@@ -14257,6 +14277,21 @@ public:
                     LCOMPILERS_ASSERT(false);
                     break;
                 }
+            }
+            case ASR::array_physical_typeType::UnboundedPointerArray: {
+                // For UnboundedPointerArray (used with legacy array sections / BindC),
+                // we can't get bounds at runtime, so return default values
+                // This matches FORTRAN 77 behavior where bounds info is not passed
+                if( x.m_bound == ASR::arrayboundType::LBound ) {
+                    // Return 1 as default lower bound
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                    // We don't know the upper bound for unbounded pointer arrays
+                    // This should ideally not be called, but if it is, return a large value
+                    // or we could error out. For now return -1 to indicate unknown
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, -1));
+                }
+                break;
             }
             default: {
                 LCOMPILERS_ASSERT(false);
