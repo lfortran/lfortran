@@ -3024,6 +3024,10 @@ public:
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
         this->visit_expr(*x.m_array);
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
@@ -6415,14 +6419,13 @@ public:
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
-        int dims = ASRUtils::extract_n_dims_from_ttype(array_type);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
-                !(is_parameter && dims == 1) ) {
+                !is_parameter) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(value_array_type)),
@@ -7292,8 +7295,6 @@ public:
             llvm::Type* target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, ASRUtils::extract_type(value_type), module.get());
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
-                value = llvm_utils->create_gep_deprecated(value, 0);
-                target = llvm_utils->create_gep_deprecated(target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -7330,7 +7331,6 @@ public:
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
-                value = llvm_utils->create_gep_deprecated(value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
                 llvm_size = builder->CreateMul(llvm_size,
@@ -7338,11 +7338,9 @@ public:
                 builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
             } else if( is_target_data_only_array || is_value_data_only_array ) {
                 if( is_value_fixed_sized_array ) {
-                    value = llvm_utils->create_gep_deprecated(value, 0);
                     is_value_data_only_array = true;
                 }
                 if( is_target_fixed_sized_array ) {
-                    target = llvm_utils->create_gep_deprecated(target, 0);
                     is_target_data_only_array = true;
                 }
                 llvm::Value *target_data = nullptr, *value_data = nullptr, *llvm_size = nullptr;
@@ -14077,15 +14075,30 @@ public:
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
         ASR::expr_t* array_value = ASRUtils::expr_value(x.m_v);
-        if( array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value) ) {
-            ASR::ArrayConstant_t* array_const = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
+        if( array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value) && ASRUtils::is_value_constant(x.m_dim) ) {
             int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
             size_t bound_value = 0;
+            ASR::dimension_t* m_dims = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_value), m_dims);
+            int req_dim;
+            ASRUtils::extract_value(x.m_dim, req_dim);
+            req_dim--;
+
+            size_t lbound = 1;
+            if (m_dims[req_dim].m_start) {
+                ASRUtils::extract_value(m_dims[req_dim].m_start, lbound);
+            }
             if( x.m_bound == ASR::arrayboundType::LBound ) {
-                bound_value = 1;
+                bound_value = lbound;
             } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                bound_value = ASRUtils::get_fixed_size_of_array(array_const->m_type);
+                size_t length;
+                ASRUtils::extract_value(m_dims[req_dim].m_length, length);
+                bound_value = length + lbound - 1;
             } else {
                 LCOMPILERS_ASSERT(false);
             }

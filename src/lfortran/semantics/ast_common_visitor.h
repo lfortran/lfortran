@@ -4411,6 +4411,10 @@ public:
                                     ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
                                     (void)adjust_array_character_length(
                                                 array_reshape_t->m_array, lhs_len, rhs_len, al);
+                                    if (array_reshape_t->m_value) {
+                                        (void)adjust_array_character_length(
+                                                    array_reshape_t->m_value, lhs_len, rhs_len, al);
+                                    }
                                     {
                                         ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
                                         LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
@@ -4800,9 +4804,6 @@ public:
                                     // }
                                     body.push_back(al, a_m_args);
                                 }
-                                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
-                                    a->base.base.loc, body.p, body.size(),
-                                    a->m_type, a->m_storage_format));
                                 if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
                                     type = a->m_type;
                                 }
@@ -7841,10 +7842,14 @@ public:
 
         reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
-        // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
-        // 'array' and 'newshape' are ArrayConstant's we can set 'value'
-        // as well
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
+        // Compile time value is same as the "source" ArrayConstant with multi-dimensional type instead of 1-D
+        ASR::expr_t* value = nullptr;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::get_past_array_physical_cast(newshape))) {
+            ASRUtils::ExprStmtDuplicator dup(al);
+            value = dup.duplicate_expr(array);
+            ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
+        }
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, value);
     }
 
     ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {
