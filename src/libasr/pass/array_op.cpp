@@ -259,7 +259,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         int repeat = 1;
         std::vector<std::vector<int64_t>> rank_indexes(n_dims, std::vector<int64_t>(size));
         for (size_t i = 0; i < n_dims; i++) {
-            int64_t length, start, ubound;
+            int64_t length = 0, start = 1, ubound;
             ASRUtils::extract_value(m_dims[i].m_length, length);
             ASRUtils::extract_value(m_dims[i].m_start, start);
             ubound = length + start - 1;
