@@ -2936,9 +2936,15 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        // Assumed-size dimension - default to lower bound of 1
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -2952,7 +2958,8 @@ public:
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
-                                                    true);
+                                                    true,
+                                                    false, array_name);
             } else {
                 llvm::Type* type;
                 bool is_fixed_size = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -7900,6 +7907,21 @@ public:
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
                 }
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray ||
+            m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+            // UnboundedPointerArray is used with --legacy-array-sections for BindC ABI
+            // Raw pointer conversion - no descriptor manipulation needed
+            // tmp already contains the pointer value from the argument
+            // For DescriptorArray -> UnboundedPointerArray: extract raw data pointer
+            if (m_old == ASR::array_physical_typeType::DescriptorArray &&
+                m_new == ASR::array_physical_typeType::UnboundedPointerArray) {
+#if LLVM_VERSION_MAJOR > 16
+                ptr_type_deprecated[arg] = arr_type;
+#endif
+                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
+            }
+            // For other UnboundedPointerArray cases, just pass the pointer through
         } else {
             LCOMPILERS_ASSERT(false);
         }

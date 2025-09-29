@@ -6744,12 +6744,38 @@ public:
             Vec<ASR::call_arg_t> & /*args*/, const Location & /*loc*/) {
         if (!compiler_options.legacy_array_sections) return;
 
-        // New approach: Use bind(c) style pointer passing for legacy array sections
-        // Instead of complex descriptor transformations, mark the function to use
-        // BindC ABI which will pass raw data pointers instead of descriptors
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(func);
-        if (func_type) {
+        if (func_type && func_type->m_abi != ASR::abiType::BindC) {
+            // Always mark as BindC to enable raw pointer passing at call sites
             func_type->m_abi = ASR::abiType::BindC;
+
+            // Only convert physical types for functions WITHOUT bodies (truly EXTERNAL)
+            // Functions with bodies need descriptor information for array sections within their bodies
+            if (func->n_body == 0) {
+                for (size_t i = 0; i < func->n_args; i++) {
+                    ASR::Variable_t* arg = ASRUtils::EXPR2VAR(func->m_args[i]);
+                    if (ASRUtils::is_array(arg->m_type)) {
+                        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(arg->m_type);
+                        if (array_type->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                            // Create NEW type to avoid shared type conflicts
+                            ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, arg->m_type);
+                            ASR::Array_t* new_array_type = ASR::down_cast<ASR::Array_t>(new_type);
+                            new_array_type->m_physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                            arg->m_type = new_type;
+                        }
+                    }
+                    // Update function signature types too
+                    if (ASRUtils::is_array(func_type->m_arg_types[i])) {
+                        ASR::Array_t* sig_type = ASR::down_cast<ASR::Array_t>(func_type->m_arg_types[i]);
+                        if (sig_type->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                            ASR::ttype_t* new_sig_type = ASRUtils::duplicate_type(al, func_type->m_arg_types[i]);
+                            ASR::Array_t* new_sig_array = ASR::down_cast<ASR::Array_t>(new_sig_type);
+                            new_sig_array->m_physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                            func_type->m_arg_types[i] = new_sig_type;
+                        }
+                    }
+                }
+            }
         }
     }
 

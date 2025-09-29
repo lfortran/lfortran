@@ -1046,9 +1046,17 @@ public:
         if(check_external){
             require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
                 "Destination physical type conflicts with the physical type of target");
-            require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
-                "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
-                + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+            // Skip verification for UnboundedPointerArray - used by --legacy-array-sections
+            // which explicitly allows physical type mismatches for FORTRAN 77 compatibility
+            ASR::array_physical_typeType arg_phys_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg));
+            bool involves_unbounded = (x.m_old == ASR::array_physical_typeType::UnboundedPointerArray ||
+                                      x.m_new == ASR::array_physical_typeType::UnboundedPointerArray ||
+                                      arg_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
+            if (!involves_unbounded) {
+                require(x.m_old == arg_phys_type,
+                    "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
+                    + " " + std::to_string(arg_phys_type));
+            }
             bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
             _inside_array_physical_cast_type = true;
             visit_ttype(*x.m_type);
