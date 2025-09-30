@@ -4338,6 +4338,9 @@ public:
     }
     
     inline llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym) {
+        if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
+            create_new_vtable_for_struct_type(struct_sym);
+        }
         llvm::Constant* vtable = newclass2vtab.at(struct_sym);
         llvm::Type* vtab_type = newclass2vtabtype.at(struct_sym);
         llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
@@ -4356,8 +4359,8 @@ public:
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
 
-        if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
-            create_new_vtable_for_struct_type(struct_sym);
+        if (ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+            return;
         }
         // Store Default vptr (Points to first Virtual function)
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
@@ -4920,7 +4923,6 @@ public:
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
         if (compiler_options.new_classes) {
-            create_new_vtable_for_struct_type(struct_sym);
             if (struct_t->m_parent != nullptr) {
                 std::vector<llvm::Constant*> tmp_field_values;
                 get_type_default_field_values(struct_t->m_parent, tmp_field_values, orig_struct_sym);

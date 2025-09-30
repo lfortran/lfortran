@@ -1976,6 +1976,7 @@ RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -c --
 RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_65 LABELS gfortran)
 RUN(NAME class_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
