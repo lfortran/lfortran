@@ -6735,6 +6735,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASRUtils::type_get_past_pointer(arg_type));
             ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_pointer(orig_arg_type));
+            bool is_orig_assumed_rank = false;
+            if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                is_orig_assumed_rank = true;
+            }
             if( (arg_array_t->m_physical_type != orig_arg_array_t->m_physical_type) ||
                 (arg_array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
                  arg_array_t->m_physical_type == orig_arg_array_t->m_physical_type &&
@@ -6750,6 +6754,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimensions = nullptr;
                 } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
+                } else if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
+                    dimensions = &dimension_;
+                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (current_scope) {
                     // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
                     ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
@@ -6799,6 +6807,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                                                             true),
                                                     nullptr));
                 a_args[i] = physical_cast_arg;
+                if (is_orig_assumed_rank) {
+                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::AssumedRankArray;
+                }
             }
         }
     }
