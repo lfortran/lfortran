@@ -4375,12 +4375,20 @@ public:
                                 throw SemanticAbort();
                                 });
                 }
+                ASR::symbol_t* func_sym = p->m_procs[idx];
+
+                // Case: GenericProcedure is present in abstract class and called from derived class object
+                if (x.n_member >= 1) {
+                    func_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(func_sym),
+                                    to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+                }
                 // Create ExternalSymbol for procedures in different modules.
-                if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(p->m_procs[idx])) ) {
-                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(p->m_procs[idx]));
+                if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(func_sym)) ) {
+                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym));
                 }
                 final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
-                    p->m_procs[idx], current_scope);
+                    func_sym, current_scope);
                 break;
             }
             case (ASR::symbolType::StructMethodDeclaration) : {
