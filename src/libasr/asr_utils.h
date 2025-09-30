@@ -2888,9 +2888,17 @@ static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
     return (dim.m_start != nullptr && dim.m_length == nullptr);
 }
 
+inline bool is_assumed_rank_array(ASR::ttype_t* x) {
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    return array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
+}
+
 inline bool is_array(ASR::ttype_t *x) {
     ASR::dimension_t* dims = nullptr;
-    return extract_dimensions_from_ttype(x, dims) > 0;
+    return extract_dimensions_from_ttype(x, dims) > 0 || is_assumed_rank_array(x);
 }
 
 class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments> {
