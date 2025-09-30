@@ -7406,6 +7406,7 @@ public:
                 }
             }
         } else {
+            if (n_dims == 0) compile_time_size = -1;
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t m_dim = m_dims[i];
                 ASR::expr_t* length_expr = m_dim.m_length;

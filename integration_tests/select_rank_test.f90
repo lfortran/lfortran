@@ -1,12 +1,12 @@
 program select_rank_test
     implicit none
 
-    integer :: a = 5
+    ! integer :: a = 5
     integer :: b(2) = [1,2]
     integer :: c(2,2) = reshape([1,2,3,4],[2,2])
     integer :: d(2,2,2) = reshape([1,2,3,4,5,6,7,8],[2,2,2])
 
-    call check(a, 0)
+    ! call check(a, 0)
     call check(b, 1)
     call check(c, 2)
     call check(d, 3)

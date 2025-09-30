@@ -8,7 +8,7 @@ subroutine process(x)
         rank default
             print *, 'i did not expect rank', rank(x), 'shape', shape(x)
             error stop 'process bad arg'
-    end select
+    end selects
     return
 end subroutine process
 

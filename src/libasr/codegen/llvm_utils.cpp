@@ -1188,6 +1188,12 @@ namespace LCompilers {
                             break;
                         }
                     }
+                    case ASR::array_physical_typeType::AssumedRankArray: {
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
+                        is_array_type = true;
+                        break;
+                    }
                     default: {
                         LCOMPILERS_ASSERT(false);
                     }

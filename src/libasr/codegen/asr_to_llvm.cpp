@@ -2559,6 +2559,14 @@ public:
                 generate_sign_from_value(args.p);
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::Rank: {
+                ASR::expr_t* m_arg = x.m_args[0];
+                this->visit_expr_wrapper(m_arg, false);
+                llvm::Value *arg = tmp;
+                llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+                tmp = arr_descr->get_rank(arr_type, arg);
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -12291,6 +12299,13 @@ public:
                     ASR::expr_t* passed_arg = x.m_args[i].m_value;
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
+                    if (ASR::is_a<ASR::Array_t>(*expected_arg_type)) {
+                        ASR::Array_t* expected_array_type = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+                        if (expected_array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                            // Allocate the assumed rank array to the proper type
+                            
+                        }
+                    }
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
                         if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
                             throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
@@ -13033,6 +13048,7 @@ public:
             }
         }
         switch( physical_type ) {
+            case ASR::array_physical_typeType::AssumedRankArray:
             case ASR::array_physical_typeType::DescriptorArray: {
                 tmp = arr_descr->get_array_size(array_type, llvm_arg, llvm_dim, output_kind, dim_kind);
                 break;

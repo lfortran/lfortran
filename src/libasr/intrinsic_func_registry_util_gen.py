@@ -1095,7 +1095,7 @@ def add_create_func_return_src(func_name):
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
-    if func_name in compile_time_only_fn or func_name == "Rank":
+    if func_name in compile_time_only_fn:
         src += indent * 2 + f"return_type = ASRUtils::extract_type(return_type);\n"
         src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
         src += indent * 3 +     "if (diag.has_error()) {\n"
