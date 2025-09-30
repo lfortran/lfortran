@@ -5472,14 +5472,15 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     ASR::ttype_t* typei = nullptr;
     ASR::dimension_t* dims = nullptr;
     for( size_t i = 0; i < x->n_args; i++ ) {
-        if( !ASR::is_a<ASR::Var_t>(*x->m_args[i]) ) {
-            continue;
+        typei = ASRUtils::expr_type(x->m_args[i]);
+        if (ASR::is_a<ASR::Array_t>(*typei)) {
+            ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(typei);
+            if (arr_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) return false;
         }
         ASR::Var_t* arg_Var = ASR::down_cast<ASR::Var_t>(x->m_args[i]);
         if( !ASR::is_a<ASR::Variable_t>(*arg_Var->m_v) ) {
             continue;
         }
-        typei = ASRUtils::expr_type(x->m_args[i]);
         if( ASRUtils::is_class_type(typei) ||
             ASR::is_a<ASR::FunctionType_t>(*typei) ) {
             continue ;
