@@ -7459,6 +7459,24 @@ public:
                                       bound, bound_value);
     }
 
+    ASR::asr_t* create_ArrayRank(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"a"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("rank"));
+        ASR::expr_t *v_Var = args[0];
+
+        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        int compile_time_rank = -1;
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(v_Var);
+        compile_time_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        ASR::expr_t* rank_value = nullptr;
+        if (compile_time_rank != -1) {
+            rank_value = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, compile_time_rank, integer_type));
+        }
+        return ASR::make_ArrayRank_t(al, x.base.base.loc, v_Var, integer_type, rank_value);
+    }
+
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -9361,6 +9379,8 @@ public:
                 tmp = create_func(al, x.base.base.loc, args, diag);
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
+            } else if (var_name == "rank" ) {
+                tmp = create_ArrayRank(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
                 tmp = create_ArrayBound(x, var_name);
             } else if( var_name == "transfer" ) {

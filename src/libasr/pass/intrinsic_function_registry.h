@@ -20,7 +20,6 @@ inline std::string get_intrinsic_name(int64_t x) {
     switch (x) {
         INTRINSIC_NAME_CASE(ObjectType)
         INTRINSIC_NAME_CASE(Kind)
-        INTRINSIC_NAME_CASE(Rank)
         INTRINSIC_NAME_CASE(Sin)
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
@@ -397,8 +396,6 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Hypot::instantiate_Hypot, &Hypot::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             {nullptr, &Kind::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
-            {nullptr, &Rank::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             {&Digits::instantiate_Digits, &Digits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rrspacing),
@@ -770,8 +767,6 @@ namespace IntrinsicElementalFunctionRegistry {
             "selected_char_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             "kind"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
-            "rank"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
             "Digits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rrspacing),
@@ -1021,7 +1016,6 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
                 {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
-                {"rank", {&Rank::create_Rank, &Rank::eval_Rank}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"rrspacing", {&Rrspacing::create_Rrspacing, &Rrspacing::eval_Rrspacing}},
                 {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},

@@ -14069,6 +14069,18 @@ public:
         visit_ArraySizeUtil(x.m_v, x.m_type, x.m_dim, x.m_value);
     }
 
+    void visit_ArrayRank(const ASR::ArrayRank_t& x) {
+        if( x.m_value ) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return ;
+        }
+        ASR::expr_t* m_arg = x.m_v;
+        this->visit_expr_wrapper(m_arg, false);
+        llvm::Value *arg = tmp;
+        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        tmp = arr_descr->get_rank(arr_type, arg);
+    }
+
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
