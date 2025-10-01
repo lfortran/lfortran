@@ -22,7 +22,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     ObjectType,
     Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
     Mod, // if mod is reordered, update `pass/openmp.cpp`
-    Rank,
     Sin,
     Cos,
     Tan,
@@ -4690,16 +4689,6 @@ namespace Kind {
     }
 
 } // namespace Kind
-
-namespace Rank {
-
-    static ASR::expr_t *eval_Rank(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASRUtils::ASRBuilder b(al, loc);
-        return b.i_t(extract_n_dims_from_ttype(expr_type(args[0])), int32);
-    }
-
-} // namespace Rank
 
 namespace BitSize {
 

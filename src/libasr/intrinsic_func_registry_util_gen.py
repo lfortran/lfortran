@@ -654,12 +654,6 @@ intrinsic_funcs_args = {
             "return": "real64",
         },
     ],
-    "Rank": [
-        {
-            "args": [("any",)],
-            "return": "int32"
-        }
-    ],
     "BitSize": [
         {
             "args": [("int",)],
@@ -877,7 +871,6 @@ compile_time_only_fn = [
     "StorageSize",
     "Range",
     "Precision",
-    "Rank",
     "Tiny",
     "Huge",
     "Loc",

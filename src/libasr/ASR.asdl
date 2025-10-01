@@ -155,6 +155,7 @@ expr
     | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
     | ArraySection(expr v, array_index* args, ttype type, expr? value)
     | ArraySize(expr v, expr? dim, ttype type, expr? value)
+    | ArrayRank(expr v, ttype type, expr? value)
     | ArrayBound(expr v, expr? dim, ttype type, arraybound bound, expr? value)
     | ArrayTranspose(expr matrix, ttype type, expr? value)
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)

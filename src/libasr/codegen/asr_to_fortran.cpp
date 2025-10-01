@@ -2118,6 +2118,11 @@ public:
         src = r;
     }
 
+    void visit_ArrayRank(const ASR::ArrayRank_t &x) {
+        visit_expr(*x.m_v);
+        src = "rank(" + src + ")";
+    }
+
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
         std::string r = "";
         if (x.m_bound == ASR::arrayboundType::UBound) {
