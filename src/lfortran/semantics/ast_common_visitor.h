@@ -7476,7 +7476,11 @@ public:
         ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
         int compile_time_rank = -1;
         ASR::ttype_t* arg_type = ASRUtils::expr_type(v_Var);
-        compile_time_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        if (ASRUtils::is_assumed_rank_array(arg_type)) {
+            compile_time_rank = -1;
+        } else {
+            compile_time_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        }
         ASR::expr_t* rank_value = nullptr;
         if (compile_time_rank != -1) {
             rank_value = ASRUtils::EXPR(
