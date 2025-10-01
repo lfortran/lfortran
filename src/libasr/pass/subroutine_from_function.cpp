@@ -225,18 +225,47 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     }
                 }
             }
+
+            bool use_temp_var_for_return = false;
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
+
+                if (ASRUtils::expr_equal(target, fc->m_args[i].m_value)) {      //TODO: Write a utility function that checks if 2 expr are the SAME
+                    use_temp_var_for_return = true;
+                }
             }
+
+            if (fc->m_dt && ASRUtils::expr_equal(target, fc->m_dt)) {       //TODO: Write a utility function that checks if 2 expr are the SAME
+                use_temp_var_for_return = true;
+            }
+
+            // Use a temp var for storing result if target is passed as input to the function, then assign the temp var to the target.
+            if (use_temp_var_for_return) {
+                ASR::expr_t *result_var = nullptr;
+
+                if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
+                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                } else {
+                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                }
+
+                // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable
+                insert_allocate_stmt_for_array(al, result_var, value, &pass_result);
+                target = result_var;
+            }
+
             bool value_and_target_allocatable_array = false;
             if (ASRUtils::is_allocatable(value) && ASRUtils::is_allocatable(target)) {
                 // Pass in a temporary instead of the target, this is done for bounds checking in assignment to an array from a FunctionCall
                 if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                     ASR::is_a<ASR::Assignment_t>(xx)) {
-                    target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                    // If we already used a temp var for return don't use it here
+                    if (!use_temp_var_for_return) {
+                        target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                    }
                     value_and_target_allocatable_array = true;
                 }
                 // Make sure to deallocate the temporary that will hold the return of function.
@@ -254,11 +283,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope));
             pass_result.push_back(al, subrout_call);
-            if (value_and_target_allocatable_array) {
-                ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
-                assignment->m_value = target;
-                // We are using a temporary so make this assignment a move assignment
-                assignment->m_move_allocation = true;
+
+            if (value_and_target_allocatable_array || use_temp_var_for_return) {
+                if (ASR::is_a<ASR::Assignment_t>(xx)) {
+                    ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
+                    assignment->m_value = target;
+
+                    if (value_and_target_allocatable_array) {
+                        // We are using a temporary so make this assignment a move assignment
+                        assignment->m_move_allocation = true;
+                    }
+                } else {
+                    ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
+                    associate->m_value = target;
+                }
+
                 remove_original_statement = false;
             } else {
                 remove_original_statement = true;
