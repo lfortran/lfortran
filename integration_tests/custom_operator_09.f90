@@ -33,6 +33,6 @@ program custom_operator_09
 
   greeting_obj = prefix // name_obj
 
-  print *, "result: ", greeting_obj % value
+  if (greeting_obj%value /= "hello,    world!") error stop
 
 end program custom_operator_09
