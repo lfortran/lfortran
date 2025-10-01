@@ -1977,6 +1977,8 @@ RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_65 LABELS gfortran)
 RUN(NAME class_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_68 LABELS gfortran)
+RUN(NAME class_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2230,6 +2232,7 @@ RUN(NAME procedure_20 LABELS gfortran llvm)
 RUN(NAME procedure_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES procedure_22_a.f90)
 RUN(NAME procedure_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME procedure_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
