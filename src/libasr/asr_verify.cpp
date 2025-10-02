@@ -1295,6 +1295,7 @@ public:
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
         visit_ttype(*x.m_type);
+        if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) return;
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
         if(ASRUtils::is_character(*x.m_type)){

@@ -3714,6 +3714,7 @@ public:
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
                 bool is_dimension_star = false;
+                bool is_assumed_rank = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
@@ -4021,6 +4022,9 @@ public:
                     if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
+                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::AssumedRank) {
+                        is_assumed_rank = true;
+                    }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout), s.m_name);
@@ -4029,7 +4033,7 @@ public:
                 ASR::ttype_t *type = nullptr;
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
+                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
@@ -4935,7 +4939,7 @@ public:
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
         AST::var_sym_t* var_sym,
-        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
+        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false, bool is_assumed_rank=false) {
 
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
             // ONLY supposed to be used for LFortran specific types
@@ -5057,8 +5061,12 @@ public:
                 throw SemanticAbort();
             }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -7468,7 +7476,11 @@ public:
         ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
         int compile_time_rank = -1;
         ASR::ttype_t* arg_type = ASRUtils::expr_type(v_Var);
-        compile_time_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        if (ASRUtils::is_assumed_rank_array(arg_type)) {
+            compile_time_rank = -1;
+        } else {
+            compile_time_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        }
         ASR::expr_t* rank_value = nullptr;
         if (compile_time_rank != -1) {
             rank_value = ASRUtils::EXPR(
@@ -7516,6 +7528,7 @@ public:
                 }
             }
         } else {
+            if (n_dims == 0) compile_time_size = -1;
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t m_dim = m_dims[i];
                 ASR::expr_t* length_expr = m_dim.m_length;
