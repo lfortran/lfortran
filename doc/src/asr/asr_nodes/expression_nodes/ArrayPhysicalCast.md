@@ -13,7 +13,7 @@ ArrayPhysicalCast(expr arg,
     expr? value)
 ```
 
-> array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
+> array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray | AssumedRankArrays
 
 ### Arguments
 
@@ -182,3 +182,15 @@ subroutine f()
 real, simd :: A(64)
 end subroutine
 ```
+
+**AssumedRankArrays**: Usedf for writing procedures that can accept arrays of any rank without creating multiple procedure overloads. They can only be used as dummy arguments in procedures and cannot be declared as local variables or function results. The rank of an assumed rank array is not known at compile-time and is determined at runtime from desriptor of the array which is used in the function/subroutine call. 
+
+Only a limited set of operations are allowed on assumed-rank arrays, such as `rank`, `shape`, `size`, `lbound`, `ubound` where the results of the operation can be completely determined from the array descriptor. Other operations and functions can be performed by using the `select_rank` construct to handle different ranks explicitly.
+
+```fortran
+subroutine f(x)
+    integer :: a(..)
+end subroutine
+```
+
+Here, the `(..)` represents that the array `a` is an assumed-rank array.
