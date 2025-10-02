@@ -2009,12 +2009,71 @@ public:
     }
 
     void visit_SelectRank(const AST::SelectRank_t& x) {
-        diag.add(Diagnostic(
-            "`select rank` is not implemented yet",
-            Level::Error, Stage::Semantic, {
-                Label("",{x.base.base.loc})
-            }));
-        throw SemanticAbort();
+        if ( !x.m_selector ) {
+            diag.add(Diagnostic(
+                "Selector expression is missing in select rank statement.",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        visit_expr(*x.m_selector);
+        ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
+        if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
+            // Throw error if selector is not an array
+        }
+        // ASR::Array_t* selector_array_type = ASR::down_cast<ASR::Array_t>(selector_type);
+        // Throw error if x.m_selector is not an assumed rank array
+        Vec<ASR::expr_t*> rank_args; rank_args.reserve(al, 1);
+        rank_args.push_back(al, m_selector);
+        char* rank_name = const_cast<char*>("lfortran_rank");
+        ASR::symbol_t* rank_decl_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc, 
+            current_scope, rank_name, nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, 
+            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+
+        current_scope->add_symbol(rank_name, rank_decl_sym);
+        ASR::expr_t* rank_decl_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, rank_decl_sym));
+        
+        ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, x.base.base.loc, m_selector, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr));
+
+        ASR::stmt_t* rank_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, rank_decl_expr, rhs, nullptr, false, false));
+        current_body->push_back(al, rank_stmt);
+        for(size_t i=0; i<x.n_body; i++) {
+            switch (x.m_body[i]->type) {
+                case AST::rank_stmtType::RankExpr: {
+                    // rank(1), rank(2), rank(3) etc. : Need to be an IntegerConstant
+                    AST::RankExpr_t* rank_expr = AST::down_cast<AST::RankExpr_t>(x.m_body[i]);
+                    visit_expr(*rank_expr->m_value);
+                    ASR::expr_t* rank_expr_value = ASRUtils::EXPR(tmp);
+                    if( !ASR::is_a<ASR::IntegerConstant_t>(*rank_expr_value) ) {
+                        diag.add(Diagnostic(
+                            "Rank expression must be an integer constant.",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{rank_expr->m_value->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    Vec<ASR::stmt_t*> rank_body; rank_body.reserve(al, rank_expr->n_body);
+                    transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
+                    ASR::expr_t* cmp_stmt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, rank_expr->base.base.loc, rank_decl_expr, ASR::cmpopType::Eq, 
+                    rank_expr_value, ASRUtils::TYPE(ASR::make_Logical_t(al, rank_expr->base.base.loc, 4)), nullptr));
+
+                    ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, rank_expr->base.base.loc, nullptr, cmp_stmt, rank_body.p, rank_body.size(), nullptr, 0));
+                    current_body->push_back(al, if_stmt);
+                    break;
+                }
+
+                case AST::rank_stmtType::RankDefault: {
+                    // rank default
+                }
+
+                case AST::rank_stmtType::RankStar: {
+                    // rank (*)
+                }
+            }
+        }
+        tmp = nullptr;
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
