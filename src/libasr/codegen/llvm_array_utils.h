@@ -198,7 +198,7 @@ namespace LCompilers {
                 * implemented by current class.
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
+                llvm::Value* get_pointer_to_data(llvm::Type* type, llvm::Value* arr) = 0;
 
                 /*
                 * Returns pointer to data in the input
@@ -296,7 +296,7 @@ namespace LCompilers {
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp) = 0;
 
                 virtual
-                void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
+                void reset_is_allocated_flag(llvm::Type* tmp_typ, llvm::Value* array, llvm::Type* llvm_data_type) = 0;
 
 
                 virtual
@@ -431,7 +431,7 @@ namespace LCompilers {
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
 
                 virtual
-                llvm::Value* get_pointer_to_data(llvm::Value* arr);
+                llvm::Value* get_pointer_to_data(llvm::Type* type, llvm::Value* arr);
                 
                 /*
                  * Return pointer to data in array descriptor,
@@ -486,7 +486,7 @@ namespace LCompilers {
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp);
 
                 virtual
-                void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
+                void reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array, llvm::Type* llvm_data_type);
 
                 virtual
                 llvm::Value* reshape(llvm::Type* arr_type, llvm::Value* array, llvm::Type* llvm_data_type,
