@@ -78,9 +78,9 @@ module continue_compilation_2_mod
         integer :: res
     end function inner_func
 
-
-
-
+    subroutine arank(x)
+        integer :: x(.., 5)
+    end subroutine arank
 
 
     
@@ -212,7 +212,7 @@ program continue_compilation_2
     character :: rhs(2)
     type(string_t) :: str_t_1, str_t_2
     character(len=10) :: prefix
-
+    integer :: aRank1(..)
 
 
 
