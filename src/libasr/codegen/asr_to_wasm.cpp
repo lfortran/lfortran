@@ -3415,6 +3415,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                 "nested_vars", "unused_functions", "intrinsic_function"};
     LCompilers::PassManager pass_manager;
     double cummulative_time_take_by_passes = 0.0;
+    co.po.legacy_array_sections = co.legacy_array_sections;
     pass_manager.apply_passes(al, &asr, passes, co.po, diagnostics, cummulative_time_take_by_passes);
 
 
