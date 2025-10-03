@@ -7653,7 +7653,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
             llvm_utils->create_if_else(is_el_set, [&]() {
                 llvm::Value* srci = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), old_elems_value, itr);
-                write_el_linked_list(set_expr, srci, set, capacity, el_asr_type, module);
+                write_el_linked_list(set_expr, srci, set, capacity, el_asr_type, module, name2memidx);
             }, [=]() {
             });
             llvm::Value* tmp = builder->CreateAdd(
