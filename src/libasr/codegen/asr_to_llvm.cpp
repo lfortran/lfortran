@@ -1833,6 +1833,12 @@ public:
                         llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
                         tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type_deprecated[tmp] = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)),
+                    module.get(), abt);
+#endif
                     llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
@@ -7339,7 +7345,6 @@ public:
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_target,
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get()), target));
-                value = llvm_utils->create_gep_deprecated(value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
                 llvm_size = builder->CreateMul(llvm_size,
@@ -8191,7 +8196,7 @@ public:
                         }
                         llvm::Value* static_ptr = llvm_selector;
                         if (ASRUtils::is_array(selector_var_type)) {
-                            static_ptr = arr_descr->get_pointer_to_data(static_ptr);
+                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
                                 llvm_utils->get_el_type(
                                     x.m_selector,
@@ -8216,7 +8221,7 @@ public:
                         llvm::Value* _type_id = nullptr;
                         if( ASRUtils::is_array(selector_var_type) ) {
                             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::extract_type(selector_var_type), module.get());
-                            llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector));
+                            llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector_type_, llvm_selector));
                             _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(el_type, data_ptr, 0));
                         } else {
                             _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
@@ -12570,7 +12575,7 @@ public:
                             s_m_args0, ASRUtils::type_get_past_array(s_m_args0_type), module.get());
                         llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
                         builder->CreateStore(
-                            array_data, arr_descr->get_pointer_to_data(unlimited_polymorphic_type_array));
+                            array_data, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
                         arr_descr->fill_array_details(arg_expr,
                                                     s_m_args0,
                                                     dt,
@@ -12581,7 +12586,7 @@ public:
                                                     true);
                         llvm::Value* unlimited_polymorphic_struct = llvm_utils->CreateLoad2(
                             array_data_type->getPointerTo(),
-                            arr_descr->get_pointer_to_data(unlimited_polymorphic_type_array));
+                            arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
 
                         llvm::Value* data_ptr = llvm_utils->create_gep2(array_data_type, unlimited_polymorphic_struct, 1);
                         arg_type = ASRUtils::extract_type(arg_type);
