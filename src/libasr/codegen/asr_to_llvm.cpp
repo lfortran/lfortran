@@ -1843,12 +1843,6 @@ public:
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
                     module.get(), abt);
-=======
-                    llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                        ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(cur_type)),
-                    module.get(), abt);
->>>>>>> 76db2fda8 (refactor: get_pointer_to_data to use create_gep2)
                     llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                         ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_pointer(

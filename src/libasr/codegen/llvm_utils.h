@@ -248,9 +248,6 @@ namespace LCompilers {
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
-            llvm::Value* create_ptr_gep_deprecated(llvm::Value* ptr, int idx);
-            llvm::Value* create_ptr_gep_deprecated(llvm::Value* ptr, llvm::Value* idx);
-
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
