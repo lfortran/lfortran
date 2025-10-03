@@ -4022,8 +4022,14 @@ public:
                     if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
-                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::AssumedRank) {
-                        is_assumed_rank = true;
+                    for(size_t i=0; i<s.n_dim; i++) {
+                        if (s.m_dim[i].m_end_star== AST::dimension_typeType::AssumedRank) is_assumed_rank = true;
+                    }
+                    if (is_assumed_rank && s_intent == ASRUtils::intent_local ) {
+                        diag.semantic_error_label("Assumed-rank variable '" + std::string(s.m_name) + "' must be a dummy argument.",
+                            {s.loc},
+                            "");
+                        throw SemanticAbort();
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
@@ -4031,6 +4037,12 @@ public:
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
+                if (is_assumed_rank && dims.n > 1) {
+                    diag.semantic_error_label("Assumed-rank variable '" + std::string(s.m_name) + "' must not have any dimensions specified.",
+                        {s.loc},
+                        "");
+                    throw SemanticAbort();
+                }
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
