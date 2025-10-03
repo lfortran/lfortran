@@ -135,6 +135,22 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
 
+        bool expr_same(ASR::expr_t *a, ASR::expr_t *b) {
+            if (a->type != b->type) {
+                return false;
+            }
+
+            // In normal cases, both a and b should be a Var_t
+            if (!ASR::is_a<ASR::Var_t>(*a)) {
+                throw LCompilersException("Error: target is not a Var_t");
+            }
+            if (!ASR::is_a<ASR::Var_t>(*b)) {
+                throw LCompilersException("Error: value is not a Var_t");
+            }
+
+            // Check if the 2 expressions refer to the same symbol
+            return ASR::down_cast<ASR::Var_t>(a)->m_v == ASR::down_cast<ASR::Var_t>(b)->m_v;
+        }
 
     public:
 
@@ -232,12 +248,12 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (ASRUtils::expr_equal(target, fc->m_args[i].m_value)) {      //TODO: Write a utility function that checks if 2 expr are the SAME
+                if (this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }
 
-            if (fc->m_dt && ASRUtils::expr_equal(target, fc->m_dt)) {       //TODO: Write a utility function that checks if 2 expr are the SAME
+            if (fc->m_dt && this->expr_same(target, fc->m_dt)) {
                 use_temp_var_for_return = true;
             }
 
