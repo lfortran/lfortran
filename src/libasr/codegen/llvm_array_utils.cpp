@@ -130,9 +130,9 @@ namespace LCompilers {
                 nullptr, ASRUtils::get_contained_type(asr_arg_type), llvm_utils->module);
             llvm::StructType* tmp_struct_type = tkr2array[asr_arg_type_code].first;
             if( tmp_struct_type->getElementType(0)->isArrayTy() ) {
-                first_ele_ptr = llvm_utils->create_gep2(element_type, get_pointer_to_data(tmp), 0);
+                first_ele_ptr = llvm_utils->create_gep2(element_type, get_pointer_to_data(arg_type, tmp), 0);
             } else if( tmp_struct_type->getNumElements() < 5 ) {
-                first_ele_ptr = llvm_utils->CreateLoad2(element_type, get_pointer_to_data(tmp));
+                first_ele_ptr = llvm_utils->CreateLoad2(element_type, get_pointer_to_data(arg_type, tmp));
             } else if( tmp_struct_type->getNumElements() == 5 ) {
                 return tmp;
             }
@@ -299,7 +299,7 @@ namespace LCompilers {
 
             llvm::Value* llvm_size = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
             builder->CreateStore(prod, llvm_size);
-            llvm::Value* first_ptr = get_pointer_to_data(arr);
+            llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
 
             if( !co.stack_arrays ) {
@@ -375,7 +375,7 @@ namespace LCompilers {
                 builder->CreateStore(dim_size, dim_size_ptr);
                 prod = builder->CreateMul(prod, dim_size);
             }
-            llvm::Value* ptr2firstptr = get_pointer_to_data(arr);
+            llvm::Value* ptr2firstptr = get_pointer_to_data(arr_type,  arr);
             llvm::AllocaInst *arg_size = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
 
             // Handle special allocation for strings. All Other types are handled the same.
@@ -670,8 +670,8 @@ namespace LCompilers {
             return llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Value* arr) {
-            return llvm_utils->create_gep_deprecated(arr, 0);
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
+            return llvm_utils->create_gep2(type, arr, 0);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
@@ -854,9 +854,10 @@ namespace LCompilers {
                     array_exp,
                     ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
                 ASR::String_t* str = ASRUtils::get_string_type(array_type);
+
                 memory_holder = llvm_utils->get_string_data(
                         str,
-                        builder->CreateLoad(load_type, get_pointer_to_data(array)), true);
+                        builder->CreateLoad(load_type, get_pointer_to_data(array_exp, array_type, array, llvm_utils->module)), true);
             } else {
                 memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);
             }
@@ -868,11 +869,11 @@ namespace LCompilers {
                     llvm::Type::getInt64Ty(context)));
         }
 
-        void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Value* array,
+        void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array,
             llvm::Type* llvm_data_type) {
             builder->CreateStore(
                 llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
-                get_pointer_to_data(array)
+                get_pointer_to_data(typ_tmp, array)
             );
         }
 
@@ -927,11 +928,11 @@ namespace LCompilers {
             // Deep copy data from array to reshaped.
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
 
-            llvm::Value* first_ptr = this->get_pointer_to_data(reshaped);
+            llvm::Value* first_ptr = this->get_pointer_to_data(arr_type, reshaped);
             llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
             builder->CreateStore(arr_first, first_ptr);
 
-            llvm::Value* ptr2firstptr = this->get_pointer_to_data(array);
+            llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
             llvm::DataLayout data_layout(module->getDataLayout());
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
@@ -949,7 +950,7 @@ namespace LCompilers {
                 builder->CreateStore(llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(arr_type, array, 1)),
                             llvm_utils->create_gep2(arr_type, reshaped, 1));
                 llvm::Value* n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
-                llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape));
+                llvm::Value* shape_data = llvm_utils->CreateLoad2(i32->getPointerTo(), this->get_pointer_to_data(shape_type, shape));
                 llvm::Value* dim_des_val = llvm_utils->create_gep2(arr_type, reshaped, 2);
                 llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(arr_type, reshaped, true));
@@ -995,7 +996,7 @@ namespace LCompilers {
             llvm::Module* module, ASR::ttype_t* asr_data_type, bool reserve_memory) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
-            llvm::Value* first_ptr = this->get_pointer_to_data(dest);
+            llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(asr_data_type)), false, false)].second;
             if( reserve_memory ) {
@@ -1003,7 +1004,7 @@ namespace LCompilers {
                 builder->CreateStore(arr_first, first_ptr);
             }
 
-            llvm::Value* ptr2firstptr = this->get_pointer_to_data(src);
+            llvm::Value* ptr2firstptr = this->get_pointer_to_data(src_ty, src);
             llvm::DataLayout data_layout(module->getDataLayout());
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
@@ -1055,8 +1056,8 @@ namespace LCompilers {
         void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
 
-            llvm::Value* first_ptr = this->get_pointer_to_data(dest);
-            llvm::Value* src_data_ptr = this->get_pointer_to_data(src);
+            llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
+            llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);
             llvm::Type* llvm_data_type =  llvm_utils->get_el_type(array_exp, ASRUtils::extract_type(asr_data_type), module);
             builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
 

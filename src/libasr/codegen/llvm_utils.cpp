@@ -2160,9 +2160,10 @@ namespace LCompilers {
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
             case ASR::DescriptorArray: {
+                llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
-                    arr_api->get_pointer_to_data(arr_ptr));
+                    arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_data(str, str_desc);
             }
             case ASR::PointerArray:{
@@ -2179,9 +2180,10 @@ namespace LCompilers {
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
             case ASR::DescriptorArray: {
+                llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
-                    arr_api->get_pointer_to_data(arr_ptr));
+                    arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_length(str, str_desc);
             }
             case ASR::PointerArray:{
