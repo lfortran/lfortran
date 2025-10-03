@@ -115,6 +115,22 @@ semantic error: Dummy argument 'c' not defined
 59 |        END SUBROUTINE faulty_subroutine
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Assumed-rank variable 'x' must not have any dimensions specified.
+  --> tests/errors/continue_compilation_2.f90:82:20
+   |
+82 |         integer :: x(.., 5)
+   |                    ^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+  --> tests/errors/continue_compilation_2.f90:81:5 - 83:24
+   |
+81 |        subroutine arank(x)
+   |        ^^^^^^^^^^^^^^^^^^^...
+...
+   |
+83 |        end subroutine arank
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
   --> tests/errors/continue_compilation_2.f90:97:5 - 99:49
    |
@@ -247,6 +263,12 @@ semantic error: Incompatible ranks 2 and 1 in assignment
     |
 199 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     |                                    ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
+   --> tests/errors/continue_compilation_2.f90:215:16
+    |
+215 |     integer :: aRank1(..)
+    |                ^^^^^^^^^^ 
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
