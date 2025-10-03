@@ -176,6 +176,7 @@ namespace LCompilers {
     }
 
     class LLVMList;
+    class LLVMStruct;
     class LLVMTuple;
     class LLVMDictInterface;
     class LLVMSetInterface;
@@ -192,6 +193,7 @@ namespace LCompilers {
 
             LLVMTuple* tuple_api;
             LLVMList* list_api;
+            LLVMStruct* struct_api;
             LLVMDictInterface* dict_api;
             LLVMSetInterface* set_api;
             LLVMArrUtils::Descriptor* arr_api;
@@ -203,7 +205,6 @@ namespace LCompilers {
             std::map<std::string, std::string>& dertype2parent;
             std::map<std::string, std::map<std::string, int>>& name2memidx;
             std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
-            std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
             std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated;
 
@@ -238,7 +239,6 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx_,
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
-                std::map<ASR::symbol_t*, llvm::Constant*>& newclass2vtab_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
@@ -576,8 +576,7 @@ namespace LCompilers {
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type,
-                ASR::ttype_t* asr_src_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx);
+                ASR::ttype_t* asr_src_type, llvm::Module* module);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -752,6 +751,52 @@ namespace LCompilers {
             void list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
                                   llvm::Value* num_times, llvm::Value* init_list_len,
                                   llvm::Module* module);
+    };
+
+    class LLVMStruct {
+        private:
+
+            llvm::LLVMContext& context;
+            LLVMUtils* llvm_utils;
+            llvm::IRBuilder<>* builder;
+            std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
+            std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
+            std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
+
+        public:
+
+            std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
+            std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
+            std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
+            std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
+            std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
+
+            LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,
+                     llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_);
+    
+            llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
+            void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
+            void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr);
+
+            void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
+                                            std::vector<llvm::Constant*>& impls,
+                                            llvm::Module* module);
+
+            void create_type_info_for_intrinsic_type(ASR::ttype_t* ttype,
+                                            int kind, llvm::Module* module);
+            void create_vtab_for_intrinsic_type(ASR::ttype_t* ttype,
+                                            int kind, llvm::Module* module);
+
+            void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym,
+                                                llvm::Module* module);
+            void create_type_info_for_struct(ASR::symbol_t* struct_sym,
+                                            llvm::Module* module);
+
+            llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
+                                                        llvm::Module* module);
+            void fill_struct_copy_body(ASR::symbol_t* struct_sym,
+                                    llvm::Function* func,
+                                    llvm::Module* module);
     };
 
     class LLVMTuple {

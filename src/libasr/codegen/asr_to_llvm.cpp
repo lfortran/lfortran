@@ -174,16 +174,9 @@ public:
 
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
     std::map<ASR::symbol_t*, std::map<SymbolTable*, std::vector<llvm::Value*>>> class2vtab;
-    std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
-    std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
-    std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
-    std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
-    std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
-    std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
-    std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
     // Stores the map of pointer and associated type, map<ptr, i32>, Used by Load or GEP
     std::map<llvm::Value *, llvm::Type *> ptr_type_deprecated;
     llvm::Type* current_select_type_block_type;
@@ -194,6 +187,7 @@ public:
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMList> list_api;
+    std::unique_ptr<LLVMStruct> struct_api;
     std::unique_ptr<LLVMTuple> tuple_api;
     std::unique_ptr<LLVMDictInterface> dict_api_lp;
     std::unique_ptr<LLVMDictInterface> dict_api_sc;
@@ -234,9 +228,10 @@ public:
     current_scope(nullptr),
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
-        dertype2parent, name2memidx, compiler_options, arr_arg_type_cache, newclass2vtab,
+        dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
         fname2arg_type, ptr_type_deprecated, llvm_symtab)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
+    struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn)),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
     dict_api_sc(std::make_unique<LLVMDictSeparateChaining>(context, llvm_utils.get(), builder.get())),
@@ -248,6 +243,7 @@ public:
     {
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
+        llvm_utils->struct_api = struct_api.get();
         llvm_utils->dict_api = nullptr;
         llvm_utils->set_api = nullptr;
         llvm_utils->arr_api = arr_descr.get();
@@ -1310,9 +1306,9 @@ public:
                         x_arr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
 
                         if (compiler_options.new_classes) {
-                            store_class_vptr(ASRUtils::symbol_get_past_external(
+                            struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(
                                     ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a)),
-                                bitcasted_malloc_ptr);
+                                bitcasted_malloc_ptr, module.get());
                         }
 
                         allocate_array_members_of_struct(
@@ -1330,7 +1326,7 @@ public:
                             this->visit_expr(*m_source);
                             ptr_loads = ptr_loads_copy;
 
-                            llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get(), name2memidx);
+                            llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
                         }
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
@@ -1393,7 +1389,8 @@ public:
                                    && ASRUtils::is_unlimited_polymorphic_type(&src_struct_sym->base)
                                    && !dest_class_sym) {
                             // This is the case of an unlimited polymorphic type being allocated an intrinsic type.
-                            create_vtab_for_intrinsic_type(dest_asr_type, ASRUtils::extract_kind_from_ttype_t(dest_asr_type));
+                            struct_api->create_vtab_for_intrinsic_type(dest_asr_type, 
+                                ASRUtils::extract_kind_from_ttype_t(dest_asr_type), module.get());
                         }
 
                         llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(malloc_ptr, src_struct_type);
@@ -1419,15 +1416,15 @@ public:
                         if (compiler_options.new_classes) {
                             // Store vptr after allocation
                             if (dest_class_sym) {
-                                store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr);
+                                struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(dest_class_sym), bitcasted_malloc_ptr, module.get());
                             } else if (ASRUtils::is_unlimited_polymorphic_type(&src_struct_sym->base)
                                    && !dest_class_sym) {
-                                store_intrinsic_type_vptr(
+                                struct_api->store_intrinsic_type_vptr(
                                     dest_asr_type,
                                     ASRUtils::extract_kind_from_ttype_t(dest_asr_type),
                                     bitcasted_malloc_ptr);
                             } else {
-                                store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr);
+                                struct_api->store_class_vptr(&src_struct_sym->base, bitcasted_malloc_ptr, module.get());
                             }
                         }
 
@@ -1451,7 +1448,7 @@ public:
                                 src = builder->CreateBitCast(src, llvm_utils->i8_ptr);
                                 dest = llvm_utils->create_gep2(get_llvm_struct_data_type(src_struct_sym, false), dest, 1);
                             }
-                            llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get(), name2memidx);
+                            llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get());
                         }
                     }
                 }
@@ -1510,12 +1507,12 @@ public:
                         ptr_to_data = llvm_utils->CreateLoad2(
                             struct_llvm_type->getPointerTo(), ptr_to_data);
                         if (curr_arg.m_sym_subclass) {
-                            store_class_vptr(ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass),
-                                ptr_to_data);
+                            struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass),
+                                ptr_to_data, module.get());
                         } else {
-                            store_class_vptr(ASRUtils::symbol_get_past_external(
+                            struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(
                                 ASRUtils::get_struct_sym_from_struct_expr(tmp_expr)),
-                                ptr_to_data);
+                                ptr_to_data, module.get());
                         }
                     }
                     allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
@@ -3399,8 +3396,8 @@ public:
             // for the vtable pointer in non-constant structs. This is done to avoid incorrect types
             // during deep-copying structs. Please see `./integration_tests/class_21.f90` with
             // assignment `type(val_type), parameter :: val_par = val_type()` for an example.
-            llvm::Constant* ptr_to_method = get_pointer_to_method(
-                ASRUtils::symbol_get_past_external(x.m_dt_sym));
+            llvm::Constant* ptr_to_method = struct_api->get_pointer_to_method(
+                ASRUtils::symbol_get_past_external(x.m_dt_sym), module.get());
             elements.push_back(ptr_to_method);
         }
 
@@ -4120,7 +4117,7 @@ public:
         }
         if (compiler_options.new_classes) {
             for (auto &sym: structs) {
-                create_new_vtable_for_struct_type(sym);
+                struct_api->create_new_vtable_for_struct_type(sym, module.get());
             }
         }
         for (auto &sym: variables) {
@@ -4337,51 +4334,6 @@ public:
         }
     }
     
-    inline llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym) {
-        if (newclass2vtab.find(struct_sym) == newclass2vtab.end()) {
-            create_new_vtable_for_struct_type(struct_sym);
-        }
-        llvm::Constant* vtable = newclass2vtab.at(struct_sym);
-        llvm::Type* vtab_type = newclass2vtabtype.at(struct_sym);
-        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-        llvm::Value* two  = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
-
-        llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(
-            vtab_type,
-            vtable,
-            {zero, zero, two}
-        );
-        gep = llvm::ConstantExpr::getBitCast(gep, llvm_utils->vptr_type);
-        return gep;
-    }
-
-    void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr) {
-        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*struct_sym));
-
-        if (ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-            return;
-        }
-        // Store Default vptr (Points to first Virtual function)
-        llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
-        llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
-        builder->CreateStore(ptr_to_method, v_ptr);
-    }
-
-    void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr)
-    {
-        llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
-        llvm::Constant* vtable = intrinsic_type_vtab.at(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind));
-        llvm::Type* vtab_type = intrinsic_type_vtabtype.at(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind));
-        llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-        llvm::Value* two = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 2);
-
-        llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(vtab_type,
-            vtable, { zero, zero, two });
-        gep = llvm::ConstantExpr::getBitCast(gep, llvm_utils->vptr_type);
-        builder->CreateStore(gep, v_ptr);
-    }
-
     void set_pointer_variable_to_null(ASR::Variable_t* v, llvm::Value* null_value, llvm::Value* ptr) {
         if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) ||
                 ASR::is_a<ASR::Pointer_t>(*v->m_type)) &&
@@ -4411,7 +4363,6 @@ public:
             }
         }
     }
-
 
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr, ASR::ttype_t* asr_type, bool is_intent_out = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
@@ -4452,8 +4403,8 @@ public:
                     if (compiler_options.new_classes &&
                             !LLVM::is_llvm_pointer(*v->m_type) &&
                             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                        store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
-                            ptr_member);
+                        struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
+                            ptr_member, module.get());
                     } else {
                         set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                             llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -4689,234 +4640,6 @@ public:
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
     }
 
-    void collect_vtable_function_impls(ASR::symbol_t *struct_sym, std::vector<llvm::Constant*>& impls) {
-        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-        if (struct_t->m_parent) {
-            collect_vtable_function_impls(struct_t->m_parent, impls);
-        }
-        for (auto &item : struct_t->m_symtab->get_scope()) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-                ASR::StructMethodDeclaration_t* method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-                ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(method_decl->m_proc);
-                if (method_decl->m_is_deferred) {
-                    llvm::FunctionType *func_type = llvm_utils->get_function_type(
-                        *(ASR::down_cast<ASR::Function_t>(
-                            ASRUtils::symbol_get_past_external(method_decl->m_proc))),
-                        module.get());
-                    struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;
-                    impls.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(func_type)));
-                } else {
-                    uint32_t h = get_hash((ASR::asr_t*)impl_sym);
-                    if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                        // Eg. `call_subroutine_without_type_01.f90`
-                        llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                            *ASR::down_cast<ASR::Function_t>(impl_sym), module.get());
-                        llvm::Function* fn = llvm::Function::Create(fntype,
-                            llvm::Function::ExternalLinkage, ASRUtils::symbol_name(impl_sym), module.get());
-                        llvm_symtab_fn[h] = fn;
-                    }
-                    llvm::Function* F = llvm_symtab_fn[h];
-                    if (struct_t->m_parent) {
-                        ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
-                        // Case: If current method is overriding any methods from parent class
-                        if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
-                              (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
-                            impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
-                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];
-                            continue;
-                        }
-                    }
-                    struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
-                    impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
-                }
-            }
-        }
-
-        // Inherit index of not-overriden methods from parent class
-        if (struct_t->m_parent && 
-                struct_vtab_function_offset.find(
-                    ASRUtils::symbol_get_past_external(struct_t->m_parent)) != struct_vtab_function_offset.end()) {
-            for(auto &item: struct_vtab_function_offset[ASRUtils::symbol_get_past_external(struct_t->m_parent)]) {
-                if (struct_vtab_function_offset[struct_sym].find(item.first) == 
-                        struct_vtab_function_offset[struct_sym].end()) {
-                    struct_vtab_function_offset[struct_sym][item.first] = item.second;
-                }
-            }
-        }
-    }
-
-    void create_type_info_for_intrinsic_type(ASR::ttype_t* ttype, int kind)
-    {
-        if (intrinsic_type_info.find(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind))
-            != intrinsic_type_info.end()) {
-            return;
-        }
-
-        const std::string type_info_name = "_Type_Info_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
-
-        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr, llvm_utils->i8_ptr };
-        std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(2); // A type-info object has minimum 1 member.
-
-        // Intrinsic type ttype number + kind
-        type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), (int) ttype->type + kind),
-            llvm_utils->i8_ptr));
-
-        // Intrinsic type kind
-        type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
-            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), kind),
-            llvm_utils->i8_ptr));
-
-        llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
-        
-        llvm::Constant* type_info_init = llvm::ConstantStruct::get(
-            type_info_struct_type, type_info_member_values);
-
-        llvm::GlobalVariable* type_info_var = new llvm::GlobalVariable(*module,
-                                                            type_info_struct_type,
-                                                            true,
-                                                            llvm::GlobalValue::LinkOnceODRLinkage,
-                                                            type_info_init,
-                                                            type_info_name);
-        type_info_var->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-        type_info_var->setAlignment(llvm::MaybeAlign(8));
-
-        intrinsic_type_info.insert(
-            std::make_pair(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind), type_info_var));
-    }
-
-    void create_vtab_for_intrinsic_type(ASR::ttype_t* ttype, int kind) {
-        create_type_info_for_intrinsic_type(ttype, kind);
-
-        std::vector<llvm::Constant*> slots;
-        slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
-        slots.push_back(intrinsic_type_info.at(
-            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)));  // Type Info
-
-        llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, 2);
-        llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
-        std::string gv_name = "_VTable_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
-        llvm::StructType *outerStructTy = llvm::StructType::get(context, { arrTy }, false);
-        llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
-
-        llvm::GlobalVariable *gv = new llvm::GlobalVariable(*module, 
-            outerStructTy, true, llvm::GlobalValue::LinkOnceODRLinkage,
-            structInit, gv_name);
-        gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); // unnamed_addr
-        gv->setAlignment(llvm::MaybeAlign(8));
-        intrinsic_type_vtab.insert(
-            std::make_pair(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind), gv));
-        intrinsic_type_vtabtype.insert(
-            std::make_pair(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind), outerStructTy));
-    }
-
-    void create_new_vtab_for_struct_dependencies(ASR::symbol_t* struct_sym)
-    {
-        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()) {
-            return ;
-        }
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-        if (struct_t->m_parent != nullptr) {
-            // First create VTable for parent
-            create_new_vtable_for_struct_type(ASRUtils::symbol_get_past_external(
-                struct_t->m_parent));
-        }
-    }
-    void create_new_vtable_for_struct_type(ASR::symbol_t* struct_sym)
-    {
-        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-        if (newclass2vtab.find(struct_sym) != newclass2vtab.end()
-            || ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-            return ;
-        }
-        create_new_vtab_for_struct_dependencies(struct_sym);
-
-        create_type_info_for_struct(struct_sym);
-
-        llvm::Type *i8Ty = llvm::Type::getInt8Ty(context);
-        llvm::PointerType *i8PtrTy = llvm::PointerType::get(i8Ty, 0);
-
-        std::vector<llvm::Constant*> slots;
-        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Reserved null ptr
-        slots.push_back(newclass2typeinfo.at(struct_sym));             // Type Info
-        collect_vtable_function_impls(struct_sym, slots);
-
-        // create and add copy funciton
-        llvm::Function* copy_function = define_struct_copy_function(struct_sym);
-        struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
-        slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
-
-        llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
-        llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
-        std::string gv_name = "_VTable_" + std::string(ASRUtils::symbol_name(struct_sym));
-        llvm::StructType *outerStructTy = llvm::StructType::get(context, { arrTy }, false);
-        llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
-
-        llvm::GlobalVariable *gv = new llvm::GlobalVariable(*module, 
-            outerStructTy, true, llvm::GlobalValue::LinkOnceODRLinkage,
-            structInit, gv_name);
-        gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global); // unnamed_addr
-        gv->setAlignment(llvm::MaybeAlign(8));
-        newclass2vtab[struct_sym] = gv;
-        newclass2vtabtype[struct_sym] = outerStructTy;
-        // populate copy function body after creating vtable
-        fill_struct_copy_body(struct_sym, copy_function);
-    }
-
-    void create_type_info_for_struct(ASR::symbol_t* struct_sym)
-    {
-        if (newclass2typeinfo.find(struct_sym) != newclass2typeinfo.end()) return;
-
-        LCOMPILERS_ASSERT_MSG(
-            ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(struct_sym)),
-            "Expect `ASR::Struct_t`, got " + ASRUtils::symbol_to_str_fortran(*struct_sym, true));
-
-
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
-
-        std::vector<llvm::Type*> type_info_member_types = { llvm_utils->i8_ptr };
-        std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(1); // A type-info object has minimum 1 member.
-
-        if (struct_t->m_parent) {
-            create_type_info_for_struct(struct_t->m_parent);
-        }
-
-        // Struct name
-        type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
-            builder->CreateGlobalStringPtr(std::string(struct_t->m_name),
-                                           "_Name_" + std::string(struct_t->m_name)),
-            llvm_utils->i8_ptr));
-        if (struct_t->m_parent) {
-            // Pointer to parent struct's type-info
-            type_info_member_types.push_back(llvm_utils->i8_ptr);
-            type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
-                newclass2typeinfo.at(ASRUtils::symbol_get_past_external(struct_t->m_parent)), llvm_utils->i8_ptr));
-        }
-
-        llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
-        
-        llvm::Constant* type_info_init = llvm::ConstantStruct::get(
-            type_info_struct_type, type_info_member_values);
-
-        llvm::GlobalVariable* type_info_var = new llvm::GlobalVariable(*module,
-                                                            type_info_struct_type,
-                                                            true,
-                                                            llvm::GlobalValue::LinkOnceODRLinkage,
-                                                            type_info_init,
-                                                            type_info_name);
-        type_info_var->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-        type_info_var->setAlignment(llvm::MaybeAlign(8));
-
-        newclass2typeinfo.insert(
-            std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
-    }
-
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
             std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -4932,7 +4655,7 @@ public:
                 field_values.push_back(llvm::ConstantStruct::get(llvm_struct_type, tmp_field_values));
             } else {
                 // Add vptr
-                llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym);
+                llvm::Constant* ptr_to_method = struct_api->get_pointer_to_method(struct_sym, module.get());
                 field_values.push_back(ptr_to_method);
             }
         }
@@ -5288,8 +5011,8 @@ public:
             }
             if (compiler_options.new_classes && !LLVM::is_llvm_pointer(*v->m_type) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
-                    ptr);
+                struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
+                    ptr, module.get());
             } else {
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
@@ -5441,8 +5164,8 @@ public:
                 }
                 if( create_vtab ) {
                     if (compiler_options.new_classes) {
-                        create_new_vtable_for_struct_type(
-                            ASRUtils::symbol_get_past_external(struct_types[i]));
+                        struct_api->create_new_vtable_for_struct_type(
+                            ASRUtils::symbol_get_past_external(struct_types[i]), module.get());
                     } else {
                         create_vtab_for_struct_type(
                             ASRUtils::symbol_get_past_external(struct_types[i]),
@@ -5899,49 +5622,6 @@ public:
     end subroutine
     Example: `class_65.f90`
     */
-    llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym) {
-        llvm::FunctionType *funcType = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context),
-            {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
-            false
-        );
-
-        // Create the function in the module
-        std::string func_name = "_copy_";
-        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
-                            + "_" + ASRUtils::symbol_name(struct_sym);
-        llvm::Function *func = llvm::Function::Create(
-            funcType,
-            llvm::Function::ExternalLinkage,
-            func_name,
-            module.get()
-        );
-        return func;
-    }
-
-    void fill_struct_copy_body(ASR::symbol_t* struct_sym, llvm::Function* func) {
-        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
-        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
-        builder->SetInsertPoint(entry);
-
-        // Get function arguments
-        std::vector<llvm::Value*> argsVec;
-        for (llvm::Argument &arg : func->args()) {
-            argsVec.push_back(&arg);
-        }
-        llvm::Type *struct_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::symbol_type(struct_sym), struct_sym, module.get());
-        llvm::Value *src = builder->CreateBitCast(argsVec[0], struct_type->getPointerTo());
-        llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
-        llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
-            ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module.get(), name2memidx);
-        store_class_vptr(struct_sym, dst);
-        builder->CreateRetVoid();
-
-        if (savedBB) {
-            builder->SetInsertPoint(savedBB, savedBB->end());
-        }
-    }
 
     void generate_function(const ASR::Function_t &x) {
         bool interactive = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::ExternalUndefined);
@@ -6535,7 +6215,7 @@ public:
                     ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
                     if (type2vtab.find(struct_sym) == type2vtab.end() ||
                         type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
-                        create_new_vtable_for_struct_type(struct_sym);
+                        struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
                     }
                     ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
@@ -6921,7 +6601,7 @@ public:
                     llvm::Value* llvm_tuple_i = llvm_utils->CreateAlloca(*builder, llvm_tuple_i_type);
                     ptr_loads = !LLVM::is_llvm_struct(asr_tuple_i_type);
                     visit_expr(*asr_value_tuple->m_elements[i]);
-                    llvm_utils->deepcopy(asr_value_tuple->m_elements[i], tmp, llvm_tuple_i, expr_type(asr_target_tuple->m_elements[i]), asr_tuple_i_type, module.get(), name2memidx);
+                    llvm_utils->deepcopy(asr_value_tuple->m_elements[i], tmp, llvm_tuple_i, expr_type(asr_target_tuple->m_elements[i]), asr_tuple_i_type, module.get());
                     src_deepcopies.push_back(al, llvm_tuple_i);
                 }
                 for( size_t i = 0; i < asr_target_tuple->n_elements; i++ ) {
@@ -7021,7 +6701,7 @@ public:
                 ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
                 llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                    vtable_ptr, struct_vtab_function_offset[value_struct_sym]["_lfortran_struct_copy"]));
+                    vtable_ptr, struct_api->struct_vtab_function_offset[value_struct_sym]["_lfortran_struct_copy"]));
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
@@ -7029,9 +6709,9 @@ public:
             } else {
                 target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
                 llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), name2memidx);
+                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get());
                 ASR::symbol_t* value_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
-                store_class_vptr(value_sym, target_struct);
+                struct_api->store_class_vptr(value_sym, target_struct, module.get());
             }
             return;
         } else if( is_target_struct && is_value_struct ) {
@@ -7054,7 +6734,7 @@ public:
                 value_struct = llvm_utils->CreateLoad2(val_type, value_struct);
             }
             llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), name2memidx);
+                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get());
             return ;
         } else if (is_target_class && is_value_class) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -7132,7 +6812,7 @@ public:
             llvm::Value* target_struct = tmp;
 
             llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_target_type, ASRUtils::type_get_past_allocatable(asr_value_type), module.get(), name2memidx);
+                asr_target_type, ASRUtils::type_get_past_allocatable(asr_value_type), module.get());
             return;
         }
 
@@ -8088,7 +7768,7 @@ public:
                         // variable passed as selector variable. We need to compare the exact type
                         // instead of inheritance here.
                         llvm::Value* val = lfortran_dynamic_cast(
-                            static_ptr, newclass2typeinfo.at(type_sym), true);
+                            static_ptr, struct_api->newclass2typeinfo.at(type_sym), true);
                         cond = builder->CreateICmpNE(
                             val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
                     } else {
@@ -8100,7 +7780,7 @@ public:
                         if ((type2vtab.find(type_sym) == type2vtab.end()) ||
                             (type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end())) {
                             if (compiler_options.new_classes) {
-                                create_new_vtable_for_struct_type(type_sym);
+                                struct_api->create_new_vtable_for_struct_type(type_sym, module.get());
                             } else {
                                 create_vtab_for_struct_type(type_sym, current_scope);
                             }
@@ -8134,7 +7814,7 @@ public:
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
                         llvm::Value* val = lfortran_dynamic_cast(
-                            static_ptr, newclass2typeinfo.at(class_sym), false);
+                            static_ptr, struct_api->newclass2typeinfo.at(class_sym), false);
                         cond = builder->CreateICmpNE(
                             val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
                     } else {
@@ -8146,7 +7826,7 @@ public:
                             if ((type2vtab.find(class_sym) == type2vtab.end()) ||
                                 (type2vtab[class_sym].find(current_scope) == type2vtab[class_sym].end())) {
                                 if (compiler_options.new_classes) {
-                                    create_new_vtable_for_struct_type(class_sym);
+                                    struct_api->create_new_vtable_for_struct_type(class_sym, module.get());
                                 } else {
                                     create_vtab_for_struct_type(class_sym, current_scope);
                                 }
@@ -8176,10 +7856,10 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(type_stmt_type);
                     if (compiler_options.new_classes) {
                         // If the intrinsic type's type-info does not exist, create it on the fly.
-                        if (intrinsic_type_info.find(
+                        if (struct_api->intrinsic_type_info.find(
                                 ASRUtils::intrinsic_type_to_str_with_kind(type_stmt_type, kind))
-                            == intrinsic_type_info.end()) {
-                            create_type_info_for_intrinsic_type(type_stmt_type, kind);
+                            == struct_api->intrinsic_type_info.end()) {
+                            struct_api->create_type_info_for_intrinsic_type(type_stmt_type, kind, module.get());
                         }
                         llvm::Value* static_ptr = llvm_selector;
                         if (ASRUtils::is_array(selector_var_type)) {
@@ -8196,7 +7876,7 @@ public:
                         }
                         llvm::Value* val = lfortran_dynamic_cast(
                             static_ptr,
-                            intrinsic_type_info.at(
+                            struct_api->intrinsic_type_info.at(
                                 ASRUtils::intrinsic_type_to_str_with_kind(type_stmt_type, kind)),
                             true);
                         cond = builder->CreateICmpNE(
@@ -12378,7 +12058,7 @@ public:
                                 target_type, nullptr, "call_arg_value");
                             if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
                                 ASR::is_a<ASR::List_t>(*arg_type) ) {
-                                    llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get(), name2memidx);
+                                    llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                             } else {
                                 builder->CreateStore(value, target);
                             }
@@ -12570,14 +12250,14 @@ public:
 
                         llvm::Value* data_ptr = llvm_utils->create_gep2(array_data_type, unlimited_polymorphic_struct, 1);
                         arg_type = ASRUtils::extract_type(arg_type);
-                        if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
+                        if (struct_api->intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
                                 arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type)))
-                            == intrinsic_type_vtab.end()) {
-                            create_vtab_for_intrinsic_type(arg_type,
-                                                        ASRUtils::extract_kind_from_ttype_t(arg_type));
+                            == struct_api->intrinsic_type_vtab.end()) {
+                            struct_api->create_vtab_for_intrinsic_type(arg_type,
+                                ASRUtils::extract_kind_from_ttype_t(arg_type), module.get());
                         }
                         // Store intrinsic type vptr
-                        store_intrinsic_type_vptr(
+                        struct_api->store_intrinsic_type_vptr(
                             arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type), unlimited_polymorphic_struct);
                         // Store inrinsic type data ptr
                         builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr),
@@ -12590,12 +12270,13 @@ public:
                         llvm::Value* data_ptr = llvm_utils->create_gep2(unlimited_polymorphic_type, unlimited_polymorphic_struct, 1);
 
                         // An intrinsic type scalar is passes as argument to a `class(*)` function parameter
-                        if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
+                        if (struct_api->intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
                                 arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type)))
-                            == intrinsic_type_vtab.end()) {
-                            create_vtab_for_intrinsic_type(arg_type, ASRUtils::extract_kind_from_ttype_t(arg_type));
+                            == struct_api->intrinsic_type_vtab.end()) {
+                            struct_api->create_vtab_for_intrinsic_type(arg_type,
+                                ASRUtils::extract_kind_from_ttype_t(arg_type), module.get());
                         }
-                        store_intrinsic_type_vptr(arg_type,
+                        struct_api->store_intrinsic_type_vptr(arg_type,
                                                     ASRUtils::extract_kind_from_ttype_t(arg_type),
                                                     unlimited_polymorphic_struct);
                                                     
@@ -12699,7 +12380,7 @@ public:
                 if( type2vtab.find(struct_sym) == type2vtab.end() &&
                     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
                     if (compiler_options.new_classes) {
-                        create_new_vtable_for_struct_type(struct_sym);
+                        struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
                     } else {
                         create_vtab_for_struct_type(struct_sym, current_scope);
                     }
@@ -12744,7 +12425,7 @@ public:
                 if( type2vtab.find(struct_sym) == type2vtab.end() &&
                     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
                     if (compiler_options.new_classes) {
-                        create_new_vtable_for_struct_type(struct_sym);
+                        struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
                     } else {
                         create_vtab_for_struct_type(struct_sym, current_scope);
                     }
@@ -13312,7 +12993,7 @@ public:
 
             // Get function pointer from VTable
             llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
+                vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             builder->CreateCall(fnTy, fn, args);
             return;
@@ -13325,7 +13006,7 @@ public:
             dt_sym_type = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_dt))));
             if (compiler_options.new_classes) {
-                create_new_vtable_for_struct_type(&dt_sym_type->base);
+                struct_api->create_new_vtable_for_struct_type(&dt_sym_type->base, module.get());
             } else {
                 create_vtab_for_struct_type(&dt_sym_type->base, current_scope);
             }
@@ -13533,7 +13214,7 @@ public:
 
             // Get function pointer from VTable
             llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                vtable_ptr, struct_vtab_function_offset[struct_sym][proc_sym_name]));
+                vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             tmp = builder->CreateCall(fnTy, fn, args);
             return;
