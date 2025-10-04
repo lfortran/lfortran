@@ -1534,77 +1534,9 @@ namespace LCompilers {
         return alloca;
     }
 
-    llvm::Value *LLVMUtils::CreateLoadDeprecated(llvm::Value *x, bool is_volatile) {
-#if LLVM_VERSION_MAJOR <= 16
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateLoad(t2, x, is_volatile);
-#else
-        llvm::Type *type = nullptr, *type_copy = nullptr;
-        bool is_type_pointer = false;
-        if (ptr_type_deprecated.find(x) != ptr_type_deprecated.end()) {
-            type_copy = type = ptr_type_deprecated[x];
-        }
-        LCOMPILERS_ASSERT(type);
-        // getPointerTo() is used for allocatable or pointer
-        if (type != character_type && (llvm::isa<llvm::AllocaInst>(x) &&
-                llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
-            // AllocaInst
-            type = type->getPointerTo();
-            is_type_pointer = true;
-        } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
-            // Function arguments
-            if (arr_type->getName() == "array" || LCompilers::startswith(
-                    std::string(arr_type->getName()), "array.")) {
-                type = type->getPointerTo();
-                is_type_pointer = true;
-            }
-        }
-
-        if ( llvm::GetElementPtrInst *
-                gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
-            // GetElementPtrInst
-            [[maybe_unused]] llvm::Type *src_type = gep->getSourceElementType();
-            LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
-            std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
-                gep->getSourceElementType())->getName());
-            if ( name2dertype.find(s_name) != name2dertype.end() ) {
-                type = type->getPointerTo();
-                is_type_pointer = true;
-            }
-        }
-
-        llvm::Value *load = builder->CreateLoad(type, x, is_volatile);
-        if (is_type_pointer) {
-            ptr_type_deprecated[load] = type_copy;
-        }
-        return load;
-#endif
-    }
 
     llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile) {
         return builder->CreateLoad(t, x, is_volatile);
-    }
-
-    llvm::Value* LLVMUtils::CreateGEPDeprecated(llvm::Value *x,
-            std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR <= 16
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateGEP(t2, x, idx);
-#else
-        llvm::Type *type = nullptr;
-        auto it = ptr_type_deprecated.find(x);
-        if (it != ptr_type_deprecated.end()) {
-            type = it->second;
-        }
-        LCOMPILERS_ASSERT(type);
-        return builder->CreateGEP(type, x, idx);
-#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
@@ -1618,24 +1550,6 @@ namespace LCompilers {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
         return LLVMUtils::CreateGEP2(type, x, idx_vec);
-    }
-
-    llvm::Value* LLVMUtils::CreateInBoundsGEPDeprecated(llvm::Value *x,
-            std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR <= 16
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateInBoundsGEP(t2, x, idx);
-#else
-        llvm::Type *type = nullptr;
-        if (ptr_type_deprecated.find(x) != ptr_type_deprecated.end()) {
-            type = ptr_type_deprecated[x];
-        }
-        LCOMPILERS_ASSERT(type);
-        return builder->CreateInBoundsGEP(type, x, idx);
-#endif
     }
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
