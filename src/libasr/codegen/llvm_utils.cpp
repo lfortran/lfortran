@@ -1456,20 +1456,6 @@ namespace LCompilers {
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
 
-    llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, int idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
-    }
-
-    llvm::Value* LLVMUtils::create_gep_deprecated(llvm::Value* ds, llvm::Value* idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        idx};
-        return LLVMUtils::CreateGEPDeprecated(ds, idx_vec);
-    }
-
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),

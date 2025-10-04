@@ -242,8 +242,6 @@ namespace LCompilers {
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<llvm::Value *, llvm::Type *> &ptr_type_deprecated_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
-            llvm::Value* create_gep_deprecated(llvm::Value* ds, int idx);
-            llvm::Value* create_gep_deprecated(llvm::Value* ds, llvm::Value* idx);
 
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
