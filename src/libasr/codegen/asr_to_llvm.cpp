@@ -7738,7 +7738,16 @@ public:
                                 vptr_int_hash,
                                 llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(current_select_type_block_type, vtab_obj_casted, 0)) ));
                         }
+#if LLVM_VERSION_MAJOR >= 9
                         cond = builder->CreateOr(conds);
+#else
+                        // LLVM 8 doesn't have CreateOr(ArrayRef), manually chain Or operations
+                        LCOMPILERS_ASSERT(conds.size() > 0);
+                        cond = conds[0];
+                        for( size_t i = 1; i < conds.size(); i++ ) {
+                            cond = builder->CreateOr(cond, conds[i]);
+                        }
+#endif
                     }
                     type_block = class_stmt->m_body;
                     n_type_block = class_stmt->n_body;
