@@ -4,6 +4,23 @@
 #include <libasr/asr_utils.h>
 #include "llvm_array_utils.h"
 
+// LLVM 9 compatibility: MaybeAlign and Align were added in LLVM 10
+#if LLVM_VERSION_MAJOR < 10
+namespace llvm {
+    struct MaybeAlign {
+        MaybeAlign() : value(0) {}
+        explicit MaybeAlign(unsigned v) : value(v) {}
+        operator unsigned() const { return value; }
+        unsigned value;
+    };
+    struct Align {
+        explicit Align(unsigned v) : value(v) {}
+        operator unsigned() const { return value; }
+        unsigned value;
+    };
+}
+#endif
+
 namespace LCompilers {
 
     namespace LLVMArrUtils {

@@ -367,7 +367,9 @@ void write_file(const std::string &filename, const std::string &contents)
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
     llvm::legacy::PassManager pass;
-#if LLVM_VERSION_MAJOR < 18
+#if LLVM_VERSION_MAJOR < 10
+    llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_AssemblyFile;
+#elif LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
 #else
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::AssemblyFile;
@@ -395,7 +397,9 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     m.setDataLayout(TM->createDataLayout());
 
     llvm::legacy::PassManager pass;
-#if LLVM_VERSION_MAJOR < 18
+#if LLVM_VERSION_MAJOR < 10
+    llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_ObjectFile;
+#elif LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
 #else
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
