@@ -64,16 +64,26 @@ public:
         ObjectLayer(*this->ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
 #endif
+#if LLVM_VERSION_MAJOR >= 10
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
+#else
+        CompileLayer(*this->ES, ObjectLayer, SimpleCompiler(**JTMB.createTargetMachine())),
+#endif
         DL(std::move(DL)), Mangle(*this->ES, this->DL),
         JITDL(
 #if LLVM_VERSION_MAJOR >= 11
             cantFail
 #endif
           (this->ES->createJITDylib("Main"))) {
+#if LLVM_VERSION_MAJOR >= 10
     JITDL.addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
+#else
+    JITDL.setGenerator(
+        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            DL.getGlobalPrefix())));
+#endif
     if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
       ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
       ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);

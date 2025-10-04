@@ -49,6 +49,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/codegen/llvm_compat.h>
 
 namespace LCompilers {
 

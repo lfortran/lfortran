@@ -3,6 +3,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/asr_utils.h>
 #include "llvm_array_utils.h"
+#include <libasr/codegen/llvm_compat.h>
 
 namespace LCompilers {
 
