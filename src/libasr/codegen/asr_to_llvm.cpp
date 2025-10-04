@@ -13979,9 +13979,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
         const std::string &infile)
 {
-#if LLVM_VERSION_MAJOR >= 15 && LLVM_VERSION_MAJOR <= 19
-    context.setOpaquePointers(false);
-#endif
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics);
 
     std::vector<int64_t> skip_optimization_func_instantiation;
