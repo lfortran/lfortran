@@ -67,6 +67,16 @@ public :
             // Create variable in current_scope to be holding the return + Deallocate.
             ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
                 "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
+            ASR::ttype_t* result_var_t = ASRUtils::expr_type(result_var);
+
+            // Some DeferredLength-String Types Aren't Allocatable Nor Pointer. DeferredLength-String Variables Must Be Pointer Or Allocatable.
+            if( ASRUtils::is_deferredLength_string(result_var_t) 
+                && !ASRUtils::is_allocatable(result_var_t) 
+                && !ASRUtils::is_pointer(result_var_t))
+            {
+                ASRUtils::EXPR2VAR(result_var)->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, result_var_t));
+            }
+            
             if(ASRUtils::is_allocatable(result_var)){
                 insert_implicit_deallocate(result_var);
             }

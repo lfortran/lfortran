@@ -10389,7 +10389,7 @@ public:
         }
 
         if (x.m_advance) {
-            this->visit_expr_wrapper(x.m_advance, true);
+            this->visit_expr_load_wrapper(x.m_advance, 0, true);
             LCOMPILERS_ASSERT(ASRUtils::is_character(*expr_type(x.m_advance)))
             std::tie(advance, advance_length) = llvm_utils->get_string_length_data(
                                                     ASRUtils::get_string_type(x.m_advance),
