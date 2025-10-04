@@ -317,9 +317,6 @@ namespace LCompilers {
                 arr_first = llvm_utils->CreateAlloca(*builder,
                     llvm_data_type, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size));
             }
-#if LLVM_VERSION_MAJOR > 16
-            llvm_utils->ptr_type_deprecated[arr_first] = llvm_data_type;
-#endif
             builder->CreateStore(arr_first, first_ptr);
         }
 
@@ -354,9 +351,6 @@ namespace LCompilers {
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
             llvm::Module* module, bool realloc) {
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
-#if LLVM_VERSION_MAJOR > 16
-            llvm_utils->ptr_type_deprecated[arr] = arr_type;
-#endif
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
@@ -403,9 +397,6 @@ namespace LCompilers {
                         *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), arg_size));
                 }
                 llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
-#if LLVM_VERSION_MAJOR > 16
-                llvm_utils->ptr_type_deprecated[first_ptr] = ptr_type;
-#endif
                 builder->CreateStore(first_ptr, ptr2firstptr);
             }
         }
