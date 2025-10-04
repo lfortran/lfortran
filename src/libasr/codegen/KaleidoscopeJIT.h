@@ -79,10 +79,15 @@ public:
     JITDL.addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
-#else
+#elif LLVM_VERSION_MAJOR >= 9
     JITDL.setGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
+#else
+    // LLVM 8: GetForCurrentProcess takes DataLayout reference, not global prefix
+    JITDL.setGenerator(
+        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            this->DL)));
 #endif
     if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
       ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
