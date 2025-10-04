@@ -1228,8 +1228,13 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
+#if LLVM_VERSION_MAJOR >= 11
                         llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
+#else
+                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
+                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+#endif
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {
