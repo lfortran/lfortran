@@ -212,7 +212,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
+        llvm-version: ["9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v5
@@ -376,7 +376,7 @@ jobs:
 
       # LLVM 10-19 all work in exactly the same way, so the test is identical
       - name: Test Linux LLVM 10-16
-        if: ${{(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
+        if: ${{(contains(matrix.llvm-version, '9') || contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
         shell: bash -e -l {0}
         run: |
             cd integration_tests
