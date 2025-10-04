@@ -5878,11 +5878,6 @@ public:
         ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
-#if LLVM_VERSION_MAJOR > 16
-        llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
-            ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(p_type)), module.get());
-#endif
         if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type)) && !compiler_options.new_classes) {
             // If the pointer is class, get its type pointer
             ptr = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get()), ptr, 1);
