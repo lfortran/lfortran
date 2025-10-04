@@ -196,13 +196,13 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Allocatable: {
-                ASR::Allocatable_t* ptr_type_deprecated = ASR::down_cast<ASR::Allocatable_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type_deprecated->m_type, member, module)->getPointerTo();
+                ASR::Allocatable_t* ptr_type = ASR::down_cast<ASR::Allocatable_t>(mem_type);
+                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Pointer: {
-                ASR::Pointer_t* ptr_type_deprecated = ASR::down_cast<ASR::Pointer_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type_deprecated->m_type, member, module)->getPointerTo();
+                ASR::Pointer_t* ptr_type = ASR::down_cast<ASR::Pointer_t>(mem_type);
+                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Complex: {
