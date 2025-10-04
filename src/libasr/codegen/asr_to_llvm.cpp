@@ -177,8 +177,7 @@ public:
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
-    // Stores the map of pointer and associated type, map<ptr, i32>, Used by Load or GEP
-    std::map<llvm::Value *, llvm::Type *> ptr_type_deprecated;
+    std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
     llvm::Type* current_select_type_block_type;
     ASR::ttype_t* current_select_type_block_type_asr;
     std::string current_select_type_block_der_type;
@@ -229,7 +228,7 @@ public:
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
         dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
-        fname2arg_type, ptr_type_deprecated, llvm_symtab)),
+        fname2arg_type, llvm_symtab)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
     struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn)),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
@@ -1480,9 +1479,6 @@ public:
                         llvm::Value* ptr_;
 
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
-#if LLVM_VERSION_MAJOR > 16
-                            ptr_type_deprecated[ptr_] = type;
-#endif
                             arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
                             LLVM::CreateStore(
@@ -1497,9 +1493,6 @@ public:
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                     && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
-#if LLVM_VERSION_MAJOR > 16
-                            ptr_type_deprecated[x_arr_] = type;
-#endif
                     if (compiler_options.new_classes) {
                         ASR::ttype_t* struct_type = ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr));
                         llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr, struct_type, module.get());
@@ -1754,13 +1747,6 @@ public:
                 }
                 LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
                 llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
-#if LLVM_VERSION_MAJOR > 16
-                llvm::Type *dt_1_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, sm->m_m),
-                    ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
-                    ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sm->m_m)))),
-                    module.get());
-                ptr_type_deprecated[dt_1] = dt_1_type;
-#endif
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
@@ -1830,12 +1816,6 @@ public:
                         llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
                         tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[tmp] = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                        ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(cur_type)),
-                    module.get(), abt);
-#endif
                     llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
@@ -2898,9 +2878,6 @@ public:
                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
-#if LLVM_VERSION_MAJOR > 16
-                ptr_type_deprecated[array] = array_type;
-#endif
             }
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
@@ -3040,12 +3017,6 @@ public:
                     ASRUtils::get_contained_type(x_m_array_type), x_m_array_type->base.loc);
                 ASR::ttype_t* asr_shape_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_shape));
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, asr_data_type, module.get());
-#if LLVM_VERSION_MAJOR > 16
-                ptr_type_deprecated[array] = llvm_utils->get_type_from_ttype_t_util(x.m_array,
-                    ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
-                ptr_type_deprecated[shape] = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
-                    ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
-#endif
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
                     ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
                 llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
@@ -3356,10 +3327,6 @@ public:
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
-#if LLVM_VERSION_MAJOR > 16
-        ptr_type_deprecated[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, x.m_m),
-            member_type, module.get());
-#endif
         member_type = ASRUtils::type_get_past_array(member_type);
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = member->m_type_declaration;
@@ -3799,16 +3766,6 @@ public:
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
-#if LLVM_VERSION_MAJOR > 16
-            if ( LLVM::is_llvm_pointer(*x.m_type) &&
-                    ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_allocatable(x.m_type))) && !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_allocatable(x.m_type)))) {
-                ptr_type_deprecated[ptr] = type_->getPointerTo();
-            } else {
-                ptr_type_deprecated[ptr] = type_;
-            }
-#endif
             if (ASRUtils::is_array(x.m_type)) {  // memorize arrays only.
                 allocatable_array_details.push_back(
                     { ASRUtils::EXPR(ASR::make_Var_t(
@@ -3931,9 +3888,6 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[ptr] = type;
-#endif
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
@@ -4449,10 +4403,6 @@ public:
                     }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type))
                         && !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
-#if LLVM_VERSION_MAJOR > 16
-                        ptr_type_deprecated[ptr_member] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, sym),
-                            symbol_type, module.get());
-#endif
                         allocate_array_members_of_struct_arrays(ASRUtils::get_expr_from_sym(al, sym), ptr_member, symbol_type);
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
@@ -4586,9 +4536,6 @@ public:
                         break;
                     }
                     case ASR::array_physical_typeType::PointerArray: {
-#if LLVM_VERSION_MAJOR > 16
-                        ptr_type_deprecated[ptr] = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::extract_type(v_m_type), module.get());
-#endif
                         ptr_i = llvm_utils->create_ptr_gep2(el_type, ptr, llvm_utils->CreateLoad2(t, llvmi));
                         break;
                     }
@@ -4996,9 +4943,6 @@ public:
                         init_value = llvm::Constant::getNullValue(type);
                     }
                     gptr->setInitializer(init_value);
-                    #if LLVM_VERSION_MAJOR > 16
-                        ptr_type_deprecated[ptr] = type;
-                    #endif
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
@@ -5229,18 +5173,6 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
-#if LLVM_VERSION_MAJOR > 16
-                    llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i],
-                        ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
-                    if ( !ASRUtils::is_array(arg->m_type) &&
-                        LLVM::is_llvm_pointer(*arg->m_type) &&
-                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(arg->m_type))) ) {
-                        arg_type = arg_type->getPointerTo();
-                    }
-                    ptr_type_deprecated[llvm_sym] = arg_type;
-#endif
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -5744,9 +5676,6 @@ public:
             llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(asr_expr, ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
                 case ASR::array_physical_typeType::DescriptorArray: {
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[llvm_tmp] = llvm_utils->get_type_from_ttype_t_util(asr_expr, asr_type, module.get());
-#endif
                     llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(asr_expr, asr_type, module.get()), llvm_tmp));
                     break;
                 }
@@ -5949,11 +5878,6 @@ public:
         ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
-#if LLVM_VERSION_MAJOR > 16
-        llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
-            ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(p_type)), module.get());
-#endif
         if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type)) && !compiler_options.new_classes) {
             // If the pointer is class, get its type pointer
             ptr = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get()), ptr, 1);
@@ -5977,9 +5901,6 @@ public:
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), ptr);
         }
-#if LLVM_VERSION_MAJOR > 16
-        ptr_type_deprecated[ptr] = ptr_arr_type;
-#endif
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
             x.m_tgt && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_tgt)) ) {
@@ -6056,11 +5977,6 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
-#if LLVM_VERSION_MAJOR > 16
-        ptr_type_deprecated[value_desc] = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
-            ASRUtils::type_get_past_allocatable_pointer(value_array_type),
-            module.get());
-#endif
         llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
         ptr_loads = 0;
@@ -6079,9 +5995,6 @@ public:
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
         }
-#if LLVM_VERSION_MAJOR > 16
-        ptr_type_deprecated[target] = target_type;
-#endif
         int value_rank = array_section->n_args, target_rank = 0;
         Vec<llvm::Value*> lbs; lbs.reserve(al, value_rank);
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
@@ -7011,11 +6924,6 @@ public:
                     llvm::Type* alloc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(alloc_type->getPointerTo(), target);
                 }
-#if LLVM_VERSION_MAJOR > 16
-                ptr_type_deprecated[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                    ASRUtils::type_get_past_allocatable_pointer(target_type),
-                    module.get());
-#endif
                 llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Value* llvm_size = arr_descr->get_array_size(llvm_array_type, target, nullptr, 4);
@@ -7059,11 +6967,6 @@ public:
                 } else {
                     llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(load_type->getPointerTo(), target);
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                        ASRUtils::type_get_past_allocatable_pointer(target_type),
-                        module.get());
-#endif
                     target_data =
                             ASRUtils::is_array_of_strings(target_type) ?
                             llvm_utils->get_stringArray_data(target_type, target) :
@@ -7136,14 +7039,6 @@ public:
                     llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(ptr_load_type->getPointerTo(), target);
                 }
-#if LLVM_VERSION_MAJOR > 16
-                ptr_type_deprecated[target] = llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                    ASRUtils::type_get_past_allocatable_pointer(target_type),
-                    module.get());
-                ptr_type_deprecated[value] = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                    ASRUtils::type_get_past_allocatable_pointer(value_type),
-                    module.get());
-#endif
                 llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
                         ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -7290,9 +7185,6 @@ public:
                     visit_expr_load_wrapper(v, 1);
                     llvm::Value* target_desc = tmp;
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(v, ASRUtils::type_get_past_allocatable_pointer(target_variable->m_type), module.get(), ASRUtils::expr_abi(v));
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[target_desc] = type;
-#endif
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
                     // With move don't throw error when target is unallocated
                     if (!x.m_move_allocation) {
@@ -7472,9 +7364,6 @@ public:
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
             }
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[arg] = arr_type;
-#endif
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
@@ -7520,9 +7409,6 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[arg] = arr_type;
-#endif
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
@@ -9444,12 +9330,12 @@ public:
         int loads = 0;
         while( ptr_loads_copy-- ) {
             if( loads == 0 ) {
-                ptr_type_deprecated[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     x->m_type, module.get());
 
             } else {
-                ptr_type_deprecated[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     ASRUtils::type_get_past_allocatable_pointer(x->m_type),
                     module.get());
@@ -9572,9 +9458,6 @@ public:
                 } else if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
                     tmp = llvm_symtab_fn[h];
                     tmp = llvm_utils->CreateLoad2(tmp->getType()->getPointerTo(), tmp);
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[tmp] = tmp->getType();
-#endif
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
@@ -9590,9 +9473,6 @@ public:
                         llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                             al, x->base.base.loc, &x->base)), x->m_type, module.get());
                         tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp);
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[tmp] = tmp->getType();
-#endif
                     }
                 }
                 break;
@@ -10668,11 +10548,6 @@ public:
                         var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                     }
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[var_to_read_into] = llvm_utils->get_type_from_ttype_t_util(x.m_values[i],
-                        ASRUtils::type_get_past_allocatable_pointer(type),
-                        module.get());
-#endif
                     ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(type));
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
@@ -12514,10 +12389,6 @@ public:
                         tmp = llvm_utils->CreateLoad2(arr_type->getPointerTo(), tmp);
                     }
                     llvm::Value* arg = tmp;
-
-#if LLVM_VERSION_MAJOR > 16
-                    ptr_type_deprecated[tmp] = arr_type;
-#endif
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
                     llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
@@ -12887,12 +12758,6 @@ public:
         }
         if( n_dims > 0 ) {
             visit_expr_load_wrapper(arg, 1, true);
-#if LLVM_VERSION_MAJOR > 16
-            llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(arg,
-                ASRUtils::type_get_past_allocatable_pointer(asr_type),
-                module.get(), ASRUtils::expr_abi(arg));
-            ptr_type_deprecated[tmp] = arr_type;
-#endif
             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(arg,
                 ASRUtils::extract_type(asr_type), module.get(), ASRUtils::expr_abi(arg));
             tmp = arr_descr->get_is_allocated_flag(tmp, llvm_data_type, arg);
@@ -13671,9 +13536,6 @@ public:
         if (is_a<ASR::StructInstanceMember_t>(*m_v)) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
         }
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[tmp] = array_type;
-#endif
         llvm::Value* llvm_arg = tmp;
 
         llvm::Value* llvm_dim = nullptr;
@@ -13824,9 +13686,6 @@ public:
         ptr_loads = ptr_loads_copy;
         if (is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
-#if LLVM_VERSION_MAJOR > 16
-            ptr_type_deprecated[tmp] = array_type;
-#endif
         }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
