@@ -87,7 +87,7 @@ private:
             if (i < fmt.size()-1) fmt_str += " ";
         }
         fmt_str += endline;
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
@@ -112,6 +112,26 @@ private:
         llvm::raw_string_ostream os(buf);
         v->print(os);
         std::cout << os.str() << endline;
+    }
+
+    //! Workaround for LLVM 7 CreateGlobalStringPtr bug
+    llvm::Value* CreateGlobalStringPtrSafe(llvm::StringRef Str, const llvm::Twine &Name = "", unsigned AddressSpace = 0) {
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: CreateGlobalStringPtr has a bug with ConstantExpr::getGetElementPtr
+        // Use bitcast as a workaround. This creates a text relocation warning but works correctly.
+        // The warning is unavoidable in LLVM 7 due to how global string references are handled.
+        llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, Str);
+        auto *GV = new llvm::GlobalVariable(
+            *module, StrConstant->getType(), true,
+            llvm::GlobalValue::PrivateLinkage, StrConstant, Name, nullptr,
+            llvm::GlobalVariable::NotThreadLocal, AddressSpace);
+        GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        // Bitcast to i8* - this works but may produce a linker warning about text relocations
+        return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, AddressSpace));
+#else
+        // LLVM 8+: Use the standard IRBuilder method
+        return builder->CreateGlobalStringPtr(Str, Name, AddressSpace);
+#endif
     }
 
 public:
@@ -426,7 +446,12 @@ public:
             FContext, fn_debug_name, llvm::StringRef(), debug_Unit,
             line, return_type, 0, // TODO: ScopeLine
             llvm::DINode::FlagPrototyped,
+#if LLVM_VERSION_MAJOR >= 8
             llvm::DISubprogram::SPFlagDefinition);
+#else
+            // LLVM 7: SPFlag enum doesn't exist, use DIDescriptor::FlagPrototyped
+            llvm::DINode::FlagZero);
+#endif
         debug_current_scope = SP;
     }
 
@@ -805,7 +830,7 @@ public:
                         complex_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
 
         llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(*builder, complex_type);
@@ -833,7 +858,7 @@ public:
                         character_type, llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         std::vector<llvm::Value*> args = {left_arg, left_len, right_arg, right_len};
         return builder->CreateCall(fn, args);
@@ -852,7 +877,7 @@ public:
                         character_type, llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         std::vector<llvm::Value*> args = {left_arg, left_arg_len, right_arg, right_arg_len};
         return builder->CreateCall(fn, args);
@@ -870,7 +895,7 @@ public:
                         character_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(left_arg, pleft_arg);
@@ -893,7 +918,7 @@ public:
                         character_type
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         return builder->CreateCall(fn, {str});
     }
@@ -908,7 +933,7 @@ public:
                         character_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         return builder->CreateCall(fn, {str});
     }
@@ -923,7 +948,7 @@ public:
                         character_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         return builder->CreateCall(fn, {str});
     }
@@ -938,7 +963,7 @@ public:
                         llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         return builder->CreateCall(fn, {str});
     }
@@ -957,7 +982,7 @@ public:
                     },
                     false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         idx1 = builder->CreateSExt(idx1, llvm::Type::getInt64Ty(context));
         return builder->CreateCall(fn, {str, str_len, idx1});
@@ -979,7 +1004,7 @@ public:
                         llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         // Make sure they're int64 integers
         idx1 = llvm_utils->convert_kind(idx1, llvm::Type::getInt64Ty(context));
@@ -1002,7 +1027,7 @@ public:
                         llvm::Type::getInt64Ty(context) // End
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         // Make sure they're int64 integers
         start = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
@@ -1021,7 +1046,7 @@ public:
                      value_type
                  }, false);
             fn = llvm::Function::Create(function_type,
-                     llvm::Function::ExternalLinkage, func_name, *module);
+                     llvm::Function::ExternalLinkage, func_name, module.get());
          }
          llvm::Value* res = builder->CreateCall(fn, {arg});
          return res;
@@ -1042,7 +1067,7 @@ public:
                 { llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context) },
                 false);
             fn = llvm::Function::Create(
-                function_type, llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                function_type, llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         std::vector<llvm::Value*> args
             = { static_ptr,
@@ -1645,7 +1670,7 @@ public:
                         character_type
                     }, false);
             free_fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, *module);
+                    llvm::Function::ExternalLinkage, func_name, module.get());
         }
         return free_fn;
     }
@@ -1662,7 +1687,7 @@ public:
                         llvm::Type::getInt64Ty(context)->getPointerTo()
                     }, false);
             alloc_fun = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, *module);
+                    llvm::Function::ExternalLinkage, func_name, module.get());
         }
         return alloc_fun;
     }
@@ -1976,7 +2001,7 @@ public:
                         llvm_utils->getIntType(int_kind)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {int_val});
     }
@@ -1996,7 +2021,7 @@ public:
                     llvm::Type::getInt8Ty(context)->getPointerTo()
                 }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {c});
     }
@@ -2016,7 +2041,7 @@ public:
                     llvm::Type::getInt8Ty(context)->getPointerTo()
                 }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {c});
         if( ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8 ) {
@@ -2348,19 +2373,43 @@ public:
     void generate_Exp(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+#if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
+#elif LLVM_VERSION_MAJOR >= 8
+        tmp = builder->CreateIntrinsic(llvm::Intrinsic::exp, {item->getType()}, {item});
+#else
+        // LLVM 7: CreateIntrinsic(ID, Args, FMFSource)
+        llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::exp, {item->getType()});
+        tmp = builder->CreateCall(fn, {item});
+#endif
     }
 
     void generate_Exp2(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+#if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp2, item);
+#elif LLVM_VERSION_MAJOR >= 8
+        tmp = builder->CreateIntrinsic(llvm::Intrinsic::exp2, {item->getType()}, {item});
+#else
+        // LLVM 7: CreateIntrinsic(ID, Args, FMFSource)
+        llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::exp2, {item->getType()});
+        tmp = builder->CreateCall(fn, {item});
+#endif
     }
 
     void generate_Expm1(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+#if LLVM_VERSION_MAJOR >= 12
         llvm::Value* exp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
+#elif LLVM_VERSION_MAJOR >= 8
+        llvm::Value* exp = builder->CreateIntrinsic(llvm::Intrinsic::exp, {item->getType()}, {item});
+#else
+        // LLVM 7: CreateIntrinsic(ID, Args, FMFSource)
+        llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::exp, {item->getType()});
+        llvm::Value* exp = builder->CreateCall(fn, {item});
+#endif
         llvm::Value* one = llvm::ConstantFP::get(builder->getFloatTy(), 1.0);
         tmp = builder->CreateFSub(exp, one);
     }
@@ -2886,7 +2935,7 @@ public:
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Runtime Error: Array '%s' is not allocated.\n",
-                        builder->CreateGlobalStringPtr(array_name));
+                        CreateGlobalStringPtrSafe(array_name));
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -4180,7 +4229,7 @@ public:
                         character_type->getPointerTo()
                     }, false);
                 fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lpython_call_initial_functions", *module);
+                    llvm::Function::ExternalLinkage, "_lpython_call_initial_functions", module.get());
             }
             std::vector<llvm::Value *> args;
             for (llvm::Argument &llvm_arg : F->args()) {
@@ -4210,7 +4259,7 @@ public:
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {}, false);
                 fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lpython_free_argv", *module);
+                    llvm::Function::ExternalLinkage, "_lpython_free_argv", module.get());
             }
             builder->CreateCall(fn, {});
         }
@@ -6369,7 +6418,7 @@ public:
                         llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         ASR::StringSection_t *ss = ASR::down_cast<ASR::StringSection_t>(target);
         llvm::Value *lp, *rp;
@@ -7113,8 +7162,8 @@ public:
             ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
 
             if (left_var && right_var) {
-                llvm::Value *left_name = builder->CreateGlobalStringPtr(left_var->m_name);
-                llvm::Value *right_name = builder->CreateGlobalStringPtr(right_var->m_name);
+                llvm::Value *left_name = CreateGlobalStringPtrSafe(left_var->m_name);
+                llvm::Value *right_name = CreateGlobalStringPtrSafe(right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
                                                     "Size of '%s' is is %d and size of '%s' is %d\n",
@@ -7192,7 +7241,7 @@ public:
                         llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                         llvm_utils->generate_runtime_error(is_not_allocated,
                             "Runtime Error: Array '%s' is not allocated.\n",
-                                builder->CreateGlobalStringPtr(target_variable->m_name));
+                                CreateGlobalStringPtrSafe(target_variable->m_name));
                     }
 
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -7206,7 +7255,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                             "LHS size is %d and RHS size is %d\n",
-                                                            builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                            CreateGlobalStringPtrSafe(target_variable->m_name),
                                                             target_size,
                                                             value_size);
                     }
@@ -7217,7 +7266,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                         "LHS size is %d and RHS size is %d\n",
-                                                        builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                        CreateGlobalStringPtrSafe(target_variable->m_name),
                                                         target_size,
                                                         value_size);
                 }
@@ -9194,8 +9243,15 @@ public:
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
         llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true,
             llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: Workaround for ConstantExpr::getGetElementPtr bug
+        // Use bitcast to element pointer type instead of GEP
+        llvm::Type *element_type = arr_type->getArrayElementType();
+        tmp = llvm::ConstantExpr::getBitCast(global_var, element_type->getPointerTo());
+#else
         tmp = builder->CreateGEP(
             arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});
+#endif
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
@@ -9211,7 +9267,7 @@ public:
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, []() {}, [=]() {
             if (compiler_options.emit_debug_info) {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 call_print_stacktrace_addresses(context, *module, *builder,
@@ -9221,21 +9277,21 @@ public:
                 std::vector<std::string> fmt;
                 std::vector<llvm::Value *> args;
                 fmt.push_back("%s");
-                args.push_back(builder->CreateGlobalStringPtr("AssertionError: "));
+                args.push_back(CreateGlobalStringPtrSafe("AssertionError: "));
                 compute_fmt_specifier_and_arg(fmt, args, x.m_msg, x.base.base.loc);
                 fmt.push_back("%s");
-                args.push_back(builder->CreateGlobalStringPtr("\n"));
+                args.push_back(CreateGlobalStringPtrSafe("\n"));
                 std::string fmt_str;
                 for (size_t i=0; i<fmt.size(); i++) {
                     fmt_str += fmt[i];
                 }
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
                 std::vector<llvm::Value *> print_error_args;
                 print_error_args.push_back(fmt_ptr);
                 print_error_args.insert(print_error_args.end(), args.begin(), args.end());
                 print_error(context, *module, *builder, print_error_args);
             } else {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("AssertionError\n");
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe("AssertionError\n");
                 print_error(context, *module, *builder, {fmt_ptr});
             }
             int exit_code_int = 1;
@@ -9427,7 +9483,7 @@ public:
                                         llvm::Type::getInt64Ty(context)));
                                 llvm_utils->generate_runtime_error(cond,
                                     "Runtime Error: Variable '%s' is not allocated.\n",
-                                            builder->CreateGlobalStringPtr(x->m_name));
+                                            CreateGlobalStringPtrSafe(x->m_name));
                             }
                             fetch_ptr(x);
                         }
@@ -10131,8 +10187,8 @@ public:
             }
             case (ASR::cast_kindType::LogicalToString) : {
                 llvm::Value *cmp = builder->CreateICmpEQ(tmp, builder->getInt1(0));
-                llvm::Value *zero_str = builder->CreateGlobalStringPtr("False");
-                llvm::Value *one_str = builder->CreateGlobalStringPtr("True");
+                llvm::Value *zero_str = CreateGlobalStringPtrSafe("False");
+                llvm::Value *one_str = CreateGlobalStringPtrSafe("True");
                 tmp = builder->CreateSelect(cmp, zero_str, one_str);
 
                 if (ASRUtils::is_allocatable(x.m_type)) {
@@ -10222,7 +10278,7 @@ public:
                                 llvm::Type::getInt32Ty(context)
                             }, false);
                     fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
@@ -10237,7 +10293,7 @@ public:
                                 llvm::Type::getInt32Ty(context) // Unit_num
                             }, false);
                     fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
@@ -10263,7 +10319,7 @@ public:
                                 llvm::Type::getInt32Ty(context)
                             }, false);
                     fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
@@ -10286,7 +10342,7 @@ public:
                                 llvm::Type::getInt32Ty(context)
                             }, false);
                     fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
@@ -10352,7 +10408,7 @@ public:
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), types, false);
                     fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
@@ -10406,7 +10462,7 @@ public:
                                                     tmp);
         } else {
             std::string yes("yes");
-            advance = builder->CreateGlobalStringPtr(yes);
+            advance = CreateGlobalStringPtrSafe(yes);
             advance_length = llvm::ConstantInt::get(context, llvm::APInt(64, yes.size()));
         }
 
@@ -10457,7 +10513,7 @@ public:
                             llvm::Type::getInt32Ty(context)                  // no_of_args
                         }, true);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
             }
             builder->CreateCall(fn, args);
         } else {
@@ -10509,27 +10565,27 @@ public:
                                 false);
                         }
                         fn = llvm::Function::Create(function_type,
-                                llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                                llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                     }
                     llvm::Value *fmt = nullptr;
                     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = int_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%d")
-                                                    : builder->CreateGlobalStringPtr("%ld");
+                        fmt = int_type->m_kind == 4 ? CreateGlobalStringPtrSafe("%d")
+                                                    : CreateGlobalStringPtrSafe("%ld");
                     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = real_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%f")
-                                                     : builder->CreateGlobalStringPtr("%lf");
+                        fmt = real_type->m_kind == 4 ? CreateGlobalStringPtrSafe("%f")
+                                                     : CreateGlobalStringPtrSafe("%lf");
                     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = builder->CreateGlobalStringPtr("%s");
+                        fmt = CreateGlobalStringPtrSafe("%s");
                     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = builder->CreateGlobalStringPtr("%d");
+                        fmt = CreateGlobalStringPtrSafe("%d");
                     }
                     llvm::Value *src_data, *src_len;
                     std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
@@ -10609,7 +10665,7 @@ public:
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
-                            *module);
+                            module.get());
             }
             builder->CreateCall(fn, {unit_val, iostat});
         }
@@ -10689,7 +10745,7 @@ public:
                         character_type, i64 // action, action_len
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {unit_val,
             f_name_data,f_name_len,
@@ -10815,7 +10871,7 @@ public:
                         character_type, llvm::Type::getInt64Ty(context) // readwrite_data, readwrite_len
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {f_name_data, f_name_len,
             exist_val, unit,
@@ -10835,7 +10891,7 @@ public:
                         llvm::Type::getInt32Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
@@ -10852,7 +10908,7 @@ public:
                         llvm::Type::getInt32Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
         builder->CreateCall(fn, {tmp});
@@ -10867,7 +10923,7 @@ public:
                         llvm::Type::getInt32Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         this->visit_expr_wrapper(x.m_unit, true);
         builder->CreateCall(fn, {tmp});
@@ -10897,7 +10953,7 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {unit_val, status, status_len});
     }
@@ -10914,17 +10970,17 @@ public:
 
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s%s");
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe("%s%s");
                 llvm::Value *str_data, *str_len;
                 // For empty output, use a space (like old behavior)
-                str_data = builder->CreateGlobalStringPtr(" ");
+                str_data = CreateGlobalStringPtrSafe(" ");
                 str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value *end_data, *end_len;
                 if (x.m_end) {
                     std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
                     end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
                 } else {
-                    end_data = builder->CreateGlobalStringPtr("\n");
+                    end_data = CreateGlobalStringPtrSafe("\n");
                     end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 }
                 printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
@@ -10999,13 +11055,13 @@ public:
         if (x.m_separator) {
             std::tie(sep_data, sep_len) = get_string_data_and_length(x.m_separator);
         } else {
-            sep_data = builder->CreateGlobalStringPtr(" ");
+            sep_data = CreateGlobalStringPtrSafe(" ");
             sep_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         if (x.m_end) {
             std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
         } else {
-            end_data = builder->CreateGlobalStringPtr("\n");
+            end_data = CreateGlobalStringPtrSafe("\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
@@ -11062,7 +11118,7 @@ public:
         for (size_t i=0; i<fmt.size(); i++) {
             fmt_str += fmt[i];
         }
-        llvm::Value *fmt_data = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value *fmt_data = CreateGlobalStringPtrSafe(fmt_str);
         llvm::Value *fmt_len = llvm::ConstantInt::get(context, llvm::APInt(64, fmt_str.length()));
 
 
@@ -11087,7 +11143,7 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), args_type, true);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, printf_args);
     }
@@ -11191,7 +11247,7 @@ public:
                 serialization_res += ",";
             }
         }
-        return builder->CreateGlobalStringPtr(serialization_res, "serialization_info");
+        return CreateGlobalStringPtrSafe(serialization_res, "serialization_info");
     }
 
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
@@ -11350,7 +11406,7 @@ public:
         // End string (always computed once)
         llvm::Value *end_data, *end_len;
         if (end_expr == nullptr) {
-            end_data = builder->CreateGlobalStringPtr("\n");
+            end_data = CreateGlobalStringPtrSafe("\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
             std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
@@ -11384,7 +11440,7 @@ public:
             main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
         fmt_str += "%s";
-        llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value* fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
         printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
     }
 
@@ -11427,7 +11483,7 @@ public:
         
         /* NEWLINE */
         {
-            llvm::Value* NEWLINE = builder->CreateGlobalStringPtr("\n");
+            llvm::Value* NEWLINE = CreateGlobalStringPtrSafe("\n");
             fmt += "%s";
             args.push_back(NEWLINE); // Null-Terminated
         }
@@ -11453,7 +11509,7 @@ public:
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
             if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 this->visit_expr(*x.m_code);
@@ -11474,7 +11530,7 @@ public:
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+            llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                 1, compiler_options.use_colors));
             call_print_stacktrace_addresses(context, *module, *builder,
@@ -12059,9 +12115,15 @@ public:
         llvm::Value* b = tmp;
         this->visit_expr_wrapper(m_args[2].m_value, true);
         llvm::Value* c = tmp;
+#if LLVM_VERSION_MAJOR >= 8
         tmp = builder->CreateIntrinsic(llvm::Intrinsic::fma,
                 {a->getType()},
                 {b, c, a});
+#else
+        // LLVM 7: Use getDeclaration instead
+        llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::fma, {a->getType()});
+        tmp = builder->CreateCall(fn, {b, c, a});
+#endif
     }
 
     void generate_sign_from_value(ASR::call_arg_t* m_args) {
@@ -12420,7 +12482,7 @@ public:
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
                                     "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                    builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                    CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                     descriptor_length,
                                     dim,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12434,7 +12496,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
-                            builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                            CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             pointer_size);
@@ -12458,7 +12520,7 @@ public:
                                 llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                        builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                        CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                         fixed_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12471,7 +12533,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
-                                builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
@@ -12640,7 +12702,7 @@ public:
                             llvm::Type::getInt32Ty(context)
                         }, false);
                     fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, "_lpython_get_argv", *module);
+                        llvm::Function::ExternalLinkage, "_lpython_get_argv", module.get());
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
@@ -12657,7 +12719,7 @@ public:
                             character_type
                         }, false);
                     fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, "_lfortran_get_env_variable", *module);
+                        llvm::Function::ExternalLinkage, "_lfortran_get_env_variable", module.get());
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
@@ -12673,7 +12735,7 @@ public:
                             character_type
                         }, false);
                     fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, "_lfortran_exec_command", *module);
+                        llvm::Function::ExternalLinkage, "_lfortran_exec_command", module.get());
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
@@ -13374,7 +13436,7 @@ public:
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getInt32Ty(context), {}, false);
                         fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, "_lfortran_get_argc", *module);
+                            llvm::Function::ExternalLinkage, "_lfortran_get_argc", module.get());
                     }
                     tmp = builder->CreateCall(fn, {});
                     return;
