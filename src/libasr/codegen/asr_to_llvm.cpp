@@ -4944,7 +4944,7 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
                     bool is_llvm_ptr = false;
                     if ( LLVM::is_llvm_pointer(*v->m_type) &&
                             !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(

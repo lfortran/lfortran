@@ -1483,7 +1483,7 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
             llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
@@ -1493,7 +1493,7 @@ namespace LCompilers {
         llvm::IRBuilder<> builder0(context);
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
@@ -1508,14 +1508,14 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
             llvm::Type* type, llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
 #endif
         ) {
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
