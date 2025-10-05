@@ -1653,7 +1653,7 @@ namespace LCompilers {
         //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
         //                     << (str->getType() == get_type_from_ttype_t_util(type, module)) << " "
         //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
             case ASR::DescriptorArray:{
@@ -1697,7 +1697,7 @@ namespace LCompilers {
 
 
     bool LLVMUtils::is_proper_string_llvm_variable([[maybe_unused]]ASR::String_t* str_type, [[maybe_unused]]llvm::Value* str){
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         switch (str_type->m_physical_type){
             case ASR::DescriptorString:
             case ASR::CChar: { // Check for => `string_descriptor*` and `char*`
