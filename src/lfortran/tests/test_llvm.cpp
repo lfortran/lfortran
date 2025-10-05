@@ -625,12 +625,12 @@ end module funcmod)");
     r = e.evaluate2("add(2.0, 5.0)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
-    CHECK(abs(r.result.f32 - 7.0) <= 1e-8 );
+    CHECK(std::abs(r.result.f32 - 7.0) <= 1e-8 );
 
     r = e.evaluate2("subtract(2.0, 5.0)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
-    CHECK(abs(r.result.f32 - (-3.0)) <= 1e-8 );
+    CHECK(std::abs(r.result.f32 - (-3.0)) <= 1e-8 );
 }
 
 // Tests passing the complex struct by reference
