@@ -491,7 +491,7 @@ jobs:
 
       - name: Test third party codes
         shell: bash -e -x -l {0}
-        if: ${{! (contains(matrix.llvm-version, '7')) }}
+        if: ${{! (matrix.llvm-version == '7') }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
