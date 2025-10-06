@@ -1489,7 +1489,7 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
             llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
@@ -1499,7 +1499,7 @@ namespace LCompilers {
         llvm::IRBuilder<> builder0(context);
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
@@ -1514,14 +1514,14 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
             llvm::Type* type, llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
 #endif
         ) {
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
@@ -1663,7 +1663,7 @@ namespace LCompilers {
         //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
         //                     << (str->getType() == get_type_from_ttype_t_util(type, module)) << " "
         //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
             case ASR::DescriptorArray:{
@@ -1707,7 +1707,7 @@ namespace LCompilers {
 
 
     bool LLVMUtils::is_proper_string_llvm_variable([[maybe_unused]]ASR::String_t* str_type, [[maybe_unused]]llvm::Value* str){
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         switch (str_type->m_physical_type){
             case ASR::DescriptorString:
             case ASR::CChar: { // Check for => `string_descriptor*` and `char*`
