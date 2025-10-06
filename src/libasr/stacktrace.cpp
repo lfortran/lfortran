@@ -498,7 +498,7 @@ std::string addr2str(const StacktraceItem &i, bool colorize)
 }
 
 #ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
-void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer &symbolizer) {
+void get_symbol_info_llvm(StacktraceItem &item, [[maybe_unused]] llvm::symbolize::LLVMSymbolizer &symbolizer) {
   auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
 
   if (!binary_file) {
@@ -513,7 +513,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
 
   llvm::object::ObjectFile *obj_file = binary_file.get().getBinary();
 
-  uint64_t section_index;
+  [[maybe_unused]] uint64_t section_index;
   bool found = false;
   for (const auto& section : obj_file->sections()) {
     if (section.getAddress() <= item.local_pc && item.local_pc < section.getAddress() + section.getSize()) {
@@ -528,6 +528,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
     exit(1);
   }
 
+#if LLVM_VERSION_MAJOR >= 10
   llvm::object::SectionedAddress sa = {item.local_pc, section_index};
   auto result = symbolizer.symbolizeCode(item.binary_filename, sa);
   
@@ -540,6 +541,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
     std::cout << "Cannot open the symbol table of '" + item.binary_filename + "'\n";
     exit(1);
   }
+#endif
 }
 
 void get_llvm_info(std::vector<StacktraceItem> &d)
