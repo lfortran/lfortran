@@ -1545,7 +1545,14 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR >= 8
         return builder->CreateGEP(t, x, idx);
+#else
+        // LLVM 7: Avoid ABI issue with Optional parameters in ConstantExpr::getGetElementPtr
+        // by directly using GetElementPtrInst::Create instead of IRBuilder::CreateGEP
+        // which tries to do constant folding
+        return builder->Insert(llvm::GetElementPtrInst::Create(t, x, idx));
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *type,
@@ -1556,9 +1563,20 @@ namespace LCompilers {
         return LLVMUtils::CreateGEP2(type, x, idx_vec);
     }
 
+    llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
+            std::initializer_list<llvm::Value *> idx) {
+        std::vector<llvm::Value*> idx_vec(idx);
+        return LLVMUtils::CreateGEP2(t, x, idx_vec);
+    }
+
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR >= 8
         return builder->CreateInBoundsGEP(t, x, idx);
+#else
+        // LLVM 7: Avoid ABI issue with Optional parameters
+        return builder->Insert(llvm::GetElementPtrInst::CreateInBounds(t, x, idx));
+#endif
     }
 
     llvm::Function* LLVMUtils::_Deallocate() {
