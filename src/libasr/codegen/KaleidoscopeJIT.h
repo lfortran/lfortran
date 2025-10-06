@@ -19,11 +19,19 @@
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
+#if LLVM_VERSION_MAJOR >= 8
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+#endif
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
+#if LLVM_VERSION_MAJOR < 8
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/IR/Mangler.h"
+#endif
 #include <memory>
 
 #if LLVM_VERSION_MAJOR >= 13
@@ -45,6 +53,7 @@ namespace orc {
 
 class KaleidoscopeJIT {
 private:
+#if LLVM_VERSION_MAJOR >= 8
   std::unique_ptr<ExecutionSession> ES;
   RTDyldObjectLinkingLayer ObjectLayer;
   IRCompileLayer CompileLayer;
@@ -52,8 +61,18 @@ private:
   DataLayout DL;
   MangleAndInterner Mangle;
   JITDylib &JITDL;
+#else
+  // LLVM 7: Different JIT infrastructure
+  ExecutionSession ES;
+  std::shared_ptr<SymbolResolver> Resolver;
+  std::unique_ptr<TargetMachine> TM;
+  const DataLayout DL;
+  RTDyldObjectLinkingLayer ObjectLayer;
+  IRCompileLayer<decltype(ObjectLayer), SimpleCompiler> CompileLayer;
+#endif
 
 public:
+#if LLVM_VERSION_MAJOR >= 8
   KaleidoscopeJIT(std::unique_ptr<ExecutionSession> ES, JITTargetMachineBuilder JTMB, DataLayout DL)
       :
         ES(std::move(ES)),
@@ -94,6 +113,18 @@ public:
       ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);
     }
   }
+#else
+  // LLVM 7: Constructor takes TargetMachine directly, different API structure
+  KaleidoscopeJIT(std::unique_ptr<TargetMachine> TM_)
+      : TM(std::move(TM_)), DL(TM->createDataLayout()),
+        ObjectLayer(ES, [](VModuleKey) {
+          return RTDyldObjectLinkingLayer::Resources{
+              std::make_shared<SectionMemoryManager>(), nullptr};
+        }),
+        CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
+    llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+  }
+#endif
 
   static Expected<std::unique_ptr<KaleidoscopeJIT>> Create() {
 #if LLVM_VERSION_MAJOR >= 13
@@ -105,7 +136,7 @@ public:
 
     JITTargetMachineBuilder JTMB(
         ES->getExecutorProcessControl().getTargetTriple());
-#else
+#elif LLVM_VERSION_MAJOR >= 8
     auto ES = std::make_unique<ExecutionSession>();
 
     auto JTMB_P = JITTargetMachineBuilder::detectHost();
@@ -113,25 +144,44 @@ public:
       return JTMB_P.takeError();
 
     auto JTMB = *JTMB_P;
+#else
+    // LLVM 7: Create TargetMachine directly using EngineBuilder
+    auto JTMB = EngineBuilder().selectTarget();
+    if (!JTMB)
+      return make_error<StringError>("Could not create target machine",
+                                     inconvertibleErrorCode());
+    
+    return std::make_unique<KaleidoscopeJIT>(std::unique_ptr<TargetMachine>(JTMB));
 #endif
 
+#if LLVM_VERSION_MAJOR >= 8
     auto DL = JTMB.getDefaultDataLayoutForTarget();
     if (!DL)
       return DL.takeError();
 
     return std::make_unique<KaleidoscopeJIT>(std::move(ES), std::move(JTMB),
                                              std::move(*DL));
+#endif
   }
 
   const DataLayout &getDataLayout() const { return DL; }
 
+#if LLVM_VERSION_MAJOR >= 8
   Error addModule(std::unique_ptr<Module> M, std::unique_ptr<LLVMContext> &Ctx) {
     auto res =  CompileLayer.add(JITDL,
                             ThreadSafeModule(std::move(M), std::move(Ctx)));
     Ctx = std::make_unique<LLVMContext>();
     return res;
   }
+#else
+  // LLVM 7: Different addModule API
+  Error addModule(std::unique_ptr<Module> M, std::unique_ptr<LLVMContext> & /* Ctx */) {
+    auto K = ES.allocateVModule();
+    return CompileLayer.addModule(K, std::move(M));
+  }
+#endif
 
+#if LLVM_VERSION_MAJOR >= 8
 #if LLVM_VERSION_MAJOR < 17
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
 #else
@@ -139,6 +189,15 @@ public:
 #endif
     return ES->lookup({&JITDL}, Mangle(Name.str()));
   }
+#else
+  // LLVM 7: Different lookup API
+  JITSymbol findSymbol(const std::string Name) {
+    std::string MangledName;
+    raw_string_ostream MangledNameStream(MangledName);
+    Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
+    return CompileLayer.findSymbol(MangledNameStream.str(), false);
+  }
+#endif
 
 };
 

@@ -24,7 +24,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
@@ -48,7 +48,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
@@ -65,7 +65,7 @@ namespace LCompilers {
                             llvm::Type::getInt32Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {count, type_size};
             return builder.CreateCall(fn, args);
@@ -82,7 +82,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -101,7 +101,7 @@ namespace LCompilers {
                             llvm::Type::getInt8Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -1536,11 +1536,34 @@ namespace LCompilers {
 
 
     llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile) {
+#if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
+#else
+        // LLVM 7: CreateLoad(Value*, bool, Name) signature
+        return builder->CreateLoad(x, is_volatile);
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: Bypass IRBuilder's constant folder to avoid ConstantExpr::getGetElementPtr bug
+        // When the pointer and all indices are constants, IRBuilder tries to constant-fold,
+        // which triggers a crash in LLVM 7. Solution: Use GetElementPtrInst directly.
+        if (llvm::isa<llvm::Constant>(x) && !idx.empty()) {
+            bool all_constant = true;
+            for (auto* i : idx) {
+                if (!llvm::isa<llvm::Constant>(i)) {
+                    all_constant = false;
+                    break;
+                }
+            }
+            if (all_constant) {
+                // Create GEP instruction directly, bypassing constant folder
+                return llvm::GetElementPtrInst::Create(t, x, idx, "", builder->GetInsertBlock());
+            }
+        }
+#endif
         return builder->CreateGEP(t, x, idx);
     }
 
@@ -1566,7 +1589,7 @@ namespace LCompilers {
                         character_type
                     }, false);
             free_fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, *module);
+                    llvm::Function::ExternalLinkage, func_name, module);
         }
         return free_fn;
     }
@@ -1642,7 +1665,7 @@ namespace LCompilers {
                         character_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, &module);
         }
         llvm::AllocaInst *pleft_arg = LLVMUtils::CreateAlloca(character_type);
         LLVM::CreateStore(*builder, left_arg, pleft_arg);
@@ -2152,7 +2175,7 @@ namespace LCompilers {
                         llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module);
         }
         return builder->CreateCall(fn, {
             lhs_data, lhs_len,
