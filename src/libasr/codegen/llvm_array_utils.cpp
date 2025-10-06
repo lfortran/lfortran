@@ -3,6 +3,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/asr_utils.h>
 #include "llvm_array_utils.h"
+#include <libasr/codegen/llvm_compat.h>
 
 namespace LCompilers {
 
@@ -18,7 +19,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             std::vector<llvm::Value*> args = {arg_size};
@@ -36,7 +37,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),

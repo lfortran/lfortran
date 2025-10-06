@@ -16,85 +16,106 @@ ctest = "cmake --build . --parallel --target test"
 tests = "./run_tests.py"
 integration_tests = "cd integration_tests && ./run_tests.py -j16"
 
+[feature.llvm7.target.linux-64.host-dependencies]
+llvmdev = "==7.0.1"
+[feature.llvm7.target.win-64.host-dependencies]
+llvmdev = "==7.0.1"
+[feature.llvm8.target.linux-64.host-dependencies]
+llvmdev = "==8.0.1"
+[feature.llvm8.target.win-64.host-dependencies]
+llvmdev = "==8.0.1"
+[feature.llvm9.host-dependencies]
+llvmdev = "==9.0.1"
 [feature.llvm10.host-dependencies]
-llvmdev = "10.0.1"
+llvmdev = "==10.0.1"
 [feature.llvm11.host-dependencies]
-llvmdev = "11.1.0"
+llvmdev = "==11.1.0"
 [feature.llvm12.host-dependencies]
-llvmdev = "12.0.1"
+llvmdev = "==12.0.1"
 [feature.llvm13.host-dependencies]
-llvmdev = "13.0.1"
+llvmdev = "==13.0.1"
 [feature.llvm14.host-dependencies]
-llvmdev = "14.0.6"
+llvmdev = "==14.0.6"
 [feature.llvm15.host-dependencies]
-llvmdev = "15.0.7"
+llvmdev = "==15.0.7"
 [feature.llvm16.host-dependencies]
-llvmdev = "16.0.6"
+llvmdev = "==16.0.6"
 [feature.llvm17.host-dependencies]
-llvmdev = "17.0.6"
+llvmdev = "==17.0.6"
 [feature.llvm18.host-dependencies]
-llvmdev = "18.1.8"
+llvmdev = "==18.1.8"
 [feature.llvm19.host-dependencies]
-llvmdev = "19.1.4"
+llvmdev = "==19.1.4"
+[feature.llvm20.host-dependencies]
+llvmdev = "==20.1.8"
+[feature.llvm21.host-dependencies]
+llvmdev = "==21.1.2"
 [feature.llvm12.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm13.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm14.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm15.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm16.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm17.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm18.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
 [feature.llvm19.target.linux.host-dependencies]
-libunwind = "1.7.2"
+libunwind = "==1.7.2"
+[feature.llvm20.target.linux.host-dependencies]
+libunwind = "==1.7.2"
+[feature.llvm21.target.linux.host-dependencies]
+libunwind = "==1.7.2"
 
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
 [feature.build.host-dependencies]
-pytest = "8.1.1"
-jupyter = "1.0.0"
-xeus = "5.1.0"
-xeus-zmq = "3.0.0"
-nlohmann_json = "3.11.3"
-jupyter_kernel_test = "0.7.0"
-numpy = "1.26.4"
-rapidjson = "1.1.0"
+pytest = "==8.1.1"
+jupyter = "==1.0.0"
+xeus = "==5.1.0"
+xeus-zmq = "==3.0.0"
+nlohmann_json = "==3.11.3"
+jupyter_kernel_test = "==0.7.0"
+numpy = "==1.26.4"
+rapidjson = "==1.1.0"
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
 
 # Dependencies to build the project to be installed on the build machine.
 # feature.default.build-dependencies
 [build-dependencies]
-python = "3.12"
+python = "==3.12"
 
 [feature.build.build-dependencies]
-python = "3.12"
-cmake = "3.29.1"
-ninja = "1.11.1"
+python = "==3.12"
+cmake = "==3.29.1"
+ninja = "==1.11.1"
 #cxx-compiler = "*"
-re2c = "3.1"
+re2c = "==3.1"
 
 [feature.test.build-dependencies]
-python = "3.12"
-toml = "0.10.2"
-cmake = "3.29.1"
-ninja = "1.11.1"
+python = "==3.12"
+toml = "==0.10.2"
+cmake = "==3.29.1"
+ninja = "==1.11.1"
 
 [feature.build.target.unix.build-dependencies]
-bison = "3.4"
+bison = "==3.4"
 
 [feature.build.target.win.build-dependencies]
-m2-bison = "3.0.4"
+m2-bison = "==3.0.4"
 
 [feature.build.tasks]
 build = "bash ./build1.sh"
 
 [environments]
+llvm7 = {features = ["llvm7", "build"]}
+llvm8 = {features = ["llvm8", "build"]}
+llvm9 = {features = ["llvm9", "build"]}
 llvm10 = {features = ["llvm10", "build"]}
 llvm11 = {features = ["llvm11", "build"]}
 llvm12 = {features = ["llvm12", "build"]}
@@ -105,4 +126,6 @@ llvm16 = {features = ["llvm16", "build"]}
 llvm17 = {features = ["llvm17", "build"]}
 llvm18 = {features = ["llvm18", "build"]}
 llvm19 = {features = ["llvm19", "build"]}
+llvm20 = {features = ["llvm20", "build"]}
+llvm21 = {features = ["llvm21", "build"]}
 test = {features = ["test"]}

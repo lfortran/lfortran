@@ -2,6 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/llvm_compat.h>
 
 namespace LCompilers {
 
@@ -23,7 +24,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
@@ -47,7 +48,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
@@ -64,7 +65,7 @@ namespace LCompilers {
                             llvm::Type::getInt32Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {count, type_size};
             return builder.CreateCall(fn, args);
@@ -81,7 +82,7 @@ namespace LCompilers {
                             llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -100,7 +101,7 @@ namespace LCompilers {
                             llvm::Type::getInt8Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, module);
+                        llvm::Function::ExternalLinkage, func_name, &module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -1227,8 +1228,13 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
+#if LLVM_VERSION_MAJOR >= 11
                         llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
+#else
+                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
+                            ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
+#endif
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {
@@ -1483,7 +1489,7 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
             llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
@@ -1493,7 +1499,7 @@ namespace LCompilers {
         llvm::IRBuilder<> builder0(context);
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
@@ -1508,14 +1514,14 @@ namespace LCompilers {
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
             llvm::Type* type, llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
 #else
             /*is_llvm_ptr*/
 #endif
         ) {
         llvm::AllocaInst *alloca;
-#if LLVM_VERSION_MAJOR > 16
+#if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
@@ -1529,8 +1535,12 @@ namespace LCompilers {
     }
 
 
-    llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile) {
+    llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
+#if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
+#else
+        return builder->CreateLoad(x, is_volatile);
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
@@ -1560,7 +1570,7 @@ namespace LCompilers {
                         character_type
                     }, false);
             free_fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, *module);
+                    llvm::Function::ExternalLinkage, func_name, module);
         }
         return free_fn;
     }
@@ -1636,7 +1646,7 @@ namespace LCompilers {
                         character_type->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, &module);
         }
         llvm::AllocaInst *pleft_arg = LLVMUtils::CreateAlloca(character_type);
         LLVM::CreateStore(*builder, left_arg, pleft_arg);
@@ -1653,7 +1663,7 @@ namespace LCompilers {
         //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
         //                     << (str->getType() == get_type_from_ttype_t_util(type, module)) << " "
         //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
             case ASR::DescriptorArray:{
@@ -1697,7 +1707,7 @@ namespace LCompilers {
 
 
     bool LLVMUtils::is_proper_string_llvm_variable([[maybe_unused]]ASR::String_t* str_type, [[maybe_unused]]llvm::Value* str){
-#if LLVM_VERSION_MAJOR < 17
+#if LLVM_VERSION_MAJOR < 15
         switch (str_type->m_physical_type){
             case ASR::DescriptorString:
             case ASR::CChar: { // Check for => `string_descriptor*` and `char*`
@@ -2146,7 +2156,7 @@ namespace LCompilers {
                         llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    llvm::Function::ExternalLinkage, runtime_func_name, module);
         }
         return builder->CreateCall(fn, {
             lhs_data, lhs_len,

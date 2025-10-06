@@ -35,8 +35,10 @@
 #include <llvm/Transforms/Scalar/InstSimplifyPass.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
+#if LLVM_VERSION_MAJOR >= 9
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
 #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
+#endif
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/CommandLine.h>
@@ -239,9 +241,20 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     }
     std::string CPU = "generic";
     std::string features = "";
+#if LLVM_VERSION_MAJOR >= 8
     llvm::TargetOptions opt;
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
     TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
+#else
+    // LLVM 7: Use EngineBuilder to create TargetMachine (same approach as KaleidoscopeJIT)
+    // This avoids potential ABI issues with manual createTargetMachine call
+    llvm::EngineBuilder builder;
+    builder.setEngineKind(llvm::EngineKind::JIT);
+    TM = builder.selectTarget();
+    if (!TM) {
+        throw LCompilersException("Could not create target machine");
+    }
+#endif
 
     // For some reason the JIT requires a different TargetMachine
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
@@ -324,6 +337,25 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+#if LLVM_VERSION_MAJOR < 8
+    // LLVM 7: Use findSymbol which returns JITSymbol
+    llvm::JITSymbol s = jit->findSymbol(name);
+    if (!s) {
+        throw LCompilersException("findSymbol() failed to find the symbol '" + name + "'");
+    }
+    auto addr = s.getAddress();
+    if (!addr) {
+        llvm::Error e = addr.takeError();
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(e), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LCompilersException("getAddress() failed for symbol '"
+            + name + "', error: " + msg);
+    }
+    return (intptr_t)addr.get();
+#else
 #if LLVM_VERSION_MAJOR < 17
     llvm::Expected<llvm::JITEvaluatedSymbol>
 #else
@@ -355,6 +387,7 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         throw LCompilersException("JITSymbol::getAddress() returned an error: " + msg);
     }
     return (intptr_t)cantFail(std::move(addr0));
+#endif
 }
 
 void write_file(const std::string &filename, const std::string &contents)
@@ -367,7 +400,9 @@ void write_file(const std::string &filename, const std::string &contents)
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
     llvm::legacy::PassManager pass;
-#if LLVM_VERSION_MAJOR < 18
+#if LLVM_VERSION_MAJOR < 10
+    llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_AssemblyFile;
+#elif LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
 #else
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::AssemblyFile;
@@ -395,7 +430,9 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     m.setDataLayout(TM->createDataLayout());
 
     llvm::legacy::PassManager pass;
-#if LLVM_VERSION_MAJOR < 18
+#if LLVM_VERSION_MAJOR < 10
+    llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_ObjectFile;
+#elif LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
 #else
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
