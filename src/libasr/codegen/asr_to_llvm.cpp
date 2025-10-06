@@ -9223,15 +9223,8 @@ public:
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
         llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true,
             llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
-#if LLVM_VERSION_MAJOR <= 7
-        // LLVM 7: Workaround for ConstantExpr::getGetElementPtr bug
-        // Use bitcast to element pointer type instead of GEP
-        llvm::Type *element_type = arr_type->getArrayElementType();
-        tmp = llvm::ConstantExpr::getBitCast(global_var, element_type->getPointerTo());
-#else
         tmp = builder->CreateGEP(
             arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});
-#endif
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
