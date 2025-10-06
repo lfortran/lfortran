@@ -309,18 +309,7 @@ namespace LCompilers {
 
                 builder->CreateCondBr(cond, thenBB, mergeBB);
                 builder->SetInsertPoint(thenBB); {
-#if LLVM_VERSION_MAJOR <= 7
-                        // LLVM 7 workaround: CreateGlobalStringPtr has a bug, use bitcast instead
-                        llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, message);
-                        auto *GV = new llvm::GlobalVariable(*module, StrConstant->getType(), true,
-                            llvm::GlobalValue::PrivateLinkage, StrConstant, "",
-                            nullptr, llvm::GlobalVariable::NotThreadLocal, 0);
-                        GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-                        llvm::Value* formatted_msg = llvm::ConstantExpr::getBitCast(GV,
-                            llvm::Type::getInt8PtrTy(context, 0));
-#else
-                        llvm::Value* formatted_msg = builder->CreateGlobalStringPtr(message);
-#endif
+                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
                         llvm::Function* print_error_fn = module->getFunction("_lcompilers_print_error");
                         if (!print_error_fn) {
                             llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
