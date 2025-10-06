@@ -7630,6 +7630,81 @@ public:
         }
     }
 
+    void fill_rank_stmt(const ASR::SelectRank_t& x, std::vector<ASR::rank_stmt_t*>& rank_stmt_order,
+        ASR::rank_stmtType rank_stmt_type) {
+        for( size_t i = 0; i < x.n_body; i++ ) {
+            if( x.m_body[i]->type == rank_stmt_type ) {
+                rank_stmt_order.push_back(x.m_body[i]);
+            }
+        }
+    }
+
+    void visit_SelectRank(const ASR::SelectRank_t& x) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector));
+        std::vector<ASR::rank_stmt_t*> rank_stmts;
+        fill_rank_stmt(x, rank_stmts, ASR::rank_stmtType::RankExpr);
+        LCOMPILERS_ASSERT(x.n_body == rank_stmts.size());
+        ASR::Var_t* selector_var = ASR::down_cast<ASR::Var_t>(x.m_selector);
+        std::string selector_var_name = ASRUtils::symbol_name(selector_var->m_v);
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_Var(*selector_var);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* llvm_selector = tmp;
+        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::expr_type(x.m_selector), module.get());
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+        llvm::Value* rank = arr_descr->get_rank(llvm_selector_type_, llvm_selector);
+        for( size_t i = 0; i < rank_stmts.size(); i++ ) {
+            llvm::Function* fn = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+            llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+
+            llvm::Value* cond = nullptr;
+            ASR::stmt_t** rank_block = nullptr;
+            size_t n_rank_block = 0;
+            switch( rank_stmts[i]->type ) {
+                case ASR::rank_stmtType::RankExpr: {
+                    ASR::RankExpr_t* rank_expr = ASR::down_cast<ASR::RankExpr_t>(rank_stmts[i]);
+                    llvm::Value* rank_value = nullptr;
+                    this->visit_expr_wrapper(rank_expr->m_rank, false);
+                    rank_value = tmp;
+                    cond = builder->CreateICmpEQ(rank, rank_value);
+
+                    rank_block = rank_expr->m_body;
+                    n_rank_block = rank_expr->n_body;
+                    break;
+                }
+                default: {
+                    throw CodeGenError("ASR::rank_stmtType, " +
+                                       std::to_string(x.m_body[i]->type) +
+                                       " is not yet supported.");
+                }
+            }
+            builder->CreateCondBr(cond, thenBB, elseBB);
+            builder->SetInsertPoint(thenBB);
+            {
+                if ( n_rank_block == 1 && ASR::is_a<ASR::BlockCall_t>(*rank_block[0])) {
+                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_block[0]);
+                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                    declare_vars(*block_t);
+                    for (size_t j = 0; j < block_t->n_body; j++) {
+                        this->visit_stmt(*(block_t->m_body[j]));
+                    }
+                }
+            }
+            builder->CreateBr(mergeBB);
+            start_new_block(elseBB);
+
+        }
+        if (x.n_default > 0) {
+            for( size_t i = 0; i < x.n_default; i++ ) {
+                this->visit_stmt(*x.m_default[i]);
+            }
+        }
+        start_new_block(mergeBB);
+    }
+
     void visit_SelectType(const ASR::SelectType_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector) || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector));
         // Process TypeStmtName first, then ClassStmt
