@@ -87,7 +87,7 @@ private:
             if (i < fmt.size()-1) fmt_str += " ";
         }
         fmt_str += endline;
-        llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, fmt_str);
+        llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
@@ -2915,7 +2915,7 @@ public:
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Runtime Error: Array '%s' is not allocated.\n",
-                        LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, array_name));
+                        LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -7142,8 +7142,8 @@ public:
             ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
 
             if (left_var && right_var) {
-                llvm::Value *left_name = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, left_var->m_name);
-                llvm::Value *right_name = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, right_var->m_name);
+                llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
+                llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
                                                     "Size of '%s' is is %d and size of '%s' is %d\n",
@@ -7221,7 +7221,7 @@ public:
                         llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                         llvm_utils->generate_runtime_error(is_not_allocated,
                             "Runtime Error: Array '%s' is not allocated.\n",
-                                LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, target_variable->m_name));
+                                LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
                     }
 
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -7235,7 +7235,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                             "LHS size is %d and RHS size is %d\n",
-                                                            LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, target_variable->m_name),
+                                                            LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
                                                             value_size);
                     }
@@ -7246,7 +7246,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                         "LHS size is %d and RHS size is %d\n",
-                                                        LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, target_variable->m_name),
+                                                        LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                         target_size,
                                                         value_size);
                 }
@@ -9247,7 +9247,7 @@ public:
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, []() {}, [=]() {
             if (compiler_options.emit_debug_info) {
-                llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, infile);
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 call_print_stacktrace_addresses(context, *module, *builder,
@@ -9257,21 +9257,21 @@ public:
                 std::vector<std::string> fmt;
                 std::vector<llvm::Value *> args;
                 fmt.push_back("%s");
-                args.push_back(LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "AssertionError: "));
+                args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, "AssertionError: "));
                 compute_fmt_specifier_and_arg(fmt, args, x.m_msg, x.base.base.loc);
                 fmt.push_back("%s");
-                args.push_back(LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "\n"));
+                args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, "\n"));
                 std::string fmt_str;
                 for (size_t i=0; i<fmt.size(); i++) {
                     fmt_str += fmt[i];
                 }
-                llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, fmt_str);
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
                 std::vector<llvm::Value *> print_error_args;
                 print_error_args.push_back(fmt_ptr);
                 print_error_args.insert(print_error_args.end(), args.begin(), args.end());
                 print_error(context, *module, *builder, print_error_args);
             } else {
-                llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "AssertionError\n");
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "AssertionError\n");
                 print_error(context, *module, *builder, {fmt_ptr});
             }
             int exit_code_int = 1;
@@ -9463,7 +9463,7 @@ public:
                                         llvm::Type::getInt64Ty(context)));
                                 llvm_utils->generate_runtime_error(cond,
                                     "Runtime Error: Variable '%s' is not allocated.\n",
-                                            LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, x->m_name));
+                                            LCompilers::create_global_string_ptr(context, *module, *builder, x->m_name));
                             }
                             fetch_ptr(x);
                         }
@@ -10167,8 +10167,8 @@ public:
             }
             case (ASR::cast_kindType::LogicalToString) : {
                 llvm::Value *cmp = builder->CreateICmpEQ(tmp, builder->getInt1(0));
-                llvm::Value *zero_str = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "False");
-                llvm::Value *one_str = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "True");
+                llvm::Value *zero_str = LCompilers::create_global_string_ptr(context, *module, *builder, "False");
+                llvm::Value *one_str = LCompilers::create_global_string_ptr(context, *module, *builder, "True");
                 tmp = builder->CreateSelect(cmp, zero_str, one_str);
 
                 if (ASRUtils::is_allocatable(x.m_type)) {
@@ -10442,7 +10442,7 @@ public:
                                                     tmp);
         } else {
             std::string yes("yes");
-            advance = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, yes);
+            advance = LCompilers::create_global_string_ptr(context, *module, *builder, yes);
             advance_length = llvm::ConstantInt::get(context, llvm::APInt(64, yes.size()));
         }
 
@@ -10552,20 +10552,20 @@ public:
                             ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = int_type->m_kind == 4 ? LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%d")
-                                                    : LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%ld");
+                        fmt = int_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, "%d")
+                                                    : LCompilers::create_global_string_ptr(context, *module, *builder, "%ld");
                     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = real_type->m_kind == 4 ? LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%f")
-                                                     : LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%lf");
+                        fmt = real_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, "%f")
+                                                     : LCompilers::create_global_string_ptr(context, *module, *builder, "%lf");
                     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%s");
+                        fmt = LCompilers::create_global_string_ptr(context, *module, *builder, "%s");
                     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%d");
+                        fmt = LCompilers::create_global_string_ptr(context, *module, *builder, "%d");
                     }
                     llvm::Value *src_data, *src_len;
                     std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
@@ -10950,17 +10950,17 @@ public:
 
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
-                llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "%s%s");
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "%s%s");
                 llvm::Value *str_data, *str_len;
                 // For empty output, use a space (like old behavior)
-                str_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, " ");
+                str_data = LCompilers::create_global_string_ptr(context, *module, *builder, " ");
                 str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value *end_data, *end_len;
                 if (x.m_end) {
                     std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
                     end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
                 } else {
-                    end_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "\n");
+                    end_data = LCompilers::create_global_string_ptr(context, *module, *builder, "\n");
                     end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 }
                 printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
@@ -11035,13 +11035,13 @@ public:
         if (x.m_separator) {
             std::tie(sep_data, sep_len) = get_string_data_and_length(x.m_separator);
         } else {
-            sep_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, " ");
+            sep_data = LCompilers::create_global_string_ptr(context, *module, *builder, " ");
             sep_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         if (x.m_end) {
             std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
         } else {
-            end_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "\n");
+            end_data = LCompilers::create_global_string_ptr(context, *module, *builder, "\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
@@ -11098,7 +11098,7 @@ public:
         for (size_t i=0; i<fmt.size(); i++) {
             fmt_str += fmt[i];
         }
-        llvm::Value *fmt_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, fmt_str);
+        llvm::Value *fmt_data = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         llvm::Value *fmt_len = llvm::ConstantInt::get(context, llvm::APInt(64, fmt_str.length()));
 
 
@@ -11227,7 +11227,7 @@ public:
                 serialization_res += ",";
             }
         }
-        return LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, serialization_res, "serialization_info");
+        return LCompilers::create_global_string_ptr(context, *module, *builder, serialization_res, "serialization_info");
     }
 
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
@@ -11386,7 +11386,7 @@ public:
         // End string (always computed once)
         llvm::Value *end_data, *end_len;
         if (end_expr == nullptr) {
-            end_data = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "\n");
+            end_data = LCompilers::create_global_string_ptr(context, *module, *builder, "\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
             std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
@@ -11420,7 +11420,7 @@ public:
             main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
         fmt_str += "%s";
-        llvm::Value* fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, fmt_str);
+        llvm::Value* fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
     }
 
@@ -11463,7 +11463,7 @@ public:
         
         /* NEWLINE */
         {
-            llvm::Value* NEWLINE = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, "\n");
+            llvm::Value* NEWLINE = LCompilers::create_global_string_ptr(context, *module, *builder, "\n");
             fmt += "%s";
             args.push_back(NEWLINE); // Null-Terminated
         }
@@ -11489,7 +11489,7 @@ public:
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
             if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-                llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, infile);
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 this->visit_expr(*x.m_code);
@@ -11510,7 +11510,7 @@ public:
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
-            llvm::Value *fmt_ptr = LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, infile);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                 1, compiler_options.use_colors));
             call_print_stacktrace_addresses(context, *module, *builder,
@@ -12462,7 +12462,7 @@ public:
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
                                     "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                    LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                     descriptor_length,
                                     dim,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12476,7 +12476,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
-                            LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             pointer_size);
@@ -12500,7 +12500,7 @@ public:
                                 llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                        LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                        LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                         fixed_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12513,7 +12513,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
-                                LCompilers::CreateGlobalStringPtrSafe(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
