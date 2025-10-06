@@ -2973,11 +2973,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     LLVMStruct::LLVMStruct(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,
         llvm::IRBuilder<>* builder_, 
-        std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_):
+        std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
+        std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct):
         context(context_),
         llvm_utils(std::move(llvm_utils_)),
         builder(std::move(builder_)),
-        llvm_symtab_fn(llvm_symtab_fn_) {}
+        llvm_symtab_fn(llvm_symtab_fn_), 
+        allocate_array_members_of_struct(allocate_arr_mem_struct){}
 
     LLVMDictInterface::LLVMDictInterface(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,
@@ -8369,8 +8371,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Constant*> slots;
         slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
-        slots.push_back(intrinsic_type_info.at(
-            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)));  // Type Info
+        slots.push_back(llvm::ConstantExpr::getBitCast(intrinsic_type_info.at(
+            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)), llvm_utils->i8_ptr));  // Type Info
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, 2);
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -8411,7 +8413,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         std::vector<llvm::Constant*> slots;
         slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Reserved null ptr
-        slots.push_back(newclass2typeinfo.at(struct_sym));             // Type Info
+        slots.push_back(llvm::ConstantExpr::getBitCast(
+            newclass2typeinfo.at(struct_sym), llvm_utils->i8_ptr));             // Type Info
         collect_vtable_function_impls(struct_sym, slots, module);
 
         // create and add copy funciton
@@ -8620,21 +8623,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
+            if (is_descriptor_array) {
+                allocate_array_members_of_struct(
+                    struct_sym, dest_elem_ptr, ASRUtils::extract_type(src_ty), false);    
+            }
+
             // Call Struct_copy function for each element
-            // std::cout<<"Calling deepcopy for struct element"<<std::endl;
-            llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
-            llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-            llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
-            llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-            llvm::Value* vtable_ptr = builder->CreateBitCast(src_elem_ptr, fnPtrPtrPtrTy);
-            vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-            llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                vtable_ptr, struct_vtab_function_offset[&struct_sym->base]["_lfortran_struct_copy"]));
-            fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             src_elem_ptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr);
             dest_elem_ptr = builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr);
             builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
-            // llvm_utils->deepcopy(asr_data, src_elem_ptr, dest_elem_ptr, asr_data_type, asr_data_type, module);
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(i_next, i);

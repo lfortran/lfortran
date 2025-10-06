@@ -771,6 +771,7 @@ namespace LCompilers {
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
+            std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_array_members_of_struct;
 
         public:
 
@@ -781,7 +782,8 @@ namespace LCompilers {
             std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
 
             LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,
-                     llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_);
+                     llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
+                      std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
