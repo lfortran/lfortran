@@ -70,6 +70,7 @@ stmt
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)
+    | SelectRank(expr selector, rank_stmt* body, stmt* default)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape, expr? lower_bounds)
     | BlockCall(int label, symbol m)
     | SetInsert(expr a, expr ele)
@@ -238,6 +239,7 @@ array_index = (expr? left, expr? right, expr? step)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
 case_stmt = CaseStmt(expr* test, stmt* body, bool fall_through) | CaseStmt_Range(expr? start, expr? end, stmt* body)
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
+rank_stmt = RankExpr(expr rank, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
 array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray | AssumedRankArray
