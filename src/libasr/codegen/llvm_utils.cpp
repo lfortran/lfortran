@@ -2814,24 +2814,43 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             case ASR::ttypeType::Complex: {
                 if( ASRUtils::is_array(asr_src_type) ) {
                     ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
+                        ASRUtils::type_get_past_allocatable_pointer(asr_src_type), module);
+                    llvm::Type* llvm_data_type = get_type_from_ttype_t_util(
+                        src_expr, ASRUtils::extract_type(asr_src_type), module);
                     switch( physical_type ) {
                         case ASR::array_physical_typeType::DescriptorArray: {
-                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
-                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_src_type)), module);
-                            arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
+                            // realloc_lhs_arrays
+                            if (ASRUtils::is_allocatable(ASRUtils::expr_type(src_expr))) {
+                                uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
+                                llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                                llvm::Value* total_memory = builder->CreateMul(num_elements,
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
+                                llvm::Value* ptr_to_data = arr_api->get_pointer_to_data(dest);  
+                                llvm::Value* dest_data  = CreateLoad2(
+                                    llvm_data_type->getPointerTo(), ptr_to_data);
+                                llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(context, *module, *builder, dest_data, total_memory);
+                                builder->CreateStore(builder->CreateBitCast(
+                                    reallocated_arr, llvm_data_type->getPointerTo()), ptr_to_data);
+                                // Store Offset
+                                llvm::Value* offset_val = create_gep2(llvm_array_type, dest, 1);
+                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                                        offset_val);
+                            }
+                            llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, llvm_data_type, src_expr);
+                            create_if_else(is_allocated, [=]() {            
+                                arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
+                            }, [=]() {
+                            });
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
-                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_src_type)), module);
                             src = create_gep2(llvm_array_type, src, 0);
                             dest = create_gep2(llvm_array_type, dest, 0);
                             ASR::dimension_t* asr_dims = nullptr;
                             size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(asr_src_type, asr_dims);
                             int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                            llvm::Type* llvm_data_type = get_type_from_ttype_t_util(src_expr, ASRUtils::type_get_past_array(
-                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_src_type))), module);
-                            llvm::DataLayout data_layout(module->getDataLayout());
                             uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                             llvm_size = builder->CreateMul(llvm_size,
@@ -8552,37 +8571,47 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             } else {
                 LCOMPILERS_ASSERT(false);
             }
- 
+
+            // realloc_lhs_arrays
+            if (ASRUtils::is_allocatable(src_expr)) {
+                uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm::Value* total_memory = builder->CreateMul(num_elements,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
+                LLVM::lfortran_free(context, *module, *builder, dest_data);
+                llvm_utils->arr_api->reset_is_allocated_flag(dest, llvm_data_type);
+                llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(context, *module, *builder, dest_data, total_memory);
+                dest_data = builder->CreateBitCast(
+                    reallocated_arr, llvm_data_type->getPointerTo());
+                builder->CreateStore(dest_data, llvm_utils->arr_api->get_pointer_to_data(dest));
+                llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                        offset_val);
+            }
+
+            // Get Copy function
+            llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+            llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+            llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
+            llvm::Value* fn = llvm_utils->CreateLoad2(
+                llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
+            fn = builder->CreateBitCast(fn, fnPtrTy);
+
             // Deep copy each struct element
-
-        //                                                     // Declare printf if not already declared
-        // llvm::FunctionType *printf_ty = llvm::FunctionType::get(
-        //     llvm::IntegerType::getInt32Ty(context),   // return int
-        //     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), // char*
-        //     true                                      // varargs
-        // );
-
-        // llvm::FunctionCallee printf_fn = module->getOrInsertFunction("printf", printf_ty);
-
-        // Create format string "%d\n"
-        // llvm::Value *fmt_str = builder->CreateGlobalStringPtr("%d\n");
-
             llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.head");
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
             llvm::Value* i = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), i);
-            // builder->CreateCall(printf_fn, { fmt_str, num_elements });
 
             // head
             llvm_utils->start_new_block(loopHead);
             llvm::Value* i_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), i);
             llvm::Value* cond = builder->CreateICmpSLT(i_val, num_elements);
-            llvm::Value* dest_not_null = builder->CreateICmpNE(
-                dest_data, llvm::Constant::getNullValue(dest_data->getType())
+            llvm::Value* src_not_null = builder->CreateICmpNE(
+                src_data, llvm::Constant::getNullValue(src_data->getType())
             );
-            cond = builder->CreateAnd(cond, dest_not_null);
+            cond = builder->CreateAnd(cond, src_not_null);
             builder->CreateCondBr(cond, loopBody, loopEnd);
 
             // body

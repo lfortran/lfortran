@@ -231,7 +231,10 @@ public:
         dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
         fname2arg_type, llvm_symtab)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
-    struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn)),
+    struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn,
+                [this](ASR::Struct_t* s, llvm::Value* v, ASR::ttype_t* t, bool flag) {
+                        allocate_array_members_of_struct(s, v, t, flag);
+                })),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
     dict_api_sc(std::make_unique<LLVMDictSeparateChaining>(context, llvm_utils.get(), builder.get())),
@@ -6645,7 +6648,24 @@ public:
                 llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
                 llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-                llvm::Value* vtable_ptr = builder->CreateBitCast(value_struct, fnPtrPtrPtrTy);
+                llvm::Value* llvm_dt = value_struct;
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value)) {
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_value);
+                    ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(array_item->m_v));
+                    this->visit_expr_wrapper(array_item->m_v, true);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
+                    if (ASRUtils::extract_physical_type(
+                            ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
+                        llvm_dt = llvm_utils->CreateLoad2(
+                            struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                            array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
+                    } else {
+                        llvm_dt = tmp;
+                    }
+                }
+                llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
                 ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
