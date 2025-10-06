@@ -9202,7 +9202,7 @@ public:
         // Declaring array constant as global constant and directly using it
         // instead of storing each element using CreateStore
         int64_t arr_size = ASRUtils::get_fixed_size_of_array(x.m_type);
-        llvm::Type *Int32Ty = llvm::Type::getInt32Ty(context);
+        [[maybe_unused]] llvm::Type *Int32Ty = llvm::Type::getInt32Ty(context);
         llvm::ArrayType * arr_type = llvm::ArrayType::get(el_type, arr_size);
         std::vector<llvm::Constant *> values;
 

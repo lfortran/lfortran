@@ -1535,7 +1535,7 @@ namespace LCompilers {
     }
 
 
-    llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile) {
+    llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
