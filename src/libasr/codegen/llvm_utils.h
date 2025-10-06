@@ -131,7 +131,6 @@ namespace LCompilers {
         builder.CreateCall(fn_exit, {exit_code});
     }
 
-    //! Workaround for LLVM 7 CreateGlobalStringPtr bug
     //! Creates a global string pointer safely across LLVM versions
     static inline llvm::Constant* create_global_string_ptr(
         llvm::LLVMContext &context, llvm::Module &module,
@@ -139,9 +138,8 @@ namespace LCompilers {
         const llvm::Twine &Name = "", unsigned AddressSpace = 0)
     {
 #if LLVM_VERSION_MAJOR <= 7
-        // LLVM 7: CreateGlobalStringPtr has a bug with ConstantExpr::getGetElementPtr
+        // LLVM 7: CreateGlobalStringPtr does not work with ConstantExpr::getGetElementPtr
         // Use bitcast as a workaround. This creates a text relocation warning but works correctly.
-        // The warning is unavoidable in LLVM 7 due to how global string references are handled.
         llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, Str);
         auto *GV = new llvm::GlobalVariable(
             module, StrConstant->getType(), true,
