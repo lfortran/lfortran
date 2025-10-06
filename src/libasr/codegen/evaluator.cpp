@@ -241,15 +241,16 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     }
     std::string CPU = "generic";
     std::string features = "";
-#if LLVM_VERSION_MAJOR >= 8
     llvm::TargetOptions opt;
+#if LLVM_VERSION_MAJOR >= 8
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
     TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
 #else
-    // LLVM 7: Use EngineBuilder to create TargetMachine (same approach as KaleidoscopeJIT)
-    // This avoids potential ABI issues with manual createTargetMachine call
+    // LLVM 7: Use EngineBuilder with setRelocationModel to avoid ABI issues
+    // with Optional parameters while still specifying PIC relocation model
     llvm::EngineBuilder builder;
     builder.setEngineKind(llvm::EngineKind::JIT);
+    builder.setRelocationModel(llvm::Reloc::Model::PIC_ );
     TM = builder.selectTarget();
     if (!TM) {
         throw LCompilersException("Could not create target machine");
