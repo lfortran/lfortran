@@ -87,7 +87,7 @@ private:
             if (i < fmt.size()-1) fmt_str += " ";
         }
         fmt_str += endline;
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(fmt_ptr);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
@@ -112,6 +112,26 @@ private:
         llvm::raw_string_ostream os(buf);
         v->print(os);
         std::cout << os.str() << endline;
+    }
+
+    //! Workaround for LLVM 7 CreateGlobalStringPtr bug
+    llvm::Value* CreateGlobalStringPtrSafe(llvm::StringRef Str, const llvm::Twine &Name = "", unsigned AddressSpace = 0) {
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: CreateGlobalStringPtr has a bug with ConstantExpr::getGetElementPtr
+        // Use bitcast as a workaround. This creates a text relocation warning but works correctly.
+        // The warning is unavoidable in LLVM 7 due to how global string references are handled.
+        llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, Str);
+        auto *GV = new llvm::GlobalVariable(
+            *module, StrConstant->getType(), true,
+            llvm::GlobalValue::PrivateLinkage, StrConstant, Name, nullptr,
+            llvm::GlobalVariable::NotThreadLocal, AddressSpace);
+        GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        // Bitcast to i8* - this works but may produce a linker warning about text relocations
+        return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, AddressSpace));
+#else
+        // LLVM 8+: Use the standard IRBuilder method
+        return builder->CreateGlobalStringPtr(Str, Name, AddressSpace);
+#endif
     }
 
 public:
@@ -2915,7 +2935,7 @@ public:
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Runtime Error: Array '%s' is not allocated.\n",
-                        builder->CreateGlobalStringPtr(array_name));
+                        CreateGlobalStringPtrSafe(array_name));
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -7142,8 +7162,8 @@ public:
             ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
 
             if (left_var && right_var) {
-                llvm::Value *left_name = builder->CreateGlobalStringPtr(left_var->m_name);
-                llvm::Value *right_name = builder->CreateGlobalStringPtr(right_var->m_name);
+                llvm::Value *left_name = CreateGlobalStringPtrSafe(left_var->m_name);
+                llvm::Value *right_name = CreateGlobalStringPtrSafe(right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
                                                     "Size of '%s' is is %d and size of '%s' is %d\n",
@@ -7221,7 +7241,7 @@ public:
                         llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                         llvm_utils->generate_runtime_error(is_not_allocated,
                             "Runtime Error: Array '%s' is not allocated.\n",
-                                builder->CreateGlobalStringPtr(target_variable->m_name));
+                                CreateGlobalStringPtrSafe(target_variable->m_name));
                     }
 
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -7235,7 +7255,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                             "LHS size is %d and RHS size is %d\n",
-                                                            builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                            CreateGlobalStringPtrSafe(target_variable->m_name),
                                                             target_size,
                                                             value_size);
                     }
@@ -7246,7 +7266,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                         "LHS size is %d and RHS size is %d\n",
-                                                        builder->CreateGlobalStringPtr(target_variable->m_name),
+                                                        CreateGlobalStringPtrSafe(target_variable->m_name),
                                                         target_size,
                                                         value_size);
                 }
@@ -9223,8 +9243,15 @@ public:
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
         llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true,
             llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: Workaround for ConstantExpr::getGetElementPtr bug
+        // Use bitcast to element pointer type instead of GEP
+        llvm::Type *element_type = arr_type->getArrayElementType();
+        tmp = llvm::ConstantExpr::getBitCast(global_var, element_type->getPointerTo());
+#else
         tmp = builder->CreateGEP(
             arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});
+#endif
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
@@ -9240,7 +9267,7 @@ public:
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, []() {}, [=]() {
             if (compiler_options.emit_debug_info) {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 call_print_stacktrace_addresses(context, *module, *builder,
@@ -9250,21 +9277,21 @@ public:
                 std::vector<std::string> fmt;
                 std::vector<llvm::Value *> args;
                 fmt.push_back("%s");
-                args.push_back(builder->CreateGlobalStringPtr("AssertionError: "));
+                args.push_back(CreateGlobalStringPtrSafe("AssertionError: "));
                 compute_fmt_specifier_and_arg(fmt, args, x.m_msg, x.base.base.loc);
                 fmt.push_back("%s");
-                args.push_back(builder->CreateGlobalStringPtr("\n"));
+                args.push_back(CreateGlobalStringPtrSafe("\n"));
                 std::string fmt_str;
                 for (size_t i=0; i<fmt.size(); i++) {
                     fmt_str += fmt[i];
                 }
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
                 std::vector<llvm::Value *> print_error_args;
                 print_error_args.push_back(fmt_ptr);
                 print_error_args.insert(print_error_args.end(), args.begin(), args.end());
                 print_error(context, *module, *builder, print_error_args);
             } else {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("AssertionError\n");
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe("AssertionError\n");
                 print_error(context, *module, *builder, {fmt_ptr});
             }
             int exit_code_int = 1;
@@ -9456,7 +9483,7 @@ public:
                                         llvm::Type::getInt64Ty(context)));
                                 llvm_utils->generate_runtime_error(cond,
                                     "Runtime Error: Variable '%s' is not allocated.\n",
-                                            builder->CreateGlobalStringPtr(x->m_name));
+                                            CreateGlobalStringPtrSafe(x->m_name));
                             }
                             fetch_ptr(x);
                         }
@@ -10160,8 +10187,8 @@ public:
             }
             case (ASR::cast_kindType::LogicalToString) : {
                 llvm::Value *cmp = builder->CreateICmpEQ(tmp, builder->getInt1(0));
-                llvm::Value *zero_str = builder->CreateGlobalStringPtr("False");
-                llvm::Value *one_str = builder->CreateGlobalStringPtr("True");
+                llvm::Value *zero_str = CreateGlobalStringPtrSafe("False");
+                llvm::Value *one_str = CreateGlobalStringPtrSafe("True");
                 tmp = builder->CreateSelect(cmp, zero_str, one_str);
 
                 if (ASRUtils::is_allocatable(x.m_type)) {
@@ -10435,7 +10462,7 @@ public:
                                                     tmp);
         } else {
             std::string yes("yes");
-            advance = builder->CreateGlobalStringPtr(yes);
+            advance = CreateGlobalStringPtrSafe(yes);
             advance_length = llvm::ConstantInt::get(context, llvm::APInt(64, yes.size()));
         }
 
@@ -10545,20 +10572,20 @@ public:
                             ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = int_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%d")
-                                                    : builder->CreateGlobalStringPtr("%ld");
+                        fmt = int_type->m_kind == 4 ? CreateGlobalStringPtrSafe("%d")
+                                                    : CreateGlobalStringPtrSafe("%ld");
                     } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
                         ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = real_type->m_kind == 4 ? builder->CreateGlobalStringPtr("%f")
-                                                     : builder->CreateGlobalStringPtr("%lf");
+                        fmt = real_type->m_kind == 4 ? CreateGlobalStringPtrSafe("%f")
+                                                     : CreateGlobalStringPtrSafe("%lf");
                     } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = builder->CreateGlobalStringPtr("%s");
+                        fmt = CreateGlobalStringPtrSafe("%s");
                     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
                                    ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = builder->CreateGlobalStringPtr("%d");
+                        fmt = CreateGlobalStringPtrSafe("%d");
                     }
                     llvm::Value *src_data, *src_len;
                     std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
@@ -10943,17 +10970,17 @@ public:
 
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s%s");
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe("%s%s");
                 llvm::Value *str_data, *str_len;
                 // For empty output, use a space (like old behavior)
-                str_data = builder->CreateGlobalStringPtr(" ");
+                str_data = CreateGlobalStringPtrSafe(" ");
                 str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value *end_data, *end_len;
                 if (x.m_end) {
                     std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
                     end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
                 } else {
-                    end_data = builder->CreateGlobalStringPtr("\n");
+                    end_data = CreateGlobalStringPtrSafe("\n");
                     end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 }
                 printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
@@ -11028,13 +11055,13 @@ public:
         if (x.m_separator) {
             std::tie(sep_data, sep_len) = get_string_data_and_length(x.m_separator);
         } else {
-            sep_data = builder->CreateGlobalStringPtr(" ");
+            sep_data = CreateGlobalStringPtrSafe(" ");
             sep_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         if (x.m_end) {
             std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
         } else {
-            end_data = builder->CreateGlobalStringPtr("\n");
+            end_data = CreateGlobalStringPtrSafe("\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
         }
         size_t n_values = x.n_values; ASR::expr_t **m_values = x.m_values;
@@ -11091,7 +11118,7 @@ public:
         for (size_t i=0; i<fmt.size(); i++) {
             fmt_str += fmt[i];
         }
-        llvm::Value *fmt_data = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value *fmt_data = CreateGlobalStringPtrSafe(fmt_str);
         llvm::Value *fmt_len = llvm::ConstantInt::get(context, llvm::APInt(64, fmt_str.length()));
 
 
@@ -11220,7 +11247,7 @@ public:
                 serialization_res += ",";
             }
         }
-        return builder->CreateGlobalStringPtr(serialization_res, "serialization_info");
+        return CreateGlobalStringPtrSafe(serialization_res, "serialization_info");
     }
 
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
@@ -11379,7 +11406,7 @@ public:
         // End string (always computed once)
         llvm::Value *end_data, *end_len;
         if (end_expr == nullptr) {
-            end_data = builder->CreateGlobalStringPtr("\n");
+            end_data = CreateGlobalStringPtrSafe("\n");
             end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
             std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
@@ -11413,7 +11440,7 @@ public:
             main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
         fmt_str += "%s";
-        llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        llvm::Value* fmt_ptr = CreateGlobalStringPtrSafe(fmt_str);
         printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
     }
 
@@ -11456,7 +11483,7 @@ public:
         
         /* NEWLINE */
         {
-            llvm::Value* NEWLINE = builder->CreateGlobalStringPtr("\n");
+            llvm::Value* NEWLINE = CreateGlobalStringPtrSafe("\n");
             fmt += "%s";
             args.push_back(NEWLINE); // Null-Terminated
         }
@@ -11482,7 +11509,7 @@ public:
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
             if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                     1, compiler_options.use_colors));
                 this->visit_expr(*x.m_code);
@@ -11503,7 +11530,7 @@ public:
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+            llvm::Value *fmt_ptr = CreateGlobalStringPtrSafe(infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
                 1, compiler_options.use_colors));
             call_print_stacktrace_addresses(context, *module, *builder,
@@ -12455,7 +12482,7 @@ public:
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
                                     "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                    builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                    CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                     descriptor_length,
                                     dim,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12469,7 +12496,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
-                            builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                            CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             pointer_size);
@@ -12493,7 +12520,7 @@ public:
                                 llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                        builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                        CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                         fixed_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12506,7 +12533,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
-                                builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                CreateGlobalStringPtrSafe(ASRUtils::symbol_name(x.m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);

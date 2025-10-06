@@ -9,6 +9,25 @@ namespace LCompilers {
 
     namespace LLVMArrUtils {
 
+        // Workaround for LLVM 7 CreateGlobalStringPtr bug
+        static llvm::Constant* CreateGlobalStringPtrSafe(
+                [[maybe_unused]] llvm::LLVMContext &context,
+                [[maybe_unused]] llvm::Module &module,
+                [[maybe_unused]] llvm::IRBuilder<> &builder, llvm::StringRef Str) {
+#if LLVM_VERSION_MAJOR <= 7
+            // LLVM 7: CreateGlobalStringPtr has a bug, use bitcast workaround
+            llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, Str);
+            auto *GV = new llvm::GlobalVariable(
+                module, StrConstant->getType(), true,
+                llvm::GlobalValue::PrivateLinkage, StrConstant, "",  nullptr,
+                llvm::GlobalVariable::NotThreadLocal, 0);
+            GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, 0));
+#else
+            return builder.CreateGlobalStringPtr(Str);
+#endif
+        }
+
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_malloc";
@@ -736,7 +755,7 @@ namespace LCompilers {
                                                             ubound_check),
                                             "Runtime error: Array '%s' index out of bounds.\n\n"
                                                      "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
-                                                     builder->CreateGlobalStringPtr(array_name),
+                                                     CreateGlobalStringPtrSafe(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
                                                      dimension,
                                                      lval,
@@ -781,7 +800,7 @@ namespace LCompilers {
                                                                 ubound_check),
                                                 "Runtime error: Array '%s' index out of bounds.\n\n"
                                                         "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
-                                                        builder->CreateGlobalStringPtr(array_name),
+                                                        CreateGlobalStringPtrSafe(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
                                                         dimension,
                                                         lval,
