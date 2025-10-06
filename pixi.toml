@@ -46,6 +46,10 @@ llvmdev = "17.0.6"
 llvmdev = "18.1.8"
 [feature.llvm19.host-dependencies]
 llvmdev = "19.1.4"
+[feature.llvm20.host-dependencies]
+llvmdev = "20.1.8"
+[feature.llvm21.host-dependencies]
+llvmdev = "21.1.2"
 [feature.llvm12.target.linux.host-dependencies]
 libunwind = "1.7.2"
 [feature.llvm13.target.linux.host-dependencies]
@@ -61,6 +65,10 @@ libunwind = "1.7.2"
 [feature.llvm18.target.linux.host-dependencies]
 libunwind = "1.7.2"
 [feature.llvm19.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm20.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm21.target.linux.host-dependencies]
 libunwind = "1.7.2"
 
 # Dependencies to build the project to be installed for the target architecture.
@@ -118,4 +126,6 @@ llvm16 = {features = ["llvm16", "build"]}
 llvm17 = {features = ["llvm17", "build"]}
 llvm18 = {features = ["llvm18", "build"]}
 llvm19 = {features = ["llvm19", "build"]}
+llvm20 = {features = ["llvm20", "build"]}
+llvm21 = {features = ["llvm21", "build"]}
 test = {features = ["test"]}
