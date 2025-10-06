@@ -1941,7 +1941,8 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (static_executable) {
                 if (compiler_options.platform != LCompilers::Platform::macOS_Intel
-                && compiler_options.platform != LCompilers::Platform::macOS_ARM) {
+                && compiler_options.platform != LCompilers::Platform::macOS_ARM
+                && compiler_options.platform != LCompilers::Platform::macOS_PowerPC) {
                     options += " -static ";
                 }
                 runtime_lib = "lfortran_runtime_static";
@@ -1971,7 +1972,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
-            if (compiler_options.openmp) {
+            if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
                 if (!openmp_shared_library.empty()) {

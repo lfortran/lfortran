@@ -42,12 +42,16 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
         md.expansion = "1";
         macro_definitions["_WIN32"] = md;
     } else if (compiler_options.platform == Platform::macOS_ARM
+        || compiler_options.platform == Platform::macOS_PowerPC
         || compiler_options.platform == Platform::macOS_Intel) {
         md.expansion = "1";
         macro_definitions["__APPLE__"] = md;
         if (compiler_options.platform == Platform::macOS_ARM) {
             md.expansion = "1";
             macro_definitions["__aarch64__"] = md;
+        } else if (compiler_options.platform == Platform::macOS_PowerPC) {
+            md.expansion = "1";
+            macro_definitions["__POWERPC__"] = md;
         } else {
             md.expansion = "1";
             macro_definitions["__x86_64__"] = md;

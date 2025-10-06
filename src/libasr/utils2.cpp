@@ -229,6 +229,7 @@ std::string pf2s(Platform p) {
         case (Platform::Linux) : return "Linux";
         case (Platform::macOS_Intel) : return "macOS Intel";
         case (Platform::macOS_ARM) : return "macOS ARM";
+        case (Platform::macOS_PowerPC) : return "macOS PowerPC";
         case (Platform::Windows) : return "Windows";
         case (Platform::FreeBSD) : return "FreeBSD";
         case (Platform::OpenBSD) : return "OpenBSD";
@@ -243,6 +244,8 @@ Platform get_platform()
 #elif defined(__APPLE__)
 #    ifdef __aarch64__
     return Platform::macOS_ARM;
+#    elif defined(__POWERPC__)
+    return Platform::macOS_PowerPC;
 #    else
     return Platform::macOS_Intel;
 #    endif

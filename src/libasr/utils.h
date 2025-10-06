@@ -12,6 +12,7 @@ enum Platform {
     Linux,
     macOS_Intel,
     macOS_ARM,
+    macOS_PowerPC,
     Windows,
     FreeBSD,
     OpenBSD,
