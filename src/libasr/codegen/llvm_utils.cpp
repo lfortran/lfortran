@@ -1539,7 +1539,6 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
-        // LLVM 7: CreateLoad(Value*, bool, Name) signature
         return builder->CreateLoad(x, is_volatile);
 #endif
     }
