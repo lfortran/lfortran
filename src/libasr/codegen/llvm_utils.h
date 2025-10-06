@@ -131,6 +131,30 @@ namespace LCompilers {
         builder.CreateCall(fn_exit, {exit_code});
     }
 
+    //! Creates a global string pointer safely across LLVM versions
+    static inline llvm::Constant* create_global_string_ptr(
+        [[maybe_unused]] llvm::LLVMContext &context,
+        [[maybe_unused]] llvm::Module &module,
+        [[maybe_unused]] llvm::IRBuilder<> &builder, llvm::StringRef Str,
+        const llvm::Twine &Name = "", unsigned AddressSpace = 0)
+    {
+#if LLVM_VERSION_MAJOR <= 7
+        // LLVM 7: CreateGlobalStringPtr does not work with ConstantExpr::getGetElementPtr
+        // Use bitcast as a workaround. This creates a text relocation warning but works correctly.
+        llvm::Constant *StrConstant = llvm::ConstantDataArray::getString(context, Str);
+        auto *GV = new llvm::GlobalVariable(
+            module, StrConstant->getType(), true,
+            llvm::GlobalValue::PrivateLinkage, StrConstant, Name, nullptr,
+            llvm::GlobalVariable::NotThreadLocal, AddressSpace);
+        GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        // Bitcast to i8* - this works but may produce a linker warning about text relocations
+        return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, AddressSpace));
+#else
+        // LLVM 8+: Use the standard IRBuilder method
+        return builder.CreateGlobalStringPtr(Str, Name, AddressSpace);
+#endif
+    }
+
     // Insert the following anywhere inside the LLVM backend to print
     // addresses at runtime:
     // call_print_stacktrace_addresses(context, *module, *builder, {filename, use_colors});
@@ -284,7 +308,7 @@ namespace LCompilers {
 
                 builder->CreateCondBr(cond, thenBB, mergeBB);
                 builder->SetInsertPoint(thenBB); {
-                        llvm::Value* formatted_msg = builder->CreateGlobalStringPtr(message);
+                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
                         llvm::Function* print_error_fn = module->getFunction("_lcompilers_print_error");
                         if (!print_error_fn) {
                             llvm::FunctionType* error_fn_type = llvm::FunctionType::get(

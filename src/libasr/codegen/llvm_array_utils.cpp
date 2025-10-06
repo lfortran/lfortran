@@ -736,7 +736,7 @@ namespace LCompilers {
                                                             ubound_check),
                                             "Runtime error: Array '%s' index out of bounds.\n\n"
                                                      "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
-                                                     builder->CreateGlobalStringPtr(array_name),
+                                                     LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
                                                      dimension,
                                                      lval,
@@ -781,7 +781,7 @@ namespace LCompilers {
                                                                 ubound_check),
                                                 "Runtime error: Array '%s' index out of bounds.\n\n"
                                                         "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
-                                                        builder->CreateGlobalStringPtr(array_name),
+                                                        LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
                                                         dimension,
                                                         lval,

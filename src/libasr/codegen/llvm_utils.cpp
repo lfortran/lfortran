@@ -3654,9 +3654,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             std::string index_error = "IndexError: %s%d%s%d\n",
             message1 = "List index is out of range. Index range is (0, ",
             message2 = "), but the given index is ";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(index_error);
-            llvm::Value *fmt_ptr1 = builder->CreateGlobalStringPtr(message1);
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message2);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, index_error);
+            llvm::Value *fmt_ptr1 = LCompilers::create_global_string_ptr(context, *module, *builder, message1);
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message2);
             llvm::Value *end_minus_one = builder->CreateSub(end_point,
                 llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr1,
@@ -4287,8 +4287,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->create_if_else(is_key_matching, [&]() {
         }, [&]() {
             std::string message = "The dict does not contain the specified key";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -4410,8 +4410,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LLVM::CreateStore(*builder, key_hash, pos_ptr);
             }, [&]() {
                 std::string message = "The dict does not contain the specified key";
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-                llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+                llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
                 print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
                 int exit_code_int = 1;
                 llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -4435,8 +4435,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->create_if_else(is_key_matching, [&]() {
         }, [&]() {
             std::string message = "The dict does not contain the specified key";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -4629,8 +4629,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             LLVM::CreateStore(*builder, value, tmp_value_ptr);
         }, [&]() {
             std::string message = "The dict does not contain the specified key";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -5989,8 +5989,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* condition = builder->CreateOr(cond, start_greater_than_end);
         llvm_utils->create_if_else(condition, [&]() {
             std::string message = "The list does not contain the element: ";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("ValueError: %s%d\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "ValueError: %s%d\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2, item});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -6147,8 +6147,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     context, llvm::APInt(32, 0)), end_point);
         llvm_utils->create_if_else(cond, [&]() {
             std::string message = "pop from empty list";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("IndexError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "IndexError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -7777,8 +7777,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LLVM::CreateStore(*builder, el_hash, pos_ptr);
             }, [&]() {
                 std::string message = "The set does not contain the specified element";
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-                llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+                llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
                 print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
                 int exit_code_int = 1;
                 llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -7801,8 +7801,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm_utils->create_if_else(is_el_matching, []() {}, [&]() {
             std::string message = "The set does not contain the specified element";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -7843,8 +7843,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm_utils->create_if_else(does_el_exist, []() {}, [&]() {
             std::string message = "The set does not contain the specified element";
-            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("KeyError: %s\n");
-            llvm::Value *fmt_ptr2 = builder->CreateGlobalStringPtr(message);
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "KeyError: %s\n");
+            llvm::Value *fmt_ptr2 = LCompilers::create_global_string_ptr(context, *module, *builder, message);
             print_error(context, *module, *builder, {fmt_ptr, fmt_ptr2});
             int exit_code_int = 1;
             llvm::Value *exit_code = llvm::ConstantInt::get(context,
@@ -8406,7 +8406,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         // Struct name
         type_info_member_values.push_back(llvm::ConstantExpr::getBitCast(
-            builder->CreateGlobalStringPtr(std::string(struct_t->m_name),
+            LCompilers::create_global_string_ptr(context, *module, *builder, std::string(struct_t->m_name),
                                            "_Name_" + std::string(struct_t->m_name)),
             llvm_utils->i8_ptr));
         if (struct_t->m_parent) {
