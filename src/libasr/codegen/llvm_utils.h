@@ -133,7 +133,8 @@ namespace LCompilers {
 
     //! Creates a global string pointer safely across LLVM versions
     static inline llvm::Constant* create_global_string_ptr(
-        llvm::LLVMContext &context, llvm::Module &module,
+        [[maybe_unused]] llvm::LLVMContext &context,
+        [[maybe_unused]] llvm::Module &module,
         [[maybe_unused]] llvm::IRBuilder<> &builder, llvm::StringRef Str,
         const llvm::Twine &Name = "", unsigned AddressSpace = 0)
     {
