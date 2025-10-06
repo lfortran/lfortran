@@ -16,9 +16,13 @@ ctest = "cmake --build . --parallel --target test"
 tests = "./run_tests.py"
 integration_tests = "cd integration_tests && ./run_tests.py -j16"
 
-[feature.llvm7.host-dependencies]
+[feature.llvm7.target.linux-64.host-dependencies]
 llvmdev = "7.0.1"
-[feature.llvm8.host-dependencies]
+[feature.llvm7.target.win-64.host-dependencies]
+llvmdev = "7.0.1"
+[feature.llvm8.target.linux-64.host-dependencies]
+llvmdev = "8.0.1"
+[feature.llvm8.target.win-64.host-dependencies]
 llvmdev = "8.0.1"
 [feature.llvm9.host-dependencies]
 llvmdev = "9.0.1"
