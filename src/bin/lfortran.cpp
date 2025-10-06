@@ -1941,7 +1941,8 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (static_executable) {
                 if (compiler_options.platform != LCompilers::Platform::macOS_Intel
-                && compiler_options.platform != LCompilers::Platform::macOS_ARM) {
+                && compiler_options.platform != LCompilers::Platform::macOS_ARM
+                && compiler_options.platform != LCompilers::Platform::macOS_PowerPC) {
                     options += " -static ";
                 }
                 runtime_lib = "lfortran_runtime_static";
