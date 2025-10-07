@@ -3649,6 +3649,114 @@ public:
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
+        //To Allocate Allocatable Array without Allocate statement
+        if (((target!=nullptr) && (value!=nullptr)) && ((ASR::is_a<ASR::Var_t>(*target) && 
+            (ASR::is_a<ASR::ArrayConstant_t>(*value) || ASR::is_a<ASR::ArrayConstructor_t>(*value))))) {
+            ASR::Var_t* target_var = ASR::down_cast<ASR::Var_t>(target);
+            if (ASR::is_a<ASR::Variable_t>(*target_var->m_v)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(target_var->m_v);
+                ASR::ttype_t* var_type = var->m_type;
+
+                // Check if it's an allocatable array
+                // Where allocate is not called explicitly
+                if (ASR::is_a<ASR::Allocatable_t>(*var_type)) {
+                    ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(var_type);
+                    if (ASRUtils::is_array(alloc_type->m_type)) {
+                        // Check if this array has already been allocated in current scope
+                        // TODO:: Check in parent scopes as well
+                        bool already_allocated = false;
+                        for (size_t i = 0; i < current_body->size(); i++) {
+                            ASR::stmt_t* stmt = (*current_body)[i];
+                            if (ASR::is_a<ASR::Allocate_t>(*stmt)) {
+                                ASR::Allocate_t* alloc_stmt = ASR::down_cast<ASR::Allocate_t>(stmt);
+                                for (size_t j = 0; j < alloc_stmt->n_args; j++) {
+                                    if (ASR::is_a<ASR::Var_t>(*alloc_stmt->m_args[j].m_a)) {
+                                        ASR::Var_t* alloc_var = ASR::down_cast<ASR::Var_t>(alloc_stmt->m_args[j].m_a);
+                                        if (alloc_var->m_v == target_var->m_v) {
+                                            already_allocated = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (already_allocated) break;
+                            }
+                        }
+                        // Check if target appears in RHS
+                        // In cases like: a = [a], auto-allocation would invalidate RHS
+                        bool target_in_rhs = false;
+                        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                            for (size_t i = 0; i < ac->n_args; i++) {
+                                ASR::expr_t* arg = ac->m_args[i];
+                                if (ASR::is_a<ASR::Var_t>(*arg)) {
+                                    ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg);
+                                    if (arg_var->m_v == target_var->m_v) {
+                                        target_in_rhs = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(alloc_type->m_type);
+                        // Skip deferred-length character arrays - they need special handling
+                        // TODO:: Handle deferred-length character arrays when allocate is not called explicitly
+                        bool skip_auto_alloc = already_allocated || target_in_rhs;
+                        if ((element_type!=nullptr)&&(ASR::is_a<ASR::String_t>(*element_type))) {
+                            ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(element_type);
+                            if (char_type->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                                skip_auto_alloc = true;
+                            }
+                        }
+                        if (!skip_auto_alloc) {
+                            // Get the size from the array value
+                            int array_size = 0;
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                                array_size = ASRUtils::get_fixed_size_of_array(ac->m_type);
+                            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                                ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                                array_size = ac->n_args;
+                            }
+                            if (array_size > 0) {
+                                // Create allocation dimensions (1:size)
+                                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                        compiler_options.po.default_integer_kind));
+                                ASR::expr_t* start_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                        1, int_type));
+                                ASR::expr_t* end_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                        array_size, int_type));
+                                // Create dimension for allocation
+                                Vec<ASR::dimension_t> dims_vec;
+                                dims_vec.reserve(al, 1);
+                                ASR::dimension_t dim;
+                                dim.loc = x.base.base.loc;
+                                dim.m_start = start_idx;
+                                dim.m_length = ASRUtils::compute_length_from_start_end(al, start_idx, end_idx);
+                                dims_vec.push_back(al, dim);
+                                // Create alloc_arg_t
+                                Vec<ASR::alloc_arg_t> alloc_args_vec;
+                                alloc_args_vec.reserve(al, 1);
+                                ASR::alloc_arg_t alloc_arg;
+                                alloc_arg.loc = x.base.base.loc;
+                                alloc_arg.m_a = target;
+                                alloc_arg.m_dims = dims_vec.p;
+                                alloc_arg.n_dims = dims_vec.size();
+                                alloc_arg.m_len_expr = nullptr;
+                                alloc_arg.m_type = nullptr;
+                                alloc_arg.m_sym_subclass = nullptr;
+                                alloc_args_vec.push_back(al, alloc_arg);
+                                // Create and push Allocate statement
+                                ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
+                                                                        alloc_args_vec.p, alloc_args_vec.size(),
+                                                                        nullptr, nullptr, nullptr));
+                                current_body->push_back(al, alloc_stmt);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs_arrays, false);
