@@ -4748,8 +4748,31 @@ public:
                 llvm::Type* llvm_type
                     = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), v->m_type, module.get());
+#if LLVM_VERSION_MAJOR >= 8
                 builder->CreateMemCpy(llvm_utils->create_gep2(llvm_type,target_var, 0),
                     llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
+#else
+                // LLVM 7 workaround: Use element-by-element copy instead of memcpy
+                // to avoid code generation bug with mixed float/double array initialization
+                // in subroutines with PIC/PIE enabled
+                llvm::Value* dest_ptr = llvm_utils->create_gep2(llvm_type, target_var, 0);
+                llvm::Value* src_ptr = init_value;
+                int64_t num_elements = ASRUtils::get_fixed_size_of_array(
+                    ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type);
+                
+                // Cast to appropriate pointer types
+                dest_ptr = builder->CreateBitCast(dest_ptr, llvm_data_type->getPointerTo());
+                src_ptr = builder->CreateBitCast(src_ptr, llvm_data_type->getPointerTo());
+                
+                // Copy elements one by one
+                for (int64_t i = 0; i < num_elements; i++) {
+                    llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(64, i));
+                    llvm::Value* src_elem_ptr = builder->CreateGEP(llvm_data_type, src_ptr, idx);
+                    llvm::Value* dest_elem_ptr = builder->CreateGEP(llvm_data_type, dest_ptr, idx);
+                    llvm::Value* elem_val = builder->CreateLoad(llvm_data_type, src_elem_ptr);
+                    builder->CreateStore(elem_val, dest_elem_ptr, v->m_is_volatile);
+                }
+#endif
             } else if(target_ptype == ASR::PointerArray){
                 if(ASRUtils::is_array_of_strings(v->m_type)){
                     builder->CreateMemCpy(
@@ -9298,7 +9321,7 @@ public:
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
         llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true,
             llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
-        tmp = builder->CreateGEP(
+        tmp = llvm_utils->CreateGEP2(
             arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});
     }
 
