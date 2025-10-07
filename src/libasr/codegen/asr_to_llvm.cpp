@@ -204,6 +204,7 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
+    std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -3782,6 +3783,8 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
+            allocatable_struct_array_members_details.push_back(std::make_pair(
+                ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
             ASR::dimension_t* m_dims = nullptr;
@@ -4221,8 +4224,12 @@ public:
             builder->CreateCall(fn, args);
         }
         for(to_be_allocated_array array : allocatable_array_details){
-                    fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
+            fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
                 true, true, false, array.var_type);
+        }
+        for(auto& st : allocatable_struct_array_members_details) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
+                st.second, ASRUtils::symbol_type(st.first), false, false);
         }
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
@@ -4354,7 +4361,8 @@ public:
         }
     }
 
-    void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr, ASR::ttype_t* asr_type, bool is_intent_out = false) {
+    void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
+            ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -4445,7 +4453,7 @@ public:
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     setup_string(ptr_member, symbol_type);
                 }
-                if( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if( v->m_symbolic_value ) {
                         visit_expr(*v->m_symbolic_value);
