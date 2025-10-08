@@ -3,6 +3,7 @@
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <llvm/Support/raw_ostream.h>
 
 namespace LCompilers {
 
@@ -115,6 +116,13 @@ namespace LCompilers {
             return (ASR::is_a<ASR::Pointer_t>(asr_type) ||
                     ASR::is_a<ASR::Allocatable_t>(asr_type)) &&
                     !ASRUtils::is_string_only(const_cast<ASR::ttype_t*>(&asr_type));
+        }
+
+        std::string get_type_as_string(llvm::Type* type) {
+            std::string type_str;
+            llvm::raw_string_ostream rso(type_str);
+            type->print(rso);
+            return rso.str();
         }
     } // namespace LLVM
 
@@ -1463,6 +1471,48 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
+#if LLVM_VERSION_MAJOR < 15
+        // Assertion: Verify type consistency to catch bugs early
+        // The GEP target type 't' should match the pointee type of 'ds'
+        // Note: LLVM 15+ uses opaque pointers, so getPointerElementType() doesn't exist
+        // and this type of bug cannot occur.
+        if (ds->getType()->isPointerTy()) {
+            llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
+            // For struct types, the target type must match the pointer's pointee type
+            if (llvm::isa<llvm::StructType>(t)) {
+                std::string target_type_str;
+                llvm::raw_string_ostream target_rso(target_type_str);
+                t->print(target_rso);
+                std::string pointee_type_str;
+                llvm::raw_string_ostream pointee_rso(pointee_type_str);
+                ds_pointee_type->print(pointee_rso);
+                LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
+                    "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
+                    "This would cause crashes in LLVM <= 8 constant folder. "
+                    "Target type: " + target_rso.str() +
+                    ", Pointer pointee type: " + pointee_rso.str());
+            }
+            // Verify index is within bounds for struct types
+            if (llvm::isa<llvm::StructType>(t)) {
+                llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
+                [[maybe_unused]] unsigned num_elements = struct_type->getNumElements();
+                LCOMPILERS_ASSERT_MSG(idx >= 0 && (unsigned)idx < num_elements,
+                    "Index out of bounds in create_gep2: index " + std::to_string(idx) +
+                    " is out of range for struct with " + std::to_string(num_elements) + " elements");
+            }
+        }
+#else
+        // LLVM 15+ uses opaque pointers - no type confusion possible
+        // Only validate bounds for struct types
+        if (llvm::isa<llvm::StructType>(t)) {
+            llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
+            unsigned num_elements = struct_type->getNumElements();
+            LCOMPILERS_ASSERT_MSG(idx >= 0 && (unsigned)idx < num_elements,
+                "Index out of bounds in create_gep2: index " + std::to_string(idx) +
+                " is out of range for struct with " + std::to_string(num_elements) + " elements");
+        }
+#endif
+
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
@@ -1545,11 +1595,35 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR < 15
+        // Validate that the type parameter matches the pointer's pointee type
+        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
+        if (x->getType()->isPointerTy()) {
+            llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
+            std::string x_type_str;
+            llvm::raw_string_ostream x_rso(x_type_str);
+            x_pointee_type->print(x_rso);
+            std::string t_type_str;
+            llvm::raw_string_ostream t_rso(t_type_str);
+            t->print(t_rso);
+            LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
+                "CreateGEP2: Type mismatch - pointer pointee type (" +
+                x_rso.str() + ") != type parameter (" +
+                t_rso.str() + ")");
+        }
+#endif
         return builder->CreateGEP(t, x, idx);
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *type,
         llvm::Value *x, int idx) {
+        // Validate struct access bounds
+        if (type->isStructTy()) {
+            [[maybe_unused]] unsigned num_elements = type->getStructNumElements();
+            LCOMPILERS_ASSERT_MSG((unsigned)idx < num_elements,
+                "CreateGEP2: Index " + std::to_string(idx) +
+                " out of bounds for struct with " + std::to_string(num_elements) + " elements");
+        }
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
@@ -1558,6 +1632,23 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, std::vector<llvm::Value *> &idx) {
+#if LLVM_VERSION_MAJOR < 15
+        // Validate that the type parameter matches the pointer's pointee type
+        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
+        if (x->getType()->isPointerTy()) {
+            llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
+            std::string x_type_str;
+            llvm::raw_string_ostream x_rso(x_type_str);
+            x_pointee_type->print(x_rso);
+            std::string t_type_str;
+            llvm::raw_string_ostream t_rso(t_type_str);
+            t->print(t_rso);
+            LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
+                "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
+                x_rso.str() + ") != type parameter (" +
+                t_rso.str() + ")");
+        }
+#endif
         return builder->CreateInBoundsGEP(t, x, idx);
     }
 
