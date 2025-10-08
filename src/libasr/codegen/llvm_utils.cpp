@@ -1471,7 +1471,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
-#if LLVM_VERSION_MAJOR < 15
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
         // Assertion: Verify type consistency to catch bugs early
         // The GEP target type 't' should match the pointee type of 'ds'
         // Note: LLVM 15+ uses opaque pointers, so getPointerElementType() doesn't exist
@@ -1595,7 +1595,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR < 15
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
         // Validate that the type parameter matches the pointer's pointee type
         // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
         if (x->getType()->isPointerTy()) {
@@ -1632,7 +1632,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR < 15
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
         // Validate that the type parameter matches the pointer's pointee type
         // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
         if (x->getType()->isPointerTy()) {
