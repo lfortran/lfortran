@@ -1664,8 +1664,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         ASR::expr_t **orig_args = nullptr;
-        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
-            orig_args = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_args;
+        if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
+            orig_args = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(x.m_name))->m_args;
         }
         traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
             name_hint + ASRUtils::symbol_name(x.m_name));
