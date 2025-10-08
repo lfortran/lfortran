@@ -1480,17 +1480,13 @@ namespace LCompilers {
         llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
         // For struct types, the target type must match the pointer's pointee type
         if (llvm::isa<llvm::StructType>(t)) {
-            std::string target_type_str;
-            llvm::raw_string_ostream target_rso(target_type_str);
-            t->print(target_rso);
-            std::string pointee_type_str;
-            llvm::raw_string_ostream pointee_rso(pointee_type_str);
-            ds_pointee_type->print(pointee_rso);
+            std::string target_type_str = LLVM::get_type_as_string(t);
+            std::string pointee_type_str = LLVM::get_type_as_string(ds_pointee_type);
             LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
                 "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
                 "This would cause crashes in LLVM <= 8 constant folder. "
-                "Target type: " + target_rso.str() +
-                ", Pointer pointee type: " + pointee_rso.str());
+                "Target type: " + target_type_str +
+                ", Pointer pointee type: " + pointee_type_str);
         }
         // Verify index is within bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {
@@ -1599,16 +1595,12 @@ namespace LCompilers {
         // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
         LCOMPILERS_ASSERT(x->getType()->isPointerTy())
         llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
-        std::string x_type_str;
-        llvm::raw_string_ostream x_rso(x_type_str);
-        x_pointee_type->print(x_rso);
-        std::string t_type_str;
-        llvm::raw_string_ostream t_rso(t_type_str);
-        t->print(t_rso);
+        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
+        std::string t_type_str = LLVM::get_type_as_string(t);
         LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
             "CreateGEP2: Type mismatch - pointer pointee type (" +
-            x_rso.str() + ") != type parameter (" +
-            t_rso.str() + ")");
+            x_type_str + ") != type parameter (" +
+            t_type_str + ")");
 #endif
         return builder->CreateGEP(t, x, idx);
     }
@@ -1635,16 +1627,12 @@ namespace LCompilers {
         // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
         LCOMPILERS_ASSERT(x->getType()->isPointerTy())
         llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
-        std::string x_type_str;
-        llvm::raw_string_ostream x_rso(x_type_str);
-        x_pointee_type->print(x_rso);
-        std::string t_type_str;
-        llvm::raw_string_ostream t_rso(t_type_str);
-        t->print(t_rso);
+        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
+        std::string t_type_str = LLVM::get_type_as_string(t);
         LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
             "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
-            x_rso.str() + ") != type parameter (" +
-            t_rso.str() + ")");
+            x_type_str + ") != type parameter (" +
+            t_type_str + ")");
 #endif
         return builder->CreateInBoundsGEP(t, x, idx);
     }
