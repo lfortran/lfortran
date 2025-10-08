@@ -3702,6 +3702,7 @@ public:
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             bool is_class = !struct_t->m_is_cstruct;
+            llvm::Constant* inner_ptr;
             if (init_value == nullptr) {
                 std::vector<llvm::Constant*> field_values;
                 get_type_default_field_values(x.m_type_declaration, field_values,
@@ -3717,7 +3718,7 @@ public:
                         llvm_utils->get_type_from_ttype_t_util(inner_struct_type, x.m_type_declaration, module.get()));
                     init_value = llvm::ConstantStruct::get(innerType, field_values);
                     std::string inner_type_name = "_inner" + llvm_var_name;
-                    llvm::Constant *inner_ptr = module->getOrInsertGlobal(inner_type_name, innerType);
+                    inner_ptr = module->getOrInsertGlobal(inner_type_name, innerType);
                     module->getNamedGlobal(inner_type_name)->setInitializer(init_value);
                     int class_hash = get_class_hash(ASRUtils::symbol_get_past_external(x.m_type_declaration));
                     field_values.clear();
@@ -3783,8 +3784,13 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
-            allocatable_struct_array_members_details.push_back(std::make_pair(
-                ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+            if (is_class && !compiler_options.new_classes) {
+                allocatable_struct_array_members_details.push_back(std::make_pair(
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration), inner_ptr));
+            } else {
+                allocatable_struct_array_members_details.push_back(std::make_pair(
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+            }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
             ASR::dimension_t* m_dims = nullptr;

@@ -2987,7 +2987,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils(std::move(llvm_utils_)),
         builder(std::move(builder_)),
         llvm_symtab_fn(llvm_symtab_fn_), 
-        allocate_array_members_of_struct(allocate_arr_mem_struct){}
+        allocate_struct_array_members(allocate_arr_mem_struct){}
 
     LLVMDictInterface::LLVMDictInterface(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,
@@ -8634,7 +8634,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
             if (is_descriptor_array) {
-                allocate_array_members_of_struct(
+                allocate_struct_array_members(
                     struct_sym, dest_elem_ptr, ASRUtils::extract_type(src_ty), false);    
             }
 

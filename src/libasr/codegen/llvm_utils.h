@@ -771,7 +771,7 @@ namespace LCompilers {
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
-            std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_array_members_of_struct;
+            std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
 
         public:
 
