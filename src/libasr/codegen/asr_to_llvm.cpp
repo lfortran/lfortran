@@ -3378,7 +3378,7 @@ public:
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
 
-        size_t n_members = struct_->n_members;
+        [[maybe_unused]] size_t n_members = struct_->n_members;
         if (struct_->m_parent) {
             ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(struct_->m_parent));

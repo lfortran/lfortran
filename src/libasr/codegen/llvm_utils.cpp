@@ -1494,7 +1494,7 @@ namespace LCompilers {
             // Verify index is within bounds for struct types
             if (llvm::isa<llvm::StructType>(t)) {
                 llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
-                unsigned num_elements = struct_type->getNumElements();
+                [[maybe_unused]] unsigned num_elements = struct_type->getNumElements();
                 LCOMPILERS_ASSERT_MSG(idx >= 0 && (unsigned)idx < num_elements,
                     "Index out of bounds in create_gep2: index " + std::to_string(idx) +
                     " is out of range for struct with " + std::to_string(num_elements) + " elements");
@@ -1618,7 +1618,7 @@ namespace LCompilers {
         llvm::Value *x, int idx) {
         // Validate struct access bounds
         if (type->isStructTy()) {
-            unsigned num_elements = type->getStructNumElements();
+            [[maybe_unused]] unsigned num_elements = type->getStructNumElements();
             LCOMPILERS_ASSERT_MSG((unsigned)idx < num_elements,
                 "CreateGEP2: Index " + std::to_string(idx) +
                 " out of bounds for struct with " + std::to_string(num_elements) + " elements");
