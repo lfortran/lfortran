@@ -1495,7 +1495,7 @@ namespace LCompilers {
                 "Index out of bounds in create_gep2: index " + std::to_string(idx) +
                 " is out of range for struct with " + std::to_string(num_elements) + " elements");
         }
-#else
+#elif defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR >= 15
         // LLVM 15+ uses opaque pointers - no type confusion possible
         // Only validate bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {
