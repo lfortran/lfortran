@@ -8536,7 +8536,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
         llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
             ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module);
-        store_class_vptr(struct_sym, dst, module);
+        if (llvm_utils->compiler_options.new_classes) {
+            store_class_vptr(struct_sym, dst, module);
+        }
         builder->CreateRetVoid();
 
         if (savedBB) {
@@ -8723,24 +8725,66 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         llvm_utils->name2dertype[der_type_name], dest, mem_idx);
                     llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
-                    // If member is allocatable string, we need to check if it is allocated before copying
-                    if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
-                        std::vector<llvm::Value*> idx_vec = {
-                            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                        llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
-                        src_member_char = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
-                        is_allocated = builder->CreateICmpNE(
-                            builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                    if (!ASRUtils::is_pointer(member_type) && 
+                            ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::type_get_past_allocatable(member_type)) &&
+                            !ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
+                                ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
+                        if (ASRUtils::is_allocatable(member_type)) {
+                            dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
+                            is_allocated = builder->CreateICmpNE(
+                                builder->CreatePtrToInt(dest_member, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        }
+                        llvm_utils->create_if_else(is_allocated, [&]() {
+                            // Call Struct Copy function for struct type members
+                            ASR::symbol_t* mem_struct = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration);
+                            
+                            // Get Copy function pointer
+                            llvm::Value* fn;
+                            llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+                            if (llvm_utils->compiler_options.new_classes) {
+                                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                                llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+                                llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+                                llvm::Value* vtable_ptr = builder->CreateBitCast(src_member, fnPtrPtrPtrTy);
+                                vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+                                fn = llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr,
+                                    struct_vtab_function_offset[mem_struct]["_lfortran_struct_copy"]);
+                                fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+                            } else {
+                                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                                llvm::Value* vtable_ptr = get_pointer_to_method(mem_struct, module);
+                                fn = llvm_utils->CreateLoad2(llvm::FunctionType::get(
+                                    llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
+                                fn = builder->CreateBitCast(fn, fnPtrTy);
+                            }
+
+                            src_member = builder->CreateBitCast(src_member, llvm_utils->i8_ptr);
+                            dest_member = builder->CreateBitCast(dest_member, llvm_utils->i8_ptr);
+                            builder->CreateCall(fnTy, fn, {src_member, dest_member});
+                        }, [=]() {});
+                    } else {
+                        // If member is allocatable string, we need to check if it is allocated before copying
+                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
+                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
+                            std::vector<llvm::Value*> idx_vec = {
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
+                            llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
+                            src_member_char = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
+                            is_allocated = builder->CreateICmpNE(
+                                builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        }
+                        llvm_utils->create_if_else(is_allocated, [&]() {
+                            llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
+                            member_type, member_type,
+                            module);
+                        }, [=]() {});
                     }
-                    llvm_utils->create_if_else(is_allocated, [&]() {
-                        llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
-                        member_type, member_type,
-                        module);
-                    }, [=]() {});
                 }
                 if( struct_sym->m_parent != nullptr ) {
                     // gep the parent struct, which is the 0th member of the child struct
