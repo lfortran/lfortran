@@ -350,19 +350,14 @@ namespace LCompilers {
             der_type_llvm = name2dertype[der_type_name];
         } else {
             if ( compiler_options.new_classes ) {
-                llvm::Type* struct_type = nullptr;
                 if (der_type_name == "~unlimited_polymorphic_type" 
                     && name2dertype.find(der_type_name) == name2dertype.end()) {
-                    struct_type = llvm::StructType::create(context, { vptr_type, i8_ptr }, der_type_name, true);
+                    der_type_llvm = llvm::StructType::create(context, { vptr_type, i8_ptr }, der_type_name, true);
                 } else {
                     // we already have `%<std::string(der_type->m_name)> = type <{ i32 }>` declared
                     // globally, just fetch it
-                    struct_type = getStructType(der_type, module, is_pointer);
+                    der_type_llvm = llvm::dyn_cast<llvm::StructType>(getStructType(der_type, module, false));
                 }
-                name2dertype.insert(std::make_pair(
-                    der_type_name, llvm::dyn_cast<llvm::StructType>(struct_type)));
-                LCOMPILERS_ASSERT(struct_type != nullptr);
-                return struct_type;
             } else {
                 std::vector<llvm::Type*> member_types;
                 member_types.push_back(getIntType(8));
@@ -372,8 +367,8 @@ namespace LCompilers {
                     member_types.push_back(getStructType(der_type, module, true));
                 }
                 der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
-                name2dertype[der_type_name] = der_type_llvm;
             }
+            name2dertype[der_type_name] = der_type_llvm;
 
         }
         LCOMPILERS_ASSERT(der_type_llvm != nullptr);
@@ -802,10 +797,6 @@ namespace LCompilers {
                                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr))),
                                            true);
                     }
-                }
-                if (compiler_options.new_classes
-                    && ASRUtils::is_unlimited_polymorphic_type(arg_expr)) {
-                    type = type->getPointerTo();
                 }
                 break;
             }
