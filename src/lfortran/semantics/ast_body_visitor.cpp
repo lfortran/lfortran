@@ -3665,22 +3665,22 @@ public:
                         // Check if this array has already been allocated in current scope
                         // TODO:: Check in parent scopes as well
                         bool already_allocated = false;
-                        for (size_t i = 0; i < current_body->size(); i++) {
-                            ASR::stmt_t* stmt = (*current_body)[i];
-                            if (ASR::is_a<ASR::Allocate_t>(*stmt)) {
-                                ASR::Allocate_t* alloc_stmt = ASR::down_cast<ASR::Allocate_t>(stmt);
-                                for (size_t j = 0; j < alloc_stmt->n_args; j++) {
-                                    if (ASR::is_a<ASR::Var_t>(*alloc_stmt->m_args[j].m_a)) {
-                                        ASR::Var_t* alloc_var = ASR::down_cast<ASR::Var_t>(alloc_stmt->m_args[j].m_a);
-                                        if (alloc_var->m_v == target_var->m_v) {
-                                            already_allocated = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (already_allocated) break;
-                            }
-                        }
+                        // for (size_t i = 0; i < current_body->size(); i++) {
+                        //     ASR::stmt_t* stmt = (*current_body)[i];
+                        //     if (ASR::is_a<ASR::Allocate_t>(*stmt)) {
+                        //         ASR::Allocate_t* alloc_stmt = ASR::down_cast<ASR::Allocate_t>(stmt);
+                        //         for (size_t j = 0; j < alloc_stmt->n_args; j++) {
+                        //             if (ASR::is_a<ASR::Var_t>(*alloc_stmt->m_args[j].m_a)) {
+                        //                 ASR::Var_t* alloc_var = ASR::down_cast<ASR::Var_t>(alloc_stmt->m_args[j].m_a);
+                        //                 if (alloc_var->m_v == target_var->m_v) {
+                        //                     already_allocated = true;
+                        //                     break;
+                        //                 }
+                        //             }
+                        //         }
+                        //         if (already_allocated) break;
+                        //     }
+                        // }
                         // Check if target appears in RHS
                         // In cases like: a = [a], auto-allocation would invalidate RHS
                         bool target_in_rhs = false;
