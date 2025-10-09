@@ -3665,22 +3665,22 @@ public:
                         // Check if this array has already been allocated in current scope
                         // TODO:: Check in parent scopes as well
                         bool already_allocated = false;
-                        // for (size_t i = 0; i < current_body->size(); i++) {
-                        //     ASR::stmt_t* stmt = (*current_body)[i];
-                        //     if (ASR::is_a<ASR::Allocate_t>(*stmt)) {
-                        //         ASR::Allocate_t* alloc_stmt = ASR::down_cast<ASR::Allocate_t>(stmt);
-                        //         for (size_t j = 0; j < alloc_stmt->n_args; j++) {
-                        //             if (ASR::is_a<ASR::Var_t>(*alloc_stmt->m_args[j].m_a)) {
-                        //                 ASR::Var_t* alloc_var = ASR::down_cast<ASR::Var_t>(alloc_stmt->m_args[j].m_a);
-                        //                 if (alloc_var->m_v == target_var->m_v) {
-                        //                     already_allocated = true;
-                        //                     break;
-                        //                 }
-                        //             }
-                        //         }
-                        //         if (already_allocated) break;
-                        //     }
-                        // }
+                        for (size_t i = 0; i < current_body->size(); i++) {
+                            ASR::stmt_t* stmt = (*current_body)[i];
+                            if (ASR::is_a<ASR::Allocate_t>(*stmt)) {
+                                ASR::Allocate_t* alloc_stmt = ASR::down_cast<ASR::Allocate_t>(stmt);
+                                for (size_t j = 0; j < alloc_stmt->n_args; j++) {
+                                    if (ASR::is_a<ASR::Var_t>(*alloc_stmt->m_args[j].m_a)) {
+                                        ASR::Var_t* alloc_var = ASR::down_cast<ASR::Var_t>(alloc_stmt->m_args[j].m_a);
+                                        if (alloc_var->m_v == target_var->m_v) {
+                                            already_allocated = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (already_allocated) break;
+                            }
+                        }
                         // Check if target appears in RHS
                         // In cases like: a = [a], auto-allocation would invalidate RHS
                         bool target_in_rhs = false;
@@ -3697,7 +3697,14 @@ public:
                                 }
                             }
                         }
-
+                        ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(target_var->m_v);
+                        SymbolTable* var_scope = var_sym->m_parent_symtab;
+                        // TODO :: Handle cases where variable is defined in parent scope
+                        // Here, variable might be defined in parent scope
+                        // and used in child scope. In such cases, we need to not allocate it again
+                        if ((!already_allocated)&&(var_scope != current_scope)) {
+                            already_allocated = true;                            
+                        }
                         ASR::ttype_t* element_type = ASRUtils::type_get_past_array(alloc_type->m_type);
                         // Skip deferred-length character arrays - they need special handling
                         // TODO:: Handle deferred-length character arrays when allocate is not called explicitly
