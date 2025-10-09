@@ -2023,23 +2023,13 @@ public:
         if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
             // Throw error if selector is not an array
         }
-        // ASR::Array_t* selector_array_type = ASR::down_cast<ASR::Array_t>(selector_type);
-        // Throw error if x.m_selector is not an assumed rank array
-        Vec<ASR::expr_t*> rank_args; rank_args.reserve(al, 1);
-        rank_args.push_back(al, m_selector);
-        char* rank_name = const_cast<char*>("lfortran_rank");
-        ASR::symbol_t* rank_decl_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc, 
-            current_scope, rank_name, nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, 
-            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
-
-        current_scope->add_symbol(rank_name, rank_decl_sym);
-        ASR::expr_t* rank_decl_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, rank_decl_sym));
-        
-        ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, x.base.base.loc, m_selector, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr));
-
-        ASR::stmt_t* rank_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, rank_decl_expr, rhs, nullptr, false, false));
-        current_body->push_back(al, rank_stmt);
+        Vec<ASR::rank_stmt_t*> select_rank_body;
+        Vec<ASR::stmt_t*> select_rank_default;
+        select_rank_body.reserve(al, x.n_body);
+        select_rank_default.reserve(al, 1);
         for(size_t i=0; i<x.n_body; i++) {
+            SymbolTable* parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
             switch (x.m_body[i]->type) {
                 case AST::rank_stmtType::RankExpr: {
                     // rank(1), rank(2), rank(3) etc. : Need to be an IntegerConstant
@@ -2056,24 +2046,41 @@ public:
                     }
                     Vec<ASR::stmt_t*> rank_body; rank_body.reserve(al, rank_expr->n_body);
                     transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
-                    ASR::expr_t* cmp_stmt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, rank_expr->base.base.loc, rank_decl_expr, ASR::cmpopType::Eq, 
-                    rank_expr_value, ASRUtils::TYPE(ASR::make_Logical_t(al, rank_expr->base.base.loc, 4)), nullptr));
-
-                    ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, rank_expr->base.base.loc, nullptr, cmp_stmt, rank_body.p, rank_body.size(), nullptr, 0));
-                    current_body->push_back(al, if_stmt);
+                    std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al, 
+                        rank_expr->base.base.loc, current_scope, s2c(al, block_name),
+                        nullptr, 0));
+                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_sym);
+                    block_t->m_body = rank_body.p;
+                    block_t->n_body = rank_body.size();
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt; block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, rank_expr->base.base.loc, -1, block_sym)));
+                    select_rank_body.push_back(al, ASR::down_cast<ASR::rank_stmt_t>(ASR::make_RankExpr_t(al, rank_expr->base.base.loc,
+                        rank_expr_value, block_call_stmt.p, block_call_stmt.size())));
                     break;
                 }
 
                 case AST::rank_stmtType::RankDefault: {
                     // rank default
+                    // TODO: throw error if more than one default case statement is present
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = parent_scope;
+                    AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
+                    transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
+                    current_scope = current_scope_copy;
+                    break;
                 }
 
                 case AST::rank_stmtType::RankStar: {
                     // rank (*)
                 }
             }
+            current_scope = parent_scope;
         }
-        tmp = nullptr;
+
+        tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
+                    select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {

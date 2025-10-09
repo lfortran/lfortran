@@ -1545,7 +1545,7 @@ public:
             ASR::ttype_t *type = nullptr;
             int i_kind = compiler_options.po.default_integer_kind;
             int a_kind = 4;
-            int a_len = -10;
+            int a_len = 1;
             if (return_type->m_kind != nullptr) {
                 if (return_type->n_kind == 1) {
                     visit_expr(*return_type->m_kind->m_value);
