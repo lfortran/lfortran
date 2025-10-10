@@ -5505,7 +5505,7 @@ public:
         ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
             ASRUtils::symbol_type(v));
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
-        if (ASRUtils::is_array(root_v_type) && n_dims != n_args) {
+        if (ASRUtils::is_array(root_v_type) && n_dims != n_args && !ASRUtils::is_assumed_rank_array(root_v_type)) {
             std::string var_name = ASRUtils::symbol_name(v);
             diag.add(Diagnostic(
                 "Rank mismatch in array reference: the array `"
