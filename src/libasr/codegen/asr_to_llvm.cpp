@@ -11834,7 +11834,7 @@ public:
                                 }
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable_pointer(arg->m_type))
-                                    && !ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value)
+                                    && (!ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value) || compiler_options.new_classes)
                                     && !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) ) {
                                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
@@ -12131,14 +12131,19 @@ public:
         // in the struct pointer to it
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
+            bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
             if (ASRUtils::is_allocatable(arg_type)) {
                 check_and_allocate_scalar(arg, dest_arg, dest_type);
             }
+            llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                        arg, ASRUtils::extract_type(arg_type), module.get());
             if (LLVM::is_llvm_pointer(*arg_type) &&
-                    !LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg))) {
-                llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, arg_type, module.get());
-                class_value = llvm_utils->CreateLoad2(arg_llvm_type, class_value);
+                    (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(dest_arg)) || is_unlimited_polymorphic)) {
+                class_value = llvm_utils->CreateLoad2(arg_llvm_type->getPointerTo(), class_value);
+            }
+            if (is_unlimited_polymorphic) {
+                class_value = llvm_utils->CreateLoad2(
+                    llvm_utils->i8_ptr, llvm_utils->create_gep2(arg_llvm_type, class_value, 1));
             }
             llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     dest_arg, ASRUtils::expr_type(dest_arg), module.get());
