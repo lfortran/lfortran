@@ -2896,6 +2896,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 break;
             }
             case ASR::ttypeType::StructType: {
+                if (ASRUtils::is_unlimited_polymorphic_type(
+                    ASRUtils::get_struct_sym_from_struct_expr(src_expr)) && !ASRUtils::is_array(asr_src_type) &&
+                    !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_dest_type))) {
+                    llvm::Type* value_llvm_type = get_type_from_ttype_t_util(
+                        src_expr, ASRUtils::type_get_past_allocatable(asr_src_type), module);
+                    llvm::Type* target_llvm_type = get_type_from_ttype_t_util(
+                        src_expr, ASRUtils::extract_type(asr_dest_type), module);
+                    src = CreateLoad2(i8_ptr, create_gep2(value_llvm_type, src, 1));
+                    src = builder->CreateBitCast(src, target_llvm_type->getPointerTo());
+                    src = CreateLoad2(target_llvm_type, src);
+                    deepcopy(src_expr, src, dest,
+                        ASRUtils::extract_type(asr_dest_type), asr_dest_type,
+                        module);
+                }
                 struct_api->struct_deepcopy(src_expr, src, asr_src_type, dest, module);
                 break;
             }
@@ -8232,8 +8246,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateStore(ptr_to_method, v_ptr);
     }
 
-    void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr)
+    void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)
     {
+        if (intrinsic_type_vtab.find(ASRUtils::intrinsic_type_to_str_with_kind(
+                ttype, ASRUtils::extract_kind_from_ttype_t(ttype))) == intrinsic_type_vtab.end()) {
+            create_vtab_for_intrinsic_type(ttype,
+                ASRUtils::extract_kind_from_ttype_t(ttype), module);
+        }
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
         llvm::Constant* vtable = intrinsic_type_vtab.at(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind));
         llvm::Type* vtab_type = intrinsic_type_vtabtype.at(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind));
