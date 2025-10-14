@@ -4936,6 +4936,18 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type, diag);
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
+        char* loop_name = x.m_stmt_name;
+        if (loop_name) {
+            std::string loop_name_str = to_lower(loop_name);
+            if (current_scope->get_symbol(loop_name_str) != nullptr) {
+                diag.add(Diagnostic(
+                    "DO loop label '" + loop_name_str + "' already defined",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         loop_nesting += 1;
         all_loops_blocks_nesting += 1;
         all_blocks_nesting++;

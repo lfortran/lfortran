@@ -345,4 +345,8 @@ program continue_compilation_1
 
     !Data Statements with different number of arguments on LHS and RHS
     data j2, x2, (y2(i2), i2=1,3), k2 / 1,2,3,4,5,6,7,3*8 /
+
+    q1: do q1 = 1, 3
+        print *, q1
+    end do q1
 end program
