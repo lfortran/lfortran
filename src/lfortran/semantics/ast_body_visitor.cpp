@@ -4618,7 +4618,7 @@ public:
                     throw SemanticAbort();
             }
 
-            // Validate required arguments are provided
+            // Validate required arguments are provided and check type compatibility
             for (size_t i = 0; i + offset < f->n_args; i++) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
 
@@ -4644,6 +4644,33 @@ public:
                                 " is missing in function call",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {args_loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                    // Check type compatibility for provided arguments in subroutine
+                    if (i < args.size() && args[i].m_value != nullptr) {
+                        ASR::expr_t* passed_arg = args[i].m_value;
+                        ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
+                        ASR::ttype_t* param_type = v->m_type;
+
+                        // Skip type checking for polymorphic types (class), function types, and intrinsics
+                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                                         ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
+                                         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
+                                         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+
+                        // Check if types are equal
+                        if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
+                            std::string passed_type_str = ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
+                            std::string param_type_str = ASRUtils::type_to_str_fortran_expr(param_type, nullptr);
+
+                            diag.add(diag::Diagnostic(
+                                "Type mismatch in argument `" + std::string(v->m_name) +
+                                "` at position " + std::to_string(i+1) +
+                                ": expected `" + param_type_str + "` but got `" +passed_type_str + "`",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {passed_arg->base.loc})
                                 }));
                             throw SemanticAbort();
                         }

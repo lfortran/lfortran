@@ -1,5 +1,0 @@
-semantic error: Unrecognized keyword argument kind1 passed to size intrinsic.
- --> tests/errors/array_size_03.f90:5:14
-  |
-5 |     size_a = size(a, kind1=4)
-  |              ^^^^^^^^^^^^^^^^ 
