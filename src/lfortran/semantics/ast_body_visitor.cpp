@@ -4669,7 +4669,6 @@ public:
 
                             diag.add(diag::Diagnostic(
                                 "Type mismatch in argument `" + std::string(v->m_name) +
-                                "` at position " + std::to_string(i+1) +
                                 ": expected `" + param_type_str + "` but got `" +passed_type_str + "`",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {passed_arg->base.loc})
