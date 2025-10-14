@@ -2875,10 +2875,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 } else if (ASRUtils::is_struct(*asr_src_type)) {
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_allocatable(asr_dest_type)) {
-                        dest = CreateLoad2(llvm_type->getPointerTo(), src); 
+                        dest = CreateLoad2(llvm_type->getPointerTo(), dest); 
                     }
                     deepcopy(src_expr, src, dest,
-                        alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
+                        ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
+                        module);
+                } else if (compiler_options.new_classes && ASRUtils::is_unlimited_polymorphic_type(src_expr)) {
+                    src = CreateLoad2(llvm_type->getPointerTo(), src);
+                    if (ASRUtils::is_allocatable(asr_dest_type)) {
+                        dest = CreateLoad2(llvm_type->getPointerTo(), dest); 
+                    }
+                    deepcopy(src_expr, src, dest,
+                        ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
                         module);
                 } else {
                     LLVM::CreateStore(*builder, src, dest);
