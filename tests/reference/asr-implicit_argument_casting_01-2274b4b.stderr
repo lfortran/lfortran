@@ -1,5 +1,0 @@
-semantic error: Type mismatch in argument `a` at position 2: expected `real[:]` but got `complex`
-  --> tests/../integration_tests/implicit_argument_casting_01.f90:23:29
-   |
-23 |     call idz_realcomp(ls*2, w(isi))
-   |                             ^^^^^^ 
