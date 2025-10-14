@@ -10,13 +10,6 @@ syntax error: Token ')' is unexpected here
 58 |     real :: test_re()
    |                     ^ 
 
-syntax error: Token '! Error: incompatible type passed
-' (of type 'comment') is unexpected here
-  --> tests/errors/continue_compilation_3.f90:72:33
-   |
-72 |     check_incompatible_type(i)  ! Error: incompatible type passed
-   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 syntax error: The LFortran pragma !LF$ must be followed by a space
    --> tests/errors/continue_compilation_3.f90:171:9
     |
@@ -52,6 +45,12 @@ semantic error: Non-variable expression in variable definition context (actual a
    |
 71 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
    |                            ^^^^^ 
+
+semantic error: Type mismatch in argument `i` at position 1: expected `real` but got `integer`
+  --> tests/errors/continue_compilation_3.f90:72:34
+   |
+72 |     call check_incompatible_type(i)  ! Error: incompatible type passed
+   |                                  ^ 
 
 semantic error: Empty array constructor is not allowed
   --> tests/errors/continue_compilation_3.f90:91:9

@@ -69,7 +69,7 @@ program continue_compilation_3
     call intent_out_test(x + 1)  ! Error: expression with intent(out)
     call intent_inout_test(2)  ! Error: literal constant with intent(inout)
     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
-    check_incompatible_type(i)  ! Error: incompatible type passed
+    call check_incompatible_type(i)  ! Error: incompatible type passed
 
 
 
