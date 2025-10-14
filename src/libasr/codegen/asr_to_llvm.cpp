@@ -1488,6 +1488,10 @@ public:
 
                             llvm::Value* src = tmp;
                             llvm::Value* dest = x_arr;
+                            if (!ASRUtils::is_value_constant(m_source) && 
+                                !ASRUtils::is_struct(*ASRUtils::expr_type(m_source))) {
+                                src = llvm_utils->CreateLoad2(dest_type, src);
+                            }
                             llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get());
                         }
                     }
