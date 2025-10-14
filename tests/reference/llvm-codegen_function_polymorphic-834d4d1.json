@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-codegen_function_polymorphic-834d4d1",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/codegen_function_polymorphic.f90",
+    "infile_hash": "e8a86676ac666387de5e3e9d38e5dffa7c2c79a5d045b662cb990fc8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-codegen_function_polymorphic-834d4d1.stdout",
+    "stdout_hash": "2a7de533710747b13f1b88ee1dcfa8a6e95da8e7bc8bfef1bd3de7da",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

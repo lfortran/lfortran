@@ -1,0 +1,5 @@
+semantic error: Kind 10 is not supported for Logical
+ --> tests/errors/kind_invalid_int_of_logical.f90:3:13
+  |
+3 |     logical(10) :: x
+  |             ^^ 

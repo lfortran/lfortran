@@ -1,0 +1,19 @@
+(TranslationUnit
+    [(Program
+        p
+        ()
+        []
+        []
+        []
+        [(SubroutineCall
+            0
+            f
+            []
+            []
+            []
+            []
+            ()
+        )]
+        []
+    )]
+)

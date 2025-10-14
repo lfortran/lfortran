@@ -1,0 +1,433 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            test_scan_module:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            test_scan_intrinsic:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    test_scan_intrinsic
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringFindSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "ao"
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringFindSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "ao"
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 6 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 6 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringFindSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "c++"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    test_scan_module
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            test_scan_verify:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            test_scan_intrinsic:
+                                (ExternalSymbol
+                                    4
+                                    test_scan_intrinsic
+                                    2 test_scan_intrinsic
+                                    test_scan_module
+                                    []
+                                    test_scan_intrinsic
+                                    Public
+                                ),
+                            test_verify_intrinsic:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            r:
+                                                (Variable
+                                                    5
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    test_verify_intrinsic
+                                    (FunctionType
+                                        []
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringContainsSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "ao"
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringContainsSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "foo"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 3 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringContainsSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "c++"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringContainsSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "c++"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 7 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 7 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (IntrinsicElementalFunction
+                                                StringContainsSet
+                                                [(StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (StringConstant
+                                                    "fortran"
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                )
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                                0
+                                                (Integer 4)
+                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                            )
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 5 r)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 5 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    test_scan_verify
+                    [test_scan_module]
+                    [(SubroutineCall
+                        4 test_scan_intrinsic
+                        ()
+                        []
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(FunctionCall
+                                4 test_verify_intrinsic
+                                ()
+                                []
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

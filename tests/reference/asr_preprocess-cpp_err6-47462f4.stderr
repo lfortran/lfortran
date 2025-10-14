@@ -1,0 +1,5 @@
+C preprocessor error: Unexpected token '(', expected ')'
+ --> tests/errors/cpp_err6.f90:2:13
+  |
+2 | #if 1 + (1+2 (
+  |             ^^^ 

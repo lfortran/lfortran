@@ -1,0 +1,130 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_15:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x1:
+                                (Variable
+                                    2
+                                    x1
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.300000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.300000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x2:
+                                (Variable
+                                    2
+                                    x2
+                                    []
+                                    Local
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y1:
+                                (Variable
+                                    2
+                                    y1
+                                    [x1]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Int
+                                        [(Var 2 x1)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y2:
+                                (Variable
+                                    2
+                                    y2
+                                    [x2]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Int
+                                        [(Var 2 x2)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 7 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_15
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 y1)
+                            (Var 2 y2)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

@@ -1,0 +1,5 @@
+tokenizer error: Expecting terminating symbol for program
+ --> tests/errors/fixed_form_1.f:2:7
+  |
+2 |       xinteger :: y
+  |       ^ 

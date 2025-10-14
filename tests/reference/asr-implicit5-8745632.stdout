@@ -1,0 +1,308 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            cpdsa:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            ca0:
+                                (Variable
+                                    2
+                                    ca0
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            cdn:
+                                (Variable
+                                    2
+                                    cdn
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            cpdsa:
+                                (Variable
+                                    2
+                                    cpdsa
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            eps:
+                                (Variable
+                                    2
+                                    eps
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            pi:
+                                (Variable
+                                    2
+                                    pi
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            va0:
+                                (Variable
+                                    2
+                                    va0
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    cpdsa
+                    (FunctionType
+                        [(Integer 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Integer 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 n)
+                    (Var 2 z)
+                    (Var 2 cdn)]
+                    [(Assignment
+                        (Var 2 eps)
+                        (RealConstant
+                            0.000000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 pi)
+                        (RealConstant
+                            3.141593
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 ca0)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Exp
+                                [(RealBinOp
+                                    (RealBinOp
+                                        (RealUnaryMinus
+                                            (RealConstant
+                                                0.250000
+                                                (Real 8)
+                                            )
+                                            (Real 8)
+                                            (RealConstant
+                                                -0.250000
+                                                (Real 8)
+                                            )
+                                        )
+                                        Mul
+                                        (Cast
+                                            (Var 2 z)
+                                            RealToReal
+                                            (Real 8)
+                                            ()
+                                        )
+                                        (Real 8)
+                                        ()
+                                    )
+                                    Mul
+                                    (Cast
+                                        (Var 2 z)
+                                        RealToReal
+                                        (Real 8)
+                                        ()
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            RealToReal
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 va0)
+                        (RealBinOp
+                            (RealConstant
+                                0.500000
+                                (Real 8)
+                            )
+                            Mul
+                            (RealBinOp
+                                (RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                Sub
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
+                                    (Real 8)
+                                    ()
+                                )
+                                (Real 8)
+                                ()
+                            )
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                    (Var 2 cpdsa)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

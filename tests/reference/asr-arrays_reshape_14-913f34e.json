@@ -1,0 +1,13 @@
+{
+    "basename": "asr-arrays_reshape_14-913f34e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_reshape_14.f90",
+    "infile_hash": "0001f1a35a57d435e0471d176786ced2d1e7b86afa641941eea5b6c2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-arrays_reshape_14-913f34e.stdout",
+    "stdout_hash": "cbe7b0785f8785c1ec51d3032b0762eba1e523bce664b80e49bd22e7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

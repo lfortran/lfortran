@@ -1,0 +1,492 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_20:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            pi:
+                                (Variable
+                                    2
+                                    pi
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Acos
+                                        [(RealUnaryMinus
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                -1.000000
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            3.141593
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        3.141593
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            pi_dp:
+                                (Variable
+                                    2
+                                    pi_dp
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Acos
+                                        [(RealUnaryMinus
+                                            (RealConstant
+                                                1.000000
+                                                (Real 8)
+                                            )
+                                            (Real 8)
+                                            (RealConstant
+                                                -1.000000
+                                                (Real 8)
+                                            )
+                                        )]
+                                        0
+                                        (Real 8)
+                                        (RealConstant
+                                            3.141593
+                                            (Real 8)
+                                        )
+                                    )
+                                    (RealConstant
+                                        3.141593
+                                        (Real 8)
+                                    )
+                                    Parameter
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Cos
+                                        [(RealBinOp
+                                            (Cast
+                                                (IntegerBinOp
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                    Add
+                                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                                )
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    7.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            Mul
+                                            (RealConstant
+                                                7.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                49.000000
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            0.300593
+                                            (Real 4)
+                                        )
+                                    )
+                                    (RealConstant
+                                        0.300593
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y2:
+                                (Variable
+                                    2
+                                    y2
+                                    []
+                                    Local
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_20
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 pi)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 pi_dp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (IntegerConstant 3 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant 7 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            7.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    Mul
+                                    (RealConstant
+                                        7.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    (RealConstant
+                                        49.000000
+                                        (Real 4)
+                                    )
+                                )]
+                                0
+                                (Real 4)
+                                (RealConstant
+                                    0.300593
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (Var 2 y)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (RealConstant
+                                        7.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (Var 2 y2)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant 7 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            7.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    Mul
+                                    (RealConstant
+                                        7.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    (RealConstant
+                                        49.000000
+                                        (Real 4)
+                                    )
+                                )]
+                                0
+                                (Real 4)
+                                (RealConstant
+                                    0.300593
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(RealBinOp
+                                (RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Cos
+                                        [(RealBinOp
+                                            (Var 2 x)
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                1.300593
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            0.266928
+                                            (Real 4)
+                                        )
+                                    )
+                                    Pow
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Real 4)
+                                    (RealConstant
+                                        0.071250
+                                        (Real 4)
+                                    )
+                                )
+                                Add
+                                (RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Sin
+                                        [(RealBinOp
+                                            (Var 2 x)
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                1.300593
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            0.963717
+                                            (Real 4)
+                                        )
+                                    )
+                                    Pow
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Real 4)
+                                    (RealConstant
+                                        0.928750
+                                        (Real 4)
+                                    )
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

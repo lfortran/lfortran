@@ -1,0 +1,23 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            testfortran:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    testfortran
+                    []
+                    [(Print
+                        (StringConstant
+                            "Hello"
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                )
+        })
+    []
+)

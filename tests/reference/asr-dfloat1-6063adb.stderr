@@ -1,0 +1,5 @@
+semantic error: Argument of intrinsic must be an integer
+ --> tests/errors/dfloat1.f90:3:10
+  |
+3 | print *, dfloat(y)
+  |          ^^^^^^^^^ 

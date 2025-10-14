@@ -1,0 +1,11 @@
+style suggestion: Use complex(8) instead of complex*16
+ --> tests/implicit11.f90:2:17
+  |
+2 | implicit complex*16 (z,i)
+  |                 ^ help: write this as 'complex(8)'
+
+style suggestion: Use complex(8) instead of complex*16
+ --> tests/implicit11.f90:8:17
+  |
+8 | implicit complex*16 (z,i)
+  |                 ^ help: write this as 'complex(8)'

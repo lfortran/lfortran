@@ -1,0 +1,13 @@
+{
+    "basename": "pass_loop_unroll-loop_unroll_large-8723774",
+    "cmd": "lfortran --pass=loop_unroll --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/loop_unroll_large.f90",
+    "infile_hash": "6dea35d299ef0d2baadd87d2ed6132d3e57e15e85a4bef2d609d1d22",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_loop_unroll-loop_unroll_large-8723774.stdout",
+    "stdout_hash": "2d6317320abc094db2c4f16353ec591fe3a5536a411330005ffd5d9d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

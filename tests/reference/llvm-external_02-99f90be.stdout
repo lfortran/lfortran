@@ -1,0 +1,31 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define void @cobyla(void (double*)* %calcfc) {
+.entry:
+  call void @cobylb(void (double*)* %calcfc)
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  br label %return
+
+return:                                           ; preds = %unreachable_after_return, %.entry
+  ret void
+}
+
+declare void @calcfc(double*)
+
+define void @cobylb(void (double*)* %calcfc) {
+.entry:
+  %con = alloca double, align 8
+  call void %calcfc(double* %con)
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  br label %return
+
+return:                                           ; preds = %unreachable_after_return, %.entry
+  ret void
+}
+
+declare void @calcfc.1(double*)

@@ -1,0 +1,5 @@
+semantic error: The first argument of `cmplx` intrinsic must be present
+ --> tests/errors/cmplx_01.f90:3:9
+  |
+3 |     a = cmplx(y = 2)
+  |         ^^^^^^^^^^^^ 

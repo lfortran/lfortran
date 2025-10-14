@@ -1,0 +1,5 @@
+semantic error: Kind of all the arguments of Iand must be the same
+ --> tests/errors/intrinsics9.f90:4:14
+  |
+4 |     print *, iand(x, y)
+  |              ^^^^^^^^^^ 

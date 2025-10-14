@@ -1,0 +1,355 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_10:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "BC"
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "BC"
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Save
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            is_alpha:
+                                (Variable
+                                    2
+                                    is_alpha
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            num:
+                                (Variable
+                                    2
+                                    num
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    string_10
+                    []
+                    [(Assignment
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 is_alpha)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (StringConstant
+                            "@a"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 is_alpha)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (StringConstant
+                            "a@"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 is_alpha)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (StringSection
+                            (Var 2 num)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            ()
+                        )
+                        (StringConstant
+                            "sbs"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (Var 2 num)
+                            NotEq
+                            (StringConstant
+                                "sbs"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

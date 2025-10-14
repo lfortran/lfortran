@@ -1,0 +1,13 @@
+{
+    "basename": "ast-case_02-cf1eb8d",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/case_02.f90",
+    "infile_hash": "76d3020fba89787d565870ed03c1b5e8914d12b062cb9ca7a8c37550",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-case_02-cf1eb8d.stdout",
+    "stdout_hash": "4f191aecaa241319cc5746f2ef6a677254033adf404772dd0933f681",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-loop_test-5d89970",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/loop_test.f90",
+    "infile_hash": "aed46db1607054f287d564d1050191e11ff8d7af86462aa07aeb685b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-loop_test-5d89970.stderr",
+    "stderr_hash": "b7b3840a887c92453850d954f2bb22da6f6c1301b87b7681a2ded5e6",
+    "returncode": 2
+}

@@ -1,0 +1,44 @@
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+float func2(float a, float b);
+float func1(float a, float b);
+
+
+
+// Implementations
+float func2(float a, float b)
+{
+    float c;
+    c = a*b;
+    return c;
+}
+
+float func1(float a, float b)
+{
+    float c;
+    c = a + b;
+    c = func2(c, c);
+    return c;
+}
+
+int main(int argc, char* argv[])
+{
+    _lpython_set_argv(argc, argv);
+    float x;
+    float y;
+    float z;
+    x =   5.00000000000000000e+00;
+    y =   2.00000000000000000e+00;
+    z = x*y;
+    printf("%s%s%f\n", "10.0 ==", " ", z);
+    z = func1(x, y);
+    printf("%s%s%f\n", "49.0 ==", " ", z);
+    z = func2(x, y);
+    printf("%s%s%f\n", "10.0 ==", " ", z);
+    return 0;
+}

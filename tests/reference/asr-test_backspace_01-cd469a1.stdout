@@ -1,0 +1,213 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            test_backspace_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            line:
+                                (Variable
+                                    2
+                                    line
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            u:
+                                (Variable
+                                    2
+                                    u
+                                    []
+                                    Local
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    test_backspace_01
+                    []
+                    [(FileOpen
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        (StringConstant
+                            "file_01_data.txt"
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        (StringConstant
+                            "old"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                        (StringConstant
+                            "read"
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )
+                    (FileRead
+                        0
+                        (Var 2 u)
+                        (StringConstant
+                            "(A)"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(Var 2 line)]
+                        ()
+                        .true.
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            [(Var 2 line)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                        ()
+                        .true.
+                    )
+                    (FileBackspace
+                        0
+                        (Var 2 u)
+                        ()
+                        ()
+                    )
+                    (FileRead
+                        0
+                        (Var 2 u)
+                        (StringConstant
+                            "(A)"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(Var 2 line)]
+                        ()
+                        .true.
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            [(StringConstant
+                                "Read and printed the same line again:"
+                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                        ()
+                        .true.
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(A)"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            [(Var 2 line)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                        ()
+                        .true.
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (Var 2 line)
+                            NotEq
+                            (StringConstant
+                                "10130"
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (FileClose
+                        0
+                        (Var 2 u)
+                        ()
+                        ()
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

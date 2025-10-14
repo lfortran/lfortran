@@ -1,0 +1,5 @@
+syntax error: Token 'abcdef' (of type 'identifier') is unexpected here
+ --> tests/errors/fixed_form_5.f:3:12
+  |
+3 |       y = 5abcdef + 3
+  |            ^^^^^^ 

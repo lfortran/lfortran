@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-interface_12-2e5ecb8",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/interface_12.f90",
+    "infile_hash": "800cf79ed2c17c44073c43bc8ae9453e21c3858b328a398f3246061f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-interface_12-2e5ecb8.stdout",
+    "stdout_hash": "da5c938dbaf2504e529d93d4487e1d959369d18c3da4eaccf62891ae",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

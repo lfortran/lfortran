@@ -1,0 +1,386 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            case_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            marks:
+                                (Variable
+                                    2
+                                    marks
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            out:
+                                (Variable
+                                    2
+                                    out
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    case_02
+                    []
+                    [(Assignment
+                        (Var 2 marks)
+                        (IntegerConstant 81 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Select
+                        ()
+                        (Var 2 marks)
+                        [(CaseStmt_Range
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "Excellent!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "Very good!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "Well done!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "Not bad!"
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "You passed!"
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            ()
+                            (IntegerConstant 40 (Integer 4) Decimal)
+                            [(Assignment
+                                (Var 2 out)
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Print
+                                (StringConstant
+                                    "Better try again!"
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )]
+                        [(Assignment
+                            (Var 2 out)
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Print
+                            (StringConstant
+                                "Invalid marks"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 out)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Select
+                        ()
+                        (Var 2 marks)
+                        [(CaseStmt_Range
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Excellent!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Very good!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Well done!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Not bad!"
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "You passed!"
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            ()
+                            (IntegerConstant 40 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Better try again!"
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Invalid marks"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Select
+                        ()
+                        (Var 2 marks)
+                        [(CaseStmt_Range
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Excellent!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Very good!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Well done!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Not bad!"
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "You passed!"
+                                    (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            ()
+                            (IntegerConstant 40 (Integer 4) Decimal)
+                            [(Print
+                                (StringConstant
+                                    "Better try again!"
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Invalid marks"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

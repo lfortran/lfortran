@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fixed_number_of_args-051b0f1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/fixed_number_of_args.f90",
+    "infile_hash": "1b3aa87f3b596e48a59fbdde7a0d087382fe86f59b16d140a9080f67",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-fixed_number_of_args-051b0f1.stderr",
+    "stderr_hash": "0b27b7f5c19c3839e3d0a9d6780e620fc12356cfaf3e1f64acd9b7ba",
+    "returncode": 2
+}

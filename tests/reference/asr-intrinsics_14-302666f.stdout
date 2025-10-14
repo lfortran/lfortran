@@ -1,0 +1,698 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_14:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i1:
+                                (Variable
+                                    2
+                                    i1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k1:
+                                (Variable
+                                    2
+                                    k1
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedIntKind
+                                        [(IntegerConstant 5 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k10:
+                                (Variable
+                                    2
+                                    k10
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedCharKind
+                                        [(StringConstant
+                                            "default"
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k11:
+                                (Variable
+                                    2
+                                    k11
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k12:
+                                (Variable
+                                    2
+                                    k12
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 10 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k2:
+                                (Variable
+                                    2
+                                    k2
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedIntKind
+                                        [(IntegerConstant 5 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k3:
+                                (Variable
+                                    2
+                                    k3
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedIntKind
+                                        [(IntegerConstant 5 (Integer 8) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k4:
+                                (Variable
+                                    2
+                                    k4
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedIntKind
+                                        [(IntegerConstant 8 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k5:
+                                (Variable
+                                    2
+                                    k5
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedIntKind
+                                        [(IntegerConstant 10 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k6:
+                                (Variable
+                                    2
+                                    k6
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k7:
+                                (Variable
+                                    2
+                                    k7
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k8:
+                                (Variable
+                                    2
+                                    k8
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 5 (Integer 8) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            k9:
+                                (Variable
+                                    2
+                                    k9
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        SelectedRealKind
+                                        [(IntegerConstant 8 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            s1:
+                                (Variable
+                                    2
+                                    s1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_14
+                    []
+                    [(Assignment
+                        (Var 2 s1)
+                        (StringConstant
+                            "default"
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 i1)
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k1)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k2)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 8) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k3)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 8 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k4)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 10 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k5)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k6)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k7)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k8)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 8 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k9)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedCharKind
+                                [(StringConstant
+                                    "default"
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                            )
+                            (Var 2 k10)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(Var 2 i1)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(Var 2 i1)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedCharKind
+                                [(Var 2 s1)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k11)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k12)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

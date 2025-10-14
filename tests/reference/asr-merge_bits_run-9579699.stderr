@@ -1,0 +1,5 @@
+semantic error: Kind of all the arguments of Mergebits must be the same
+ --> tests/errors/merge_bits_run.f90:7:14
+  |
+7 |     print *, merge_bits(a, b, c)
+  |              ^^^^^^^^^^^^^^^^^^^ 

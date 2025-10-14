@@ -1,0 +1,595 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            cond_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            ap:
+                                (Variable
+                                    2
+                                    ap
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            bp:
+                                (Variable
+                                    2
+                                    bp
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            cp:
+                                (Variable
+                                    2
+                                    cp
+                                    []
+                                    Local
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    Parameter
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            grade_fixed:
+                                (Variable
+                                    2
+                                    grade_fixed
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "B"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "B"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            marks:
+                                (Variable
+                                    2
+                                    marks
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            marks_fixed:
+                                (Variable
+                                    2
+                                    marks_fixed
+                                    []
+                                    Local
+                                    (IntegerConstant 94 (Integer 4) Decimal)
+                                    (IntegerConstant 94 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    cond_03
+                    []
+                    [(Select
+                        ()
+                        (Var 2 grade_fixed)
+                        [(CaseStmt
+                            [(StringConstant
+                                "A"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            [(Print
+                                (StringConstant
+                                    "Excellent!"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            .false.
+                        )
+                        (CaseStmt
+                            [(StringConstant
+                                "B"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            [(If
+                                ()
+                                (IntegerCompare
+                                    (Var 2 a)
+                                    Eq
+                                    (Var 2 b)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(Print
+                                    (StringConstant
+                                        "a == b"
+                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                )
+                                (If
+                                    ()
+                                    (IntegerCompare
+                                        (Var 2 ap)
+                                        Eq
+                                        (Var 2 bp)
+                                        (Logical 4)
+                                        (LogicalConstant
+                                            .false.
+                                            (Logical 4)
+                                        )
+                                    )
+                                    [(Print
+                                        (StringConstant
+                                            "ap == bp"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )]
+                                    [(Print
+                                        (StringConstant
+                                            "ap /= bp"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )]
+                                )]
+                                [(If
+                                    ()
+                                    (RealCompare
+                                        (Cast
+                                            (Var 2 ap)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                        )
+                                        Eq
+                                        (Var 2 cp)
+                                        (Logical 4)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                    )
+                                    [(Print
+                                        (StringConstant
+                                            "ap == cp"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (If
+                                        ()
+                                        (RealCompare
+                                            (Var 2 cp)
+                                            Eq
+                                            (Var 2 dp)
+                                            (Logical 4)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            )
+                                        )
+                                        [(Print
+                                            (StringConstant
+                                                "cp == dp"
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )]
+                                        [(Print
+                                            (StringConstant
+                                                "cp /= dp"
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )]
+                                    )]
+                                    [(If
+                                        ()
+                                        (RealCompare
+                                            (Var 2 c)
+                                            Eq
+                                            (Var 2 d)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Print
+                                            (StringConstant
+                                                "c == d"
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )]
+                                        []
+                                    )]
+                                )]
+                            )]
+                            .false.
+                        )
+                        (CaseStmt
+                            [(StringConstant
+                                "C"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            [(Print
+                                (StringConstant
+                                    "Well done"
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            .false.
+                        )
+                        (CaseStmt
+                            [(StringConstant
+                                "D"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            [(Print
+                                (StringConstant
+                                    "You passed"
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            .false.
+                        )
+                        (CaseStmt
+                            [(StringConstant
+                                "F"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            [(Print
+                                (StringConstant
+                                    "Better try again"
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            .false.
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Invalid grade"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your grade is "
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 grade_fixed)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 marks)
+                        (IntegerConstant 94 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Select
+                        ()
+                        (Var 2 marks)
+                        [(CaseStmt_Range
+                            (IntegerBinOp
+                                (IntegerConstant 40 (Integer 4) Decimal)
+                                Add
+                                (Var 2 bp)
+                                (Integer 4)
+                                (IntegerConstant 42 (Integer 4) Decimal)
+                            )
+                            ()
+                            [(Print
+                                (StringConstant
+                                    "Pass!"
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            ()
+                            (IntegerBinOp
+                                (IntegerConstant 39 (Integer 4) Decimal)
+                                Sub
+                                (Var 2 ap)
+                                (Integer 4)
+                                (IntegerConstant 38 (Integer 4) Decimal)
+                            )
+                            [(Print
+                                (StringConstant
+                                    "Failed!"
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Invalid marks"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Select
+                        ()
+                        (Var 2 marks_fixed)
+                        [(CaseStmt_Range
+                            (IntegerBinOp
+                                (IntegerConstant 40 (Integer 4) Decimal)
+                                Add
+                                (Var 2 bp)
+                                (Integer 4)
+                                (IntegerConstant 42 (Integer 4) Decimal)
+                            )
+                            ()
+                            [(Print
+                                (StringConstant
+                                    "Pass!"
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )
+                        (CaseStmt_Range
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerBinOp
+                                (IntegerConstant 39 (Integer 4) Decimal)
+                                Sub
+                                (Var 2 ap)
+                                (Integer 4)
+                                (IntegerConstant 38 (Integer 4) Decimal)
+                            )
+                            [(Print
+                                (StringConstant
+                                    "Failed!"
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Invalid marks"
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

@@ -4654,8 +4654,10 @@ public:
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
                         ASR::ttype_t* param_type = v->m_type;
 
-                        // Skip type checking for polymorphic types (class), function types, and intrinsics
-                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                        // Skip type checking for implicit argument_casting, 
+                        // polymorphic types (class), function types, and intrinsics
+                        bool skip_check = compiler_options.implicit_argument_casting ||
+                                         ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
                                          ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
                                          ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                          ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));

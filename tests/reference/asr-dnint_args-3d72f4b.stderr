@@ -1,0 +1,5 @@
+semantic error: Too many arguments to call `dnint`
+ --> tests/errors/dnint_args.f90:2:13
+  |
+2 |     print*, dnint(1.0_8, 8)
+  |             ^^^^^^^^^^^^^^^ 

@@ -1,0 +1,5 @@
+semantic error: The SHIFT argument must be less than or equal to the of SIZE argument
+ --> tests/errors/ishftc_size.f90:2:14
+  |
+2 |     print *, ishftc(10, 6, 4)
+  |              ^^^^^^^^^^^^^^^^ 

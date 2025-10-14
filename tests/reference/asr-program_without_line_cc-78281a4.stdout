@@ -1,0 +1,9 @@
+(TranslationUnit
+    [(Print
+        0
+        ()
+        [(String "OK")]
+        ()
+    )
+    contains]
+)

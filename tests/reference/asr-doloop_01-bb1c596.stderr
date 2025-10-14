@@ -1,0 +1,17 @@
+warning: Start expression in DO loop must be integer
+ --> tests/warnings/doloop_01.f90:4:12
+  |
+4 |     do i = 1.5, 10.5, 2.4
+  |            ^^^ 
+
+warning: End expression in DO loop must be integer
+ --> tests/warnings/doloop_01.f90:4:17
+  |
+4 |     do i = 1.5, 10.5, 2.4
+  |                 ^^^^ 
+
+warning: Step expression (increment) in DO loop must be integer
+ --> tests/warnings/doloop_01.f90:4:23
+  |
+4 |     do i = 1.5, 10.5, 2.4
+  |                       ^^^ 

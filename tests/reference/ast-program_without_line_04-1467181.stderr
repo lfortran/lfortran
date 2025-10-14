@@ -1,0 +1,5 @@
+syntax error: Statement or Declaration expected inside program, found Expression
+ --> tests/errors/program_without_line_04.f90:2:1
+  |
+2 | 2 + 2
+  | ^^^^^ 

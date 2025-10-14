@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incorrect_allocate_for_array-b52ea30",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incorrect_allocate_for_array.f90",
+    "infile_hash": "f60a82bb992ad3cff8f57805c5cae6793003e8814985af976f003a9d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incorrect_allocate_for_array-b52ea30.stderr",
+    "stderr_hash": "24447f7654ddd6077296652c946cb2297e5e050b1462240f1895a113",
+    "returncode": 2
+}

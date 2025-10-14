@@ -1,0 +1,13 @@
+{
+    "basename": "asr-statement_02-daaef34",
+    "cmd": "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/statement_02.f90",
+    "infile_hash": "61034a47086bdbf3221fccdae0ad236a38d9ee626e02852cc820bc8e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-statement_02-daaef34.stdout",
+    "stdout_hash": "372fe97ba5ba8b530b52abc4993d51cad1427ba17e47c5e8f87910f9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,5 @@
+semantic error: Argument of `sqrt` has a negative argument
+ --> tests/errors/sqrt_neg.f90:2:14
+  |
+2 |     print *, sqrt(-1.0)
+  |              ^^^^^^^^^^ 

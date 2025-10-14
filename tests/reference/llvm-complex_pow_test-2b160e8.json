@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-complex_pow_test-2b160e8",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_pow_test.f90",
+    "infile_hash": "cc3e566ed81771c2b1c24916ac5bcd29fde8fef80826cc84d56d72fa",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-complex_pow_test-2b160e8.stdout",
+    "stdout_hash": "a9ac339fd7cabba8ea10c9d1b6a96b0908f02c913fd497ad4830f122",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,17 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%abstype_polymorphic = type { i64, %abstype* }
+%abstype = type <{}>
+%__vtab_abstype = type { i64 }
+
+define void @__module_codegen_function_polymorphic_my_func(%abstype_polymorphic* %obj) {
+.entry:
+  %0 = alloca %__vtab_abstype, align 8
+  %1 = getelementptr %__vtab_abstype, %__vtab_abstype* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}

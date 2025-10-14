@@ -1,0 +1,13 @@
+{
+    "basename": "llvm_new_classes-unlimited_polymorphic_intrinsic_type_allocate-a7e8dd2",
+    "cmd": "lfortran --no-color --show-llvm --new-classes {infile} -o {outfile}",
+    "infile": "tests/unlimited_polymorphic_intrinsic_type_allocate.f90",
+    "infile_hash": "5e3fd98f08d2d9173c3610e43114224b2865c77917c3c0faa1951861",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm_new_classes-unlimited_polymorphic_intrinsic_type_allocate-a7e8dd2.stdout",
+    "stdout_hash": "46062e8aec6b86ff05eb1f33a7a0402073e656dfa0a9275ef5483223",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

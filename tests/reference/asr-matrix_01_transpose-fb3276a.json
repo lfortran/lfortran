@@ -1,0 +1,13 @@
+{
+    "basename": "asr-matrix_01_transpose-fb3276a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/matrix_01_transpose.f90",
+    "infile_hash": "c9aabbf171aad175f8ee167db7f8b9191537d7e2afe04ef4c669d615",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-matrix_01_transpose-fb3276a.stdout",
+    "stdout_hash": "b00c071c156df29f354285c7fbfecd6a30d1a35d015c469d8ddb3157",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

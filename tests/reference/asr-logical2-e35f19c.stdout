@@ -1,0 +1,100 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            logical2:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    logical2
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (LogicalConstant
+                            .false.
+                            (Logical 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (Var 2 a)
+                            And
+                            (Var 2 b)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Print
+                            (StringConstant
+                                "Line 1 - Condition is true"
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                        [(Print
+                            (StringConstant
+                                "Line 1 - Condition is false"
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )]
+                    )]
+                )
+        })
+    []
+)

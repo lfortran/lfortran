@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-external_04-30bc1c7",
+    "cmd": "lfortran --show-llvm --implicit-typing --implicit-interface {infile} -o {outfile}",
+    "infile": "tests/external_04.f90",
+    "infile_hash": "a5c33c0669ed285af4ed4856e01d35a773adcd4be529adc807f976c5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-external_04-30bc1c7.stdout",
+    "stdout_hash": "e765e3f184d0c44ea7a6ee624caa70ab2d916ffbf2dbce0589648787",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
