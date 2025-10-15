@@ -103,7 +103,7 @@ private :
 public:
     Allocator& al;
     SymbolTable* new_function_scope = nullptr;
-    SymbolTable* &current_scope; // Dependency -- Passed by visitor -- Avoids mantining 2 spearate variables
+    SymbolTable* &current_scope; // Dependency -- Passed by visitor -- Avoids maintaining 2 separate variables
     ASR::expr_t* assignment_value = nullptr;
     ASR::expr_t* call_for_return_var = nullptr;
     Vec<ASR::expr_t*>* newargsp = nullptr;
