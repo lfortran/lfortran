@@ -6,7 +6,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
-#include <libasr/pickle.h>
 
 namespace LCompilers {
 
@@ -104,7 +103,7 @@ private :
 public:
     Allocator& al;
     SymbolTable* new_function_scope = nullptr;
-    SymbolTable* current_scope = nullptr;
+    SymbolTable* &current_scope; // Dependency -- Passed by visitor -- Avoids maintaining 2 separate variables
     ASR::expr_t* assignment_value = nullptr;
     ASR::expr_t* call_for_return_var = nullptr;
     Vec<ASR::expr_t*>* newargsp = nullptr;
@@ -117,7 +116,8 @@ public:
         ASR::expr_t* arg_param;
     };
 
-    ReplaceFunctionCall(Allocator &al_, ASR::TranslationUnit_t& tt) : al(al_), tt(tt) {}
+    ReplaceFunctionCall(Allocator &al_, ASR::TranslationUnit_t& tt, SymbolTable* &current_scope_visitor_ref) 
+    : al(al_),  current_scope(current_scope_visitor_ref), tt(tt) {}
 
     void replace_Var(ASR::Var_t* x) {
         if ( newargsp == nullptr) {
@@ -129,11 +129,28 @@ public:
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, new_function_scope->get_symbol(ASRUtils::symbol_name(x->m_v))));
     }
 
+    // TODO : This replacer should be in a dedicated replacer class, rather than implementing it in the same current replacer. 
     void replace_FunctionParam(ASR::FunctionParam_t* x) {
-        if( newargsp == nullptr ) {
-            return ;
+        if( newargsp == nullptr ) return ; // If not preparing the helper function -- RETURN.
+
+        // FunctionParam in new helper function could be pointing to the wrong arguments.
+        // It'll be pointing to arguments indices in helped-function scope while the helper function has new-different indices arrangement. 
+        // We'll depend on the fact that variables' names in both HELPER function and the HELPED function are the exact same
+        // So we can pick the correct argument.
+        LCOMPILERS_ASSERT(current_scope && current_scope->asr_owner)
+        ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+        ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[x->m_param_number]);
+        char* const parameter_name = v->m_name;
+        // Match on Symbol name -- Use argument from `newargsp` -- replace current
+        for(size_t i = 0; i < newargsp->n; i++) {
+            char* const argument_name = ASRUtils::symbol_name(down_cast<ASR::Var_t>((*newargsp)[i])->m_v);
+            if( argument_name == parameter_name ){
+                *current_expr = newargsp->p[i];
+                return;
+            }
         }
-        *current_expr = newargsp->p[x->m_param_number];
+        // If everthing was fine, Function would've returned earlier -- Now it's not so raise ERROR.
+        throw LCompilersException("Argument Not Found -- FuncParam Points to an argument that is likely not in the current scope");
     }
 
     void replace_FunctionParam_with_FunctionArgs(ASR::expr_t*& value, Vec<ASR::expr_t*>& new_args) {
@@ -256,7 +273,7 @@ public:
             return BaseExprReplacer<ReplaceFunctionCall>::replace_IntrinsicArrayFunction(x);
             
         }
-        if (!current_scope || !assignment_value) return;
+        if (!assignment_value) return;
 
         std::vector<ArgInfo> indices;
         get_arg_indices_used(x, indices);
@@ -362,7 +379,8 @@ public:
             }
         }
 
-        if (!current_scope || !assignment_value) return;
+        if (!assignment_value) return;
+
         std::vector<ArgInfo> indices;
         switch(x->type){
             case ASR::StringLen:
@@ -370,6 +388,9 @@ public:
                 break;
             case ASR::FunctionCall:
                 get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(x), indices);
+                break;
+            case ASR::IntrinsicElementalFunction:
+                get_arg_indices_used(ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x), indices);
                 break;
             default : 
                 throw LCompilersException("Unhandled case");
@@ -460,6 +481,8 @@ public:
 
 };
 
+/* ================================== VISITOR ==================================*/
+
 class FunctionTypeVisitor : public ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>
 {
 private:
@@ -503,6 +526,14 @@ private:
                 return found_non_scalar_return;
                 break;
             }
+            case ASR::IntrinsicElementalFunction :{
+                ASR::IntrinsicElementalFunction_t* intrinsic_elem_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                bool found_non_scalar_return = false;
+                for(size_t i = 0;(i < intrinsic_elem_func->n_args) && !found_non_scalar_return; i++){
+                    found_non_scalar_return |= expr_contains_functionCall_with_Nonscalar_return(intrinsic_elem_func->m_args[i]);
+                }
+                return found_non_scalar_return;
+            }
             case ASR::StringPhysicalCast:
                 return expr_contains_functionCall_with_Nonscalar_return(ASR::down_cast<ASR::StringPhysicalCast_t>(expr)->m_arg);
             case ASR::StringConcat:{
@@ -526,17 +557,15 @@ public:
 
 
 
-    FunctionTypeVisitor(Allocator &al_, ASR::TranslationUnit_t &tt) : al(al_), replacer(al_, tt), tt(tt) {
+    FunctionTypeVisitor(Allocator &al_, ASR::TranslationUnit_t &tt) : al(al_), replacer(al_, tt, current_scope), tt(tt) {
         current_scope = nullptr;
         pass_result.reserve(al, 1);
     }
 
     void call_replacer_(ASR::expr_t* value) {
         replacer.current_expr = current_expr;
-        replacer.current_scope = current_scope;
         replacer.assignment_value = value;
         replacer.replace_expr(*current_expr);
-        replacer.current_scope = nullptr;
         replacer.assignment_value = nullptr;
     }
 
@@ -545,9 +574,11 @@ public:
         visit_ttype(*x.m_type);
     }
 
-/* --> Construct Visitors Mustn't Visit The Body <-- */
+/* --------------------> CONSTRUCTS VISITORS <--------------------*/
 
-    void visit_Function(const ASR::Function_t &x) {
+/*  Construct Visitors Mustn't Visit The Body  */
+
+    void visit_Function(const ASR::Function_t &x) { // NO Body Visiting
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature); // Visit signature first to handle returnVar
@@ -558,7 +589,7 @@ public:
     }
     
     template<typename T>
-    void visit_construct(const T &x){
+    void visit_construct(const T &x){ // NO Body Visiting
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         for( auto sym: x.m_symtab->get_scope() ) {
@@ -566,18 +597,13 @@ public:
         }
         current_scope = current_scope_copy;
     }
-    void visit_Program(const ASR::Program_t &x){
-        return visit_construct(x);    
-    }
-    void visit_Block(const ASR::Block_t &x){
-        return visit_construct(x);    
-    }
-    void visit_AssociateBlock(const ASR::AssociateBlock_t &x){
-        return visit_construct(x);    
-    }
+    
+    void visit_Block(const ASR::Block_t &x)                     { visit_construct(x); }
+    void visit_Module(const ASR::Module_t &x)                   { visit_construct(x); }
+    void visit_Program(const ASR::Program_t &x)                 { visit_construct(x); }
+    void visit_AssociateBlock(const ASR::AssociateBlock_t &x)   { visit_construct(x); }
 
-
-
+/* <---------------------------------------->*/
 
     bool is_function_call_or_intrinsic_array_function(ASR::expr_t* expr) {
         if (!expr) return false;
@@ -617,7 +643,6 @@ public:
     }
 
     void visit_Array(const ASR::Array_t &x) {
-        if (!current_scope) return;
         if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) return;
         if (is_function_call_or_intrinsic_array_function(x.m_dims->m_length)) {
             ASR::expr_t** current_expr_copy = current_expr;
@@ -635,19 +660,14 @@ public:
             current_expr = const_cast<ASR::expr_t**>(&(x.m_len));
             { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
                 replacer.current_expr = current_expr;
-                replacer.current_scope = current_scope;
                 replacer.assignment_value = x.m_len;
                 replacer.stringLength_replacer(*current_expr);
-                replacer.current_scope = nullptr;
-                replacer.assignment_value = nullptr;
             }
             current_expr = current_expr_copy;
         }
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        if (!current_scope) return;
-
         if (is_function_call_or_intrinsic_array_function(x.m_left)) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_left));
@@ -666,8 +686,6 @@ public:
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
-        if (!current_scope) return;
-
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg = x.m_args[i];
             if (is_function_call_or_intrinsic_array_function(arg)) {
@@ -682,8 +700,6 @@ public:
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        if (!current_scope) return;
-
         if (is_function_call_or_intrinsic_array_function(x.m_left)) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_left));
@@ -702,7 +718,6 @@ public:
     }
 
     void visit_Cast(const ASR::Cast_t &x) {
-        if (!current_scope) return;
 
         if (is_function_call_or_intrinsic_array_function(x.m_arg)) {
             ASR::expr_t** current_expr_copy = current_expr;
@@ -715,7 +730,6 @@ public:
     }
 
     void visit_FunctionType(const ASR::FunctionType_t &x) {
-        if (!current_scope) return;
         ASR::Function_t* func = nullptr;
         ASR::asr_t* asr_owner = current_scope->asr_owner;
         if (ASR::is_a<ASR::symbol_t>(*asr_owner)) {
