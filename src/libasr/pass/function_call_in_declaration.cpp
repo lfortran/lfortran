@@ -150,7 +150,7 @@ public:
             }
         }
         // If everthing was fine, Function would've returned earlier -- Now it's not so raise ERROR.
-        throw LCompilersException("Argument Not Found -- FuncParam Points to an argument that's proabably isn't in the current scope");
+        throw LCompilersException("Argument Not Found -- FuncParam Points to an argument that is likely not in the current scope");
     }
 
     void replace_FunctionParam_with_FunctionArgs(ASR::expr_t*& value, Vec<ASR::expr_t*>& new_args) {
