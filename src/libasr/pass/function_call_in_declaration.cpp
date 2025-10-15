@@ -6,7 +6,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
-#include <libasr/pickle.h>
 
 namespace LCompilers {
 
@@ -141,10 +140,11 @@ public:
         LCOMPILERS_ASSERT(current_scope && current_scope->asr_owner)
         ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
         ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[x->m_param_number]);
-        char* variable_name = v->m_name;
-        // Match on variable name -- Use argument from `newargsp` -- replace current
+        char* const parameter_name = v->m_name;
+        // Match on Symbol name -- Use argument from `newargsp` -- replace current
         for(size_t i = 0; i < newargsp->n; i++) {
-            if(ASRUtils::EXPR2VAR((*newargsp)[i])->m_name == variable_name){
+            char* const argument_name = ASRUtils::symbol_name(down_cast<ASR::Var_t>((*newargsp)[i])->m_v);
+            if( argument_name == parameter_name ){
                 *current_expr = newargsp->p[i];
                 return;
             }
