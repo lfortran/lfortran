@@ -2971,7 +2971,7 @@ public:
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
-                    "Runtime Error: Array '%s' is not allocated.\n",
+                    "Runtime Error: Array '%s' is indexed but not allocated.\n",
                         LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
             }
 
@@ -7383,7 +7383,8 @@ public:
                     if (!x.m_move_allocation) {
                         llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                         llvm_utils->generate_runtime_error(is_not_allocated,
-                            "Runtime Error: Array '%s' is not allocated.\n",
+                            "Runtime Error: Array '%s' is not allocated.\n\n"
+                                "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
                                 LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
                     }
 
@@ -7397,7 +7398,8 @@ public:
                     builder->SetInsertPoint(thenBB); {
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Runtime Error: Size mismatch in assignment to '%s'\n\n"
-                                                            "LHS size is %d and RHS size is %d\n",
+                                                            "LHS size is %d and RHS size is %d\n\n"
+                                                            "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
                                                             value_size);
