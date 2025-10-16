@@ -6,7 +6,7 @@ source_filename = "LFortran"
 %string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@1 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@1 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @3 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -16,7 +16,7 @@ source_filename = "LFortran"
 @8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @9 = private unnamed_addr constant [2 x i8] c"x\00", align 1
-@10 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@10 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @11 = private unnamed_addr constant [2 x i8] c"x\00", align 1
 @12 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @13 = private unnamed_addr constant [2 x i8] c"x\00", align 1
@@ -25,7 +25,7 @@ source_filename = "LFortran"
 @16 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @18 = private unnamed_addr constant [2 x i8] c"x\00", align 1
-@19 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@19 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @20 = private unnamed_addr constant [2 x i8] c"x\00", align 1
 @21 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @22 = private unnamed_addr constant [2 x i8] c"x\00", align 1
@@ -38,7 +38,7 @@ source_filename = "LFortran"
 @28 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @29 = private unnamed_addr constant [2 x i8] c"x\00", align 1
-@30 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@30 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @31 = private unnamed_addr constant [2 x i8] c"x\00", align 1
 @32 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @33 = private unnamed_addr constant [2 x i8] c"x\00", align 1
@@ -47,7 +47,7 @@ source_filename = "LFortran"
 @36 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @37 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @38 = private unnamed_addr constant [2 x i8] c"x\00", align 1
-@39 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@39 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @40 = private unnamed_addr constant [2 x i8] c"x\00", align 1
 @41 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @42 = private unnamed_addr constant [2 x i8] c"x\00", align 1
@@ -57,7 +57,7 @@ source_filename = "LFortran"
 @46 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @47 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @48 = private unnamed_addr constant [2 x i8] c"x\00", align 1
-@49 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@49 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @50 = private unnamed_addr constant [2 x i8] c"x\00", align 1
 @51 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @52 = private unnamed_addr constant [2 x i8] c"x\00", align 1
@@ -69,7 +69,7 @@ source_filename = "LFortran"
 @58 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.2 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @59 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@60 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@60 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @61 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @62 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @63 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -78,7 +78,7 @@ source_filename = "LFortran"
 @66 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @67 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @68 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@69 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@69 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @70 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @71 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @72 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -88,7 +88,7 @@ source_filename = "LFortran"
 @76 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @77 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @78 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@79 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@79 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @80 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @81 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @82 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -98,7 +98,7 @@ source_filename = "LFortran"
 @86 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @87 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @88 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@89 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@89 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @90 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @91 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @92 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -106,7 +106,7 @@ source_filename = "LFortran"
 @94 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @95 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @96 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@97 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@97 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @98 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @99 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @100 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -118,7 +118,7 @@ source_filename = "LFortran"
 @106 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.3 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @107 = private unnamed_addr constant [2 x i8] c"c\00", align 1
-@108 = private unnamed_addr constant [45 x i8] c"Runtime Error: Array '%s' is not allocated.\0A\00", align 1
+@108 = private unnamed_addr constant [57 x i8] c"Runtime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
 @109 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @110 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @111 = private unnamed_addr constant [2 x i8] c"c\00", align 1
@@ -236,7 +236,7 @@ ifcont5:                                          ; preds = %else4, %then3
   br i1 %50, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont5
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @89, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @88, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @89, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @88, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -354,7 +354,7 @@ ifcont16:                                         ; preds = %else15, %then14
   br i1 %121, label %then17, label %ifcont18
 
 then17:                                           ; preds = %ifcont16
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -459,7 +459,7 @@ ifcont27:                                         ; preds = %else26, %then25
   br i1 %183, label %then28, label %ifcont29
 
 then28:                                           ; preds = %ifcont27
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @108, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @107, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @108, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @107, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -658,7 +658,7 @@ ifcont:                                           ; preds = %else, %then
   br i1 %38, label %then1, label %ifcont2
 
 then1:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -760,7 +760,7 @@ define i32 @g(%array** %x) {
   br i1 %6, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -867,7 +867,7 @@ ifcont6:                                          ; preds = %ifcont4
   br i1 %76, label %then7, label %ifcont8
 
 then7:                                            ; preds = %ifcont6
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -996,7 +996,7 @@ ifcont19:                                         ; preds = %else18, %then17
   br i1 %149, label %then20, label %ifcont21
 
 then20:                                           ; preds = %ifcont19
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -1103,7 +1103,7 @@ ifcont27:                                         ; preds = %ifcont25
   br i1 %219, label %then29, label %ifcont30
 
 then29:                                           ; preds = %ifcont27
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -1207,7 +1207,7 @@ ifcont39:                                         ; preds = %else38, %then37
   br i1 %280, label %then40, label %ifcont41
 
 then40:                                           ; preds = %ifcont39
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -1351,7 +1351,7 @@ ifcont3:                                          ; preds = %else2, %then1
   br i1 %23, label %then4, label %ifcont5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @60, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @59, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @60, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @59, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -1458,7 +1458,7 @@ ifcont11:                                         ; preds = %ifcont9
   br i1 %93, label %then12, label %ifcont13
 
 then12:                                           ; preds = %ifcont11
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -1562,7 +1562,7 @@ ifcont22:                                         ; preds = %else21, %then20
   br i1 %154, label %then23, label %ifcont24
 
 then23:                                           ; preds = %ifcont22
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([57 x i8], [57 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 

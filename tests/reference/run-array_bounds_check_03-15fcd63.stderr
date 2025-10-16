@@ -1,1 +1,3 @@
 Runtime Error: Array 'x' is not allocated.
+
+Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
