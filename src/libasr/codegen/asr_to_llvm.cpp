@@ -1603,9 +1603,19 @@ public:
         if(ASRUtils::is_character(*expr_type(x.m_args[0].m_a))){
             llvm::Value* current_str_len = get_string_length(x.m_args[0].m_a);
             LCOMPILERS_ASSERT(current_str_len->getType() == llvm::Type::getInt64Ty(context));
-            visit_expr(*(x.m_args[0].m_len_expr));
-            llvm::Value* desired_str_len = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
-            tmp = nullptr;
+            /* Set `desired_str_len` */
+            llvm::Value* desired_str_len {};
+            if(x.m_args[0].m_len_expr){ // Provided length in allocation statment.
+                visit_expr(*(x.m_args[0].m_len_expr));
+                desired_str_len = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+                tmp = nullptr;
+            } else { // array's string length is fixed (compile-time or run-time value) -- No need to be provided within the allocation statement.
+                LCOMPILERS_ASSERT_MSG(  ASRUtils::get_string_type(x.m_args[0].m_a)->m_len_kind != ASR::DeferredLength,
+                                        "Deferred length strings must have length provided when allocating")
+                llvm::Value* array {};
+                { visit_expr_load_wrapper(x.m_args[0].m_a, 1);   array = tmp;    tmp = nullptr; } // Visit + Set
+                desired_str_len = llvm_utils->get_stringArray_length(ASRUtils::expr_type(x.m_args[0].m_a), array);
+            }
             realloc_condition = builder->CreateOr(realloc_condition,
                 builder->CreateICmpNE(current_str_len, desired_str_len));
         }
@@ -7091,7 +7101,7 @@ public:
             m_value = ASR::down_cast<ASR::ArraySection_t>(m_value)->m_v;
         }
         int ptr_loads_copy = ptr_loads;
-        if(ASRUtils::is_character(*value_type)){
+        if(ASRUtils::is_string_only(value_type)){
             ptr_loads = 0;
         } else if(ASRUtils::is_array(value_type)){
             ptr_loads = 1;
@@ -7377,6 +7387,7 @@ public:
     }
 
     void generate_binop_checks(ASR::expr_t* x) {
+        if(!x) return;
         if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
             check_binop<ASR::IntegerBinOp_t>(x);
         } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
@@ -10795,7 +10806,7 @@ public:
         }
 
         if (x.m_advance) {
-            this->visit_expr_wrapper(x.m_advance, true);
+            this->visit_expr_load_wrapper(x.m_advance, 0, true);
             LCOMPILERS_ASSERT(ASRUtils::is_character(*expr_type(x.m_advance)))
             std::tie(advance, advance_length) = llvm_utils->get_string_length_data(
                                                     ASRUtils::get_string_type(x.m_advance),

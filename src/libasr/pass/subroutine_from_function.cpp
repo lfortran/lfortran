@@ -14,44 +14,254 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+
+/**
+ * @class CreateFunctionFromSubroutine
+ * @brief This pass transforms functions that return aggregate types (like arrays, structs, strings, etc.) into subroutines.
+ * @see @ref doc/src/passes/subroutine_from_function.md
+ */
 class CreateFunctionFromSubroutine: public ASR::BaseWalkVisitor<CreateFunctionFromSubroutine> {
 
-    public:
+private :
 
         Allocator& al;
+        // Mapping Modified Functions With What Used To Be Its Return Type -- It's Useful Later When Allocating a Temporary is Needed For FuncCall Return.
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
 
-        CreateFunctionFromSubroutine(Allocator &al_): al(al_)
-        {
-        }
+public:
+
+        /* Constructor */
+        CreateFunctionFromSubroutine(
+            Allocator &al_,
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
+            : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP){}
+
 
         void visit_Function(const ASR::Function_t& x) {
-            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
-            ASR::Function_t* x_ptr = ASR::down_cast<ASR::Function_t>(&(xx.base));
-            PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
+            ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
+            
+            /* Transform This Function Into Subroutine IF NEEDED */
+            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            if(transform_success) {Function__TO__ReturnType_MAP_[x_ptr] = return_type;}
+
+            /* Visit Functions In Current SymTable */
+            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                }
+            }
         }
+
+        void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
+            /* Visit Functions In Current SymTable */
+            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                }
+            }
+        }
+
 
 };
 
-class ReplaceFunctionCallWithSubroutineCall:
-    public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
+/**
+ * @class AllocateVarBasedOnFuncCall
+ * @brief This class is responsible for inserting an ALLOCATE statement for a variable based on the return type of a function call.
+ *
+ * @details
+ * >>> Why This Class :
+ *      Avoiding double function calls -- One inside allocation stmt, another in the original functionCall itself
+ *
+ * @see @ref doc/passes/subroutine_from_function.md
+ */
+class AllocateVarBasedOnFuncCall : public ASR::BaseExprReplacer<AllocateVarBasedOnFuncCall> {
+        
 private :
-    void insert_implicit_deallocate(ASR::expr_t* result_var) {
-        Vec<ASR::expr_t*> to_be_deallocated;
-        to_be_deallocated.reserve(al, 1);
-        to_be_deallocated.push_back(al, result_var);
-        pass_result.push_back(al, ASRUtils::STMT(
-        ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
-            to_be_deallocated.p, to_be_deallocated.size())));
+
+    Allocator            &al_;
+    ASR::FunctionCall_t  *f_call_; // FunctionCall that we're allocating a var based on.
+    SymbolTable          *current_scope_;
+    Vec<ASR::stmt_t*>    &pass_result_;
+
+    AllocateVarBasedOnFuncCall(
+        Allocator           &al,
+        ASR::FunctionCall_t *f_call,
+        SymbolTable         *current_scope,
+        Vec<ASR::stmt_t*>   &pass_result)
+        :al_(al), f_call_(f_call), current_scope_(current_scope), pass_result_(pass_result) {}
+
+
+    /// Inserts Allocate Statement for `var_to_allocate` based on the information from `funcCall_ret_type`
+    void insert_allocate_stmt(ASR::Var_t* var_to_allocate, ASR::ttype_t* funcCall_ret_type){
+        /* Assertions */
+        LCOMPILERS_ASSERT_MSG(   ASRUtils::is_array(funcCall_ret_type) 
+                                || ASRUtils::is_string_only(funcCall_ret_type),
+                                "Cannot allocate type -- Only String and Array types are supported.")
+
+        ASR::dimension_t* array_m_dims { };
+        size_t            array_n_dims {0};
+        ASR::expr_t* allocate_len_expr { };
+
+        /* Set `m_dims` + `n_dims`` (if found) */
+        if(ASRUtils::is_array(funcCall_ret_type)){
+            ASR::Array_t* array_type = down_cast<ASR::Array_t>(ASRUtils::extract_type(funcCall_ret_type));
+            array_n_dims = array_type->n_dims;
+            array_m_dims = array_type->m_dims;
+        }
+
+        /* Set `len_expr` (if found)*/
+        if(ASRUtils::is_character(*funcCall_ret_type)){
+            allocate_len_expr = ASRUtils::get_string_type(funcCall_ret_type)->m_len;
+        }
+
+        /* Create Statement + Push it*/
+        ASR::stmt_t* allocate_stmt =  ASRUtils::ASRBuilder(al_, f_call_->base.base.loc).
+                                        Allocate(&var_to_allocate->base, array_m_dims, array_n_dims, allocate_len_expr);
+        pass_result_.push_back(al_, allocate_stmt);
     }
 
-public :
+    /**
+     * === Look Up Symbol In Current Scope -- If Not Found, Create An External Symbol ===
+     *  We're Traversing Function Return Node. Symbols Like (Var, FunctionCall, ..) Might Need ExternalSymbol
+     *  
+     *  EXAMPLE ::: return_var_type ==> ` (String 1 (foo()) ExpressionLength DescriptorString) `
+     *    
+     *  An ExternalSymbol should be already in the current scope, but we might not be able 
+     *  to get it due to name mangling -- So just create a one.
+     */
+    ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
+        if(ASR::symbol_t* func = current_scope_->resolve_symbol(ASRUtils::symbol_name(sym))){
+            return func; // Found In Current Scope -- Do Nothing
+        } else {
+            // Not Found In Current Scope -- Create An External Symbol
+            auto ext_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
+                                        current_scope_, ASRUtils::symbol_name(sym), sym,
+                                        ASRUtils::get_sym_module(sym)->m_name, nullptr, 0,
+                                        ASRUtils::symbol_name(sym), ASR::Private));
+            current_scope_->add_symbol(ASRUtils::symbol_name(ext_sym), ext_sym);
+            return ext_sym;
+        }
+    }
+
+public : 
+
+    void replace_FunctionParam(ASR::FunctionParam_t* x){
+
+        ASR::expr_t* fnCall_argument {};
+        fnCall_argument = ASRUtils::get_past_array_physical_cast(f_call_->m_args[x->m_param_number].m_value); // Cleaned Up
+
+        if(ASR::is_a<ASR::FunctionCall_t>(*fnCall_argument)){ // We have to resolve the issue of double evaluation
+            /* Create Temporary Variable To Hold Call Return -- We'll Re-use The Temp Instead of Re-evaluating*/
+            ASR::expr_t* temp_var {};
+            {
+                static int cnt = 0;
+                ASR::ttype_t* temp_t  = ASRUtils::expr_type(fnCall_argument);
+                // NOTE : We depend on the fact that the FuncCall is simple enough that its return doesn't need any special handling.
+                temp_var = PassUtils::create_var(cnt++, "funcCall_temp_var", x->base.base.loc, temp_t, al_, current_scope_);
+            }
+
+            /* Create Assignment ---> `funcCall_temp_var = f()` --- Push Assignment Statement */
+            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false));
+            pass_result_.push_back(al_, assignment_stmt);                            
+
+            /* Replace Current FuncParam With `temp_var` */
+            *current_expr = temp_var;
+
+            /* Replace the argument in the functionCall with `temp_var` */
+            f_call_->m_args[x->m_param_number].m_value = temp_var;
+        } else {
+            /* Do Nothing -- Replace Current FuncParam With Argument */
+            *current_expr = fnCall_argument;
+        }
+
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x){
+        x->m_name = get_resolved_symbol(x->m_name);
+        if(x->m_original_name) x->m_original_name = get_resolved_symbol(x->m_original_name);
+        ASR::BaseExprReplacer<AllocateVarBasedOnFuncCall>::replace_FunctionCall(x);
+    }
+    void replace_Var(ASR::Var_t *x){
+        x->m_v = get_resolved_symbol(x->m_v);
+    }
+
+    /**
+     *
+     * =================== Entry Point ===================
+     *
+     */
+    static void 
+    Allocate( Allocator& al, ASR::FunctionCall_t* f_call, 
+    ASR::Var_t* var_to_allocate, SymbolTable* current_scope, Vec<ASR::stmt_t*> &pass_result,
+    ASR::ttype_t* func_ret_type = nullptr /*Pass In case Function was modified to subroutine*/) {
+
+        /* Assertions */
+        LCOMPILERS_ASSERT(f_call && var_to_allocate && current_scope)
+        LCOMPILERS_ASSERT(ASRUtils::is_allocatable(&var_to_allocate->base))
+
+        /* Get Return Type -- Duplicate It -- Set `return_t` */
+        ASR::ttype_t* return_t {};
+        {
+            ASR::ttype_t* return_t_ = ASRUtils::get_FunctionType(ASRUtils::get_function(f_call->m_name))->m_return_var_type;
+            if(!return_t_){
+                LCOMPILERS_ASSERT_MSG(func_ret_type,
+                                        "Must pass Function Return Type manually -- "
+                                        "You're now allocating against a functionCall that its"
+                                        "function has no return var"
+                                        " -- If it got modified into subroutine,"
+                                        " You'll probably find type in the Function_returnType MAP.")
+                return_t_ = func_ret_type;
+            }
+            return_t = ASRUtils::duplicate_type(al, return_t_);
+        }
+
+        /* Create Instance */
+        auto instance = AllocateVarBasedOnFuncCall(al, f_call, current_scope, pass_result);
+          
+        // Replacing Type Will Make us End Up Having Appropriate Type (No FunctionParam, No FuncCall Inplace of FunctionParam) 
+        instance.replace_ttype(return_t);
+
+        /* Insert ALLOCATE Statment */
+        instance.insert_allocate_stmt(var_to_allocate, return_t);
+    }
+};
+
+
+
+class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
+
+
+private :
+
     Allocator & al;
     int result_counter = 0;
-    SymbolTable* current_scope;
+    SymbolTable* &current_scope;
     Vec<ASR::stmt_t*> &pass_result;
-    ReplaceFunctionCallWithSubroutineCall(Allocator& al_, Vec<ASR::stmt_t*> &pass_result_) :
-        al(al_),pass_result(pass_result_) {}
+    // Mapping Modified Functions With What Used To Be Its Return Type -- It's Useful Later When Allocate Stmt Needed For FuncCall Return
+    std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
 
+public:
+
+    ReplaceFunctionCallWithSubroutineCall(
+        Allocator                                           &al_,
+        SymbolTable*                                        &current_scope,
+        Vec<ASR::stmt_t*>                                   &pass_result_,
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP) 
+        :al(al_),
+         current_scope(current_scope),
+         pass_result(pass_result_),
+         Function__TO__ReturnType_MAP_(Function__TO__ReturnType_MAP) {}
+
+private :
+
+    void insert_implicit_deallocate(ASR::expr_t* result_var) {
+        pass_result.push_back(al, ASRUtils::ASRBuilder(al, result_var->base.loc).Deallocate(result_var));
+    }
+
+
+    
     void traverse_functionCall_args(ASR::call_arg_t* call_args, size_t call_args_n){
         for(size_t i = 0; i < call_args_n; i++){
             ASR::expr_t** current_expr_copy = current_expr;
@@ -61,54 +271,97 @@ public :
         }
     }
 
+    /// Check if return slot must be allocated before passed to functionCall.
+    bool allocate_stmt_needed_for_return_slot(ASR::ttype_t* function_return_t, ASR::ttype_t* return_slot_t){
+        LCOMPILERS_ASSERT(
+            ASRUtils::type_get_past_allocatable_pointer(function_return_t)->type ==
+            ASRUtils::type_get_past_allocatable_pointer(return_slot_t)->type)
+            
+        if(ASRUtils::is_string_only(function_return_t)){
+            LCOMPILERS_ASSERT(ASRUtils::is_string_only(return_slot_t))
+            /*
+                TRUE WHEN :
+                * return slot is     --> `character(:), allocatable :: str`
+                * function return is --> `character(len=expr) :: ret`
+
+            */
+            return  ASRUtils::is_allocatable(return_slot_t)
+                &&  ASRUtils::get_string_type(return_slot_t)->m_len_kind == ASR::DeferredLength
+                && !ASRUtils::is_allocatable(function_return_t) 
+                &&  ASRUtils::get_string_type(function_return_t)->m_len_kind == ASR::ExpressionLength;
+
+        } else if (   ASR::is_a<ASR::List_t> (*function_return_t)
+                   || ASR::is_a<ASR::Dict_t> (*function_return_t)
+                   || ASR::is_a<ASR::Set_t>  (*function_return_t)
+                   || ASR::is_a<ASR::Tuple_t>(*function_return_t)) {
+            return false;
+        } else {
+             throw LCompilersException("Unhandled Type : " + ASRUtils::type_to_str_fortran_expr(function_return_t, nullptr));
+        }
+    }
+
+    /// This function is creating the proper type for return slot variable
+    /// WHY? Some return slot variables can't be of the exact type as their function return type.
+    ASR::ttype_t* create_type_for_return_slot_var(ASR::ttype_t* function_return_t){
+        /* Initially Create Exactly The Same Type */
+        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, function_return_t);
+
+        /* Now Start To Modify Type If Needed */
+
+        /* ================ STRING TYPE ================ */
+
+        /* Handle The Case Of DeferredLength + Non Allocatable (some functions have that return type) */
+        {
+            const bool allocatable_needed = ASRUtils::is_deferredLength_string(new_type)
+                                            && !ASRUtils::is_allocatable(new_type)
+                                            && !ASRUtils::is_pointer(new_type);
+
+            if(allocatable_needed) new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
+        }
+        /* Handle Case `character(n) :: str` --  Create `character(:), alloactable :: str` */
+        {
+            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
+                                            && !ASRUtils::is_value_constant(ASRUtils::get_string_type(new_type)->m_len)
+                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::ExpressionLength
+                                            && !ASRUtils::is_allocatable(new_type)
+                                            && !ASRUtils::is_pointer(new_type);
+            if(allocatable_needed){ 
+                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
+                str->m_len = nullptr;
+                str->m_len_kind = ASR::DeferredLength;
+                str->m_physical_type = ASR::DescriptorString;
+                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
+            }
+        }
+        return new_type;
+    }
+
+public :
+
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
         if(PassUtils::is_non_primitive_return_type(x->m_type)){ // Arrays and structs are handled by the array_struct_temporary. No need to check for them here.
-            // Create variable in current_scope to be holding the return + Deallocate.
-            ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
-                "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
-            if(ASRUtils::is_allocatable(result_var)){
-                insert_implicit_deallocate(result_var);
-            }
-            // Create allocate statement if needed
-            if(ASRUtils::is_string_only(x->m_type)){ 
-                ASR::String_t* str = ASRUtils::get_string_type(result_var);
-                if( str->m_len &&
-                !ASRUtils::is_value_constant(str->m_len) &&
-                !ASRUtils::is_allocatable(result_var)){ // Corresponds to -> `character(n) :: str` (Non-allocatable string of non-compile-time length)
-                    ASR::expr_t* len_expr_to_allocate_with = str->m_len; // length Expression
-                    {
-                    /*
-                        Replace allocate length (could be a functionCall).
-                        TODO :: Do proper replacement if functionCall is dependant on FunctionParam from the current functionCall,
-                        as the current visit does redundant functionCall replacement(FunctionCall + variable).
-                    */ 
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = &len_expr_to_allocate_with;
-                        replace_expr(len_expr_to_allocate_with);
-                        current_expr = current_expr_copy;
-                    }
-                    // Modify String info to be deferred allocatable string
-                    str->m_len = nullptr; str->m_len_kind = ASR::DeferredLength;str->m_physical_type = ASR::DescriptorString;
-                    ASRUtils::EXPR2VAR(result_var)->m_type =
-                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, str->base.base.loc, ASRUtils::EXPR2VAR(result_var)->m_type));
 
-                    // Make an implicit deallocate before allocating the return var (handles when allocate is in a do while loop)
-                    insert_implicit_deallocate(result_var);
+            // Create variable in current_scope to be holding the return.
+            ASR::expr_t* result_var = PassUtils::create_var(
+                                            result_counter++,
+                                            "return_slot", x->base.base.loc,
+                                            create_type_for_return_slot_var(x->m_type) , al, current_scope);
 
-                    // Create allocate statement
-                    Vec<ASR::alloc_arg_t> v;
-                    v.reserve(al, 1);
-                    ASR::alloc_arg_t alloc_arg{};
-                    alloc_arg.m_a = result_var;
-                    alloc_arg.m_dims = nullptr;
-                    alloc_arg.n_dims = 0;
-                    alloc_arg.m_len_expr = len_expr_to_allocate_with;
-                    alloc_arg.m_type = nullptr;
-                    v.push_back(al, alloc_arg);
-                    pass_result.push_back(al,
-                        ASRUtils::STMT(ASR::make_Allocate_t(al, str->base.base.loc, v.p, 1, nullptr, nullptr, nullptr)));    
+            /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
+            if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
+            
+            if(allocate_stmt_needed_for_return_slot(x->m_type, ASRUtils::expr_type(result_var))){
+
+                ASR::ttype_t* func_return_type {};
+                if(!ASRUtils::get_function(x->m_name)->m_return_var){ // FunctionCall to Modified Function (Currently Subroutine)
+                    func_return_type = Function__TO__ReturnType_MAP_[ASRUtils::get_function(x->m_name)];
+                } else {
+                    func_return_type = nullptr; // Doesn't matter to provide or not.
                 }
+                
+                AllocateVarBasedOnFuncCall::Allocate(
+                    al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, func_return_type);
             }
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
@@ -168,15 +421,18 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
     public:
 
-        ReplaceFunctionCallWithSubroutineCallVisitor(Allocator& al_): al(al_), replacer(al, pass_result)
+        ReplaceFunctionCallWithSubroutineCallVisitor(
+            Allocator& al_,
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP)
+            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP)
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
+            visit_expr_after_replacement = false;
         }
 
         void call_replacer(){
             replacer.current_expr = current_expr;
-            replacer.current_scope = current_scope;
             replacer.replace_expr(*current_expr);
         }
 
@@ -208,6 +464,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             remove_original_statement = remove_original_statement_copy;
             m_body = body.p;
             n_body = body.size();
+            parent_body = nullptr; // Avoid dangling pointer bugs
         }
 
         bool is_function_call_returning_aggregate_type(ASR::expr_t* m_value) {
@@ -356,9 +613,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
                                           const LCompilers::PassOptions& /*pass_options*/) {
-    CreateFunctionFromSubroutine v(al);
+    std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
+    CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
     v.visit_TranslationUnit(unit);
-    ReplaceFunctionCallWithSubroutineCallVisitor u(al);
+    ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
