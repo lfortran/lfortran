@@ -1067,7 +1067,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
-            ASR::expr_t* d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
+            ASR::expr_t* d_orig_value {};
+            if(ASR::is_a<ASR::FunctionCall_t>(* x.m_value)){
+                // `d_orig_value` should only accept variables. e.g. `arr` OR`arr1+arr2`. Using FunctionCall here creates double functionCall 
+                d_orig_value = nullptr; 
+            } else {
+                d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
+            } 
             ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
 
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));

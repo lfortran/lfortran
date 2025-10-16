@@ -162,7 +162,7 @@ namespace LCompilers {
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_descriptorString(x) || 
+            return ASRUtils::is_string_only(x) || 
                     (x && (ASR::is_a<ASR::List_t>(*x) 
                        || ASR::is_a<ASR::Dict_t>(*x)
                        || ASR::is_a<ASR::Set_t>(*x)
@@ -1292,11 +1292,11 @@ namespace LCompilers {
         }
     }
 
-    static inline void handle_fn_return_var(Allocator &al, ASR::Function_t *x,
+    static inline bool handle_fn_return_var(Allocator &al, ASR::Function_t *x,
             bool (*is_array_or_struct_or_symbolic)(ASR::expr_t*)) {
-        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython) {
-            return;
-        }
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython) return false;
+        
+        bool success = false; // Function Transformed INTO Subroutine
         if (x->m_return_var) {
             /*
             * The `return_var` of the function, which is either an array or
@@ -1348,14 +1348,11 @@ namespace LCompilers {
                 s_func_type->m_arg_types = arg_types.p;
                 s_func_type->n_arg_types = arg_types.n;
                 s_func_type->m_return_var_type = nullptr;
+
+                success = true; // Transformed
             }
         }
-        for (auto &item : x->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                handle_fn_return_var(al, ASR::down_cast<ASR::Function_t>(
-                    item.second), is_array_or_struct_or_symbolic);
-            }
-        }
+        return success;
     }
 
 
