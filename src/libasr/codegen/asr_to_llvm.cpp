@@ -12683,7 +12683,7 @@ public:
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
-                if (arr_cast->m_old == ASR::DescriptorArray && arr_cast->m_new == ASR::PointerArray) {
+                if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
                     this->visit_expr_wrapper(arr_cast->m_arg, false);
