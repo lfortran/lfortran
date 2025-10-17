@@ -1,13 +1,18 @@
 # Backup the original value of the requested library suffixes
 set(_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-# Static libraries end with .a on Unix and .lib on Windows
-# set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib)
-if(WIN32)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .dll .lib .a)
-elseif(APPLE)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib .so .a .lib)
+
+if (USE_DYNAMIC_ZSTD)
+    # Search dynamic library first, then static one.
+    if(WIN32)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES .dll .lib .a)
+    elseif(APPLE)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib .so .a .lib)
+    else()
+        set(CMAKE_FIND_LIBRARY_SUFFIXES .so .a .lib)
+    endif()
 else()
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .so .a .lib)
+    # Static libraries end with .a on Unix and .lib on Windows
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib)
 endif()
 
 find_path(zstd_INCLUDE_DIR zstd.h)
@@ -19,7 +24,7 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CMAKE_FIND_LIBRARY_SUFFIXES})
 unset(_CMAKE_FIND_LIBRARY_SUFFIXES)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(ZSTD DEFAULT_MSG zstd_LIBRARY
+find_package_handle_standard_args(StaticZSTD DEFAULT_MSG zstd_LIBRARY
     zstd_INCLUDE_DIR)
 
 
