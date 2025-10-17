@@ -46,6 +46,12 @@ semantic error: Non-variable expression in variable definition context (actual a
 71 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
    |                            ^^^^^ 
 
+semantic error: Type mismatch in argument `i`: expected `real` but got `integer`
+  --> tests/errors/continue_compilation_3.f90:72:34
+   |
+72 |     call check_incompatible_type(i)  ! Error: incompatible type passed
+   |                                  ^ 
+
 semantic error: Empty array constructor is not allowed
   --> tests/errors/continue_compilation_3.f90:91:9
    |
