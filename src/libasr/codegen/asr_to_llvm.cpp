@@ -7919,6 +7919,9 @@ public:
             llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
 
             llvm::Value* cond = nullptr;
+            if (compiler_options.new_classes) {
+                cond = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt1Ty(context));
+            }
             ASR::stmt_t** type_block = nullptr;
             size_t n_type_block = 0;
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
@@ -7938,13 +7941,45 @@ public:
                         if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_selector))) {
+                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                            static_ptr = llvm_utils->CreateLoad2(
+                                llvm_utils->get_el_type(
+                                    x.m_selector,
+                                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)),
+                                    module.get())->getPointerTo(),
+                                static_ptr);
+                        }
+
                         // Use `lfortran_dynamic_cast()` to compare runtime type-info of a class
                         // variable passed as selector variable. We need to compare the exact type
                         // instead of inheritance here.
-                        llvm::Value* val = lfortran_dynamic_cast(
-                            static_ptr, struct_api->newclass2typeinfo.at(type_sym), true);
-                        cond = builder->CreateICmpNE(
-                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                        if (ASRUtils::is_unlimited_polymorphic_type(x.m_selector)) {
+                            llvm::Value* val = lfortran_dynamic_cast(
+                                    static_ptr, struct_api->newclass2typeinfo.at(type_sym), true);
+                            builder->CreateStore(builder->CreateICmpNE(
+                                val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                        } else {
+                            ASR::symbol_t* selector_sym = ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(x.m_selector));
+                            llvm::Value* is_selector_null = builder->CreateICmpEQ(
+                                builder->CreatePtrToInt(static_ptr, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                            llvm_utils->create_if_else(is_selector_null, [=]() {
+                                llvm::Value* ptr_to_method = struct_api->get_pointer_to_method(selector_sym, module.get());
+                                llvm::Value* vptr = llvm_utils->CreateAlloca(*builder, llvm_utils->vptr_type);
+                                builder->CreateStore(ptr_to_method, vptr);
+                                llvm::Value* val = lfortran_dynamic_cast(
+                                    vptr, struct_api->newclass2typeinfo.at(type_sym), true);
+                                builder->CreateStore(builder->CreateICmpNE(
+                                    val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                            }, [=](){
+                                llvm::Value* val = lfortran_dynamic_cast(
+                                    static_ptr, struct_api->newclass2typeinfo.at(type_sym), true);
+                                builder->CreateStore(builder->CreateICmpNE(
+                                    val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                            });
+                        }
                     } else {
                         ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
                         llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
@@ -7987,10 +8022,42 @@ public:
                         if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
-                        llvm::Value* val = lfortran_dynamic_cast(
-                            static_ptr, struct_api->newclass2typeinfo.at(class_sym), false);
-                        cond = builder->CreateICmpNE(
-                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_selector))) {
+                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                            static_ptr = llvm_utils->CreateLoad2(
+                                llvm_utils->get_el_type(
+                                    x.m_selector,
+                                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)),
+                                    module.get())->getPointerTo(),
+                                static_ptr);
+                        }
+
+                        if (ASRUtils::is_unlimited_polymorphic_type(x.m_selector)) {
+                            llvm::Value* val = lfortran_dynamic_cast(
+                                    static_ptr, struct_api->newclass2typeinfo.at(class_sym), false);
+                            builder->CreateStore(builder->CreateICmpNE(
+                                val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                        } else {
+                            ASR::symbol_t* selector_sym = ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(x.m_selector));
+                            llvm::Value* is_selector_null = builder->CreateICmpEQ(
+                                builder->CreatePtrToInt(static_ptr, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                            llvm_utils->create_if_else(is_selector_null, [=]() {
+                                llvm::Value* ptr_to_method = struct_api->get_pointer_to_method(selector_sym, module.get());
+                                llvm::Value* vptr = llvm_utils->CreateAlloca(*builder, llvm_utils->vptr_type);
+                                builder->CreateStore(ptr_to_method, vptr);
+                                llvm::Value* val = lfortran_dynamic_cast(
+                                    vptr, struct_api->newclass2typeinfo.at(class_sym), false);
+                                builder->CreateStore(builder->CreateICmpNE(
+                                    val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                            }, [=](){
+                                llvm::Value* val = lfortran_dynamic_cast(
+                                    static_ptr, struct_api->newclass2typeinfo.at(class_sym), false);
+                                builder->CreateStore(builder->CreateICmpNE(
+                                    val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
+                            });
+                        }
                     } else {
                         llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
 
@@ -8062,8 +8129,8 @@ public:
                             struct_api->intrinsic_type_info.at(
                                 ASRUtils::intrinsic_type_to_str_with_kind(type_stmt_type, kind)),
                             true);
-                        cond = builder->CreateICmpNE(
-                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                        builder->CreateStore(builder->CreateICmpNE(
+                            val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
                     } else {
                         llvm::Value* intrinsic_type_id = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                             llvm::APInt(64, -((int) type_stmt_type->type) -
@@ -8088,7 +8155,12 @@ public:
                                        " is not yet supported.");
                 }
             }
-            builder->CreateCondBr(cond, thenBB, elseBB);
+            if (compiler_options.new_classes) {
+                builder->CreateCondBr(llvm_utils->CreateLoad2(
+                    llvm::Type::getInt1Ty(context), cond), thenBB, elseBB);
+            } else {
+                builder->CreateCondBr(cond, thenBB, elseBB);
+            }
             builder->SetInsertPoint(thenBB);
             // TODO: change symtab for arrays too
             bool change_symtab = !compiler_options.new_classes && ASRUtils::is_unlimited_polymorphic_type(x.m_selector)

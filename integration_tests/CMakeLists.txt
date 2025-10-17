@@ -1977,7 +1977,7 @@ RUN(NAME class_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --rea
 RUN(NAME class_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES)
+RUN(NAME class_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2256,7 +2256,7 @@ RUN(NAME dealloc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --r
 RUN(NAME dealloc_02 LABELS gfortran)
 RUN(NAME dealloc_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME dealloc_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_NEW_CLASSES)
+RUN(NAME dealloc_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME lapack_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
