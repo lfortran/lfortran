@@ -6,10 +6,10 @@ source_filename = "LFortran"
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_point = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0) }, align 8
-@_VTable_point = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_point to i8*), i8* null, i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*)] }, align 8
+@_VTable_point = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*), i8* null] }, align 8
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
 @_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_point to i8*) }, align 8
-@_VTable_point2d = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_point2d to i8*), i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*)] }, align 8
+@_VTable_point2d = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*), i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -38,7 +38,11 @@ entry:
   %2 = bitcast i8* %0 to %point*
   %3 = bitcast i8* %1 to %point*
   %4 = bitcast %point* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %point* %2 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = bitcast %point* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
   ret void
 }
 
@@ -46,36 +50,40 @@ define void @_copy_defs_point2d(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %point2d*
   %3 = bitcast i8* %1 to %point2d*
-  %4 = getelementptr %point2d, %point2d* %2, i32 0, i32 1
-  %5 = load float, float* %4, align 4
-  %6 = getelementptr %point2d, %point2d* %3, i32 0, i32 1
+  %4 = bitcast %point2d* %3 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %point2d* %2 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %point2d, %point2d* %2, i32 0, i32 1
+  %8 = load float, float* %7, align 4
+  %9 = getelementptr %point2d, %point2d* %3, i32 0, i32 1
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %8, float* %9, align 4
   br label %ifcont
 
 else:                                             ; preds = %entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %7 = getelementptr %point2d, %point2d* %2, i32 0, i32 2
-  %8 = load float, float* %7, align 4
-  %9 = getelementptr %point2d, %point2d* %3, i32 0, i32 2
+  %10 = getelementptr %point2d, %point2d* %2, i32 0, i32 2
+  %11 = load float, float* %10, align 4
+  %12 = getelementptr %point2d, %point2d* %3, i32 0, i32 2
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  store float %8, float* %9, align 4
+  store float %11, float* %12, align 4
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %10 = getelementptr %point2d, %point2d* %2, i32 0, i32 0
-  %11 = getelementptr %point2d, %point2d* %3, i32 0, i32 0
-  %12 = bitcast %point2d* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  %13 = getelementptr %point2d, %point2d* %2, i32 0, i32 0
+  %14 = getelementptr %point2d, %point2d* %3, i32 0, i32 0
+  %15 = bitcast %point2d* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
   ret void
 }
 
@@ -103,7 +111,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = load %point*, %point** %ptr, align 8
   %10 = bitcast %point* %9 to float (%point*)***
   %11 = load float (%point*)**, float (%point*)*** %10, align 8
-  %12 = getelementptr inbounds float (%point*)*, float (%point*)** %11, i32 0
+  %12 = getelementptr inbounds float (%point*)*, float (%point*)** %11, i32 1
   %13 = load float (%point*)*, float (%point*)** %12, align 8
   %14 = call float %13(%point* %9)
   store float %14, float* %res, align 4

@@ -808,9 +808,13 @@ namespace LCompilers {
             void fill_struct_copy_body(ASR::symbol_t* struct_sym,
                                     llvm::Function* func,
                                     llvm::Module* module);
+            
+            llvm::Function* define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module); 
+
+            void fill_intrinsic_type_copy_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
-                                llvm::Value* dest, llvm::Module* module);
+                                ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
     };
 
     class LLVMTuple {
