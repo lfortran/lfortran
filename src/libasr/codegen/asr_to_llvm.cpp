@@ -6695,12 +6695,14 @@ public:
             }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
-            this->visit_expr(*x.m_value);
-            llvm::Value* value_struct = tmp;
+            bool is_unl_poly = ptr_loads && ASRUtils::is_unlimited_polymorphic_type(x.m_value);
+            this->visit_expr_wrapper(x.m_value, is_unl_poly);
+            llvm::Value* value_struct_orig = tmp;
             ptr_loads = LLVM::is_llvm_pointer(*asr_target_type);
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
-            this->visit_expr(*x.m_target);
+            is_unl_poly = ptr_loads && ASRUtils::is_unlimited_polymorphic_type(x.m_target);
+            this->visit_expr_wrapper(x.m_target, is_unl_poly);
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target_struct_orig = tmp;
             ptr_loads = ptr_loads_copy;
@@ -6716,12 +6718,31 @@ public:
             }
             if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
                 LLVM::is_llvm_pointer(*asr_value_type)) {
-                value_struct = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), value_struct);
+                value_struct_orig = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), value_struct_orig);
             }
 
             llvm::Value* target_struct = target_struct_orig;
+            llvm::Value* value_struct = value_struct_orig;
+            llvm::Value* llvm_dt = value_struct;
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value)) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_value);
+                ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(array_item->m_v));
+                this->visit_expr_wrapper(array_item->m_v, true);
+                ptr_loads = ptr_loads_copy;
+                llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
+                if (ASRUtils::extract_physical_type(
+                        ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
+                    llvm_dt = llvm_utils->CreateLoad2(
+                        struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
+                        array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
+                } else {
+                    llvm_dt = tmp;
+                }
+            }
+
             if (is_target_unlimited_polymorphic) {
-                target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
+                target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
                 target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_struct);
             }
             if (is_value_unlimited_polymorphic) {
@@ -6736,29 +6757,10 @@ public:
                 llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
                 llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-                llvm::Value* llvm_dt = value_struct;
-                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value)) {
-                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_value);
-                    ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(array_item->m_v));
-                    this->visit_expr_wrapper(array_item->m_v, true);
-                    ptr_loads = ptr_loads_copy;
-                    llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                        array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
-                    if (ASRUtils::extract_physical_type(
-                            ASRUtils::expr_type(array_item->m_v)) == ASR::array_physical_typeType::DescriptorArray) {
-                        llvm_dt = llvm_utils->CreateLoad2(
-                            struct_llvm_type->getPointerTo(), arr_descr->get_pointer_to_data(
-                            array_item->m_v, ASRUtils::expr_type(array_item->m_v), tmp, module.get()));
-                    } else {
-                        llvm_dt = tmp;
-                    }
-                }
+
                 llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-                ASR::symbol_t* value_struct_sym = ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
-                llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-                    vtable_ptr, struct_api->struct_vtab_function_offset[value_struct_sym]["_lfortran_struct_copy"]));
+                llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0));
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
@@ -6781,15 +6783,14 @@ public:
 
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
                     deepcopy_type, deepcopy_type, module.get());
-                
-                if (is_target_unlimited_polymorphic) {
-                    // Store Vptr from original struct
-                    llvm::Value* vptr = builder->CreateBitCast(value_struct, llvm_utils->vptr_type->getPointerTo());
-                    vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
-                    builder->CreateStore(vptr, llvm_utils->create_gep2(
-                        target_llvm_type, target_struct_orig, 0));
-                }
                 struct_api->store_class_vptr(vptr_sym, target_struct, module.get());
+            }
+            if (is_target_unlimited_polymorphic) {
+                // Store Vptr from original struct
+                llvm::Value* vptr = builder->CreateBitCast(llvm_dt, llvm_utils->vptr_type->getPointerTo());
+                vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                builder->CreateStore(vptr, builder->CreateBitCast(
+                    target_struct_orig, llvm_utils->vptr_type->getPointerTo()));
             }
             return;
         } else if( is_target_struct && is_value_struct ) {
