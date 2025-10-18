@@ -33,7 +33,7 @@ stmt
     | ReAlloc(alloc_arg* args)
     | Assign(int label, identifier variable)
     | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation)
-    | DebugCheckArrayBounds(expr target, expr value, expr orig_value, bool move_allocation)
+    | DebugCheckArrayBounds(expr target, expr value, expr? orig_value, bool move_allocation)
     | Associate(expr target, expr value)
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars)

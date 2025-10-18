@@ -2110,7 +2110,7 @@ namespace LCompilers {
     }
 
 
-    llvm::Value* LLVMUtils::get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr){
+    llvm::Value* LLVMUtils::get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr, bool get_pointer_to_data /*default*/){
         LCOMPILERS_ASSERT(is_proper_array_of_strings_llvm_var(type, arr_ptr))
         LCOMPILERS_ASSERT(ASRUtils::is_array_of_strings(type))
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
@@ -2121,10 +2121,10 @@ namespace LCompilers {
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
                     arr_api->get_pointer_to_data(type_, arr_ptr));
-                return get_string_data(str, str_desc);
+                return get_string_data(str, str_desc, get_pointer_to_data);
             }
             case ASR::PointerArray:{
-                return get_string_data(str, arr_ptr);
+                return get_string_data(str, arr_ptr, get_pointer_to_data);
             }
             default:
                 throw LCompilersException("Unhandled Array Physical Type");

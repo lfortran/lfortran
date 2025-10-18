@@ -469,7 +469,7 @@ namespace LCompilers {
                 * e.g. --> `character(100) :: arr_of_strings(7)`
                   Returns `i8*`
             */
-            llvm::Value* get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr);
+            llvm::Value* get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr, bool get_poniter_to_data = false);
             
             /*
                 * Gets string length of array of strings

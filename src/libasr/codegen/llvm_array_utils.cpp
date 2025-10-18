@@ -1051,10 +1051,23 @@ namespace LCompilers {
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);
             llvm::Type* llvm_data_type =  llvm_utils->get_el_type(array_exp, ASRUtils::extract_type(asr_data_type), module);
-            builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
+            if(ASRUtils::is_character(*asr_data_type)){ // `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }` -- Copy The whole string descriptor.
+                llvm::Value* dest_str_desc_loaded {}; // %string_descriptor*
+                llvm::Value* src_str_desc_ptr {};// %string_descriptor
+                dest_str_desc_loaded = builder->CreateLoad(llvm_data_type->getPointerTo(), first_ptr);
+                src_str_desc_ptr = builder->CreateLoad(llvm_data_type, builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr));
+                builder->CreateStore(src_str_desc_ptr, dest_str_desc_loaded);
+            } else { // e.g. `{ %f64*, i32, %dimension_descriptor*, i1, i32 }`
+                builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
+            }
 
-            // Data pointer has been moved to dest, so set src's data pointer to null
-            builder->CreateStore(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), src_data_ptr);
+            // Data pointer has been moved to dest, so set src's data pointer to null            
+            if(ASRUtils::is_character(*asr_data_type)){ // `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }` -- Keep `string_descriptor` but clear its state.
+                llvm::Value* src_data_ptr = llvm_utils->get_stringArray_data(asr_data_type /*Type Of Src*/, src, true);
+                builder->CreateStore(llvm::ConstantPointerNull::get(llvm_utils->character_type), src_data_ptr);
+            } else { // e.g. `{ %f64*, i32, %dimension_descriptor*, i1, i32 }`
+                builder->CreateStore(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), src_data_ptr);
+            }
 
             llvm::Value* src_offset = this->get_offset(dest_ty, src);
             llvm::Value* dest_offset = this->get_offset(dest_ty, dest, false);
