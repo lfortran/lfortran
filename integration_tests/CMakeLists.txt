@@ -548,8 +548,9 @@ RUN(NAME functions_43 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_44 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_45 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_46 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME functions_47 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME functions_48 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME functions_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME functions_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 
 RUN(NAME common_01 LABELS gfortran)
