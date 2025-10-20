@@ -143,7 +143,7 @@ private :
                 ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
                                     current_scope_, unique_name, sym,
                                     ASRUtils::get_sym_module(sym)->m_name, nullptr, 0,
-                                    unique_name, ASR::Private));
+                                    ASRUtils::symbol_name(sym), ASR::Private));
         current_scope_->add_symbol(unique_name, ext_sym);
         return ext_sym;
     }
