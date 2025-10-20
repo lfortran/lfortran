@@ -1067,7 +1067,28 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
-            ASR::expr_t* d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
+            ASR::expr_t* d_orig_value {};
+            {/* Very hard coded case (see test `elemental_18.f90`) -- Remove after `orig_value` refactor (issue #8726) */
+                auto elemental_fnCall_case = [&](){
+                    if(ASR::is_a<ASR::StringCompare_t>(*x.m_value)){
+                        auto tmp = ASR::down_cast<ASR::StringCompare_t>(x.m_value)->m_right;
+                        auto tmp2 = ASR::down_cast<ASR::StringCompare_t>(x.m_value)->m_left;
+                        auto fn_call = ASR::is_a<ASR::FunctionCall_t> (*tmp)  ? ASR::down_cast<ASR::FunctionCall_t>(tmp) : nullptr; 
+                        auto fn_call2 = ASR::is_a<ASR::FunctionCall_t>(*tmp2) ? ASR::down_cast<ASR::FunctionCall_t>(tmp2) : nullptr; 
+                        return (fn_call && ASRUtils::is_elemental(fn_call->m_name)) 
+                            || (fn_call2 && ASRUtils::is_elemental(fn_call2->m_name));
+                    }
+                    return false;
+                };
+                if(ASR::is_a<ASR::FunctionCall_t>(*x.m_value)){ // functionCalls shouldn't appear here
+                    d_orig_value = nullptr; 
+                } else if(elemental_fnCall_case()){
+                    d_orig_value = nullptr; 
+                } else {
+                    d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
+                }
+            }
+
             ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
 
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));

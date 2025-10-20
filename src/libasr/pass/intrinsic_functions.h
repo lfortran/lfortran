@@ -4987,7 +4987,8 @@ namespace StringConcat {
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
         if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
             ASRBuilder b(al, loc);
-            return b.Call(f_sym, new_args, b.String(nullptr, ASR::DeferredLength), nullptr);
+            ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+            return f_call;
         }
         
         declare_basic_variables(intrinsic_fn_name)
@@ -5028,7 +5029,6 @@ namespace StringConcat {
 
         /* Create Call + Replace FuncParams */
         ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-        FuncParamToArgReplacer::replace(al, ASR::down_cast<ASR::FunctionCall_t>(f_call));
         return f_call;
     }
 
@@ -5133,11 +5133,10 @@ namespace StringTrim {
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-            ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::DescriptorString));
         scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
+
+        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        return f_call;
     }
 
 } // namespace StringTrim
