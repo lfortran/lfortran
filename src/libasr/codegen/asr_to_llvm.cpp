@@ -14362,6 +14362,16 @@ public:
                     ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
                     this->visit_expr_wrapper(x.m_args[i], true);
                 }
+                // Handling for polymorphic class variables in select type with --new-classes
+                if (compiler_options.new_classes &&
+                    current_select_type_block_type_asr != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
+                    ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
+                    // Extract data pointer from polymorphic struct (field 1)
+                    llvm::Value* data_ptr = llvm_utils->create_gep2(
+                        tmp->getType()->getPointerElementType(), tmp, 1);
+                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8PtrTy(context), data_ptr);
+                }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     llvm::Value* tmp_ptr = builder->CreateAlloca(tmp->getType());
