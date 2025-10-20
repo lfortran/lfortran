@@ -14367,10 +14367,27 @@ public:
                     current_select_type_block_type_asr != nullptr &&
                     ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
                     ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
-                    // Extract data pointer from polymorphic struct (field 1)
+                    // Extract data pointer from polymorphic struct
+#if LLVM_VERSION_MAJOR >= 14
+                    // LLVM 14+ uses opaque pointers, get type from ASR instead
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
+                    llvm::Type* polymorphic_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_args[i], arg_type, module.get());
+                    llvm::Value* data_ptr = llvm_utils->create_gep2(
+                        polymorphic_struct_type, tmp, 1);
+#else
+                    // LLVM < 14: use getPointerElementType()
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
                         tmp->getType()->getPointerElementType(), tmp, 1);
+#endif
+#if LLVM_VERSION_MAJOR >= 17
+                    // LLVM 17+: use PointerType::getUnqual()
+                    tmp = llvm_utils->CreateLoad2(
+                        llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr);
+#else
+                    // LLVM < 17: use Type::getInt8PtrTy()
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8PtrTy(context), data_ptr);
+#endif
                 }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
