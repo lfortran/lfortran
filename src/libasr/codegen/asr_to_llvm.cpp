@@ -14368,18 +14368,14 @@ public:
                     ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
                     ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
                     // Extract data pointer from polymorphic struct
-#if LLVM_VERSION_MAJOR >= 14
-                    // LLVM 14+ uses opaque pointers, get type from ASR instead
-                    ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
-                    llvm::Type* polymorphic_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_args[i], arg_type, module.get());
+                    // Get struct type from ASR, as LLVM 15+ Doesn't support direct 
+                    // extraction from tmp as getPointerElementType()
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i]));
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
                         polymorphic_struct_type, tmp, 1);
-#else
-                    // LLVM < 14: use getPointerElementType()
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(
-                        tmp->getType()->getPointerElementType(), tmp, 1);
-#endif
 #if LLVM_VERSION_MAJOR >= 17
                     // LLVM 17+: use PointerType::getUnqual()
                     tmp = llvm_utils->CreateLoad2(
