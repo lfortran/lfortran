@@ -140,11 +140,12 @@ public:
         LCOMPILERS_ASSERT(current_scope && current_scope->asr_owner)
         ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
         ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[x->m_param_number]);
-        char* const parameter_name = v->m_name;
+        char* const name_in_helped_func = v->m_name;
+
         // Match on Symbol name -- Use argument from `newargsp` -- replace current
         for(size_t i = 0; i < newargsp->n; i++) {
-            char* const argument_name = ASRUtils::symbol_name(down_cast<ASR::Var_t>((*newargsp)[i])->m_v);
-            if( argument_name == parameter_name ){
+            char* const name_in_helper_func = ASRUtils::symbol_name(down_cast<ASR::Var_t>((*newargsp)[i])->m_v);
+            if( std::strcmp(name_in_helper_func, name_in_helped_func) == 0 ){
                 *current_expr = newargsp->p[i];
                 return;
             }
