@@ -132,17 +132,20 @@ private :
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
         if(ASR::symbol_t* func = current_scope_->resolve_symbol(ASRUtils::symbol_name(sym))){
-            return func; // Found In Current Scope -- Do Nothing
-        } else {
-            // Not Found In Current Scope -- Create An External Symbol
-            auto ext_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
-                                        current_scope_, ASRUtils::symbol_name(sym), sym,
-                                        ASRUtils::get_sym_module(sym)->m_name, nullptr, 0,
-                                        ASRUtils::symbol_name(sym), ASR::Private));
-            current_scope_->add_symbol(ASRUtils::symbol_name(ext_sym), ext_sym);
-            return ext_sym;
+            auto const sym_deep  =  ASRUtils::symbol_get_past_external(sym);
+            auto const func_deep =  ASRUtils::symbol_get_past_external(func);
+            if(sym_deep == func_deep) return func; // Found In Current Scope -- Do Nothing
         }
+        
+        /* Not Found In Current Scope -- Create An External Symbol */
+        char* const unique_name = s2c(al_, current_scope_->get_unique_name(ASRUtils::symbol_name(sym)));
+        auto ext_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
+                                    current_scope_, unique_name, sym,
+                                    ASRUtils::get_sym_module(sym)->m_name, nullptr, 0,
+                                    unique_name, ASR::Private));
+        current_scope_->add_symbol(unique_name, ext_sym);
+        return ext_sym;
     }
 
 public : 

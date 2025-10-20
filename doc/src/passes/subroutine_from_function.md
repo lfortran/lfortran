@@ -22,25 +22,28 @@
         pass logic in depth first manner -- making us creating temporaries for simple functionCalls. NO AGGREGATE RETURNS
 
 ========   Example   ========
-
+```.f90
     function foo(x) result (r)
         integer :: x
         character(len=x) :: r 
     end function
-
     print *, foo(f()) ! ASSUME `f()` returns an integer
+```
 
-    WITHOUT THIS CLASS :
-        allocate(character(len=f()) :: return_slot) ! DOUBLE EVALUATION OF `f()`
-        call foo(f(), return_slot)
-        print *, return_slot
+WITHOUT THIS CLASS :
+```.f90
+    allocate(character(len=f()) :: return_slot) ! DOUBLE EVALUATION OF `f()`
+    call foo(f(), return_slot)
+    print *, return_slot
+```
 
-    WITH THIS CLASS :
-        temp_var = f()
-        allocate(character(len=funcCall_temp_var) :: return_slot)
-        call foo(temp_var, return_slot)
-        print *, return_slot
-
+WITH THIS CLASS :
+```.f90
+    temp_var = f()
+    allocate(character(len=funcCall_temp_var) :: return_slot)
+    call foo(temp_var, return_slot)
+    print *, return_slot
+```
 ========   How It Works?   ========
     1. We use entry static function `Allocate()` to prevent using other functions by mistake.
     2. Pass to it Var to allocate + FunctionCall we're allocating against its return type + Other helper members.
@@ -50,6 +53,10 @@
     6. FunctionCalls arguments are replaced with temporaries in both FunctionParam site and also the functionCall's argument site.
     7. Any other argument expression is just used normally.
     8. Then we insert an allocate statement (the main purpose of this class) 
+
+---
+
+
 
 ### Class `CreateFunctionFromSubroutine` 
 
