@@ -14362,7 +14362,7 @@ public:
                     ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
                     this->visit_expr_wrapper(x.m_args[i], true);
                 }
-                // Handling for polymorphic class variables in select type with --new-classes
+                // Handling for polymorphic class variables in print statements with --new-classes
                 if (compiler_options.new_classes &&
                     current_select_type_block_type_asr != nullptr &&
                     ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&

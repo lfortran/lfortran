@@ -6,5 +6,7 @@ program class_71
     select type (x)
     type is (integer)
         print *, x
+    class default
+        print *, "Unknown type"
     end select
 end program class_71
