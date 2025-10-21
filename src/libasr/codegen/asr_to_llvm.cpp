@@ -14387,14 +14387,7 @@ public:
                     llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
                         polymorphic_struct_type, tmp, 1);
-#if LLVM_VERSION_MAJOR >= 17
-                    // LLVM 17+: use PointerType::getUnqual()
-                    tmp = llvm_utils->CreateLoad2(
-                        llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)), data_ptr);
-#else
-                    // LLVM < 17: use Type::getInt8PtrTy()
-                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8PtrTy(context), data_ptr);
-#endif
+                    tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
                 }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
