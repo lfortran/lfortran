@@ -4381,7 +4381,7 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
     if (ASR::is_a<ASR::Struct_t>(*target) && ASR::is_a<ASR::Struct_t>(*value)) {
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(value);
-        is_class_same = (target == value);
+        is_class_same = (target == value) || (std::string(tar_struct->m_name) == "~unlimited_polymorphic_type" && std::string(tar_struct->m_name) == "~unlimited_polymorphic_type");
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
