@@ -278,7 +278,7 @@ namespace LCompilers {
                 std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *type, llvm::Value *x, int idx);
 
-            llvm::Value* CreateInBoundsGEPDeprecated(llvm::Value *x, std::vector<llvm::Value *> &idx);
+            
             llvm::Value* CreateInBoundsGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(ASR::ttype_t *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
