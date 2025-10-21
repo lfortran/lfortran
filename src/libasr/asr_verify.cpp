@@ -938,7 +938,7 @@ public:
                 // TODO: This seems like a bug, we should not use ArrayItem with
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
-            } else {
+            } else if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(x.m_v))) {
                 require(n_dims > 0,
                     "The variable in ArrayItem must be an array, not a scalar");
             }
