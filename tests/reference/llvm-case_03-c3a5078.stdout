@@ -94,6 +94,7 @@ ifcont6:                                          ; preds = %ifcont, %then
   %17 = load i64, i64* %16, align 4
   %18 = trunc i64 %17 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %15, i32 %18, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %10)
   store i32 -1, i32* %marks3, align 4
   %19 = load i32, i32* %marks3, align 4
   %20 = icmp sle i32 42, %19
@@ -141,6 +142,7 @@ ifcont12:                                         ; preds = %ifcont11, %then7
   %38 = load i64, i64* %37, align 4
   %39 = trunc i64 %38 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %36, i32 %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %31)
   call void @_lpython_free_argv()
   br label %return
 
@@ -153,5 +155,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

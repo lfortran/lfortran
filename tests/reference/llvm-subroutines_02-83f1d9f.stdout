@@ -50,6 +50,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %3)
   %12 = load i32, i32* %i1, align 4
   %13 = icmp ne i32 %12, 1
   br i1 %13, label %then, label %else
@@ -91,6 +92,7 @@ ifcont5:                                          ; preds = %else4, %then3
   %24 = load i64, i64* %23, align 4
   %25 = trunc i64 %24 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %22, i32 %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %17)
   %26 = load i32, i32* %i1, align 4
   %27 = icmp ne i32 %26, 1
   br i1 %27, label %then7, label %else8
@@ -132,6 +134,7 @@ ifcont12:                                         ; preds = %else11, %then10
   %38 = load i64, i64* %37, align 4
   %39 = trunc i64 %38 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %36, i32 %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %31)
   %40 = load i32, i32* %i1, align 4
   %41 = icmp ne i32 %40, 1
   br i1 %41, label %then14, label %else15
@@ -201,6 +204,8 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

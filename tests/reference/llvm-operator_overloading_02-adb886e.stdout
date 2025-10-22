@@ -47,6 +47,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %3)
   store i32 1, i32* %call_arg_value1, align 4
   call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %call_arg_value1)
   %12 = alloca i64, align 8
@@ -63,6 +64,7 @@ define i32 @main(i32 %0, i8** %1) {
   %20 = load i64, i64* %19, align 4
   %21 = trunc i64 %20 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %18, i32 %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %13)
   call void @_lpython_free_argv()
   br label %return
 
@@ -75,5 +77,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

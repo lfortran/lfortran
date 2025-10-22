@@ -100,6 +100,7 @@ ifcont8:                                          ; preds = %else7, %then6
   %24 = load i64, i64* %23, align 4
   %25 = trunc i64 %24 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %22, i32 %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %17)
   store i32 0, i32* %j2, align 4
   store i32 0, i32* %i1, align 4
   br label %loop.head9
@@ -162,6 +163,7 @@ ifcont18:                                         ; preds = %else17, %then16
   %46 = load i64, i64* %45, align 4
   %47 = trunc i64 %46 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %44, i32 %47, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %39)
   store i32 0, i32* %j2, align 4
   store i32 0, i32* %i1, align 4
   br label %loop.head20
@@ -224,6 +226,7 @@ ifcont28:                                         ; preds = %else27, %then26
   %68 = load i64, i64* %67, align 4
   %69 = trunc i64 %68 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %66, i32 %69, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %61)
   call void @_lpython_free_argv()
   br label %return
 
@@ -240,5 +243,7 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

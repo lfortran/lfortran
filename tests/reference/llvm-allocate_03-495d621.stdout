@@ -557,6 +557,7 @@ ifcont35:                                         ; preds = %ifcont33
   %246 = load i64, i64* %245, align 4
   %247 = trunc i64 %246 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @115, i32 0, i32 0), i8* %244, i32 %247, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @106, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %239)
   %248 = load %array*, %array** %c, align 8
   %249 = getelementptr %array, %array* %248, i32 0, i32 0
   %250 = load i32*, i32** %249, align 8
@@ -858,6 +859,7 @@ ifcont6:                                          ; preds = %ifcont4
   %69 = load i64, i64* %68, align 4
   %70 = trunc i64 %69 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %67, i32 %70, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %62)
   %71 = load %array*, %array** %x, align 8
   %72 = getelementptr %array, %array* %71, i32 0, i32 0
   %73 = load i32*, i32** %72, align 8
@@ -1094,6 +1096,7 @@ ifcont27:                                         ; preds = %ifcont25
   %212 = load i64, i64* %211, align 4
   %213 = trunc i64 %212 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @37, i32 0, i32 0), i8* %210, i32 %213, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %205)
   %214 = load %array*, %array** %x, align 8
   %215 = getelementptr %array, %array* %214, i32 0, i32 0
   %216 = load i32*, i32** %215, align 8
@@ -1449,6 +1452,7 @@ ifcont11:                                         ; preds = %ifcont9
   %86 = load i64, i64* %85, align 4
   %87 = trunc i64 %86 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @67, i32 0, i32 0), i8* %84, i32 %87, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @58, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %79)
   %88 = load %array*, %array** %c, align 8
   %89 = getelementptr %array, %array* %88, i32 0, i32 0
   %90 = load i32*, i32** %89, align 8
