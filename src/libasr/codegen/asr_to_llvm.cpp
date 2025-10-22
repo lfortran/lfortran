@@ -1,3 +1,4 @@
+#include "libasr/assert.h"
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -1265,6 +1266,8 @@ public:
                 visit_symbol(*item.second);
             }
         }
+        LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
+                        "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
 
     template <typename T>

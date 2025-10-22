@@ -633,7 +633,7 @@ namespace LCompilers {
             /**
              *@class StringFormatReturn
              *
-             *@brief Hold return of `_lcompilers_string_format_fortran` 
+             *@brief Holds return of `_lcompilers_string_format_fortran` 
              *        for the consumer of the return to free it after consumtion (print, write, ..).
              *
              *@details ** `_lcompilers_string_format_fortran` return a `char*` which needs
@@ -642,16 +642,19 @@ namespace LCompilers {
              */ 
             class StringFormatReturn {
                 LLVMUtils   *llvmUtils_instance_;
-                llvm::Value *return_val = nullptr; // Holds return of call to `_lcompilers_string_format_fortran`
-                StringFormatReturn(LLVMUtils *instance): llvmUtils_instance_(instance) {}
-
-                bool is_freed()           { return return_val == nullptr; }
+                llvm::Value *return_val = nullptr; // Holds `_lcompilers_string_format_fortran()` call return
                 bool previous_one_freed() { return return_val == nullptr; }
 
-                public:
+            public:
 
+                StringFormatReturn(LLVMUtils *instance): llvmUtils_instance_(instance) {}
+
+                /// Check that nothing is pending to be freed.
+                bool all_clean(){ return return_val == nullptr; }
+                
                 void set(llvm::Value* val) {
-                    LCOMPILERS_ASSERT_MSG(previous_one_freed(), "Previous StringFormatReturn not freed")
+                    LCOMPILERS_ASSERT_MSG(previous_one_freed(),
+                                          "Previous StringFormatReturn not freed")
                     return_val = val;
                 }
 
@@ -660,14 +663,6 @@ namespace LCompilers {
                     llvmUtils_instance_->lfortran_free(return_val);
                     return_val = nullptr;
                 }
-
-                ~StringFormatReturn()  {
-                   if(std::uncaught_exceptions() == 0) {
-                        LCOMPILERS_ASSERT_MSG(is_freed(), "StringFormat Return Not Freed");
-                   }
-                };
-
-                friend class LLVMUtils;
             };
             StringFormatReturn stringFormat_return {this};
     }; // LLVMUtils
