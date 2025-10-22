@@ -219,6 +219,7 @@ ifcont14:                                         ; preds = %else13, %then12
   %35 = load i64, i64* %34, align 4
   %36 = trunc i64 %35 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %33, i32 %36, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %28)
   %37 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
   %38 = icmp ne i32 %37, 12
   br i1 %38, label %then15, label %else16
@@ -248,5 +249,7 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

@@ -42,6 +42,7 @@ then:                                             ; preds = %.entry
   %14 = load i64, i64* %13, align 4
   %15 = trunc i64 %14 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %7)
   %16 = load i32, i32* %x, align 4
   store i32 %16, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
   call void @sub1.__module_recursion_01_sub2()
@@ -85,6 +86,7 @@ define void @sub1.__module_recursion_01_sub2() {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %3)
   call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
   br label %return
 
@@ -95,6 +97,8 @@ return:                                           ; preds = %.entry
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

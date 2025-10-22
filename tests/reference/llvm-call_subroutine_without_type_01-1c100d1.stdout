@@ -69,6 +69,7 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   %14 = load i64, i64* %13, align 4
   %15 = trunc i64 %14 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %7)
   %16 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
   %17 = getelementptr %mytype, %mytype* %16, i32 0, i32 0
   %18 = load float, float* %17, align 4
@@ -93,6 +94,8 @@ return:                                           ; preds = %ifcont
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

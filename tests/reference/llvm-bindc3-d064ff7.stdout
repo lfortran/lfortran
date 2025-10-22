@@ -40,6 +40,7 @@ define i32 @main(i32 %0, i8** %1) {
   %15 = load i64, i64* %14, align 4
   %16 = trunc i64 %15 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %8)
   store i16* %y1, i16** %x, align 8
   %17 = alloca i64, align 8
   %18 = load i16*, i16** %x, align 8
@@ -62,6 +63,7 @@ define i32 @main(i32 %0, i8** %1) {
   %30 = load i64, i64* %29, align 4
   %31 = trunc i64 %30 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %28, i32 %31, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %23)
   call void @_lpython_free_argv()
   br label %return
 
@@ -74,5 +76,7 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

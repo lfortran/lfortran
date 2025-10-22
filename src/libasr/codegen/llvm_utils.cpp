@@ -91,24 +91,6 @@ namespace LCompilers {
             };
             return builder.CreateCall(fn, args);
         }
-
-        llvm::Value* lfortran_free(llvm::LLVMContext &context, llvm::Module &module,
-                                   llvm::IRBuilder<> &builder, llvm::Value* ptr) {
-            std::string func_name = "_lfortran_free";
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
-            std::vector<llvm::Value*> args = {
-                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
-            };
-            return builder.CreateCall(fn, args);
-        }
         bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
             /*
                 True : When Pointer or Allocatable, if and only if it's not a standalond string type.
@@ -174,6 +156,41 @@ namespace LCompilers {
             string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor", true);
         }
 
+    llvm::Value* LLVMUtils::lfortran_free(llvm::Value* ptr) {
+        std::string func_name = "_lfortran_free";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
+        }
+        std::vector<llvm::Value*> args = {
+            builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
+        };
+        return builder->CreateCall(fn, args);
+    }
+
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args)
+    {
+        llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
+        if (!fn_printf) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context)->getPointerTo(),
+                    llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt32Ty(context)}, true);
+            fn_printf = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", module);
+        }
+
+        auto ret = builder->CreateCall(fn_printf, args);
+        stringFormat_return.set(ret);
+        return ret;
+    }
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
     }
@@ -5051,7 +5068,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // TODO: Free key_list, value_list and key_mask
         llvm_utils->list_api->free_data_using_type(key_type_code, key_list, module);
         llvm_utils->list_api->free_data_using_type(value_type_code, value_list, module);
-        LLVM::lfortran_free(context, *module, *builder, key_mask);
+        llvm_utils->lfortran_free(key_mask);
         LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(llvm_utils->list_api->get_list_type(nullptr, key_type_code, 0),
                                 new_key_list), key_list);
         LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(llvm_utils->list_api->get_list_type(nullptr, value_type_code, 0),
@@ -6295,18 +6312,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         LLVM::CreateStore(*builder, zero, end_point_ptr);
     }
 
-    void LLVMList::free_data_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Module* module) {
+    void LLVMList::free_data_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Module* /*module*/) {
         llvm::Type* el_type_ptr = list_type->getStructElementType(0);
         llvm::Value* data = llvm_utils->CreateLoad2(el_type_ptr, get_pointer_to_list_data_using_type(list_type, list));
-        LLVM::lfortran_free(context, *module, *builder, data);
+        llvm_utils->lfortran_free(data);
     }
 
 
-    void LLVMList::free_data_using_type(std::string& type_code, llvm::Value* list, llvm::Module* module) {
+    void LLVMList::free_data_using_type(std::string& type_code, llvm::Value* list, llvm::Module* /*module*/) {
         llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
         llvm::Type* list_el_type = std::get<2>(typecode2listtype[type_code]);
         llvm::Value* data = llvm_utils->CreateLoad2(list_el_type->getPointerTo(), get_pointer_to_list_data_using_type(list_type, list));
-        LLVM::lfortran_free(context, *module, *builder, data);
+        llvm_utils->lfortran_free(data);
     }
 
     llvm::Value* LLVMList::check_list_equality(llvm::Value* l1, llvm::Value* l2,
@@ -7516,7 +7533,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopend);
 
         llvm_utils->list_api->free_data_using_type(el_type_code, el_list, module);
-        LLVM::lfortran_free(context, *module, *builder, el_mask);
+        llvm_utils->lfortran_free(el_mask);
         LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(llvm_utils->list_api->get_list_type(el_llvm_type,el_type_code, el_type_size), new_el_list), el_list);
         LLVM::CreateStore(*builder, new_el_mask, get_pointer_to_mask(set_type, set));
     }
@@ -8644,7 +8661,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* total_memory = builder->CreateMul(num_elements,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
-                LLVM::lfortran_free(context, *module, *builder, dest_data);
+                llvm_utils->lfortran_free(dest_data);
                 llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
                 dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
                                         llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));

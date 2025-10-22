@@ -1,3 +1,4 @@
+#include "libasr/assert.h"
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -1265,6 +1266,8 @@ public:
                 visit_symbol(*item.second);
             }
         }
+        LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
+                        "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
 
     template <typename T>
@@ -4321,7 +4324,7 @@ public:
             this->visit_stmt(*x.m_body[i]);
         }
         for( auto& value: heap_arrays ) {
-            LLVM::lfortran_free(context, *module, *builder, value);
+            llvm_utils->lfortran_free(value);
         }
 
         {
@@ -5707,13 +5710,13 @@ public:
                 }
             }
             for( auto& value: heap_arrays ) {
-                LLVM::lfortran_free(context, *module, *builder, value);
+                llvm_utils->lfortran_free(value);
             }
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
             for( auto& value: heap_arrays ) {
-                LLVM::lfortran_free(context, *module, *builder, value);
+                llvm_utils->lfortran_free(value);
             }
             builder->CreateRetVoid();
         }
@@ -7788,7 +7791,7 @@ public:
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Instruction *block_terminator = last_bb->getTerminator();
         for( auto& value: heap_arrays ) {
-            LLVM::lfortran_free(context, *module, *builder, value);
+            llvm_utils->lfortran_free(value);
         }
         heap_arrays = heap_arrays_copy;
         if (block_terminator == nullptr) {
@@ -11448,12 +11451,12 @@ public:
                 }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
-                x.base.base.loc);
+                x.base.base.loc); // return of visited expression `m_values[i]` stored in `tmp`
 
             // Push the length of the string to args
             ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
             if (x.m_is_formatted && ASRUtils::is_character(*t)) {
-                llvm::Value *str_len = get_string_length(m_values[i]);
+                llvm::Value *str_len = llvm_utils->get_string_length(ASRUtils::get_string_type(t), tmp);
                 args.push_back(str_len);
             }
         }
@@ -11497,6 +11500,7 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, printf_args);
+        llvm_utils->stringFormat_return.free();
     }
 
     std::string serialize_structType_symbols(ASR::symbol_t* sym){
@@ -11617,11 +11621,7 @@ public:
         ptr_loads = ptr_loads - reduce_loads;
         lookup_enum_value_for_nonints = true;
         ASR::ttype_t *t = ASRUtils::expr_type(v);
-        if(ASRUtils::is_character(*t)){
-            tmp = get_string_data(v);
-        } else {
-            this->visit_expr_wrapper(v, true);
-        }
+        this->visit_expr_load_wrapper(v, (ASRUtils::is_character(*t) ? 0 : ptr_loads), true);
         lookup_enum_value_for_nonints = false;
         ptr_loads = ptr_loads_copy;
 
@@ -11714,7 +11714,7 @@ public:
             args.push_back(tmp);
         } else if (t->type == ASR::ttypeType::String) {
             fmt.push_back("%s");
-            args.push_back(tmp);
+            args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(t), tmp));
         } else if (ASRUtils::is_logical(*t)) {
             fmt.push_back("%s");
             args.push_back(tmp);
@@ -11793,6 +11793,7 @@ public:
         fmt_str += "%s";
         llvm::Value* fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
+        llvm_utils->stringFormat_return.free();
     }
 
 
@@ -14398,7 +14399,7 @@ public:
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
-            tmp = string_format_fortran(context, *module, *builder, args);
+            tmp = llvm_utils->string_format_fortran(args);
 
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);

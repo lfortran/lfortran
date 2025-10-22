@@ -52,6 +52,7 @@ define i32 @main(i32 %0, i8** %1) {
   %24 = load i64, i64* %23, align 4
   %25 = trunc i64 %24 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %22, i32 %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %17)
   call void @_lpython_free_argv()
   br label %return
 
@@ -66,5 +67,7 @@ declare void @_lfortran_complex_pow_32(%complex_4*, %complex_4*, %complex_4*)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()

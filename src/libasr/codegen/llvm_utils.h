@@ -86,23 +86,6 @@ namespace LCompilers {
         builder.CreateCall(fn_printf, args);
     }
 
-    static inline llvm::Value* string_format_fortran(llvm::LLVMContext &context, llvm::Module &module,
-        llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
-    {
-        llvm::Function *fn_printf = module.getFunction("_lcompilers_string_format_fortran");
-        if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    llvm::Type::getInt64Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)}, true);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", &module);
-        }
-        return builder.CreateCall(fn_printf, args);
-    }
 
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
@@ -185,8 +168,6 @@ namespace LCompilers {
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
         llvm::Value* lfortran_calloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size);
-        llvm::Value* lfortran_free(llvm::LLVMContext &context, llvm::Module &module,
-                llvm::IRBuilder<> &builder, llvm::Value* ptr);
         static inline bool is_llvm_struct(ASR::ttype_t* asr_type) {
             return ASR::is_a<ASR::Tuple_t>(*asr_type) ||
                    ASR::is_a<ASR::List_t>(*asr_type) ||
@@ -264,8 +245,9 @@ namespace LCompilers {
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<uint64_t, llvm::Value*> &llvm_symtab_);
-
-
+                
+            llvm::Value* lfortran_free(llvm::Value* ptr);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -648,6 +630,41 @@ namespace LCompilers {
                 create_if_else(cond, if_block, else_block, name, dummy_blocks, dummy_names);
             }
 
+            /**
+             *@class StringFormatReturn
+             *
+             *@brief Holds return of `_lcompilers_string_format_fortran` 
+             *        for the consumer of the return to free it after consumtion (print, write, ..).
+             *
+             *@details ** `_lcompilers_string_format_fortran` return a `char*` which needs
+             *              to be freed by the consumer of that string.
+             *         ** It complains if current return wasn't freed.
+             */ 
+            class StringFormatReturn {
+                LLVMUtils   *llvmUtils_instance_;
+                llvm::Value *return_val = nullptr; // Holds `_lcompilers_string_format_fortran()` call return
+                bool previous_one_freed() { return return_val == nullptr; }
+
+            public:
+
+                StringFormatReturn(LLVMUtils *instance): llvmUtils_instance_(instance) {}
+
+                /// Check that nothing is pending to be freed.
+                bool all_clean(){ return return_val == nullptr; }
+                
+                void set(llvm::Value* val) {
+                    LCOMPILERS_ASSERT_MSG(previous_one_freed(),
+                                          "Previous StringFormatReturn not freed")
+                    return_val = val;
+                }
+
+                void free() {
+                    if(!return_val) return;
+                    llvmUtils_instance_->lfortran_free(return_val);
+                    return_val = nullptr;
+                }
+            };
+            StringFormatReturn stringFormat_return {this};
     }; // LLVMUtils
 
     class LLVMList {

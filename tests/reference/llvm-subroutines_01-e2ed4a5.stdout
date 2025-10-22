@@ -75,6 +75,7 @@ ifcont:                                           ; preds = %else, %then
   %12 = load i64, i64* %11, align 4
   %13 = trunc i64 %12 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %10, i32 %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %5)
   %14 = load i32, i32* %i1, align 4
   %15 = icmp ne i32 %14, 1
   br i1 %15, label %then3, label %else4
@@ -131,6 +132,7 @@ ifcont11:                                         ; preds = %else10, %then9
   %28 = load i64, i64* %27, align 4
   %29 = trunc i64 %28 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %26, i32 %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %21)
   %30 = load i32, i32* %j2, align 4
   %31 = icmp ne i32 %30, 4
   br i1 %31, label %then13, label %else14
@@ -174,6 +176,7 @@ ifcont18:                                         ; preds = %else17, %then16
   %42 = load i64, i64* %41, align 4
   %43 = trunc i64 %42 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %40, i32 %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %35)
   %44 = load i32, i32* %j2, align 4
   %45 = icmp ne i32 %44, 4
   br i1 %45, label %then21, label %else22
@@ -219,6 +222,7 @@ ifcont26:                                         ; preds = %else25, %then24
   %58 = load i64, i64* %57, align 4
   %59 = trunc i64 %58 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* %56, i32 %59, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %51)
   %60 = load i32, i32* %j2, align 4
   %61 = icmp ne i32 %60, 4
   br i1 %61, label %then29, label %else30
@@ -259,5 +263,7 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+
+declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
