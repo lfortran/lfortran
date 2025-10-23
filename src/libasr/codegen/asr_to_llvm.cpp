@@ -13297,7 +13297,9 @@ public:
             // Get VTable pointer
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
-                this->visit_expr_wrapper(array_item->m_v, true);
+                ptr_loads = 1;
+                this->visit_expr_wrapper(array_item->m_v, ASR::is_a<ASR::StructInstanceMember_t>(*array_item->m_v));
+                ptr_loads = ptr_loads_copy;
                 llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
                 if (ASRUtils::extract_physical_type(
@@ -13518,7 +13520,9 @@ public:
             // Get Runtime VTable Pointer
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
-                this->visit_expr_wrapper(array_item->m_v, true);
+                ptr_loads = 1;
+                this->visit_expr_wrapper(array_item->m_v, ASR::is_a<ASR::StructInstanceMember_t>(*array_item->m_v));
+                ptr_loads = ptr_loads_copy;
                 llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     array_item->m_v, ASRUtils::extract_type(array_item->m_type), module.get());
                 if (ASRUtils::extract_physical_type(
@@ -13534,6 +13538,7 @@ public:
             vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
 
             // Get function pointer from VTable
+            // std::cout<<struct_vtab_function_offset[struct_sym][proc_sym_name]<<std::endl;
             llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
                 vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
