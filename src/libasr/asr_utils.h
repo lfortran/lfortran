@@ -3792,7 +3792,7 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
 
 template <typename SemanticAbort>
 inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnostics &diag) {
-    int a_len = -10;
+    int a_len = -1;
     switch( len_expr->type ) {
         case ASR::exprType::IntegerConstant: {
             a_len = ASR::down_cast<ASR::IntegerConstant_t>
@@ -3817,24 +3817,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
                 }
-            } else {
-                // An expression is being used for `len` that cannot be evaluated
-                a_len = -3;
             }
-            break;
-        }
-        case ASR::exprType::StringLen:
-        case ASR::exprType::FunctionCall: {
-            a_len = -3;
-            break;
-        }
-        case ASR::exprType::ArraySize:
-        case ASR::exprType::IntegerBinOp: {
-            a_len = -3;
-            break;
-        }
-        case ASR::exprType::IntrinsicElementalFunction: {
-            a_len = -3;
             break;
         }
         default: {
@@ -3845,7 +3828,6 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
             throw SemanticAbort();
         }
     }
-    LCOMPILERS_ASSERT(a_len != -10)
     return a_len;
 }
 

@@ -1547,6 +1547,7 @@ public:
             int a_kind = 4;
             int a_len = 1;
             ASR::expr_t* len_expr = nullptr;
+
             if (return_type->m_kind != nullptr) {
                 if (return_type->n_kind == 1) {
                     visit_expr(*return_type->m_kind->m_value);
@@ -1558,11 +1559,6 @@ public:
                         a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
-
-                    if (a_len != -3) {
-                        len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
-                                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind))));
-                    }
                 } else {
                     diag.add(diag::Diagnostic(
                         "Only one kind item supported for now",
@@ -1571,6 +1567,11 @@ public:
                     throw SemanticAbort();
                 }
             }
+            if (len_expr == nullptr || a_len != -1) {
+                len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind))));
+            }
+
             ASR::symbol_t* type_decl = nullptr;
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
