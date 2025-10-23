@@ -883,7 +883,9 @@ public:
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
-        if (is_a<ASR::Variable_t>(*s) && is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+
+        // Allow any variable that is either external or is not defined in this scope to pass FunctionType verification
+        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) || !current_symtab->get_symbol(x_mv_name))) {
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
