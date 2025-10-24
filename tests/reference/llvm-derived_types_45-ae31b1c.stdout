@@ -1,46 +1,73 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%__vtab_myint = type { i64 }
-%myint = type <{ i32 }>
+%myint = type <{ i32 (...)**, i32 }>
 
+@_Name_myint = private unnamed_addr constant [6 x i8] c"myint\00", align 1
+@_Type_Info_myint = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_myint, i32 0, i32 0) }, align 8
+@_VTable_myint = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_myint to i8*), i8* bitcast (void (i8*, i8*)* @_copy_derived_types_45_mod_myint to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
+define void @_copy_derived_types_45_mod_myint(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %myint*
+  %3 = bitcast i8* %1 to %myint*
+  %4 = bitcast %myint* %3 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %myint* %2 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %myint, %myint* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %myint, %myint* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %myint* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_myint, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %2 = alloca %__vtab_myint, align 8
-  %3 = getelementptr %__vtab_myint, %__vtab_myint* %2, i32 0, i32 0
-  store i64 0, i64* %3, align 4
   %ins = alloca %myint*, align 8
   store %myint* null, %myint** %ins, align 8
-  %4 = load %myint*, %myint** %ins, align 8
-  %5 = icmp eq %myint* %4, null
-  br i1 %5, label %then, label %else
+  %2 = load %myint*, %myint** %ins, align 8
+  %3 = icmp eq %myint* %2, null
+  br i1 %3, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %6 = call i8* @_lfortran_malloc(i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
-  %7 = bitcast i8* %6 to %myint*
-  store %myint* %7, %myint** %ins, align 8
-  %8 = load %myint*, %myint** %ins, align 8
-  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
+  %4 = call i8* @_lfortran_malloc(i64 12)
+  call void @llvm.memset.p0i8.i32(i8* %4, i8 0, i32 12, i1 false)
+  %5 = bitcast i8* %4 to %myint*
+  store %myint* %5, %myint** %ins, align 8
+  %6 = load %myint*, %myint** %ins, align 8
+  %7 = bitcast %myint* %5 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_myint, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
+  %8 = getelementptr %myint, %myint* %6, i32 0, i32 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %10 = load %myint*, %myint** %ins, align 8
-  %11 = getelementptr %myint, %myint* %10, i32 0, i32 0
-  store i32 44, i32* %11, align 4
-  %12 = load %myint*, %myint** %ins, align 8
-  %13 = getelementptr %myint, %myint* %12, i32 0, i32 0
-  %14 = load i32, i32* %13, align 4
-  %15 = icmp ne i32 %14, 44
-  br i1 %15, label %then1, label %else2
+  %9 = load %myint*, %myint** %ins, align 8
+  %10 = getelementptr %myint, %myint* %9, i32 0, i32 1
+  store i32 44, i32* %10, align 4
+  %11 = load %myint*, %myint** %ins, align 8
+  %12 = getelementptr %myint, %myint* %11, i32 0, i32 1
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp ne i32 %13, 44
+  br i1 %14, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
@@ -51,17 +78,17 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %16 = load %myint*, %myint** %ins, align 8
-  %17 = ptrtoint %myint* %16 to i64
-  %18 = icmp ne i64 %17, 0
-  br i1 %18, label %then4, label %else5
+  %15 = load %myint*, %myint** %ins, align 8
+  %16 = ptrtoint %myint* %15 to i64
+  %17 = icmp ne i64 %16, 0
+  br i1 %17, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
-  %19 = alloca i8*, align 8
-  %20 = bitcast %myint* %16 to i8*
-  store i8* %20, i8** %19, align 8
-  %21 = load i8*, i8** %19, align 8
-  call void @_lfortran_free(i8* %21)
+  %18 = alloca i8*, align 8
+  %19 = bitcast %myint* %15 to i8*
+  store i8* %19, i8** %18, align 8
+  %20 = load i8*, i8** %18, align 8
+  call void @_lfortran_free(i8* %20)
   store %myint* null, %myint** %ins, align 8
   br label %ifcont6
 

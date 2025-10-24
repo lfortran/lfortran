@@ -106,9 +106,6 @@ time_section "🧪 Testing fortran-regex" '
   git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
   
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes"
-
   print_success "Done with fortran-regex"
   cd ..
 '
@@ -124,9 +121,6 @@ time_section "🧪 Testing fortran-shlex" '
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
  
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --realloc-lhs-arrays"
-
   print_success "Done with fortran-shlex"
   cd ..
 '
@@ -141,9 +135,6 @@ time_section "🧪 Testing toml-f" '
   git checkout 38c294fc5d9cb5fa6a9d3569514da28b8705f3fb
   fpm --compiler=$FC build
   
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes"
-
   print_success "Done with toml-f"
   cd ..
 '
@@ -157,9 +148,6 @@ time_section "🧪 Testing jonquil" '
 
   git checkout 81ee9efbf265301986d3ab682994f63c1a20f1cc
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
-  
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
   cd ..

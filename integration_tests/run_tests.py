@@ -16,7 +16,6 @@ LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
 fast_tests = "no"
 nofast_llvm16 = "no"
-new_classes_tests = "no"
 separate_compilation = "no"
 
 def run_cmd(cmd, cwd=None):
@@ -44,16 +43,16 @@ def run_test(backend, std):
                 cwd=cwd)
     elif backend == "cpp":
         run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} -DNEW_CLASSES={new_classes_tests} {std_string}" + common,
+                f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
             f"-DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} "
-            f"-DNEW_CLASSES={new_classes_tests} -DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
+            f"-DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
                 cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} -DNEW_CLASSES={new_classes_tests} " + common,
+                f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16}" + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -118,7 +117,7 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation, new_classes_tests
+    global NO_OF_THREADS, fast_tests, std_f23_tests, nofast_llvm16, separate_compilation
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
@@ -128,7 +127,6 @@ def main():
 
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
     fast_tests = "yes" if args.fast else "no"
-    new_classes_tests = "yes" if args.new_classes else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
     for backend in args.backends:
