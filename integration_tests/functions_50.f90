@@ -3,7 +3,7 @@ program functions_50
   character(:), ALLOCATABLE :: x
 
   n = 5
-  x = tolower()
+  x = sayHi()
 
   if (x /= "Hello") error stop
 
@@ -11,7 +11,7 @@ program functions_50
 
   contains
 
-  character(n) function tolower () result (res)
+  character(n) function sayHi() result (res)
       res = "Hello"
   end function
 end program  functions_50

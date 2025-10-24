@@ -1,10 +1,10 @@
 module functions_51_mod
   implicit none
 contains
-  integer pure function blabla(inp) result(r)
+  integer pure function multiply_2(inp) result(r)
     integer, intent(in) :: inp
     r = inp * 2
-  end function blabla
+  end function multiply_2
 end module functions_51_mod
 
 program functions_51
@@ -14,14 +14,14 @@ program functions_51
   character(:), allocatable :: x
 
   n(3) = 5
-  x = tolower()
+  x = sayHi()
 
   if (x /= "Hello") error stop
 
   print *, x
 
 contains
-  character(blabla(5)) function tolower() result(res)
+  character(multiply_2(5)) function sayHi() result(res)
     res = "Hello"
-  end function tolower
+  end function sayHi
 end program functions_51
