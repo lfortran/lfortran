@@ -2985,7 +2985,9 @@ public:
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Runtime Error: Array '%s' is indexed but not allocated.\n",
-                        LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
+                    infile,
+                    x.m_v->base.loc,
+                    LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -3029,7 +3031,7 @@ public:
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
-                                                    true);
+                                                    true, false, array_name, infile);
             } else {
                 llvm::Type* type;
                 bool is_fixed_size = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -3048,7 +3050,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    compiler_options.po.bounds_checking, array_name);
+                                                    compiler_options.po.bounds_checking, array_name, infile);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -7370,6 +7372,8 @@ public:
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
                                                     "Size of '%s' is is %d and size of '%s' is %d\n",
+                                                    infile,
+                                                    x->base.loc,
                                                     left_name,
                                                     right_name,
                                                     left_name,
@@ -7380,6 +7384,8 @@ public:
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Runtime Error: Size mismatch in binary operation\n\n"
                                                     "LHS size is %d and RHS size is %d\n",
+                                                    infile,
+                                                    x->base.loc,
                                                     left_llvm_size,
                                                     right_llvm_size);
             }
@@ -7446,6 +7452,8 @@ public:
                         llvm_utils->generate_runtime_error(is_not_allocated,
                             "Runtime Error: Array '%s' is not allocated.\n\n"
                                 "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                infile,
+                                target_expr->base.loc,
                                 LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
                     }
 
@@ -7461,6 +7469,8 @@ public:
                                                             "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                             "LHS size is %d and RHS size is %d\n\n"
                                                             "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                                            infile,
+                                                            target_expr->base.loc,
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
                                                             value_size);
@@ -7472,6 +7482,8 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Runtime Error: Size mismatch in assignment to '%s'\n\n"
                                                         "LHS size is %d and RHS size is %d\n",
+                                                        infile,
+                                                        target_expr->base.loc,
                                                         LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                         target_size,
                                                         value_size);
@@ -7480,6 +7492,8 @@ public:
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                     "Runtime Error: Size mismatch in assignment\n\n"
                                                     "LHS size is %d and RHS size is %d\n",
+                                                    infile,
+                                                    x.m_target->base.loc,
                                                     target_size,
                                                     value_size);
             }
@@ -9835,9 +9849,12 @@ public:
                                         llvm::Type::getInt64Ty(context)),
                                     builder->CreatePtrToInt(llvm::ConstantPointerNull::get(type->getPointerTo()),
                                         llvm::Type::getInt64Ty(context)));
+                                // TODO: Set location here
                                 llvm_utils->generate_runtime_error(cond,
                                     "Runtime Error: Variable '%s' is not allocated.\n",
-                                            LCompilers::create_global_string_ptr(context, *module, *builder, x->m_name));
+                                    infile,
+                                    {0, 0},
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, x->m_name));
                             }
                             fetch_ptr(x);
                         }
@@ -12849,6 +12866,8 @@ public:
                             llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
                                     "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                    infile,
+                                    arg_expr->base.loc,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                     descriptor_length,
                                     dim,
@@ -12863,6 +12882,8 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
+                            infile,
+                            arg_expr->base.loc,
                             LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -12887,6 +12908,8 @@ public:
                                 llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                        infile,
+                                        arg_expr->base.loc,
                                         LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                         fixed_length,
                                         dim,
@@ -12900,6 +12923,8 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                infile,
+                                arg_expr->base.loc,
                                 LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
