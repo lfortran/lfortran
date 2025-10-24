@@ -55,6 +55,7 @@ private:
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
+    bool _is_return_type_string;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
     bool _inside_call = false;
@@ -63,7 +64,7 @@ private:
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, non_global_symbol_visited{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -885,11 +886,14 @@ public:
         }
 
         // Allow any variable that is either external or is not defined in this scope to pass FunctionType verification
-        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) || !current_symtab->get_symbol(x_mv_name))) {
+        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) ||
+            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name)))) {
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
         }
+        _is_return_type_string = false;
+
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
@@ -1130,6 +1134,11 @@ public:
             require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
+
+        _is_return_type_string = false;
+        if (x.m_return_var_type) {
+            _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);
+        }
 
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
             verify_nonscoped_ttype(x.m_arg_types[i]);
