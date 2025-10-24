@@ -3820,13 +3820,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
             }
             break;
         }
-        default: {
-            diag.add(diag::Diagnostic(
-                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(len_expr), len_expr),
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {loc})}));
-            throw SemanticAbort();
-        }
+        default: {}
     }
     return a_len;
 }
