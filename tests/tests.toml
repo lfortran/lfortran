@@ -3906,6 +3906,10 @@ filename = "errors/array_bounds_check_08.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_09.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
