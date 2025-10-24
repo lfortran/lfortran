@@ -280,13 +280,37 @@ namespace LCompilers {
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
 
+            void get_line_column(const uint32_t &loc_first,
+                    uint32_t &line, uint32_t &column, std::string infile) {
+                LocationManager lm;
+                LocationManager::FileLocations fl;
+                fl.in_filename = infile;
+                lm.files.push_back(fl);
+                std::string input;
+                if (!read_file(infile, input)) {
+                    throw CodeGenError("File '" + infile + "' cannot be opened.");
+                }
+                lm.init_simple(input);
+                lm.file_ends.push_back(input.size());
+                lm.pos_to_linecol(lm.output_to_input_pos(loc_first, false),
+                    line, column, fl.in_filename);
+            }
+
             template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, Args... args)
+            void generate_runtime_error(llvm::Value* cond, std::string message, std::string infile, Location loc, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
                 llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                uint32_t line, column;
+                if (infile != "" && loc.first != 0 && loc.last != 0) {
+                    get_line_column(loc.first, line, column, infile);
+                    std::stringstream ss;
+                    ss << "At " << line << ":" << column << " of file " << infile << "\n" << message;
+                    message = ss.str();
+                }
 
                 builder->CreateCondBr(cond, thenBB, mergeBB);
                 builder->SetInsertPoint(thenBB); {

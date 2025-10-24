@@ -1,3 +1,4 @@
+At 7:13 of file tests/errors/array_bounds_check_05.f90
 Runtime error: Array shape mismatch in subroutine 'my'
 
 Tried to match size 3 of dimension 1 of argument number 1, but expected size is 5
