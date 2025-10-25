@@ -7,4 +7,3 @@ program functions_45
         print *, repeat('\', n_slashes / 2)
     end do
 end program
-    
