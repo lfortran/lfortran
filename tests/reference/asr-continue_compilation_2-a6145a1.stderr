@@ -294,6 +294,12 @@ semantic error: Argument `val_a` with intent(in) passed to a dummy argument with
 73 |         res = inner_func(val_a)
    |                          ^^^^^ 
 
+semantic error: Deferred-length CHARACTER variable must be allocated with a character length `character(..)`
+   --> tests/errors/continue_compilation_2.f90:232:14
+    |
+232 |     allocate(str1(i))
+    |              ^^^^^^^ 
+
 semantic error: No custom operator exists for this expression
    --> tests/errors/continue_compilation_2.f90:235:15
     |
