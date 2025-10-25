@@ -100,7 +100,7 @@ struct CompilerOptions {
     std::string column = "";
     bool continue_compilation = false;
     bool semantics_only = false;
-    bool new_classes = false;
+    bool new_classes = true;
     /*
         Generates object code for modules as well as global procedures ( subroutines / functions )
         avialable in ASR. This needs to be explicity set to true.
