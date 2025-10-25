@@ -174,6 +174,10 @@ time_section "🧪 Testing M_CLI2" '
   git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+
+  git clean -dfx
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --new-classes"
+  fpm --compiler=$FC test --flag "--realloc-lhs-arrays --new-classes"
   print_success "Done with M_CLI2"
   cd ..
 '
@@ -285,6 +289,7 @@ time_section "🧪 Testing FPM" '
   micromamba install -c conda-forge fpm
   git checkout 0495209655831f5a13f643feaa790e08851adf8a
   fpm --compiler=$FC build
+  fpm --compiler=$FC build --flag "--new-classes"
   print_success "Done with FPM"
   cd ..
 '

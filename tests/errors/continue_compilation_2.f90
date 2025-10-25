@@ -213,6 +213,7 @@ program continue_compilation_2
     type(string_t) :: str_t_1, str_t_2
     character(len=10) :: prefix
     integer :: aRank1(..)
+    character(:), ALLOCATABLE :: str1
 
 
 
@@ -228,8 +229,7 @@ program continue_compilation_2
 
 
 
-
-
+    allocate(str1(i))
     str_t_1%value = "world!"
     prefix = "hello, "
     str_t_2 = prefix // 10
