@@ -943,9 +943,12 @@ public:
         visit_expr(*x.m_target);
         r += src;
         r += ", RHS = ";
-        visit_expr(*x.m_value);
-        r += src;
-        handle_line_truncation(r, 2);
+        for (size_t i = 0; i < x.n_components; i++) {
+            visit_expr(*x.m_components[i]);
+            r += src;
+            r += ", ";
+            handle_line_truncation(r, 2);
+        }
         r += "\n";
         src = r;
     }
