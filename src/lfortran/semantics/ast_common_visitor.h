@@ -12213,9 +12213,7 @@ public:
     }
 
     ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right, const AST::StrOp_t &x) {
-        ASR::symbol_t* sym = current_scope->resolve_symbol(intrinsic_op_name);
-        if (sym != nullptr)
-            return sym;
+        ASR::symbol_t* sym = nullptr;
 
         ASR::symbol_t* left_symbol = nullptr;
         ASR::symbol_t* right_symbol = nullptr;
