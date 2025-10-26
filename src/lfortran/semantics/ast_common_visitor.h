@@ -12213,26 +12213,51 @@ public:
     }
 
     ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right, const AST::StrOp_t &x) {
+        ASR::symbol_t* sym = nullptr;
         ASR::symbol_t* left_symbol = nullptr;
         ASR::symbol_t* right_symbol = nullptr;
+
+        sym = current_scope->resolve_symbol(intrinsic_op_name);
+        // operator is defined outside both left and right symbols but inside current scope
+        if (sym != nullptr) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
+
+            Vec<ASR::call_arg_t> args;
+            ASR::call_arg_t arg1;
+            ASR::call_arg_t arg2;
+            ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
+                ASRUtils::symbol_get_past_external(sym));
+
+            arg1.loc = x.base.base.loc;
+            arg1.m_value = left;
+
+            arg2.loc = x.base.base.loc;
+            arg2.m_value = right;
+
+            args.reserve(al, 2);
+            args.push_back(al, arg1);
+            args.push_back(al, arg2);
+
+            int i = ASRUtils::select_generic_procedure(args, *custom_op, x.base.base.loc,
+                [&](const std::string &msg, const Location &loc) {
+                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }, false);
+
+            if (i != -1) {
+                return sym;
+            }
+        }
 
         left_symbol = resolve_struct_symbol(left);
         if (left_symbol == nullptr)
             right_symbol = resolve_struct_symbol(right);
 
         ASR::symbol_t* struct_sym = left_symbol != nullptr ? left_symbol : right_symbol;
-        ASR::symbol_t* sym = nullptr;
 
         if (struct_sym != nullptr) {
             ASR::Struct_t* op_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
             sym = op_struct->m_symtab->resolve_symbol(intrinsic_op_name);
-
-        } else {
-            sym = current_scope->resolve_symbol(intrinsic_op_name);
-
-            // operator is defined outside both left and right symbols but inside current scope
-            if (sym != nullptr)
-                return sym;
         }
 
         if (sym == nullptr) {
