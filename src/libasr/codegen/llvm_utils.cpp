@@ -194,7 +194,9 @@ namespace LCompilers {
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
     }
-
+    std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
+        return LLVM::get_type_as_string(type);
+    }
     llvm::Type* LLVMUtils::getMemberType(ASR::ttype_t* mem_type, ASR::Variable_t* member,
         llvm::Module* module) {
         llvm::Type* llvm_mem_type = nullptr;
@@ -1856,7 +1858,7 @@ namespace LCompilers {
         } else {
             throw LCompilersException("Unhandled string physical type");
         }
-        llvm::Value *s_alloc = builder->CreateAlloca(character_type, builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
+        llvm::Value *s_alloc = builder->CreateAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
         builder->CreateStore(s_alloc, str_data);
         builder->CreateStore(convert_kind(len, llvm::Type::getInt64Ty(context)), str_len);
     }

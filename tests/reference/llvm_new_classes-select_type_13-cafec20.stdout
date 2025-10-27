@@ -192,29 +192,35 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %12, label %then1, label %else
 
 then:                                             ; preds = %ifcont
-  %13 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  br label %ifcont14
+  br label %"~select_type_block_.start"
 
 then1:                                            ; preds = %.entry
-  %14 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %14, align 8
-  %15 = bitcast i32 (...)*** %14 to i8*
-  %16 = call i8* @__lfortran_dynamic_cast(i8* %15, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %17 = icmp ne i8* %16, null
-  store i1 %17, i1* %9, align 1
+  %13 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %13, align 8
+  %14 = bitcast i32 (...)*** %13 to i8*
+  %15 = call i8* @__lfortran_dynamic_cast(i8* %14, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %16 = icmp ne i8* %15, null
+  store i1 %16, i1* %9, align 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %18 = bitcast %shape* %10 to i8*
-  %19 = call i8* @__lfortran_dynamic_cast(i8* %18, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %20 = icmp ne i8* %19, null
-  store i1 %20, i1* %9, align 1
+  %17 = bitcast %shape* %10 to i8*
+  %18 = call i8* @__lfortran_dynamic_cast(i8* %17, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %19 = icmp ne i8* %18, null
+  store i1 %19, i1* %9, align 1
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then1
-  %21 = load i1, i1* %9, align 1
-  br i1 %21, label %then, label %else2
+  %20 = load i1, i1* %9, align 1
+  br i1 %20, label %then, label %else2
+
+"~select_type_block_.start":                      ; preds = %then
+  %21 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %21, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_.end"
+
+"~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
+  br label %ifcont14
 
 else2:                                            ; preds = %ifcont
   %22 = alloca i1, align 1
@@ -224,33 +230,39 @@ else2:                                            ; preds = %ifcont
   br i1 %25, label %then4, label %else5
 
 then3:                                            ; preds = %ifcont6
-  %26 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %26, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
-  %27 = load %shape*, %shape** %s1, align 8
-  %28 = icmp eq %shape* %27, null
-  br i1 %28, label %then7, label %else8
+  br label %"~select_type_block_1.start"
 
 then4:                                            ; preds = %else2
-  %29 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %29, align 8
-  %30 = bitcast i32 (...)*** %29 to i8*
+  %26 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %26, align 8
+  %27 = bitcast i32 (...)*** %26 to i8*
+  %28 = call i8* @__lfortran_dynamic_cast(i8* %27, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %29 = icmp ne i8* %28, null
+  store i1 %29, i1* %22, align 1
+  br label %ifcont6
+
+else5:                                            ; preds = %else2
+  %30 = bitcast %shape* %23 to i8*
   %31 = call i8* @__lfortran_dynamic_cast(i8* %30, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
   %32 = icmp ne i8* %31, null
   store i1 %32, i1* %22, align 1
   br label %ifcont6
 
-else5:                                            ; preds = %else2
-  %33 = bitcast %shape* %23 to i8*
-  %34 = call i8* @__lfortran_dynamic_cast(i8* %33, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %35 = icmp ne i8* %34, null
-  store i1 %35, i1* %22, align 1
-  br label %ifcont6
-
 ifcont6:                                          ; preds = %else5, %then4
-  %36 = load i1, i1* %22, align 1
-  br i1 %36, label %then3, label %else13
+  %33 = load i1, i1* %22, align 1
+  br i1 %33, label %then3, label %else13
 
-then7:                                            ; preds = %then3
+"~select_type_block_1.start":                     ; preds = %then3
+  %34 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %34, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %35 = load %shape*, %shape** %s1, align 8
+  %36 = icmp eq %shape* %35, null
+  br i1 %36, label %then7, label %else8
+
+"~select_type_block_1.end":                       ; preds = %ifcont12
+  br label %ifcont14
+
+then7:                                            ; preds = %"~select_type_block_1.start"
   %37 = call i8* @_lfortran_malloc(i64 8)
   call void @llvm.memset.p0i8.i32(i8* %37, i8 0, i32 8, i1 false)
   %38 = bitcast i8* %37 to %shape*
@@ -260,7 +272,7 @@ then7:                                            ; preds = %then3
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %40, align 8
   br label %ifcont9
 
-else8:                                            ; preds = %then3
+else8:                                            ; preds = %"~select_type_block_1.start"
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
@@ -305,14 +317,14 @@ else11:                                           ; preds = %ifcont9
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  br label %ifcont14
+  br label %"~select_type_block_1.end"
 
 else13:                                           ; preds = %ifcont6
   %64 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %64, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
   br label %ifcont14
 
-ifcont14:                                         ; preds = %else13, %ifcont12, %then
+ifcont14:                                         ; preds = %else13, %"~select_type_block_1.end", %"~select_type_block_.end"
   %65 = call i8* @_lfortran_malloc(i64 16)
   call void @llvm.memset.p0i8.i32(i8* %65, i8 0, i32 16, i1 false)
   %66 = bitcast i8* %65 to %shape*
@@ -331,29 +343,35 @@ ifcont14:                                         ; preds = %else13, %ifcont12, 
   br i1 %76, label %then16, label %else17
 
 then15:                                           ; preds = %ifcont18
-  %77 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %77, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
-  br label %ifcont38
+  br label %"~select_type_block_2.start"
 
 then16:                                           ; preds = %ifcont14
-  %78 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %78, align 8
-  %79 = bitcast i32 (...)*** %78 to i8*
-  %80 = call i8* @__lfortran_dynamic_cast(i8* %79, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %81 = icmp ne i8* %80, null
-  store i1 %81, i1* %73, align 1
+  %77 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %77, align 8
+  %78 = bitcast i32 (...)*** %77 to i8*
+  %79 = call i8* @__lfortran_dynamic_cast(i8* %78, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %80 = icmp ne i8* %79, null
+  store i1 %80, i1* %73, align 1
   br label %ifcont18
 
 else17:                                           ; preds = %ifcont14
-  %82 = bitcast %shape* %74 to i8*
-  %83 = call i8* @__lfortran_dynamic_cast(i8* %82, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %84 = icmp ne i8* %83, null
-  store i1 %84, i1* %73, align 1
+  %81 = bitcast %shape* %74 to i8*
+  %82 = call i8* @__lfortran_dynamic_cast(i8* %81, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %83 = icmp ne i8* %82, null
+  store i1 %83, i1* %73, align 1
   br label %ifcont18
 
 ifcont18:                                         ; preds = %else17, %then16
-  %85 = load i1, i1* %73, align 1
-  br i1 %85, label %then15, label %else19
+  %84 = load i1, i1* %73, align 1
+  br i1 %84, label %then15, label %else19
+
+"~select_type_block_2.start":                     ; preds = %then15
+  %85 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %85, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_2.end"
+
+"~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
+  br label %ifcont38
 
 else19:                                           ; preds = %ifcont18
   %86 = alloca i1, align 1
@@ -363,33 +381,39 @@ else19:                                           ; preds = %ifcont18
   br i1 %89, label %then21, label %else22
 
 then20:                                           ; preds = %ifcont23
-  %90 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %90, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
-  %91 = load %shape*, %shape** %s2, align 8
-  %92 = icmp eq %shape* %91, null
-  br i1 %92, label %then24, label %else25
+  br label %"~select_type_block_3.start"
 
 then21:                                           ; preds = %else19
-  %93 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %93, align 8
-  %94 = bitcast i32 (...)*** %93 to i8*
+  %90 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %90, align 8
+  %91 = bitcast i32 (...)*** %90 to i8*
+  %92 = call i8* @__lfortran_dynamic_cast(i8* %91, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %93 = icmp ne i8* %92, null
+  store i1 %93, i1* %86, align 1
+  br label %ifcont23
+
+else22:                                           ; preds = %else19
+  %94 = bitcast %shape* %87 to i8*
   %95 = call i8* @__lfortran_dynamic_cast(i8* %94, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
   %96 = icmp ne i8* %95, null
   store i1 %96, i1* %86, align 1
   br label %ifcont23
 
-else22:                                           ; preds = %else19
-  %97 = bitcast %shape* %87 to i8*
-  %98 = call i8* @__lfortran_dynamic_cast(i8* %97, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %99 = icmp ne i8* %98, null
-  store i1 %99, i1* %86, align 1
-  br label %ifcont23
-
 ifcont23:                                         ; preds = %else22, %then21
-  %100 = load i1, i1* %86, align 1
-  br i1 %100, label %then20, label %else37
+  %97 = load i1, i1* %86, align 1
+  br i1 %97, label %then20, label %else37
 
-then24:                                           ; preds = %then20
+"~select_type_block_3.start":                     ; preds = %then20
+  %98 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %98, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  %99 = load %shape*, %shape** %s2, align 8
+  %100 = icmp eq %shape* %99, null
+  br i1 %100, label %then24, label %else25
+
+"~select_type_block_3.end":                       ; preds = %ifcont36
+  br label %ifcont38
+
+then24:                                           ; preds = %"~select_type_block_3.start"
   %101 = call i8* @_lfortran_malloc(i64 8)
   call void @llvm.memset.p0i8.i32(i8* %101, i8 0, i32 8, i1 false)
   %102 = bitcast i8* %101 to %shape*
@@ -399,7 +423,7 @@ then24:                                           ; preds = %then20
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %104, align 8
   br label %ifcont26
 
-else25:                                           ; preds = %then20
+else25:                                           ; preds = %"~select_type_block_3.start"
   br label %ifcont26
 
 ifcont26:                                         ; preds = %else25, %then24
@@ -488,14 +512,14 @@ else35:                                           ; preds = %ifcont33
   br label %ifcont36
 
 ifcont36:                                         ; preds = %else35, %then34
-  br label %ifcont38
+  br label %"~select_type_block_3.end"
 
 else37:                                           ; preds = %ifcont23
   %147 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.11, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8* %147, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 1)
   br label %ifcont38
 
-ifcont38:                                         ; preds = %else37, %ifcont36, %then15
+ifcont38:                                         ; preds = %else37, %"~select_type_block_3.end", %"~select_type_block_2.end"
   call void @_lpython_free_argv()
   br label %return
 

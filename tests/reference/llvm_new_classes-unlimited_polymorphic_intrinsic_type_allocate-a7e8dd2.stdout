@@ -58,8 +58,14 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %16, label %then, label %else
 
 then:                                             ; preds = %.entry
+  br label %"~select_type_block_.start"
+
+"~select_type_block_.start":                      ; preds = %then
   %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_.end"
+
+"~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
   br label %ifcont
 
 else:                                             ; preds = %.entry
@@ -73,8 +79,14 @@ else:                                             ; preds = %.entry
   br i1 %23, label %then2, label %else3
 
 then2:                                            ; preds = %else
+  br label %"~select_type_block_1.start"
+
+"~select_type_block_1.start":                     ; preds = %then2
   %24 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %24, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_1.end"
+
+"~select_type_block_1.end":                       ; preds = %"~select_type_block_1.start"
   br label %ifcont
 
 else3:                                            ; preds = %else
@@ -88,8 +100,14 @@ else3:                                            ; preds = %else
   br i1 %30, label %then4, label %else5
 
 then4:                                            ; preds = %else3
+  br label %"~select_type_block_2.start"
+
+"~select_type_block_2.start":                     ; preds = %then4
   %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %31, i32 4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
+  br label %"~select_type_block_2.end"
+
+"~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
   br label %ifcont
 
 else5:                                            ; preds = %else3
@@ -97,7 +115,7 @@ else5:                                            ; preds = %else3
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %32, i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
   br label %ifcont
 
-ifcont:                                           ; preds = %else5, %then4, %then2, %then
+ifcont:                                           ; preds = %else5, %"~select_type_block_2.end", %"~select_type_block_1.end", %"~select_type_block_.end"
   call void @_lpython_free_argv()
   br label %return
 
