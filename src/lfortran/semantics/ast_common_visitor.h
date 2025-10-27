@@ -11381,38 +11381,23 @@ public:
             LCOMPILERS_ASSERT(ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function("stringconcat"))
             tmp = ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("stringconcat")(al, x.base.base.loc, v, diag);
         } else {
-            // resolve the intrinsic_op_name to get it's symbol
-            ASR::symbol_t* sym = resolve_custom_operator(intrinsic_op_name, left, right, x);
-
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
-
-            ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
-                ASRUtils::symbol_get_past_external(sym));
-            Vec<ASR::call_arg_t> args; args.reserve(al, 2);
-            ASR::call_arg_t arg1; arg1.loc = x.base.base.loc; arg1.m_value = left;
-            args.push_back(al, arg1);
-            ASR::call_arg_t arg2; arg2.loc = x.base.base.loc; arg2.m_value = right;
-            args.push_back(al, arg2);
-            int i = ASRUtils::select_generic_procedure(args, *custom_op, x.base.base.loc,
-                [&](const std::string &msg, const Location &loc) {
-                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    }, true);
+            Vec<ASR::call_arg_t> args;
+            ASR::symbol_t* op_proc = resolve_custom_operator_proc(intrinsic_op_name, left, right, x, args);
 
             ASR::Function_t* func = nullptr;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*custom_op->m_procs[i])) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*op_proc)) {
                 ASR::StructMethodDeclaration_t* temp_struct_method =
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(custom_op->m_procs[i]);
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(op_proc);
                 func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
 
             } else {
                 func = ASR::down_cast<ASR::Function_t>(
-                    ASRUtils::symbol_get_past_external(custom_op->m_procs[i]));
+                    ASRUtils::symbol_get_past_external(op_proc));
             }
 
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
-            ASR::symbol_t* v = custom_op->m_procs[i];
+            ASR::symbol_t* v = op_proc;
             std::string func_name = ASRUtils::symbol_name(v);
             v = current_scope->resolve_symbol(func_name);
             if (v == nullptr) {
@@ -12212,40 +12197,30 @@ public:
         return "~~" + op;
     }
 
-    ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right, const AST::StrOp_t &x) {
+    ASR::symbol_t* resolve_custom_operator_proc(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right,
+        const AST::StrOp_t &x, Vec<ASR::call_arg_t> &args) {
         ASR::symbol_t* sym = nullptr;
         ASR::symbol_t* left_symbol = nullptr;
         ASR::symbol_t* right_symbol = nullptr;
+        ASR::call_arg_t arg1;
+        ASR::call_arg_t arg2;
+
+        arg1.loc = x.base.base.loc;
+        arg1.m_value = left;
+
+        arg2.loc = x.base.base.loc;
+        arg2.m_value = right;
+
+        args.reserve(al, 2);
+        args.push_back(al, arg1);
+        args.push_back(al, arg2);
 
         sym = current_scope->resolve_symbol(intrinsic_op_name);
-        // operator is defined outside both left and right symbols but inside current scope
         if (sym != nullptr) {
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
-
-            Vec<ASR::call_arg_t> args;
-            ASR::call_arg_t arg1;
-            ASR::call_arg_t arg2;
-            ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
-                ASRUtils::symbol_get_past_external(sym));
-
-            arg1.loc = x.base.base.loc;
-            arg1.m_value = left;
-
-            arg2.loc = x.base.base.loc;
-            arg2.m_value = right;
-
-            args.reserve(al, 2);
-            args.push_back(al, arg1);
-            args.push_back(al, arg2);
-
-            int i = ASRUtils::select_generic_procedure(args, *custom_op, x.base.base.loc,
-                [&](const std::string &msg, const Location &loc) {
-                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    }, false);
-
-            if (i != -1) {
-                return sym;
+            // operator is defined outside both left and right symbols but inside current scope
+            ASR::symbol_t *op_proc = get_custom_op_proc(sym, args, x, false);
+            if (op_proc) {
+                return op_proc;
             }
         }
 
@@ -12267,7 +12242,26 @@ public:
             throw SemanticAbort();
         }
 
-        return sym;
+        return get_custom_op_proc(sym, args, x, true);
+    }
+
+    ASR::symbol_t* get_custom_op_proc(ASR::symbol_t *op_sym, Vec<ASR::call_arg_t>& args, const AST::StrOp_t &x, bool raise_error) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(op_sym)));
+
+        ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
+        ASRUtils::symbol_get_past_external(op_sym));
+
+        int i = ASRUtils::select_generic_procedure(args, *custom_op, x.base.base.loc,
+            [&](const std::string &msg, const Location &loc) {
+                    diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }, raise_error);
+
+        if (i != -1) {
+            return custom_op->m_procs[i];
+        }
+
+        return nullptr;
     }
 
     ASR::symbol_t* resolve_struct_symbol(ASR::expr_t* x) {
