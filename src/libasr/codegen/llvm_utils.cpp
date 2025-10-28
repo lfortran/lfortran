@@ -8656,8 +8656,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LCOMPILERS_ASSERT(false);
             }
 
-            // realloc_lhs_arrays
-            if (ASRUtils::is_allocatable(src_expr)) {
+            if (llvm_utils->compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(src_expr)) {
                 uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* total_memory = builder->CreateMul(num_elements,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
