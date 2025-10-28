@@ -9,6 +9,9 @@
 
 namespace LCompilers {
 
+// hard code avoided types (handled by llvm backend) -- We're transitioing the deallocation process into the backend. 
+auto avoided_type = [](ASR::ttype_t* t) -> bool {return ASRUtils::extract_type(t)->type == ASR::String;};
+
 class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>
 {
     private:
@@ -34,6 +37,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                 ASRUtils::is_array(ASRUtils::symbol_type(s)) ||
                 ASRUtils::is_struct(*ASRUtils::symbol_type(s))) &&
                 ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
+                if(avoided_type(ASRUtils::symbol_type(s))) return false;
                 return true;
             }
             return false;
@@ -187,6 +191,7 @@ class CollectTempVarsVisitor : public ASR::BaseWalkVisitor<CollectTempVarsVisito
                 ASRUtils::is_allocatable_or_pointer(target_variable->m_type) &&
                 ASRUtils::symbol_StorageType((ASR::symbol_t *)target_variable) == ASR::storage_typeType::Default) {
                 if (std::string(target_variable->m_name).rfind("__libasr_created") != std::string::npos) {
+                    if(avoided_type(target_variable->m_type)) return;
                     res.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.m_target->base.loc, (ASR::symbol_t *)target_variable)));
                 }
             }

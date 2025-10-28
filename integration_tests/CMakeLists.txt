@@ -1839,6 +1839,7 @@ RUN(NAME string_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

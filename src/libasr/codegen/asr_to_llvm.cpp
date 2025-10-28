@@ -149,6 +149,7 @@ public:
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
 
@@ -1268,6 +1269,7 @@ public:
         }
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
+        LLVMFinalize(llvm_utils, builder, symbol_to_returnBlock).finalize_TranslationUnit(&x);
     }
 
     template <typename T>
@@ -4320,6 +4322,7 @@ public:
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
+        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -5560,6 +5563,7 @@ public:
         llvm::Function* F = llvm_symtab_fn[h];
         if (compiler_options.emit_debug_info) debug_current_scope = llvm_symtab_fn_discope[h];
         proc_return = llvm::BasicBlock::Create(context, "return");
+        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         builder->SetInsertPoint(BB);
@@ -7712,10 +7716,18 @@ public:
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
         ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        
+        llvm::BasicBlock* start_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_start");
+        start_new_block(start_BB);
+
         declare_vars(*associate_block);
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+
+        llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
+        start_new_block(end_BB);
+        symbol_to_returnBlock[&associate_block->base] = end_BB;
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -7742,6 +7754,7 @@ public:
         llvm::BasicBlock *blockstart = llvm::BasicBlock::Create(context, blockstart_name);
         start_new_block(blockstart);
         llvm::BasicBlock *blockend = llvm::BasicBlock::Create(context, blockend_name);
+        symbol_to_returnBlock[&block->base] = blockend;
         llvm::Function *fn = blockstart->getParent();
 #if LLVM_VERSION_MAJOR >= 16
         fn->insert(fn->end(), blockend);
@@ -7891,12 +7904,7 @@ public:
             builder->SetInsertPoint(thenBB);
             {
                 if ( n_rank_block == 1 && ASR::is_a<ASR::BlockCall_t>(*rank_block[0])) {
-                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_block[0]);
-                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_call->m_m);
-                    declare_vars(*block_t);
-                    for (size_t j = 0; j < block_t->n_body; j++) {
-                        this->visit_stmt(*(block_t->m_body[j]));
-                    }
+                    visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(rank_block[0]));
                 }
             }
             builder->CreateBr(mergeBB);
@@ -8210,12 +8218,7 @@ public:
             }
             {
                 if( n_type_block == 1 && ASR::is_a<ASR::BlockCall_t>(*type_block[0]) ) {
-                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(type_block[0]);
-                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_call->m_m);
-                    declare_vars(*block_t, false);
-                    for( size_t j = 0; j < block_t->n_body; j++ ) {
-                        this->visit_stmt(*block_t->m_body[j]);
-                    }
+                    visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(type_block[0]));
                 }
             }
             builder->CreateBr(mergeBB);

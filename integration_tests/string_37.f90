@@ -14,7 +14,8 @@ program string_37
     end function maybe
     function cast_to_string() result(str)
         character(len=:), pointer :: str
-        character(len=5), target :: str2
+        character(len=5), pointer :: str2
+        allocate(str2)
         str2 = "Hello"
         str => str2
     end function cast_to_string

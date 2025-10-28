@@ -319,6 +319,7 @@ namespace LCompilers {
                 }
                 start_new_block(mergeBB);
             }
+            std::string get_llvm_type_as_string(llvm::Type* type);
             /*
                 * Checker for the desired type while operating on array of strings.
                 To make sure of consistency while working, to avoid llvm IR opaque errors.
@@ -666,6 +667,268 @@ namespace LCompilers {
             };
             StringFormatReturn stringFormat_return {this};
     }; // LLVMUtils
+    
+    /**
+     * @class LLVMFinalize
+     * @brief Finalize variables before exiting their scope.
+     * @details 
+     *      - It shouldn't be used to finalize specific symbolTable, rather, 
+     *          it operates on the whole TU to avoid double freeing symboltable.
+     *      - Global variables aren't finalized; They live till program ends anyway @see is_global_scope() + finalize_variable().
+     *      - We Finalize symbolTable as we go. We set llvm return block based on construct, and retrieve again.
+     */
+    class LLVMFinalize final {
+    private:
+        std::unique_ptr<LLVMUtils>                                  &llvm_utils_;
+        std::unique_ptr<llvm::IRBuilder<>>                          &builder_;
+        std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> &symbol_to_returnBlock_;
+
+    public:
+
+        LLVMFinalize(std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder,
+                std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> &symbol_to_returnBlock)  
+        :   llvm_utils_(llvm_utils), builder_(builder), symbol_to_returnBlock_(symbol_to_returnBlock){}
+
+    private:
+    /* ===== Utilities ===== */
+
+        /// Get finalize function based on type.
+        auto get_finalizing_fn(ASR::ttypeType type){
+            switch (type) {
+                case(ASR::String):  
+                    return &LLVMFinalize::finalize_string;
+                case(ASR::Array) :  
+                    return &LLVMFinalize::finalize_array;
+                case(ASR::StructType) :  
+                    return &LLVMFinalize::finalize_struct;
+                case(ASR::Integer):
+                case(ASR::Real):
+                case(ASR::Complex):
+                case(ASR::UnsignedInteger):
+                case(ASR::Logical):
+                    return &LLVMFinalize::finalize_scalar;
+                default: 
+                    return (void (LLVMFinalize::*)(llvm::Value* const, ASR::ttype_t* const)) nullptr;
+            }      
+        }
+        /// insert_null into freed ptr holder -- Useful only for debugging
+        void insert_null(llvm::Type* null_type, llvm::Value* ptr){ 
+            #if !defined(WITH_LFORTRAN_ASSERT) // Release Mode -- Dont't use.
+                return;
+            #endif
+            #if LLVM_VERSION_MAJOR <= 15
+                if(!(ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType()->isPointerTy()))
+                    throw LCompilersException("ptr parameter must be a PTR to PTR type.");
+            #endif
+            builder_->CreateStore(
+                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(null_type)), ptr);
+        }
+
+        /**
+            * Checks that `var_ptr` must a PTR to underlying type,
+            * It also checks that predicted_llvm_type is similar to `var_ptr` (not exact)
+            * @param var_ptr must be a ptr to the underlying type
+            * @param predicted_llvm_type The underlying type OR any set of ptr to the underlying type.
+            * @details Only functional with LLVM < 15.
+                       Doesn't check with release mode.
+         */
+        void verify(llvm::Value* var_ptr, llvm::Type* const predicted_llvm_type){
+        #if !defined(WITH_LFORTRAN_ASSERT) || LLVM_VERSION_MAJOR >= 15
+            return (void)(var_ptr && predicted_llvm_type); 
+        #else
+            llvm::Type* const var_ptr_type = var_ptr->getType();
+            if( !var_ptr_type->isPointerTy() ) throw LCompilersException("Can't operate on non pointers");
+            if( var_ptr_type->getPointerElementType()->isPointerTy() ) throw LCompilersException("We only operate on PTR to the underlying type");
+
+            llvm::Type* predicted_llvm_type_adjusted {}; // Just a PTR to type.
+            {
+                if( !predicted_llvm_type->isPointerTy() ){
+                    predicted_llvm_type_adjusted = predicted_llvm_type->getPointerTo();
+                } else {
+                    predicted_llvm_type_adjusted = predicted_llvm_type;
+                    while(predicted_llvm_type_adjusted->getPointerElementType()->isPointerTy()){ // ???**
+                        predicted_llvm_type_adjusted = predicted_llvm_type_adjusted->getPointerElementType(); // ???*
+                    }
+                }
+            }
+
+            if( var_ptr_type != predicted_llvm_type_adjusted ){
+                throw LCompilersException(
+                    "Unmatching Types :\n"
+                        "ptr_type -->" + llvm_utils_->get_llvm_type_as_string(var_ptr_type) + "\n"
+                    + "Predicted_llvm_type -->" + llvm_utils_->get_llvm_type_as_string(predicted_llvm_type) + "\n"
+                    + "Adjusted-predicted_llvm_type -->" + llvm_utils_->get_llvm_type_as_string(predicted_llvm_type_adjusted)
+                );
+            }
+        #endif
+        }
+
+        /// Set LLVM insert point to some dummy one.
+        /// Useful to break llvm generation if ever used.
+        void set_IP_to_dummy_IP(){
+            static auto dummy_BB = llvm::BasicBlock::Create(builder_->getContext(), "dummy_BB");
+            builder_->SetInsertPoint(dummy_BB); // To raise llvm error if somehow used.
+        }
+        
+        llvm::BasicBlock* get_return_block(ASR::symbol_t* s){
+            LCOMPILERS_ASSERT_MSG(symbol_to_returnBlock_.find(s) != symbol_to_returnBlock_.end(), ASRUtils::symbol_name(s))
+            return symbol_to_returnBlock_[s];
+        }
+
+        /// Sets builder's insert point to construct's return block (before first instruction)
+        void set_IP_with_constructReturnBlock(ASR::symbol_t* s){
+            if(ASR::is_a<ASR::Module_t>(*s)){ 
+                 set_IP_to_dummy_IP(); // No finalization instructions should be inserted for module's variables.
+            } else {
+                builder_->SetInsertPoint(&get_return_block(s)->front());
+            }
+        }
+
+        bool is_global_scope(SymbolTable* symtab){ // Global scope from Variable's perspective.
+            const bool is_module = ASR::is_a<ASR::symbol_t>(*symtab->asr_owner) &&
+                                   ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)symtab->asr_owner);
+            const bool is_TU     = ASR::is_a<ASR::unit_t>(*symtab->asr_owner) &&
+                                   ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)symtab->asr_owner);
+            return is_module || is_TU;
+        }
+
+    /* ===== Type Finalizer Functions + llvm ptr adjusting functions ===== */
+
+        /// Rely on our knowledge on how we preserve llvm variable ptr.
+        /// Adjust to be a PTR to the underlying type.
+        llvm::Value* adjust_string_ptr(llvm::Value* const ptr, ASR::ttype_t* const /*str_t*/){
+            return ptr;// No adjustment needed.
+        }
+
+        void finalize_string(llvm::Value* const str, ASR::ttype_t* const t){
+            ASR::ttype_t* const type_past = ASRUtils::type_get_past_allocatable_pointer(t);
+            ASR::String_t* const str_t = ASR::down_cast<ASR::String_t>(type_past);
+
+            /* Adjust ptr + Verify */
+            llvm::Value* str_adjusted = adjust_string_ptr(str, type_past);
+            verify(str_adjusted, llvm_utils_->get_type_from_ttype_t_util(nullptr, t, llvm_utils_->module));
+            
+            /* Free */
+            switch(str_t->m_physical_type){
+                case ASR::DescriptorString: { // Operate on  ` { i8*, i64 }* `
+                    llvm::Value* const ptr_to_I8_ptr = llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_adjusted, 0);
+                    llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(llvm_utils_->character_type, ptr_to_I8_ptr));
+                    // insert_null(llvm_utils_->character_type, ptr_to_I8_ptr);
+                break;
+                }
+                case ASR::CChar:{ // Operate on  ` i8** `
+                    llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(llvm_utils_->character_type, str_adjusted));
+                    // insert_null(llvm_utils_->character_type, str_adjusted);
+                break;
+                }
+            }
+        }
+
+        void finalize_array(llvm::Value* const arr, ASR::ttype_t* const t){
+            // * adjust_array_ptr -- to match accessing operations
+            // * Verify
+            // * Finailize based on physical Type
+            (void)arr; (void)t;
+        }
+        void finalize_struct(llvm::Value* const struc, ASR::ttype_t* const t){
+            // * adjust_struct_ptr -- to match accessing operations
+            // * Verify
+            // * Finailize
+            (void)struc; (void)t;
+        }
+        void finalize_scalar(llvm::Value* const scalar, ASR::ttype_t* const t){
+            // * adjust_scalar -- to match accessing operations
+            // * Verify
+            // * Finailize
+            (void)scalar; (void)t;
+        }
+
+    /* ===== Lead Functions + Utilities ===== */
+
+        bool not_deallocatable_variable(ASR::Variable_t* const v){ // can't deallocate
+            // allocated on binary load
+            /* TODO :: Handle non local + `Value` attribute. */
+            return v->m_intent != ASR::Local
+                || ASRUtils::is_pointer(v->m_type)
+                || v->m_storage == ASR::Parameter
+                || v->m_storage == ASR::Save /*Neglect - Lives till program ends*/;
+        }
+
+        bool is_variable(ASR::symbol_t* const s){
+            return s->type == ASR::Variable;
+        }
+
+        void finalize_variable(ASR::Variable_t* const v){
+            if(not_deallocatable_variable(v))       return;
+            if(is_global_scope(v->m_parent_symtab)) return;
+
+            ASR::ttype_t* const v_type = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+            llvm::Value* llvm_var {}; {
+                const uint32_t v_h = get_hash((ASR::asr_t*)v);
+                LCOMPILERS_ASSERT(llvm_utils_->llvm_symtab.find(v_h) != llvm_utils_->llvm_symtab.end());
+                llvm_var = llvm_utils_->llvm_symtab[v_h];
+            }
+
+            if(auto fn = get_finalizing_fn(v_type->type)) { 
+                (this->*fn)(llvm_var , v_type); 
+            }
+        }
+
+        bool non_deallocatable_construct(ASR::symbol_t* const s){ // Can't deallocate
+            const bool is_interface = ASR::is_a<ASR::Function_t>(*s)
+                                      && ASRUtils::get_FunctionType(s)->m_deftype == ASR::Interface;
+            const bool is_external_abi = ASR::is_a<ASR::Function_t>(*s)
+                                      && ASRUtils::get_FunctionType(s)->m_abi == ASR::ExternalUndefined;
+            const bool special_MLIR_Module = ASR::is_a<ASR::Module_t>(*s) 
+                                      && ASRUtils::symbol_name(s) == std::string("_lcompilers_mlir_gpu_offloading");
+            return is_interface || is_external_abi || special_MLIR_Module;
+        }
+
+        bool is_construct(ASR::symbol_t* const s){
+            const bool is_construct_symbol =   s->type == ASR::Program
+                                            || s->type == ASR::Function
+                                            || s->type == ASR::Block
+                                            || s->type == ASR::AssociateBlock
+                                            || s->type == ASR::Module;
+            return is_construct_symbol;
+        }
+
+        void finalize_construct(ASR::symbol_t* sym){
+            LCOMPILERS_ASSERT(sym)
+            if(non_deallocatable_construct(sym)) return;
+
+            SymbolTable* symtab = ASRUtils::symbol_symtab(sym);
+            LCOMPILERS_ASSERT(symtab)
+
+            auto const old_insert_point = builder_->saveIP();
+            set_IP_with_constructReturnBlock(sym);
+            finalize_symtab(symtab);
+            builder_->restoreIP(old_insert_point);
+        }
+
+        void finalize_symtab(SymbolTable* symtab){
+            auto MAP = symtab->get_scope();
+            for(auto str_sym_pair : MAP){
+                ASR::symbol_t* const sym = str_sym_pair.second;
+                if(is_construct(sym)){
+                    finalize_construct(sym);
+                } else if (is_variable(sym)){
+                    finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
+                }
+            }
+        }
+
+    public:
+    /* === Entry ===*/
+        void finalize_TranslationUnit(const ASR::TranslationUnit_t* const TU){
+            LCOMPILERS_ASSERT(TU)
+            auto const old_insert_point = builder_->saveIP();
+            set_IP_to_dummy_IP();
+            finalize_symtab(TU->m_symtab);
+            builder_->restoreIP(old_insert_point);
+        }
+
+    };
 
     class LLVMList {
         private:
