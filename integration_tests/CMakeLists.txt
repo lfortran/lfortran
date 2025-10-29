@@ -1520,6 +1520,7 @@ RUN(NAME custom_operator_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_operator_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME custom_operator_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
