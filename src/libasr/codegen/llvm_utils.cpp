@@ -8536,7 +8536,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             + "_" + ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            llvm::Function::ExternalLinkage,
+            llvm::Function::LinkOnceODRLinkage,
             func_name,
             module
         );

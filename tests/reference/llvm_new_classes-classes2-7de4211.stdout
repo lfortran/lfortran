@@ -33,7 +33,7 @@ return:                                           ; preds = %.entry
   ret float %6
 }
 
-define void @_copy_defs_point(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_defs_point(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %point*
   %3 = bitcast i8* %1 to %point*
@@ -46,7 +46,7 @@ entry:
   ret void
 }
 
-define void @_copy_defs_point2d(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_defs_point2d(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %point2d*
   %3 = bitcast i8* %1 to %point2d*

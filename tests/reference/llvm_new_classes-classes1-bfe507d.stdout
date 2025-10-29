@@ -24,7 +24,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @_copy_xx_base(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_xx_base(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %base*
   %3 = bitcast i8* %1 to %base*
