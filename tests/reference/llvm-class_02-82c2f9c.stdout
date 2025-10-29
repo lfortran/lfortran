@@ -83,7 +83,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @_copy_class_circle2_circle(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_class_circle2_circle(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %circle*
   %3 = bitcast i8* %1 to %circle*

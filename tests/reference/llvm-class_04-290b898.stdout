@@ -176,7 +176,7 @@ return:                                           ; preds = %ifcont
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-define void @_copy_main_foo_a(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_foo_a(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_a*
   %3 = bitcast i8* %1 to %foo_a*
@@ -207,7 +207,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define void @_copy_main_foo_b(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_foo_b(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_b*
   %3 = bitcast i8* %1 to %foo_b*
@@ -258,7 +258,7 @@ ifcont3:                                          ; preds = %else2, %then1
   ret void
 }
 
-define void @_copy_main_foo_c(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_foo_c(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_c*
   %3 = bitcast i8* %1 to %foo_c*
@@ -329,7 +329,7 @@ ifcont6:                                          ; preds = %else5, %then4
   ret void
 }
 
-define void @_copy_main_bar_a(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_bar_a(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %bar_a*
   %3 = bitcast i8* %1 to %bar_a*
@@ -355,7 +355,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define void @_copy_main_bar_b(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_bar_b(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %bar_b*
   %3 = bitcast i8* %1 to %bar_b*
@@ -396,7 +396,7 @@ ifcont3:                                          ; preds = %else2, %then1
   ret void
 }
 
-define void @_copy_main_bar_c(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_main_bar_c(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %bar_c*
   %3 = bitcast i8* %1 to %bar_c*

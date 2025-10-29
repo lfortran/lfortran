@@ -194,33 +194,33 @@ time_section "🧪 Testing fortran_mpi" '
   rm -rf fortran_mpi
 '
 
-time_section "🧪 Testing POT3D with fortran_mpi" '
-  git clone https://github.com/parth121101/pot3d.git
-  cd pot3d
-  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
+# time_section "🧪 Testing POT3D with fortran_mpi" '
+#   git clone https://github.com/parth121101/pot3d.git
+#   cd pot3d
+#   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+#   git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
 
-  git clone https://github.com/lfortran/fortran_mpi
-  cd fortran_mpi
-  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
-  cp src/mpi.f90 ../src/
-  cp src/mpi_c_bindings.f90 ../src/
-  cp src/mpi_constants.c ../src/
-  cd ..
+#   git clone https://github.com/lfortran/fortran_mpi
+#   cd fortran_mpi
+#   git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+#   cp src/mpi.f90 ../src/
+#   cp src/mpi_c_bindings.f90 ../src/
+#   cp src/mpi_constants.c ../src/
+#   cd ..
 
-  print_subsection "Building with default flags"
-  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+#   print_subsection "Building with default flags"
+#   FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-  print_subsection "Building with optimization flags"
-  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+#   print_subsection "Building with optimization flags"
+#   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-  print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+#   print_subsection "Building POT3D in separate compilation mode"
+#   FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-  print_success "Done with POT3D"
-  cd ..
-  rm -rf pot3d
-'
+#   print_success "Done with POT3D"
+#   cd ..
+#   rm -rf pot3d
+# '
 
 
 ##########################

@@ -241,7 +241,7 @@ return:                                           ; preds = %ifcont19
   ret void
 }
 
-define void @_copy_modules_36_fpm_main_01_fpm_build_settings(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_build_settings(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %fpm_build_settings*
   %3 = bitcast i8* %1 to %fpm_build_settings*
@@ -267,7 +267,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %fpm_run_settings*
   %3 = bitcast i8* %1 to %fpm_run_settings*
