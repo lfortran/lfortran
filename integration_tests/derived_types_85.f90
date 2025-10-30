@@ -1,4 +1,4 @@
-module derived_types_82_module
+module derived_types_85_module
     implicit none
 
     type :: shlex_token
@@ -19,11 +19,11 @@ contains
         end if
     end function neq
 
-end module derived_types_82_module
+end module
 
 
-program derived_types_82
-    use derived_types_82_module
+program derived_types_85
+    use derived_types_85_module
     implicit none
 
     type(shlex_token), allocatable :: list(:), lmsvcrt(:)
@@ -42,4 +42,4 @@ program derived_types_82
     if (list(1) /= lmsvcrt(1)) error stop
     if (.not.(list(2) /= lmsvcrt(2))) error stop
     if (list(3) /= lmsvcrt(3)) error stop
-end program derived_types_82
+end program
