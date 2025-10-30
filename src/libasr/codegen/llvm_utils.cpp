@@ -320,7 +320,10 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types, true);
+            // Don't pack structs containing vtable pointers in new_classes mode
+            bool should_pack = der_type->m_is_packed &&
+                              !(compiler_options.new_classes && der_type->m_parent == nullptr);
+            (*der_type_llvm)->setBody(member_types, should_pack);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();
