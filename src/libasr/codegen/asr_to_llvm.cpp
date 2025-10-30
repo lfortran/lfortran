@@ -6821,9 +6821,25 @@ public:
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
                 llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
+                // Check if this is a derived-to-base assignment
+                bool use_target_copy = false;
+                if (!is_target_unlimited_polymorphic && !is_value_unlimited_polymorphic) {
+                    ASR::symbol_t* target_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_target);
+                    ASR::symbol_t* value_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
+                    if (target_sym && value_sym &&
+                        ASR::is_a<ASR::Struct_t>(*target_sym) &&
+                        ASR::is_a<ASR::Struct_t>(*value_sym)) {
+                        ASR::Struct_t* target_struct_t = ASR::down_cast<ASR::Struct_t>(target_sym);
+                        ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(value_sym);
+                        // If target is parent of value, this is derived-to-base
+                        use_target_copy = ASRUtils::is_parent(target_struct_t, value_struct_t);
+                    }
+                }
+
                 // For derived-to-base assignments, use the target's copy function
-                // to avoid writing past the target allocation
-                llvm::Value* copy_source = target_struct;
+                // to avoid writing past the target allocation.
+                // For same-type or base-to-derived, use source's copy function.
+                llvm::Value* copy_source = use_target_copy ? target_struct : llvm_dt;
                 llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
                 llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0));
