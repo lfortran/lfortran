@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%base = type <{ i32 (...)**, i32 }>
+%base = type { i32 (...)**, i32 }
 %string_descriptor = type <{ i8*, i64 }>
 
 @_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
@@ -24,7 +24,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @_copy_xx_base(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_xx_base(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %base*
   %3 = bitcast i8* %1 to %base*

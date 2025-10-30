@@ -1,8 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%point = type <{ i32 (...)** }>
-%point2d = type <{ %point, float, float }>
+%point = type { i32 (...)** }
+%point2d = type { %point, float, float }
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_point = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0) }, align 8
@@ -33,7 +33,7 @@ return:                                           ; preds = %.entry
   ret float %6
 }
 
-define void @_copy_defs_point(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_defs_point(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %point*
   %3 = bitcast i8* %1 to %point*
@@ -46,7 +46,7 @@ entry:
   ret void
 }
 
-define void @_copy_defs_point2d(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_defs_point2d(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %point2d*
   %3 = bitcast i8* %1 to %point2d*

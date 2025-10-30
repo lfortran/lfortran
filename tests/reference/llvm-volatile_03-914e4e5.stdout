@@ -23,6 +23,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  %7 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  call void @_lfortran_free(i8* %8)
   ret i32 0
 }
 
@@ -33,3 +36,5 @@ declare i8* @_lfortran_malloc(i64)
 declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(i8*)

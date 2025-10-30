@@ -385,6 +385,63 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
     return vec[index];
 }
 
+// Collect the array expressions which should be of the same size
+class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
+private:
+        Allocator& al;
+        Vec<ASR::expr_t*>& vars;
+public:
+
+        CollectComponentsFromElementalExpr(Allocator& al_, Vec<ASR::expr_t*>& vars_) :
+        al(al_), vars(vars_) {}
+
+        void push_expr_if_array(ASR::expr_t *v) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(v))) {
+                vars.push_back(al, v);
+            }
+        }
+
+        // Don't go inside these
+        void visit_ttype(const ASR::ttype_t &) {}
+        void visit_ArraySection(const ASR::ArraySection_t&) {}
+        void visit_ArrayItem(const ASR::ArrayItem_t&) {}
+        void visit_ArraySize(const ASR::ArraySize_t&) {}
+        void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
+        void visit_ArrayBound(const ASR::ArrayBound_t&) {}
+
+        void visit_Var(const ASR::Var_t& x) {
+            ASR::Var_t *xx = const_cast<ASR::Var_t*>(&x);
+            push_expr_if_array((ASR::expr_t *)xx);
+        }
+
+        void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+            ASR::ArrayPhysicalCast_t *xx = const_cast<ASR::ArrayPhysicalCast_t*>(&x);
+            push_expr_if_array((ASR::expr_t *)xx);
+        }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+            ASR::StructInstanceMember_t *xx = const_cast<ASR::StructInstanceMember_t*>(&x);
+            push_expr_if_array((ASR::expr_t *)xx);
+        }
+
+        void visit_BitCast(const ASR::BitCast_t& x) {
+            ASR::BitCast_t *xx = const_cast<ASR::BitCast_t*>(&x);
+            push_expr_if_array((ASR::expr_t *)xx);
+        }
+
+        void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
+            ASR::ArrayConstant_t *xx = const_cast<ASR::ArrayConstant_t*>(&x);
+            push_expr_if_array((ASR::expr_t *)xx);
+        }
+
+        // Only go inside the FunctionCall if the Function is elemental
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            if (ASRUtils::is_elemental(x.m_name)) {
+                ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr>::visit_FunctionCall(x);
+            }
+        }
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -1066,38 +1123,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-            ASR::expr_t* d_target = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_target));
-            ASR::expr_t* d_orig_value {};
-            {/* Very hard coded case (see test `elemental_18.f90`) -- Remove after `orig_value` refactor (issue #8726) */
-                auto elemental_fnCall_case = [&](){
-                    if(ASR::is_a<ASR::StringCompare_t>(*x.m_value)){
-                        auto tmp = ASR::down_cast<ASR::StringCompare_t>(x.m_value)->m_right;
-                        auto tmp2 = ASR::down_cast<ASR::StringCompare_t>(x.m_value)->m_left;
-                        auto fn_call = ASR::is_a<ASR::FunctionCall_t> (*tmp)  ? ASR::down_cast<ASR::FunctionCall_t>(tmp) : nullptr; 
-                        auto fn_call2 = ASR::is_a<ASR::FunctionCall_t>(*tmp2) ? ASR::down_cast<ASR::FunctionCall_t>(tmp2) : nullptr; 
-                        return (fn_call && ASRUtils::is_elemental(fn_call->m_name)) 
-                            || (fn_call2 && ASRUtils::is_elemental(fn_call2->m_name));
-                    }
-                    return false;
-                };
-                if(ASR::is_a<ASR::FunctionCall_t>(*x.m_value)){ // functionCalls shouldn't appear here
-                    d_orig_value = nullptr; 
-                } else if(elemental_fnCall_case()){
-                    d_orig_value = nullptr; 
-                } else {
-                    d_orig_value = expr_duplicator.duplicate_expr(x.m_value);
-                }
-            }
+            ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
+            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
 
-            ASR::expr_t* d_value = ASRUtils::get_expr_size_expr(expr_duplicator.duplicate_expr(x.m_value));
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, 1);
 
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            ASR::expr_t* d_target_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
-                d_target, nullptr, type32, nullptr));
-            ASR::expr_t* d_value_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
-                d_value, nullptr, type32, nullptr));
+            CollectComponentsFromElementalExpr cv(al, vars);
+            cv.visit_expr(*d_value);
+
             if (debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target_size, d_value_size, d_orig_value, x.m_move_allocation)));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
                 }

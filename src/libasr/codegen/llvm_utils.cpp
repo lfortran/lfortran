@@ -194,7 +194,9 @@ namespace LCompilers {
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
     }
-
+    std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
+        return LLVM::get_type_as_string(type);
+    }
     llvm::Type* LLVMUtils::getMemberType(ASR::ttype_t* mem_type, ASR::Variable_t* member,
         llvm::Module* module) {
         llvm::Type* llvm_mem_type = nullptr;
@@ -318,7 +320,9 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types, true);
+            // Don't pack structs in new_classes mode (they contain or inherit vtable pointers)
+            bool should_pack = der_type->m_is_packed && !compiler_options.new_classes;
+            (*der_type_llvm)->setBody(member_types, should_pack);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();
@@ -1856,7 +1860,7 @@ namespace LCompilers {
         } else {
             throw LCompilersException("Unhandled string physical type");
         }
-        llvm::Value *s_alloc = builder->CreateAlloca(character_type, builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
+        llvm::Value *s_alloc = builder->CreateAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
         builder->CreateStore(s_alloc, str_data);
         builder->CreateStore(convert_kind(len, llvm::Type::getInt64Ty(context)), str_len);
     }
@@ -8534,7 +8538,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             + "_" + ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            llvm::Function::ExternalLinkage,
+            llvm::Function::LinkOnceODRLinkage,
             func_name,
             module
         );
@@ -8656,8 +8660,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 LCOMPILERS_ASSERT(false);
             }
 
-            // realloc_lhs_arrays
-            if (ASRUtils::is_allocatable(src_expr)) {
+            if (llvm_utils->compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(src_expr)) {
                 uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* total_memory = builder->CreateMul(num_elements,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));

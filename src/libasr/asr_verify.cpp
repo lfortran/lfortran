@@ -55,6 +55,7 @@ private:
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
+    bool _is_return_type_string;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
     bool _inside_call = false;
@@ -63,7 +64,7 @@ private:
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, non_global_symbol_visited{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -883,11 +884,16 @@ public:
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
-        if (is_a<ASR::Variable_t>(*s) && is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+
+        // Allow any string variable that is either external or is not defined in this scope to pass FunctionType verification
+        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) ||
+            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name)))) {
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
         }
+        _is_return_type_string = false;
+
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
@@ -968,28 +974,16 @@ public:
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
         if (check_external) {
-            if (ASR::is_a<ASR::ArraySize_t>(*x.m_target)) {
-                ASR::expr_t* target_v = ASR::down_cast<ASR::ArraySize_t>(x.m_target)->m_v;
-                require(ASR::is_a<ASR::Var_t>(*target_v) ||
-                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*target_v) ||
-                        ASR::is_a<ASR::StructInstanceMember_t>(*target_v) ||
-                        ASR::is_a<ASR::BitCast_t>(*target_v) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*target_v), "DebugCheckArrayBounds::m_target::m_v must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
-                require(ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(target_v))), "DebugCheckArrayBounds::m_target::m_v must have an Array type");
-            } else {
-                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Integer type")
-            }
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Array type");
 
-            if (ASR::is_a<ASR::ArraySize_t>(*x.m_value)) {
-                ASR::expr_t* value_v = ASR::down_cast<ASR::ArraySize_t>(x.m_value)->m_v;
-                require(ASR::is_a<ASR::Var_t>(*value_v) ||
-                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*value_v) ||
-                        ASR::is_a<ASR::StructInstanceMember_t>(*value_v) ||
-                        ASR::is_a<ASR::BitCast_t>(*value_v) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*value_v), "DebugCheckArrayBounds::m_value::m_v must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
-                require(ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value_v))), "DebugCheckArrayBounds::m_value::m_v must have an Array type");
-            } else {
-                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_value)), "DebugCheckArrayBounds::m_value must have an Integer type")
+            for (size_t i = 0; i < x.n_components; i++) {
+                require(ASR::is_a<ASR::Var_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_vars element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+
+                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_vars element must have an Array type");
             }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
@@ -1140,6 +1134,11 @@ public:
             require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
+
+        _is_return_type_string = false;
+        if (x.m_return_var_type) {
+            _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);
+        }
 
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
             verify_nonscoped_ttype(x.m_arg_types[i]);

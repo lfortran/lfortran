@@ -165,15 +165,13 @@
                                             (Logical 4)
                                         )
                                         [(ImplicitDeallocate
-                                            [(Var 6 arr_real)
-                                            (Var 6 str)]
+                                            [(Var 6 arr_real)]
                                         )
                                         (Return)]
                                         []
                                     )
                                     (ImplicitDeallocate
-                                        [(Var 6 arr_real)
-                                        (Var 6 str)]
+                                        [(Var 6 arr_real)]
                                     )]
                                     ()
                                     Public
@@ -250,8 +248,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [(Var 5 arr)
-                        (Var 5 str)]
+                        [(Var 5 arr)]
                     )
                     (Return)]
                 ),
@@ -422,9 +419,6 @@
                                         ()
                                         ()
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 str)]
                                     )
                                     (Return)
                                     (DoLoop

@@ -149,6 +149,7 @@ public:
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
 
@@ -1268,6 +1269,7 @@ public:
         }
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
+        LLVMFinalize(llvm_utils, builder, symbol_to_returnBlock).finalize_TranslationUnit(&x);
     }
 
     template <typename T>
@@ -4320,6 +4322,7 @@ public:
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
+        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -5560,6 +5563,7 @@ public:
         llvm::Function* F = llvm_symtab_fn[h];
         if (compiler_options.emit_debug_info) debug_current_scope = llvm_symtab_fn_discope[h];
         proc_return = llvm::BasicBlock::Create(context, "return");
+        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         builder->SetInsertPoint(BB);
@@ -6817,7 +6821,26 @@ public:
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
                 llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
-                llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+                // Check if this is a derived-to-base assignment
+                bool use_target_copy = false;
+                if (!is_target_unlimited_polymorphic && !is_value_unlimited_polymorphic) {
+                    ASR::symbol_t* target_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_target);
+                    ASR::symbol_t* value_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
+                    if (target_sym && value_sym &&
+                        ASR::is_a<ASR::Struct_t>(*target_sym) &&
+                        ASR::is_a<ASR::Struct_t>(*value_sym)) {
+                        ASR::Struct_t* target_struct_t = ASR::down_cast<ASR::Struct_t>(target_sym);
+                        ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(value_sym);
+                        // If target is parent of value, this is derived-to-base
+                        use_target_copy = ASRUtils::is_parent(target_struct_t, value_struct_t);
+                    }
+                }
+
+                // For derived-to-base assignments, use the target's copy function
+                // to avoid writing past the target allocation.
+                // For same-type or base-to-derived, use source's copy function.
+                llvm::Value* copy_source = use_target_copy ? target_struct : llvm_dt;
+                llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
                 llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0));
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
@@ -7342,95 +7365,67 @@ public:
         }
     }
 
-    template<typename T>
-    void check_binop(ASR::expr_t* x) {
-        ASR::expr_t* left = ASR::down_cast<T>(x)->m_left;
-        ASR::expr_t* right = ASR::down_cast<T>(x)->m_right;
+    void generate_binop_check(ASR::expr_t* left, ASR::expr_t* right) {
+        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, left->base.loc, 4));
 
-        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
-        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
             left, nullptr, type32, nullptr));
-        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.loc,
+        visit_expr(*left_size);
+        llvm::Value* left_llvm_size = tmp;
+
+        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
             right, nullptr, type32, nullptr));
+        visit_expr(*right_size);
+        llvm::Value* right_llvm_size = tmp;
 
-        if (ASRUtils::is_array(ASRUtils::expr_type(left)) &&
-            ASRUtils::is_array(ASRUtils::expr_type(right))) {
-            visit_expr(*left_size);
-            llvm::Value* left_llvm_size = tmp;
+        ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+        ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
 
-            visit_expr(*right_size);
-            llvm::Value* right_llvm_size = tmp;
-
-            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
-            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
-
-            if (left_var && right_var) {
-                llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
-                llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
-                                                    "Size of '%s' is is %d and size of '%s' is %d\n",
-                                                    left_name,
-                                                    right_name,
-                                                    left_name,
-                                                    left_llvm_size,
-                                                    right_name,
-                                                    right_llvm_size);
-            } else {
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Runtime Error: Size mismatch in binary operation\n\n"
-                                                    "LHS size is %d and RHS size is %d\n",
-                                                    left_llvm_size,
-                                                    right_llvm_size);
-            }
-
-            generate_binop_checks(left);
-            generate_binop_checks(right);
+        if (left_var && right_var) {
+            llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
+            llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
+            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
+                                                "Size of '%s' is %d and size of '%s' is %d\n",
+                                                left_name,
+                                                right_name,
+                                                left_name,
+                                                left_llvm_size,
+                                                right_name,
+                                                right_llvm_size);
+        } else {
+            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                "Runtime Error: Size mismatch in binary operation\n\n"
+                                                "LHS size is %d and RHS size is %d\n",
+                                                left_llvm_size,
+                                                right_llvm_size);
         }
     }
 
-    void generate_binop_checks(ASR::expr_t* x) {
-        if(!x) return;
-        if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
-            check_binop<ASR::IntegerBinOp_t>(x);
-        } else if (ASR::is_a<ASR::RealBinOp_t>(*x)) {
-            check_binop<ASR::RealBinOp_t>(x);
-        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*x)) {
-            check_binop<ASR::ComplexBinOp_t>(x);
-        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*x)) {
-            check_binop<ASR::LogicalBinOp_t>(x);
-        } else if (ASR::is_a<ASR::IntegerCompare_t>(*x)) {
-            check_binop<ASR::IntegerCompare_t>(x);
-        } else if (ASR::is_a<ASR::RealCompare_t>(*x)) {
-            check_binop<ASR::RealCompare_t>(x);
-        } else if (ASR::is_a<ASR::ComplexCompare_t>(*x)) {
-            check_binop<ASR::ComplexCompare_t>(x);
-        } else if (ASR::is_a<ASR::StringCompare_t>(*x)) {
-            check_binop<ASR::StringCompare_t>(x);
-        } else if (ASR::is_a<ASR::OverloadedCompare_t>(*x)) {
-            check_binop<ASR::OverloadedCompare_t>(x);
-        } else if (ASR::is_a<ASR::StringConcat_t>(*x)) {
-            check_binop<ASR::StringConcat_t>(x);
+    void generate_binop_checks(ASR::expr_t** components, size_t n) {
+        for (size_t i = 0; i < n - 1; i++) {
+            generate_binop_check(components[i], components[i + 1]);
         }
     }
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
-            generate_binop_checks(x.m_orig_value);
+            // Check for errors in array operations in the RHS of the assignment
+            generate_binop_checks(x.m_components, x.n_components);
 
-            visit_expr(*x.m_target);
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
+
+            ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
+                x.m_target, nullptr, type32, nullptr));
+            visit_expr(*target_size_asr);
             llvm::Value* target_size = tmp;
 
-            visit_expr(*x.m_value);
+            ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_components[0]->base.loc,
+                x.m_components[0], nullptr, type32, nullptr));
+            visit_expr(*x_m_components_0_size);
             llvm::Value* value_size = tmp;
 
-            ASR::expr_t* target_expr = nullptr;
-            if (ASR::is_a<ASR::ArraySize_t>(*x.m_target)) {
-                target_expr = ASR::down_cast<ASR::ArraySize_t>(x.m_target)->m_v;
-            }
-
-            // TODO: Try to reserve the target Var, ArraySize can get replaced by IntegerBinOp
-            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(target_expr);
+            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
             if (target_variable) {
                 ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
                 if (ASRUtils::is_array(target_variable->m_type) &&
@@ -7740,10 +7735,18 @@ public:
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
         ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        
+        llvm::BasicBlock* start_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_start");
+        start_new_block(start_BB);
+
         declare_vars(*associate_block);
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+
+        llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
+        start_new_block(end_BB);
+        symbol_to_returnBlock[&associate_block->base] = end_BB;
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -7770,6 +7773,7 @@ public:
         llvm::BasicBlock *blockstart = llvm::BasicBlock::Create(context, blockstart_name);
         start_new_block(blockstart);
         llvm::BasicBlock *blockend = llvm::BasicBlock::Create(context, blockend_name);
+        symbol_to_returnBlock[&block->base] = blockend;
         llvm::Function *fn = blockstart->getParent();
 #if LLVM_VERSION_MAJOR >= 16
         fn->insert(fn->end(), blockend);
@@ -7919,12 +7923,7 @@ public:
             builder->SetInsertPoint(thenBB);
             {
                 if ( n_rank_block == 1 && ASR::is_a<ASR::BlockCall_t>(*rank_block[0])) {
-                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_block[0]);
-                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_call->m_m);
-                    declare_vars(*block_t);
-                    for (size_t j = 0; j < block_t->n_body; j++) {
-                        this->visit_stmt(*(block_t->m_body[j]));
-                    }
+                    visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(rank_block[0]));
                 }
             }
             builder->CreateBr(mergeBB);
@@ -8238,12 +8237,7 @@ public:
             }
             {
                 if( n_type_block == 1 && ASR::is_a<ASR::BlockCall_t>(*type_block[0]) ) {
-                    ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(type_block[0]);
-                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_call->m_m);
-                    declare_vars(*block_t, false);
-                    for( size_t j = 0; j < block_t->n_body; j++ ) {
-                        this->visit_stmt(*block_t->m_body[j]);
-                    }
+                    visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(type_block[0]));
                 }
             }
             builder->CreateBr(mergeBB);
@@ -13520,7 +13514,8 @@ public:
             // Get Runtime VTable Pointer
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
                 ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
-                ptr_loads = 1;
+                ptr_loads_copy = ptr_loads;
+                ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(array_item->m_v));
                 this->visit_expr_wrapper(array_item->m_v, ASR::is_a<ASR::StructInstanceMember_t>(*array_item->m_v));
                 ptr_loads = ptr_loads_copy;
                 llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(

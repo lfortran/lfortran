@@ -1513,6 +1513,15 @@ public:
             if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_end));
                 tmp_stmt = ASRUtils::EXPR(tmp);
+
+                if (ASR::is_a<ASR::StringItem_t>(*tmp_stmt)) {
+                    diag.add(Diagnostic(
+                        "Deferred-length CHARACTER variable must be allocated with a character length `character(..)`",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.m_args[i].m_end->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_step));
                 tmp_stmt = ASRUtils::EXPR(tmp);
@@ -1800,8 +1809,8 @@ public:
             tmp = nullptr;
         } else {
             for( size_t i = 0; i < x.n_args; i++ ) {
-                if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
-                    alloc_args_vec.p[i].n_dims == 0 ) {
+                if(alloc_args_vec.p[i].m_a && ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
+                    alloc_args_vec.p[i].n_dims == 0) {
                     diag.add(Diagnostic(
                         "Allocate for arrays should have dimensions specified, "
                         "found only array variable with no dimensions",

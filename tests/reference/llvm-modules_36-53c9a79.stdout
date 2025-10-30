@@ -3,8 +3,8 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 %fpm_run_settings_polymorphic = type { i64, %fpm_run_settings* }
-%fpm_run_settings = type <{ %fpm_build_settings, %string_descriptor, %string_descriptor, %string_descriptor, i1 }>
-%fpm_build_settings = type <{ i1 }>
+%fpm_run_settings = type { %fpm_build_settings, %string_descriptor, %string_descriptor, %string_descriptor, i1 }
+%fpm_build_settings = type { i1 }
 %__vtab_fpm_run_settings = type { i64 }
 
 @0 = private unnamed_addr constant [47 x i8] c"__libasr_created__intrinsic_array_function_Any\00", align 1

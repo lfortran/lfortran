@@ -836,6 +836,21 @@ namespace LCompilers {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
             llvm::PointerType* memory_holder_type;
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
+            // Check if array descriptor pointer is NULL
+            // Example :: For allocatable members in derived types
+            // If the descriptor pointer itself is NULL, the array is not allocated
+            llvm::BasicBlock *entryBB = builder->GetInsertBlock();
+            llvm::Value* array_ptr_int = builder->CreatePtrToInt(array, llvm::Type::getInt64Ty(context));
+            llvm::Value* is_desc_null = builder->CreateICmpEQ(array_ptr_int, 
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            // Create blocks for conditional execution
+            llvm::Function *fn = entryBB->getParent();
+            llvm::BasicBlock *checkDataBB = llvm::BasicBlock::Create(context, "check_data", fn);
+            llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "merge_allocated", fn);
+            // If descriptor is NULL, skip to merge with false result
+            builder->CreateCondBr(is_desc_null, mergeBB, checkDataBB);
+            // Check data pointer block
+            builder->SetInsertPoint(checkDataBB);
             // Handle an array of strings
             memory_holder_type = ASRUtils::is_character(*array_type) ?
                 llvm_utils->character_type
@@ -853,12 +868,18 @@ namespace LCompilers {
             } else {
                 memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);
             }
-
-            return builder->CreateICmpNE(
+            llvm::Value* is_data_allocated = builder->CreateICmpNE(
                 builder->CreatePtrToInt(llvm_utils->CreateLoad2(memory_holder_type, memory_holder),
                     llvm::Type::getInt64Ty(context)),
                 builder->CreatePtrToInt(llvm::ConstantPointerNull::get(memory_holder_type),
                     llvm::Type::getInt64Ty(context)));
+            builder->CreateBr(mergeBB);
+            // Merge block with PHI node
+            builder->SetInsertPoint(mergeBB);
+            llvm::PHINode *result = builder->CreatePHI(llvm::Type::getInt1Ty(context), 2, "is_allocated");
+            result->addIncoming(llvm::ConstantInt::getFalse(context), entryBB); // from entry (NULL case)
+            result->addIncoming(is_data_allocated, checkDataBB); // from check_data block
+            return result;
         }
 
         void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array,
