@@ -1,10 +1,10 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%shape = type <{ i32 (...)** }>
+%shape = type { i32 (...)** }
 %string_descriptor = type <{ i8*, i64 }>
-%circle = type <{ %shape, float }>
-%rectangle = type <{ %shape, float, float }>
+%circle = type { %shape, float }
+%rectangle = type { %shape, float, float }
 
 @_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
 @_Type_Info_shape = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_shape, i32 0, i32 0) }, align 8
@@ -175,8 +175,8 @@ define i32 @main(i32 %0, i8** %1) {
   store %shape* null, %shape** %s1, align 8
   %s2 = alloca %shape*, align 8
   store %shape* null, %shape** %s2, align 8
-  %2 = call i8* @_lfortran_malloc(i64 12)
-  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 12, i1 false)
+  %2 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
   %3 = bitcast i8* %2 to %shape*
   store %shape* %3, %shape** %s1, align 8
   %4 = load %shape*, %shape** %s1, align 8
