@@ -6821,7 +6821,10 @@ public:
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
                 llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
-                llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+                // For derived-to-base assignments, use the target's copy function
+                // to avoid writing past the target allocation
+                llvm::Value* copy_source = target_struct;
+                llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
                 llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0));
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
