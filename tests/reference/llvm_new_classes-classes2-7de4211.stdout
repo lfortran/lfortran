@@ -1,8 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%point = type <{ i32 (...)** }>
-%point2d = type <{ %point, float, float }>
+%point = type { i32 (...)** }
+%point2d = type { %point, float, float }
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_point = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0) }, align 8

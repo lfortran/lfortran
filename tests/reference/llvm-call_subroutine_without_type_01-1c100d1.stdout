@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%mytype = type <{ float }>
+%mytype = type { float }
 %mytype_polymorphic = type { i64, %mytype* }
 %string_descriptor = type <{ i8*, i64 }>
 %__vtab_mytype = type { i64 }
@@ -27,18 +27,18 @@ define void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polym
   store i64 %3, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
   %4 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
   %5 = load %mytype*, %mytype** %4, align 8
-  %6 = load %mytype, %mytype* %5, align 1
+  %6 = load %mytype, %mytype* %5, align 4
   %7 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  store %mytype %6, %mytype* %7, align 1
+  store %mytype %6, %mytype* %7, align 4
   call void @get_i.__module_module_call_subroutine_without_type_01_get_r()
   %8 = load i64, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
   %9 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 0
   store i64 %8, i64* %9, align 4
   %10 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  %11 = load %mytype, %mytype* %10, align 1
+  %11 = load %mytype, %mytype* %10, align 4
   %12 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
   %13 = load %mytype*, %mytype** %12, align 8
-  store %mytype %11, %mytype* %13, align 1
+  store %mytype %11, %mytype* %13, align 4
   br label %return
 
 return:                                           ; preds = %.entry
