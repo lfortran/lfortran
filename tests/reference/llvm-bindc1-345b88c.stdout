@@ -1,6 +1,68 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%c_funptr = type { i32 (...)**, i32 }
+%c_ptr = type { i32 (...)**, i32 }
+
+@_Name_c_funptr = private unnamed_addr constant [9 x i8] c"c_funptr\00", align 1
+@_Type_Info_c_funptr = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @_Name_c_funptr, i32 0, i32 0) }, align 8
+@_VTable_c_funptr = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_c_funptr to i8*), i8* bitcast (void (i8*, i8*)* @_copy_lfortran_intrinsic_iso_c_binding_c_funptr to i8*)] }, align 8
+@_Name_c_ptr = private unnamed_addr constant [6 x i8] c"c_ptr\00", align 1
+@_Type_Info_c_ptr = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_c_ptr, i32 0, i32 0) }, align 8
+@_VTable_c_ptr = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_c_ptr to i8*), i8* bitcast (void (i8*, i8*)* @_copy_lfortran_intrinsic_iso_c_binding_c_ptr to i8*)] }, align 8
+
+define linkonce_odr void @_copy_lfortran_intrinsic_iso_c_binding_c_funptr(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %c_funptr*
+  %3 = bitcast i8* %1 to %c_funptr*
+  %4 = bitcast %c_funptr* %3 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %c_funptr* %2 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %c_funptr, %c_funptr* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %c_funptr, %c_funptr* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %c_funptr* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_c_funptr, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
+define linkonce_odr void @_copy_lfortran_intrinsic_iso_c_binding_c_ptr(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %c_ptr*
+  %3 = bitcast i8* %1 to %c_ptr*
+  %4 = bitcast %c_ptr* %3 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %c_ptr* %2 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %c_ptr, %c_ptr* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %c_ptr, %c_ptr* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %c_ptr* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_c_ptr, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)

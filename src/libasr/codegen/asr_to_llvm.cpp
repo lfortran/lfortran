@@ -4537,7 +4537,7 @@ public:
                             // Allocate dimension descriptor
                             llvm::Value* arr = llvm_utils->CreateLoad2(type_->getPointerTo(), ptr_member);
                             type_size = data_layout.getTypeAllocSize(arr_descr->get_dimension_descriptor_type());
-                            malloc_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                            malloc_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims*type_size));
                             malloc_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, malloc_size);
                             builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(

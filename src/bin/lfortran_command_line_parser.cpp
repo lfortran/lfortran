@@ -48,6 +48,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
+        bool old_classes = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -126,7 +127,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
-        app.add_flag("--new-classes", compiler_options.new_classes, "Uses the new design for OOPs")->group(group_output_debugging_options);
+        app.add_flag("--old-classes", old_classes, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
@@ -304,6 +305,10 @@ namespace LCompilers::CommandLineInterface {
 
         if (disable_realloc_lhs) {
             compiler_options.po.realloc_lhs_arrays = false;
+        }
+
+        if (old_classes) {
+            compiler_options.new_classes = false;
         }
 
         compiler_options.use_colors = !opts.arg_no_color;

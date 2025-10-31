@@ -77,7 +77,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
-    llvm_new_classes = is_included("llvm_new_classes")
     cpp = is_included("cpp")
     cpp_infer = is_included("cpp_infer")
     c = is_included("c")
@@ -649,19 +648,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 filename,
                 "llvm",
                 "lfortran --no-color --show-llvm {infile} -o {outfile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
-    
-    if llvm_new_classes:
-        if no_llvm:
-            log.info(f"{filename} * llvm_new_classes   SKIPPED as requested")
-        else:
-            run_test(
-                filename,
-                "llvm_new_classes",
-                "lfortran --no-color --show-llvm --new-classes {infile} -o {outfile}",
                 filename,
                 update_reference,
                 verify_hash,
