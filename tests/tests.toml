@@ -4800,11 +4800,11 @@ ast = true
 
 [[test]]
 filename = "classes1.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "classes2.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "implied_do_loop2.f90"
@@ -4816,8 +4816,8 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/select_type_13.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
-llvm_new_classes = true
+llvm = true
