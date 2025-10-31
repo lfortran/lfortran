@@ -175,7 +175,7 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    int value_rank, int target_rank) = 0;
+                    int value_rank, int target_rank, LocationManager& lm) = 0;
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
@@ -183,7 +183,7 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) = 0;
 
                 /*
                 * Returns the llvm::Type* associated with the
@@ -286,11 +286,11 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
-                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "") = 0;
+                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "") = 0;
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp) = 0;
@@ -342,11 +342,11 @@ namespace LCompilers {
 
                 llvm::Value* cmo_convertor_single_element(
                     llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
-                    int n_args, bool check_for_bounds, std::string array_name = "");
+                    int n_args, bool check_for_bounds, LocationManager& lm, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
 
                 llvm::Value* cmo_convertor_single_element_data_only(
                     llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-                    int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data = false, std::string array_name = "");
+                    int n_args, bool check_for_bounds, LocationManager& lm, bool is_unbounded_pointer_to_data = false, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
 
             public:
 
@@ -417,7 +417,7 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    int value_rank, int target_rank);
+                    int value_rank, int target_rank, LocationManager& lm);
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
@@ -425,7 +425,7 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    llvm::Value** llvm_diminfo, int value_rank, int target_rank);
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
@@ -476,11 +476,11 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    ASR::ttype_t* asr_type, ASR::expr_t* expr,
+                    ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
-                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "");
+                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "");
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp);

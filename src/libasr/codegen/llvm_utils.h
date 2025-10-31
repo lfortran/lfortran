@@ -281,12 +281,21 @@ namespace LCompilers {
                                           std::string runtime_func_name, llvm::Module& module);
 
             template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, Args... args)
+            void generate_runtime_error(llvm::Value* cond, std::string message, std::string infile, Location loc, LocationManager& lm, Args... args)
             {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
                 llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                uint32_t line, column;
+                if (infile != "" && loc.first != 0 && loc.last != 0) {
+                    lm.pos_to_linecol(lm.output_to_input_pos(loc.first, false),
+                        line, column, infile);
+                    std::stringstream ss;
+                    ss << "At " << line << ":" << column << " of file " << infile << "\n" << message;
+                    message = ss.str();
+                }
 
                 builder->CreateCondBr(cond, thenBB, mergeBB);
                 builder->SetInsertPoint(thenBB); {
