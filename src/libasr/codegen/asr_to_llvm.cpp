@@ -14411,48 +14411,28 @@ public:
                     ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
                     this->visit_expr_wrapper(x.m_args[i], true);
                 }
-                // ===================== DEBUG: Inspect tmp before class unwrap =====================
-                if (compiler_options.new_classes &&
-                    ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
-                    (ASRUtils::is_class_type(ASRUtils::expr_type(x.m_args[i])) ||
-                     ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])))
-                {
-                    std::cerr << "[DEBUG] BEFORE UNWRAP tmp LLVM type: ";
-                    tmp->getType()->print(llvm::errs());
-                    llvm::errs() << "\n";
-
-                    // Try to see if tmp is a pointer-to-wrapper or the wrapper struct itself
-                    if (!tmp->getType()->isPointerTy()) {
-                        std::cerr << "[DEBUG] tmp is NOT a pointer, storing into alloca.\n";
-                        llvm::Value* slot = builder->CreateAlloca(tmp->getType());
-                        builder->CreateStore(tmp, slot);
-                        tmp = slot;
-                    } else {
-                        std::cerr << "[DEBUG] tmp is a pointer.\n";
-                    }
-
-                    std::cerr << "[DEBUG] AFTER optional alloca. Type: ";
-                    tmp->getType()->print(llvm::errs());
-                    llvm::errs() << "\n";
-                }
-                // =======================================================================
                 // Handling for polymorphic class variables in print statements with --new-classes
                 if (compiler_options.new_classes &&
-                    current_select_type_block_type_asr != nullptr &&
-                    ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
-                    ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) 
-                {
-                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i]));
+                    ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
 
-                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    // Extract data pointer from polymorphic struct
+                    // Get struct type from ASR, as LLVM 15+ doesn't support direct
+                    // extraction from tmp using getPointerElementType()
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_from_expr(al, x.m_args[i])
+                        )
+                    );
 
                     llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
-
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
                         polymorphic_struct_type, tmp, 1);
 
-                    tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+                    if (ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
+                        tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+                    } else {
+                        tmp = data_ptr;  // Already concrete CLASS(T)
+                    }
                 }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
