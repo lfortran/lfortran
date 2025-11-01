@@ -14415,14 +14415,13 @@ public:
                 if (compiler_options.new_classes &&
                     ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
 
-                    // Extract data pointer from polymorphic struct
-                    // Get struct type from ASR, as LLVM 15+ doesn't support direct
-                    // extraction from tmp using getPointerElementType()
-                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+                    // Extract struct symbol from CLASS(T) expression
+                    ASR::symbol_t* struct_sym =
                         ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_from_expr(al, x.m_args[i])
-                        )
-                    );
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i])
+                        );
+
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
                     llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
@@ -14431,7 +14430,7 @@ public:
                     if (ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
                         tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
                     } else {
-                        tmp = data_ptr;  // Already concrete CLASS(T)
+                        tmp = data_ptr;  // already concrete CLASS(T)
                     }
                 }
                 if(!tmp->getType()->isPointerTy() ||
