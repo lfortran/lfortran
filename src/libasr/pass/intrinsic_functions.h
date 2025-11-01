@@ -819,7 +819,7 @@ namespace Abs {
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
                 type = TYPE(ASR::make_Array_t(al, type->base.loc, real_type,
-                                    e->m_dims, e->n_dims, e->m_physical_type));
+                                    e->m_dims, e->n_dims, e->m_physical_type, e->m_is_assumed_rank));
             } else {
                 type = real_type;
             }

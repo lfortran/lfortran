@@ -7740,6 +7740,11 @@ public:
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
                 }
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::DescriptorArray &&
+            m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            
+            PointerToData_to_Descriptor(m_arg, m_type, m_type_for_dimensions);
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -14389,7 +14394,7 @@ public:
                     if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
-                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
+                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray, false));
                         ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
                                                                 ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
                                                                 x.m_args[i],arr->m_physical_type,
