@@ -493,7 +493,7 @@ namespace LCompilers {
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
-            int value_rank, int target_rank) {
+            int value_rank, int target_rank, LocationManager& lm) {
             llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), value_desc, llvm_utils->module));
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
@@ -508,7 +508,7 @@ namespace LCompilers {
             llvm::Type* type_llvm = llvm_utils->get_type_from_ttype_t_util(
                 target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), llvm_utils->module);
             llvm::Value* target_offset = cmo_convertor_single_element(
-                type_llvm, value_desc, section_first_indices, value_rank, false);
+                type_llvm, value_desc, section_first_indices, value_rank, false, lm);
 
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
@@ -579,7 +579,7 @@ namespace LCompilers {
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
-            llvm::Value** llvm_diminfo, int value_rank, int target_rank) {
+            llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) {
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -591,7 +591,7 @@ namespace LCompilers {
                 }
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
-                llvm_diminfo, section_first_indices, value_rank, false);
+                llvm_diminfo, section_first_indices, value_rank, false, lm);
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
                     "Only descriptor strings are supported for now");
@@ -710,7 +710,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
             llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, std::string array_name) {
+            int n_args, bool check_for_bounds, LocationManager& lm, std::string array_name, std::string infile, Location loc) {
             llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(
                 dim_des->getPointerTo(), llvm_utils->create_gep2(type, arr, 2));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
@@ -734,8 +734,11 @@ namespace LCompilers {
                     llvm_utils->generate_runtime_error(builder->CreateOr(
                                                             lbound_check,
                                                             ubound_check),
-                                            "Runtime error: Array '%s' index out of bounds.\n\n"
+                                                "Runtime error: Array '%s' index out of bounds.\n\n"
                                                      "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                     infile,
+                                                     loc,
+                                                     lm,
                                                      LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
                                                      dimension,
@@ -751,7 +754,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data, std::string array_name) {
+            int n_args, bool check_for_bounds,LocationManager& lm, bool is_unbounded_pointer_to_data, std::string array_name, std::string infile, Location loc) {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
@@ -781,6 +784,9 @@ namespace LCompilers {
                                                                 ubound_check),
                                                 "Runtime error: Array '%s' index out of bounds.\n\n"
                                                         "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                        infile,
+                                                        loc,
+                                                        lm,
                                                         LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
                                                         dimension,
@@ -794,14 +800,14 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name, std::string infile) {
             llvm::Value* tmp = nullptr;
             llvm::Value* idx = nullptr;
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
-                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data, array_name);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else {
@@ -814,7 +820,7 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
-                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, array_name);
+                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
                 llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);

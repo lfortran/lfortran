@@ -111,7 +111,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.files.back().in_filename,
+        pass_manager, diagnostics, lm, lm.files.back().in_filename,
         nullptr);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
@@ -334,7 +334,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         return asr.error;
     }
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
-        diagnostics, lm.files.back().in_filename, nullptr);
+        diagnostics, lm, lm.files.back().in_filename, nullptr);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -353,13 +353,14 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         i.e. time taken by optimizations, and used when
         `--time-report` flag is used
 */
+// Add LocationManager here
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
-    diag::Diagnostics &diagnostics
+    diag::Diagnostics &diagnostics, LocationManager& lm
 #else
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
-    diag::Diagnostics &/*diagnostics*/
+    diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
   [[maybe_unused]] int* time_opt=nullptr)
@@ -390,7 +391,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn, "", infile);
+            compiler_options, run_fn, "", infile, lm);
     if (res.ok) {
         m = std::move(res.result);
     } else {

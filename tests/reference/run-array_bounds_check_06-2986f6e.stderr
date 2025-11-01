@@ -1,3 +1,4 @@
+At 10:5 of file tests/errors/array_bounds_check_06.f90
 Runtime Error: Size mismatch in assignment to 'x'
 
 LHS size is 3 and RHS size is 4
