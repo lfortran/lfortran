@@ -1360,12 +1360,7 @@ public:
                         llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
                         // If no type specified then use curr_arg_m_a_type as default
                         if (m_source && !m_source_is_class) {
-                            if(ASRUtils::is_character(*ASRUtils::expr_type(m_source))){ //hackish (clean dest_type + src_type passed to deepcopy)
-                                ASRUtils::ASRBuilder b(al, x.base.base.loc) ;
-                                dest_asr_type = b.allocatable(b.String(nullptr, ASR::DeferredLength));
-                            } else {
-                                dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
-                            }
+                            dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(m_source));
                             malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4),
                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -1390,7 +1385,16 @@ public:
                             context, *module, *builder, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                     malloc_size, llvm::MaybeAlign());
-
+                        if(ASRUtils::is_string_only(dest_asr_type)) { // String type has a state to be cloned.
+                            // NOTE : dest_asr_type == source_type (They both refelect the type the class will be)
+                            this->visit_expr_load_wrapper(m_source, 0);
+                            auto* const dest__source_t = llvm_utils->get_type_from_ttype_t_util(m_source, dest_asr_type, module.get());
+                            llvm_utils->clone_string_state(
+                                        builder->CreateBitCast(malloc_ptr, dest__source_t->getPointerTo()),
+                                        tmp /*m_source*/,
+                                        ASRUtils::get_string_type(dest_asr_type));
+                            tmp = nullptr;
+                        }
                         if (!compiler_options.new_classes) {
                             // Set class hash in polymorphic struct
                             llvm::Value* class_hash = nullptr;
@@ -1484,19 +1488,16 @@ public:
                             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(dest_class_sym), x_arr, dest_asr_type);
                         }
                         if (m_source && !m_source_is_class) {
-                            int64_t ptr_loads_copy = ptr_loads;
-                            if (ASRUtils::is_allocatable(m_source)) {
-                                ptr_loads = 1;
-                            } else {
-                                ptr_loads = 0;
+                            llvm::Value* src = nullptr; {
+                                const auto load = ASRUtils::is_allocatable(m_source) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
+                                this->visit_expr_load_wrapper(m_source, load);
+                                src = tmp;
+                                tmp = nullptr;
                             }
-                            this->visit_expr(*m_source);
-                            ptr_loads = ptr_loads_copy;
-
-                            llvm::Value* src = tmp;
                             llvm::Value* dest = x_arr;
                             if (!ASRUtils::is_value_constant(m_source) && 
-                                !ASRUtils::is_struct(*ASRUtils::expr_type(m_source))) {
+                                !ASRUtils::is_struct(*ASRUtils::expr_type(m_source)) &&
+                                !ASRUtils::is_string_only(ASRUtils::expr_type(m_source))) {
                                 src = llvm_utils->CreateLoad2(dest_type, src);
                             }
                             llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get());

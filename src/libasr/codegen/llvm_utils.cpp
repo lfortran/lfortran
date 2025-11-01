@@ -1891,6 +1891,16 @@ namespace LCompilers {
         return str_desc;
     }
 
+    void LLVMUtils::clone_string_state(llvm::Value* const dest, llvm::Value* const src, ASR::String_t* const string_type){
+        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(string_type, dest));
+        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(string_type, src));
+        llvm::Value* const src_len = get_string_length(string_type, src);
+        llvm::Value* const dest_len = get_string_length(string_type, dest, true);
+
+        builder->CreateStore(src_len, dest_len);
+        set_string_memory_on_heap(string_type->m_physical_type, dest, src_len);
+    }
+
     bool LLVMUtils::is_string_length_setable(ASR::String_t* string_t){
         switch(string_t->m_physical_type){
             case ASR::DescriptorString:{

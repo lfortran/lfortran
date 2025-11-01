@@ -374,6 +374,13 @@ namespace LCompilers {
             */
             llvm::Value* create_string_descriptor(llvm::Value* data, llvm::Value* len, std::string name = "");
 
+            /**
+             * Clones the state of string
+             * A STRING STATE : is the length of it, and the amount of allocated memory.
+             * @param s_type is assumed to be a string type reflecting the type of both strings.
+             */
+            void clone_string_state(llvm::Value*  dest, llvm::Value* src, ASR::String_t* str_type);
+
             /* 
                 Creates a string_descriptor.
                 Only allocates it, does not set data or length.
