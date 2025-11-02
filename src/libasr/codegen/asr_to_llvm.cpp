@@ -14415,22 +14415,30 @@ public:
                 if (compiler_options.new_classes &&
                     ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
 
-                    // Extract struct symbol from CLASS(T) expression
-                    ASR::symbol_t* struct_sym =
+                    // Try to get struct symbol for this expression (returns nullptr if not applicable)
+                    ASR::symbol_t* maybe_struct =
                         ASRUtils::symbol_get_past_external(
                             ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i])
                         );
 
-                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    // If the argument is not a struct/class, skip this block (important for REPL)
+                    if (maybe_struct != nullptr) {
 
-                    llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(
-                        polymorphic_struct_type, tmp, 1);
+                        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(maybe_struct);
 
-                    if (ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
-                        tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
-                    } else {
-                        tmp = data_ptr;  // already concrete CLASS(T)
+                        llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
+
+                        // GEP to the "data" field of the wrapper: wrapper = { typeid, data_ptr }
+                        llvm::Value* data_ptr = llvm_utils->create_gep2(
+                            polymorphic_struct_type, tmp, 1);
+
+                        if (ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
+                            // For class(*), load the void* from wrapper
+                            tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+                        } else {
+                            // For a concrete CLASS(T), data_ptr is already the pointer we need
+                            tmp = data_ptr;
+                        }
                     }
                 }
                 if(!tmp->getType()->isPointerTy() ||
