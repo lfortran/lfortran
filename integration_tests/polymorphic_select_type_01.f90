@@ -9,9 +9,9 @@ program main
    x%a = 10
 
    select type(x)
-    type is (type_a)
-      print *, x
+    type is(type_a)
+        if (x%a /= 10) error stop "FAILED: wrong value"
     class default
-      print *, "default"
+        error stop "FAILED: wrong type in select type"
    end select
 end program
