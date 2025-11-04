@@ -352,10 +352,10 @@ semantic error: Invalid argument `end` supplied
     |     ^^^^^^^^^^^^^^ 
 
 semantic error: The first argument of `cmplx` intrinsic must be present
-   --> tests/errors/continue_compilation_2.f90:249:9
+   --> tests/errors/continue_compilation_2.f90:249:14
     |
-249 |     a = cmplx(y = 2)
-    |         ^^^^^^^^^^^^ 
+249 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+    |              ^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
    --> tests/errors/continue_compilation_2.f90:255:11
