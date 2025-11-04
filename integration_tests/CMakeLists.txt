@@ -2734,3 +2734,6 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
+
+# test for polymorphic select type
+RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
