@@ -20,7 +20,7 @@ contains
 end subroutine add
 
 
-program main
+program internal_subr_host_vars_01
     implicit none
     call add(1.0, 2.0)
 end program main
