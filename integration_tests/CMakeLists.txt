@@ -2007,6 +2007,7 @@ RUN(NAME class_70 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_71 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_72 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
