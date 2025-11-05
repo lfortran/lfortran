@@ -5,7 +5,7 @@ subroutine add(x, y)
     real :: s
 
     s = x + y
-    if (abs(s - (x + y)) > 1.0e-6) error stop "host add: s mismatch"
+    if (s /= 3.0) error stop
 
 contains
 
@@ -14,7 +14,7 @@ contains
         real :: t
         ! add2 should be able to see x, y from the host
         t = x + y + 2.0
-        if (abs(t - (x + y + 2.0)) > 1.0e-6) error stop "host add2: t mismatch"
+        if (t /= 5.0) error stop
     end subroutine add2
 
 end subroutine add
