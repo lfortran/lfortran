@@ -4035,7 +4035,18 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             case (ASR::ttypeType::String) : {
                 ASR::String_t *a2 = ASR::down_cast<ASR::String_t>(a);
                 ASR::String_t *b2 = ASR::down_cast<ASR::String_t>(b);
-                return (a2->m_kind == b2->m_kind);
+                
+                if (a2->m_kind != b2->m_kind) {
+                    return false;
+                }
+                bool a_is_deferred = ASRUtils::is_deferredLength_string(a);
+                bool b_is_deferred = ASRUtils::is_deferredLength_string(b);
+
+                if (a_is_deferred != b_is_deferred) {
+                    return false; 
+                }
+
+                return true;
             }
             case (ASR::ttypeType::List) : {
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
