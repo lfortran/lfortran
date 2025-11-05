@@ -791,17 +791,6 @@ public:
                         } else if (is_procedure_variable) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
                         } else {
-                            if (ASR::is_a<ASR::Var_t>(*val)) {
-                                ASR::Var_t* var_expr = ASR::down_cast<ASR::Var_t>(val);
-                                if (ASR::is_a<ASR::Variable_t>(*var_expr->m_v)) {
-                                    ASR::Variable_t* v
-                                        = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-                                    if (v->m_intent == ASR::intentType::In) {
-                                        v->m_intent = ASR::intentType::InOut;
-                                    }
-                                }
-                            }
-
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                         target, val, nullptr, false, false));
                             /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */
