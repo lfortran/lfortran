@@ -2047,12 +2047,31 @@ namespace LCompilers {
                 break;
             }
             case ASR::DeferredLength:{
+                // For deferred-length character(:), ensure the provided length is
+                // a scalar integer value of the correct kind before both allocating
+                // and storing it into the descriptor. Some code paths can produce
+                // a pointer-typed value here (e.g., length coming from a pointer/
+                // allocatable expression). Load first when needed, then convert.
                 LCOMPILERS_ASSERT(amount_to_allocate)
-                set_string_memory_on_heap(str_type->m_physical_type, str, amount_to_allocate);
-                llvm::Value* str_len = get_string_length(str_type, str, true); // Pointer to it (e.g `i64*`)
-                builder->CreateStore(
-                    convert_kind(amount_to_allocate, llvm::Type::getInt64Ty(context)),
-                    str_len);
+
+                llvm::Value* len_val = amount_to_allocate;
+                if (len_val->getType()->isPointerTy()) {
+                    auto *pt = llvm::cast<llvm::PointerType>(len_val->getType());
+                    llvm::Type *elt = pt->getElementType();
+                    // Only load if it points to a numeric scalar
+                    if (elt->isIntegerTy() || elt->isFloatingPointTy()) {
+                        len_val = builder->CreateLoad(elt, len_val);
+                    }
+                }
+                // Convert to i64 as the canonical length storage type
+                len_val = convert_kind(len_val, llvm::Type::getInt64Ty(context));
+
+                // Allocate memory according to the desired length
+                set_string_memory_on_heap(str_type->m_physical_type, str, len_val);
+
+                // And write the length into the descriptor
+                llvm::Value* str_len = get_string_length(str_type, str, true); // e.g. i64*
+                builder->CreateStore(len_val, str_len);
                 break;
             }
             default:
