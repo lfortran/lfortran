@@ -6648,7 +6648,8 @@ public:
         if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
             !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASRUtils::is_allocatable(sim->m_v) && !ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+            if (!compiler_options.new_classes && ASRUtils::is_allocatable(sim->m_v) && 
+                    !ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
                 check_and_allocate_scalar(sim->m_v, x.m_value, asr_value_type);
             }
 
@@ -6760,7 +6761,7 @@ public:
                     (is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {
             if (ASRUtils::is_allocatable(asr_target_type)) {
-                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type);
+                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
@@ -6906,7 +6907,7 @@ public:
         } else if (compiler_options.new_classes &&
                     (is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
             if (ASRUtils::is_allocatable(asr_target_type)) {
-                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type);
+                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
@@ -7506,7 +7507,8 @@ public:
     }
 
     // Checks if target_expr is allocated and if not then allocate
-    void check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr, ASR::ttype_t *value_struct_type = nullptr) {
+    void check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr,
+            ASR::ttype_t *value_struct_type = nullptr, bool is_assignment = false) {
         ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(asr_ttype));
@@ -7538,6 +7540,17 @@ public:
             llvm::Value* null_cond = builder->CreateICmpEQ(
                         target_struct_ptr,
                         llvm::ConstantPointerNull::get(wrapper_struct_llvm_type->getPointerTo()));
+            
+            if (compiler_options.new_classes && is_assignment && 
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(value_struct_type))) {
+                // If lhs is class(), rhs is type() then we must reallocate always
+                Vec<ASR::expr_t*> del_args; del_args.reserve(al, 1);
+                del_args.push_back(al, target_expr);
+                ASR::stmt_t* delete_stmt = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                    al, target_expr->base.loc, del_args.p, del_args.n));
+                this->visit_stmt(*delete_stmt);
+                null_cond = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+            }
 
             // consider the class hash only if the assignment value is a struct type
             if (ASR::is_a<ASR::StructType_t>(*value_struct_type) && !compiler_options.new_classes) {

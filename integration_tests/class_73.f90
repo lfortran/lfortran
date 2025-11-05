@@ -33,4 +33,23 @@ program class_73
     class default
         error stop
    end select
+
+   deallocate(self)
+   allocate(self)
+   self = map
+   select type(self)
+    type is (toml_ordered_map)
+        if (any(self%arr /= [1,2,3])) error stop
+    class default
+        error stop
+   end select
+
+   deallocate(self)
+   call move_alloc(map, self)
+   select type(self)
+    type is (toml_ordered_map)
+        if (any(self%arr /= [1,2,3])) error stop
+    class default
+        error stop
+   end select
 end program class_73
