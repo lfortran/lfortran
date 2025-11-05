@@ -14413,7 +14413,8 @@ public:
                 }
                 // Handling for polymorphic class variables in print statements with --new-classes
                 if (compiler_options.new_classes &&
-                    ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
+                    ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i])))) {
 
                     // Try to get struct symbol for this expression (returns nullptr if not applicable)
                     ASR::symbol_t* maybe_struct =
