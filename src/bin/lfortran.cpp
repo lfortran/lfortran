@@ -2733,9 +2733,10 @@ int main_app(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
     LCompilers::initialize();
-#if defined(HAVE_LFORTRAN_STACKTRACE)
+
+    
     LCompilers::print_stack_on_segfault();
-#endif
+
     try {
         return main_app(argc, argv);
     } catch(const LCompilers::LCompilersException &e) {
@@ -2756,5 +2757,6 @@ int main(int argc, char *argv[])
         std::cerr << "Unknown Exception" << std::endl;
         return 1;
     }
+
     return 0;
 }
