@@ -1,14 +1,14 @@
 program class_73
    implicit none
 
-   type, abstract :: toml_map_structure
+   type :: toml_map_structure
    end type toml_map_structure
 
    type, extends(toml_map_structure) :: toml_ordered_map
       integer, allocatable :: arr(:)
    end type toml_ordered_map
 
-   class(toml_map_structure), allocatable :: self
+   class(toml_map_structure), allocatable :: self, self2, self3
    type(toml_ordered_map), allocatable, target :: map
    type(toml_ordered_map), pointer :: map_ptr
 
@@ -30,6 +30,23 @@ program class_73
    select type(self)
     type is (toml_ordered_map)
         if (any(self%arr /= [1,2,3])) error stop
+    class default
+        error stop
+   end select
+
+   allocate(self2)
+   self2 = map
+   select type(self2)
+    type is (toml_ordered_map)
+        if (any(self2%arr /= [1,2,3])) error stop
+    class default
+        error stop
+   end select
+
+   call move_alloc(map, self3)
+   select type(self3)
+    type is (toml_ordered_map)
+        if (any(self3%arr /= [1,2,3])) error stop
     class default
         error stop
    end select

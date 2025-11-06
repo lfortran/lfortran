@@ -1203,7 +1203,13 @@ namespace MoveAlloc {
         al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
                 alloc_dims.push_back(al, dim);
             }
-            if_body.push_back(b.Allocate(args[1], alloc_dims));
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
+                ASR::symbol_t* from_struct =  ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr( new_args[0].m_value));
+                if_body.push_back(b.Allocate(args[1], alloc_dims, from_struct));
+            } else {
+                if_body.push_back(b.Allocate(args[1], alloc_dims));
+            }
         }
         if_body.push_back(b.Assignment(args[1], args[0]));
         Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
