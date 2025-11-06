@@ -126,38 +126,19 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
   %6 = getelementptr %mytype, %mytype* %4, i32 0, i32 1
   %7 = load %mytype*, %mytype** %obj, align 8
-  %8 = icmp eq %mytype* %7, null
-  br i1 %8, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %9 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %9, i8 0, i32 16, i1 false)
-  %10 = bitcast i8* %9 to %mytype*
-  store %mytype* %10, %mytype** %obj, align 8
-  %11 = load %mytype*, %mytype** %obj, align 8
-  %12 = bitcast %mytype* %10 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
-  %13 = getelementptr %mytype, %mytype* %11, i32 0, i32 1
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %14 = load %mytype*, %mytype** %obj, align 8
-  %15 = getelementptr %mytype, %mytype* %14, i32 0, i32 1
-  store float 1.000000e+00, float* %15, align 4
-  %16 = load %mytype*, %mytype** %obj, align 8
-  %17 = load %mytype*, %mytype** %obj, align 8
-  %18 = bitcast %mytype* %17 to void (%mytype*)***
-  %19 = load void (%mytype*)**, void (%mytype*)*** %18, align 8
-  %20 = getelementptr inbounds void (%mytype*)*, void (%mytype*)** %19, i32 1
-  %21 = load void (%mytype*)*, void (%mytype*)** %20, align 8
-  call void %21(%mytype* %17)
+  %8 = getelementptr %mytype, %mytype* %7, i32 0, i32 1
+  store float 1.000000e+00, float* %8, align 4
+  %9 = load %mytype*, %mytype** %obj, align 8
+  %10 = load %mytype*, %mytype** %obj, align 8
+  %11 = bitcast %mytype* %10 to void (%mytype*)***
+  %12 = load void (%mytype*)**, void (%mytype*)*** %11, align 8
+  %13 = getelementptr inbounds void (%mytype*)*, void (%mytype*)** %12, i32 1
+  %14 = load void (%mytype*)*, void (%mytype*)** %13, align 8
+  call void %14(%mytype* %10)
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

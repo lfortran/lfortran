@@ -353,7 +353,6 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         i.e. time taken by optimizations, and used when
         `--time-report` flag is used
 */
-// Add LocationManager here
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,

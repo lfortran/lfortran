@@ -1845,6 +1845,7 @@ RUN(NAME string_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_82 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_83 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2009,6 +2010,7 @@ RUN(NAME class_70 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_71 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_72 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2737,3 +2739,6 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
+
+# test for polymorphic select type
+RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
