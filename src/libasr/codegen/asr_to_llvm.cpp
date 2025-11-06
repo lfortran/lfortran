@@ -7375,43 +7375,57 @@ public:
     void generate_binop_check(ASR::expr_t* left, ASR::expr_t* right) {
         ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, left->base.loc, 4));
 
-        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
-            left, nullptr, type32, nullptr));
-        visit_expr(*left_size);
-        llvm::Value* left_llvm_size = tmp;
+        ASR::ttype_t* left_type = ASRUtils::expr_type(left);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
 
-        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
-            right, nullptr, type32, nullptr));
-        visit_expr(*right_size);
-        llvm::Value* right_llvm_size = tmp;
+        for (size_t dim = 0; dim < rank; dim++) {
+            ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
 
-        ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
-        ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+            ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
+                left, dim_asr, type32, nullptr));
+            visit_expr(*left_size);
+            llvm::Value* left_llvm_size = tmp;
 
-        if (left_var && right_var) {
-            llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
-            llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
-            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
-                                                "Size of '%s' is %d and size of '%s' is %d\n",
-                                                infile,
-                                                left->base.loc,
-                                                location_manager,
-                                                left_name,
-                                                right_name,
-                                                left_name,
-                                                left_llvm_size,
-                                                right_name,
-                                                right_llvm_size);
-        } else {
-            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                "Runtime Error: Size mismatch in binary operation\n\n"
-                                                "LHS size is %d and RHS size is %d\n",
-                                                infile,
-                                                left->base.loc,
-                                                location_manager,
-                                                left_llvm_size,
-                                                right_llvm_size);
+            ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
+                right, dim_asr, type32, nullptr));
+            visit_expr(*right_size);
+            llvm::Value* right_llvm_size = tmp;
+
+            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+
+            llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
+            if (left_var && right_var) {
+                llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
+                llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Array shape mismatch in binary operation with operands '%s' and '%s'\n\n"
+                                                    "Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.\n",
+                                                    infile,
+                                                    left->base.loc,
+                                                    location_manager,
+                                                    left_name,
+                                                    right_name,
+                                                    left_llvm_size,
+                                                    dim_llvm,
+                                                    left_name,
+                                                    right_llvm_size,
+                                                    dim_llvm,
+                                                    right_name);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Array shape mismatch in binary operation\n\n"
+                                                    "Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.\n",
+                                                    infile,
+                                                    left->base.loc,
+                                                    location_manager,
+                                                    left_llvm_size,
+                                                    dim_llvm,
+                                                    right_llvm_size,
+                                                    dim_llvm);
+            }
         }
     }
 
@@ -7428,80 +7442,95 @@ public:
 
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
 
-            ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
-                x.m_target, nullptr, type32, nullptr));
-            visit_expr(*target_size_asr);
-            llvm::Value* target_size = tmp;
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            ASR::dimension_t* m_dims = nullptr;
+            size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
+            for (size_t dim = 0; dim < rank; dim++) {
+                ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
+                llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
 
-            ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_components[0]->base.loc,
-                x.m_components[0], nullptr, type32, nullptr));
-            visit_expr(*x_m_components_0_size);
-            llvm::Value* value_size = tmp;
+                ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
+                    x.m_target, dim_asr, type32, nullptr));
+                visit_expr(*target_size_asr);
+                llvm::Value* target_size = tmp;
 
-            ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
-            if (target_variable) {
-                ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
-                if (ASRUtils::is_array(target_variable->m_type) &&
-                    ASRUtils::is_allocatable(target_variable->m_type) &&
-                    ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
-                    visit_expr_load_wrapper(v, 1);
-                    llvm::Value* target_desc = tmp;
-                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(v, ASRUtils::type_get_past_allocatable_pointer(target_variable->m_type), module.get(), ASRUtils::expr_abi(v));
-                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
-                    // With move don't throw error when target is unallocated
-                    if (!x.m_move_allocation) {
-                        llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
-                        llvm_utils->generate_runtime_error(is_not_allocated,
-                            "Runtime Error: Array '%s' is not allocated.\n\n"
-                                "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
-                                infile,
-                                x.m_target->base.loc,
-                                location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
-                    }
+                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_components[0]->base.loc,
+                    x.m_components[0], dim_asr, type32, nullptr));
+                visit_expr(*x_m_components_0_size);
+                llvm::Value* value_size = tmp;
 
-                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
-                    llvm::BasicBlock *thenBB = nullptr;
-                    llvm::BasicBlock *mergeBB = nullptr;
-                    thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                    mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+                if (target_variable) {
+                    ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
+                    if (ASRUtils::is_array(target_variable->m_type) &&
+                        ASRUtils::is_allocatable(target_variable->m_type) &&
+                        ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
+                        visit_expr_load_wrapper(v, 1);
+                        llvm::Value* target_desc = tmp;
+                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(v, ASRUtils::type_get_past_allocatable_pointer(target_variable->m_type), module.get(), ASRUtils::expr_abi(v));
+                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
+                        // With move don't throw error when target is unallocated
+                        if (!x.m_move_allocation) {
+                            llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
+                            llvm_utils->generate_runtime_error(is_not_allocated,
+                                "Runtime Error: Array '%s' is not allocated.\n\n"
+                                    "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                    infile,
+                                    x.m_target->base.loc,
+                                    location_manager,
+                                    LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
+                        }
 
-                    builder->CreateCondBr(is_allocated, thenBB, mergeBB);
-                    builder->SetInsertPoint(thenBB); {
+                        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock *thenBB = nullptr;
+                        llvm::BasicBlock *mergeBB = nullptr;
+                        thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                        mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                        builder->CreateCondBr(is_allocated, thenBB, mergeBB);
+                        builder->SetInsertPoint(thenBB); {
+                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                                                                "Runtime Error: Array shape mismatch in assignment to '%s'\n\n"
+                                                                "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n\n"
+                                                                "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                                                infile,
+                                                            x.m_target->base.loc,
+                                                            location_manager,
+                                                                LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
+                                                                target_size,
+                                                                dim_llvm,
+                                                                value_size,
+                                                                dim_llvm);
+                        }
+                        builder->CreateBr(mergeBB);
+
+                        start_new_block(mergeBB);
+                    } else {
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                            "Runtime Error: Size mismatch in assignment to '%s'\n\n"
-                                                            "LHS size is %d and RHS size is %d\n\n"
-                                                            "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                                            "Runtime Error: Array shape mismatch in assignment to '%s'\n\n"
+                                                            "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n",
                                                             infile,
                                                         x.m_target->base.loc,
                                                         location_manager,
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                             target_size,
-                                                            value_size);
+                                                            dim_llvm,
+                                                            value_size,
+                                                            dim_llvm);
                     }
-                    builder->CreateBr(mergeBB);
-
-                    start_new_block(mergeBB);
                 } else {
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                        "Runtime Error: Size mismatch in assignment to '%s'\n\n"
-                                                        "LHS size is %d and RHS size is %d\n",
+                                                        "Runtime Error: Array shape mismatch in assignment\n\n"
+                                                        "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n",
                                                         infile,
                                                         x.m_target->base.loc,
                                                         location_manager,
-                                                        LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
                                                         target_size,
-                                                        value_size);
+                                                        dim_llvm,
+                                                        value_size,
+                                                        dim_llvm);
                 }
-            } else {
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                    "Runtime Error: Size mismatch in assignment\n\n"
-                                                    "LHS size is %d and RHS size is %d\n",
-                                                    infile,
-                                                    x.m_target->base.loc,
-                                                    location_manager,
-                                                    target_size,
-                                                    value_size);
             }
         }
     }
@@ -14086,6 +14115,15 @@ public:
                         builder->SetInsertPoint(thenBB);
                         {
                             load_array_size_deep_copy(m_dims[i].m_length);
+
+                            // Make dimension length and return size compatible.
+                            if(ASRUtils::extract_kind_from_ttype_t(
+                                ASRUtils::expr_type(m_dims[i].m_length)) > output_kind){
+                                    tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 8 * output_kind));
+                            } else if (ASRUtils::extract_kind_from_ttype_t(
+                                ASRUtils::expr_type(m_dims[i].m_length)) < output_kind){
+                                tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 8 * output_kind));
+                            }
                             builder->CreateStore(tmp, target);
                         }
                         builder->CreateBr(mergeBB);
@@ -14095,12 +14133,11 @@ public:
                     start_new_block(mergeBB);
                     tmp = llvm_utils->CreateLoad2(target_type, target);
                 } else {
-                    int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
                     if( physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
                         int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-                        tmp = llvm::ConstantInt::get(target_type, llvm::APInt(8 * kind, size));
+                        tmp = llvm::ConstantInt::get(target_type, llvm::APInt(8 * output_kind, size));
                     } else {
-                        llvm::Value* llvm_size = llvm::ConstantInt::get(target_type, llvm::APInt(8 * kind, 1));
+                        llvm::Value* llvm_size = llvm::ConstantInt::get(target_type, llvm::APInt(8 * output_kind, 1));
                         int ptr_loads_copy = ptr_loads;
                         ptr_loads = 2;
                         for( int i = 0; i < n_dims; i++ ) {
@@ -14108,11 +14145,11 @@ public:
 
                             // Make dimension length and return size compatible.
                             if(ASRUtils::extract_kind_from_ttype_t(
-                                ASRUtils::expr_type(m_dims[i].m_length)) > kind){
-                                    tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 8 * kind));
+                                ASRUtils::expr_type(m_dims[i].m_length)) > output_kind){
+                                    tmp = builder->CreateTrunc(tmp, llvm::IntegerType::get(context, 8 * output_kind));
                             } else if (ASRUtils::extract_kind_from_ttype_t(
-                                ASRUtils::expr_type(m_dims[i].m_length)) < kind){
-                                tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 8 * kind));
+                                ASRUtils::expr_type(m_dims[i].m_length)) < output_kind){
+                                tmp = builder->CreateSExt(tmp, llvm::IntegerType::get(context, 8 * output_kind));
                             }
 
                             llvm_size = builder->CreateMul(tmp, llvm_size);

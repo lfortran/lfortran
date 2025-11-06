@@ -1,4 +1,4 @@
 At 12:9 of file tests/errors/array_bounds_check_07.f90
-Runtime Error: Size mismatch in binary operation with operands 'x' and 'y'
+Runtime Error: Array shape mismatch in binary operation with operands 'x' and 'y'
 
-Size of 'x' is 3 and size of 'y' is 4
+Tried to match size 3 of dimension 1 of 'x' with size 4 of dimension 1 of 'y'.
