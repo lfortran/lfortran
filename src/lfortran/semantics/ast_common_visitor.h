@@ -6757,7 +6757,18 @@ public:
                         }
                     }
                 }
+                if (ASRUtils::is_character(orig_arg_type) && ASRUtils::is_character(arg_type)) {
+                    bool arg_is_deferred = ASRUtils::is_deferredLength_string(arg_type);
+                    bool param_is_deferred = ASRUtils::is_deferredLength_string(orig_arg_type);
 
+                    if (!arg_is_deferred && param_is_deferred) {
+                        diag.add(Diagnostic(
+                            "Deferred-length mismatch in argument (" + std::to_string(i+1) + 
+                            "): dummy argument expects CHARACTER(:), but actual argument is CHARACTER(n).",
+                            Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
+                        throw SemanticAbort();
+                    }
+                }
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type, arg, func->m_args[i]) &&
                     !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
                     std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
