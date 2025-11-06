@@ -11619,7 +11619,7 @@ public:
             res += "[";
             res += SerializeType(expr, ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
             res += "]";
-        } else if (ASR::is_a<ASR::StructType_t>(*type) && !ASRUtils::is_class_type(type)) {
+        } else if (ASR::is_a<ASR::StructType_t>(*type)) {
             res += "(";
             if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
                 res += serialize_structType_symbols(current_scope->resolve_symbol(current_select_type_block_der_type));
@@ -11633,7 +11633,7 @@ public:
             res += "CPtr";
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran_expr(type, nullptr) + "` type.");
+                ASRUtils::type_to_str_fortran_expr(type, expr) + "` type.");
         }
         return res;
     }
@@ -14438,19 +14438,34 @@ public:
                 }
                 // Handling for polymorphic class variables in print statements with --new-classes
                 if (compiler_options.new_classes &&
-                    current_select_type_block_type_asr != nullptr &&
                     ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
-                    ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
-                    // Extract data pointer from polymorphic struct
-                    // Get struct type from ASR, as LLVM 15+ Doesn't support direct 
-                    // extraction from tmp as getPointerElementType()
-                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i]));
-                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-                    llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(
-                        polymorphic_struct_type, tmp, 1);
-                    tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i])))) {
+
+                    // Try to get struct symbol for this expression (returns nullptr if not applicable)
+                    ASR::symbol_t* maybe_struct =
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i])
+                        );
+
+                    // If the argument is not a struct/class, skip this block (important for REPL)
+                    if (maybe_struct != nullptr) {
+
+                        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(maybe_struct);
+
+                        llvm::Type* polymorphic_struct_type = llvm_utils->getClassType(struct_t);
+
+                        // GEP to the "data" field of the wrapper: wrapper = { typeid, data_ptr }
+                        llvm::Value* data_ptr = llvm_utils->create_gep2(
+                            polymorphic_struct_type, tmp, 1);
+
+                        if (ASRUtils::is_unlimited_polymorphic_type(x.m_args[i])) {
+                            // For class(*), load the void* from wrapper
+                            tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
+                        } else {
+                            // For a concrete CLASS(T), data_ptr is already the pointer we need
+                            tmp = data_ptr;
+                        }
+                    }
                 }
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
