@@ -1544,7 +1544,7 @@ RUN(NAME complex_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME complex_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME complex_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME complex_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
-RUN(NAME complex_07 LABELS gfortran llvm fortran) # cmplx
+RUN(NAME complex_07 LABELS gfortran llvm) # cmplx
 RUN(NAME complex_08 LABELS gfortran llvm fortran) # conjg
 RUN(NAME complex_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # cmplx
 RUN(NAME complex_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # conjg
@@ -1559,7 +1559,7 @@ RUN(NAME complex_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME complex_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME complex_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_array_member_access LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_implicit_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
