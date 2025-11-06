@@ -7375,43 +7375,57 @@ public:
     void generate_binop_check(ASR::expr_t* left, ASR::expr_t* right) {
         ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, left->base.loc, 4));
 
-        ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
-            left, nullptr, type32, nullptr));
-        visit_expr(*left_size);
-        llvm::Value* left_llvm_size = tmp;
+        ASR::ttype_t* left_type = ASRUtils::expr_type(left);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
 
-        ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
-            right, nullptr, type32, nullptr));
-        visit_expr(*right_size);
-        llvm::Value* right_llvm_size = tmp;
+        for (size_t dim = 0; dim < rank; dim++) {
+            ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
 
-        ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
-        ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+            ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
+                left, dim_asr, type32, nullptr));
+            visit_expr(*left_size);
+            llvm::Value* left_llvm_size = tmp;
 
-        if (left_var && right_var) {
-            llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
-            llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
-            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                "Runtime Error: Size mismatch in binary operation with operands '%s' and '%s'\n\n"
-                                                "Size of '%s' is %d and size of '%s' is %d\n",
-                                                infile,
-                                                left->base.loc,
-                                                location_manager,
-                                                left_name,
-                                                right_name,
-                                                left_name,
-                                                left_llvm_size,
-                                                right_name,
-                                                right_llvm_size);
-        } else {
-            llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                "Runtime Error: Size mismatch in binary operation\n\n"
-                                                "LHS size is %d and RHS size is %d\n",
-                                                infile,
-                                                left->base.loc,
-                                                location_manager,
-                                                left_llvm_size,
-                                                right_llvm_size);
+            ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
+                right, dim_asr, type32, nullptr));
+            visit_expr(*right_size);
+            llvm::Value* right_llvm_size = tmp;
+
+            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+
+            llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
+            if (left_var && right_var) {
+                llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
+                llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Array shape mismatch in binary operation with operands '%s' and '%s'\n\n"
+                                                    "Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.\n",
+                                                    infile,
+                                                    left->base.loc,
+                                                    location_manager,
+                                                    left_name,
+                                                    right_name,
+                                                    left_llvm_size,
+                                                    dim_llvm,
+                                                    left_name,
+                                                    right_llvm_size,
+                                                    dim_llvm,
+                                                    right_name);
+            } else {
+                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
+                                                    "Runtime Error: Array shape mismatch in binary operation\n\n"
+                                                    "Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.\n",
+                                                    infile,
+                                                    left->base.loc,
+                                                    location_manager,
+                                                    left_llvm_size,
+                                                    dim_llvm,
+                                                    right_llvm_size,
+                                                    dim_llvm);
+            }
         }
     }
 

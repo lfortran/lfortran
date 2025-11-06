@@ -1,4 +1,4 @@
 At 12:9 of file tests/errors/array_bounds_check_09.f90
-Runtime Error: Size mismatch in binary operation with operands '__libasr_created__integer_binop_' and '__libasr_created_integer_binop_right_'
+Runtime Error: Array shape mismatch in binary operation with operands '__libasr_created__integer_binop_' and '__libasr_created_integer_binop_right_'
 
-Size of '__libasr_created__integer_binop_' is 3 and size of '__libasr_created_integer_binop_right_' is 2
+Tried to match size 3 of dimension 1 of '__libasr_created__integer_binop_' with size 2 of dimension 1 of '__libasr_created_integer_binop_right_'.
