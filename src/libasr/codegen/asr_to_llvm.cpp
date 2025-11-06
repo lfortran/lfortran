@@ -12244,6 +12244,8 @@ public:
                 }
                 if (ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
                         ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type)) &&
+                        (!compiler_options.new_classes || !ASRUtils::is_class_type(
+                            ASRUtils::extract_type(orig_arg->m_type))) &&
                         !LLVM::is_llvm_pointer(*orig_arg->m_type)) {
                     llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, module.get());
@@ -12344,7 +12346,7 @@ public:
                     ASR::Variable_t *orig_arg = nullptr;
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                        orig_arg = EXPR2VAR(func->m_args[i]);
+                        orig_arg = EXPR2VAR(func->m_args[i + is_method]);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
@@ -12382,7 +12384,8 @@ public:
                                     value = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                         al, orig_arg->base.base.loc, &orig_arg->base)),
                                         orig_arg->m_type, value);
-                                } else {
+                                } else if (!compiler_options.new_classes || !ASRUtils::is_class_type(
+                                        ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
                                     if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
                                         check_and_allocate_scalar(x.m_args[i].m_value);
                                     }
