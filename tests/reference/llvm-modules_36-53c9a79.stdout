@@ -7,10 +7,10 @@ source_filename = "LFortran"
 
 @_Name_fpm_build_settings = private unnamed_addr constant [19 x i8] c"fpm_build_settings\00", align 1
 @_Type_Info_fpm_build_settings = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0) }, align 8
-@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*)] }, align 8
+@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings to i8*)] }, align 8
 @_Name_fpm_run_settings = private unnamed_addr constant [17 x i8] c"fpm_run_settings\00", align 1
 @_Type_Info_fpm_run_settings = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_fpm_build_settings to i8*) }, align 8
-@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*)] }, align 8
+@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*)] }, align 8
 @0 = private unnamed_addr constant [47 x i8] c"__libasr_created__intrinsic_array_function_Any\00", align 1
 @1 = private unnamed_addr constant [202 x i8] c"At 24:14 of file tests/../integration_tests/modules_36.f90\0ARuntime Error: Array shape mismatch in assignment to '%s'\0A\0ATried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\0A\00", align 1
 @2 = private unnamed_addr constant [47 x i8] c"__libasr_created__intrinsic_array_function_Any\00", align 1
@@ -270,9 +270,9 @@ define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_build_settings(i8* %0
 entry:
   %2 = bitcast i8* %0 to %fpm_build_settings*
   %3 = bitcast i8* %1 to %fpm_build_settings*
-  %4 = bitcast %fpm_build_settings* %3 to i32 (...)***
+  %4 = bitcast %fpm_build_settings* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %fpm_build_settings* %2 to i32 (...)***
+  %6 = bitcast %fpm_build_settings* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %fpm_build_settings, %fpm_build_settings* %2, i32 0, i32 1
   %8 = load i1, i1* %7, align 1
@@ -288,17 +288,33 @@ else:                                             ; preds = %entry
 
 ifcont:                                           ; preds = %else, %then
   %10 = bitcast %fpm_build_settings* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_fpm_build_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_fpm_build_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
   ret void
 }
+
+define linkonce_odr void @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %fpm_build_settings*
+  %3 = getelementptr %fpm_build_settings, %fpm_build_settings* %2, i32 0, i32 1
+  store i1 false, i1* %3, align 1
+  ret void
+}
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %fpm_run_settings*
   %3 = bitcast i8* %1 to %fpm_run_settings*
-  %4 = bitcast %fpm_run_settings* %3 to i32 (...)***
+  %4 = bitcast %fpm_run_settings* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %fpm_run_settings* %2 to i32 (...)***
+  %6 = bitcast %fpm_run_settings* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 1
   %8 = getelementptr %fpm_run_settings, %fpm_run_settings* %3, i32 0, i32 1
@@ -377,7 +393,35 @@ else11:                                           ; preds = %ifcont9
 
 ifcont12:                                         ; preds = %else11, %then10
   %33 = bitcast %fpm_run_settings* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %33, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %33, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 72)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 72, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %fpm_run_settings*
+  %3 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 2
+  store %string_descriptor zeroinitializer, %string_descriptor* %3, align 1
+  %4 = getelementptr %string_descriptor, %string_descriptor* %3, i32 0, i32 1
+  store i64 4, i64* %4, align 4
+  %5 = getelementptr %string_descriptor, %string_descriptor* %3, i32 0, i32 0
+  %6 = call i8* @_lfortran_malloc(i64 4)
+  store i8* %6, i8** %5, align 8
+  %7 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 4
+  %8 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 1
+  %9 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 3
+  store %string_descriptor zeroinitializer, %string_descriptor* %9, align 1
+  %10 = getelementptr %string_descriptor, %string_descriptor* %9, i32 0, i32 1
+  store i64 6, i64* %10, align 4
+  %11 = getelementptr %string_descriptor, %string_descriptor* %9, i32 0, i32 0
+  %12 = call i8* @_lfortran_malloc(i64 6)
+  store i8* %12, i8** %11, align 8
+  %13 = getelementptr %fpm_run_settings, %fpm_run_settings* %2, i32 0, i32 0
+  %14 = getelementptr %fpm_build_settings, %fpm_build_settings* %13, i32 0, i32 1
+  store i1 false, i1* %14, align 1
   ret void
 }
 
@@ -395,7 +439,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %settings = alloca %fpm_run_settings, align 8
   %2 = bitcast %fpm_run_settings* %settings to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
   %3 = getelementptr %fpm_run_settings, %fpm_run_settings* %settings, i32 0, i32 2
   store %string_descriptor zeroinitializer, %string_descriptor* %3, align 1
   %4 = getelementptr %string_descriptor, %string_descriptor* %3, i32 0, i32 1
@@ -426,6 +470,6 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc(i64)
-
 declare void @_lpython_free_argv()
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }

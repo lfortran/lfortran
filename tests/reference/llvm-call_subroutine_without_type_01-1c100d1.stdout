@@ -6,8 +6,8 @@ source_filename = "LFortran"
 
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_mytype = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0) }, align 8
-@_VTable_mytype = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (%mytype*)* @get_i to i8*)] }, align 8
-@__lcompilers_created__nested_context__get_i_self = global %mytype { i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), float 0.000000e+00 }
+@_VTable_mytype = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (%mytype*)* @get_i to i8*)] }, align 8
+@__lcompilers_created__nested_context__get_i_self = global %mytype { i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), float 0.000000e+00 }
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1
 @string_const_data = private constant [4 x i8] c"r = "
@@ -21,9 +21,9 @@ define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8
 entry:
   %2 = bitcast i8* %0 to %mytype*
   %3 = bitcast i8* %1 to %mytype*
-  %4 = bitcast %mytype* %3 to i32 (...)***
+  %4 = bitcast %mytype* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %mytype* %2 to i32 (...)***
+  %6 = bitcast %mytype* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %mytype, %mytype* %2, i32 0, i32 1
   %8 = load float, float* %7, align 4
@@ -39,9 +39,24 @@ else:                                             ; preds = %entry
 
 ifcont:                                           ; preds = %else, %then
   %10 = bitcast %mytype* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
   ret void
 }
+
+define linkonce_odr void @_allocate_struct_module_call_subroutine_without_type_01_mytype(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %mytype*
+  %3 = getelementptr %mytype, %mytype* %2, i32 0, i32 1
+  ret void
+}
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 define void @get_i(%mytype* %self) {
 .entry:
@@ -123,7 +138,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %mytype* %3, %mytype** %obj, align 8
   %4 = load %mytype*, %mytype** %obj, align 8
   %5 = bitcast %mytype* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
   %6 = getelementptr %mytype, %mytype* %4, i32 0, i32 1
   %7 = load %mytype*, %mytype** %obj, align 8
   %8 = getelementptr %mytype, %mytype* %7, i32 0, i32 1
@@ -132,7 +147,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = load %mytype*, %mytype** %obj, align 8
   %11 = bitcast %mytype* %10 to void (%mytype*)***
   %12 = load void (%mytype*)**, void (%mytype*)*** %11, align 8
-  %13 = getelementptr inbounds void (%mytype*)*, void (%mytype*)** %12, i32 1
+  %13 = getelementptr inbounds void (%mytype*)*, void (%mytype*)** %12, i32 2
   %14 = load void (%mytype*)*, void (%mytype*)** %13, align 8
   call void %14(%mytype* %10)
   call void @_lpython_free_argv()
@@ -143,11 +158,6 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
-
-declare i8* @_lfortran_malloc(i64)
-
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
 declare void @_lpython_free_argv()
 
