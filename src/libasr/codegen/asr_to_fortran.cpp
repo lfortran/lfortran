@@ -1637,6 +1637,28 @@ public:
         src = out;
     }
 
+    void handle_cmplx_intrinsic(std::string &out, const ASR::IntrinsicElementalFunction_t &x) {
+        visit_expr(*x.m_args[0]);
+        std::string arg1 = src;
+
+        bool first_is_complex = ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x.m_args[0]));
+
+        out += "(" + arg1;
+
+        if (!first_is_complex && x.n_args >= 2) {
+            visit_expr(*x.m_args[1]);
+            out += ", " + src;
+        }
+
+        if (x.n_args == 3) {
+            visit_expr(*x.m_args[2]);
+            out += ", kind=" + src;
+        }
+
+        out += ")";
+        src = out;
+    }
+
     void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
         if ( x.m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CompilerVersion) ) {
             src = "";
@@ -1647,6 +1669,10 @@ public:
         }
         src = "";
         out += func_name;
+        if (to_lower(func_name) == "cmplx") {
+            handle_cmplx_intrinsic(out, x);
+            return;
+        }
         if (x.n_args > 0) visit_expr(*x.m_args[0]);
         out += "(" + src;
         for (size_t i = 1; i < x.n_args; i++) {
