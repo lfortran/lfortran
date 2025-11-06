@@ -8463,8 +8463,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         
         // create and add copy funciton
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
+        llvm::Function* allocate_array_members_function = get_allocate_struct_function(struct_sym, module);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
+        struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
+        slots.push_back(llvm::ConstantExpr::getBitCast(allocate_array_members_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -8532,6 +8535,60 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         newclass2typeinfo.insert(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
+    }
+
+    llvm::Function* LLVMStruct::get_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr->getPointerTo()},
+            false
+        );
+
+        // Create the function in the module
+        std::string func_name = "_allocate_struct_";
+        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
+                            + "_" + ASRUtils::symbol_name(struct_sym);
+        llvm::Function *func = llvm::Function::Create(
+            funcType,
+            llvm::Function::LinkOnceODRLinkage,
+            func_name,
+            module
+        );
+
+        Allocator al(1024);
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        // Get function arguments
+        std::vector<llvm::Value*> argsVec;
+        for (llvm::Argument &arg : func->args()) {
+            argsVec.push_back(&arg);
+        }
+        llvm::Type *struct_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::symbol_type(struct_sym), struct_sym, module);
+
+        llvm::DataLayout data_layout(module->getDataLayout());
+        int64_t type_size = data_layout.getTypeAllocSize(struct_type);
+        llvm::Value* malloc_size = llvm::ConstantInt::get(
+            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+        llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, malloc_size);
+        builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+            context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+        builder->CreateStore(malloc_ptr, argsVec[0]);
+        malloc_ptr = builder->CreateBitCast(malloc_ptr, struct_type->getPointerTo());
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        allocate_struct_array_members(struct_t, malloc_ptr, ASRUtils::symbol_type(struct_sym), false);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+
+        return func;
     }
 
     llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
@@ -8779,10 +8836,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 llvm_utils->compiler_options.new_classes) {
                 if (!ASRUtils::is_value_constant(src_expr)) {
                     // Store Vptr from src to dest
-                    llvm::Value* vptr = builder->CreateBitCast(dest, llvm_utils->vptr_type->getPointerTo());
+                    llvm::Value* vptr = builder->CreateBitCast(src, llvm_utils->vptr_type->getPointerTo());
                     vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
                     builder->CreateStore(vptr, builder->CreateBitCast(
-                        src, llvm_utils->vptr_type->getPointerTo()));
+                        dest, llvm_utils->vptr_type->getPointerTo()));
                 }
             }
 
