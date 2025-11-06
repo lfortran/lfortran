@@ -159,6 +159,11 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         visit_ArrayOp(x);
     }
 
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ComplexBinOp(x);
+        visit_ArrayOp(x);
+    }
+
     void visit_RealCompare(const ASR::RealCompare_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_RealCompare(x);
         visit_ArrayOp(x);
