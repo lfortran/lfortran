@@ -421,7 +421,7 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         } else {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
-            if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims)) {
+            if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && !(x->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
               arr->m_dims = ASR::down_cast<ASR::Array_t>(
                   ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                       ASRUtils::expr_type(x->m_arg))))->m_dims;
