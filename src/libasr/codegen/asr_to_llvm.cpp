@@ -6875,8 +6875,17 @@ public:
                     }
                     builder->CreateCall(fnTy, fn, {builder->CreateBitCast(
                         ptr_to_target_struct, llvm_utils->i8_ptr->getPointerTo())});
+                    // Reload target_struct after allocation
+                    if (!is_target_unlimited_polymorphic) {
+                        target_struct = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
+                    } else {
+                        target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(),
+                            builder->CreateBitCast(ptr_to_target_struct, target_llvm_type->getPointerTo()->getPointerTo()));
+                        target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
+                        target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_struct);
+                    }
                 }
-                    
+
                 llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
                 llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
                 llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
