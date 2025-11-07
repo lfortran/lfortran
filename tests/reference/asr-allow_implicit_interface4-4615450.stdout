@@ -195,6 +195,7 @@
                         ()
                         [((Var 2 f))]
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -455,6 +456,7 @@
                         ()
                         [((Var 3 c))]
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -658,6 +660,7 @@
                         ()
                         [((Var 4 a))]
                         ()
+                        .false.
                     )
                     (Print
                         (StringFormat

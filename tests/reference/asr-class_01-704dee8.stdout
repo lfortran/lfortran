@@ -91,6 +91,7 @@
                         ()
                         []
                         (Var 6 c)
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -112,6 +113,7 @@
                         ()
                         []
                         (Var 6 c)
+                        .false.
                     )]
                 ),
             class_circle1:

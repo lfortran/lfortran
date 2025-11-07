@@ -87,7 +87,7 @@ public:
             call_args.push_back(al, call_arg);
         }
         return ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, sym,
-            sym, call_args.p, call_args.n, nullptr));
+            sym, call_args.p, call_args.n, nullptr, false));
     }
 
     ASR::expr_t *FunctionCall(const Location &loc, ASR::symbol_t *sym,
@@ -794,7 +794,7 @@ public:
             }
         }
         ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, x.m_name,
-            x.m_name, call_args.p, call_args.n, x.m_dt));
+            x.m_name, call_args.p, call_args.n, x.m_dt, x.m_was_functioncall));
         pass_result.push_back(al, stmt);
     }
 

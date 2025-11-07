@@ -8,7 +8,7 @@ function (`name`) member, a `stmt` node.
 ### Syntax
 
 ```fortran
-SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
+SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt, bool was_functioncall)
 ```
 
 ### Arguments
@@ -17,6 +17,7 @@ SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
 `original_name` contains name present in program unit.
 `args` contains arguments passed to subroutine call.
 `dt` contains expression for variable name, array name, an aseterist e.t.c.
+`was_functioncall` indicates if this SubroutineCall was a FunctionCall before getting converted by subroutine_from_function pass, this is used for bounds checking.
 
 ### Return values
 

@@ -61,7 +61,7 @@ stmt
     | Select(identifier? name, expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
-    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
+    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt, bool was_functioncall)
     | IntrinsicImpureSubroutine(int sub_intrinsic_id, expr* args, int overload_id)
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
