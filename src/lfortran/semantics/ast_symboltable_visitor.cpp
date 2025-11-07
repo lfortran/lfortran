@@ -3345,6 +3345,16 @@ public:
                 nullptr, 0, ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
+            ASR::symbol_t *ext = ASRUtils::symbol_get_past_external(ext_sym->m_external);
+            if (remote_sym.size() > 0 && remote_sym[0] != '~' &&
+                    ASR::is_a<ASR::Struct_t>(*ext)) {
+                ASR::symbol_t *interface_override_s =
+                    m->m_symtab->resolve_symbol("~" + remote_sym);
+                if (interface_override_s) {
+                    to_be_imported_later.push(
+                        std::make_pair("~" + remote_sym, "~" + local_sym));
+                }
+            }
             if( ASR::is_a<ASR::GenericProcedure_t>(*ext_sym->m_external) ) {
                 process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym,
                     ext_sym->m_external, to_be_imported_later, loc, m,
