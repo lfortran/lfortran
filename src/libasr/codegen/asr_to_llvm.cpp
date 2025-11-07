@@ -6760,21 +6760,20 @@ public:
         } else if (compiler_options.new_classes &&
                     (is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {
-            if (ASRUtils::is_allocatable(asr_target_type)) {
+            if (ASRUtils::is_allocatable(asr_target_type) && 
+                    !(is_target_class && is_value_class)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
-            bool is_unl_poly = ptr_loads && ASRUtils::is_unlimited_polymorphic_type(x.m_value);
-            this->visit_expr_wrapper(x.m_value, is_unl_poly);
+            ptr_loads = 0;
+            this->visit_expr(*x.m_value);
             llvm::Value* value_struct_orig = tmp;
-            ptr_loads = LLVM::is_llvm_pointer(*asr_target_type);
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
-            is_unl_poly = ptr_loads && ASRUtils::is_unlimited_polymorphic_type(x.m_target);
-            this->visit_expr_wrapper(x.m_target, is_unl_poly);
+            this->visit_expr(*x.m_target);
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target_struct_orig = tmp;
+            llvm::Value* ptr_to_target_struct = target_struct_orig;
             ptr_loads = ptr_loads_copy;
 
             llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -6782,12 +6781,10 @@ public:
             llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
 
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
-                LLVM::is_llvm_pointer(*asr_target_type)) {
+            if (LLVM::is_llvm_pointer(*asr_target_type)) {
                 target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), target_struct_orig);
             }
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
-                LLVM::is_llvm_pointer(*asr_value_type)) {
+            if (LLVM::is_llvm_pointer(*asr_value_type)) {
                 value_struct_orig = llvm_utils->CreateLoad2(value_llvm_type->getPointerTo(), value_struct_orig);
             }
 
@@ -6823,10 +6820,6 @@ public:
             if (is_target_class && is_value_class) {
                 // Use runtime copy function for class to class assignments
                 // As we don't know the type of value
-                llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
-                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-                llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
-                llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
 
                 // Check if this is a derived-to-base assignment
                 bool use_target_copy = false;
@@ -6839,7 +6832,7 @@ public:
                         ASR::Struct_t* target_struct_t = ASR::down_cast<ASR::Struct_t>(target_sym);
                         ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(value_sym);
                         // If target is parent of value, this is derived-to-base
-                        use_target_copy = ASRUtils::is_parent(target_struct_t, value_struct_t);
+                        use_target_copy = ASRUtils::is_parent(value_struct_t, target_struct_t);
                     }
                 }
 
@@ -6847,9 +6840,59 @@ public:
                 // to avoid writing past the target allocation.
                 // For same-type or base-to-derived, use source's copy function.
                 llvm::Value* copy_source = use_target_copy ? target_struct : llvm_dt;
+                
+                // Use runtime allocate function for class to class assignments
+                if (ASRUtils::is_allocatable(asr_target_type)) {
+                    // Deallocating target first
+                    Vec<ASR::expr_t*> dealloc_stmts;
+                    dealloc_stmts.reserve(al, 1);
+                    dealloc_stmts.push_back(al, x.m_target);
+                    ASR::stmt_t* del = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, 
+                        x.m_target->base.loc, dealloc_stmts.p, dealloc_stmts.n));
+                    this->visit_stmt(*del);
+                    llvm::FunctionType* fnTy = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr->getPointerTo()}, false);
+                    llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                    llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+                    llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+                    llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
+                    vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
+                    llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 1));
+                    fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+                    if (is_target_unlimited_polymorphic) {
+                        // allocate class(*) wrapper first
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        int64_t type_size = data_layout.getTypeAllocSize(target_llvm_type);
+                        llvm::Value* malloc_size = llvm::ConstantInt::get(
+                            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                        llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, malloc_size);
+                        builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+                            context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+                        builder->CreateStore(builder->CreateBitCast(
+                            malloc_ptr, target_llvm_type->getPointerTo()), ptr_to_target_struct);
+                        // Reload the new wrapper before computing GEP
+                        target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
+                        ptr_to_target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
+                    }
+                    builder->CreateCall(fnTy, fn, {builder->CreateBitCast(
+                        ptr_to_target_struct, llvm_utils->i8_ptr->getPointerTo())});
+                    // Reload target_struct after allocation
+                    if (!is_target_unlimited_polymorphic) {
+                        target_struct = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
+                    } else {
+                        // target_struct_orig is already reloaded above, just need to load the data pointer
+                        target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr_to_target_struct);
+                    }
+                }
+
+                llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+                llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
                 llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
                 vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-                llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0));
+                llvm::Value* fn = llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 0);
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);

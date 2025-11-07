@@ -5,7 +5,7 @@ source_filename = "LFortran"
 
 @_Name_abstype = private unnamed_addr constant [8 x i8] c"abstype\00", align 1
 @_Type_Info_abstype = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_abstype, i32 0, i32 0) }, align 8
-@_VTable_abstype = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_abstype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_codegen_function_polymorphic_abstype to i8*)] }, align 8
+@_VTable_abstype = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_abstype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_codegen_function_polymorphic_abstype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_codegen_function_polymorphic_abstype to i8*)] }, align 8
 
 define void @__module_codegen_function_polymorphic_my_func(%abstype** %obj) {
 .entry:
@@ -19,11 +19,27 @@ define linkonce_odr void @_copy_codegen_function_polymorphic_abstype(i8* %0, i8*
 entry:
   %2 = bitcast i8* %0 to %abstype*
   %3 = bitcast i8* %1 to %abstype*
-  %4 = bitcast %abstype* %3 to i32 (...)***
+  %4 = bitcast %abstype* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %abstype* %2 to i32 (...)***
+  %6 = bitcast %abstype* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = bitcast %abstype* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_abstype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_abstype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
   ret void
 }
+
+define linkonce_odr void @_allocate_struct_codegen_function_polymorphic_abstype(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 8, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %abstype*
+  ret void
+}
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }

@@ -11,22 +11,22 @@ source_filename = "LFortran"
 
 @_Name_foo_a = private unnamed_addr constant [6 x i8] c"foo_a\00", align 1
 @_Type_Info_foo_a = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_foo_a, i32 0, i32 0) }, align 8
-@_VTable_foo_a = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_foo_a to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_a to i8*)] }, align 8
-@_Name_foo_b = private unnamed_addr constant [6 x i8] c"foo_b\00", align 1
-@_Type_Info_foo_b = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_foo_b, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_foo_a to i8*) }, align 8
-@_VTable_foo_b = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_b to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_b to i8*)] }, align 8
-@_Name_foo_c = private unnamed_addr constant [6 x i8] c"foo_c\00", align 1
-@_Type_Info_foo_c = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_foo_c, i32 0, i32 0), i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_b to i8*) }, align 8
-@_VTable_foo_c = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_c to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_c to i8*)] }, align 8
 @_Name_bar_a = private unnamed_addr constant [6 x i8] c"bar_a\00", align 1
 @_Type_Info_bar_a = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_bar_a, i32 0, i32 0) }, align 8
-@_VTable_bar_a = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_bar_a to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_a to i8*)] }, align 8
+@_VTable_bar_a = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_bar_a to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_a to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_bar_a to i8*)] }, align 8
+@_VTable_foo_a = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_foo_a to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_a to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_foo_a to i8*)] }, align 8
+@_Name_foo_b = private unnamed_addr constant [6 x i8] c"foo_b\00", align 1
+@_Type_Info_foo_b = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_foo_b, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_foo_a to i8*) }, align 8
 @_Name_bar_b = private unnamed_addr constant [6 x i8] c"bar_b\00", align 1
 @_Type_Info_bar_b = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_bar_b, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_bar_a to i8*) }, align 8
-@_VTable_bar_b = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_bar_b to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_b to i8*)] }, align 8
+@_VTable_bar_b = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_bar_b to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_b to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_bar_b to i8*)] }, align 8
+@_VTable_foo_b = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_b to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_b to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_foo_b to i8*)] }, align 8
+@_Name_foo_c = private unnamed_addr constant [6 x i8] c"foo_c\00", align 1
+@_Type_Info_foo_c = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_foo_c, i32 0, i32 0), i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_b to i8*) }, align 8
 @_Name_bar_c = private unnamed_addr constant [6 x i8] c"bar_c\00", align 1
 @_Type_Info_bar_c = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_bar_c, i32 0, i32 0), i8* bitcast ({ i8*, i8* }* @_Type_Info_bar_b to i8*) }, align 8
-@_VTable_bar_c = linkonce_odr unnamed_addr constant { [3 x i8*] } { [3 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_bar_c to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_c to i8*)] }, align 8
+@_VTable_bar_c = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_bar_c to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_bar_c to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_bar_c to i8*)] }, align 8
+@_VTable_foo_c = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_foo_c to i8*), i8* bitcast (void (i8*, i8*)* @_copy_main_foo_c to i8*), i8* bitcast (void (i8**)* @_allocate_struct_main_foo_c to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -45,10 +45,10 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %foo = alloca %foo_c, align 8
   %2 = bitcast %foo_c* %foo to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_foo_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_foo_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
   %3 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
   %4 = bitcast %bar_c* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
   %5 = getelementptr %bar_c, %bar_c* %3, i32 0, i32 1
   %6 = getelementptr %bar_c, %bar_c* %3, i32 0, i32 0
   %7 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 1
@@ -57,14 +57,14 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
   %11 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 1
   %12 = bitcast %bar_b* %11 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
   %13 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 1
   %14 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 0
   %15 = getelementptr %bar_a, %bar_a* %14, i32 0, i32 1
   %16 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 0
   %17 = getelementptr %foo_a, %foo_a* %16, i32 0, i32 1
   %18 = bitcast %bar_a* %17 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %18, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %18, align 8
   %19 = getelementptr %bar_a, %bar_a* %17, i32 0, i32 1
   %20 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
   %21 = getelementptr %foo_b, %foo_b* %20, i32 0, i32 0
@@ -180,9 +180,9 @@ define linkonce_odr void @_copy_main_foo_a(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_a*
   %3 = bitcast i8* %1 to %foo_a*
-  %4 = bitcast %foo_a* %3 to i32 (...)***
+  %4 = bitcast %foo_a* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %foo_a* %2 to i32 (...)***
+  %6 = bitcast %foo_a* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %foo_a, %foo_a* %2, i32 0, i32 1
   %8 = getelementptr %foo_a, %foo_a* %3, i32 0, i32 1
@@ -203,7 +203,61 @@ else:                                             ; preds = %entry
 
 ifcont:                                           ; preds = %else, %then
   %15 = bitcast %foo_a* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_foo_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_foo_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_main_foo_a(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 24)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 24, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %foo_a*
+  %3 = getelementptr %foo_a, %foo_a* %2, i32 0, i32 1
+  %4 = bitcast %bar_a* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %bar_a, %bar_a* %3, i32 0, i32 1
+  ret void
+}
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+define linkonce_odr void @_copy_main_bar_a(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %bar_a*
+  %3 = bitcast i8* %1 to %bar_a*
+  %4 = bitcast %bar_a* %2 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %bar_a* %3 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %bar_a, %bar_a* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %bar_a, %bar_a* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %bar_a* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_main_bar_a(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %bar_a*
+  %3 = getelementptr %bar_a, %bar_a* %2, i32 0, i32 1
   ret void
 }
 
@@ -211,9 +265,9 @@ define linkonce_odr void @_copy_main_foo_b(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_b*
   %3 = bitcast i8* %1 to %foo_b*
-  %4 = bitcast %foo_b* %3 to i32 (...)***
+  %4 = bitcast %foo_b* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %foo_b* %2 to i32 (...)***
+  %6 = bitcast %foo_b* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %foo_b, %foo_b* %2, i32 0, i32 1
   %8 = getelementptr %foo_b, %foo_b* %3, i32 0, i32 1
@@ -254,7 +308,80 @@ else2:                                            ; preds = %ifcont
 
 ifcont3:                                          ; preds = %else2, %then1
   %25 = bitcast %foo_b* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_foo_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %25, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_foo_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %25, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_main_foo_b(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 48)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 48, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %foo_b*
+  %3 = getelementptr %foo_b, %foo_b* %2, i32 0, i32 1
+  %4 = bitcast %bar_b* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 1
+  %6 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 0
+  %7 = getelementptr %bar_a, %bar_a* %6, i32 0, i32 1
+  %8 = getelementptr %foo_b, %foo_b* %2, i32 0, i32 0
+  %9 = getelementptr %foo_a, %foo_a* %8, i32 0, i32 1
+  %10 = bitcast %bar_a* %9 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  %11 = getelementptr %bar_a, %bar_a* %9, i32 0, i32 1
+  ret void
+}
+
+define linkonce_odr void @_copy_main_bar_b(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %bar_b*
+  %3 = bitcast i8* %1 to %bar_b*
+  %4 = bitcast %bar_b* %2 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %bar_b* %3 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 0
+  %11 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 0
+  %12 = getelementptr %bar_a, %bar_a* %10, i32 0, i32 1
+  %13 = load i32, i32* %12, align 4
+  %14 = getelementptr %bar_a, %bar_a* %11, i32 0, i32 1
+  br i1 true, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i32 %13, i32* %14, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %15 = bitcast %bar_b* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_main_bar_b(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 24)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 24, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %bar_b*
+  %3 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 1
+  %4 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 0
+  %5 = getelementptr %bar_a, %bar_a* %4, i32 0, i32 1
   ret void
 }
 
@@ -262,9 +389,9 @@ define linkonce_odr void @_copy_main_foo_c(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %foo_c*
   %3 = bitcast i8* %1 to %foo_c*
-  %4 = bitcast %foo_c* %3 to i32 (...)***
+  %4 = bitcast %foo_c* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %foo_c* %2 to i32 (...)***
+  %6 = bitcast %foo_c* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %foo_c, %foo_c* %2, i32 0, i32 1
   %8 = getelementptr %foo_c, %foo_c* %3, i32 0, i32 1
@@ -325,74 +452,36 @@ else5:                                            ; preds = %ifcont3
 
 ifcont6:                                          ; preds = %else5, %then4
   %35 = bitcast %foo_c* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_foo_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %35, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_foo_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %35, align 8
   ret void
 }
 
-define linkonce_odr void @_copy_main_bar_a(i8* %0, i8* %1) {
+define linkonce_odr void @_allocate_struct_main_foo_c(i8** %0) {
 entry:
-  %2 = bitcast i8* %0 to %bar_a*
-  %3 = bitcast i8* %1 to %bar_a*
-  %4 = bitcast %bar_a* %3 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %bar_a* %2 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = getelementptr %bar_a, %bar_a* %2, i32 0, i32 1
-  %8 = load i32, i32* %7, align 4
-  %9 = getelementptr %bar_a, %bar_a* %3, i32 0, i32 1
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
-  store i32 %8, i32* %9, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %10 = bitcast %bar_a* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
-  ret void
-}
-
-define linkonce_odr void @_copy_main_bar_b(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %bar_b*
-  %3 = bitcast i8* %1 to %bar_b*
-  %4 = bitcast %bar_b* %3 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %bar_b* %2 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 1
-  %8 = load i32, i32* %7, align 4
-  %9 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 1
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
-  store i32 %8, i32* %9, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %10 = getelementptr %bar_b, %bar_b* %2, i32 0, i32 0
-  %11 = getelementptr %bar_b, %bar_b* %3, i32 0, i32 0
-  %12 = getelementptr %bar_a, %bar_a* %10, i32 0, i32 1
-  %13 = load i32, i32* %12, align 4
-  %14 = getelementptr %bar_a, %bar_a* %11, i32 0, i32 1
-  br i1 true, label %then1, label %else2
-
-then1:                                            ; preds = %ifcont
-  store i32 %13, i32* %14, align 4
-  br label %ifcont3
-
-else2:                                            ; preds = %ifcont
-  br label %ifcont3
-
-ifcont3:                                          ; preds = %else2, %then1
-  %15 = bitcast %bar_b* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
+  %1 = call i8* @_lfortran_malloc(i64 80)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 80, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %foo_c*
+  %3 = getelementptr %foo_c, %foo_c* %2, i32 0, i32 1
+  %4 = bitcast %bar_c* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %bar_c, %bar_c* %3, i32 0, i32 1
+  %6 = getelementptr %bar_c, %bar_c* %3, i32 0, i32 0
+  %7 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 1
+  %8 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 0
+  %9 = getelementptr %bar_a, %bar_a* %8, i32 0, i32 1
+  %10 = getelementptr %foo_c, %foo_c* %2, i32 0, i32 0
+  %11 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 1
+  %12 = bitcast %bar_b* %11 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_b, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  %13 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 1
+  %14 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 0
+  %15 = getelementptr %bar_a, %bar_a* %14, i32 0, i32 1
+  %16 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 0
+  %17 = getelementptr %foo_a, %foo_a* %16, i32 0, i32 1
+  %18 = bitcast %bar_a* %17 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_a, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %18, align 8
+  %19 = getelementptr %bar_a, %bar_a* %17, i32 0, i32 1
   ret void
 }
 
@@ -400,9 +489,9 @@ define linkonce_odr void @_copy_main_bar_c(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %bar_c*
   %3 = bitcast i8* %1 to %bar_c*
-  %4 = bitcast %bar_c* %3 to i32 (...)***
+  %4 = bitcast %bar_c* %2 to i32 (...)***
   %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %bar_c* %2 to i32 (...)***
+  %6 = bitcast %bar_c* %3 to i32 (...)***
   store i32 (...)** %5, i32 (...)*** %6, align 8
   %7 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 1
   %8 = load i32, i32* %7, align 4
@@ -448,7 +537,21 @@ else5:                                            ; preds = %ifcont3
 
 ifcont6:                                          ; preds = %else5, %then4
   %20 = bitcast %bar_c* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [3 x i8*] }, { [3 x i8*] }* @_VTable_bar_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %20, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_bar_c, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %20, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_main_bar_c(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 32)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 32, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %bar_c*
+  %3 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 1
+  %4 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 0
+  %5 = getelementptr %bar_b, %bar_b* %4, i32 0, i32 1
+  %6 = getelementptr %bar_b, %bar_b* %4, i32 0, i32 0
+  %7 = getelementptr %bar_a, %bar_a* %6, i32 0, i32 1
   ret void
 }
 
@@ -463,3 +566,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @exit(i32)
 
 declare void @_lpython_free_argv()
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }

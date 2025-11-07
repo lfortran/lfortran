@@ -1099,6 +1099,8 @@ namespace LCompilers {
             void create_type_info_for_struct(ASR::symbol_t* struct_sym,
                                             llvm::Module* module);
 
+            llvm::Function* get_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
+
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
                                                         llvm::Module* module);
             void fill_struct_copy_body(ASR::symbol_t* struct_sym,
