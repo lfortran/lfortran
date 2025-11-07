@@ -2028,6 +2028,14 @@ public:
         }
         visit_expr(*x.m_selector);
         ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        std::string array_var_name = "";
+        if (ASR::is_a<ASR::Var_t>(*m_selector)) {
+            ASR::Var_t* selector_var = ASR::down_cast<ASR::Var_t>(m_selector);
+            if (ASR::is_a<ASR::Variable_t>(*selector_var->m_v)) {
+                ASR::Variable_t* selector_variable = ASR::down_cast<ASR::Variable_t>(selector_var->m_v);
+                array_var_name = selector_variable->m_name;
+            }
+        }
         ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
         if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
             // Throw error if selector is not an array
@@ -2053,6 +2061,8 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    int rank = ASR::down_cast<ASR::IntegerConstant_t>(rank_expr_value)->m_n;
+                    assumed_rank_arrays[array_var_name] = rank;
                     Vec<ASR::stmt_t*> rank_body; rank_body.reserve(al, rank_expr->n_body);
                     transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
