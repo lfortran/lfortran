@@ -7762,6 +7762,27 @@ public:
                     tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
                 }
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::DescriptorArray &&
+            m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            
+            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(m_type)), module.get());
+            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
+                target_type, nullptr, "array_descriptor");
+            builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
+                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
+                arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target_type, target));
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
+            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
+            tmp = target;
+        } else if (
+            m_new == ASR::array_physical_typeType::PointerArray &&
+            m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else {
             LCOMPILERS_ASSERT(false);
         }
