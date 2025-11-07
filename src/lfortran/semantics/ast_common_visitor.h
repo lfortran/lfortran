@@ -27,6 +27,7 @@ using LCompilers::diag::Diagnostic;
 namespace LCompilers::LFortran {
 
 static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
+static std::map<std::string, int> assumed_rank_arrays;
 
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
@@ -7345,9 +7346,46 @@ public:
                 current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 
                     compiler_options.po.default_integer_kind));
             }
+            AST::expr_t* arg_expr = x.m_args[i].m_end;
             this->visit_expr(*x.m_args[i].m_end);
             current_variable_type_ = temp_current_variable_type;
-            args.p[i] = ASRUtils::EXPR(tmp);
+            ASR::expr_t* temp = ASRUtils::EXPR(tmp);
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(temp))) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(temp);
+                if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                    std::string var_name = variable->m_name;
+                    if (assumed_rank_arrays.find(var_name) != assumed_rank_arrays.end()) {
+                        // TODO: Use Array Physical Cast to convert assumed rank to descriptor array
+                        int rank = assumed_rank_arrays[var_name];
+                        Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
+                        for (int r = 0; r < rank; r++) {
+                            ASR::dimension_t dim;
+                            dim.loc = arg_expr->base.loc;
+                            dim.m_start = nullptr;
+                            dim.m_length = nullptr;
+                            dims.push_back(al, dim);
+                        }
+                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(temp));
+                        ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, arg_expr->base.loc,
+                            elem_type, dims.p, dims.size(), ASR::abiType::Source, false, 
+                            ASR::array_physical_typeType::DescriptorArray, false, false, true
+                            );
+                        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
+                            al, arg_expr->base.loc, temp, ASR::array_physical_typeType::AssumedRankArray,
+                            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+                        );
+                        temp = ASRUtils::EXPR(array_cast);
+                    } else if (!(intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
+                        intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
+                        intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present")) {
+                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
+                            {arg_expr->base.loc}, "");
+                        throw SemanticAbort();
+                    }
+                }
+            }
+            args.p[i] = temp;
             if (intrinsic_name == "and" || intrinsic_name == "or" || intrinsic_name == "xor" || intrinsic_name == "repeat" || intrinsic_name == "selected_int_kind"
             || intrinsic_name == "selected_real_kind" || intrinsic_name == "selected_char_kind") {
                 if( ASRUtils::is_array(ASRUtils::expr_type(args[i]))) {
