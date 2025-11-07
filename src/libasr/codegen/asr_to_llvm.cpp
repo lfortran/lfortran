@@ -6871,6 +6871,8 @@ public:
                             context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         builder->CreateStore(builder->CreateBitCast(
                             malloc_ptr, target_llvm_type->getPointerTo()), ptr_to_target_struct);
+                        // Reload the new wrapper before computing GEP
+                        target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
                         ptr_to_target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
                     }
                     builder->CreateCall(fnTy, fn, {builder->CreateBitCast(
@@ -6879,10 +6881,8 @@ public:
                     if (!is_target_unlimited_polymorphic) {
                         target_struct = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
                     } else {
-                        target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(),
-                            builder->CreateBitCast(ptr_to_target_struct, target_llvm_type->getPointerTo()->getPointerTo()));
-                        target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
-                        target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, target_struct);
+                        // target_struct_orig is already reloaded above, just need to load the data pointer
+                        target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr_to_target_struct);
                     }
                 }
 
