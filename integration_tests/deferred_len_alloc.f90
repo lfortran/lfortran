@@ -1,14 +1,14 @@
-module util
+module module_deferred_len_alloc
   implicit none
 contains
   integer pure function blabla(inp) result(r)
     integer, intent(in) :: inp
     r = inp * 2
   end function blabla
-end module util
+end module module_deferred_len_alloc
 
 program deferred_len_alloc
-  use util
+  use module_deferred_len_alloc
   implicit none
   integer :: n(5)
   character(:), allocatable :: x
