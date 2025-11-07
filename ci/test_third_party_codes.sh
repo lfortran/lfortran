@@ -98,13 +98,15 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing fortran-regex" '
-  git clone https://github.com/perazz/fortran-regex.git
+  git clone https://github.com/jinangshah21/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf1
   micromamba install -c conda-forge fpm
 
-  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  git checkout c3807f49bf3a88df9b1527b2c49fc956abb77398
   fpm --compiler=$FC build
+  fpm --compiler=$FC test
 
   print_success "Done with fortran-regex"
   cd ..
@@ -129,11 +131,12 @@ time_section "🧪 Testing toml-f" '
   git clone https://github.com/jinangshah21/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-2
+  git checkout lf-4
   micromamba install -c conda-forge fpm
 
-  git checkout 38c294fc5d9cb5fa6a9d3569514da28b8705f3fb
-  fpm --compiler=$FC build
+  git checkout 34d6860a34fa8d5e30aa3a38b0ff98ca4b81a5b1
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
   print_success "Done with toml-f"
   cd ..
