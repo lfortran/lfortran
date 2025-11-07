@@ -3363,6 +3363,19 @@ public:
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_v, ASRUtils::extract_type(x_m_v_type), module.get());
                 if (LLVM::is_llvm_pointer(*x_m_v_type)) {
+                    if (compiler_options.po.bounds_checking) {
+                        llvm::Value* cond = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(tmp,
+                                llvm::Type::getInt64Ty(context)),
+                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
+                                llvm::Type::getInt64Ty(context)));
+                        llvm_utils->generate_runtime_error(cond,
+                                "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                                infile,
+                                x.m_v->base.loc,
+                                location_manager,
+                                LCompilers::create_global_string_ptr(context, *module, *builder, current_selector_var_name));
+                    }
                     tmp = llvm_utils->CreateLoad2(x_mv_llvm_type->getPointerTo(), tmp);
                 }
                 tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
@@ -3379,6 +3392,23 @@ public:
                                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)), true);
                 llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, wrapped_struct_type, module.get())->getPointerTo();
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type, module.get());
+
+                if (compiler_options.po.bounds_checking) {
+                    ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
+                    if (var) {
+                        llvm::Value* cond = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(tmp,
+                                llvm::Type::getInt64Ty(context)),
+                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
+                                llvm::Type::getInt64Ty(context)));
+                        llvm_utils->generate_runtime_error(cond,
+                                "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                                infile,
+                                x.m_v->base.loc,
+                                location_manager,
+                                LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name));
+                    }
+                }
                 if (!compiler_options.new_classes) {
                     tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
                     tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
@@ -3398,6 +3428,23 @@ public:
                 current_der_type_name = current_select_type_block_der_type;
             } else {
                 // TODO: Select type by comparing with vtab
+            }
+        } else if (compiler_options.po.bounds_checking &&
+                ASRUtils::is_allocatable(x_m_v_type) && ASRUtils::is_struct(*x_m_v_type)) {
+            ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
+            if (var) {
+                llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type, module.get());
+                llvm::Value* cond = builder->CreateICmpEQ(
+                    builder->CreatePtrToInt(tmp,
+                        llvm::Type::getInt64Ty(context)),
+                    builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
+                        llvm::Type::getInt64Ty(context)));
+                llvm_utils->generate_runtime_error(cond,
+                        "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                        infile,
+                        x.m_v->base.loc,
+                        location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name));
             }
         }
         if (ASR::is_a<ASR::Struct_t>(*symbol_get_past_external(x.m_m))) {
