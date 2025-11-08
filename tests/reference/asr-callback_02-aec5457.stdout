@@ -193,6 +193,7 @@
                                         [((Var 3 a))
                                         ((Var 3 res))]
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -211,6 +212,7 @@
                                         [((Var 3 b))
                                         ((Var 3 res))]
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -472,6 +474,7 @@
                                         ((Var 5 d))
                                         ((Var 5 f))]
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 foo)

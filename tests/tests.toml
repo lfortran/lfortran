@@ -3896,6 +3896,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_04.f90"
 run = true
+options = "--strict-array-bounds-checking"
 
 [[test]]
 filename = "errors/array_bounds_check_05.f90"
@@ -3923,6 +3924,10 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_11.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_12.f90"
 run = true
 
 [[test]]

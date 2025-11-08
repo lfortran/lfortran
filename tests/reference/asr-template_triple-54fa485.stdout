@@ -1422,18 +1422,21 @@
                         ()
                         []
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         34 test_minus_triples
                         ()
                         []
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         34 test_max_triples
                         ()
                         []
                         ()
+                        .false.
                     )]
                 ),
             triple_m:

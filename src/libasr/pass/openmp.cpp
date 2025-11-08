@@ -1110,7 +1110,7 @@ class ParallelRegionVisitor :
             //  Collapse Ends Here
 
             body.push_back(al, b.DoLoop(I, b.Add(start, b.i32(1)), end, flattened_body, loop_head.m_increment));
-            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
+            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr, false)));
 
             /*
                 handle reduction variables if any then:
@@ -1120,7 +1120,7 @@ class ParallelRegionVisitor :
             */
             if (do_loop.n_reduction > 0) {
                 body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                        current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
+                        current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false)));
             }
             for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
                 ASR::reduction_expr_t red = do_loop.m_reduction[i];
@@ -1163,7 +1163,7 @@ class ParallelRegionVisitor :
             }
             if (do_loop.n_reduction > 0) {
                 body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                        current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+                        current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false)));
             }
 
             ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc, current_scope, s2c(al, current_scope->parent->get_unique_name("lcompilers_function")),
@@ -1699,7 +1699,7 @@ class ParallelRegionVisitor :
                 current_scope->add_symbol(fn_name, fnInterface);
                 pass_result.push_back(al, ASRUtils::STMT(
                     ASR::make_SubroutineCall_t(al, loc, fnInterface, fnInterface,
-                    call_args.p, call_args.n, nullptr)));
+                    call_args.p, call_args.n, nullptr, false)));
                 remove_original_statement = true;
                 return;
             }
@@ -1769,7 +1769,7 @@ class ParallelRegionVisitor :
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
 
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
-                                call_args.p, call_args.n, nullptr)));
+                                call_args.p, call_args.n, nullptr, false)));
 
             for (auto it: reduction_variables) {
                 ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it);
@@ -2353,7 +2353,7 @@ class ParallelRegionVisitor :
             nested_lowered_body={};
             if (reduction_clauses.size() > 0) {
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
+                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false)));
                 for(size_t j=0; j<reduction_clauses.size(); j++) {
                     for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
                     ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
@@ -2386,7 +2386,7 @@ class ParallelRegionVisitor :
                 }
                 }
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false)));
             }
         }
 
@@ -2681,11 +2681,11 @@ class ParallelRegionVisitor :
                 call_args1.push_back(al, arg);
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
                                 current_scope->get_symbol("omp_set_num_threads"), nullptr,
-                                call_args1.p, call_args1.n, nullptr)));
+                                call_args1.p, call_args1.n, nullptr, false)));
             }
 
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
-                                call_args.p, call_args.n, nullptr)));
+                                call_args.p, call_args.n, nullptr, false)));
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
 
             for (auto it: reduction_variables) {
@@ -2985,7 +2985,7 @@ class ParallelRegionVisitor :
                 
                 // Call GOMP_loop_end_nowait or GOMP_loop_end based on whether there's a nowait clause
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr)));
+                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr, false)));
                 
                 // Handle reduction variables
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
@@ -3215,7 +3215,7 @@ class ParallelRegionVisitor :
             
             // Generate GOMP_task call
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, 
-                current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr)));
+                current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3434,7 +3434,7 @@ class ParallelRegionVisitor :
             
             // Call GOMP_sections_end()
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr)));
+                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3482,7 +3482,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> start_args;
             start_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr)));
+                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the critical section body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
@@ -3500,7 +3500,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> end_args;
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr)));
+                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3514,7 +3514,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> start_args;
             start_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr)));
+                current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the atomic section body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
@@ -3532,7 +3532,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> end_args;
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_atomic_end"), nullptr, end_args.p, end_args.n, nullptr)));
+                current_scope->get_symbol("gomp_atomic_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3546,7 +3546,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> barrier_args;
             barrier_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr)));
+                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3560,7 +3560,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> taskwait_args;
             taskwait_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr)));
+                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
@@ -3864,7 +3864,7 @@ class ParallelRegionVisitor :
 
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, 
                 x.base.base.loc, current_scope->get_symbol("gomp_teams"), nullptr,
-                call_args.p, call_args.n, nullptr)));
+                call_args.p, call_args.n, nullptr, false)));
             
             // Handle reduction variables if any
             ASR::symbol_t* thread_data_sym = thread_data_module.second;

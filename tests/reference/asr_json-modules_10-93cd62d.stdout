@@ -99,7 +99,8 @@
                                                     "name": "my_other_proc (SymbolTable5)",
                                                     "original_name": [],
                                                     "args": [],
-                                                    "dt": []
+                                                    "dt": [],
+                                                    "strict_bounds_checking": false
                                                 },
                                                 "loc": {
                                                     "first": 297,

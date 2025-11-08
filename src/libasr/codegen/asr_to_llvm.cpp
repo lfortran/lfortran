@@ -12998,11 +12998,15 @@ public:
     }
 
     template<typename T>
-    void bounds_check_call(T& x) {
+    void bounds_check_call(T& x, bool subroutinecall_was_functioncall = false) {
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+                // Use strict bounds checking if SubroutineCall was a FunctionCall before getting converted by subroutine_from_function
+                // Last argument of converted subroutine is the return value of the FunctionCall
+                // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
+                bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
@@ -13033,7 +13037,13 @@ public:
                             llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
                             load_array_size_deep_copy(m_dims[j].m_length);
                             llvm::Value* pointer_length = tmp;
-                            llvm_utils->generate_runtime_error(builder->CreateICmpSLT(descriptor_length, pointer_length),
+                            llvm::Value* cond = nullptr;
+                            if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                                cond = builder->CreateICmpNE(descriptor_length, pointer_length);
+                            } else {
+                                cond = builder->CreateICmpSLT(descriptor_length, pointer_length);
+                            }
+                            llvm_utils->generate_runtime_error(cond,
                                     "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
                                     infile,
@@ -13050,7 +13060,13 @@ public:
                     start_new_block(elseBB);
                     llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
                     llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
-                    llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
+                    llvm::Value* cond = nullptr;
+                    if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                        cond = builder->CreateICmpNE(desc_size, pointer_size);
+                    } else {
+                        cond = builder->CreateICmpSLT(desc_size, pointer_size);
+                    }
+                    llvm_utils->generate_runtime_error(cond,
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
                             infile,
@@ -13077,7 +13093,13 @@ public:
                                 llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length)));
                                 load_array_size_deep_copy(m_dims_pointer[j].m_length);
                                 llvm::Value* pointer_length = tmp;
-                                llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_length, pointer_length),
+                                llvm::Value* cond = nullptr;
+                                if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                                    cond = builder->CreateICmpNE(fixed_length, pointer_length);
+                                } else {
+                                    cond = builder->CreateICmpSLT(fixed_length, pointer_length);
+                                }
+                                llvm_utils->generate_runtime_error(cond,
                                         "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
                                         "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
                                         infile,
@@ -13093,7 +13115,13 @@ public:
                     } else {
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
                         llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
-                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
+                        llvm::Value* cond = nullptr;
+                        if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                            cond = builder->CreateICmpNE(fixed_size, pointer_size);
+                        } else {
+                            cond = builder->CreateICmpSLT(fixed_size, pointer_size);
+                        }
+                        llvm_utils->generate_runtime_error(cond,
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
                                 infile,
@@ -13121,7 +13149,7 @@ public:
 
         // Generate runtime error if array arguments' shape doesn't match
         if (compiler_options.po.bounds_checking) {
-            bounds_check_call(x);
+            bounds_check_call(x, x.m_strict_bounds_checking);
         }
 
         std::vector<llvm::Value*> args;

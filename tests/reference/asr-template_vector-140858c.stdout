@@ -35,6 +35,7 @@
                         ()
                         []
                         ()
+                        .false.
                     )]
                 ),
             template_vector_m:
@@ -218,6 +219,7 @@
                                                         ()
                                                         [((Var 9 new_size))]
                                                         (Var 9 this)
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (ArrayItem
@@ -752,6 +754,7 @@
                                         ()
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (Var 7 v)
+                                        .false.
                                     )
                                     (If
                                         ()
@@ -973,6 +976,7 @@
                                                         ()
                                                         [((Var 5 new_size))]
                                                         (Var 5 this)
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (ArrayItem

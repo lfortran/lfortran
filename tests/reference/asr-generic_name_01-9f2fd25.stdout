@@ -888,6 +888,7 @@
                         ((Var 6 izero))
                         ((Var 6 a))]
                         (Var 6 c)
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -962,6 +963,7 @@
                         ((Var 6 negfpone))
                         ((Var 6 a))]
                         (Var 6 c)
+                        .false.
                     )
                     (Print
                         (StringFormat
