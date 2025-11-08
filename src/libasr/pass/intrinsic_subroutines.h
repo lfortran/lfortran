@@ -1190,32 +1190,37 @@ namespace MoveAlloc {
 
         std::vector<ASR::stmt_t*> if_body;
 
-        if (!ASRUtils::is_character(*arg_types[0])) {
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
-            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
-            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            for(int i=0; i<n_dims; i++) {
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, 1, integer_type));
-                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-        al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
-                alloc_dims.push_back(al, dim);
-            }
-            if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
-                ASR::symbol_t* from_struct =  ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr( new_args[0].m_value));
-                if_body.push_back(b.Allocate(args[1], alloc_dims, from_struct));
+        // If argument is an array, use move assignment so descriptor/pointers move.
+        // For non-arrays (scalars), fall back to allocate+assign+deallocate to keep
+        // current semantics without regressions.
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+        if (n_dims > 0) {
+            ASR::stmt_t* move_assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                args[1], args[0], /*overloaded*/nullptr, /*realloc_lhs*/false, /*move_allocation*/true));
+            if_body.push_back(move_assign);
+        } else {
+            // Scalar move: handle deferred-length character or class scalars
+            if (ASRUtils::is_character(*ASRUtils::expr_type(args[0]))) {
+                // Allocate destination with length=len(from)
+                ASR::ttype_t* int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::expr_t* from_len = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], int4, nullptr));
+                if_body.push_back(b.Allocate(args[1], /*m_dims*/nullptr, /*n_dims*/0, /*len_expr*/from_len));
             } else {
-                if_body.push_back(b.Allocate(args[1], alloc_dims));
+                Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, 0);
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
+                    ASR::symbol_t* from_struct =  ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr( new_args[0].m_value));
+                    if_body.push_back(b.Allocate(args[1], alloc_dims, from_struct));
+                } else {
+                    if_body.push_back(b.Allocate(args[1], alloc_dims));
+                }
             }
+            if_body.push_back(b.Assignment(args[1], args[0]));
+            Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+            explicit_deallocate_args.push_back(al, args[0]);
+            ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+            if_body.push_back(explicit_deallocate);
         }
-        if_body.push_back(b.Assignment(args[1], args[0]));
-        Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
-                    explicit_deallocate_args.push_back(al, args[0]);
-        ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-        if_body.push_back(explicit_deallocate);
 
         ASR::stmt_t* if_stmt = b.If(is_from_allocated, if_body, {});
         body.push_back(al, if_stmt);
