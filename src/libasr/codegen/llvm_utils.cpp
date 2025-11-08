@@ -2056,12 +2056,20 @@ namespace LCompilers {
 
                 llvm::Value* len_val = amount_to_allocate;
                 if (len_val->getType()->isPointerTy()) {
+#if defined(LLVM_VERSION_MAJOR) && (LLVM_VERSION_MAJOR >= 15)
+                    // Opaque pointers (LLVM >= 15): element type is not encoded in the pointer
+                    // Cast to i64* and load the value as i64; convert below if needed
+                    auto *i64ptr = llvm::Type::getInt64Ty(context)->getPointerTo();
+                    len_val = builder->CreateBitCast(len_val, i64ptr);
+                    len_val = builder->CreateLoad(llvm::Type::getInt64Ty(context), len_val);
+#else
                     auto *pt = llvm::cast<llvm::PointerType>(len_val->getType());
                     llvm::Type *elt = pt->getElementType();
                     // Only load if it points to a numeric scalar
                     if (elt->isIntegerTy() || elt->isFloatingPointTy()) {
                         len_val = builder->CreateLoad(elt, len_val);
                     }
+#endif
                 }
                 // Convert to i64 as the canonical length storage type
                 len_val = convert_kind(len_val, llvm::Type::getInt64Ty(context));
