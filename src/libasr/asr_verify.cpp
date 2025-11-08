@@ -404,18 +404,12 @@ public:
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
-            bool is_target_allocatable_array = ASRUtils::is_array(target_type) &&
-                                            ASRUtils::is_allocatable(target_type) &&
-                                            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
-
-            bool is_value_allocatable_array = ASRUtils::is_array(value_type) &&
-                                            ASRUtils::is_allocatable(value_type) &&
-                                            ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
-
-            require(is_target_allocatable_array,
-                "Move assignment target must be an allocatable array");
-            require(is_value_allocatable_array,
-                "Move assignment value must be an allocatable array");
+            bool target_alloc = ASRUtils::is_allocatable(target_type);
+            bool value_alloc = ASRUtils::is_allocatable(value_type);
+            require(target_alloc && value_alloc,
+                "Move assignment requires both sides to be allocatable");
+            // Arrays remain supported as before. Derived/class allocatables are
+            // also supported by codegen; no additional restriction here.
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
