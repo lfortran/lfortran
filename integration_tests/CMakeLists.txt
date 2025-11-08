@@ -2747,3 +2747,6 @@ RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # test for polymorphic select type
 RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
+
+# Nested CLASS dummy capture MRE (should not segfault)
+RUN(NAME class_80 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
