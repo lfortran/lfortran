@@ -62,18 +62,17 @@ declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) 
 
 define void @get_i(%mytype* %self) {
 .entry:
-  %0 = bitcast %mytype* %self to void (i8*, i8*)***
-  %1 = load void (i8*, i8*)**, void (i8*, i8*)*** %0, align 8
-  %2 = getelementptr inbounds void (i8*, i8*)*, void (i8*, i8*)** %1, i32 0
-  %3 = load void (i8*, i8*)*, void (i8*, i8*)** %2, align 8
-  %4 = bitcast %mytype* %self to i8*
-  call void %3(i8* %4, i8* bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to i8*))
+  %0 = load void (i8*, i8*)**, void (i8*, i8*)*** bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to void (i8*, i8*)***), align 8
+  %1 = getelementptr inbounds void (i8*, i8*)*, void (i8*, i8*)** %0, i32 0
+  %2 = load void (i8*, i8*)*, void (i8*, i8*)** %1, align 8
+  %3 = bitcast %mytype* %self to i8*
+  call void %2(i8* %3, i8* bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to i8*))
   call void @__module_module_call_subroutine_without_type_01_get_r()
-  %5 = load void (i8*, i8*)**, void (i8*, i8*)*** bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to void (i8*, i8*)***), align 8
-  %6 = getelementptr inbounds void (i8*, i8*)*, void (i8*, i8*)** %5, i32 0
-  %7 = load void (i8*, i8*)*, void (i8*, i8*)** %6, align 8
-  %8 = bitcast %mytype* %self to i8*
-  call void %7(i8* bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to i8*), i8* %8)
+  %4 = load void (i8*, i8*)**, void (i8*, i8*)*** bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to void (i8*, i8*)***), align 8
+  %5 = getelementptr inbounds void (i8*, i8*)*, void (i8*, i8*)** %4, i32 0
+  %6 = load void (i8*, i8*)*, void (i8*, i8*)** %5, align 8
+  %7 = bitcast %mytype* %self to i8*
+  call void %6(i8* bitcast (%mytype* @__lcompilers_created__nested_context__get_i_self to i8*), i8* %7)
   br label %return
 
 return:                                           ; preds = %.entry
