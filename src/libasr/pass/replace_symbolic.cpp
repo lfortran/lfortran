@@ -794,7 +794,7 @@ public:
             }
         }
         ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, x.m_name,
-            x.m_name, call_args.p, call_args.n, x.m_dt, x.m_was_functioncall));
+            x.m_name, call_args.p, call_args.n, x.m_dt, x.m_strict_bounds_checking));
         pass_result.push_back(al, stmt);
     }
 

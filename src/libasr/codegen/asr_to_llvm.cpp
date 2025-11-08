@@ -13149,7 +13149,7 @@ public:
 
         // Generate runtime error if array arguments' shape doesn't match
         if (compiler_options.po.bounds_checking) {
-            bounds_check_call(x, x.m_was_functioncall);
+            bounds_check_call(x, x.m_strict_bounds_checking);
         }
 
         std::vector<llvm::Value*> args;

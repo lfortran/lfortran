@@ -100,7 +100,7 @@
                                                     "original_name": [],
                                                     "args": [],
                                                     "dt": [],
-                                                    "was_functioncall": false
+                                                    "strict_bounds_checking": false
                                                 },
                                                 "loc": {
                                                     "first": 297,
