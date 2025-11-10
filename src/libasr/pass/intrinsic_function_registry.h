@@ -151,6 +151,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Popcnt)
         INTRINSIC_NAME_CASE(Poppar)
         INTRINSIC_NAME_CASE(Real)
+        INTRINSIC_NAME_CASE(Cmplx)
         INTRINSIC_NAME_CASE(Dim)
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
@@ -460,6 +461,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Poppar::instantiate_Poppar, &Poppar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Real),
             {&Real::instantiate_Real, &Real::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx),
+            {&Cmplx::instantiate_Cmplx, &Cmplx::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             {&Nint::instantiate_Nint, &Nint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
@@ -827,6 +830,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "poppar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Real),
             "real"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx),
+            "cmplx"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             "nint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
@@ -1056,6 +1061,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"popcnt", {&Popcnt::create_Popcnt, &Popcnt::eval_Popcnt}},
                 {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},
                 {"real", {&Real::create_Real, &Real::eval_Real}},
+                {"cmplx", {&Cmplx::create_Cmplx, &Cmplx::eval_Cmplx}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
                 {"idnint", {&Idnint::create_Idnint, &Idnint::eval_Idnint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},

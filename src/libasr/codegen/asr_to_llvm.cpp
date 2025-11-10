@@ -7466,10 +7466,17 @@ public:
         ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, left->base.loc, 4));
 
         ASR::ttype_t* left_type = ASRUtils::expr_type(left);
+        ASR::ttype_t* right_type = ASRUtils::expr_type(right);
         ASR::dimension_t* m_dims = nullptr;
-        size_t rank = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
+        size_t lrank = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
+        ASR::dimension_t* n_dims = nullptr;
+        size_t rrank = ASRUtils::extract_dimensions_from_ttype(right_type, n_dims);
 
-        for (size_t dim = 0; dim < rank; dim++) {
+        if (lrank == 0 || rrank == 0 || lrank != rrank) {
+            return;
+        }
+
+        for (size_t dim = 0; dim < lrank; dim++) {
             ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
 

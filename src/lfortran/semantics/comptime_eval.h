@@ -24,8 +24,8 @@ struct IntrinsicProceduresAsASRNodes {
     public:
 
         IntrinsicProceduresAsASRNodes() {
-            intrinsics_present_in_ASR = {"size", "rank", "lbound", "ubound",
-                "transpose", "transfer", "cmplx", "dcmplx", "reshape",
+            intrinsics_present_in_ASR = {"size", "lbound", "ubound",
+                "transpose", "transfer", "reshape", "rank",
                 "iachar", "null", "associated", "len", "complex", "is_contiguous",
 
                 // LF specific

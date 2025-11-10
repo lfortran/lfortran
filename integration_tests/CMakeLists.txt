@@ -1263,6 +1263,7 @@ RUN(NAME intrinsics_389 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # loc
 RUN(NAME intrinsics_390 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # c_f_ptr
 RUN(NAME intrinsics_391 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum, selected_real_kind, minloc, merge
 RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
+RUN(NAME intrinsics_393 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1543,14 +1544,14 @@ RUN(NAME complex_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME complex_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME complex_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME complex_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
-RUN(NAME complex_07 LABELS gfortran llvm fortran) # cmplx
+RUN(NAME complex_07 LABELS gfortran llvm) # cmplx
 RUN(NAME complex_08 LABELS gfortran llvm fortran) # conjg
-RUN(NAME complex_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # cmplx
+RUN(NAME complex_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 RUN(NAME complex_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # conjg
 RUN(NAME complex_11 LABELS gfortran llvmImplicit wasm fortran)
 RUN(NAME complex_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME complex_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME complex_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
+RUN(NAME complex_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1558,7 +1559,9 @@ RUN(NAME complex_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME complex_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME complex_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME complex_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME complex_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_array_member_access LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_implicit_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_sub_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
