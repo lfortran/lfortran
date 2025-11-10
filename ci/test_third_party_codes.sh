@@ -131,10 +131,10 @@ time_section "🧪 Testing toml-f" '
   git clone https://github.com/jinangshah21/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-4
+  git checkout lf-5
   micromamba install -c conda-forge fpm
 
-  git checkout 34d6860a34fa8d5e30aa3a38b0ff98ca4b81a5b1
+  git checkout 083f1f67655a7af7bbf29e212200f35cdd986c86
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
