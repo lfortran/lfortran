@@ -6934,8 +6934,11 @@ public:
                     SymbolTable* st = ASR::down_cast<ASR::Variable_t>(v)->m_parent_symtab;
                     if (!st) return false;
                     if (!st->asr_owner) return false;
-                    if (!ASR::is_a<ASR::Module_t>(*st->asr_owner)) return false;
-                    ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(st->asr_owner);
+                    // asr_owner is an asr_t*, ensure it is a symbol and then a Module
+                    if (!ASR::is_a<ASR::symbol_t>(*st->asr_owner)) return false;
+                    ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(st->asr_owner);
+                    if (!ASR::is_a<ASR::Module_t>(*owner_sym)) return false;
+                    ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(owner_sym);
                     std::string name = m->m_name; 
                     return name.rfind("__lcompilers_created__nested_context__", 0) == 0; // starts_with
                 };
