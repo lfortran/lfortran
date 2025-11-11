@@ -4202,7 +4202,7 @@ public:
                         args_.push_front(al, this_arg);
                     }
                     if (!diags.has_error()) {
-                        if (ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
+                        if (static_cast<size_t>(ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
                             [&](const std::string& msg, const Location& loc) {
                                 diag.add(Diagnostic(
                                     msg,
@@ -4210,7 +4210,7 @@ public:
                                         Label("", {loc})
                                     }));
                                 throw SemanticAbort();
-                            }, false) != -1) {
+                            }, false)) == i) {
                             function_found = true;
                             args.n = 0;
                             if (is_class_procedure && !is_nopass) {
