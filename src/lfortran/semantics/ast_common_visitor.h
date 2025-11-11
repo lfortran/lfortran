@@ -12248,20 +12248,7 @@ public:
         if (x == nullptr)
             return nullptr;
 
-        ASR::symbol_t* struct_sym = nullptr;
-
-        if (ASR::is_a<ASR::FunctionCall_t>(*x)) {
-            ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(x);
-            ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(function_call->m_name));
-            struct_sym = ASRUtils::get_struct_sym_from_struct_expr(function->m_return_var);
-        } else if (ASR::is_a<ASR::StructConstructor_t>(*x)) {
-            ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(x);
-            struct_sym = ASRUtils::symbol_get_past_external(struct_constructor->m_dt_sym);
-        } else if (ASR::is_a<ASR::Var_t>(*x)) {
-            struct_sym = ASRUtils::get_struct_sym_from_struct_expr(x);
-        }
-
-        return struct_sym;
+        return ASRUtils::get_struct_sym_from_struct_expr(x);
     }
 };
 
