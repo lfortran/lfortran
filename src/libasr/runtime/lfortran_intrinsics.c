@@ -3704,7 +3704,8 @@ _lfortran_open(int32_t unit_num,
     char* action_c = to_c_string((const fchar*)action, action_len);
 
     _lfortran_inquire(
-        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3926,7 +3927,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
-                                    char *readwrite, int64_t readwrite_len) {
+                                    char *readwrite, int64_t readwrite_len,
+                                    char *access, int64_t access_len,
+                                    char *name, int64_t name_len) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -3949,9 +3952,10 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
     }
     if (unit_num != -1) {
         bool unit_file_bin;
+        int access_id = -1;
         bool read_access;
         bool write_access;
-        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, &read_access, &write_access);
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access);
         if (write != NULL) {
             if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
@@ -3971,7 +3975,29 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(readwrite, readwrite_len, "NO", 2);
             }
         }
-        *opened = (fp != NULL);
+        if (access != NULL) {
+            char *access_str = "";
+            if (access_id == 0) {
+                access_str = "SEQUENTIAL";
+            } else if (access_id == 1) {
+                access_str = "STREAM";
+            } else if (access_id == 2) {
+                access_str = "DIRECT";
+            }
+            _lfortran_copy_str_and_pad(access, access_len, access_str, strlen(access_str));
+        }
+        if (name != NULL) {
+            bool dummy_unit_file_bin;
+            char *unit_name = get_file_name_from_unit(unit_num, &dummy_unit_file_bin);
+            if (unit_name != NULL) {
+                _lfortran_copy_str_and_pad(name, name_len, unit_name, strlen(unit_name));
+            } else {
+                _lfortran_copy_str_and_pad(name, name_len, "", 0);
+            }
+        }
+        if (opened != NULL) {
+            *opened = (fp != NULL);
+        }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
             *pos = (int32_t)p + 1;
