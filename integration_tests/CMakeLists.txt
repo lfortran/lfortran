@@ -2410,6 +2410,7 @@ RUN(NAME optional_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME optional_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
+RUN(NAME optional_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
