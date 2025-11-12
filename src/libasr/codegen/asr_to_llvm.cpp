@@ -11309,6 +11309,8 @@ public:
         llvm::Value *write{}, *write_len{};
         llvm::Value *read{}, *read_len{};
         llvm::Value *readwrite{}, *readwrite_len{};
+        llvm::Value *access_val{}, *access_len{};
+        llvm::Value *name_val{}, *name_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -11400,6 +11402,28 @@ public:
             readwrite_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_access) {
+            this->visit_expr_load_wrapper(x.m_access, 0);
+            std::tie(access_val, access_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_access),
+                    tmp);
+        } else {
+            access_val = llvm::Constant::getNullValue(character_type);
+            access_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_name) {
+            this->visit_expr_load_wrapper(x.m_name, 0);
+            std::tie(name_val, name_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_name),
+                    tmp);
+        } else {
+            name_val = llvm::Constant::getNullValue(character_type);
+            name_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -11413,7 +11437,9 @@ public:
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         character_type, llvm::Type::getInt64Ty(context), // write_data, write_len
                         character_type, llvm::Type::getInt64Ty(context), // read_data, read_len
-                        character_type, llvm::Type::getInt64Ty(context) // readwrite_data, readwrite_len
+                        character_type, llvm::Type::getInt64Ty(context), // readwrite_data, readwrite_len
+                        character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
+                        character_type, llvm::Type::getInt64Ty(context)  // name_data, name_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -11424,7 +11450,9 @@ public:
             pos_val,
             write, write_len,
             read, read_len,
-            readwrite, readwrite_len});
+            readwrite, readwrite_len,
+            access_val, access_len,
+            name_val, name_len});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
