@@ -29,6 +29,9 @@ define float @__module_defs_r2d(%point2d* %this) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_r2d
+
+FINALIZE_SYMTABLE_r2d:                            ; preds = %return
   %6 = load float, float* %r2d, align 4
   ret float %6
 }
@@ -158,6 +161,15 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_p2d
+
+Finalize_Variable_p2d:                            ; preds = %FINALIZE_SYMTABLE_main
+  br label %Finalize_Variable_res
+
+Finalize_Variable_res:                            ; preds = %Finalize_Variable_p2d
   ret i32 0
 }
 

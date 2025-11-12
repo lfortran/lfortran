@@ -39,6 +39,9 @@ define i32 @main(i32 %0, i8** %1) !dbg !3 {
   br label %return, !dbg !9
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_expr2, !dbg !9
+
+FINALIZE_SYMTABLE_expr2:                          ; preds = %return
   ret i32 0, !dbg !9
 }
 
@@ -59,6 +62,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return, !dbg !13
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_f, !dbg !13
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void, !dbg !13
 }
 
@@ -71,6 +77,9 @@ define i32 @g() !dbg !14 {
   br label %return, !dbg !19
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_g, !dbg !19
+
+FINALIZE_SYMTABLE_g:                              ; preds = %return
   %0 = load i32, i32* %g, align 4, !dbg !19
   ret i32 %0, !dbg !19
 }
@@ -101,6 +110,9 @@ define i32 @_xx_lcompilers_changed_main_xx() !dbg !8 {
   br label %return, !dbg !24
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main, !dbg !24
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   %12 = load i32, i32* %main, align 4, !dbg !24
   ret i32 %12, !dbg !24
 }

@@ -199,6 +199,21 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_array_bound_1
+
+FINALIZE_SYMTABLE_array_bound_1:                  ; preds = %return
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_array_bound_1
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %Finalize_Variable_b
+  br label %Finalize_Variable_d
+
+Finalize_Variable_d:                              ; preds = %Finalize_Variable_c
   ret i32 0
 }
 

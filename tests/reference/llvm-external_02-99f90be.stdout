@@ -10,6 +10,9 @@ unreachable_after_return:                         ; No predecessors!
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
+  br label %FINALIZE_SYMTABLE_cobyla
+
+FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
   ret void
 }
 
@@ -25,6 +28,12 @@ unreachable_after_return:                         ; No predecessors!
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
+  br label %FINALIZE_SYMTABLE_cobylb
+
+FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
+  br label %Finalize_Variable_con
+
+Finalize_Variable_con:                            ; preds = %FINALIZE_SYMTABLE_cobylb
   ret void
 }
 

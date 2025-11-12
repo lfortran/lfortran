@@ -153,6 +153,15 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_bindc3
+
+FINALIZE_SYMTABLE_bindc3:                         ; preds = %return
+  br label %Finalize_Variable_queries
+
+Finalize_Variable_queries:                        ; preds = %FINALIZE_SYMTABLE_bindc3
+  br label %Finalize_Variable_y
+
+Finalize_Variable_y:                              ; preds = %Finalize_Variable_queries
   ret i32 0
 }
 

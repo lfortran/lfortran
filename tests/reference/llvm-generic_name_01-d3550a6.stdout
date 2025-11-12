@@ -54,6 +54,9 @@ define void @__module_complex_module_integer_add_subrout(%complextype* %this, i3
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_integer_add_subrout
+
+FINALIZE_SYMTABLE_integer_add_subrout:            ; preds = %return
   ret void
 }
 
@@ -78,6 +81,9 @@ define void @__module_complex_module_real_add_subrout(%complextype* %this, float
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_real_add_subrout
+
+FINALIZE_SYMTABLE_real_add_subrout:               ; preds = %return
   ret void
 }
 
@@ -279,6 +285,33 @@ ifcont12:                                         ; preds = %else11, %then10
   br label %return
 
 return:                                           ; preds = %ifcont12
+  br label %FINALIZE_SYMTABLE_generic_name_01
+
+FINALIZE_SYMTABLE_generic_name_01:                ; preds = %return
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_generic_name_01
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %Finalize_Variable_a
+  br label %Finalize_Variable_fpone
+
+Finalize_Variable_fpone:                          ; preds = %Finalize_Variable_c
+  br label %Finalize_Variable_fptwo
+
+Finalize_Variable_fptwo:                          ; preds = %Finalize_Variable_fpone
+  br label %Finalize_Variable_fpzero
+
+Finalize_Variable_fpzero:                         ; preds = %Finalize_Variable_fptwo
+  br label %Finalize_Variable_ione
+
+Finalize_Variable_ione:                           ; preds = %Finalize_Variable_fpzero
+  br label %Finalize_Variable_izero
+
+Finalize_Variable_izero:                          ; preds = %Finalize_Variable_ione
+  br label %Finalize_Variable_negfpone
+
+Finalize_Variable_negfpone:                       ; preds = %Finalize_Variable_izero
   ret i32 0
 }
 

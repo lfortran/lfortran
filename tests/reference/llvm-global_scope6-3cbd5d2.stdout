@@ -16,5 +16,11 @@ define void @__lfortran_evaluate_1() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
+
+FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
+  br label %Finalize_Variable___lfortran_evaluate_11
+
+Finalize_Variable___lfortran_evaluate_11:         ; preds = %FINALIZE_SYMTABLE___lfortran_evaluate_1
   ret void
 }

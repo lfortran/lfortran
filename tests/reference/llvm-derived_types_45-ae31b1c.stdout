@@ -150,6 +150,18 @@ ifcont11:                                         ; preds = %else10, %then9
   br label %return
 
 return:                                           ; preds = %ifcont11
+  br label %FINALIZE_SYMTABLE_derived_types_45
+
+FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
+  br label %Finalize_Variable_ins
+
+Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
+  %32 = load %myint*, %myint** %ins, align 8
+  %33 = bitcast %myint* %32 to i8*
+  call void @_lfortran_free(i8* %33)
+  br label %Finalize_Variable_temp_struct_var__
+
+Finalize_Variable_temp_struct_var__:              ; preds = %Finalize_Variable_ins
   ret i32 0
 }
 

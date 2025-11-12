@@ -6,6 +6,9 @@ define void @find_fit(void ([1 x float]*)* %expr) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_find_fit
+
+FINALIZE_SYMTABLE_find_fit:                       ; preds = %return
   ret void
 }
 
@@ -19,6 +22,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
@@ -27,6 +33,9 @@ define void @expression([1 x float]* %y) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_expression
+
+FINALIZE_SYMTABLE_expression:                     ; preds = %return
   ret void
 }
 

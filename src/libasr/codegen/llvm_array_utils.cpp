@@ -85,18 +85,17 @@ namespace LCompilers {
         Descriptor::get_descriptor
         (llvm::LLVMContext& context, llvm::IRBuilder<>* builder,
          LLVMUtils* llvm_utils, DESCR_TYPE descr_type,
-         CompilerOptions& co, std::vector<llvm::Value*>& heap_arrays_) {
+         CompilerOptions& co) {
             switch( descr_type ) {
                 case DESCR_TYPE::_SimpleCMODescriptor: {
-                    return std::make_unique<SimpleCMODescriptor>(context, builder, llvm_utils, co, heap_arrays_);
+                    return std::make_unique<SimpleCMODescriptor>(context, builder, llvm_utils, co);
                 }
             }
             return nullptr;
         }
 
         SimpleCMODescriptor::SimpleCMODescriptor(llvm::LLVMContext& _context,
-            llvm::IRBuilder<>* _builder, LLVMUtils* _llvm_utils, CompilerOptions& co_,
-            std::vector<llvm::Value*>& heap_arrays_):
+            llvm::IRBuilder<>* _builder, LLVMUtils* _llvm_utils, CompilerOptions& co_):
         context(_context),
         llvm_utils(std::move(_llvm_utils)),
         builder(std::move(_builder)),
@@ -107,7 +106,7 @@ namespace LCompilers {
                  llvm::Type::getInt32Ty(context),
                  llvm::Type::getInt32Ty(context)}),
                  "dimension_descriptor")
-        ), co(co_), heap_arrays(heap_arrays_) {
+        ), co(co_) {
         }
 
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
@@ -311,7 +310,6 @@ namespace LCompilers {
                     llvm::ConstantInt::get(context, llvm::APInt(32, size))), llvm_size);
                 llvm::Value* arr_first_i8 = lfortran_malloc(
                     context, *module, *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size));
-                heap_arrays.push_back(arr_first_i8);
                 arr_first = builder->CreateBitCast(
                     arr_first_i8, llvm_data_type->getPointerTo());
             } else {

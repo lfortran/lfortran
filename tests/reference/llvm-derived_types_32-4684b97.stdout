@@ -85,6 +85,9 @@ ifcont3:                                          ; preds = %else2, %loop.end
   br label %return
 
 return:                                           ; preds = %ifcont3
+  br label %FINALIZE_SYMTABLE__lcompilers_len_trim_str
+
+FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   %23 = load i32, i32* %result, align 4
   ret i32 %23
 }
@@ -113,6 +116,9 @@ define void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* 
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_trim_str
+
+FINALIZE_SYMTABLE__lcompilers_trim_str:           ; preds = %return
   ret void
 }
 
@@ -188,9 +194,18 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_real_dp_to_string
+
+FINALIZE_SYMTABLE_real_dp_to_string:              ; preds = %return
+  br label %Finalize_Variable___libasr__created__var__2_return_slot
+
+Finalize_Variable___libasr__created__var__2_return_slot: ; preds = %FINALIZE_SYMTABLE_real_dp_to_string
   %35 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__2_return_slot, i32 0, i32 0
   %36 = load i8*, i8** %35, align 8
   call void @_lfortran_free(i8* %36)
+  br label %Finalize_Variable_buffer
+
+Finalize_Variable_buffer:                         ; preds = %Finalize_Variable___libasr__created__var__2_return_slot
   %37 = getelementptr %string_descriptor, %string_descriptor* %buffer, i32 0, i32 0
   %38 = load i8*, i8** %37, align 8
   call void @_lfortran_free(i8* %38)
@@ -278,12 +293,24 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable___libasr__created__var__0_return_slot
+
+Finalize_Variable___libasr__created__var__0_return_slot: ; preds = %FINALIZE_SYMTABLE_main
   %29 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, i32 0, i32 0
   %30 = load i8*, i8** %29, align 8
   call void @_lfortran_free(i8* %30)
+  br label %Finalize_Variable___libasr__created__var__1_return_slot
+
+Finalize_Variable___libasr__created__var__1_return_slot: ; preds = %Finalize_Variable___libasr__created__var__0_return_slot
   %31 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 0
   %32 = load i8*, i8** %31, align 8
   call void @_lfortran_free(i8* %32)
+  br label %Finalize_Variable_value
+
+Finalize_Variable_value:                          ; preds = %Finalize_Variable___libasr__created__var__1_return_slot
   ret i32 0
 }
 

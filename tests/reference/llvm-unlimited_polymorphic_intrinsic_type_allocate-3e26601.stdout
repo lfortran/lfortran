@@ -66,6 +66,9 @@ then:                                             ; preds = %.entry
   br label %"~select_type_block_.end"
 
 "~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_"
+
+"FINALIZE_SYMTABLE_~select_type_block_":          ; preds = %"~select_type_block_.end"
   br label %ifcont
 
 else:                                             ; preds = %.entry
@@ -87,6 +90,9 @@ then2:                                            ; preds = %else
   br label %"~select_type_block_1.end"
 
 "~select_type_block_1.end":                       ; preds = %"~select_type_block_1.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_1"
+
+"FINALIZE_SYMTABLE_~select_type_block_1":         ; preds = %"~select_type_block_1.end"
   br label %ifcont
 
 else3:                                            ; preds = %else
@@ -108,6 +114,9 @@ then4:                                            ; preds = %else3
   br label %"~select_type_block_2.end"
 
 "~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
+  br label %"FINALIZE_SYMTABLE_~select_type_block_2"
+
+"FINALIZE_SYMTABLE_~select_type_block_2":         ; preds = %"~select_type_block_2.end"
   br label %ifcont
 
 else5:                                            ; preds = %else3
@@ -115,11 +124,23 @@ else5:                                            ; preds = %else3
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %32, i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
   br label %ifcont
 
-ifcont:                                           ; preds = %else5, %"~select_type_block_2.end", %"~select_type_block_1.end", %"~select_type_block_.end"
+ifcont:                                           ; preds = %else5, %"FINALIZE_SYMTABLE_~select_type_block_2", %"FINALIZE_SYMTABLE_~select_type_block_1", %"FINALIZE_SYMTABLE_~select_type_block_"
   call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
+
+FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate: ; preds = %return
+  br label %Finalize_Variable_var
+
+Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_unlimited_polymorphic_intrinsic_type_allocate
+  %33 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
+  %34 = bitcast %"~unlimited_polymorphic_type"* %33 to i8*
+  call void @_lfortran_free(i8* %34)
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %Finalize_Variable_var
   ret i32 0
 }
 
@@ -144,5 +165,7 @@ declare i8* @__lfortran_dynamic_cast(i8*, i8*, i1)
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(i8*)
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

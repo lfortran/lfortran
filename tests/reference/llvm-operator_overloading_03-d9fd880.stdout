@@ -70,6 +70,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_greater_than_inverse
+
+FINALIZE_SYMTABLE_greater_than_inverse:           ; preds = %return
   %9 = load i1, i1* %greater_than_inverse, align 1
   ret i1 %9
 }
@@ -100,6 +103,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_less_than_inverse
+
+FINALIZE_SYMTABLE_less_than_inverse:              ; preds = %return
   %9 = load i1, i1* %less_than_inverse, align 1
   ret i1 %9
 }
@@ -259,6 +265,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_operator_overloading_01
+
+FINALIZE_SYMTABLE_operator_overloading_01:        ; preds = %return
   ret i32 0
 }
 

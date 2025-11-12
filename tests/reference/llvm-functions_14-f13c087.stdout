@@ -6,6 +6,9 @@ define void @find_fit(i32 ()* %expr) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_find_fit
+
+FINALIZE_SYMTABLE_find_fit:                       ; preds = %return
   ret void
 }
 
@@ -18,6 +21,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_functions_14
+
+FINALIZE_SYMTABLE_functions_14:                   ; preds = %return
   ret i32 0
 }
 

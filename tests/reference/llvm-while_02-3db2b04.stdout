@@ -192,6 +192,15 @@ ifcont29:                                         ; preds = %else28, %then27
   br label %return
 
 return:                                           ; preds = %ifcont29
+  br label %FINALIZE_SYMTABLE_while_02
+
+FINALIZE_SYMTABLE_while_02:                       ; preds = %return
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_while_02
+  br label %Finalize_Variable_j
+
+Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
   ret i32 0
 }
 

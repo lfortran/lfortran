@@ -13,6 +13,9 @@ define void @f() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 
@@ -28,6 +31,9 @@ unreachable_after_return:                         ; No predecessors!
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

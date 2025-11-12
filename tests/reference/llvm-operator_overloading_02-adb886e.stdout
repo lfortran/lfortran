@@ -22,6 +22,9 @@ define void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_logical_gets_integer
+
+FINALIZE_SYMTABLE_logical_gets_integer:           ; preds = %return
   ret void
 }
 
@@ -69,6 +72,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_tf
+
+Finalize_Variable_tf:                             ; preds = %FINALIZE_SYMTABLE_main
   ret i32 0
 }
 

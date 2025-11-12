@@ -77,8 +77,7 @@ namespace LCompilers {
                     llvm::IRBuilder<>* builder,
                     LLVMUtils* llvm_utils,
                     DESCR_TYPE descr_type,
-                    CompilerOptions& co_,
-                    std::vector<llvm::Value*>& heap_arrays_);
+                    CompilerOptions& co_);
 
                 /*
                 * Checks whether the given ASR::ttype_t* is an
@@ -338,7 +337,6 @@ namespace LCompilers {
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
 
                 CompilerOptions& co;
-                std::vector<llvm::Value*>& heap_arrays;
 
                 llvm::Value* cmo_convertor_single_element(
                     llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
@@ -352,8 +350,7 @@ namespace LCompilers {
 
                 SimpleCMODescriptor(llvm::LLVMContext& _context,
                     llvm::IRBuilder<>* _builder,
-                    LLVMUtils* _llvm_utils, CompilerOptions& co_,
-                    std::vector<llvm::Value*>& heap_arrays);
+                    LLVMUtils* _llvm_utils, CompilerOptions& co_);
 
                 virtual
                 bool is_array(ASR::ttype_t* asr_type);

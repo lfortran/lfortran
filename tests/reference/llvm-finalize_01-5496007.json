@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-finalize_01-5496007",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/finalize_01.f90",
+    "infile_hash": "81b1d43091ce29fff8f14e778b9a33030de61262f7c499b22c152b7e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-finalize_01-5496007.stdout",
+    "stdout_hash": "68f365f346c751460a608614ccd2267bb78c6492cad9bac4b353c9a9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

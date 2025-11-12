@@ -542,6 +542,18 @@ ifcont86:                                         ; preds = %else85, %then84
   br label %return
 
 return:                                           ; preds = %ifcont86
+  br label %FINALIZE_SYMTABLE_arrays_01
+
+FINALIZE_SYMTABLE_arrays_01:                      ; preds = %return
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_arrays_01
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_b
   ret i32 0
 }
 

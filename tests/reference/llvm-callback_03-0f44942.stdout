@@ -24,6 +24,9 @@ define float @__module_callback_03_cb(float (float*)* %f, float* %a, float* %b) 
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_cb
+
+FINALIZE_SYMTABLE_cb:                             ; preds = %return
   %7 = load float, float* %cb, align 4
   ret float %7
 }
@@ -53,6 +56,9 @@ define void @__module_callback_03_foo1(float* %c, float* %d) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_foo1
+
+FINALIZE_SYMTABLE_foo1:                           ; preds = %return
   ret void
 }
 
@@ -65,6 +71,9 @@ define float @foo1.__module_callback_03_f(float* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   %2 = load float, float* %f, align 4
   ret float %2
 }
@@ -92,6 +101,9 @@ define void @__module_callback_03_foo2(float* %c, float* %d) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_foo2
+
+FINALIZE_SYMTABLE_foo2:                           ; preds = %return
   ret void
 }
 
@@ -104,6 +116,9 @@ define float @foo2.__module_callback_03_f(float* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   %2 = load float, float* %f, align 4
   ret float %2
 }
@@ -131,6 +146,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

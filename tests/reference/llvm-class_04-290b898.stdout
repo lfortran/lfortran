@@ -171,6 +171,12 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_foo
+
+Finalize_Variable_foo:                            ; preds = %FINALIZE_SYMTABLE_main
   ret i32 0
 }
 

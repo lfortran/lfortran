@@ -90,6 +90,18 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_types_04
+
+FINALIZE_SYMTABLE_types_04:                       ; preds = %return
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_types_04
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %Finalize_Variable_i
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %Finalize_Variable_r
   ret i32 0
 }
 
