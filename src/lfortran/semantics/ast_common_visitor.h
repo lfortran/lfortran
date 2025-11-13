@@ -18,6 +18,7 @@
 #include <set>
 #include <map>
 #include <limits>
+#include <sstream>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -6794,8 +6795,76 @@ public:
                     ASR::call_arg_t arg = args[i];
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
                     ASR::expr_t* arg_expr = arg.m_value;
+                    ASR::Variable_t* dummy_var = ASRUtils::EXPR2VAR(f->m_args[i]);
+                    ASR::ttype_t* dummy_type = ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(dummy_var->m_type));
+                    if (dummy_type && ASR::is_a<ASR::Array_t>(*dummy_type)) {
+                        SetChar dim_dependency_names;
+                        dim_dependency_names.reserve(al, 1);
+                        struct DimDependencyWalker : ASR::BaseWalkVisitor<DimDependencyWalker> {
+                            Allocator &al;
+                            SetChar &names;
+                            const ASR::Function_t* current_function;
+                            DimDependencyWalker(Allocator &al, SetChar &names, const ASR::Function_t* current_function) :
+                                al(al), names(names), current_function(current_function) {}
+                            void visit_Var(const ASR::Var_t &x) {
+                                names.push_back(al, ASRUtils::symbol_name(x.m_v));
+                            }
+                            void visit_FunctionParam(const ASR::FunctionParam_t &x) {
+                                if (!current_function) return;
+                                int64_t idx = x.m_param_number;
+                                if (idx < 0 || (size_t)idx >= current_function->n_args) return;
+                                ASR::expr_t* arg_expr = current_function->m_args[idx];
+                                if (arg_expr && ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg_expr)->m_v;
+                                    names.push_back(al, ASRUtils::symbol_name(sym));
+                                }
+                            }
+                        } dep_walker(al, dim_dependency_names, f);
+                        ASR::Array_t* dummy_array = ASR::down_cast<ASR::Array_t>(dummy_type);
+                        for (size_t dep_i = 0; dep_i < dummy_array->n_dims; dep_i++) {
+                            if (dummy_array->m_dims[dep_i].m_start) {
+                                dep_walker.visit_expr(*dummy_array->m_dims[dep_i].m_start);
+                            }
+                            if (dummy_array->m_dims[dep_i].m_length) {
+                                dep_walker.visit_expr(*dummy_array->m_dims[dep_i].m_length);
+                            }
+                        }
+                        if (dim_dependency_names.n > 0) {
+                            Vec<char*> deps_vec;
+                            deps_vec.reserve(al, dummy_var->n_dependencies + dim_dependency_names.n);
+                            for (size_t k = 0; k < dummy_var->n_dependencies; k++) {
+                                deps_vec.push_back(al, dummy_var->m_dependencies[k]);
+                            }
+                            for (size_t d = 0; d < dim_dependency_names.n; d++) {
+                                bool present = false;
+                                for (size_t existing = 0; existing < deps_vec.size(); existing++) {
+                                    if (std::strcmp(deps_vec[existing], dim_dependency_names[d]) == 0) {
+                                        present = true;
+                                        break;
+                                    }
+                                }
+                                if (!present) {
+                                    deps_vec.push_back(al, dim_dependency_names[d]);
+                                }
+                            }
+                            dummy_var->m_dependencies = deps_vec.p;
+                            dummy_var->n_dependencies = deps_vec.size();
+                            if (compiler_options.trace_fortran77) {
+                                std::ostringstream dep_msg;
+                                dep_msg << "Dummy '" << dummy_var->m_name << "' inferred dependencies {";
+                                for (size_t existing = 0; existing < deps_vec.size(); existing++) {
+                                    if (existing) dep_msg << ",";
+                                    dep_msg << deps_vec[existing];
+                                }
+                                dep_msg << "}";
+                                trace_fortran77_log(compiler_options, "legacy-array-sections", dep_msg.str());
+                            }
+                        }
+                    }
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                        ASR::Variable_t* dummy_var = ASRUtils::EXPR2VAR(f->m_args[i]);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
                         ASR::array_index_t first_arg = array_item->m_args[0];
@@ -6836,6 +6905,40 @@ public:
                             }
                             for (size_t i = 0; i < temp_function_dependencies.n; i++) {
                                 current_function_dependencies.push_back(al, temp_function_dependencies[i]);
+                            }
+                            if (temp_function_dependencies.n > 0) {
+                                Vec<char*> deps_vec;
+                                deps_vec.reserve(al, dummy_var->n_dependencies + temp_function_dependencies.n);
+                                for (size_t existing = 0; existing < dummy_var->n_dependencies; existing++) {
+                                    deps_vec.push_back(al, dummy_var->m_dependencies[existing]);
+                                }
+                                for (size_t dep_i = 0; dep_i < temp_function_dependencies.n; dep_i++) {
+                                    bool present = false;
+                                    for (size_t existing = 0; existing < deps_vec.size(); existing++) {
+                                        if (std::strcmp(deps_vec[existing], temp_function_dependencies[dep_i]) == 0) {
+                                            present = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!present) {
+                                        deps_vec.push_back(al, temp_function_dependencies[dep_i]);
+                                    }
+                                }
+                                dummy_var->m_dependencies = deps_vec.p;
+                                dummy_var->n_dependencies = deps_vec.size();
+                                if (compiler_options.trace_fortran77) {
+                                    std::ostringstream dep_msg;
+                                    dep_msg << "Dummy '" << dummy_var->m_name << "' updated with legacy deps {";
+                                    for (size_t existing = 0; existing < deps_vec.size(); existing++) {
+                                        if (existing) dep_msg << ",";
+                                        dep_msg << deps_vec[existing];
+                                    }
+                                    dep_msg << "}";
+                                    trace_fortran77_log(compiler_options, "legacy-array-sections", dep_msg.str());
+                                }
+                            } else if (compiler_options.trace_fortran77) {
+                                trace_fortran77_log(compiler_options, "legacy-array-sections",
+                                    "No dependency symbols detected for '" + std::string(dummy_var->m_name) + "'");
                             }
                         }
 
