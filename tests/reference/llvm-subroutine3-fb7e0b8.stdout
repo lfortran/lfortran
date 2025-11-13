@@ -8,6 +8,9 @@ define i32 @f() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   %0 = load i32, i32* %f, align 4
   ret i32 %0
 }

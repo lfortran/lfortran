@@ -18,6 +18,39 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_array2
+
+FINALIZE_SYMTABLE_array2:                         ; preds = %return
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_array2
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %Finalize_Variable_b
+  br label %Finalize_Variable_d
+
+Finalize_Variable_d:                              ; preds = %Finalize_Variable_c
+  br label %Finalize_Variable_e
+
+Finalize_Variable_e:                              ; preds = %Finalize_Variable_d
+  br label %Finalize_Variable_f
+
+Finalize_Variable_f:                              ; preds = %Finalize_Variable_e
+  br label %Finalize_Variable_g
+
+Finalize_Variable_g:                              ; preds = %Finalize_Variable_f
+  br label %Finalize_Variable_h
+
+Finalize_Variable_h:                              ; preds = %Finalize_Variable_g
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_h
+  br label %Finalize_Variable_j
+
+Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
   ret i32 0
 }
 

@@ -40,6 +40,15 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_logical2
+
+FINALIZE_SYMTABLE_logical2:                       ; preds = %return
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_logical2
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
   ret i32 0
 }
 

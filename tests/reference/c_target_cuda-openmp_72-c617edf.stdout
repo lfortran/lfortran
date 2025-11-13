@@ -190,6 +190,5 @@ int main(int argc, char* argv[])
         fprintf(stderr, "ERROR STOP");
         exit(1);
     }
-    // FIXME: implicit deallocate(a, b, );
     return 0;
 }

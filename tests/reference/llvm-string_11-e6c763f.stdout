@@ -171,6 +171,24 @@ loop.end11:                                       ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end11
+  br label %FINALIZE_SYMTABLE__lcompilers_index_str
+
+FINALIZE_SYMTABLE__lcompilers_index_str:          ; preds = %return
+  br label %Finalize_Variable_found
+
+Finalize_Variable_found:                          ; preds = %FINALIZE_SYMTABLE__lcompilers_index_str
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_found
+  br label %Finalize_Variable_j
+
+Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
+  br label %Finalize_Variable_k
+
+Finalize_Variable_k:                              ; preds = %Finalize_Variable_j
+  br label %Finalize_Variable_pos
+
+Finalize_Variable_pos:                            ; preds = %Finalize_Variable_k
   %76 = load i32, i32* %_lcompilers_index_str, align 4
   ret i32 %76
 }
@@ -329,6 +347,24 @@ loop.end11:                                       ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end11
+  br label %FINALIZE_SYMTABLE__lcompilers_index_str1
+
+FINALIZE_SYMTABLE__lcompilers_index_str1:         ; preds = %return
+  br label %Finalize_Variable_found
+
+Finalize_Variable_found:                          ; preds = %FINALIZE_SYMTABLE__lcompilers_index_str1
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_found
+  br label %Finalize_Variable_j
+
+Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
+  br label %Finalize_Variable_k
+
+Finalize_Variable_k:                              ; preds = %Finalize_Variable_j
+  br label %Finalize_Variable_pos
+
+Finalize_Variable_pos:                            ; preds = %Finalize_Variable_k
   %76 = load i32, i32* %_lcompilers_index_str1, align 4
   ret i32 %76
 }
@@ -403,9 +439,18 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_string_11
+
+FINALIZE_SYMTABLE_string_11:                      ; preds = %return
+  br label %Finalize_Variable_mystring
+
+Finalize_Variable_mystring:                       ; preds = %FINALIZE_SYMTABLE_string_11
   %29 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
   %30 = load i8*, i8** %29, align 8
   call void @_lfortran_free(i8* %30)
+  br label %Finalize_Variable_teststring
+
+Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_mystring
   %31 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
   %32 = load i8*, i8** %31, align 8
   call void @_lfortran_free(i8* %32)

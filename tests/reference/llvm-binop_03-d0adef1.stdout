@@ -37,6 +37,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE__lcompilers_abs_f64
+
+FINALIZE_SYMTABLE__lcompilers_abs_f64:            ; preds = %return
   %5 = load double, double* %_lcompilers_abs_f64, align 8
   ret double %5
 }
@@ -119,6 +122,15 @@ ifcont6:                                          ; preds = %else5, %then4
   br label %return
 
 return:                                           ; preds = %ifcont6
+  br label %FINALIZE_SYMTABLE_binop_03
+
+FINALIZE_SYMTABLE_binop_03:                       ; preds = %return
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_binop_03
+  br label %Finalize_Variable_y
+
+Finalize_Variable_y:                              ; preds = %Finalize_Variable_x
   ret i32 0
 }
 

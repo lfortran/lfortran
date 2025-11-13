@@ -77,6 +77,9 @@ define void @get_i(%mytype* %self) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_get_i
+
+FINALIZE_SYMTABLE_get_i:                          ; preds = %return
   ret void
 }
 
@@ -116,6 +119,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_get_r
+
+FINALIZE_SYMTABLE_get_r:                          ; preds = %return
   ret void
 }
 
@@ -166,6 +172,15 @@ ifcont:                                           ; preds = %.entry
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_call_subroutine_without_type_01
+
+FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
+  br label %Finalize_Variable_obj
+
+Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
+  %17 = load %mytype*, %mytype** %obj, align 8
+  %18 = bitcast %mytype* %17 to i8*
+  call void @_lfortran_free(i8* %18)
   ret i32 0
 }
 

@@ -81,6 +81,9 @@ ifcont3:                                          ; preds = %ifcont, %then
   br label %return
 
 return:                                           ; preds = %ifcont3
+  br label %FINALIZE_SYMTABLE_bin_add
+
+FINALIZE_SYMTABLE_bin_add:                        ; preds = %return
   %10 = load i32, i32* %bin_add, align 4
   ret i32 %10
 }
@@ -96,6 +99,9 @@ define i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* 
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_logical_and
+
+FINALIZE_SYMTABLE_logical_and:                    ; preds = %return
   %4 = load i1, i1* %logical_and, align 1
   ret i1 %4
 }
@@ -255,6 +261,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_operator_overloading_01
+
+FINALIZE_SYMTABLE_operator_overloading_01:        ; preds = %return
   ret i32 0
 }
 

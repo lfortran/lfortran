@@ -307,6 +307,33 @@ ifcont41:                                         ; preds = %else40, %then39
   br label %return
 
 return:                                           ; preds = %ifcont41
+  br label %FINALIZE_SYMTABLE_automatic_allocation_02
+
+FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
+  %93 = load %complex_4*, %complex_4** %c, align 8
+  %94 = bitcast %complex_4* %93 to i8*
+  call void @_lfortran_free(i8* %94)
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_c
+  %95 = load i32*, i32** %i, align 8
+  %96 = bitcast i32* %95 to i8*
+  call void @_lfortran_free(i8* %96)
+  br label %Finalize_Variable_l
+
+Finalize_Variable_l:                              ; preds = %Finalize_Variable_i
+  %97 = load i1*, i1** %l, align 8
+  %98 = bitcast i1* %97 to i8*
+  call void @_lfortran_free(i8* %98)
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %Finalize_Variable_l
+  %99 = load float*, float** %r, align 8
+  %100 = bitcast float* %99 to i8*
+  call void @_lfortran_free(i8* %100)
   ret i32 0
 }
 

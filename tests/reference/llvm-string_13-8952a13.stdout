@@ -87,6 +87,9 @@ ifcont9:                                          ; preds = %else8, %then7
   br label %return
 
 return:                                           ; preds = %ifcont9
+  br label %FINALIZE_SYMTABLE_string_13
+
+FINALIZE_SYMTABLE_string_13:                      ; preds = %return
   ret i32 0
 }
 

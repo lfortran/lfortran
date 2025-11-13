@@ -21,6 +21,9 @@ define void @__module_xx_show_x(%base* %this) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_show_x
+
+FINALIZE_SYMTABLE_show_x:                         ; preds = %return
   ret void
 }
 
@@ -112,6 +115,12 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %FINALIZE_SYMTABLE_main
   ret i32 0
 }
 

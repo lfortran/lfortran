@@ -78,6 +78,12 @@ define i32 @__module_recursion_03_solver(i32 ()* %f, i32* %iter) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_solver
+
+FINALIZE_SYMTABLE_solver:                         ; preds = %return
+  br label %Finalize_Variable_f_val
+
+Finalize_Variable_f_val:                          ; preds = %FINALIZE_SYMTABLE_solver
   %25 = load i32, i32* %solver, align 4
   ret i32 %25
 }
@@ -92,6 +98,9 @@ define i32 @__module_recursion_03_solver_caller(i32 ()* %f, i32* %iter) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_solver_caller
+
+FINALIZE_SYMTABLE_solver_caller:                  ; preds = %return
   %1 = load i32, i32* %solver_caller, align 4
   ret i32 %1
 }
@@ -137,6 +146,15 @@ ifcont:                                           ; preds = %else, %unreachable_
   br label %return
 
 return:                                           ; preds = %ifcont, %then
+  br label %FINALIZE_SYMTABLE_sub1
+
+FINALIZE_SYMTABLE_sub1:                           ; preds = %return
+  br label %Finalize_Variable_tmp
+
+Finalize_Variable_tmp:                            ; preds = %FINALIZE_SYMTABLE_sub1
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %Finalize_Variable_tmp
   %10 = load i32, i32* %sub1, align 4
   ret i32 %10
 }
@@ -164,6 +182,9 @@ define i32 @sub1.__module_recursion_03_getx() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_getx
+
+FINALIZE_SYMTABLE_getx:                           ; preds = %return
   %11 = load i32, i32* %getx, align 4
   ret i32 %11
 }
@@ -204,6 +225,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %FINALIZE_SYMTABLE_main
   ret i32 0
 }
 

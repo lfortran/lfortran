@@ -594,42 +594,27 @@ ifcont44:                                         ; preds = %ifcont42
   %255 = trunc i64 %254 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @115, i32 0, i32 0), i8* %252, i32 %255, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @106, i32 0, i32 0), i32 1)
   call void @_lfortran_free(i8* %247)
-  %256 = load %array*, %array** %c, align 8
-  %257 = ptrtoint %array* %256 to i64
-  %258 = icmp eq i64 %257, 0
-  br i1 %258, label %merge_allocated46, label %check_data45
-
-check_data45:                                     ; preds = %ifcont44
-  %259 = getelementptr %array, %array* %256, i32 0, i32 0
-  %260 = load i32*, i32** %259, align 8
-  %261 = ptrtoint i32* %260 to i64
-  %262 = icmp ne i64 %261, 0
-  br label %merge_allocated46
-
-merge_allocated46:                                ; preds = %check_data45, %ifcont44
-  %is_allocated47 = phi i1 [ false, %ifcont44 ], [ %262, %check_data45 ]
-  br i1 %is_allocated47, label %then48, label %else49
-
-then48:                                           ; preds = %merge_allocated46
-  %263 = getelementptr %array, %array* %256, i32 0, i32 0
-  %264 = load i32*, i32** %263, align 8
-  %265 = alloca i8*, align 8
-  %266 = bitcast i32* %264 to i8*
-  store i8* %266, i8** %265, align 8
-  %267 = load i8*, i8** %265, align 8
-  call void @_lfortran_free(i8* %267)
-  %268 = getelementptr %array, %array* %256, i32 0, i32 0
-  store i32* null, i32** %268, align 8
-  br label %ifcont50
-
-else49:                                           ; preds = %merge_allocated46
-  br label %ifcont50
-
-ifcont50:                                         ; preds = %else49, %then48
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont50
+return:                                           ; preds = %ifcont44
+  br label %FINALIZE_SYMTABLE_allocate_03
+
+FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
+  %256 = load %array*, %array** %c, align 8
+  %257 = getelementptr %array, %array* %256, i32 0, i32 0
+  %258 = load i32*, i32** %257, align 8
+  %259 = bitcast i32* %258 to i8*
+  call void @_lfortran_free(i8* %259)
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %Finalize_Variable_c
+  br label %Finalize_Variable_stat
+
+Finalize_Variable_stat:                           ; preds = %Finalize_Variable_r
   ret i32 0
 }
 
@@ -799,6 +784,9 @@ ifcont8:                                          ; preds = %ifcont6
   br label %return
 
 return:                                           ; preds = %ifcont8
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 
@@ -1405,6 +1393,9 @@ ifcont62:                                         ; preds = %ifcont60
   br label %return
 
 return:                                           ; preds = %ifcont62
+  br label %FINALIZE_SYMTABLE_g
+
+FINALIZE_SYMTABLE_g:                              ; preds = %return
   %346 = load i32, i32* %r, align 4
   ret i32 %346
 }
@@ -1805,6 +1796,9 @@ ifcont42:                                         ; preds = %ifcont40
   br label %return
 
 return:                                           ; preds = %ifcont42
+  br label %FINALIZE_SYMTABLE_h
+
+FINALIZE_SYMTABLE_h:                              ; preds = %return
   ret void
 }
 

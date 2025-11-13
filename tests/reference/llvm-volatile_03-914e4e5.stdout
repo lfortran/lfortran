@@ -23,6 +23,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_volatile_03
+
+FINALIZE_SYMTABLE_volatile_03:                    ; preds = %return
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_volatile_03
   %7 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
   call void @_lfortran_free(i8* %8)

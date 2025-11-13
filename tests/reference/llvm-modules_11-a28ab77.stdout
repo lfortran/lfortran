@@ -36,6 +36,9 @@ define void @__module_modules_11_module11_access_internally() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_access_internally
+
+FINALIZE_SYMTABLE_access_internally:              ; preds = %return
   ret void
 }
 
@@ -68,6 +71,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_access_externally
+
+FINALIZE_SYMTABLE_access_externally:              ; preds = %return
   ret i32 0
 }
 

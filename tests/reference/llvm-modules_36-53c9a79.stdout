@@ -76,6 +76,12 @@ loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
+  br label %FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0
+
+FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0: ; preds = %return
+  br label %Finalize_Variable___1_i
+
+Finalize_Variable___1_i:                          ; preds = %FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0
   %24 = load i1, i1* %_lcompilers_Any_4_1_0, align 1
   ret i1 %24
 }
@@ -263,6 +269,27 @@ ifcont26:                                         ; preds = %else25, %then24
   br label %return
 
 return:                                           ; preds = %ifcont26
+  br label %FINALIZE_SYMTABLE_cmd_run
+
+FINALIZE_SYMTABLE_cmd_run:                        ; preds = %return
+  br label %Finalize_Variable___libasr_created__intrinsic_array_function_Any
+
+Finalize_Variable___libasr_created__intrinsic_array_function_Any: ; preds = %FINALIZE_SYMTABLE_cmd_run
+  br label %Finalize_Variable___libasr_created__intrinsic_array_function_Any1
+
+Finalize_Variable___libasr_created__intrinsic_array_function_Any1: ; preds = %Finalize_Variable___libasr_created__intrinsic_array_function_Any
+  br label %Finalize_Variable___libasr_index_0_
+
+Finalize_Variable___libasr_index_0_:              ; preds = %Finalize_Variable___libasr_created__intrinsic_array_function_Any1
+  br label %Finalize_Variable___libasr_index_0_1
+
+Finalize_Variable___libasr_index_0_1:             ; preds = %Finalize_Variable___libasr_index_0_
+  br label %Finalize_Variable_found
+
+Finalize_Variable_found:                          ; preds = %Finalize_Variable___libasr_index_0_1
+  br label %Finalize_Variable_toomany
+
+Finalize_Variable_toomany:                        ; preds = %Finalize_Variable_found
   ret void
 }
 
@@ -465,6 +492,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_modules_36
+
+FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
+  br label %Finalize_Variable_settings
+
+Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
   ret i32 0
 }
 

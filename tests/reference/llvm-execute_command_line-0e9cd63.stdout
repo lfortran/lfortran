@@ -18,6 +18,12 @@ define void @_lcompilers_execute_command_line_(%string_descriptor* %command, i1*
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_execute_command_line_
+
+FINALIZE_SYMTABLE__lcompilers_execute_command_line_: ; preds = %return
+  br label %Finalize_Variable__lcompilers_exit_status
+
+Finalize_Variable__lcompilers_exit_status:        ; preds = %FINALIZE_SYMTABLE__lcompilers_execute_command_line_
   ret void
 }
 
@@ -33,6 +39,12 @@ define void @_lcompilers_execute_command_line_1(%string_descriptor* %command, i1
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_execute_command_line_1
+
+FINALIZE_SYMTABLE__lcompilers_execute_command_line_1: ; preds = %return
+  br label %Finalize_Variable__lcompilers_exit_status
+
+Finalize_Variable__lcompilers_exit_status:        ; preds = %FINALIZE_SYMTABLE__lcompilers_execute_command_line_1
   ret void
 }
 
@@ -49,6 +61,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_execute_command_line
+
+FINALIZE_SYMTABLE_execute_command_line:           ; preds = %return
   ret i32 0
 }
 

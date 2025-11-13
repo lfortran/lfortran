@@ -64,6 +64,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_sub1
+
+FINALIZE_SYMTABLE_sub1:                           ; preds = %return
   ret void
 }
 
@@ -91,6 +94,9 @@ define void @sub1.__module_recursion_01_sub2() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_sub2
+
+FINALIZE_SYMTABLE_sub2:                           ; preds = %return
   ret void
 }
 
@@ -109,6 +115,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

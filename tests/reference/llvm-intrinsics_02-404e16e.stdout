@@ -41,6 +41,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE__lcompilers_abs_f32
+
+FINALIZE_SYMTABLE__lcompilers_abs_f32:            ; preds = %return
   %5 = load float, float* %_lcompilers_abs_f32, align 4
   ret float %5
 }
@@ -67,6 +70,9 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE__lcompilers_abs_f64
+
+FINALIZE_SYMTABLE__lcompilers_abs_f64:            ; preds = %return
   %5 = load double, double* %_lcompilers_abs_f64, align 8
   ret double %5
 }
@@ -80,6 +86,9 @@ define float @_lcompilers_sin_f32(float* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_sin_f32
+
+FINALIZE_SYMTABLE__lcompilers_sin_f32:            ; preds = %return
   %2 = load float, float* %_lcompilers_sin_f32, align 4
   ret float %2
 }
@@ -95,6 +104,9 @@ define double @_lcompilers_sin_f64(double* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_sin_f64
+
+FINALIZE_SYMTABLE__lcompilers_sin_f64:            ; preds = %return
   %2 = load double, double* %_lcompilers_sin_f64, align 8
   ret double %2
 }
@@ -215,6 +227,12 @@ ifcont17:                                         ; preds = %else16, %then15
   br label %return
 
 return:                                           ; preds = %ifcont17
+  br label %FINALIZE_SYMTABLE_intrinsics_02
+
+FINALIZE_SYMTABLE_intrinsics_02:                  ; preds = %return
+  br label %Finalize_Variable_y
+
+Finalize_Variable_y:                              ; preds = %FINALIZE_SYMTABLE_intrinsics_02
   ret i32 0
 }
 

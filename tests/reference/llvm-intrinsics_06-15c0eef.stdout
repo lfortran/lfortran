@@ -149,6 +149,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_intrinsics_06
+
+FINALIZE_SYMTABLE_intrinsics_06:                  ; preds = %return
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_intrinsics_06
   ret i32 0
 }
 

@@ -165,6 +165,15 @@ ifcont19:                                         ; preds = %else18, %then17
   br label %return
 
 return:                                           ; preds = %ifcont19
+  br label %FINALIZE_SYMTABLE_subroutines_02
+
+FINALIZE_SYMTABLE_subroutines_02:                 ; preds = %return
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_subroutines_02
+  br label %Finalize_Variable_j
+
+Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
   ret i32 0
 }
 
@@ -176,6 +185,9 @@ define void @f(i32* %a, i32* %b) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 
@@ -187,6 +199,9 @@ define void @g(i32* %a, i32* %b) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_g
+
+FINALIZE_SYMTABLE_g:                              ; preds = %return
   ret void
 }
 
@@ -196,6 +211,9 @@ define void @h(i32* %a, i32* %b) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_h
+
+FINALIZE_SYMTABLE_h:                              ; preds = %return
   ret void
 }
 

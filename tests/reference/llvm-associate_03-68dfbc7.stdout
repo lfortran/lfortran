@@ -88,6 +88,12 @@ ifcont5:                                          ; preds = %else4, %then3
   br label %return
 
 return:                                           ; preds = %ifcont5
+  br label %FINALIZE_SYMTABLE_associate_03
+
+FINALIZE_SYMTABLE_associate_03:                   ; preds = %return
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_associate_03
   ret i32 0
 }
 

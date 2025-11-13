@@ -197,7 +197,7 @@ public:
     std::unique_ptr<LLVMSetInterface> set_api_lp;
     std::unique_ptr<LLVMSetInterface> set_api_sc;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
-    std::vector<llvm::Value*> heap_arrays;
+    LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
@@ -247,7 +247,8 @@ public:
     set_api_sc(std::make_unique<LLVMSetSeparateChaining>(context, llvm_utils.get(), builder.get())),
     arr_descr(LLVMArrUtils::Descriptor::get_descriptor(context,
               builder.get(), llvm_utils.get(),
-              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor, compiler_options_, heap_arrays))
+              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor, compiler_options_)),
+    llvm_symtab_finalizer(*this, llvm_utils, builder, al)
     {
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
@@ -497,7 +498,6 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, size)));
                     llvm::Value* arr_first_i8 = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, prod);
-                    heap_arrays.push_back(arr_first_i8);
                     arr_first = builder->CreateBitCast(
                         arr_first_i8, llvm_data_type->getPointerTo());
                 } else {
@@ -1271,7 +1271,6 @@ public:
         }
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
-        LLVMFinalize(llvm_utils, builder, symbol_to_returnBlock).finalize_TranslationUnit(&x);
     }
 
     template <typename T>
@@ -4287,7 +4286,6 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
-        heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -4375,14 +4373,9 @@ public:
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
-        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        for( auto& value: heap_arrays ) {
-            llvm_utils->lfortran_free(value);
-        }
-
         {
             llvm::Function *fn = module->getFunction("_lpython_free_argv");
             if(!fn) {
@@ -4393,8 +4386,8 @@ public:
             }
             builder->CreateCall(fn, {});
         }
-
         start_new_block(proc_return);
+        llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -4410,7 +4403,6 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
-        heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
 
 #ifdef HAVE_TARGET_WASM
@@ -5128,7 +5120,6 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, size)));
                     llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, array_size);
-                    heap_arrays.push_back(ptr_i8);
                     ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                 }
             } else if(ASRUtils::is_string_only(v->m_type)){
@@ -5433,7 +5424,6 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
-        heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -5467,7 +5457,6 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
-        heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
     }
 
@@ -5616,7 +5605,6 @@ public:
         llvm::Function* F = llvm_symtab_fn[h];
         if (compiler_options.emit_debug_info) debug_current_scope = llvm_symtab_fn_discope[h];
         proc_return = llvm::BasicBlock::Create(context, "return");
-        symbol_to_returnBlock[&x.base] = proc_return; // Register return block
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         builder->SetInsertPoint(BB);
@@ -5713,6 +5701,7 @@ public:
     inline void define_function_exit(const ASR::Function_t& x) {
         if (x.m_return_var) {
             start_new_block(proc_return);
+            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
@@ -5766,15 +5755,10 @@ public:
                 ret_val2 = tmp;
                 }
             }
-            for( auto& value: heap_arrays ) {
-                llvm_utils->lfortran_free(value);
-            }
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
-            for( auto& value: heap_arrays ) {
-                llvm_utils->lfortran_free(value);
-            }
+            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             builder->CreateRetVoid();
         }
     }
@@ -5801,7 +5785,7 @@ public:
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
-
+                
                 define_function_exit(x);
             }
         } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
@@ -7939,13 +7923,10 @@ public:
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
-        symbol_to_returnBlock[&associate_block->base] = end_BB;
+        llvm_symtab_finalizer.finalize_symtab(associate_block->m_symtab);
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
-        std::vector<llvm::Value*> heap_arrays_copy;
-        heap_arrays_copy = heap_arrays;
-        heap_arrays.clear();
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -7963,17 +7944,9 @@ public:
         }
         std::string blockstart_name = block_name + ".start";
         std::string blockend_name = block_name + ".end";
-        llvm::BasicBlock *blockstart = llvm::BasicBlock::Create(context, blockstart_name);
+        llvm::BasicBlock* const blockstart = llvm::BasicBlock::Create(context, blockstart_name);
+        llvm::BasicBlock* const blockend   = llvm::BasicBlock::Create(context, blockend_name);
         start_new_block(blockstart);
-        llvm::BasicBlock *blockend = llvm::BasicBlock::Create(context, blockend_name);
-        symbol_to_returnBlock[&block->base] = blockend;
-        llvm::Function *fn = blockstart->getParent();
-#if LLVM_VERSION_MAJOR >= 16
-        fn->insert(fn->end(), blockend);
-#else
-        fn->getBasicBlockList().push_back(blockend);
-#endif
-        builder->SetInsertPoint(blockstart);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
 
@@ -7983,21 +7956,12 @@ public:
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+
+        start_new_block(blockend);
+        llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
+
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
-        llvm::BasicBlock *last_bb = builder->GetInsertBlock();
-        llvm::Instruction *block_terminator = last_bb->getTerminator();
-        for( auto& value: heap_arrays ) {
-            llvm_utils->lfortran_free(value);
-        }
-        heap_arrays = heap_arrays_copy;
-        if (block_terminator == nullptr) {
-            // The previous block is not terminated --- terminate it by jumping
-            // to blockend
-            builder->CreateBr(blockend);
-        }
-        builder->SetInsertPoint(blockend);
-
         current_scope = current_scope_copy;
     }
 
@@ -14713,7 +14677,36 @@ public:
     }
 };
 
+/// Utility used by any llvm_util member function.
+/// defined here to have access to ASRToLLVMVisitor member definition (specifically `visit_expr_wrapper()`, `tmp`).
+llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type, ASR::ttype_t* array_asr_type, ASRToLLVMVisitor *asr_to_llvm_visitor){
+    const int RESULT_KIND = 8;
+    auto const array_t = ASR::down_cast<ASR::Array_t>(array_asr_type);
+    if(ASRUtils::is_fixed_size_array(array_asr_type)){
+        const auto array_size = ASRUtils::get_fixed_size_of_array(array_asr_type);
+        return llvm::ConstantInt::get(context, llvm::APInt(RESULT_KIND * 8, array_size));
+    } else if(array_t->m_physical_type == ASR::DescriptorArray) {
+        return arr_api->get_array_size(array_llvm_type, array_ptr, nullptr, RESULT_KIND);
+    } else {
+        llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(8 * RESULT_KIND, 1));
+        auto const n_dims = array_t->n_dims;
+        auto const m_dims = array_t->m_dims;
+        for( size_t i = 0; i < n_dims; i++ ) {
+            asr_to_llvm_visitor->visit_expr_wrapper(m_dims[i].m_length, true);
 
+            // Make dimension length and return size compatible.
+            if(ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(m_dims[i].m_length)) > RESULT_KIND){
+                    asr_to_llvm_visitor->tmp = builder->CreateTrunc(asr_to_llvm_visitor->tmp, llvm::IntegerType::get(context, 8 * RESULT_KIND));
+            } else if (ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(m_dims[i].m_length)) < RESULT_KIND){
+                asr_to_llvm_visitor->tmp = builder->CreateSExt(asr_to_llvm_visitor->tmp, llvm::IntegerType::get(context, 8 * RESULT_KIND));
+            }
+            llvm_size = builder->CreateMul(asr_to_llvm_visitor->tmp, llvm_size);
+        }
+        return llvm_size;
+    }
+}
 
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
