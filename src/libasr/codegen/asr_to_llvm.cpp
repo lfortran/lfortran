@@ -12285,6 +12285,10 @@ public:
             std::uint32_t m_h;
             ASR::Variable_t *orig_arg = nullptr;
             std::string orig_arg_name = "";
+            ASR::expr_t* orig_arg_expr = nullptr;
+            llvm::Type* expected_llvm_type = nullptr;
+            ASR::FunctionType_t* func_type = nullptr;
+            ASR::ttype_t* expected_dummy_type = nullptr;
             if( func_subrout->type == ASR::symbolType::Function ) {
                 ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                 set_func_subrout_params(func, x_abi, use_fortran77_raw, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
@@ -12302,6 +12306,19 @@ public:
                 set_func_subrout_params(func, x_abi, use_fortran77_raw, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
             } else {
                 LCOMPILERS_ASSERT(false)
+            }
+            func_type = ASRUtils::get_FunctionType(func_subrout);
+            if( func_type && (i + is_method) < func_type->n_arg_types ) {
+                expected_dummy_type = func_type->m_arg_types[i + is_method];
+            }
+            if( orig_arg ) {
+                orig_arg_expr = ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base));
+                expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(orig_arg_expr,
+                    orig_arg->m_type, module.get());
+            }
+            if( !expected_llvm_type && expected_dummy_type ) {
+                expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, expected_dummy_type, module.get());
             }
 
             if( x.m_args[i].m_value == nullptr ) {
@@ -12749,7 +12766,7 @@ public:
             // is not a ASR::Variable_t like callbacks.
             if( orig_arg ) {
                 tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
-                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                    orig_arg_expr,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
@@ -12766,6 +12783,42 @@ public:
                     tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
                         arr_descr->get_pointer_to_data(arg_desc_type, tmp));
                 }
+            }
+
+#if LLVM_VERSION_MAJOR < 15
+            if( tmp->getType()->isPointerTy() ) {
+                llvm::Type* tmp_elem_type = tmp->getType()->getPointerElementType();
+                if( tmp_elem_type && tmp_elem_type->isArrayTy() ) {
+                    llvm::Value* zero = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 0);
+                    std::vector<llvm::Value*> gep_idx = {zero, zero};
+                    tmp = llvm_utils->CreateInBoundsGEP2(tmp_elem_type, tmp, gep_idx);
+                }
+            }
+#endif
+
+            if( expected_llvm_type && expected_llvm_type->isPointerTy() &&
+                tmp->getType()->isPointerTy() ) {
+#if LLVM_VERSION_MAJOR < 15
+                if( tmp->getType() != expected_llvm_type ) {
+                    llvm::Type* tmp_elem_type = tmp->getType()->getPointerElementType();
+                    llvm::Type* expected_elem_type = expected_llvm_type->getPointerElementType();
+                    if( tmp_elem_type && tmp_elem_type->isArrayTy() &&
+                        expected_elem_type &&
+                        tmp_elem_type->getArrayElementType() == expected_elem_type ) {
+                        llvm::Value* zero = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), 0);
+                        std::vector<llvm::Value*> gep_idx = {zero, zero};
+                        tmp = llvm_utils->CreateInBoundsGEP2(tmp_elem_type, tmp, gep_idx);
+                    } else {
+                        tmp = builder->CreateBitCast(tmp, expected_llvm_type);
+                    }
+                }
+#else
+                if( tmp->getType() != expected_llvm_type ) {
+                    tmp = builder->CreateBitCast(tmp, expected_llvm_type);
+                }
+#endif
             }
 
             args.push_back(tmp);
