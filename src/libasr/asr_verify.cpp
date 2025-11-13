@@ -62,6 +62,9 @@ private:
     bool _inside_array_physical_cast_type = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
     const Function_t* current_function;
+    const ASR::FunctionType_t* current_function_type = nullptr;
+    const ASR::ttype_t* current_ft_arg = nullptr;
+    int current_ft_arg_index = -1;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -896,6 +899,24 @@ public:
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
+            if (_processing_dims && current_function != nullptr && current_function_type != nullptr) {
+                std::string type_str;
+                if (current_ft_arg != nullptr) {
+                    type_str = ASRUtils::type_to_str_python_expr(current_ft_arg, nullptr);
+                }
+                std::cerr << "[verify-debug] FunctionType dependency on '"
+                          << x_mv_name << "' while verifying function '"
+                          << current_function->m_name << "'";
+                if (current_ft_arg_index >= 0) {
+                    std::cerr << " argument #" << (current_ft_arg_index + 1);
+                } else {
+                    std::cerr << " return type";
+                }
+                if (!type_str.empty()) {
+                    std::cerr << " (type=" << type_str << ")";
+                }
+                std::cerr << "\n";
+            }
         }
         _is_return_type_string = false;
 
@@ -1158,23 +1179,36 @@ public:
 
     void visit_FunctionType(const FunctionType_t& x) {
 
-        #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
+        #define verify_nonscoped_ttype(idx, ttype) do { \
+            const ASR::ttype_t* prev_ft_arg = current_ft_arg; \
+            int prev_ft_arg_index = current_ft_arg_index; \
+            current_ft_arg = ttype; \
+            current_ft_arg_index = idx; \
+            non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
             require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
+            current_ft_arg = prev_ft_arg; \
+            current_ft_arg_index = prev_ft_arg_index; \
+        } while(0)
 
         _is_return_type_string = false;
         if (x.m_return_var_type) {
             _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);
         }
 
+        const ASR::FunctionType_t* prev_ft = current_function_type;
+        current_function_type = &x;
+
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
-            verify_nonscoped_ttype(x.m_arg_types[i]);
+            verify_nonscoped_ttype((int)i, x.m_arg_types[i]);
         }
         if( x.m_return_var_type ) {
-            verify_nonscoped_ttype(x.m_return_var_type);
+            verify_nonscoped_ttype(-1, x.m_return_var_type);
         }
+
+        current_function_type = prev_ft;
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
