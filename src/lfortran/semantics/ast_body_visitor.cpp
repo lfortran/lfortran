@@ -5936,6 +5936,75 @@ public:
 
 };
 
+static ASR::ttype_t* convert_descriptor_to_pointer_array(Allocator &al, ASR::ttype_t* type) {
+    if (type == nullptr) return nullptr;
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            ASR::ttype_t *new_inner = convert_descriptor_to_pointer_array(al, arr->m_type);
+            bool needs_pointer = arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray;
+            if (!needs_pointer && new_inner == arr->m_type) {
+                return type;
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, arr->n_dims);
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                dims.push_back(al, arr->m_dims[i]);
+            }
+            ASR::array_physical_typeType new_physical = needs_pointer ?
+                ASR::array_physical_typeType::PointerArray : arr->m_physical_type;
+            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
+                new_inner, dims.p, dims.size(), new_physical));
+        }
+        case ASR::ttypeType::Pointer: {
+            ASR::Pointer_t *pt = ASR::down_cast<ASR::Pointer_t>(type);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, pt->m_type);
+            if (new_type == pt->m_type) return type;
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, pt->base.base.loc, new_type));
+        }
+        case ASR::ttypeType::Allocatable: {
+            ASR::Allocatable_t *alloc = ASR::down_cast<ASR::Allocatable_t>(type);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, alloc->m_type);
+            if (new_type == alloc->m_type) return type;
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, alloc->base.base.loc, new_type));
+        }
+        default:
+            return type;
+    }
+}
+
+static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope, bool force_fortran77) {
+    if (!scope) return;
+    for (auto &item: scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Module_t>(*sym)) {
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(sym);
+            rewrite_fortran77_pointer_arrays(al, mod->m_symtab, force_fortran77);
+            continue;
+        }
+        bool is_function = ASR::is_a<ASR::Function_t>(*sym);
+        if (!is_function) {
+            continue;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(fn);
+        bool wants_conversion = fn_type->m_abi == ASR::abiType::Fortran77;
+        if (!wants_conversion && !force_fortran77) {
+            continue;
+        }
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v));
+            var->m_type = convert_descriptor_to_pointer_array(al, var->m_type);
+            fn_type->m_arg_types[i] = convert_descriptor_to_pointer_array(al, fn_type->m_arg_types[i]);
+        }
+        if (fn_type->m_return_var_type) {
+            fn_type->m_return_var_type = convert_descriptor_to_pointer_array(al, fn_type->m_return_var_type);
+        }
+    }
+}
+
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
@@ -5967,6 +6036,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+    rewrite_fortran77_pointer_arrays(al, tu->m_symtab, compiler_options.legacy_array_sections);
     return tu;
 }
 
