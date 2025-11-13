@@ -866,7 +866,7 @@ class ASRToLLVMVisitor;
             auto *const arr_llvm_t       = get_llvm_type(t);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type);
             auto  const array_size_lazy  = [this, arr, t]() { 
-                insert_BB_for_readability("Calculate_arraySize"); // For llvm IR readability.
+                insert_BB_for_readability("Calculate_arraySize");
                 return llvm_utils_->get_array_size(arr, get_llvm_type(t), t, &asr_to_llvm_visitor_);
             };
             switch(arr_t->m_physical_type){
@@ -1105,20 +1105,13 @@ class ASRToLLVMVisitor;
         }
 
         /// Inserts a Basic block only for the sake of IR readability.
-        /// Works only on debug mode.
         void insert_BB_for_readability(const char* bb_name){
-            #if !defined(WITH_LFORTRAN_ASSERT)
-                return (void)bb_name;
-            #endif
             auto const BB = llvm::BasicBlock::Create(builder_->getContext(), bb_name);
             llvm_utils_->start_new_block(BB);
         }
 
         /// Inserts null into freed ptr holder -- Useful only for debugging
         void insert_null(llvm::Type* null_type, llvm::Value* ptr){ 
-            #if !defined(WITH_LFORTRAN_ASSERT) // Release Mode -- Dont't use.
-                return;
-            #endif
             #if LLVM_VERSION_MAJOR <= 15
                 if(!(ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType()->isPointerTy()))
                     throw LCompilersException("ptr parameter must be a PTR to PTR type.");
