@@ -61,10 +61,12 @@ private:
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
+    const Function_t* current_function;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false},
+        current_function{nullptr} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -459,6 +461,8 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        const Function_t* current_function_copy = current_function;
+        current_function = &x;
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -536,6 +540,7 @@ public:
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
+        current_function = current_function_copy;
     }
 
     template <typename T>
@@ -903,6 +908,28 @@ public:
         if ( x_mv_name != current_name ) {
             variable_dependencies.push_back(x_mv_name);
         }
+    }
+
+    void visit_FunctionParam(const FunctionParam_t &x) {
+        if (current_function != nullptr) {
+            int64_t idx = x.m_param_number;
+            if (idx >= 0 && static_cast<size_t>(idx) < current_function->n_args) {
+                ASR::expr_t* arg_expr = current_function->m_args[idx];
+                if (arg_expr != nullptr) {
+                    ASR::expr_t* original_arg = ASRUtils::get_past_array_physical_cast(arg_expr);
+                    if (original_arg && ASR::is_a<ASR::Var_t>(*original_arg)) {
+                        std::string dep_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(original_arg)->m_v);
+                        if (std::find(variable_dependencies.begin(),
+                                      variable_dependencies.end(),
+                                      dep_name) == variable_dependencies.end()) {
+                            variable_dependencies.push_back(dep_name);
+                        }
+                    }
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FunctionParam(x);
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
