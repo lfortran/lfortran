@@ -152,6 +152,7 @@ public:
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
     const ASR::Function_t *parent_function = nullptr;
+    const ASR::Function_t *current_function = nullptr;
 
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
         so that we can jump to the head of the loop when we reach a cycle */
@@ -5521,6 +5522,8 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
+        const ASR::Function_t* current_function_copy = current_function;
+        current_function = &x;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
         bool is_dict_present_copy_sc = dict_api_sc->is_dict_present();
         dict_api_lp->set_is_dict_present(false);
@@ -5534,6 +5537,7 @@ public:
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
             // declared, so there is nothing to do here
+            current_function = current_function_copy;
             return;
         }
         visit_procedures(x);
@@ -5547,6 +5551,7 @@ public:
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
+        current_function = current_function_copy;
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -10217,6 +10222,26 @@ public:
             default: {
                 throw CodeGenError("Only function and variables supported so far");
             }
+        }
+    }
+
+    void visit_FunctionParam(const ASR::FunctionParam_t &x) {
+        if (current_function == nullptr) {
+            return;
+        }
+        int64_t idx = x.m_param_number;
+        if (idx < 0 || static_cast<size_t>(idx) >= current_function->n_args) {
+            throw CodeGenError("FunctionParam index out of bounds");
+        }
+        ASR::expr_t* arg_expr = current_function->m_args[idx];
+        if (arg_expr == nullptr) {
+            throw CodeGenError("FunctionParam references a null argument expression");
+        }
+        ASR::expr_t* original_arg = ASRUtils::get_past_array_physical_cast(arg_expr);
+        if (ASR::is_a<ASR::Var_t>(*original_arg)) {
+            visit_Var(*ASR::down_cast<ASR::Var_t>(original_arg));
+        } else {
+            visit_expr(*original_arg);
         }
     }
 
