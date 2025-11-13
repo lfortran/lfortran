@@ -447,6 +447,9 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     v(v_), replacer(v) {}
 
     void call_replacer() {
+        if (current_expr == nullptr || *current_expr == nullptr) {
+            return;
+        }
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
