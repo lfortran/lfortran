@@ -3051,22 +3051,42 @@ public:
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
+            auto emit_dim_bound = [&](ASR::expr_t* expr, const char* label) -> llvm::Value* {
+                if (!expr) {
+                    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                }
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(expr));
+                this->visit_expr_wrapper(expr, true);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* val = tmp;
+                if (!val->getType()->isIntegerTy()) {
+                    throw CodeGenError(std::string("Expected integer dimension component for ") + label);
+                }
+                if (val->getType()->getIntegerBitWidth() != 32) {
+                    val = builder->CreateSExtOrTrunc(val, llvm::Type::getInt32Ty(context));
+                }
+                return val;
+            };
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
                 (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    if (is_intent_in) {
-                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_start = emit_dim_bound(m_dims[idim].m_start, "dimension start");
+                    llvm::Value* dim_size = nullptr;
+                    if (m_dims[idim].m_length) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
+                        if (is_intent_in) {
+                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        } else {
+                            load_array_size_deep_copy(m_dims[idim].m_length);
+                        }
+                        dim_size = tmp;
                     } else {
-                        load_array_size_deep_copy(m_dims[idim].m_length);
+                        dim_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
                     }
-                    llvm::Value* dim_size = tmp;
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
                 }
@@ -3074,9 +3094,7 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start = emit_dim_bound(m_dims[idim].m_start, "dimension start");
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
