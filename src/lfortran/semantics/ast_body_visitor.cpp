@@ -6004,8 +6004,8 @@ static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope,
                 trace_fortran77_log(trace_fortran77, "rewrite-pointer-arrays",
                     std::string("Function '") + fn->m_name + "' rewrote dummy arg '" +
                     var->m_name + "' (#" + std::to_string(i + 1) + ") from " +
-                    ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(var->m_type)) +
-                    " to " + ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(converted_dummy)));
+                    ASRUtils::describe_array_physical_kind(var->m_type) +
+                    " to " + ASRUtils::describe_array_physical_kind(converted_dummy));
             }
             var->m_type = converted_dummy;
             fn_type->m_arg_types[i] = converted_signature;
@@ -6015,8 +6015,8 @@ static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope,
             if (converted_ret != fn_type->m_return_var_type) {
                 trace_fortran77_log(trace_fortran77, "rewrite-pointer-arrays",
                     std::string("Function '") + fn->m_name + "' rewrote return value physical type " +
-                    ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(fn_type->m_return_var_type)) +
-                    " -> " + ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(converted_ret)));
+                    ASRUtils::describe_array_physical_kind(fn_type->m_return_var_type) +
+                    " -> " + ASRUtils::describe_array_physical_kind(converted_ret));
             }
             fn_type->m_return_var_type = converted_ret;
         }

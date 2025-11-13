@@ -6901,15 +6901,13 @@ public:
                 bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
                 if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
                     // create array type with empty dimensions and physical type as PointerArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
+                    ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, it.second, nullptr, ASR::array_physical_typeType::PointerArray, true);
                     if (compiler_options.trace_fortran77) {
                         ASR::Variable_t *arg_var = ASRUtils::EXPR2VAR(func_arg);
                         std::string msg = "Promoting dummy '" + std::string(arg_var->m_name) +
                             "' in call to '" + std::string(f->m_name) +
-                            "' (" + ASRUtils::array_physical_type_to_cstr(
-                                ASRUtils::extract_physical_type(arg_var->m_type)) + " -> " +
-                            ASRUtils::array_physical_type_to_cstr(
-                                ASRUtils::extract_physical_type(new_type)) + ")";
+                            "' (" + ASRUtils::describe_array_physical_kind(arg_var->m_type) + " -> " +
+                            ASRUtils::describe_array_physical_kind(new_type) + ")";
                         trace_fortran77_log(compiler_options, "legacy-array-sections", msg);
                     }
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;

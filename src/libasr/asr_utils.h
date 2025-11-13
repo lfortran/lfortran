@@ -804,6 +804,28 @@ static inline const char* array_physical_type_to_cstr(
     }
 }
 
+static inline std::string describe_array_physical_kind(ASR::ttype_t *type) {
+    if (type == nullptr) {
+        return "<null>";
+    }
+    ASR::ttype_t *base = type;
+    while (ASR::is_a<ASR::Pointer_t>(*base) || ASR::is_a<ASR::Allocatable_t>(*base)) {
+        if (ASR::is_a<ASR::Pointer_t>(*base)) {
+            base = ASR::down_cast<ASR::Pointer_t>(base)->m_type;
+        } else {
+            base = ASR::down_cast<ASR::Allocatable_t>(base)->m_type;
+        }
+        if (base == nullptr) {
+            return "<null>";
+        }
+    }
+    if (ASR::is_a<ASR::Array_t>(*base)) {
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(base);
+        return array_physical_type_to_cstr(arr->m_physical_type);
+    }
+    return "scalar";
+}
+
 static inline ASR::abiType expr_abi(ASR::expr_t* e) {
     switch( e->type ) {
         case ASR::exprType::Var: {
