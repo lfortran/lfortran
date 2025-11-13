@@ -3143,7 +3143,22 @@ public:
                 if( m_proc == nullptr ) {
                     are_all_present = false;
                     std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    to_be_imported_later.push(std::make_pair(proc_name, proc_name + "@" + local_sym));
+                    std::string suffix = "@" + local_sym;
+                    std::string extern_name;
+                    if (proc_name.length() >= suffix.length()) {
+                        if (proc_name.compare(proc_name.length() - suffix.length(), 
+                                            suffix.length(), 
+                                            suffix) == 0) {
+                            // If already suffix is added (see custom_operator_11.f90),
+                            // don't add again
+                            extern_name = proc_name;
+                        } else {
+                            extern_name = proc_name + suffix;
+                        }
+                    } else {
+                        extern_name = proc_name + suffix;
+                    }
+                    to_be_imported_later.push(std::make_pair(proc_name, extern_name));
                 }
                 gp_procs.push_back(al, m_proc);
             }
