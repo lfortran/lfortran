@@ -6781,19 +6781,19 @@ public:
         if (compiler_options.legacy_array_sections) {
             // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
             ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-            std::map<int, ASR::ttype_t*> array_arg_idx;
+            std::map<int, ASR::ttype_t*> formal_array_arg_idx;
             for (size_t i = 0; i < f->n_args; i++) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                    array_arg_idx[i] = f_type->m_arg_types[i];
+                    formal_array_arg_idx[i] = f_type->m_arg_types[i];
                 }
             }
             Vec<ASR::call_arg_t> args_with_array_section;
             args_with_array_section.reserve(al, args.size());
             for (size_t i = 0; i < args.size(); i++) {
                 // check if i is in array_arg_idx
-                if (array_arg_idx.find(i) != array_arg_idx.end()) {
+                if (formal_array_arg_idx.find(i) != formal_array_arg_idx.end()) {
                     ASR::call_arg_t arg = args[i];
-                    ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
+                    ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, formal_array_arg_idx[i]);
                     ASR::expr_t* arg_expr = arg.m_value;
                     ASR::Variable_t* dummy_var = ASRUtils::EXPR2VAR(f->m_args[i]);
                     ASR::ttype_t* dummy_type = ASRUtils::type_get_past_pointer(
@@ -6903,8 +6903,8 @@ public:
                             for (size_t i = 0; i < array_t->n_dims; i++) {
                                 array_t->m_dims[i] = dimensions_[i];
                             }
-                            for (size_t i = 0; i < temp_function_dependencies.n; i++) {
-                                current_function_dependencies.push_back(al, temp_function_dependencies[i]);
+                            for (size_t i_dep = 0; i_dep < temp_function_dependencies.n; i_dep++) {
+                                current_function_dependencies.push_back(al, temp_function_dependencies[i_dep]);
                             }
                             if (temp_function_dependencies.n > 0) {
                                 Vec<char*> deps_vec;
@@ -6939,6 +6939,41 @@ public:
                             } else if (compiler_options.trace_fortran77) {
                                 trace_fortran77_log(compiler_options, "legacy-array-sections",
                                     "No dependency symbols detected for '" + std::string(dummy_var->m_name) + "'");
+                            }
+                            if (compiler_options.trace_fortran77) {
+                                auto describe_expr = [&](ASR::expr_t* expr) -> std::string {
+                                    if (!expr) {
+                                        return "null";
+                                    }
+                                    if (ASR::is_a<ASR::Var_t>(*expr)) {
+                                        return ASRUtils::symbol_name(
+                                            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                                    }
+                                    if (ASR::is_a<ASR::FunctionParam_t>(*expr)) {
+                                        int64_t param_index = ASR::down_cast<ASR::FunctionParam_t>(expr)->m_param_number;
+                                        return "arg#" + std::to_string(param_index + 1);
+                                    }
+                                    return ASRUtils::type_to_str_python_expr(
+                                        ASRUtils::expr_type(expr), expr);
+                                };
+                                ASR::ttype_t* dummy_type = ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_allocatable(dummy_var->m_type));
+                                if (dummy_type && ASR::is_a<ASR::Array_t>(*dummy_type)) {
+                                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(dummy_type);
+                                    std::ostringstream dim_log;
+                                    dim_log << "Dummy '" << dummy_var->m_name << "' dims now [";
+                                    for (size_t di = 0; di < arr->n_dims; di++) {
+                                        if (di) dim_log << "; ";
+                                        dim_log << "start=" << describe_expr(arr->m_dims[di].m_start)
+                                                << ",len=" << describe_expr(arr->m_dims[di].m_length);
+                                    }
+                                    dim_log << "]";
+                                    trace_fortran77_log(compiler_options, "legacy-array-sections", dim_log.str());
+                                }
+                                std::string type_str = ASRUtils::type_to_str_fortran_symbol(
+                                    dummy_var->m_type, dummy_var->m_type_declaration);
+                                trace_fortran77_log(compiler_options, "legacy-array-sections",
+                                    "Dummy '" + std::string(dummy_var->m_name) + "' type after promotion: " + type_str);
                             }
                         }
 
@@ -7007,32 +7042,39 @@ public:
             args = args_with_array_section;
             // There can be a possibility that initially it is ArrayItem and now we realised
             // that it must be an ArraySection instead.
-            array_arg_idx.clear();
+            std::map<int, ASR::ttype_t*> actual_array_arg_idx;
             for ( size_t i = 0; i < args.size(); i++ ) {
                 ASR::expr_t* arg_expr = args[i].m_value;
                 if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
-                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
+                    actual_array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
                 }
             }
             // bool visit_required = false;
-            for ( auto it: array_arg_idx ) {
+            for ( auto it: actual_array_arg_idx ) {
                 ASR::expr_t* func_arg = f->m_args[it.first];
                 ASR::FunctionType_t* f_type =
                     ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                 bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
-                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
+                ASR::Variable_t *arg_var = ASRUtils::EXPR2VAR(func_arg);
+                auto formal_it = formal_array_arg_idx.find(it.first);
+                if (formal_it == formal_array_arg_idx.end()) {
+                    continue;
+                }
+                if (!is_elemental && !ASRUtils::is_array(arg_var->m_type)) {
                     // create array type with empty dimensions and physical type as PointerArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, it.second, nullptr, ASR::array_physical_typeType::PointerArray, true);
+                    std::string previous_kind = ASRUtils::describe_array_physical_kind(arg_var->m_type);
+                    ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, arg_var->m_type, nullptr, ASR::array_physical_typeType::PointerArray, true);
                     if (compiler_options.trace_fortran77) {
-                        ASR::Variable_t *arg_var = ASRUtils::EXPR2VAR(func_arg);
                         std::string msg = "Promoting dummy '" + std::string(arg_var->m_name) +
                             "' in call to '" + std::string(f->m_name) +
-                            "' (" + ASRUtils::describe_array_physical_kind(arg_var->m_type) + " -> " +
+                            "' (" + previous_kind + " -> " +
                             ASRUtils::describe_array_physical_kind(new_type) + ")";
                         trace_fortran77_log(compiler_options, "legacy-array-sections", msg);
                     }
-                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
-                    f_type->m_arg_types[it.first] = new_type;
+                    arg_var->m_type = new_type;
+                    ASR::ttype_t* signature_type = ASRUtils::duplicate_type(al, formal_it->second, nullptr,
+                        ASR::array_physical_typeType::PointerArray, true);
+                    f_type->m_arg_types[it.first] = signature_type;
                     // visit_required = true;
                 }
             }
