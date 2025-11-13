@@ -526,6 +526,14 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
     return ASR::abiType::Source;
 }
 
+static inline bool is_bindc_like_abi(ASR::abiType abi) {
+    return abi == ASR::abiType::BindC || abi == ASR::abiType::Fortran77;
+}
+
+static inline bool is_source_like_abi(ASR::abiType abi) {
+    return abi == ASR::abiType::Source || abi == ASR::abiType::Fortran77;
+}
+
 
 // Helper function to convert intentType to Fortran intent string
 static std::string intent_to_str(ASR::intentType intent) {
