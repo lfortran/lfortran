@@ -7912,7 +7912,8 @@ public:
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
             module.get());
         llvm::Type* m_arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
-        if( m_new == ASR::array_physical_typeType::PointerArray &&
+        if( (m_new == ASR::array_physical_typeType::PointerArray ||
+             m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
