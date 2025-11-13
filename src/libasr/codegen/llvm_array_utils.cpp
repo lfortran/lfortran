@@ -189,6 +189,12 @@ namespace LCompilers {
         (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
         bool get_pointer) {
             std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
+            if (ASRUtils::is_character(*m_type_)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(m_type_));
+                if (str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    array_key += "desc";
+                }
+            }
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();
