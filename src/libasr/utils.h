@@ -46,7 +46,6 @@ struct PassOptions {
     bool use_loop_variable_after_loop = false;
     bool legacy_array_sections = false;
     bool fortran77_abi = false;
-    bool fortran77_abi = false;
     bool realloc_lhs_arrays = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
@@ -141,6 +140,7 @@ struct CompilerOptions {
     bool link_numpy = false;
     bool run = false;
     bool legacy_array_sections = false;
+    bool fortran77_abi = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
