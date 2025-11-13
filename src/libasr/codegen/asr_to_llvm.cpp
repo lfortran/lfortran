@@ -5113,7 +5113,7 @@ public:
                         if (compiler_options.trace_fortran77) {
                             std::string msg = "Lowering Fortran77 dummy '" + std::string(v->m_name) +
                                 "' in function '" + std::string(x.m_name) + "' as raw pointer (" +
-                                ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(v->m_type)) + ")";
+                                ASRUtils::describe_array_physical_kind(v->m_type) + ")";
                             trace_fortran77_log(compiler_options, "llvm-arg-lowering", msg);
                         }
                     } else if( abi_type == ASR::abiType::Intrinsic &&
@@ -6254,11 +6254,9 @@ public:
         if (compiler_options.trace_fortran77) {
             std::string msg = "associate target=" + ASRUtils::type_to_str_python_expr(
                 ASRUtils::expr_type(x.m_target), x.m_target) + " (" +
-                ASRUtils::array_physical_type_to_cstr(
-                    ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_target))) +
+                ASRUtils::describe_array_physical_kind(ASRUtils::expr_type(x.m_target)) +
                 ") value=" + ASRUtils::type_to_str_python_expr(value_array_type, array_section->m_v) + " (" +
-                ASRUtils::array_physical_type_to_cstr(
-                    ASRUtils::extract_physical_type(value_array_type)) + ")";
+                ASRUtils::describe_array_physical_kind(value_array_type) + ")";
             trace_fortran77_log(compiler_options, "llvm-array-section-assoc", msg);
         }
 
@@ -6296,20 +6294,30 @@ public:
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
         Vec<llvm::Value*> non_sliced_indices; non_sliced_indices.reserve(al, value_rank);
+        auto emit_index_component = [&](ASR::expr_t* expr, int64_t fallback, const char* label) -> llvm::Value* {
+            if (!expr) {
+                return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, fallback));
+            }
+            this->visit_expr_wrapper(expr, true);
+            llvm::Value* val = tmp;
+            if (!val->getType()->isIntegerTy()) {
+                throw CodeGenError(std::string("Expected integer array index for ") + label);
+            }
+            if (val->getType()->getIntegerBitWidth() != 32) {
+                val = builder->CreateSExtOrTrunc(val, llvm::Type::getInt32Ty(context));
+            }
+            return val;
+        };
         for( int i = 0; i < value_rank; i++ ) {
             lbs.p[i] = nullptr; ubs.p[i] = nullptr; ds.p[i] = nullptr;
             non_sliced_indices.p[i] = nullptr;
             if( array_section->m_args[i].m_step != nullptr ) {
-                visit_expr_wrapper(array_section->m_args[i].m_left, true);
-                lbs.p[i] = tmp;
-                visit_expr_wrapper(array_section->m_args[i].m_right, true);
-                ubs.p[i] = tmp;
-                visit_expr_wrapper(array_section->m_args[i].m_step, true);
-                ds.p[i] = tmp;
+                lbs.p[i] = emit_index_component(array_section->m_args[i].m_left, 1, "array section lower bound");
+                ubs.p[i] = emit_index_component(array_section->m_args[i].m_right, 1, "array section upper bound");
+                ds.p[i] = emit_index_component(array_section->m_args[i].m_step, 1, "array section step");
                 target_rank++;
             } else {
-                visit_expr_wrapper(array_section->m_args[i].m_right, true);
-                non_sliced_indices.p[i] = tmp;
+                non_sliced_indices.p[i] = emit_index_component(array_section->m_args[i].m_right, 1, "array section index");
             }
         }
         LCOMPILERS_ASSERT(target_rank > 0);
@@ -6337,11 +6345,23 @@ public:
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
+            auto get_dim_component = [&](ASR::expr_t* expr, int64_t fallback, const char* label) -> llvm::Value* {
+                if (!expr) {
+                    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, fallback));
+                }
+                this->visit_expr_wrapper(expr, true);
+                llvm::Value* val = tmp;
+                if (!val->getType()->isIntegerTy()) {
+                    throw CodeGenError(std::string("Expected integer dimension component for ") + label);
+                }
+                if (val->getType()->getIntegerBitWidth() != 32) {
+                    val = builder->CreateSExtOrTrunc(val, llvm::Type::getInt32Ty(context));
+                }
+                return val;
+            };
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-                llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                llvm_diminfo.push_back(al, get_dim_component(m_dims[i].m_start, 1, "lbound"));
+                llvm_diminfo.push_back(al, get_dim_component(m_dims[i].m_length, 1, "length"));
             }
             if (compiler_options.trace_fortran77) {
                 std::string msg = "fill_descriptor_data_only value_rank=" + std::to_string(value_rank) +
@@ -14283,7 +14303,11 @@ public:
     }
 
     void load_array_size_deep_copy(ASR::expr_t* x) {
-        if (x != nullptr &&  ASR::is_a<ASR::Var_t>(*x)) {
+        if (x == nullptr) {
+            tmp = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+            return;
+        }
+        if (ASR::is_a<ASR::Var_t>(*x)) {
             ASR::Var_t* x_var = ASR::down_cast<ASR::Var_t>(x);
             ASR::symbol_t* x_sym = ASRUtils::symbol_get_past_external(x_var->m_v);
             if (x_sym != nullptr && ASR::is_a<ASR::Variable_t>(*x_sym)) {
@@ -14298,10 +14322,8 @@ public:
             } else {
                 this->visit_expr_wrapper(x, true);
             }
-        } else if (x != nullptr) {
-            this->visit_expr_wrapper(x, true);
         } else {
-            throw CodeGenError("x is nullptr in load_array_size_deep_copy()");
+            this->visit_expr_wrapper(x, true);
         }
     }
 
@@ -14484,8 +14506,7 @@ public:
                 std::string("<implicit-dim>");
             std::string msg = "ArrayBound(" + bound_kind + ") for " +
                 ASRUtils::type_to_str_python_expr(x_mv_type, x.m_v) + " dim expr=" + dim_type +
-                " physical=" + ASRUtils::array_physical_type_to_cstr(
-                    ASRUtils::extract_physical_type(x_mv_type));
+                " physical=" + ASRUtils::describe_array_physical_kind(x_mv_type);
             trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
         }
         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
@@ -14507,18 +14528,30 @@ public:
             if (compiler_options.trace_fortran77) {
                 std::string msg = "Emitting explicit-shape bound for " +
                     ASRUtils::type_to_str_python_expr(mv_type, x.m_v) +
-                    " (physical=" + ASRUtils::array_physical_type_to_cstr(
-                        ASRUtils::extract_physical_type(mv_type)) + ")";
+                    " (physical=" + ASRUtils::describe_array_physical_kind(mv_type) + ")";
                 trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
             }
-            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(mv_type)), module.get());
+            llvm::Type* target_type = llvm::Type::getInt32Ty(context);
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_bound");
             llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
             ASR::dimension_t* m_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(mv_type, m_dims);
+            auto load_bound_component = [&](ASR::expr_t* expr, int64_t fallback, const char* label) -> llvm::Value* {
+                if (expr == nullptr) {
+                    return llvm::ConstantInt::get(target_type, llvm::APInt(32, fallback));
+                }
+                this->visit_expr_wrapper(expr, true);
+                llvm::Value* val = tmp;
+                if (!val->getType()->isIntegerTy()) {
+                    std::string msg = std::string("Expected integer expression for ") + label;
+                    throw CodeGenError(msg);
+                }
+                if (val->getType() != target_type) {
+                    val = builder->CreateSExtOrTrunc(val, target_type);
+                }
+                return val;
+            };
             for( int i = 0; i < n_dims; i++ ) {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -14531,19 +14564,14 @@ public:
                 builder->SetInsertPoint(thenBB);
                 {
                     if( x.m_bound == ASR::arrayboundType::LBound ) {
-                        this->visit_expr_wrapper(m_dims[i].m_start, true);
-                        tmp = builder->CreateSExtOrTrunc(tmp, target_type);
-                        builder->CreateStore(tmp, target);
+                        llvm::Value* lb = load_bound_component(m_dims[i].m_start, 1, "lbound");
+                        builder->CreateStore(lb, target);
                     } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                        llvm::Value *lbound = nullptr, *length = nullptr;
-                        this->visit_expr_wrapper(m_dims[i].m_start, true);
-                        lbound = tmp;
-                        load_array_size_deep_copy(m_dims[i].m_length);
-                        length = tmp;
-                        builder->CreateStore(
-                            builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                  llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
-                            target);
+                        llvm::Value* lb = load_bound_component(m_dims[i].m_start, 1, "lbound");
+                        llvm::Value* len_val = load_bound_component(m_dims[i].m_length, 1, "length");
+                        llvm::Value* sum = builder->CreateAdd(len_val, lb);
+                        llvm::Value* one32 = llvm::ConstantInt::get(target_type, llvm::APInt(32, 1));
+                        builder->CreateStore(builder->CreateSub(sum, one32), target);
                     }
                 }
                 builder->CreateBr(mergeBB);
