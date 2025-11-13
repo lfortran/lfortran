@@ -11219,13 +11219,12 @@ public:
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
             ASR::symbol_t* proc;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
-                proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc);
+                proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc;
             } else {
                 proc = gen_proc->m_procs[i];
             }
 
-            if (!ASR::is_a<ASR::Function_t>(*proc)) {
+            if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(proc))) {
                 diag.add(Diagnostic("Only functions are allowed in defined binary operators",
                                     Level::Error,
                                     Stage::Semantic,
@@ -11233,7 +11232,7 @@ public:
                 throw SemanticAbort();
             }
 
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc));
             if ((is_binary && func->n_args != 2) || (!is_binary && func->n_args != 1))
                 continue;
             bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand);
@@ -11287,10 +11286,10 @@ public:
                 // return_type = ASRUtils::fix_scoped_type(al, type, current_scope);
             }
 
-            if (op_sym && ASRUtils::symbol_parent_symtab(op_sym)->get_counter()
+            if (a_name && ASRUtils::symbol_parent_symtab(a_name)->get_counter()
                         != current_scope->get_counter()) {
                 ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
-                                                op_sym,
+                                                a_name,
                                                 current_function_dependencies,
                                                 s2c(al, matched_func_name));
             }
