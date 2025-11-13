@@ -1034,7 +1034,8 @@ public:
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
-        if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
+        if( x.m_old != ASR::array_physical_typeType::DescriptorArray &&
+            x.m_old != ASR::array_physical_typeType::PointerArray ) {
             require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
                 "the old physical type and new physical type must be different.");
         }
