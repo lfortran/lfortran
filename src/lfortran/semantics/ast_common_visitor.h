@@ -6866,12 +6866,7 @@ public:
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     ASRUtils::TYPE(descriptor_array), nullptr));
 
-                        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
-
-                        ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
-
-                        arg.m_value = array_section_cast;
+                        arg.m_value = array_section;
 
                         args_with_array_section.push_back(al, arg);
                     } else {

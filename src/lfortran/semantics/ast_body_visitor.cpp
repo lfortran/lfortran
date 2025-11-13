@@ -4348,7 +4348,6 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
-                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
@@ -4684,6 +4683,10 @@ public:
 
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
+        if (compiler_options.legacy_array_sections && final_sym != nullptr) {
+            legacy_array_sections_helper(final_sym, args, x.base.base.loc);
+        }
+
         ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);

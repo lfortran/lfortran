@@ -44,6 +44,7 @@ struct PassOptions {
     bool pass_cumulative = false; // Apply passes cumulatively
     bool disable_main = false;
     bool use_loop_variable_after_loop = false;
+    bool legacy_array_sections = false;
     bool realloc_lhs_arrays = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;

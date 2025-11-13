@@ -361,9 +361,18 @@ namespace LCompilers::CommandLineInterface {
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
+        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") ||
+                endswith(opts.arg_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
+
+        if (compiler_options.fixed_form) {
+            // Fixed-form sources imply FORTRAN 77 semantics, so allow legacy
+            // sequence association automatically without requiring extra flags.
+            compiler_options.legacy_array_sections = true;
+        }
+
+        compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
 
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
