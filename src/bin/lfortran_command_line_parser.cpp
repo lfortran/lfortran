@@ -372,7 +372,9 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.legacy_array_sections = true;
         }
 
+        compiler_options.fortran77_abi = compiler_options.legacy_array_sections;
         compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
+        compiler_options.po.fortran77_abi = compiler_options.fortran77_abi;
 
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
