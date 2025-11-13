@@ -1921,90 +1921,58 @@ public:
     }
 
     void visit_case_stmt(const AST::case_stmt_t& x, Vec<ASR::case_stmt_t*>& case_stmts) {
-        switch(x.type) {
-            case AST::case_stmtType::CaseStmt: {
-                AST::CaseStmt_t* Case_Stmt = (AST::CaseStmt_t*)(&(x.base));
-                if (Case_Stmt->n_test == 0) {
-                    diag.add(Diagnostic(
-                        "Case statement must have at least one condition",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                std::vector<ASR::expr_t*> expr_accum;
-
-                auto emit_expr_group = [&](const Location &loc) {
-                    if (expr_accum.empty()) return;
-                    Vec<ASR::expr_t*> expr_vec;
-                    expr_vec.reserve(al, expr_accum.size());
-                    for (ASR::expr_t* item: expr_accum) {
-                        expr_vec.push_back(al, item);
-                    }
-                    Vec<ASR::stmt_t*> case_body_vec;
-                    case_body_vec.reserve(al, Case_Stmt->n_body);
-                    transform_stmts(case_body_vec, Case_Stmt->n_body, Case_Stmt->m_body);
-                    ASR::case_stmt_t *new_case = ASR::down_cast<ASR::case_stmt_t>(
-                        ASR::make_CaseStmt_t(al, loc, expr_vec.p, expr_vec.size(),
-                                             case_body_vec.p, case_body_vec.size(), false));
-                    case_stmts.push_back(al, new_case);
-                    expr_accum.clear();
-                };
-
-                for( std::uint32_t i = 0; i < Case_Stmt->n_test; i++ ) {
-                    if (AST::is_a<AST::CaseCondExpr_t>(*(Case_Stmt->m_test[i]))) {
-                        AST::CaseCondExpr_t *condexpr
-                            = AST::down_cast<AST::CaseCondExpr_t>(Case_Stmt->m_test[i]);
-                        this->visit_expr(*condexpr->m_cond);
-                        expr_accum.push_back(ASRUtils::EXPR(tmp));
-                        continue;
-                    }
-
-                    if (AST::is_a<AST::CaseCondRange_t>(*(Case_Stmt->m_test[i]))) {
-                        emit_expr_group(x.base.loc);
-                        AST::CaseCondRange_t *condrange
-                            = AST::down_cast<AST::CaseCondRange_t>(Case_Stmt->m_test[i]);
-                        ASR::expr_t *m_start = nullptr, *m_end = nullptr;
-                        if( condrange->m_start != nullptr ) {
-                            this->visit_expr(*(condrange->m_start));
-                            m_start = ASRUtils::EXPR(tmp);
-                        }
-                        if( condrange->m_end != nullptr ) {
-                            this->visit_expr(*(condrange->m_end));
-                            m_end = ASRUtils::EXPR(tmp);
-                        }
-                        Vec<ASR::stmt_t*> case_body_vec;
-                        case_body_vec.reserve(al, Case_Stmt->n_body);
-                        transform_stmts(case_body_vec, Case_Stmt->n_body, Case_Stmt->m_body);
-                        ASR::case_stmt_t *new_case = ASR::down_cast<ASR::case_stmt_t>(
-                            ASR::make_CaseStmt_Range_t(al, x.base.loc, m_start, m_end,
-                                                       case_body_vec.p, case_body_vec.size()));
-                        case_stmts.push_back(al, new_case);
-                        continue;
-                    }
-
-                    diag.add(Diagnostic(
-                        R"""(Case statement can only support a valid expression
-                    that reduces to a constant or range defined by : separator)""",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-
-                emit_expr_group(x.base.loc);
-                break;
+        AST::CaseStmt_t* Case_Stmt = (AST::CaseStmt_t*)(&(x.base));
+        std::vector<ASR::expr_t*> expr_accum;
+        auto emit_expr_group = [&](const Location &loc) {
+            if (expr_accum.empty()) return;
+            Vec<ASR::expr_t*> expr_vec;
+            expr_vec.reserve(al, expr_accum.size());
+            for (ASR::expr_t* item: expr_accum) {
+                expr_vec.push_back(al, item);
             }
-            default: {
-                diag.add(Diagnostic(
-                    R"""(Case statement can only support a valid expression
-                    that reduces to a constant or range defined by : separator)""",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{x.base.loc})
-                    }));
-                throw SemanticAbort();
+            Vec<ASR::stmt_t*> case_body_vec;
+            case_body_vec.reserve(al, Case_Stmt->n_body);
+            transform_stmts(case_body_vec, Case_Stmt->n_body, Case_Stmt->m_body);
+            ASR::case_stmt_t *new_case = ASR::down_cast<ASR::case_stmt_t>(
+                ASR::make_CaseStmt_t(al, loc, expr_vec.p, expr_vec.size(),
+                                        case_body_vec.p, case_body_vec.size(), false));
+            case_stmts.push_back(al, new_case);
+            expr_accum.clear();
+        };
+
+        for( std::uint32_t i = 0; i < Case_Stmt->n_test; i++ ) {
+            if (AST::is_a<AST::CaseCondExpr_t>(*(Case_Stmt->m_test[i]))) {
+                AST::CaseCondExpr_t *condexpr
+                    = AST::down_cast<AST::CaseCondExpr_t>(Case_Stmt->m_test[i]);
+                this->visit_expr(*condexpr->m_cond);
+                expr_accum.push_back(ASRUtils::EXPR(tmp));
+                continue;
+            } else if (AST::is_a<AST::CaseCondRange_t>(*(Case_Stmt->m_test[i]))) {
+                emit_expr_group(x.base.loc);
+                AST::CaseCondRange_t *condrange
+                    = AST::down_cast<AST::CaseCondRange_t>(Case_Stmt->m_test[i]);
+                ASR::expr_t *m_start = nullptr, *m_end = nullptr;
+                if( condrange->m_start != nullptr ) {
+                    this->visit_expr(*(condrange->m_start));
+                    m_start = ASRUtils::EXPR(tmp);
+                }
+                if( condrange->m_end != nullptr ) {
+                    this->visit_expr(*(condrange->m_end));
+                    m_end = ASRUtils::EXPR(tmp);
+                }
+                Vec<ASR::stmt_t*> case_body_vec;
+                case_body_vec.reserve(al, Case_Stmt->n_body);
+                transform_stmts(case_body_vec, Case_Stmt->n_body, Case_Stmt->m_body);
+                ASR::case_stmt_t *new_case = ASR::down_cast<ASR::case_stmt_t>(
+                    ASR::make_CaseStmt_Range_t(al, x.base.loc, m_start, m_end,
+                                                case_body_vec.p, case_body_vec.size()));
+                case_stmts.push_back(al, new_case);
+                continue;
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
         }
+        emit_expr_group(x.base.loc);
     }
 
     void visit_Select(const AST::Select_t& x) {
