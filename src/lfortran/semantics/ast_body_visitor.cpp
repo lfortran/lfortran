@@ -6005,6 +6005,27 @@ static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope, 
     }
 }
 
+class ArrayPhysicalCastFixer : public ASR::BaseWalkVisitor<ArrayPhysicalCastFixer> {
+public:
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        ASR::ArrayPhysicalCast_t &x_mut = const_cast<ASR::ArrayPhysicalCast_t&>(x);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_arg);
+        ASR::array_physical_typeType actual_old = ASRUtils::extract_physical_type(arg_type);
+        ASR::array_physical_typeType actual_new = ASRUtils::extract_physical_type(x.m_type);
+
+        x_mut.m_old = actual_old;
+        x_mut.m_new = actual_new;
+
+        BaseWalkVisitor::visit_ArrayPhysicalCast(x);
+    }
+};
+
+static void fixup_array_physical_casts(Allocator &al, ASR::TranslationUnit_t *tu) {
+    (void)al;
+    ArrayPhysicalCastFixer fixer;
+    fixer.visit_TranslationUnit(*tu);
+}
+
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
@@ -6037,6 +6058,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     rewrite_fortran77_pointer_arrays(al, tu->m_symtab, compiler_options.legacy_array_sections);
+    fixup_array_physical_casts(al, tu);
     return tu;
 }
 

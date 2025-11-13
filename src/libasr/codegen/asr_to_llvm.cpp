@@ -360,6 +360,11 @@ public:
                 type_encoding = llvm::dwarf::DW_ATE_signed;
                 break;
             }
+            case ASR::ttypeType::UnsignedInteger: {
+                type_name = "unsigned integer";
+                type_encoding = llvm::dwarf::DW_ATE_unsigned;
+                break;
+            }
             case ASR::ttypeType::Logical: {
                 type_name = "boolean";
                 type_encoding = llvm::dwarf::DW_ATE_boolean;
@@ -372,6 +377,55 @@ public:
                     type_name = "double";
                 }
                 type_encoding = llvm::dwarf::DW_ATE_float;
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                type_name = "complex";
+                type_encoding = llvm::dwarf::DW_ATE_complex_float;
+                break;
+            }
+            case ASR::ttypeType::String: {
+                type_name = "string";
+                type_encoding = llvm::dwarf::DW_ATE_signed_char;
+                if( type_size == 0 ) {
+                    type_size = 8;
+                }
+                break;
+            }
+            case ASR::ttypeType::StructType: {
+                type_name = "struct";
+                type_encoding = llvm::dwarf::DW_ATE_signed;
+                if( type_size == 0 ) {
+                    type_size = 8;
+                }
+                break;
+            }
+            case ASR::ttypeType::Pointer: {
+                type_name = "pointer";
+                type_encoding = llvm::dwarf::DW_ATE_address;
+                type_size = 64;
+                break;
+            }
+            case ASR::ttypeType::Array: {
+                ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
+                std::string element_type_name;
+                uint32_t element_type_size, element_type_encoding;
+                get_type_debug_info(array_t->m_type, element_type_name,
+                    element_type_size, element_type_encoding);
+                type_name = element_type_name + " array";
+                type_encoding = element_type_encoding;
+                break;
+            }
+            case ASR::ttypeType::Allocatable: {
+                type_name = "allocatable";
+                type_encoding = llvm::dwarf::DW_ATE_address;
+                type_size = 64;
+                break;
+            }
+            case ASR::ttypeType::CPtr: {
+                type_name = "c_ptr";
+                type_encoding = llvm::dwarf::DW_ATE_address;
+                type_size = 64;
                 break;
             }
             default : throw LCompilersException("Debug information for the type: `"
