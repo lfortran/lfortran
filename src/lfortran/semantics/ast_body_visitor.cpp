@@ -5996,8 +5996,17 @@ static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope,
         }
         for (size_t i = 0; i < fn->n_args; i++) {
             if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v));
+            ASR::symbol_t *raw_sym = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            ASR::symbol_t *var_sym = ASRUtils::symbol_get_past_external(raw_sym);
+            if (!ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                if (trace_fortran77) {
+                    trace_fortran77_log(true, "rewrite-pointer-arrays",
+                        std::string("Skipping Fortran77 pointer rewrite for non-variable arg #") +
+                        std::to_string(i + 1) + " of '" + fn->m_name + "'");
+                }
+                continue;
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(var_sym);
             ASR::ttype_t *converted_dummy = convert_descriptor_to_pointer_array(al, var->m_type);
             ASR::ttype_t *converted_signature = convert_descriptor_to_pointer_array(al, fn_type->m_arg_types[i]);
             if (converted_dummy != var->m_type) {
