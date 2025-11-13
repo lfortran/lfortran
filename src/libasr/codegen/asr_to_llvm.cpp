@@ -5110,6 +5110,12 @@ public:
                             ASRUtils::extract_type(v->m_type), module.get());
                         type = el_type->getPointerTo();
                         is_array_type = false;
+                        if (compiler_options.trace_fortran77) {
+                            std::string msg = "Lowering Fortran77 dummy '" + std::string(v->m_name) +
+                                "' in function '" + std::string(x.m_name) + "' as raw pointer (" +
+                                ASRUtils::array_physical_type_to_cstr(ASRUtils::extract_physical_type(v->m_type)) + ")";
+                            trace_fortran77_log(compiler_options, "llvm-arg-lowering", msg);
+                        }
                     } else if( abi_type == ASR::abiType::Intrinsic &&
                         fname2arg_type.find(m_name) != fname2arg_type.end() ) {
                         type = fname2arg_type[m_name].second;
@@ -6245,6 +6251,17 @@ public:
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
         bool is_parameter = ASRUtils::is_value_constant(array_section->m_v);
 
+        if (compiler_options.trace_fortran77) {
+            std::string msg = "associate target=" + ASRUtils::type_to_str_python_expr(
+                ASRUtils::expr_type(x.m_target), x.m_target) + " (" +
+                ASRUtils::array_physical_type_to_cstr(
+                    ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_target))) +
+                ") value=" + ASRUtils::type_to_str_python_expr(value_array_type, array_section->m_v) + " (" +
+                ASRUtils::array_physical_type_to_cstr(
+                    ASRUtils::extract_physical_type(value_array_type)) + ")";
+            trace_fortran77_log(compiler_options, "llvm-array-section-assoc", msg);
+        }
+
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
@@ -6326,11 +6343,23 @@ public:
                 visit_expr_wrapper(m_dims[i].m_length, true);
                 llvm_diminfo.push_back(al, tmp);
             }
+            if (compiler_options.trace_fortran77) {
+                std::string msg = "fill_descriptor_data_only value_rank=" + std::to_string(value_rank) +
+                    " target_rank=" + std::to_string(target_rank) + " physical=" +
+                    ASRUtils::array_physical_type_to_cstr(arr_physical_type);
+                trace_fortran77_log(compiler_options, "llvm-array-section-assoc", msg);
+            }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank, location_manager);
         } else {
+            if (compiler_options.trace_fortran77) {
+                std::string msg = "fill_descriptor_full value_rank=" + std::to_string(array_section->n_args) +
+                    " target_rank=" + std::to_string(target_rank) + " physical=" +
+                    ASRUtils::array_physical_type_to_cstr(arr_physical_type);
+                trace_fortran77_log(compiler_options, "llvm-array-section-assoc", msg);
+            }
             arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
@@ -14448,6 +14477,17 @@ public:
         }
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
+        if (compiler_options.trace_fortran77) {
+            std::string bound_kind = (x.m_bound == ASR::arrayboundType::LBound) ? "lbound" : "ubound";
+            std::string dim_type = x.m_dim ?
+                ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(x.m_dim), x.m_dim) :
+                std::string("<implicit-dim>");
+            std::string msg = "ArrayBound(" + bound_kind + ") for " +
+                ASRUtils::type_to_str_python_expr(x_mv_type, x.m_v) + " dim expr=" + dim_type +
+                " physical=" + ASRUtils::array_physical_type_to_cstr(
+                    ASRUtils::extract_physical_type(x_mv_type));
+            trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
+        }
         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_mv_type)), module.get());
         int64_t ptr_loads_copy = ptr_loads;
@@ -14464,6 +14504,13 @@ public:
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         auto emit_explicit_shape_bound = [&](ASR::ttype_t* mv_type) {
+            if (compiler_options.trace_fortran77) {
+                std::string msg = "Emitting explicit-shape bound for " +
+                    ASRUtils::type_to_str_python_expr(mv_type, x.m_v) +
+                    " (physical=" + ASRUtils::array_physical_type_to_cstr(
+                        ASRUtils::extract_physical_type(mv_type)) + ")";
+                trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
+            }
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(mv_type)), module.get());

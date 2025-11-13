@@ -778,6 +778,32 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
     }
 }
 
+static inline const char* array_physical_type_to_cstr(
+        ASR::array_physical_typeType physical_type) {
+    switch (physical_type) {
+        case ASR::array_physical_typeType::DescriptorArray:
+            return "DescriptorArray";
+        case ASR::array_physical_typeType::PointerArray:
+            return "PointerArray";
+        case ASR::array_physical_typeType::UnboundedPointerArray:
+            return "UnboundedPointerArray";
+        case ASR::array_physical_typeType::FixedSizeArray:
+            return "FixedSizeArray";
+        case ASR::array_physical_typeType::StringArraySinglePointer:
+            return "StringArraySinglePointer";
+        case ASR::array_physical_typeType::NumPyArray:
+            return "NumPyArray";
+        case ASR::array_physical_typeType::ISODescriptorArray:
+            return "ISODescriptorArray";
+        case ASR::array_physical_typeType::SIMDArray:
+            return "SIMDArray";
+        case ASR::array_physical_typeType::AssumedRankArray:
+            return "AssumedRankArray";
+        default:
+            return "UnknownArrayPhysicalType";
+    }
+}
+
 static inline ASR::abiType expr_abi(ASR::expr_t* e) {
     switch( e->type ) {
         case ASR::exprType::Var: {

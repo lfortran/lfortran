@@ -1,9 +1,12 @@
 #ifndef LIBASR_UTILS_H
 #define LIBASR_UTILS_H
 
-#include <string>
-#include <vector>
 #include <filesystem>
+#include <iostream>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include <libasr/containers.h>
 
 namespace LCompilers {
@@ -46,6 +49,7 @@ struct PassOptions {
     bool use_loop_variable_after_loop = false;
     bool legacy_array_sections = false;
     bool fortran77_abi = false;
+    bool trace_fortran77 = false;
     bool realloc_lhs_arrays = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
@@ -141,6 +145,7 @@ struct CompilerOptions {
     bool run = false;
     bool legacy_array_sections = false;
     bool fortran77_abi = false;
+    bool trace_fortran77 = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
@@ -155,6 +160,22 @@ struct CompilerOptions {
 bool present(Vec<char*> &v, const char* name);
 bool present(char** const v, size_t n, const std::string name);
 int initialize();
+
+inline void trace_fortran77_log(bool enabled, std::string_view tag,
+        const std::string &message) {
+    if (!enabled) return;
+    std::cerr << "[trace-f77:" << tag << "] " << message << std::endl;
+}
+
+inline void trace_fortran77_log(const PassOptions &opts, std::string_view tag,
+        const std::string &message) {
+    trace_fortran77_log(opts.trace_fortran77, tag, message);
+}
+
+inline void trace_fortran77_log(const CompilerOptions &opts, std::string_view tag,
+        const std::string &message) {
+    trace_fortran77_log(opts.trace_fortran77, tag, message);
+}
 
 } // namespace LCompilers
 

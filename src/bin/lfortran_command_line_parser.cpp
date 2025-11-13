@@ -128,6 +128,9 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
         app.add_flag("--old-classes", old_classes, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
+        app.add_flag("--trace-fortran77", compiler_options.trace_fortran77,
+            "Emit verbose tracing for legacy Fortran 77 ABI diagnostics")
+            ->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
@@ -375,6 +378,7 @@ namespace LCompilers::CommandLineInterface {
         compiler_options.fortran77_abi = compiler_options.legacy_array_sections;
         compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
         compiler_options.po.fortran77_abi = compiler_options.fortran77_abi;
+        compiler_options.po.trace_fortran77 = compiler_options.trace_fortran77;
 
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
