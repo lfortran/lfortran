@@ -5048,6 +5048,11 @@ public:
                     if( abi_type == ASR::abiType::Source && is_v_arg ) {
                         type = arr_descr->get_argument_type(type, m_h, v->m_name, arr_arg_type_cache);
                         is_array_type = false;
+                    } else if( abi_type == ASR::abiType::Fortran77 && is_v_arg ) {
+                        // Fortran77 ABI: arrays are passed as raw pointers (like BindC)
+                        // Don't convert to descriptor - use raw pointer
+                        // The physical type should already be PointerArray
+                        is_array_type = false;
                     } else if( abi_type == ASR::abiType::Intrinsic &&
                         fname2arg_type.find(m_name) != fname2arg_type.end() ) {
                         type = fname2arg_type[m_name].second;
@@ -5492,6 +5497,9 @@ public:
                 } else {
                     fn_name = sym_name;
                 }
+            } else if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Fortran77) {
+                // Fortran77 ABI: use unmangled Fortran name (no bindc_name, but no mangling)
+                fn_name = sym_name;
             } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
                 fn_name = sym_name;
@@ -5501,7 +5509,8 @@ public:
             if ( parent_function != nullptr &&
                  ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface &&
                  ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic &&
-                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
+                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
+                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Fortran77
                 ) {
                 std::string parent_function_name = std::string(parent_function->m_name);
                 fn_name = parent_function_name+ "." + fn_name;
@@ -12324,7 +12333,7 @@ public:
                                 throw CodeGenError(std::string(arg->m_name) + " isn't defined in any scope.");
                             }
                             this->visit_expr_wrapper(arg->m_value, true);
-                            if( x_abi != ASR::abiType::BindC &&
+                            if( x_abi != ASR::abiType::BindC && x_abi != ASR::abiType::Fortran77 &&
                                 !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
                                 llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                                     llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -12372,7 +12381,7 @@ public:
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
 
-                if( x_abi == ASR::abiType::BindC ) {
+                if( x_abi == ASR::abiType::BindC || x_abi == ASR::abiType::Fortran77 ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
@@ -12383,7 +12392,8 @@ public:
                             ASR::dimension_t* arg_m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, arg_m_dims);
                             if( !(ASRUtils::is_fixed_size_array(arg_m_dims, n_dims) &&
-                                  ASRUtils::expr_abi(x.m_args[i].m_value) == ASR::abiType::BindC) ) {
+                                  (ASRUtils::expr_abi(x.m_args[i].m_value) == ASR::abiType::BindC ||
+                                   ASRUtils::expr_abi(x.m_args[i].m_value) == ASR::abiType::Fortran77)) ) {
                                 llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, ASRUtils::get_contained_type(arg_type), module.get());
                                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
                                 tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(), arr_descr->get_pointer_to_data(_type, tmp));
@@ -13290,6 +13300,8 @@ public:
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
             h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
             if (sub_name == "get_command_argument") {
                 llvm::Function *fn = module->getFunction("_lpython_get_argv");
@@ -14022,6 +14034,8 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic || intrinsic_function) {
             std::string func_name = s->m_name;
