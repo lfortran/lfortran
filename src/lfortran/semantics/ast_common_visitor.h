@@ -6850,9 +6850,27 @@ public:
                             array_indices.push_back(al, array_item->m_args[i]);
                         }
 
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
+                        ASR::ttype_t* idx_type = ASRUtils::expr_type(idx);
+                        ASR::expr_t* one = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, loc, 1, idx_type));
 
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
+                        ASR::expr_t* dim_start = array_t->m_dims[0].m_start;
+                        if (!dim_start) {
+                            dim_start = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, loc, 1, idx_type));
+                        }
+                        ASR::expr_t* dim_length = array_t->m_dims[0].m_length;
+                        if (!dim_length) {
+                            dim_length = one;
+                        }
+                        ASR::expr_t* length_minus_one = ASRUtils::EXPR(
+                            ASR::make_IntegerBinOp_t(al, loc,
+                                dim_length, ASR::binopType::Sub, one,
+                                ASRUtils::expr_type(dim_length), nullptr));
+                        ASR::expr_t* array_bound = ASRUtils::EXPR(
+                            ASR::make_IntegerBinOp_t(al, loc,
+                                dim_start, ASR::binopType::Add, length_minus_one,
+                                ASRUtils::expr_type(dim_start), nullptr));
 
                         ASR::array_index_t array_idx;
                         array_idx.loc = array_item->base.base.loc;
@@ -9681,7 +9699,7 @@ public:
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                ASR::abiType::Fortran77, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -9698,7 +9716,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::Fortran77, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));

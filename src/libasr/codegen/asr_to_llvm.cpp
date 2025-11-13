@@ -3030,6 +3030,13 @@ public:
                 ASRUtils::type_get_past_pointer(x_mv_type));
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*x_mv_type_));
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x_mv_type_);
+            bool has_assumed_size_dim = false;
+            for (size_t id = 0; id < (size_t)array_t->n_dims; id++) {
+                if (array_t->m_dims[id].m_length == nullptr) {
+                    has_assumed_size_dim = true;
+                    break;
+                }
+            }
             bool is_bindc_array = ASRUtils::expr_abi(x.m_v) == ASR::abiType::BindC;
             if ( LLVM::is_llvm_pointer(*x_mv_type) ||
                ((is_bindc_array && !ASRUtils::is_fixed_size_array(m_dims, n_dims)) &&
@@ -3127,7 +3134,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    compiler_options.po.bounds_checking, array_name, infile);
+                                                    compiler_options.po.bounds_checking && !has_assumed_size_dim, array_name, infile);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -13176,6 +13183,9 @@ public:
                         tmp = llvm_utils->CreateLoad2(arr_type->getPointerTo(), tmp);
                     }
                     llvm::Value* arg = tmp;
+                    if (arr_cast->m_new == ASR::array_physical_typeType::PointerArray) {
+                        continue;
+                    }
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
                     llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
@@ -13436,6 +13446,12 @@ public:
         std::string sub_name = s->m_name;
         uint32_t h;
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
+        if (compiler_options.trace_fortran77) {
+            std::string msg = std::string("SubroutineCall '") + sub_name + "' abi=" +
+                std::to_string(static_cast<int>(s_func_type->m_abi)) +
+                " bounds_checking=" + (compiler_options.po.bounds_checking ? "on" : "off");
+            trace_fortran77_log(compiler_options, "llvm-subroutine-call", msg);
+        }
         if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
             throw CodeGenError("Subroutine LCompilers interfaces not implemented yet");
         } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
@@ -14044,11 +14060,6 @@ public:
             return ;
         }
 
-        // Generate runtime error if array arguments' shape doesn't match
-        if (compiler_options.po.bounds_checking) {
-            bounds_check_call(x);
-        }
-
         std::vector<llvm::Value*> args;
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
@@ -14171,6 +14182,16 @@ public:
         bool intrinsic_function = ASRUtils::is_intrinsic_function2(s);
         uint32_t h;
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
+        if (compiler_options.trace_fortran77) {
+            std::string msg = std::string("FunctionCall '") +
+                std::string(s->m_name) + "' abi=" +
+                std::to_string(static_cast<int>(s_func_type->m_abi)) +
+                " bounds_checking=" + (compiler_options.po.bounds_checking ? "on" : "off");
+            trace_fortran77_log(compiler_options, "llvm-function-call", msg);
+        }
+        if (compiler_options.po.bounds_checking) {
+            bounds_check_call(x);
+        }
         if (s_func_type->m_abi == ASR::abiType::Source && !intrinsic_function) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
@@ -14527,6 +14548,15 @@ public:
                 " physical=" + ASRUtils::describe_array_physical_kind(x_mv_type);
             trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
         }
+        ASR::expr_t* descriptor_expr = nullptr;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_v)) {
+            ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_v);
+            if (arr_cast->m_old == ASR::array_physical_typeType::DescriptorArray &&
+                arr_cast->m_new == ASR::array_physical_typeType::PointerArray) {
+                descriptor_expr = arr_cast->m_arg;
+            }
+        }
+
         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_mv_type)), module.get());
         int64_t ptr_loads_copy = ptr_loads;
@@ -14538,6 +14568,24 @@ public:
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
         }
         llvm::Value* llvm_arg1 = tmp;
+
+        llvm::Value* descriptor_arg_value = nullptr;
+        llvm::Type* descriptor_arg_type = nullptr;
+        if (descriptor_expr) {
+            int64_t ptr_loads_copy_desc = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*descriptor_expr);
+            ptr_loads = ptr_loads_copy_desc;
+            descriptor_arg_type = llvm_utils->get_type_from_ttype_t_util(descriptor_expr,
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(descriptor_expr))),
+                module.get());
+            descriptor_arg_value = tmp;
+            if (descriptor_arg_value && ASR::is_a<ASR::StructInstanceMember_t>(*descriptor_expr)) {
+                descriptor_arg_value = llvm_utils->CreateLoad2(descriptor_arg_type->getPointerTo(), descriptor_arg_value);
+            }
+        }
+
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
 
@@ -14599,32 +14647,43 @@ public:
             start_new_block(mergeBB);
             tmp = llvm_utils->CreateLoad2(target_type, target);
         };
-        bool has_descriptor_layout = true;
-#if LLVM_VERSION_MAJOR < 15
-        has_descriptor_layout = llvm_arg1->getType()->isPointerTy() &&
-            llvm_arg1->getType()->getPointerElementType() == array_type;
-#endif
+        auto emit_descriptor_layout_bound = [&](llvm::Value* descriptor_value, llvm::Type* descriptor_type) {
+            llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(descriptor_type, descriptor_value);
+            llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            dim_val = builder->CreateSub(dim_val, const_1);
+            llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
+            llvm::Value* res = nullptr;
+            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                res = arr_descr->get_lower_bound(dim_struct);
+            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                res = arr_descr->get_upper_bound(dim_struct);
+            }
+            tmp = res;
+        };
+
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                if( !has_descriptor_layout ) {
+                if( !llvm_arg1 || !array_type ) {
                     emit_explicit_shape_bound(x_mv_type);
                 } else {
-                    llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
-                    llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-                    dim_val = builder->CreateSub(dim_val, const_1);
-                    llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
-                    llvm::Value* res = nullptr;
-                    if( x.m_bound == ASR::arrayboundType::LBound ) {
-                        res = arr_descr->get_lower_bound(dim_struct);
-                    } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                        res = arr_descr->get_upper_bound(dim_struct);
-                    }
-                    tmp = res;
+                    emit_descriptor_layout_bound(llvm_arg1, array_type);
                 }
                 break;
             }
-            case ASR::array_physical_typeType::FixedSizeArray:
             case ASR::array_physical_typeType::PointerArray: {
+                if (descriptor_arg_value && descriptor_arg_type) {
+                    if (compiler_options.trace_fortran77) {
+                        std::string msg = "ArrayBound using descriptor layout for PointerArray "
+                            + ASRUtils::type_to_str_python_expr(x_mv_type, x.m_v);
+                        trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
+                    }
+                    emit_descriptor_layout_bound(descriptor_arg_value, descriptor_arg_type);
+                } else {
+                    emit_explicit_shape_bound(x_mv_type);
+                }
+                break;
+            }
+            case ASR::array_physical_typeType::FixedSizeArray: {
                 emit_explicit_shape_bound(x_mv_type);
                 break;
             }
