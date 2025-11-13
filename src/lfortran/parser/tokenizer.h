@@ -48,8 +48,15 @@ public:
     // Return the current token as YYSTYPE::Str, strips first and last character
     void token_str(Allocator &al, Str &s, char ch) const
     {
-        s.p = (char*) tok + 1;
-        s.n = cur-tok-2;
+        unsigned char *start = tok;
+        unsigned char *end = cur;
+        while (start < end && *start != (unsigned char)ch) {
+            start++;
+        }
+        LCOMPILERS_ASSERT(start < end);
+        LCOMPILERS_ASSERT((end - start) >= 2);
+        s.p = (char*) start + 1;
+        s.n = end - start - 2;
         s.p = str_unescape_fortran(al, s, ch);
         s.n = strlen(s.p);
     }
