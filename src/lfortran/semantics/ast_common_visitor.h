@@ -6868,6 +6868,13 @@ public:
 
                         arg.m_value = array_section;
 
+                        if (compiler_options.trace_fortran77) {
+                            std::string msg = "Call '" + std::string(f->m_name) +
+                                "' converted actual arg " + std::to_string(i + 1) +
+                                " into ArraySection (legacy sequence association)";
+                            trace_fortran77_log(compiler_options, "legacy-array-sections", msg);
+                        }
+
                         args_with_array_section.push_back(al, arg);
                     } else {
                         args_with_array_section.push_back(al, args[i]);
@@ -6895,6 +6902,16 @@ public:
                 if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
                     // create array type with empty dimensions and physical type as PointerArray
                     ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
+                    if (compiler_options.trace_fortran77) {
+                        ASR::Variable_t *arg_var = ASRUtils::EXPR2VAR(func_arg);
+                        std::string msg = "Promoting dummy '" + std::string(arg_var->m_name) +
+                            "' in call to '" + std::string(f->m_name) +
+                            "' (" + ASRUtils::array_physical_type_to_cstr(
+                                ASRUtils::extract_physical_type(arg_var->m_type)) + " -> " +
+                            ASRUtils::array_physical_type_to_cstr(
+                                ASRUtils::extract_physical_type(new_type)) + ")";
+                        trace_fortran77_log(compiler_options, "legacy-array-sections", msg);
+                    }
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
                     f_type->m_arg_types[it.first] = new_type;
                     // visit_required = true;
