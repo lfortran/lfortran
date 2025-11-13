@@ -934,6 +934,11 @@ namespace LCompilers {
 
     std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
         std::vector<llvm::Type*> args;
+        bool use_raw_fortran77 = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Fortran77 &&
+            x.n_body == 0);
+        if( use_raw_fortran77 ) {
+            // debug placeholder
+        }
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -978,7 +983,11 @@ namespace LCompilers {
                     m_h = get_hash((ASR::asr_t*)_func);
                 }
                 if( is_array_type && !LLVM::is_llvm_pointer(*arg->m_type) ) {
-                    if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Source ) {
+                    if( use_raw_fortran77 ) {
+                        llvm::Type* el_type = get_type_from_ttype_t_util(x.m_args[i], ASRUtils::extract_type(arg->m_type), module);
+                        type = el_type->getPointerTo();
+                        is_array_type = false;
+                    } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Source ) {
                         llvm::Type* orig_type = type_original;
                         type = arr_api->get_argument_type(orig_type, m_h, arg->m_name, arr_arg_type_cache);
                         is_array_type = false;
@@ -1187,6 +1196,8 @@ namespace LCompilers {
 
     std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x) {
         std::vector<llvm::Type*> args;
+        bool use_raw_fortran77 = (x->m_abi == ASR::abiType::Fortran77 &&
+            fn && fn->n_body == 0);
         for (size_t i=0; i < x->n_arg_types; i++) {
             llvm::Type *type = nullptr, *type_original = nullptr;
             int n_dims = 0, a_kind = 4;
@@ -1195,7 +1206,11 @@ namespace LCompilers {
                 nullptr, x->m_abi, x->m_abi, ASR::storage_typeType::Default,
                 false, n_dims, a_kind, is_array_type, ASR::intentType::Unspecified,
                 module, false);
-            if( is_array_type ) {
+            if( use_raw_fortran77 && is_array_type ) {
+                llvm::Type* el_type = get_type_from_ttype_t_util(fn->m_args[i], ASRUtils::extract_type(x->m_arg_types[i]), module);
+                type = el_type->getPointerTo();
+                is_array_type = false;
+            } else if( is_array_type ) {
                 type = type_original->getPointerTo();
             } else {
                 type = type_original;
