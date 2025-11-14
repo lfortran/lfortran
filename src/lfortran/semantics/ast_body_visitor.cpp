@@ -5936,17 +5936,13 @@ public:
 
 };
 
-static ASR::ttype_t* convert_descriptor_to_pointer_array(Allocator &al, ASR::ttype_t* type,
-                                                          bool inside_allocatable_or_pointer = false) {
+static ASR::ttype_t* convert_descriptor_to_pointer_array(Allocator &al, ASR::ttype_t* type) {
     if (type == nullptr) return nullptr;
     switch (type->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-            ASR::ttype_t *new_inner = convert_descriptor_to_pointer_array(al, arr->m_type, inside_allocatable_or_pointer);
-            // Don't convert DescriptorArray to PointerArray if inside Allocatable/Pointer
-            // because we need the descriptor for bounds checking
-            bool needs_pointer = arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray
-                                  && !inside_allocatable_or_pointer;
+            ASR::ttype_t *new_inner = convert_descriptor_to_pointer_array(al, arr->m_type);
+            bool needs_pointer = arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray;
             if (!needs_pointer && new_inner == arr->m_type) {
                 return type;
             }
@@ -5962,13 +5958,13 @@ static ASR::ttype_t* convert_descriptor_to_pointer_array(Allocator &al, ASR::tty
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t *pt = ASR::down_cast<ASR::Pointer_t>(type);
-            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, pt->m_type, true);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, pt->m_type);
             if (new_type == pt->m_type) return type;
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, pt->base.base.loc, new_type));
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t *alloc = ASR::down_cast<ASR::Allocatable_t>(type);
-            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, alloc->m_type, true);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, alloc->m_type);
             if (new_type == alloc->m_type) return type;
             return ASRUtils::TYPE(ASR::make_Allocatable_t(al, alloc->base.base.loc, new_type));
         }
