@@ -132,11 +132,19 @@ struct LocationManager {
         if (index != 0 && index == file_ends.size()) index -= 1;
         if (files[index].out_start.size() == 0) return 0;
         uint32_t interval = bisection(files[index].out_start, out_pos)-1;
+        // Clamp interval to valid range in case position is past last boundary
+        if (interval >= files[index].in_start.size()) {
+            interval = files[index].in_start.size() - 1;
+        }
         uint32_t rel_pos = out_pos - files[index].out_start[interval];
         uint32_t in_pos = files[index].in_start[interval] + rel_pos;
         if (files[index].preprocessor) {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].out_start0, in_pos)-1;
+            // Clamp interval to valid range in case position is past last boundary
+            if (interval0 >= files[index].interval_type0.size()) {
+                interval0 = files[index].interval_type0.size() - 1;
+            }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
                 uint32_t rel_pos0 = in_pos - files[index].out_start0[interval0];
@@ -167,11 +175,19 @@ struct LocationManager {
         if (index != 0 && index == file_ends.size()) index -= 1;
         if (files[index].in_start.size() == 0) return 0;
         uint32_t interval = bisection(files[index].in_start, in_pos)-1;
+        // Clamp interval to valid range in case position is past last boundary
+        if (interval >= files[index].out_start.size()) {
+            interval = files[index].out_start.size() - 1;
+        }
         uint32_t rel_pos = in_pos - files[index].in_start[interval];
         uint32_t out_pos = files[index].out_start[interval] + rel_pos;
         if (files[index].preprocessor) {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].in_start0, in_pos)-1;
+            // Clamp interval to valid range in case position is past last boundary
+            if (interval0 >= files[index].interval_type0.size()) {
+                interval0 = files[index].interval_type0.size() - 1;
+            }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
                 uint32_t rel_pos0 = in_pos - files[index].in_start0[interval0];
