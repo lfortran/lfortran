@@ -411,6 +411,9 @@ namespace LCompilers::CommandLineInterface {
 
         if (compiler_options.fixed_form || wants_implicit_interface(opts.arg_file)) {
             compiler_options.implicit_interface = true;
+            if (!style_suggestions) {
+                compiler_options.show_style_suggestions = false;
+            }
         }
 
         if (compiler_options.implicit_interface) {
