@@ -6977,9 +6977,6 @@ public:
                             }
                         }
 
-                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
-
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
