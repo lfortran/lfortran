@@ -4839,7 +4839,8 @@ public:
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, orig_struct_sym);
                 field_values.push_back(c);
             } else {
-                llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(var->m_type, struct_sym, module.get());
+                llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, &var->base)),var->m_type, module.get());
                 field_values.push_back(llvm::Constant::getNullValue(member_type));
             }
         }
