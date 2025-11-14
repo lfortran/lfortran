@@ -12563,8 +12563,10 @@ public:
                                 llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                 tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
-                            // For Fortran77/BindC with raw pointers, extract element pointer from fixed-size arrays
-                            // This is needed for LLVM 11 typed pointers: [N x T]* must become T*
+                            // For Fortran77/BindC: arrays are passed as raw pointers
+                            // LLVM 11 (typed pointers): Need GEP to convert [N x T]* → T* for fixed-size arrays
+                            // LLVM 15+ (opaque pointers): Already ptr type, no GEP needed
+                            #if LLVM_VERSION_MAJOR < 15
                             if( (x_abi == ASR::abiType::Fortran77 || x_abi == ASR::abiType::BindC) &&
                                 use_fortran77_raw && ASRUtils::is_array(arg->m_type) ) {
                                 ASR::dimension_t* arg_m_dims = nullptr;
@@ -12577,6 +12579,8 @@ public:
                                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
                                 }
                             }
+                            #endif
+                            // In opaque pointer mode (LLVM 15+), tmp is already correct ptr type
                         }
                     } else {
                         if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(

@@ -2318,6 +2318,10 @@ RUN(NAME lapack_05 LABELS gfortran
     EXTRA_ARGS --fixed-form --implicit-interface
     GFORTRAN_ARGS -ffixed-form)
 
+RUN(NAME lapack_06 LABELS gfortran llvm
+    EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections
+    GFORTRAN_ARGS -ffixed-form)
+
 RUN(NAME complex_param_unary_minus LABELS gfortran llvm)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
