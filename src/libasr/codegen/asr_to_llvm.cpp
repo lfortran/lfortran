@@ -5310,9 +5310,8 @@ public:
                 llvm::DILocalVariable *debug_var;
                 // Use createParameterVariable only for actual function parameters
                 if (is_arg_dummy(v->m_intent)) {
-                    debug_arg_count++;
                     debug_var = DBuilder->createParameterVariable(
-                        debug_current_scope, v->m_name, debug_arg_count, debug_Unit, line,
+                        debug_current_scope, v->m_name, ++debug_arg_count, debug_Unit, line,
                         DBuilder->createBasicType(type_name, type_size, type_encoding), true);
                 } else {
                     // Use createAutoVariable for local variables
