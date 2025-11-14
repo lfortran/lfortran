@@ -97,10 +97,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         outfile.close();
     }
 #if defined(WITH_LFORTRAN_ASSERT)
-    {
-        PassUtils::UpdateDependenciesVisitor update_dependencies(al);
-        update_dependencies.visit_TranslationUnit(*tu);
-    }
     if (!asr_verify(*tu, true, diagnostics)) {
         return Error();
     };
@@ -135,10 +131,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
-        {
-            PassUtils::UpdateDependenciesVisitor update_dependencies(al);
-            update_dependencies.visit_TranslationUnit(*tu);
-        }
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();
         };
