@@ -4398,11 +4398,11 @@ public:
         // there maybe a possibility that nested function has an array variable
         // whose dimension depends on variable present in this program / function
         // thereby visit all integer variables and declare those:
+        uint32_t debug_arg_count = 0;
         for(auto &item: x.m_symtab->get_scope()) {
             ASR::symbol_t* sym = item.second;
             if ( is_a<ASR::Variable_t>(*sym) ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(sym);
-                uint32_t debug_arg_count = 0;
                 if ( ASR::is_a<ASR::Integer_t>(*v->m_type) ) {
                     process_Variable(sym, x, debug_arg_count);
                 }
@@ -5307,9 +5307,18 @@ public:
                 uint32_t type_size, type_encoding;
                 get_type_debug_info(v->m_type, type_name, type_size,
                     type_encoding);
-                llvm::DILocalVariable *debug_var = DBuilder->createParameterVariable(
-                    debug_current_scope, v->m_name, ++debug_arg_count, debug_Unit, line,
-                    DBuilder->createBasicType(type_name, type_size, type_encoding), true);
+                llvm::DILocalVariable *debug_var;
+                // Use createParameterVariable only for actual function parameters
+                if (is_arg_dummy(v->m_intent)) {
+                    debug_var = DBuilder->createParameterVariable(
+                        debug_current_scope, v->m_name, ++debug_arg_count, debug_Unit, line,
+                        DBuilder->createBasicType(type_name, type_size, type_encoding), true);
+                } else {
+                    // Use createAutoVariable for local variables
+                    debug_var = DBuilder->createAutoVariable(
+                        debug_current_scope, v->m_name, debug_Unit, line,
+                        DBuilder->createBasicType(type_name, type_size, type_encoding), true);
+                }
                 DBuilder->insertDeclare(ptr, debug_var, DBuilder->createExpression(),
                     llvm::DILocation::get(debug_current_scope->getContext(),
                     line, 0, debug_current_scope), builder->GetInsertBlock());
