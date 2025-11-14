@@ -12870,12 +12870,29 @@ public:
                 }
             }
 
+            // Check if actual argument is a variable pointing to a descriptor array
+            // Descriptor arrays need to stay as %array** for intrinsic functions that expect descriptor pointers
+            bool is_descriptor_ptr = false;
+            if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value);
+                if( var->m_v && ASR::is_a<ASR::Variable_t>(*var->m_v) ) {
+                    ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                    if( ASRUtils::is_array(var_sym->m_type) ) {
+                        ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(var_sym->m_type);
+                        if( phys_type == ASR::array_physical_typeType::PointerArray ||
+                            phys_type == ASR::array_physical_typeType::DescriptorArray ) {
+                            is_descriptor_ptr = true;
+                        }
+                    }
+                }
+            }
+
 #if LLVM_VERSION_MAJOR < 15
             bool expect_pointer_array = expected_dummy_type &&
                 ASRUtils::is_array(expected_dummy_type) &&
                 (ASRUtils::extract_physical_type(expected_dummy_type) == ASR::array_physical_typeType::PointerArray ||
                  ASRUtils::extract_physical_type(expected_dummy_type) == ASR::array_physical_typeType::UnboundedPointerArray);
-            if( expect_pointer_array && tmp->getType()->isPointerTy() ) {
+            if( expect_pointer_array && !is_descriptor_ptr && tmp->getType()->isPointerTy() ) {
                 ASR::ttype_t* elem_ttype = ASRUtils::extract_type(expected_dummy_type);
                 llvm::Type* elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_args[i].m_value, elem_ttype, module.get());
@@ -12884,8 +12901,9 @@ public:
             }
 #endif
 
+            // Don't bitcast descriptor arrays - they need to preserve pointer-to-descriptor type
             if( expected_llvm_type && expected_llvm_type->isPointerTy() &&
-                tmp->getType()->isPointerTy() ) {
+                tmp->getType()->isPointerTy() && !is_descriptor_ptr ) {
 #if LLVM_VERSION_MAJOR < 15
                 if( tmp->getType() != expected_llvm_type ) {
                     llvm::Type* tmp_elem_type = tmp->getType()->getPointerElementType();
