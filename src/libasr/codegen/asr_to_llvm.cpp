@@ -12908,7 +12908,17 @@ public:
                 if( tmp->getType() != expected_llvm_type ) {
                     llvm::Type* tmp_elem_type = tmp->getType()->getPointerElementType();
                     llvm::Type* expected_elem_type = expected_llvm_type->getPointerElementType();
-                    if( tmp_elem_type && tmp_elem_type->isArrayTy() &&
+
+                    // LLVM 11 typed pointers: Don't bitcast pointer-to-pointer to pointer
+                    // or vice versa, as this breaks function signature matching.
+                    // This happens with pointer intent(out) parameters where tmp is correctly
+                    // T** but expected_llvm_type may be incorrectly computed as T*.
+                    bool tmp_is_ptr_to_ptr = tmp_elem_type && tmp_elem_type->isPointerTy();
+                    bool expected_is_ptr_to_ptr = expected_elem_type && expected_elem_type->isPointerTy();
+                    if( tmp_is_ptr_to_ptr != expected_is_ptr_to_ptr ) {
+                        // Skip bitcast - one is pointer-to-pointer, other is single pointer
+                        // This likely means expected_llvm_type was computed incorrectly
+                    } else if( tmp_elem_type && tmp_elem_type->isArrayTy() &&
                         expected_elem_type &&
                         tmp_elem_type->getArrayElementType() == expected_elem_type ) {
                         llvm::Value* zero = llvm::ConstantInt::get(
