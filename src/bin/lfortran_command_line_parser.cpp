@@ -229,9 +229,32 @@ namespace LCompilers::CommandLineInterface {
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
 
+        auto normalize_cpp_alias = [](std::string &arg) {
+            if (arg == "-cpp") {
+                arg = "--cpp";
+            } else if (arg == "-nocpp") {
+                arg = "--no-cpp";
+            }
+        };
+
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> normalized_args;
+            normalized_args.reserve(argc);
+            for (int i = 0; i < argc; i++) {
+                std::string token = argv[i] ? argv[i] : "";
+                normalize_cpp_alias(token);
+                normalized_args.emplace_back(std::move(token));
+            }
+            std::vector<const char *> normalized_cargs;
+            normalized_cargs.reserve(normalized_args.size());
+            for (const std::string &token : normalized_args) {
+                normalized_cargs.push_back(token.c_str());
+            }
+            app.parse(static_cast<int>(normalized_cargs.size()), normalized_cargs.data());
         } else {
+            for (std::string &token : args) {
+                normalize_cpp_alias(token);
+            }
             app.parse(args);
         }
 
@@ -362,16 +385,37 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
         }
 
+        auto looks_fixed_form = [](const std::string &path) {
+            return endswith(path, ".f") || endswith(path, ".F")
+                || endswith(path, ".for") || endswith(path, ".FOR")
+                || endswith(path, ".ftn") || endswith(path, ".FTN")
+                || endswith(path, ".f77") || endswith(path, ".F77");
+        };
+        auto wants_implicit_interface = [](const std::string &path) {
+            return endswith(path, ".f90") || endswith(path, ".F90")
+                || endswith(path, ".f95") || endswith(path, ".F95")
+                || endswith(path, ".f03") || endswith(path, ".F03")
+                || endswith(path, ".f08") || endswith(path, ".F08")
+                || endswith(path, ".f18") || endswith(path, ".F18")
+                || endswith(path, ".fpp") || endswith(path, ".FPP");
+        };
+
+        const bool inferred_fixed_form = looks_fixed_form(opts.arg_file) ||
+            (opts.fixed_form_infer && (endswith(opts.arg_file, ".fpp") ||
+            endswith(opts.arg_file, ".FPP")));
         // Decide if a file is fixed format based on the extension
-        // Gfortran does the same thing
-        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") ||
-                endswith(opts.arg_file, ".F"))) {
+        // Gfortran does the same thing for the canonical fixed-form suffixes.
+        if (inferred_fixed_form) {
             compiler_options.fixed_form = true;
         }
 
-        if (compiler_options.fixed_form) {
-            // Fixed-form sources imply FORTRAN 77 semantics, so allow legacy
-            // sequence association automatically without requiring extra flags.
+        if (compiler_options.fixed_form || wants_implicit_interface(opts.arg_file)) {
+            compiler_options.implicit_interface = true;
+        }
+
+        if (compiler_options.implicit_interface) {
+            // Implicit interfaces rely on FORTRAN 77 style sequence association,
+            // so allow the legacy lowering path automatically.
             compiler_options.legacy_array_sections = true;
         }
 
