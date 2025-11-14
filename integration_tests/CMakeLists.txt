@@ -232,6 +232,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if (copy_to_bin)
             file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${copy_to_bin} DESTINATION ${CURRENT_BINARY_DIR})
         endif()
+
+        set_property(TEST ${name} APPEND PROPERTY ENVIRONMENT "LFORTRAN_TEST_ENV_VAR=STATUS OK!")
     endif()
 endmacro(RUN_UTIL)
 

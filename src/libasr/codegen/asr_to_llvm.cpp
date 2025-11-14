@@ -7398,12 +7398,41 @@ public:
             tmp = nullptr;
             return;
         }
+        ASR::array_physical_typeType target_ptype = ASR::array_physical_typeType::DescriptorArray;
+        ASR::array_physical_typeType value_ptype = ASR::array_physical_typeType::DescriptorArray;
+        bool pointer_descriptor_combo = false;
+        bool arrays_check_equal = false;
+        if( ASRUtils::is_array(target_type) && ASRUtils::is_array(value_type) ) {
+            target_ptype = ASRUtils::extract_physical_type(target_type);
+            value_ptype = ASRUtils::extract_physical_type(value_type);
+            arrays_check_equal = ASRUtils::check_equal_type(target_type, value_type, x.m_target, x.m_value);
+            if( !arrays_check_equal ) {
+                pointer_descriptor_combo =
+                    (target_ptype == ASR::array_physical_typeType::PointerArray &&
+                     value_ptype == ASR::array_physical_typeType::DescriptorArray) ||
+                    (target_ptype == ASR::array_physical_typeType::DescriptorArray &&
+                     value_ptype == ASR::array_physical_typeType::PointerArray);
+                if( pointer_descriptor_combo ) {
+                    ASR::ttype_t* target_dup = ASRUtils::duplicate_type(al, target_type, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    ASR::ttype_t* value_dup = ASRUtils::duplicate_type(al, value_type, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    arrays_check_equal = ASRUtils::check_equal_type(target_dup, value_dup, x.m_target, x.m_value);
+                }
+            }
+        }
+        pointer_descriptor_combo =
+            pointer_descriptor_combo ||
+            (ASRUtils::is_array(target_type) && ASRUtils::is_array(value_type) &&
+             ((target_ptype == ASR::array_physical_typeType::PointerArray &&
+               value_ptype == ASR::array_physical_typeType::DescriptorArray) ||
+              (target_ptype == ASR::array_physical_typeType::DescriptorArray &&
+               value_ptype == ASR::array_physical_typeType::PointerArray)));
+
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
-            ASRUtils::check_equal_type(target_type, value_type, x.m_target, x.m_value) ) {
+            (arrays_check_equal || pointer_descriptor_combo) ) {
             bool data_only_copy = false;
-            ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
-            ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
             bool is_target_data_only_array = (target_ptype == ASR::array_physical_typeType::PointerArray);
             bool is_value_data_only_array = (value_ptype == ASR::array_physical_typeType::PointerArray);
             bool is_target_fixed_sized_array = (target_ptype == ASR::array_physical_typeType::FixedSizeArray);
@@ -7474,7 +7503,7 @@ public:
                             data_only_copy = false;
                             break;
                         }
-                        this->visit_expr_wrapper(target_dims[i].m_length, true);
+                        load_array_size_deep_copy(target_dims[i].m_length);
                         llvm_size = builder->CreateMul(llvm_size, builder->CreateSExtOrTrunc(tmp,
                                 llvm::Type::getInt32Ty(context)));
                     }
@@ -7504,7 +7533,7 @@ public:
                                 data_only_copy = false;
                                 break;
                             }
-                            this->visit_expr_wrapper(value_dims[i].m_length, true);
+                            load_array_size_deep_copy(value_dims[i].m_length);
                             tmp = builder->CreateSExtOrTrunc(tmp, llvm::Type::getInt32Ty(context));
                             llvm_size = builder->CreateMul(llvm_size, tmp);
                         }
@@ -7524,6 +7553,9 @@ public:
                             llvm_utils->CreateLoad2(
                                 llvm_array_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(llvm_array_type_, value));
+                    llvm::Value* value_nelems = arr_descr->get_array_size(
+                        llvm_array_type_, value, nullptr, 4);
+                    llvm_size = value_nelems;
                 }
                 LCOMPILERS_ASSERT(data_only_copy);
                 arr_descr->copy_array_data_only(target_data, value_data, module.get(),
@@ -10229,6 +10261,21 @@ public:
         switch( x_m_v->type ) {
             case ASR::symbolType::Variable: {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x_m_v);
+                uint32_t h = get_hash((ASR::asr_t*)v);
+                SymbolTable* scope_iter = current_scope;
+                while( scope_iter ) {
+                    auto key = std::make_pair(h, scope_iter);
+                    if( llvm_symtab_deep_copy.find(key) != llvm_symtab_deep_copy.end() ) {
+                        llvm::Value* deep = llvm_symtab_deep_copy[key];
+                        ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                            al, v->base.base.loc, (ASR::symbol_t*)v));
+                        llvm::Type* var_type = llvm_utils->get_type_from_ttype_t_util(
+                            var_expr, v->m_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(var_type, deep);
+                        return;
+                    }
+                    scope_iter = scope_iter->parent;
+                }
                 fetch_var(v);
                 return ;
             }
@@ -12797,11 +12844,11 @@ public:
                 ASR::ttype_t* arg_type_local = ASRUtils::expr_type(x.m_args[i].m_value);
                 if( ASRUtils::is_array(arg_type_local) &&
                     ASRUtils::extract_physical_type(arg_type_local) == ASR::array_physical_typeType::DescriptorArray ) {
-                    llvm::Type* arg_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type_local, module.get());
                     llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value,
                         ASRUtils::extract_type(arg_type_local), module.get());
-                    tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
-                        arr_descr->get_pointer_to_data(arg_desc_type, tmp));
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
+                        x.m_args[i].m_value, arg_type_local, tmp, module.get());
+                    tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(), data_ptr);
                 }
             }
 
@@ -14453,10 +14500,18 @@ public:
             if (x_sym != nullptr && ASR::is_a<ASR::Variable_t>(*x_sym)) {
                 ASR::Variable_t* x_sym_variable = ASR::down_cast<ASR::Variable_t>(x_sym);
                 uint32_t x_sym_variable_h = get_hash((ASR::asr_t*)x_sym_variable);
-                if (llvm_symtab_deep_copy.find({x_sym_variable_h, current_scope}) != llvm_symtab_deep_copy.end()) {
-                    tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get()),
-                        llvm_symtab_deep_copy[{x_sym_variable_h, current_scope}]);
-                } else {
+                SymbolTable* scope_iter = current_scope;
+                while (scope_iter) {
+                    auto key = std::make_pair(x_sym_variable_h, scope_iter);
+                    if (llvm_symtab_deep_copy.find(key) != llvm_symtab_deep_copy.end()) {
+                        tmp = llvm_utils->CreateLoad2(
+                            llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get()),
+                            llvm_symtab_deep_copy[key]);
+                        break;
+                    }
+                    scope_iter = scope_iter->parent;
+                }
+                if (!scope_iter) {
                     this->visit_expr_wrapper(x, true);
                 }
             } else {
@@ -14698,7 +14753,9 @@ public:
                     " (physical=" + ASRUtils::describe_array_physical_kind(mv_type) + ")";
                 trace_fortran77_log(compiler_options, "llvm-array-bound", msg);
             }
-            llvm::Type* target_type = llvm::Type::getInt32Ty(context);
+            int bound_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            unsigned bound_bits = bound_kind * 8;
+            llvm::Type* target_type = llvm::IntegerType::get(context, bound_bits);
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_bound");
             llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
@@ -14706,7 +14763,7 @@ public:
             int n_dims = ASRUtils::extract_dimensions_from_ttype(mv_type, m_dims);
             auto load_bound_component = [&](ASR::expr_t* expr, int64_t fallback, const char* label) -> llvm::Value* {
                 if (expr == nullptr) {
-                    return llvm::ConstantInt::get(target_type, llvm::APInt(32, fallback));
+                    return llvm::ConstantInt::get(target_type, llvm::APInt(bound_bits, fallback));
                 }
                 this->visit_expr_wrapper(expr, true);
                 llvm::Value* val = tmp;
@@ -14737,8 +14794,8 @@ public:
                         llvm::Value* lb = load_bound_component(m_dims[i].m_start, 1, "lbound");
                         llvm::Value* len_val = load_bound_component(m_dims[i].m_length, 1, "length");
                         llvm::Value* sum = builder->CreateAdd(len_val, lb);
-                        llvm::Value* one32 = llvm::ConstantInt::get(target_type, llvm::APInt(32, 1));
-                        builder->CreateStore(builder->CreateSub(sum, one32), target);
+                        llvm::Value* one = llvm::ConstantInt::get(target_type, llvm::APInt(bound_bits, 1));
+                        builder->CreateStore(builder->CreateSub(sum, one), target);
                     }
                 }
                 builder->CreateBr(mergeBB);
