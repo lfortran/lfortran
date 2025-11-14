@@ -4389,10 +4389,12 @@ public:
                 llvm::Function::ExternalLinkage, "main", module.get());
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
+        llvm::DISubprogram *main_program_scope = nullptr;
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP;
             debug_emit_function(x, SP);
             F->setSubprogram(SP);
+            main_program_scope = SP;
         }
         builder->SetInsertPoint(BB);
         // there maybe a possibility that nested function has an array variable
@@ -4423,7 +4425,10 @@ public:
         // Call the `_lpython_call_initial_functions` function to assign command line argument
         // values to `argc` and `argv`, and set the random seed to the system clock.
         {
-            if (compiler_options.emit_debug_info) debug_emit_loc(x);
+            if (compiler_options.emit_debug_info) {
+                debug_current_scope = main_program_scope;
+                debug_emit_loc(x);
+            }
             llvm::Function *fn = module->getFunction("_lpython_call_initial_functions");
             if(!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
