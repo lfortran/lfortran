@@ -1146,11 +1146,23 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         } else if (ASRUtils::is_complex(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    ASRUtils::expr_value(operand));
-                std::complex<double> op_value(c->m_re, c->m_im);
-                std::complex<double> result;
-                result = -op_value;
+                double op_re = 0.0, op_im = 0.0;
+                ASR::expr_t* operand_const = ASRUtils::expr_value(operand);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*operand_const)) {
+                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(operand_const);
+                    op_re = c->m_re;
+                    op_im = c->m_im;
+                } else if (ASR::is_a<ASR::RealConstant_t>(*operand_const)) {
+                    ASR::RealConstant_t *c = ASR::down_cast<ASR::RealConstant_t>(operand_const);
+                    op_re = c->m_r;
+                } else if (ASR::is_a<ASR::IntegerConstant_t>(*operand_const)) {
+                    ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(operand_const);
+                    op_re = (double) c->m_n;
+                } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*operand_const)) {
+                    ASR::UnsignedIntegerConstant_t *c = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(operand_const);
+                    op_re = (double) c->m_n;
+                }
+                std::complex<double> result(-op_re, -op_im);
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
                         std::imag(result), operand_type));

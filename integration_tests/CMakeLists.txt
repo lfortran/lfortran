@@ -2316,6 +2316,8 @@ RUN(NAME lapack_05 LABELS gfortran
     EXTRA_ARGS --fixed-form --implicit-interface
     GFORTRAN_ARGS -ffixed-form)
 
+RUN(NAME complex_param_unary_minus LABELS gfortran llvm)
+
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_04 LABELS gfortran llvm) # TODO: Fix these tests

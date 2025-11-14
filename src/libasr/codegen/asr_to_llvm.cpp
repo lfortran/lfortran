@@ -8751,10 +8751,14 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        llvm::Value* real_left = complex_re(left, left->getType());
-        llvm::Value* real_right = complex_re(right, right->getType());
-        llvm::Value* img_left = complex_im(left, left->getType());
-        llvm::Value* img_right = complex_im(right, right->getType());
+        int left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_left));
+        int right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_right));
+        llvm::Type* left_complex_type = (left_kind == 4) ? complex_type_4 : complex_type_8;
+        llvm::Type* right_complex_type = (right_kind == 4) ? complex_type_4 : complex_type_8;
+        llvm::Value* real_left = complex_re(left, left_complex_type);
+        llvm::Value* real_right = complex_re(right, right_complex_type);
+        llvm::Value* img_left = complex_im(left, left_complex_type);
+        llvm::Value* img_right = complex_im(right, right_complex_type);
         llvm::Value *real_res, *img_res;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
@@ -9707,12 +9711,13 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Type *type = tmp->getType();
-        llvm::Value *re = complex_re(tmp, type);
-        llvm::Value *im = complex_im(tmp, type);
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+        llvm::Type *complex_type = (a_kind == 4) ? complex_type_4 : complex_type_8;
+        llvm::Value *re = complex_re(tmp, complex_type);
+        llvm::Value *im = complex_im(tmp, complex_type);
         re = builder->CreateFNeg(re);
         im = builder->CreateFNeg(im);
-        tmp = complex_from_floats(re, im, type);
+        tmp = complex_from_floats(re, im, complex_type);
     }
 
     template <typename T>
@@ -10580,14 +10585,15 @@ public:
                 ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(curr_type != nullptr)
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
+                llvm::Type* complex_type = (a_kind == 4) ? complex_type_4 : complex_type_8;
                 if (a_kind == 4) {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat((float)0.0));
                 } else {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
                 }
-                llvm::Value *c_real = complex_re(tmp, tmp->getType());
+                llvm::Value *c_real = complex_re(tmp, complex_type);
                 llvm::Value *real_check = builder->CreateFCmpUEQ(c_real, zero);
-                llvm::Value *c_imag = complex_im(tmp, tmp->getType());
+                llvm::Value *c_imag = complex_im(tmp, complex_type);
                 llvm::Value *imag_check = builder->CreateFCmpUEQ(c_imag, zero);
                 tmp = builder->CreateAnd(real_check, imag_check);
                 tmp = builder->CreateNot(tmp);
@@ -12786,14 +12792,16 @@ public:
             }
 
 #if LLVM_VERSION_MAJOR < 15
-            if( tmp->getType()->isPointerTy() ) {
-                llvm::Type* tmp_elem_type = tmp->getType()->getPointerElementType();
-                if( tmp_elem_type && tmp_elem_type->isArrayTy() ) {
-                    llvm::Value* zero = llvm::ConstantInt::get(
-                        llvm::Type::getInt32Ty(context), 0);
-                    std::vector<llvm::Value*> gep_idx = {zero, zero};
-                    tmp = llvm_utils->CreateInBoundsGEP2(tmp_elem_type, tmp, gep_idx);
-                }
+            bool expect_pointer_array = expected_dummy_type &&
+                ASRUtils::is_array(expected_dummy_type) &&
+                (ASRUtils::extract_physical_type(expected_dummy_type) == ASR::array_physical_typeType::PointerArray ||
+                 ASRUtils::extract_physical_type(expected_dummy_type) == ASR::array_physical_typeType::UnboundedPointerArray);
+            if( expect_pointer_array && tmp->getType()->isPointerTy() ) {
+                ASR::ttype_t* elem_ttype = ASRUtils::extract_type(expected_dummy_type);
+                llvm::Type* elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, elem_ttype, module.get());
+                llvm::Type* elem_ptr_type = llvm::PointerType::get(elem_llvm_type, 0);
+                tmp = builder->CreateBitCast(tmp, elem_ptr_type);
             }
 #endif
 
