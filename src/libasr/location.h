@@ -142,8 +142,10 @@ struct LocationManager {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].out_start0, in_pos)-1;
             // Clamp interval to valid range in case position is past last boundary
+            bool at_last_interval = false;
             if (interval0 >= files[index].interval_type0.size()) {
                 interval0 = files[index].interval_type0.size() - 1;
+                at_last_interval = true;
             }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
@@ -153,7 +155,7 @@ struct LocationManager {
             } else {
                 // many to many interval
                 uint32_t in_pos0;
-                if (in_pos == files[index].out_start0[interval0+1]-1 || show_last) {
+                if (at_last_interval || in_pos == files[index].out_start0[interval0+1]-1 || show_last) {
                     // The end of the interval in "out" code
                     // Return the end of the interval in "in" code
                     in_pos0 = files[index].in_start0[interval0]+files[index].in_size0[interval0]-1;
@@ -185,8 +187,10 @@ struct LocationManager {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].in_start0, in_pos)-1;
             // Clamp interval to valid range in case position is past last boundary
+            bool at_last_interval = false;
             if (interval0 >= files[index].interval_type0.size()) {
                 interval0 = files[index].interval_type0.size() - 1;
+                at_last_interval = true;
             }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
@@ -196,7 +200,7 @@ struct LocationManager {
             } else {
                 // many to many interval
                 uint32_t out_pos0;
-                if (in_pos == files[index].in_start0[interval0+1]-1 || show_last) {
+                if (at_last_interval || in_pos == files[index].in_start0[interval0+1]-1 || show_last) {
                     // The end of the interval in "out" code
                     // Return the end of the interval in "in" code
                     out_pos0 = files[index].out_start0[interval0]+files[index].out_start0[interval0]-1;
