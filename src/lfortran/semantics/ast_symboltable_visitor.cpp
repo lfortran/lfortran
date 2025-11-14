@@ -1173,7 +1173,9 @@ public:
                 }
 
                 // Any import from parent module will be shadowed
-                parent_scope->erase_symbol(sym_name);
+                if (!in_submodule) {
+                    parent_scope->erase_symbol(sym_name);
+                }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
