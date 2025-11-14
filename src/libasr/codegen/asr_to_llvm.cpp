@@ -12563,6 +12563,20 @@ public:
                                 llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                 tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
+                            // For Fortran77/BindC with raw pointers, extract element pointer from fixed-size arrays
+                            // This is needed for LLVM 11 typed pointers: [N x T]* must become T*
+                            if( (x_abi == ASR::abiType::Fortran77 || x_abi == ASR::abiType::BindC) &&
+                                use_fortran77_raw && ASRUtils::is_array(arg->m_type) ) {
+                                ASR::dimension_t* arg_m_dims = nullptr;
+                                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg->m_type, arg_m_dims);
+                                if( ASRUtils::is_fixed_size_array(arg_m_dims, n_dims) ) {
+                                    // tmp is currently [N x T]*, we need T* for typed-pointer compatibility
+                                    llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_args[i].m_value, arg->m_type, module.get());
+                                    tmp = llvm_utils->create_gep2(arr_type, tmp,
+                                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
+                                }
+                            }
                         }
                     } else {
                         if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(
