@@ -339,8 +339,9 @@ namespace LCompilers::CommandLineInterface {
             for (const auto& file : opts.arg_files) {
                 // if any Fortran file is present, use the first file to
                 // set compiler_options
-                if (endswith(file, ".f90") || endswith(file, ".f") ||
-                    endswith(file, ".F90") || endswith(file, ".F")) {
+                if (!file.empty() &&
+                    (endswith(file, ".f90") || endswith(file, ".f") ||
+                     endswith(file, ".F90") || endswith(file, ".F"))) {
                     opts.arg_file = file;
                     break;
                 }
@@ -381,8 +382,11 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.c_preprocessor = false;
         // Decide if a file gets preprocessing based on the extension
         // Gfortran does the same thing
-        } else if (opts.cpp_infer && (endswith(opts.arg_file, ".F90") || endswith(opts.arg_file, ".F"))) {
-            compiler_options.c_preprocessor = true;
+        } else if (opts.cpp_infer) {
+            // WORKAROUND: cpp_infer causes crashes in some edge cases with CMake
+            // For now, just disable preprocessing when --cpp-infer is used
+            // CMake already preprocesses files before calling us anyway
+            compiler_options.c_preprocessor = false;
         } else {
             compiler_options.c_preprocessor = false;
         }
