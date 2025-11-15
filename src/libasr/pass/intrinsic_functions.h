@@ -4205,7 +4205,12 @@ namespace Cmplx {
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[0])) {
             arg1_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
-            return args[0];
+            // If the first argument is already a complex constant, construct
+            // a complex constant of the requested return type `t1` to ensure
+            // the kind matches (e.g., cmplx(complex(4), kind=8)).
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
+            double im = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_im;
+            return b.complex_t(re, im, t1);
         } else {
             append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
             return nullptr;
