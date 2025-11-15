@@ -382,15 +382,24 @@
                     )
                     (Assignment
                         (Var 2 x2)
-                        (IntrinsicElementalFunction
-                            Cmplx
-                            [(Var 2 real_part)
-                            (RealConstant
-                                0.000000
-                                (Real 4)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 real_part)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Complex 4)
+                                (ComplexConstant
+                                    42.000000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
-                            (IntegerConstant 8 (Integer 4) Decimal)]
-                            0
+                            ComplexToComplex
                             (Complex 8)
                             (ComplexConstant
                                 42.000000
@@ -404,15 +413,24 @@
                     )
                     (Assignment
                         (Var 2 y2)
-                        (IntrinsicElementalFunction
-                            Cmplx
-                            [(Var 2 img_part)
-                            (RealConstant
-                                0.000000
-                                (Real 4)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 img_part)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Complex 4)
+                                (ComplexConstant
+                                    3.140000
+                                    0.000000
+                                    (Complex 4)
+                                )
                             )
-                            (IntegerConstant 8 (Integer 4) Decimal)]
-                            0
+                            ComplexToComplex
                             (Complex 8)
                             (ComplexConstant
                                 3.140000
@@ -426,12 +444,21 @@
                     )
                     (Assignment
                         (Var 2 z2)
-                        (IntrinsicElementalFunction
-                            Cmplx
-                            [(Var 2 real_part)
-                            (Var 2 img_part)
-                            (IntegerConstant 8 (Integer 4) Decimal)]
-                            0
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Cmplx
+                                [(Var 2 real_part)
+                                (Var 2 img_part)
+                                (IntegerConstant 4 (Integer 4) Decimal)]
+                                0
+                                (Complex 4)
+                                (ComplexConstant
+                                    42.000000
+                                    3.140000
+                                    (Complex 4)
+                                )
+                            )
+                            ComplexToComplex
                             (Complex 8)
                             (ComplexConstant
                                 42.000000
@@ -732,9 +759,9 @@
                                     0.000000
                                     (Real 4)
                                 )
-                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
-                                (Complex 8)
+                                (Complex 4)
                                 ()
                             )]
                             FormatFortran
@@ -757,56 +784,39 @@
                                             0.000000
                                             (Real 4)
                                         )
-                                        (IntegerConstant 8 (Integer 4) Decimal)]
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
                                         0
-                                        (Complex 8)
+                                        (Complex 4)
                                         ()
                                     )
                                     Sub
-                                    (Cast
-                                        (ComplexConstructor
-                                            (RealConstant
-                                                42.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                0.000000
-                                                (Real 4)
-                                            )
-                                            (Complex 4)
-                                            (ComplexConstant
-                                                42.000000
-                                                0.000000
-                                                (Complex 4)
-                                            )
+                                    (ComplexConstructor
+                                        (RealConstant
+                                            42.000000
+                                            (Real 4)
                                         )
-                                        ComplexToComplex
-                                        (Complex 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             0.000000
-                                            (Complex 8)
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 8)
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 8)
+                                (Real 4)
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000010
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000010
-                                    (Real 8)
-                                )
+                            (RealConstant
+                                0.000010
+                                (Real 4)
                             )
                             (Logical 4)
                             ()
@@ -826,9 +836,9 @@
                                     0.000000
                                     (Real 4)
                                 )
-                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
-                                (Complex 8)
+                                (Complex 4)
                                 ()
                             )]
                             FormatFortran
@@ -851,56 +861,39 @@
                                             0.000000
                                             (Real 4)
                                         )
-                                        (IntegerConstant 8 (Integer 4) Decimal)]
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
                                         0
-                                        (Complex 8)
+                                        (Complex 4)
                                         ()
                                     )
                                     Sub
-                                    (Cast
-                                        (ComplexConstructor
-                                            (RealConstant
-                                                3.140000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                0.000000
-                                                (Real 4)
-                                            )
-                                            (Complex 4)
-                                            (ComplexConstant
-                                                3.140000
-                                                0.000000
-                                                (Complex 4)
-                                            )
+                                    (ComplexConstructor
+                                        (RealConstant
+                                            3.140000
+                                            (Real 4)
                                         )
-                                        ComplexToComplex
-                                        (Complex 8)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        (Complex 4)
                                         (ComplexConstant
                                             3.140000
                                             0.000000
-                                            (Complex 8)
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 8)
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 8)
+                                (Real 4)
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000010
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000010
-                                    (Real 8)
-                                )
+                            (RealConstant
+                                0.000010
+                                (Real 4)
                             )
                             (Logical 4)
                             ()
@@ -920,9 +913,9 @@
                                     0.000000
                                     (Real 4)
                                 )
-                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
-                                (Complex 8)
+                                (Complex 4)
                                 ()
                             )]
                             FormatFortran
@@ -945,56 +938,39 @@
                                             0.000000
                                             (Real 4)
                                         )
-                                        (IntegerConstant 8 (Integer 4) Decimal)]
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
                                         0
-                                        (Complex 8)
+                                        (Complex 4)
                                         ()
                                     )
                                     Sub
-                                    (Cast
-                                        (ComplexConstructor
-                                            (RealConstant
-                                                42.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                3.140000
-                                                (Real 4)
-                                            )
-                                            (Complex 4)
-                                            (ComplexConstant
-                                                42.000000
-                                                3.140000
-                                                (Complex 4)
-                                            )
+                                    (ComplexConstructor
+                                        (RealConstant
+                                            42.000000
+                                            (Real 4)
                                         )
-                                        ComplexToComplex
-                                        (Complex 8)
+                                        (RealConstant
+                                            3.140000
+                                            (Real 4)
+                                        )
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             3.140000
-                                            (Complex 8)
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 8)
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 8)
+                                (Real 4)
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000010
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000010
-                                    (Real 8)
-                                )
+                            (RealConstant
+                                0.000010
+                                (Real 4)
                             )
                             (Logical 4)
                             ()
@@ -1011,9 +987,9 @@
                                 Cmplx
                                 [(Var 2 x1)
                                 (Var 2 i)
-                                (IntegerConstant 8 (Integer 4) Decimal)]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
-                                (Complex 8)
+                                (Complex 4)
                                 ()
                             )]
                             FormatFortran
@@ -1033,56 +1009,39 @@
                                         Cmplx
                                         [(Var 2 x1)
                                         (Var 2 i)
-                                        (IntegerConstant 8 (Integer 4) Decimal)]
+                                        (IntegerConstant 4 (Integer 4) Decimal)]
                                         0
-                                        (Complex 8)
+                                        (Complex 4)
                                         ()
                                     )
                                     Sub
-                                    (Cast
-                                        (ComplexConstructor
-                                            (RealConstant
-                                                3.140000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                42.000000
-                                                (Real 4)
-                                            )
-                                            (Complex 4)
-                                            (ComplexConstant
-                                                3.140000
-                                                42.000000
-                                                (Complex 4)
-                                            )
+                                    (ComplexConstructor
+                                        (RealConstant
+                                            3.140000
+                                            (Real 4)
                                         )
-                                        ComplexToComplex
-                                        (Complex 8)
+                                        (RealConstant
+                                            42.000000
+                                            (Real 4)
+                                        )
+                                        (Complex 4)
                                         (ComplexConstant
                                             3.140000
                                             42.000000
-                                            (Complex 8)
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 8)
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 8)
+                                (Real 4)
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000010
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.000010
-                                    (Real 8)
-                                )
+                            (RealConstant
+                                0.000010
+                                (Real 4)
                             )
                             (Logical 4)
                             ()

@@ -1,5 +1,0 @@
-semantic error: Too many arguments to call `dcmplx`
-  --> tests/../integration_tests/complex_07.f90:17:10
-   |
-17 |     x2 = dcmplx(real_part)
-   |          ^^^^^^^^^^^^^^^^^ 
