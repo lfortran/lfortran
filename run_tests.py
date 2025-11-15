@@ -134,6 +134,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if options:
         extra_args += " " + options
 
+    tokens_in_extra = extra_args.split()
+    if "-g" in tokens_in_extra and "--debug-with-line-column" not in tokens_in_extra:
+        extra_args += " --debug-with-line-column"
+
     if tokens:
         run_test(
             filename,
