@@ -2142,7 +2142,10 @@ namespace LCompilers {
 
 
     llvm::Value* LLVMUtils::get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr, bool get_pointer_to_data /*default*/){
-        LCOMPILERS_ASSERT(is_proper_array_of_strings_llvm_var(type, arr_ptr))
+        if (!is_proper_array_of_strings_llvm_var(type, arr_ptr)) {
+            // Handle character arrays
+            return arr_ptr;
+        }
         LCOMPILERS_ASSERT(ASRUtils::is_array_of_strings(type))
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
