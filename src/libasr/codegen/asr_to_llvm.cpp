@@ -11109,6 +11109,9 @@ public:
                     } else {
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
                     }
+                    builder->CreateStore(
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                        iostat);
                     return;
                 } else {
                     fn = get_read_function(type);
