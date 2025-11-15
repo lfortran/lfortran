@@ -38,21 +38,22 @@ def run_test(backend, std):
 
     cwd=f"{BASE_DIR}/test-{backend}"
     common=f" -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
+    debug_flag = "-DCMAKE_Fortran_FLAGS_DEBUG=--debug-with-line-column"
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
         run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} {std_string}" + common,
+                f"-DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} {std_string} {debug_flag}" + common,
                 cwd=cwd)
     elif backend == "fortran":
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} "
             f"-DFAST={fast_tests} -DLLVM_GOC={separate_compilation} -DNOFAST_LLVM16={nofast_llvm16} "
-            f"-DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string}" + common,
+            f"-DCMAKE_Fortran_FLAGS=\"-fPIC\" {std_string} {debug_flag}" + common,
                 cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
-                f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
+                f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} {debug_flag} " + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
