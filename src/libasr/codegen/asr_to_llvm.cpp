@@ -13332,6 +13332,9 @@ public:
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
             h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
+            // Fortran77 ABI uses same calling convention as Source/BindC
+            h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
             if (sub_name == "get_command_argument") {
                 llvm::Function *fn = module->getFunction("_lpython_get_argv");
@@ -14064,6 +14067,9 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
+            // Fortran77 ABI uses same calling convention as Source/BindC
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic || intrinsic_function) {
             std::string func_name = s->m_name;
