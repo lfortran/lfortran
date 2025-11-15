@@ -9517,7 +9517,8 @@ public:
                     x, args, signature.kwarg_names,
                     signature.positional_args, signature.max_args,
                     var_name, false);
-                if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
+                if (compiler_options.legacy_array_sections &&
+                        is_specific_type_intrinsic && specific_var_name == "dcmplx") {
                     ASR::ttype_t *int_kind4 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                     if (args.size() < 3) {
                         args.reserve(al, 3);
