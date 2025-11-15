@@ -4348,7 +4348,6 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
-                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
@@ -4684,6 +4683,10 @@ public:
 
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
+        if (compiler_options.legacy_array_sections && final_sym != nullptr) {
+            legacy_array_sections_helper(final_sym, args, x.base.base.loc);
+        }
+
         ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
@@ -5933,6 +5936,123 @@ public:
 
 };
 
+static ASR::ttype_t* convert_descriptor_to_pointer_array(Allocator &al, ASR::ttype_t* type) {
+    if (type == nullptr) return nullptr;
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            ASR::ttype_t *new_inner = convert_descriptor_to_pointer_array(al, arr->m_type);
+            bool needs_pointer = arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray;
+            if (!needs_pointer && new_inner == arr->m_type) {
+                return type;
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, arr->n_dims);
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                dims.push_back(al, arr->m_dims[i]);
+            }
+            ASR::array_physical_typeType new_physical = needs_pointer ?
+                ASR::array_physical_typeType::PointerArray : arr->m_physical_type;
+            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
+                new_inner, dims.p, dims.size(), new_physical));
+        }
+        case ASR::ttypeType::Pointer: {
+            ASR::Pointer_t *pt = ASR::down_cast<ASR::Pointer_t>(type);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, pt->m_type);
+            if (new_type == pt->m_type) return type;
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, pt->base.base.loc, new_type));
+        }
+        case ASR::ttypeType::Allocatable: {
+            ASR::Allocatable_t *alloc = ASR::down_cast<ASR::Allocatable_t>(type);
+            ASR::ttype_t *new_type = convert_descriptor_to_pointer_array(al, alloc->m_type);
+            if (new_type == alloc->m_type) return type;
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, alloc->base.base.loc, new_type));
+        }
+        default:
+            return type;
+    }
+}
+
+static void rewrite_fortran77_pointer_arrays(Allocator &al, SymbolTable *scope,
+        bool force_fortran77, bool trace_fortran77) {
+    if (!scope) return;
+    for (auto &item: scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Module_t>(*sym)) {
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(sym);
+            rewrite_fortran77_pointer_arrays(al, mod->m_symtab,
+                force_fortran77, trace_fortran77);
+            continue;
+        }
+        bool is_function = ASR::is_a<ASR::Function_t>(*sym);
+        if (!is_function) {
+            continue;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(fn);
+        bool wants_conversion = fn_type->m_abi == ASR::abiType::Fortran77;
+        if (!wants_conversion && !force_fortran77) {
+            continue;
+        }
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *raw_sym = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            ASR::symbol_t *var_sym = ASRUtils::symbol_get_past_external(raw_sym);
+            if (!ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                if (trace_fortran77) {
+                    trace_fortran77_log(true, "rewrite-pointer-arrays",
+                        std::string("Skipping Fortran77 pointer rewrite for non-variable arg #") +
+                        std::to_string(i + 1) + " of '" + fn->m_name + "'");
+                }
+                continue;
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(var_sym);
+            ASR::ttype_t *converted_dummy = convert_descriptor_to_pointer_array(al, var->m_type);
+            ASR::ttype_t *converted_signature = convert_descriptor_to_pointer_array(al, fn_type->m_arg_types[i]);
+            if (converted_dummy != var->m_type) {
+                trace_fortran77_log(trace_fortran77, "rewrite-pointer-arrays",
+                    std::string("Function '") + fn->m_name + "' rewrote dummy arg '" +
+                    var->m_name + "' (#" + std::to_string(i + 1) + ") from " +
+                    ASRUtils::describe_array_physical_kind(var->m_type) +
+                    " to " + ASRUtils::describe_array_physical_kind(converted_dummy));
+            }
+            var->m_type = converted_dummy;
+            fn_type->m_arg_types[i] = converted_signature;
+        }
+        if (fn_type->m_return_var_type) {
+            ASR::ttype_t *converted_ret = convert_descriptor_to_pointer_array(al, fn_type->m_return_var_type);
+            if (converted_ret != fn_type->m_return_var_type) {
+                trace_fortran77_log(trace_fortran77, "rewrite-pointer-arrays",
+                    std::string("Function '") + fn->m_name + "' rewrote return value physical type " +
+                    ASRUtils::describe_array_physical_kind(fn_type->m_return_var_type) +
+                    " -> " + ASRUtils::describe_array_physical_kind(converted_ret));
+            }
+            fn_type->m_return_var_type = converted_ret;
+        }
+    }
+}
+
+class ArrayPhysicalCastFixer : public ASR::BaseWalkVisitor<ArrayPhysicalCastFixer> {
+public:
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        ASR::ArrayPhysicalCast_t &x_mut = const_cast<ASR::ArrayPhysicalCast_t&>(x);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_arg);
+        ASR::array_physical_typeType actual_old = ASRUtils::extract_physical_type(arg_type);
+        ASR::array_physical_typeType actual_new = ASRUtils::extract_physical_type(x.m_type);
+
+        x_mut.m_old = actual_old;
+        x_mut.m_new = actual_new;
+
+        BaseWalkVisitor::visit_ArrayPhysicalCast(x);
+    }
+};
+
+static void fixup_array_physical_casts(Allocator &al, ASR::TranslationUnit_t *tu) {
+    (void)al;
+    ArrayPhysicalCastFixer fixer;
+    fixer.visit_TranslationUnit(*tu);
+}
+
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
@@ -5964,6 +6084,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+    rewrite_fortran77_pointer_arrays(al, tu->m_symtab,
+        compiler_options.legacy_array_sections,
+        compiler_options.trace_fortran77);
+    fixup_array_physical_casts(al, tu);
     return tu;
 }
 

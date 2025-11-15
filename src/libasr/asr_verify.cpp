@@ -61,10 +61,15 @@ private:
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
+    const Function_t* current_function;
+    const ASR::FunctionType_t* current_function_type = nullptr;
+    const ASR::ttype_t* current_ft_arg = nullptr;
+    int current_ft_arg_index = -1;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false},
+        current_function{nullptr} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -459,6 +464,8 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        const Function_t* current_function_copy = current_function;
+        current_function = &x;
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -536,6 +543,7 @@ public:
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
+        current_function = current_function_copy;
     }
 
     template <typename T>
@@ -891,6 +899,24 @@ public:
             non_global_symbol_visited = false;
         } else {
             non_global_symbol_visited = true;
+            if (_processing_dims && current_function != nullptr && current_function_type != nullptr) {
+                std::string type_str;
+                if (current_ft_arg != nullptr) {
+                    type_str = ASRUtils::type_to_str_python_expr(current_ft_arg, nullptr);
+                }
+                std::cerr << "[verify-debug] FunctionType dependency on '"
+                          << x_mv_name << "' while verifying function '"
+                          << current_function->m_name << "'";
+                if (current_ft_arg_index >= 0) {
+                    std::cerr << " argument #" << (current_ft_arg_index + 1);
+                } else {
+                    std::cerr << " return type";
+                }
+                if (!type_str.empty()) {
+                    std::cerr << " (type=" << type_str << ")";
+                }
+                std::cerr << "\n";
+            }
         }
         _is_return_type_string = false;
 
@@ -903,6 +929,28 @@ public:
         if ( x_mv_name != current_name ) {
             variable_dependencies.push_back(x_mv_name);
         }
+    }
+
+    void visit_FunctionParam(const FunctionParam_t &x) {
+        if (current_function != nullptr) {
+            int64_t idx = x.m_param_number;
+            if (idx >= 0 && static_cast<size_t>(idx) < current_function->n_args) {
+                ASR::expr_t* arg_expr = current_function->m_args[idx];
+                if (arg_expr != nullptr) {
+                    ASR::expr_t* original_arg = ASRUtils::get_past_array_physical_cast(arg_expr);
+                    if (original_arg && ASR::is_a<ASR::Var_t>(*original_arg)) {
+                        std::string dep_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(original_arg)->m_v);
+                        if (std::find(variable_dependencies.begin(),
+                                      variable_dependencies.end(),
+                                      dep_name) == variable_dependencies.end()) {
+                            variable_dependencies.push_back(dep_name);
+                        }
+                    }
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FunctionParam(x);
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
@@ -1034,7 +1082,8 @@ public:
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
-        if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
+        if( x.m_old != ASR::array_physical_typeType::DescriptorArray &&
+            x.m_old != ASR::array_physical_typeType::PointerArray ) {
             require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
                 "the old physical type and new physical type must be different.");
         }
@@ -1130,23 +1179,36 @@ public:
 
     void visit_FunctionType(const FunctionType_t& x) {
 
-        #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
+        #define verify_nonscoped_ttype(idx, ttype) do { \
+            const ASR::ttype_t* prev_ft_arg = current_ft_arg; \
+            int prev_ft_arg_index = current_ft_arg_index; \
+            current_ft_arg = ttype; \
+            current_ft_arg_index = idx; \
+            non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
             require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
+            current_ft_arg = prev_ft_arg; \
+            current_ft_arg_index = prev_ft_arg_index; \
+        } while(0)
 
         _is_return_type_string = false;
         if (x.m_return_var_type) {
             _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);
         }
 
+        const ASR::FunctionType_t* prev_ft = current_function_type;
+        current_function_type = &x;
+
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
-            verify_nonscoped_ttype(x.m_arg_types[i]);
+            verify_nonscoped_ttype((int)i, x.m_arg_types[i]);
         }
         if( x.m_return_var_type ) {
-            verify_nonscoped_ttype(x.m_return_var_type);
+            verify_nonscoped_ttype(-1, x.m_return_var_type);
         }
+
+        current_function_type = prev_ft;
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {

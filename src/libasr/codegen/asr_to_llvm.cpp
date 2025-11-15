@@ -3003,16 +3003,27 @@ public:
                 (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    if (is_intent_in) {
-                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_start;
+                    llvm::Value* dim_size;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
                     } else {
-                        load_array_size_deep_copy(m_dims[idim].m_length);
+                        dim_start = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
                     }
-                    llvm::Value* dim_size = tmp;
+                    if (m_dims[idim].m_length) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
+                        if (is_intent_in) {
+                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        } else {
+                            load_array_size_deep_copy(m_dims[idim].m_length);
+                        }
+                        dim_size = tmp;
+                    } else {
+                        // Assumed-size dimension (e.g., A(*)) - use -1 as sentinel for unbounded
+                        dim_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
                 }
@@ -3020,9 +3031,14 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        dim_start = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -6192,6 +6208,16 @@ public:
         }
         llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
+        ASR::abiType assoc_value_abi = ASR::abiType::Source;
+        bool value_is_fortran77_passthrough = false;
+        if( compiler_options.legacy_array_sections ) {
+            try {
+                assoc_value_abi = ASRUtils::expr_abi(array_section->m_v);
+                value_is_fortran77_passthrough = (assoc_value_abi == ASR::abiType::Fortran77);
+            } catch (const LCompilers::LCompilersException &) {
+                assoc_value_abi = ASR::abiType::Source;
+            }
+        }
         ptr_loads = 0;
         visit_expr(*x.m_target);
         llvm::Value* target_desc = tmp;
@@ -6236,29 +6262,61 @@ public:
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
-        if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
+        bool treat_as_data_only = value_is_fortran77_passthrough ||
+            arr_physical_type == ASR::array_physical_typeType::PointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer;
+#if LLVM_VERSION_MAJOR < 15
+        if( compiler_options.legacy_array_sections && !treat_as_data_only &&
+            value_desc->getType()->isPointerTy() &&
+            value_desc->getType()->getPointerElementType() != value_desc_type ) {
+            treat_as_data_only = true;
+        }
+#endif
+        if( treat_as_data_only ) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
-                !is_parameter) {
+                !is_parameter ) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(value_array_type)),
                     module.get());
-                value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
+                bool needs_gep = true;
+                if( compiler_options.legacy_array_sections && value_is_fortran77_passthrough ) {
+                    needs_gep = false;
+                }
+#if LLVM_VERSION_MAJOR < 15
+                if( value_desc->getType()->isPointerTy() &&
+                    value_desc->getType()->getPointerElementType() != val_type ) {
+                    needs_gep = false;
+                }
+#endif
+                if( needs_gep ) {
+                    value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
+                }
             }
             ASR::dimension_t* m_dims = nullptr;
-            // Fill in m_dims:
             [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
+            auto emit_dim_component = [&](ASR::expr_t* expr, int64_t fallback, const char* label) -> llvm::Value* {
+                if (!expr) {
+                    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, fallback));
+                }
+                visit_expr_wrapper(expr, true);
+                llvm::Value* val = tmp;
+                if (!val->getType()->isIntegerTy()) {
+                    throw CodeGenError(std::string("Expected integer array index for ") + label);
+                }
+                if (val->getType()->getIntegerBitWidth() != 32) {
+                    val = builder->CreateSExtOrTrunc(val, llvm::Type::getInt32Ty(context));
+                }
+                return val;
+            };
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-                llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                llvm_diminfo.push_back(al, emit_dim_component(m_dims[i].m_start, 1, "array section lower bound"));
+                llvm_diminfo.push_back(al, emit_dim_component(m_dims[i].m_length, 1, "array section length"));
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
@@ -12407,7 +12465,8 @@ public:
                 llvm::Value *value = tmp;
                 if (orig_arg_intent == ASR::intentType::In ||
                     orig_arg_intent == ASR::intentType::InOut ||
-                    orig_arg_intent == ASR::intentType::Out) {
+                    orig_arg_intent == ASR::intentType::Out ||
+                    orig_arg == nullptr) {
                     /*
                         For the cases where argument intent is In or InOut or Out, we
                         cannot pass the evaluated value of expression directly to it. Currently
@@ -12416,6 +12475,10 @@ public:
 
                         To avoid this problem, we manually set the expr value to nullptr.
                         For example, refer integration_tests/intent_03.f90
+
+                        For implicit interfaces (orig_arg == nullptr), we also need to re-visit
+                        ArrayItem to get the pointer instead of the evaluated value.
+                        For example, refer integration_tests/legacy_array_sections_03.f90
                     */
                     // TODO: this is possible in other cases as well, support those.
                     if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
@@ -12507,7 +12570,7 @@ public:
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
-                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) && orig_arg != nullptr) {
                         use_value = true;
                     }
                     if (!use_value) {
@@ -12576,6 +12639,20 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
+            }
+
+            // For descriptor-based arrays, extract the data pointer before passing to function
+            ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value)));
+            if (ASRUtils::is_array(arg_type_unwrapped) &&
+                ASRUtils::extract_physical_type(arg_type_unwrapped) == ASR::array_physical_typeType::DescriptorArray) {
+                // tmp points to a descriptor struct; extract the data pointer (field 0)
+                llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, arg_type_unwrapped, module.get());
+                llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, ASRUtils::extract_type(arg_type_unwrapped), module.get());
+                tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(desc_type, tmp));
             }
 
             args.push_back(tmp);
@@ -13286,6 +13363,9 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::Source) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
+            // Fortran77 ABI uses same calling convention as Source/BindC
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
             if (sub_name == "get_command_argument") {
@@ -14019,6 +14099,9 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::ExternalUndefined) {
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
+            h = get_hash((ASR::asr_t*)proc_sym);
+        } else if (s_func_type->m_abi == ASR::abiType::Fortran77) {
+            // Fortran77 ABI uses same calling convention as Source/BindC
             h = get_hash((ASR::asr_t*)proc_sym);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic || intrinsic_function) {
             std::string func_name = s->m_name;

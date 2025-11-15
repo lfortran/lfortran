@@ -59,10 +59,18 @@ public:
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
             common_variables_hash, external_procedures_mapping,
-            explicit_intrinsic_procedures_mapping,
-            instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+        explicit_intrinsic_procedures_mapping,
+        instantiate_types, instantiate_symbols, entry_functions,
+        entry_function_arguments_mapping, data_structure, lm
         ) {}
+
+    ASR::abiType get_effective_procedure_abi() const {
+        if (compiler_options.fortran77_abi &&
+                current_procedure_abi_type == ASR::abiType::Source) {
+            return ASR::abiType::Fortran77;
+        }
+        return current_procedure_abi_type;
+    }
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -753,7 +761,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             return_var_expr,
-            current_procedure_abi_type,
+            get_effective_procedure_abi(),
             s_access, deftype, nullptr,
             false, false, false, false, false,
             nullptr, 0,
@@ -1198,7 +1206,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             nullptr,
-            current_procedure_abi_type,
+            get_effective_procedure_abi(),
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
@@ -1730,7 +1738,7 @@ public:
             /* a_args */ args.p, /* n_args */ args.size(),
             /* m_body */ nullptr, /* n_body */ 0,
             /* m_return_var */ ASRUtils::EXPR(return_var_ref),
-            /* m_abi */ current_procedure_abi_type,
+            /* m_abi */ get_effective_procedure_abi(),
             /* m_access */ s_access, /* m_deftype */ deftype,
             /* m_bindc_name */ bindc_name, /* m_elemental */ is_elemental,
             /* m_pure */ is_pure, /* m_module */ is_module,

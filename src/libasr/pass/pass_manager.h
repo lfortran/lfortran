@@ -30,6 +30,7 @@
 #include <libasr/pass/replace_print_list_tuple.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
@@ -187,6 +188,8 @@ namespace LCompilers {
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                PassUtils::UpdateDependenciesVisitor update_dependencies(al);
+                update_dependencies.visit_TranslationUnit(*asr);
 #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();

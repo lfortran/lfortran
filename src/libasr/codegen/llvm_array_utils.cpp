@@ -778,6 +778,14 @@ namespace LCompilers {
                     dim_size = builder->CreateSExtOrTrunc(dim_size, llvm::Type::getInt32Ty(context));
                     r1 += 2;
                     if( check_for_bounds ) {
+                        // Check if this is an assumed-size dimension (sentinel value -1)
+                        llvm::Value* is_assumed_size = builder->CreateICmpEQ(dim_size,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
+                        llvm::BasicBlock* check_bounds_bb = llvm::BasicBlock::Create(context, "check_bounds", builder->GetInsertBlock()->getParent());
+                        llvm::BasicBlock* skip_check_bb = llvm::BasicBlock::Create(context, "skip_bounds_check", builder->GetInsertBlock()->getParent());
+                        builder->CreateCondBr(is_assumed_size, skip_check_bb, check_bounds_bb);
+
+                        builder->SetInsertPoint(check_bounds_bb);
                         llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
                         llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, dim_size),
                                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
@@ -796,8 +804,16 @@ namespace LCompilers {
                                                         dimension,
                                                         lval,
                                                         ubound);
+                        builder->CreateBr(skip_check_bb);
+
+                        builder->SetInsertPoint(skip_check_bb);
                     }
-                    prod = builder->CreateMul(prod, dim_size);
+                    // For assumed-size arrays, use dim_size=1 for stride calculation (doesn't matter since it's the last dim)
+                    llvm::Value* dim_size_for_stride = builder->CreateSelect(
+                        builder->CreateICmpEQ(dim_size, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true))),
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
+                        dim_size);
+                    prod = builder->CreateMul(prod, dim_size_for_stride);
                 }
             }
             return idx;
