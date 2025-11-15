@@ -12468,7 +12468,8 @@ public:
                 llvm::Value *value = tmp;
                 if (orig_arg_intent == ASR::intentType::In ||
                     orig_arg_intent == ASR::intentType::InOut ||
-                    orig_arg_intent == ASR::intentType::Out) {
+                    orig_arg_intent == ASR::intentType::Out ||
+                    orig_arg == nullptr) {
                     /*
                         For the cases where argument intent is In or InOut or Out, we
                         cannot pass the evaluated value of expression directly to it. Currently
@@ -12477,6 +12478,10 @@ public:
 
                         To avoid this problem, we manually set the expr value to nullptr.
                         For example, refer integration_tests/intent_03.f90
+
+                        For implicit interfaces (orig_arg == nullptr), we also need to re-visit
+                        ArrayItem to get the pointer instead of the evaluated value.
+                        For example, refer integration_tests/legacy_array_sections_03.f90
                     */
                     // TODO: this is possible in other cases as well, support those.
                     if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
@@ -12568,7 +12573,7 @@ public:
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
-                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) && orig_arg != nullptr) {
                         use_value = true;
                     }
                     if (!use_value) {
@@ -12637,6 +12642,20 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
+            }
+
+            // For descriptor-based arrays, extract the data pointer before passing to function
+            ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value)));
+            if (ASRUtils::is_array(arg_type_unwrapped) &&
+                ASRUtils::extract_physical_type(arg_type_unwrapped) == ASR::array_physical_typeType::DescriptorArray) {
+                // tmp points to a descriptor struct; extract the data pointer (field 0)
+                llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, arg_type_unwrapped, module.get());
+                llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i].m_value, ASRUtils::extract_type(arg_type_unwrapped), module.get());
+                tmp = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(desc_type, tmp));
             }
 
             args.push_back(tmp);
