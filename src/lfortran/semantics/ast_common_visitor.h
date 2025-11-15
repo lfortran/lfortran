@@ -11438,13 +11438,53 @@ public:
     }
 
     void visit_String(const AST::String_t &x) {
-        int s_len = strlen(x.m_s);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, 
+        // Handle optional kind-literal prefix: kind_"..." or kind_'...'
+        std::string tok = std::string(x.m_s ? x.m_s : "");
+        size_t first_quote = tok.find_first_of("\"'");
+        int64_t kind_val = 1; // default kind
+        std::string content;
+        if (first_quote != std::string::npos) {
+            char q = tok[first_quote];
+            // Determine end quote position (simple scan; doubled quotes not handled exhaustively)
+            size_t end_quote = tok.find(q, first_quote + 1);
+            if (end_quote == std::string::npos) end_quote = tok.size();
+            // Extract prefix before quote if any and ends with '_'
+            if (first_quote >= 2 && tok[first_quote - 1] == '_') {
+                std::string prefix = tok.substr(0, first_quote - 1);
+                // Try numeric kind
+                bool numeric = !prefix.empty() && std::all_of(prefix.begin(), prefix.end(), ::isdigit);
+                if (numeric) {
+                    kind_val = std::stoll(prefix);
+                } else {
+                    // Try resolve parameter integer variable
+                    ASR::symbol_t *ksym = current_scope->resolve_symbol(prefix);
+                    if (ksym && ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ksym))) {
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ksym));
+                        if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(v->m_type)) && v->m_value && ASR::is_a<ASR::IntegerConstant_t>(*v->m_value)) {
+                            kind_val = ASR::down_cast<ASR::IntegerConstant_t>(v->m_value)->m_n;
+                        }
+                    }
+                }
+            }
+            // Extract raw content between quotes, strip quotes
+            if (end_quote > first_quote + 1) {
+                content = tok.substr(first_quote + 1, end_quote - first_quote - 1);
+            } else {
+                content.clear();
+            }
+        } else {
+            // No quotes found (should not happen for string tokens), use raw
+            content = tok;
+        }
+
+        // Create ASR string type with resolved kind and correct length
+        int s_len = (int)content.size();
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, kind_val,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, s_len,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
-        tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
+        tmp = ASR::make_StringConstant_t(al, x.base.base.loc, s2c(al, content), type);
     }
 
     void visit_BOZ(const AST::BOZ_t& x) {
