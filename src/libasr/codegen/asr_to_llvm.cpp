@@ -1312,8 +1312,74 @@ public:
                     builder->CreateStore(builder->CreateBitCast(
                         malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
                 } else if (ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type)) {
-                    // TODO: Implement source argument when m_source is class
-                    bool m_source_is_class = m_source && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)));
+                    ASR::ttype_t* source_expr_type = nullptr;
+                    ASR::ttype_t* source_underlying_type = nullptr;
+                    if (m_source) {
+                        source_expr_type = ASRUtils::expr_type(m_source);
+                        ASR::ttype_t* source_no_alloc = ASRUtils::type_get_past_allocatable(source_expr_type);
+                        source_underlying_type = ASRUtils::type_get_past_pointer(source_no_alloc);
+                    }
+                    bool m_source_is_class = source_underlying_type && ASRUtils::is_class_type(source_underlying_type);
+
+                    if (m_source && m_source_is_class && compiler_options.new_classes) {
+                        llvm::Value* target_addr = x_arr;
+
+                        int64_t saved_ptr_loads = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr(*m_source);
+                        llvm::Value* source_handle = tmp;
+                        ptr_loads = saved_ptr_loads;
+                        tmp = nullptr;
+
+                        ASR::ttype_t* source_type = source_expr_type;
+                        llvm::Type* source_wrapper_type = llvm_utils->get_type_from_ttype_t_util(
+                            m_source, ASRUtils::extract_type(source_type), module.get());
+
+                        if (source_type && LLVM::is_llvm_pointer(*source_type)) {
+                            source_handle = llvm_utils->CreateLoad2(
+                                source_wrapper_type->getPointerTo(), source_handle);
+                        }
+
+                        llvm::FunctionType* alloc_fn_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), { llvm_utils->i8_ptr->getPointerTo() }, false);
+                        llvm::PointerType* alloc_fn_ptr_type = llvm::PointerType::get(alloc_fn_type, 0);
+                        llvm::PointerType* alloc_fn_ptr_ptr_type = llvm::PointerType::get(alloc_fn_ptr_type, 0);
+                        llvm::PointerType* alloc_fn_ptr_ptr_ptr_type = llvm::PointerType::get(alloc_fn_ptr_ptr_type, 0);
+
+                        llvm::Value* vtable_alloc_ptr = builder->CreateBitCast(
+                            source_handle, alloc_fn_ptr_ptr_ptr_type);
+                        vtable_alloc_ptr = llvm_utils->CreateLoad2(alloc_fn_ptr_ptr_type, vtable_alloc_ptr);
+                        llvm::Value* alloc_fn_slot = llvm_utils->create_ptr_gep2(
+                            alloc_fn_ptr_type, vtable_alloc_ptr, 1);
+                        alloc_fn_slot = llvm_utils->CreateLoad2(alloc_fn_ptr_type, alloc_fn_slot);
+
+                        llvm::Value* target_addr_as_i8pp = builder->CreateBitCast(
+                            target_addr, llvm_utils->i8_ptr->getPointerTo());
+                        builder->CreateCall(alloc_fn_type, alloc_fn_slot, { target_addr_as_i8pp });
+
+                        llvm::Value* target_struct_i8 = llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr, target_addr_as_i8pp);
+
+                        llvm::FunctionType* copy_fn_type = llvm_utils->struct_copy_functype;
+                        llvm::PointerType* copy_fn_ptr_type = llvm::PointerType::get(copy_fn_type, 0);
+                        llvm::PointerType* copy_fn_ptr_ptr_type = llvm::PointerType::get(copy_fn_ptr_type, 0);
+                        llvm::PointerType* copy_fn_ptr_ptr_ptr_type = llvm::PointerType::get(copy_fn_ptr_ptr_type, 0);
+
+                        llvm::Value* vtable_copy_ptr = builder->CreateBitCast(
+                            source_handle, copy_fn_ptr_ptr_ptr_type);
+                        vtable_copy_ptr = llvm_utils->CreateLoad2(copy_fn_ptr_ptr_type, vtable_copy_ptr);
+                        llvm::Value* copy_fn_slot = llvm_utils->create_ptr_gep2(
+                            copy_fn_ptr_type, vtable_copy_ptr, 0);
+                        copy_fn_slot = llvm_utils->CreateLoad2(copy_fn_ptr_type, copy_fn_slot);
+
+                        llvm::Value* source_struct_i8 = builder->CreateBitCast(
+                            source_handle, llvm_utils->i8_ptr);
+                        builder->CreateCall(copy_fn_type, copy_fn_slot,
+                                            { source_struct_i8, target_struct_i8 });
+
+                        continue;
+                    }
+
                     if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
