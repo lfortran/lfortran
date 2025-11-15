@@ -3021,7 +3021,8 @@ public:
                         }
                         dim_size = tmp;
                     } else {
-                        dim_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                        // Assumed-size dimension (e.g., A(*)) - use -1 as sentinel for unbounded
+                        dim_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
                     }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
