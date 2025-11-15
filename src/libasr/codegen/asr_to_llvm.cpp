@@ -3031,11 +3031,17 @@ public:
                 ASRUtils::type_get_past_pointer(x_mv_type));
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*x_mv_type_));
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x_mv_type_);
+            // Check if we have assumed-size dimensions (no upper bound known)
+            // For DescriptorArray, we can still do runtime bounds checking even with deferred shapes
+            // Only skip bounds checking for PointerArray with truly assumed-size dimensions
             bool has_assumed_size_dim = false;
-            for (size_t id = 0; id < (size_t)array_t->n_dims; id++) {
-                if (array_t->m_dims[id].m_length == nullptr) {
-                    has_assumed_size_dim = true;
-                    break;
+            bool is_descriptor_array = array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray;
+            if (!is_descriptor_array) {
+                for (size_t id = 0; id < (size_t)array_t->n_dims; id++) {
+                    if (array_t->m_dims[id].m_length == nullptr) {
+                        has_assumed_size_dim = true;
+                        break;
+                    }
                 }
             }
             bool is_bindc_array = ASRUtils::expr_abi(x.m_v) == ASR::abiType::BindC;
