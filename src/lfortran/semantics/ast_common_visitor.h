@@ -9517,18 +9517,6 @@ public:
                     x, args, signature.kwarg_names,
                     signature.positional_args, signature.max_args,
                     var_name, false);
-                if (compiler_options.legacy_array_sections &&
-                        is_specific_type_intrinsic && specific_var_name == "dcmplx") {
-                    ASR::ttype_t *int_kind4 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    if (args.size() < 3) {
-                        args.reserve(al, 3);
-                        while (args.size() < 3) {
-                            args.push_back(al, nullptr);
-                        }
-                    }
-                    args.p[2] = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int_kind4));
-                }
                 check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
                     diag.add(Diagnostic("No matching signature found for intrinsic " + var_name,
