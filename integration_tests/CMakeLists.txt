@@ -2321,6 +2321,9 @@ RUN(NAME lapack_05 LABELS gfortran
 RUN(NAME lapack_06 LABELS gfortran llvm
     EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections
     GFORTRAN_ARGS -ffixed-form)
+RUN(NAME lapack_assumed_size_ptr LABELS gfortran llvm
+    EXTRA_ARGS --fixed-form --implicit-interface --legacy-array-sections
+    GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME complex_param_unary_minus LABELS gfortran llvm)
 
