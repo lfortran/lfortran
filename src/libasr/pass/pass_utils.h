@@ -418,13 +418,15 @@ namespace LCompilers {
                 bool _return_var_or_intent_out = false;
                 SymbolTable* current_scope;
                 std::string current_name;
+                const ASR::Function_t* current_function;
 
             public:
 
                 UpdateDependenciesVisitor(Allocator &al_)
                 : al(al_), fill_function_dependencies(false),
                 fill_module_dependencies(false),
-                fill_variable_dependencies(false)
+                fill_variable_dependencies(false),
+                current_function(nullptr)
                 {
                     function_dependencies.n = 0;
                     module_dependencies.n = 0;
@@ -436,6 +438,8 @@ namespace LCompilers {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = xx.m_symtab;
+                    const ASR::Function_t* current_function_copy = current_function;
+                    current_function = &xx;
                     SetChar function_dependencies_copy;
                     function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
@@ -451,6 +455,7 @@ namespace LCompilers {
                         function_dependencies_copy.size()
                     );
                     current_scope = current_scope_copy;
+                    current_function = current_function_copy;
                 }
 
                 void visit_Program(const ASR::Program_t& x){
@@ -572,6 +577,23 @@ namespace LCompilers {
                         }
                     }
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
+                }
+
+                void visit_FunctionParam(const ASR::FunctionParam_t& x) {
+                    if (fill_variable_dependencies && current_function != nullptr) {
+                        int64_t idx = x.m_param_number;
+                        if (idx >= 0 && static_cast<size_t>(idx) < current_function->n_args) {
+                            ASR::expr_t* arg_expr = current_function->m_args[idx];
+                            if (arg_expr != nullptr) {
+                                ASR::expr_t* original_arg = ASRUtils::get_past_array_physical_cast(arg_expr);
+                                if (original_arg && ASR::is_a<ASR::Var_t>(*original_arg)) {
+                                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(original_arg)->m_v;
+                                    variable_dependencies.push_back(al, ASRUtils::symbol_name(arg_sym));
+                                }
+                            }
+                        }
+                    }
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionParam(x);
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {

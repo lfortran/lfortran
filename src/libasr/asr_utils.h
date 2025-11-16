@@ -526,6 +526,14 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
     return ASR::abiType::Source;
 }
 
+static inline bool is_bindc_like_abi(ASR::abiType abi) {
+    return abi == ASR::abiType::BindC || abi == ASR::abiType::Fortran77;
+}
+
+static inline bool is_source_like_abi(ASR::abiType abi) {
+    return abi == ASR::abiType::Source || abi == ASR::abiType::Fortran77;
+}
+
 
 // Helper function to convert intentType to Fortran intent string
 static std::string intent_to_str(ASR::intentType intent) {
@@ -768,6 +776,54 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
             throw LCompilersException("Cannot extract the physical type of " +
                     std::to_string(e->type) + " type.");
     }
+}
+
+static inline const char* array_physical_type_to_cstr(
+        ASR::array_physical_typeType physical_type) {
+    switch (physical_type) {
+        case ASR::array_physical_typeType::DescriptorArray:
+            return "DescriptorArray";
+        case ASR::array_physical_typeType::PointerArray:
+            return "PointerArray";
+        case ASR::array_physical_typeType::UnboundedPointerArray:
+            return "UnboundedPointerArray";
+        case ASR::array_physical_typeType::FixedSizeArray:
+            return "FixedSizeArray";
+        case ASR::array_physical_typeType::StringArraySinglePointer:
+            return "StringArraySinglePointer";
+        case ASR::array_physical_typeType::NumPyArray:
+            return "NumPyArray";
+        case ASR::array_physical_typeType::ISODescriptorArray:
+            return "ISODescriptorArray";
+        case ASR::array_physical_typeType::SIMDArray:
+            return "SIMDArray";
+        case ASR::array_physical_typeType::AssumedRankArray:
+            return "AssumedRankArray";
+        default:
+            return "UnknownArrayPhysicalType";
+    }
+}
+
+static inline std::string describe_array_physical_kind(ASR::ttype_t *type) {
+    if (type == nullptr) {
+        return "<null>";
+    }
+    ASR::ttype_t *base = type;
+    while (ASR::is_a<ASR::Pointer_t>(*base) || ASR::is_a<ASR::Allocatable_t>(*base)) {
+        if (ASR::is_a<ASR::Pointer_t>(*base)) {
+            base = ASR::down_cast<ASR::Pointer_t>(base)->m_type;
+        } else {
+            base = ASR::down_cast<ASR::Allocatable_t>(base)->m_type;
+        }
+        if (base == nullptr) {
+            return "<null>";
+        }
+    }
+    if (ASR::is_a<ASR::Array_t>(*base)) {
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(base);
+        return array_physical_type_to_cstr(arr->m_physical_type);
+    }
+    return "scalar";
 }
 
 static inline ASR::abiType expr_abi(ASR::expr_t* e) {
