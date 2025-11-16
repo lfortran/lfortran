@@ -1,11 +1,139 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%event_type = type { i32 (...)**, i32 }
+%lock_type = type { i32 (...)**, i32 }
+%team_type = type { i32 (...)**, i32 }
 %string_descriptor = type <{ i8*, i64 }>
 
+@_Name_event_type = private unnamed_addr constant [11 x i8] c"event_type\00", align 1
+@_Type_Info_event_type = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([11 x i8], [11 x i8]* @_Name_event_type, i32 0, i32 0) }, align 8
+@_VTable_event_type = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_event_type to i8*), i8* bitcast (void (i8*, i8*)* @_copy_lfortran_intrinsic_iso_fortran_env_event_type to i8*), i8* bitcast (void (i8**)* @_allocate_struct_lfortran_intrinsic_iso_fortran_env_event_type to i8*)] }, align 8
+@_Name_lock_type = private unnamed_addr constant [10 x i8] c"lock_type\00", align 1
+@_Type_Info_lock_type = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_lock_type, i32 0, i32 0) }, align 8
+@_VTable_lock_type = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_lock_type to i8*), i8* bitcast (void (i8*, i8*)* @_copy_lfortran_intrinsic_iso_fortran_env_lock_type to i8*), i8* bitcast (void (i8**)* @_allocate_struct_lfortran_intrinsic_iso_fortran_env_lock_type to i8*)] }, align 8
+@_Name_team_type = private unnamed_addr constant [10 x i8] c"team_type\00", align 1
+@_Type_Info_team_type = linkonce_odr unnamed_addr constant { i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_team_type, i32 0, i32 0) }, align 8
+@_VTable_team_type = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_team_type to i8*), i8* bitcast (void (i8*, i8*)* @_copy_lfortran_intrinsic_iso_fortran_env_team_type to i8*), i8* bitcast (void (i8**)* @_allocate_struct_lfortran_intrinsic_iso_fortran_env_team_type to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"R8\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define linkonce_odr void @_copy_lfortran_intrinsic_iso_fortran_env_event_type(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %event_type*
+  %3 = bitcast i8* %1 to %event_type*
+  %4 = bitcast %event_type* %2 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %event_type* %3 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %event_type, %event_type* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %event_type, %event_type* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %event_type* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_event_type, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_lfortran_intrinsic_iso_fortran_env_event_type(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %event_type*
+  %3 = getelementptr %event_type, %event_type* %2, i32 0, i32 1
+  store i32 0, i32* %3, align 4
+  ret void
+}
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+define linkonce_odr void @_copy_lfortran_intrinsic_iso_fortran_env_lock_type(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %lock_type*
+  %3 = bitcast i8* %1 to %lock_type*
+  %4 = bitcast %lock_type* %2 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %lock_type* %3 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %lock_type, %lock_type* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %lock_type, %lock_type* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %lock_type* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_lock_type, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_lfortran_intrinsic_iso_fortran_env_lock_type(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %lock_type*
+  %3 = getelementptr %lock_type, %lock_type* %2, i32 0, i32 1
+  store i32 0, i32* %3, align 4
+  ret void
+}
+
+define linkonce_odr void @_copy_lfortran_intrinsic_iso_fortran_env_team_type(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %team_type*
+  %3 = bitcast i8* %1 to %team_type*
+  %4 = bitcast %team_type* %2 to i32 (...)***
+  %5 = load i32 (...)**, i32 (...)*** %4, align 8
+  %6 = bitcast %team_type* %3 to i32 (...)***
+  store i32 (...)** %5, i32 (...)*** %6, align 8
+  %7 = getelementptr %team_type, %team_type* %2, i32 0, i32 1
+  %8 = load i32, i32* %7, align 4
+  %9 = getelementptr %team_type, %team_type* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store i32 %8, i32* %9, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %10 = bitcast %team_type* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_team_type, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_lfortran_intrinsic_iso_fortran_env_team_type(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = bitcast i8* %1 to %team_type*
+  %3 = getelementptr %team_type, %team_type* %2, i32 0, i32 1
+  store i32 0, i32* %3, align 4
+  ret void
+}
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -49,3 +177,5 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 declare void @_lfortran_free(i8*)
 
 declare void @_lpython_free_argv()
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }
