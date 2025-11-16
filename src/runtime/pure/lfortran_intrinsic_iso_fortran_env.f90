@@ -1,6 +1,23 @@
 module lfortran_intrinsic_iso_fortran_env
 implicit none
 
+public :: lock_type, event_type, team_type
+
+type :: lock_type
+    private
+    integer :: storage = 0
+end type lock_type
+
+type :: event_type
+    private
+    integer :: storage = 0
+end type event_type
+
+type :: team_type
+    private
+    integer :: storage = 0
+end type team_type
+
 integer, parameter :: int8 = 1
 integer, parameter :: int16 = 2
 integer, parameter :: int32 = 4
