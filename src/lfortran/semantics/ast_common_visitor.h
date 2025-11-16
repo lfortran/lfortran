@@ -11269,6 +11269,20 @@ public:
             }
 
             ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
+            if (!a_name && first_struct != nullptr && proc) {
+                // Create an ExternalSymbol in the current scope to reference the
+                // type-bound procedure so ASR verification passes.
+                ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(proc);
+                std::string module_name = "";
+                if (proc_owner) {
+                    module_name = ASRUtils::symbol_name(proc_owner);
+                }
+                a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, proc->base.loc, current_scope,
+                    s2c(al, matched_func_name), proc, s2c(al, module_name),
+                    nullptr, 0, s2c(al, std::string(func->m_name)), ASR::accessType::Public));
+                current_scope->add_symbol(matched_func_name, a_name);
+            }
             if (!a_name) {
                 diag.add(Diagnostic("Unable to resolve matched function: `" + matched_func_name
                                         + "` for defined binary operation",
