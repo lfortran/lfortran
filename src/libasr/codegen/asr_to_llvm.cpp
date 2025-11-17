@@ -1359,23 +1359,13 @@ public:
 
                         llvm::Value* target_struct_i8 = llvm_utils->CreateLoad2(
                             llvm_utils->i8_ptr, target_addr_as_i8pp);
+                        llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                            curr_arg.m_a, curr_arg_m_a_type, module.get());
+                        llvm::Value* target_struct = builder->CreateBitCast(
+                            target_struct_i8, target_struct_type->getPointerTo());
 
-                        llvm::FunctionType* copy_fn_type = llvm_utils->struct_copy_functype;
-                        llvm::PointerType* copy_fn_ptr_type = llvm::PointerType::get(copy_fn_type, 0);
-                        llvm::PointerType* copy_fn_ptr_ptr_type = llvm::PointerType::get(copy_fn_ptr_type, 0);
-                        llvm::PointerType* copy_fn_ptr_ptr_ptr_type = llvm::PointerType::get(copy_fn_ptr_ptr_type, 0);
-
-                        llvm::Value* vtable_copy_ptr = builder->CreateBitCast(
-                            source_handle, copy_fn_ptr_ptr_ptr_type);
-                        vtable_copy_ptr = llvm_utils->CreateLoad2(copy_fn_ptr_ptr_type, vtable_copy_ptr);
-                        llvm::Value* copy_fn_slot = llvm_utils->create_ptr_gep2(
-                            copy_fn_ptr_type, vtable_copy_ptr, 0);
-                        copy_fn_slot = llvm_utils->CreateLoad2(copy_fn_ptr_type, copy_fn_slot);
-
-                        llvm::Value* source_struct_i8 = builder->CreateBitCast(
-                            source_handle, llvm_utils->i8_ptr);
-                        builder->CreateCall(copy_fn_type, copy_fn_slot,
-                                            { source_struct_i8, target_struct_i8 });
+                        llvm_utils->deepcopy(m_source, source_handle, target_struct,
+                            ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
 
                         continue;
                     }
