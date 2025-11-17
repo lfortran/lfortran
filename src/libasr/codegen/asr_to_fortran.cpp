@@ -49,6 +49,7 @@ public:
     // Used for importing struct type inside interface
     bool is_interface = false;
     std::vector<std::string> import_struct_type;
+    bool in_derived_type_component = false;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -685,6 +686,8 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
+        bool old_in_derived_type_component = in_derived_type_component;
+        in_derived_type_component = true;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -693,6 +696,7 @@ public:
                 r += src;
             }
         }
+        in_derived_type_component = old_in_derived_type_component;
 
         std::vector<std::string> class_procedure_order = ASRUtils::determine_class_procedure_declaration_order(x.m_symtab);
         if (class_procedure_order.size() > 0) r += "contains\n";
@@ -765,7 +769,8 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
-        } else if (x.m_storage == ASR::storage_typeType::Save) {
+        } else if (x.m_storage == ASR::storage_typeType::Save &&
+                !in_derived_type_component) {
             r += ", save";
         }
         if (x.m_value_attr) {
