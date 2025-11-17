@@ -134,7 +134,7 @@ time_section "🧪 Testing toml-f" '
   git checkout lf-6
   micromamba install -c conda-forge fpm
 
-  git checkout 7e42ba494647f9008bedcce871a8133ba946c2e9
+  git checkout 8c191574db70fe65c3b07d187fdea1e3504b1b5e
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
@@ -146,10 +146,10 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-4
+  git checkout lf-5
   micromamba install -c conda-forge fpm
 
-  git checkout 81ee9efbf265301986d3ab682994f63c1a20f1cc
+  git checkout 92077d0c678a9ca85f4937a139c45938f51a3271
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
@@ -266,9 +266,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-7
+  git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 0495209655831f5a13f643feaa790e08851adf8a
+  git checkout 934bc012f0cd86788e9d4abb479b523c30938c75
   fpm --compiler=$FC build
   print_success "Done with FPM"
   cd ..
