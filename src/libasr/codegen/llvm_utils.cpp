@@ -1997,6 +1997,31 @@ namespace LCompilers {
         return std::make_pair(data, len);
     }
 
+    llvm::Value* LLVMUtils::ensure_non_opaque_pointer(llvm::Value* ptr, llvm::Type* element_type,
+            const std::string &name) {
+        if (!ptr || !ptr->getType()->isPointerTy()) {
+            return ptr;
+        }
+
+        llvm::PointerType *ptr_type = llvm::cast<llvm::PointerType>(ptr->getType());
+#if LLVM_VERSION_MAJOR >= 15
+        llvm::Type *target_ptr_type = element_type->getPointerTo(ptr_type->getAddressSpace());
+        if (ptr->getType() == target_ptr_type) {
+            return ptr;
+        }
+        return builder->CreateBitCast(ptr, target_ptr_type, name);
+#else
+        if (ptr_type->getPointerElementType() == element_type) {
+            return ptr;
+        }
+        llvm::Type *target_ptr_type = element_type->getPointerTo(ptr_type->getAddressSpace());
+        if (ptr->getType() == target_ptr_type) {
+            return ptr;
+        }
+        return builder->CreateBitCast(ptr, target_ptr_type, name);
+#endif
+    }
+
 
 
     // TODO : Refactor names of the following two functions.

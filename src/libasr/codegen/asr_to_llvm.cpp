@@ -9049,6 +9049,8 @@ public:
         llvm::Value *str_item {};
         {
             llvm::Value* str_data /*  i8*  */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data = llvm_utils->ensure_non_opaque_pointer(
+                str_data, llvm::Type::getInt8Ty(context), "string_item_data");
             llvm::Value* idx_INT64 = llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context));
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
@@ -9101,6 +9103,8 @@ public:
         } else {
             llvm::Value* str_data{}, *str_len{};
             std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data = llvm_utils->ensure_non_opaque_pointer(
+                str_data, llvm::Type::getInt8Ty(context), "string_section_data");
             tmp = lfortran_str_slice(str_data, str_len, left, right, step, left_present, right_present);
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
             tmp = llvm_utils->create_string_descriptor(
@@ -9147,6 +9151,8 @@ public:
         llvm::Value* str_data {}; // Shifted from Original by value = start
         {
             llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data_orig = llvm_utils->ensure_non_opaque_pointer(
+                str_data_orig, llvm::Type::getInt8Ty(context), "string_section_data");
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
             str_data = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data_orig, start, "StrSliceGEP");
@@ -10206,17 +10212,35 @@ public:
         llvm::Value* source_ptr;
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
         llvm::Value* source_descriptor = source;
-        if (is_array &&
-            source_descriptor->getType()->isPointerTy() &&
-            source_descriptor->getType()->getPointerElementType()->isPointerTy()) {
-            source_descriptor = builder->CreateLoad(
-                source_descriptor->getType()->getPointerElementType(),
-                source_descriptor);
+        if (is_array && source_descriptor->getType()->isPointerTy()) {
+#if LLVM_VERSION_MAJOR >= 15
+            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_source))) {
+                ASR::ttype_t *bare_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_source));
+                if (bare_type) {
+                    llvm::Type *bare_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_source, bare_type, module.get());
+                    if (bare_llvm_type) {
+                        llvm::Type *loaded_type = bare_llvm_type->isPointerTy() ?
+                            bare_llvm_type : bare_llvm_type->getPointerTo();
+                        source_descriptor = builder->CreateLoad(loaded_type, source_descriptor);
+                    }
+                }
+            }
+#else
+            if (source_descriptor->getType()->getPointerElementType()->isPointerTy()) {
+                source_descriptor = builder->CreateLoad(
+                    source_descriptor->getType()->getPointerElementType(),
+                    source_descriptor);
+            }
+#endif
         }
         if (ASRUtils::is_character(*expr_type(x.m_source))) {
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
                         llvm_utils->get_stringArray_data(expr_type(x.m_source), source_descriptor) :
                         llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), source_descriptor);
+            source_ptr = llvm_utils->ensure_non_opaque_pointer(
+                source_ptr, llvm::Type::getInt8Ty(context), "transfer_source_data");
         } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
         } else if (is_array) {
