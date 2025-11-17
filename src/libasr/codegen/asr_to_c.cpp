@@ -945,6 +945,7 @@ R"(    // Initialise Numpy
         c_decl_options_.pre_initialise_derived_type = false;
         c_decl_options_.use_ptr_for_derived_type = false;
         c_decl_options_.do_not_initialize = true;
+        c_decl_options_.use_static = false;
         for( size_t i = 0; i < x.n_members; i++ ) {
             ASR::symbol_t* member = x.m_symtab->get_symbol(x.m_members[i]);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
