@@ -8151,15 +8151,6 @@ public:
                         current_select_type_block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(type_sym)->m_name;
-                        // Ensure the ASR type is also tracked for the current select-type block.
-                        // This mirrors the behavior in the TypeStmtType branch and is used by
-                        // subsequent loads/casts that rely on `current_select_type_block_type_asr`.
-                        current_select_type_block_type_asr = ASRUtils::make_StructType_t_util(
-                            al,
-                            type_sym->base.loc,
-                            type_sym,
-                            false
-                        );
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
