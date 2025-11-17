@@ -433,7 +433,20 @@ jobs:
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            ./build_to_wasm.sh
+            
+            # Determine build type based on trigger:
+            # - Main branch: Debug mode (for dev builds)
+            # - Release tag (v*): Release mode (for release builds)
+            # - PR: Debug mode (build only, no upload)
+            if [[ "${GITHUB_REF}" == "refs/tags/v"* ]]; then
+                BUILD_TYPE="Release"
+                echo "Building in Release mode for release tag"
+            else
+                BUILD_TYPE="Debug"
+                echo "Building in Debug mode"
+            fi
+            
+            ./build_to_wasm.sh ${BUILD_TYPE}
 
       - name: Test built lfortran.wasm
         shell: bash -l {0}

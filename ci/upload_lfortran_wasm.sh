@@ -8,7 +8,22 @@ deploy_repo_push="git@github.com:lfortran/wasm_builds.git"
 
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
 git_ref=${GITHUB_REF}
-dest_dir="release"
+
+# Determine dest_dir based on git ref
+# - Main branch pushes go to "dev" (debug builds)
+# - Tags starting with 'v' go to "release" (release builds)
+if [[ ${git_ref} == "refs/heads/main" ]]; then
+    dest_dir="dev"
+    echo "Main branch detected: using dest_dir=${dest_dir}"
+elif [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
+    dest_dir="release"
+    echo "Release tag detected: using dest_dir=${dest_dir}"
+else
+    # We are either on a non-main branch or tagged with a tag that does
+    # not start with v*. We skip the upload.
+    echo "Not a main branch, not tagged with v*, skipping upload..."
+    exit 0
+fi
 
 lfortran_version=$(<version)
 
@@ -42,19 +57,6 @@ git commit -m "${COMMIT_MESSAGE}"
 
 git show HEAD -p --stat
 dest_commit=$(git show HEAD -s --format=%H)
-
-if [[ ${git_ref} == "refs/heads/main" ]]; then
-    echo "The pipeline was triggered from the main branch"
-else
-    if [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
-        echo "The pipeline was triggered from a tag 'v*'"
-    else
-        # We are either on a non-main branch, or tagged with a tag that does
-        # not start with v*. We skip the upload.
-        echo "Not a main branch, not tagged with v*, skipping..."
-        exit 0
-    fi
-fi
 
 set +x
 if [[ "${SSH_PRIVATE_KEY_WASM_BUILDS}" == "" ]]; then
