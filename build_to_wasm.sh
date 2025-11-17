@@ -2,11 +2,8 @@
 
 set -ex
 
-# Accept build type as first argument, default to Release for backwards compatibility
-BUILD_TYPE="${1:-Release}"
-
 cmake \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DWITH_LLVM=yes \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_STACKTRACE=no \
@@ -21,7 +18,7 @@ cp src/runtime/*.mod src/bin/asset_dir
 git clean -dfx -e src/bin/asset_dir
 
 emcmake cmake \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" \
     -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -fexceptions" \
     -DWITH_LLVM=no \
