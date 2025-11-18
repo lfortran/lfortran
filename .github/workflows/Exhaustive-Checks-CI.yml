@@ -7,12 +7,7 @@ on:
     tags:
       - 'v*'
   pull_request:
-    types: 
-      - labeled
-      - unlabeled
-      - synchronize
-      - opened
-      - reopened
+    types: [labeled, unlabeled, synchronize]
     branches:
       - main
 
@@ -35,7 +30,11 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or when the PR has the label at the time of the event
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -95,7 +94,10 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -199,7 +201,10 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ${{ matrix.os }}
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -499,7 +504,10 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -531,7 +539,10 @@ jobs:
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -552,7 +563,10 @@ jobs:
   test_mlir:
     name: Test MLIR backend
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -601,7 +615,10 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -652,7 +669,10 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    # Run on push to main, or only when the specific label is modified on a PR
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     permissions:
       contents: read
       packages: write
