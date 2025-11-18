@@ -1268,6 +1268,7 @@ RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
 RUN(NAME intrinsics_393 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 RUN(NAME intrinsics_394 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx kind cast regression
+RUN(NAME intrinsics_396 LABELS gfortran llvm)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

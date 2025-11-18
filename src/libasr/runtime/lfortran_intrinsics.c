@@ -5856,8 +5856,20 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
 
-LFORTRAN_API int _lfortran_exec_command(char *cmd) {
-    return system(cmd);
+LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
+    char *c_cmd = malloc(sizeof(char) * (len + 1));
+
+    int64_t i = 0;
+    while(i < len) {
+        c_cmd[i] = cmd[i];
+        i++;
+    }
+    c_cmd[i] = '\0';
+
+    int result = system(c_cmd);
+    free(c_cmd);
+
+    return result;
 }
 
 
