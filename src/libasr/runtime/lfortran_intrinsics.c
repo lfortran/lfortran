@@ -5856,15 +5856,16 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
 
+// This function assumes that the length of src is at least len, and dest is at least len + 1 (1 for '\0').
+static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
+    memcpy(dest, src, len);
+    dest[len] = '\0';
+}
+
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = malloc(sizeof(char) * (len + 1));
 
-    int64_t i = 0;
-    while(i < len) {
-        c_cmd[i] = cmd[i];
-        i++;
-    }
-    c_cmd[i] = '\0';
+    copy_fchar_to_char(cmd, len, c_cmd);
 
     int result = system(c_cmd);
     free(c_cmd);
