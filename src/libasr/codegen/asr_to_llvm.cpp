@@ -10301,15 +10301,35 @@ public:
                 bool source_is_character = ASRUtils::is_character(*source_expr_type);
                 llvm::Value* source_bytes = nullptr;
                 llvm::DataLayout data_layout(module->getDataLayout());
+                auto get_num_elems = [&]() -> llvm::Value* {
+                    ASR::array_physical_typeType physical_type
+                        = ASRUtils::extract_physical_type(source_expr_type);
+                    if (physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+                        physical_type = ASRUtils::is_fixed_size_array(source_expr_type) ?
+                            ASR::array_physical_typeType::FixedSizeArray :
+                            ASR::array_physical_typeType::DescriptorArray;
+                    }
+                    switch( physical_type ) {
+                        case ASR::array_physical_typeType::DescriptorArray:
+                        case ASR::array_physical_typeType::AssumedRankArray:
+                        case ASR::array_physical_typeType::ISODescriptorArray:
+                        case ASR::array_physical_typeType::NumPyArray: {
+                            llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_source, source_type_no_alloc, module.get());
+                            return arr_descr->get_array_size(
+                                llvm_array_type, source_descriptor, nullptr, 4);
+                        }
+                        default: {
+                            return get_array_size_from_asr_type(source_type_no_alloc);
+                        }
+                    }
+                };
 
                 if (source_is_character) {
                     ASR::String_t* source_string_type = ASRUtils::get_string_type(x.m_source);
                     llvm::Value* total_chars = nullptr;
                     if (is_array) {
-                        llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_source, source_type_no_alloc, module.get());
-                        llvm::Value* num_elems = arr_descr->get_array_size(
-                            llvm_array_type, source_descriptor, nullptr, 4);
+                        llvm::Value* num_elems = get_num_elems();
                         num_elems = llvm_utils->convert_kind(
                             num_elems, llvm::Type::getInt64Ty(context));
                         llvm::Value* elem_len = llvm_utils->get_stringArray_length(
@@ -10323,13 +10343,10 @@ public:
                         llvm::Type::getInt64Ty(context), source_string_type->m_kind);
                     source_bytes = builder->CreateMul(total_chars, source_kind);
                 } else if (is_array) {
-                    llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_source, source_type_no_alloc, module.get());
                     ASR::ttype_t* element_type = ASRUtils::type_get_past_array(source_type_no_alloc);
                     llvm::Type* element_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_source, element_type, module.get());
-                    llvm::Value* num_elems = arr_descr->get_array_size(
-                        llvm_array_type, source_descriptor, nullptr, 4);
+                    llvm::Value* num_elems = get_num_elems();
                     num_elems = llvm_utils->convert_kind(
                         num_elems, llvm::Type::getInt64Ty(context));
                     uint64_t elem_size = data_layout.getTypeAllocSize(element_llvm_type);
