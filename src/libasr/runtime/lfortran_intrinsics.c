@@ -5856,7 +5856,7 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
 
-// This function assumes thatt length of src is at least len, and dest is at least len + 1 (1 for '\0').
+// This function assumes that the length of src is at least len, and dest is at least len + 1 (1 for '\0').
 static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
     memcpy(dest, src, len);
     dest[len] = '\0';
