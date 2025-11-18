@@ -754,6 +754,7 @@ RUN(NAME global_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_03 LABELS gfortran llvm)
+RUN(NAME pointer_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_indices_array_section LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_indices_array_section_assignment LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1267,6 +1268,7 @@ RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
 RUN(NAME intrinsics_393 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 RUN(NAME intrinsics_394 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx kind cast regression
+RUN(NAME intrinsics_396 LABELS gfortran llvm)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
