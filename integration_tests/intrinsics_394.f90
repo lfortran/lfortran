@@ -11,15 +11,18 @@ contains
     subroutine check_dir_exists(dirname)
         character(len=*), intent(in) :: dirname
         character(len=:), allocatable :: local_cmd
-        integer :: exitstat
+        integer :: exitstat, cmdstat
 
         ! Build the test command
         local_cmd = "test -d " // trim(dirname)
 
         ! Execute and capture exit status
-        call execute_command_line(local_cmd, exitstat=exitstat)
+        cmdstat = -999
+        call execute_command_line(local_cmd, exitstat=exitstat, cmdstat=cmdstat)
 
         ! Print robust diagnostic info
+        print *, cmdstat
+        if (cmdstat /= 0) error stop "cmdstat should be zero when the command runs"
         if (exitstat == 0) then
             print *, "Directory exists: ", trim(dirname)
         else
