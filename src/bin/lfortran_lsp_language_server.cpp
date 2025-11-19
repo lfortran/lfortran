@@ -574,11 +574,17 @@ namespace LCompilers::LanguageServerProtocol {
             << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+        auto lookupStart = std::chrono::steady_clock::now();
         std::vector<lc::document_symbols> symbols =
             lfortran.lookupName(path, text, compilerOptions);
+        auto lookupEnd = std::chrono::steady_clock::now();
+        auto lookupElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            lookupEnd - lookupStart
+        );
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << symbols.size() << " symbol(s) matching the query in "
+            << lookupElapsed.count() << " ms."
             << std::endl;
         TextDocument_DefinitionResult result;
         if (symbols.size() > 0) {
@@ -586,6 +592,7 @@ namespace LCompilers::LanguageServerProtocol {
                 std::unique_ptr<std::vector<DefinitionLink>> links =
                     std::make_unique<std::vector<DefinitionLink>>();
                 links->reserve(symbols.size());
+                std::size_t linkCount = 0;
                 for (const auto &symbol : symbols) {
                     DefinitionLink &link = links->emplace_back();
                     link.targetUri = "file://" + resolve(
@@ -610,12 +617,17 @@ namespace LCompilers::LanguageServerProtocol {
                     targetRangeEnd.character =
                         targetSelectionRangeEnd.character =
                         symbol.last_column - 1;  // 1-to-0 index
+                    ++linkCount;
                 }
+                logger.trace()
+                    << "Returning " << linkCount
+                    << " definition link(s)." << std::endl;
                 result = std::move(links);
             } else {
                 std::unique_ptr<std::vector<Location>> locations =
                     std::make_unique<std::vector<Location>>();
                 locations->reserve(symbols.size());
+                std::size_t locationCount = 0;
                 for (const auto &symbol : symbols) {
                     Location &location = locations->emplace_back();
                     location.uri = "file://" + resolve(
@@ -628,7 +640,11 @@ namespace LCompilers::LanguageServerProtocol {
                     start.character = symbol.first_column - 1;  // 1-to-0 index
                     end.line = symbol.last_line - 1;  // 1-to-0 index
                     end.character = symbol.last_column - 1;  // 1-to-0 index
+                    ++locationCount;
                 }
+                logger.trace()
+                    << "Returning " << locationCount
+                    << " definition location(s)." << std::endl;
                 result = std::move(locations);
             }
         } else {
