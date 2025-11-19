@@ -48,9 +48,16 @@ cp $D/src/bin/lfortran.data ${dest_dir}/${git_hash}/lfortran.data
 echo "$git_hash" > ${dest_dir}/latest_commit # overwrite the file instead of appending to it
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
 
+# Wipe git history to keep repository size small
+# This ensures only one commit exists, making old builds unreachable for GitHub GC
+echo "Wiping git history and creating fresh orphaned commit..."
+rm -rf .git
+
+git init
 git config user.name "Deploy"
 git config user.email "noreply@deploylfortran.com"
-COMMIT_MESSAGE="Deploying on $(date "+%Y-%m-%d %H:%M:%S")"
+
+COMMIT_MESSAGE="Deploy ${dest_dir} build ${git_hash} on $(date "+%Y-%m-%d %H:%M:%S")"
 
 git add .
 git commit -m "${COMMIT_MESSAGE}"
@@ -67,7 +74,8 @@ fi
 ssh-add <(echo "$SSH_PRIVATE_KEY_WASM_BUILDS" | base64 -d)
 set -x
 
-
-git push ${deploy_repo_push} main:main
-echo "New commit pushed at:"
+# Force push since we're creating a fresh orphaned commit each time
+# This keeps the repository at exactly one reachable commit
+git push --force ${deploy_repo_push} main:main
+echo "New orphaned commit force-pushed at:"
 echo "https://github.com/lfortran/wasm_builds/commit/${dest_commit}"
