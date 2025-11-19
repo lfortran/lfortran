@@ -100,6 +100,7 @@ python = "==3.12"
 toml = "==0.10.2"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
+pip = ">=25.3,<26"
 
 [feature.build.target.unix.dependencies]
 bison = "==3.4"
