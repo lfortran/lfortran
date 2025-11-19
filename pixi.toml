@@ -15,6 +15,9 @@ clean = "git clean -dfx -e '.pixi'"
 ctest = "cmake --build . --parallel --target test"
 tests = "./run_tests.py"
 integration_tests = "cd integration_tests && ./run_tests.py -j16"
+lsp_install = "pip install src/server/tests tests/server"
+lsp_tests = "pytest -vv --showlocals --execution-strategy=\"concurrent\" tests/server"
+lsp_tests_parallel = "pytest -vv --showlocals --execution-strategy=\"parallel\" tests/server"
 
 [feature.llvm7.target.linux-64.dependencies]
 llvmdev = "==7.0.1"
