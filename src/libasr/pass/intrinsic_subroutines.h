@@ -1109,6 +1109,19 @@ namespace ExecuteCommandLine {
             body.push_back(al, b.Assignment(args[optional_arg_index], exit_status_local));
             optional_arg_index++;
         }
+
+        std::vector<ASR::stmt_t*> failure_handlers;
+        if (overload_id & CMDSTAT_BIT) {
+            ASR::expr_t *cmdstat_arg = args[optional_arg_index];
+            ASR::ttype_t *cmdstat_type = ASRUtils::expr_type(cmdstat_arg);
+            body.push_back(al, b.Assignment(cmdstat_arg, b.i_t(0, cmdstat_type)));
+            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(1, cmdstat_type)));
+            optional_arg_index++;
+        }
+        if (!failure_handlers.empty()) {
+            ASR::expr_t *system_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            body.push_back(al, b.If(system_failed, failure_handlers, {}));
+        }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
