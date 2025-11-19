@@ -7,16 +7,16 @@
             points:
                 (Module
                     (SymbolTable
-                        6
+                        9
                         {
                             point:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        10
                                         {
                                             x:
                                                 (Variable
-                                                    7
+                                                    10
                                                     x
                                                     []
                                                     Local
@@ -37,7 +37,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    7
+                                                    10
                                                     y
                                                     []
                                                     Local
@@ -80,11 +80,11 @@
                             point_dist_func:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        11
                                         {
                                             a:
                                                 (Variable
-                                                    8
+                                                    11
                                                     a
                                                     []
                                                     In
@@ -98,7 +98,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 point
+                                                    9 point
                                                     Source
                                                     Public
                                                     Required
@@ -111,7 +111,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    8
+                                                    11
                                                     b
                                                     []
                                                     In
@@ -125,7 +125,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 point
+                                                    9 point
                                                     Source
                                                     Public
                                                     Required
@@ -138,7 +138,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    8
+                                                    11
                                                     distance
                                                     []
                                                     ReturnVar
@@ -187,10 +187,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 8 a)
-                                    (Var 8 b)]
+                                    [(Var 11 a)
+                                    (Var 11 b)]
                                     []
-                                    (Var 8 distance)
+                                    (Var 11 distance)
                                     Public
                                     .false.
                                     .false.
@@ -199,11 +199,11 @@
                             point_dist_subrout:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        12
                                         {
                                             a:
                                                 (Variable
-                                                    9
+                                                    12
                                                     a
                                                     []
                                                     In
@@ -217,7 +217,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 point
+                                                    9 point
                                                     Source
                                                     Public
                                                     Required
@@ -230,7 +230,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    9
+                                                    12
                                                     b
                                                     []
                                                     In
@@ -244,7 +244,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 point
+                                                    9 point
                                                     Source
                                                     Public
                                                     Required
@@ -257,7 +257,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    9
+                                                    12
                                                     distance
                                                     []
                                                     Out
@@ -307,9 +307,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 9 a)
-                                    (Var 9 b)
-                                    (Var 9 distance)]
+                                    [(Var 12 a)
+                                    (Var 12 b)
+                                    (Var 12 distance)]
                                     []
                                     ()
                                     Public
@@ -319,7 +319,7 @@
                                 ),
                             rkind:
                                 (ExternalSymbol
-                                    6
+                                    9
                                     rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -338,13 +338,13 @@
             points_a:
                 (Module
                     (SymbolTable
-                        10
+                        13
                         {
                             point:
                                 (ExternalSymbol
-                                    10
+                                    13
                                     point
-                                    6 point
+                                    9 point
                                     points
                                     []
                                     point
@@ -353,13 +353,13 @@
                             point_dist_func:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        14
                                         {
                                             1_point_x:
                                                 (ExternalSymbol
-                                                    11
+                                                    14
                                                     1_point_x
-                                                    7 x
+                                                    10 x
                                                     point
                                                     []
                                                     x
@@ -367,9 +367,9 @@
                                                 ),
                                             1_point_y:
                                                 (ExternalSymbol
-                                                    11
+                                                    14
                                                     1_point_y
-                                                    7 y
+                                                    10 y
                                                     point
                                                     []
                                                     y
@@ -377,7 +377,7 @@
                                                 ),
                                             a:
                                                 (Variable
-                                                    11
+                                                    14
                                                     a
                                                     []
                                                     In
@@ -391,7 +391,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    10 point
+                                                    13 point
                                                     Source
                                                     Public
                                                     Required
@@ -404,7 +404,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    11
+                                                    14
                                                     b
                                                     []
                                                     In
@@ -418,7 +418,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    10 point
+                                                    13 point
                                                     Source
                                                     Public
                                                     Required
@@ -431,7 +431,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    11
+                                                    14
                                                     distance
                                                     []
                                                     ReturnVar
@@ -480,25 +480,25 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 11 a)
-                                    (Var 11 b)]
+                                    [(Var 14 a)
+                                    (Var 14 b)]
                                     [(Assignment
-                                        (Var 11 distance)
+                                        (Var 14 distance)
                                         (IntrinsicElementalFunction
                                             Sqrt
                                             [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
-                                                            (Var 11 a)
-                                                            11 1_point_x
+                                                            (Var 14 a)
+                                                            14 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
-                                                            (Var 11 b)
-                                                            11 1_point_x
+                                                            (Var 14 b)
+                                                            14 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
@@ -514,15 +514,15 @@
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
-                                                            (Var 11 a)
-                                                            11 1_point_y
+                                                            (Var 14 a)
+                                                            14 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
-                                                            (Var 11 b)
-                                                            11 1_point_y
+                                                            (Var 14 b)
+                                                            14 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
@@ -545,7 +545,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 11 distance)
+                                    (Var 14 distance)
                                     Public
                                     .false.
                                     .false.
@@ -554,13 +554,13 @@
                             point_dist_subrout:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        15
                                         {
                                             1_point_x:
                                                 (ExternalSymbol
-                                                    12
+                                                    15
                                                     1_point_x
-                                                    7 x
+                                                    10 x
                                                     point
                                                     []
                                                     x
@@ -568,9 +568,9 @@
                                                 ),
                                             1_point_y:
                                                 (ExternalSymbol
-                                                    12
+                                                    15
                                                     1_point_y
-                                                    7 y
+                                                    10 y
                                                     point
                                                     []
                                                     y
@@ -578,7 +578,7 @@
                                                 ),
                                             a:
                                                 (Variable
-                                                    12
+                                                    15
                                                     a
                                                     []
                                                     In
@@ -592,7 +592,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    10 point
+                                                    13 point
                                                     Source
                                                     Public
                                                     Required
@@ -605,7 +605,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    12
+                                                    15
                                                     b
                                                     []
                                                     In
@@ -619,7 +619,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    10 point
+                                                    13 point
                                                     Source
                                                     Public
                                                     Required
@@ -632,7 +632,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    12
+                                                    15
                                                     distance
                                                     []
                                                     Out
@@ -682,26 +682,26 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 12 a)
-                                    (Var 12 b)
-                                    (Var 12 distance)]
+                                    [(Var 15 a)
+                                    (Var 15 b)
+                                    (Var 15 distance)]
                                     [(Assignment
-                                        (Var 12 distance)
+                                        (Var 15 distance)
                                         (IntrinsicElementalFunction
                                             Sqrt
                                             [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
-                                                            (Var 12 a)
-                                                            12 1_point_x
+                                                            (Var 15 a)
+                                                            15 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
-                                                            (Var 12 b)
-                                                            12 1_point_x
+                                                            (Var 15 b)
+                                                            15 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
@@ -717,15 +717,15 @@
                                                 (RealBinOp
                                                     (RealBinOp
                                                         (StructInstanceMember
-                                                            (Var 12 a)
-                                                            12 1_point_y
+                                                            (Var 15 a)
+                                                            15 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
-                                                            (Var 12 b)
-                                                            12 1_point_y
+                                                            (Var 15 b)
+                                                            15 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
@@ -756,7 +756,7 @@
                                 ),
                             rkind:
                                 (ExternalSymbol
-                                    10
+                                    13
                                     rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -808,7 +808,7 @@
             submodules_02:
                 (Program
                     (SymbolTable
-                        13
+                        16
                         {
                             
                         })

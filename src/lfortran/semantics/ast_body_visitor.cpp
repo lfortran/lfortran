@@ -112,6 +112,71 @@ public:
         all_loops_blocks_nesting--;
     }
 
+    void visit_ChangeTeam(const AST::ChangeTeam_t &x) {
+        all_loops_blocks_nesting++;
+        from_block = true;
+
+        if (x.n_coarray_assoc > 0 || x.n_sync > 0 || x.n_sync_stat > 0) {
+            diag.add(diag::Diagnostic(
+                "CHANGE TEAM associations and sync-stat controls are not supported yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.m_team_value == nullptr) {
+            diag.add(diag::Diagnostic(
+                "CHANGE TEAM requires a team selector",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        this->visit_expr(*x.m_team_value);
+        ASR::expr_t *team_expr = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *team_expr_type
+            = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(team_expr));
+        if (!team_expr_type || !ASR::is_a<ASR::StructType_t>(*team_expr_type)) {
+            diag.add(diag::Diagnostic(
+                "CHANGE TEAM selector must be of type team_type",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {team_expr->base.loc})}));
+            throw SemanticAbort();
+        }
+
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASR::asr_t *block;
+        std::string name;
+        if (x.m_stmt_name) {
+            name = std::string(x.m_stmt_name);
+            block = ASR::make_Block_t(al, x.base.base.loc, current_scope,
+                x.m_stmt_name, nullptr, 0);
+        } else {
+            name = parent_scope->get_unique_name("change_team");
+            block = ASR::make_Block_t(al, x.base.base.loc, current_scope,
+                s2c(al, name), nullptr, 0);
+        }
+
+        ASR::Block_t *block_t = ASR::down_cast<ASR::Block_t>(
+            ASR::down_cast<ASR::symbol_t>(block));
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
+        block_t->m_body = body.p;
+        block_t->n_body = body.size();
+
+        current_scope = parent_scope;
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
+        tmp = ASR::make_BlockCall_t(al, x.base.base.loc, -1,
+            ASR::down_cast<ASR::symbol_t>(block));
+
+        from_block = false;
+        all_loops_blocks_nesting--;
+    }
+
     // Transforms statements to a list of ASR statements
     // In addition, it also inserts the following nodes if needed:
     //   * ImplicitDeallocate
