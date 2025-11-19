@@ -937,6 +937,10 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> TextDocument_DocumentHighlightResult {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
+        logger.trace()
+            << "documentHighlight request for uri=" << uri
+            << " line=" << pos.line << " column=" << pos.character
+            << std::endl;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
         auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
@@ -952,17 +956,24 @@ namespace LCompilers::LanguageServerProtocol {
             << uri << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+        auto highlightStart = std::chrono::steady_clock::now();
         std::vector<lc::document_symbols> symbols =
             lfortran.getAllOccurrences(path, text, compilerOptions);
+        auto highlightEnd = std::chrono::steady_clock::now();
+        auto highlightElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            highlightEnd - highlightStart
+        );
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << symbols.size() << " symbol(s) matching the query in "
+            << highlightElapsed.count() << " ms."
             << std::endl;
         TextDocument_DocumentHighlightResult result;
         if (symbols.size() > 0) {
             std::unique_ptr<std::vector<DocumentHighlight>> highlights =
                 std::make_unique<std::vector<DocumentHighlight>>();
             highlights->reserve(symbols.size());
+            std::size_t sameDocumentCount = 0;
             for (const auto &symbol : symbols) {
                 // NOTE: Only highlight symbols from the current document
                 if (document->path() == resolve(symbol.filename, compilerOptions)) {
@@ -974,8 +985,16 @@ namespace LCompilers::LanguageServerProtocol {
                     start.character = symbol.first_column - 1;  // 1-to-0 index
                     end.line = symbol.last_line - 1;  // 1-to-0 index
                     end.character = symbol.last_column - 1;  // 1-to-0 index
+                    ++sameDocumentCount;
+                } else {
+                    logger.trace()
+                        << "Ignoring occurrence from different file: "
+                        << symbol.filename << std::endl;
                 }
             }
+            logger.trace()
+                << "Returning " << sameDocumentCount
+                << " highlight(s) for document." << std::endl;
             result = std::move(highlights);
         } else {
             result = nullptr;
