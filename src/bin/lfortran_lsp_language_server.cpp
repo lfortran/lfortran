@@ -1238,6 +1238,12 @@ namespace LCompilers::LanguageServerProtocol {
         TextDocument_RangeFormattingResult result;
         if (clientSupportsRangeFormatting) {
             const std::string &uri = params.textDocument.uri;
+            logger.trace()
+                << "Range formatting request for uri=" << uri
+                << " range=(" << params.range.start.line << ':'
+                << params.range.start.character << ")-("
+                << params.range.end.line << ':' << params.range.end.character
+                << ")" << std::endl;
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             CompilerOptions compilerOptions = *getCompilerOptions(*document);
             compilerOptions.interactive = true;
@@ -1249,6 +1255,7 @@ namespace LCompilers::LanguageServerProtocol {
                 params.range.end.line,
                 params.range.end.character
             );
+            auto formatStart = std::chrono::steady_clock::now();
             auto formatted = lfortran.format(
                 path,
                 fragment,
@@ -1257,6 +1264,14 @@ namespace LCompilers::LanguageServerProtocol {
                 params.options.tabSize,
                 true  //-> indent_unit
             );
+            auto formatEnd = std::chrono::steady_clock::now();
+            auto formatElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                formatEnd - formatStart
+            );
+            logger.trace()
+                << "Range formatting completed in " << formatElapsed.count()
+                << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                << std::endl;
             std::vector<TextEdit> edits;
             if (formatted.ok) {
                 // TODO: Specify the reformatted document in terms of a diff
@@ -1272,6 +1287,9 @@ namespace LCompilers::LanguageServerProtocol {
                     document->leadingIndentation(params.range.start.line)
                 );
             }
+            logger.trace()
+                << "Range formatting produced " << edits.size()
+                << " edit(s)." << std::endl;
             result = std::move(edits);
         } else {
             result = nullptr;
