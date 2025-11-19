@@ -10,9 +10,9 @@ whether the current usage appears correct or potentially buggy.
   concurrent mode once under `set -ex`. Any timeout or pytest failure exits the
   shell immediately, so the CI job fails as soon as the concurrent run times
   out (the `timeout` process propagates its non-zero exit status).
-- The parallel run underneath the same step now defaults to three attempts
-  (`MAX_ATTEMPTS=${MAX_ATTEMPTS:-3}`) before `exit $EXIT_CODE`, so a flaky
-  failure is retried twice and still causes the step (and CI) to fail if all
+- The parallel run underneath the same step already retries three times
+  (controlled via the `MAX_ATTEMPTS=3` environment variable) before `exit
+  $EXIT_CODE`, so a flaky failure still causes the step (and CI) to fail if all
   attempts exceed the timeout or pytest fails for a logical reason.
 
 ## Entry Points & Protocol Plumbing
