@@ -1100,7 +1100,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1142,7 +1142,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1173,7 +1173,7 @@
                                                     2 file_scope_flag
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1194,7 +1194,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1215,7 +1215,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1362,7 +1362,7 @@
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    WasOptional
                                                     .false.
                                                     .false.
                                                     .false.
