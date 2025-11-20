@@ -57,9 +57,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_program1
 
 FINALIZE_SYMTABLE_program1:                       ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_program1
   ret i32 0
 }
 

@@ -13,9 +13,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
 
 FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
-  br label %Finalize_Variable___lfortran_evaluate_11
-
-Finalize_Variable___lfortran_evaluate_11:         ; preds = %FINALIZE_SYMTABLE___lfortran_evaluate_1
   %0 = load float, float* %__lfortran_evaluate_12, align 4
   ret float %0
 }

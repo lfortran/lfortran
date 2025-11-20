@@ -58,9 +58,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_modules_06
 
 FINALIZE_SYMTABLE_modules_06:                     ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_modules_06
   ret i32 0
 }
 

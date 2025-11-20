@@ -31,9 +31,6 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_stop
 
 FINALIZE_SYMTABLE_stop:                           ; preds = %return
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_stop
   ret i32 0
 }
 

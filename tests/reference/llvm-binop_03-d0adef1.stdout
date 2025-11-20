@@ -125,12 +125,6 @@ return:                                           ; preds = %ifcont6
   br label %FINALIZE_SYMTABLE_binop_03
 
 FINALIZE_SYMTABLE_binop_03:                       ; preds = %return
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_binop_03
-  br label %Finalize_Variable_y
-
-Finalize_Variable_y:                              ; preds = %Finalize_Variable_x
   ret i32 0
 }
 

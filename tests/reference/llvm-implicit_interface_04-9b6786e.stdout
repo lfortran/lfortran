@@ -113,9 +113,6 @@ return:                                           ; preds = %ifcont7
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
-  br label %Finalize_Variable___1_k
-
-Finalize_Variable___1_k:                          ; preds = %FINALIZE_SYMTABLE_main
   ret i32 0
 }
 

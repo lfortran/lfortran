@@ -168,12 +168,6 @@ return:                                           ; preds = %ifcont19
   br label %FINALIZE_SYMTABLE_subroutines_02
 
 FINALIZE_SYMTABLE_subroutines_02:                 ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_subroutines_02
-  br label %Finalize_Variable_j
-
-Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
   ret i32 0
 }
 

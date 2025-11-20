@@ -21,12 +21,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_foo
 
 FINALIZE_SYMTABLE_foo:                            ; preds = %return
-  br label %Finalize_Variable_e
-
-Finalize_Variable_e:                              ; preds = %FINALIZE_SYMTABLE_foo
-  br label %Finalize_Variable_g
-
-Finalize_Variable_g:                              ; preds = %Finalize_Variable_e
   ret void
 }
 

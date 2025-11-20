@@ -640,14 +640,34 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
   %148 = load %shape*, %shape** %s1, align 8
-  %149 = bitcast %shape* %148 to i8*
-  call void @_lfortran_free(i8* %149)
+  %149 = icmp ne %shape* %148, null
+  br i1 %149, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %Finalize_Variable_s1
+  %150 = bitcast %shape* %148 to i8*
+  call void @_lfortran_free(i8* %150)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable_s1
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   br label %Finalize_Variable_s2
 
-Finalize_Variable_s2:                             ; preds = %Finalize_Variable_s1
-  %150 = load %shape*, %shape** %s2, align 8
-  %151 = bitcast %shape* %150 to i8*
-  call void @_lfortran_free(i8* %151)
+Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
+  %151 = load %shape*, %shape** %s2, align 8
+  %152 = icmp ne %shape* %151, null
+  br i1 %152, label %is_allocated.then48, label %is_allocated.else49
+
+is_allocated.then48:                              ; preds = %Finalize_Variable_s2
+  %153 = bitcast %shape* %151 to i8*
+  call void @_lfortran_free(i8* %153)
+  br label %is_allocated.ifcont50
+
+is_allocated.else49:                              ; preds = %Finalize_Variable_s2
+  br label %is_allocated.ifcont50
+
+is_allocated.ifcont50:                            ; preds = %is_allocated.else49, %is_allocated.then48
   ret i32 0
 }
 

@@ -179,8 +179,19 @@ FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
   %17 = load %mytype*, %mytype** %obj, align 8
-  %18 = bitcast %mytype* %17 to i8*
-  call void @_lfortran_free(i8* %18)
+  %18 = icmp ne %mytype* %17, null
+  br i1 %18, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %Finalize_Variable_obj
+  %19 = getelementptr %mytype, %mytype* %17, i32 0, i32 1
+  %20 = bitcast %mytype* %17 to i8*
+  call void @_lfortran_free(i8* %20)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable_obj
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret i32 0
 }
 

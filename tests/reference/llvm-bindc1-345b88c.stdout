@@ -104,9 +104,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_bindc1
 
 FINALIZE_SYMTABLE_bindc1:                         ; preds = %return
-  br label %Finalize_Variable_p
-
-Finalize_Variable_p:                              ; preds = %FINALIZE_SYMTABLE_bindc1
   ret i32 0
 }
 

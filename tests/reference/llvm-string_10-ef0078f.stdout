@@ -214,12 +214,9 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_string_10
 
 FINALIZE_SYMTABLE_string_10:                      ; preds = %return
-  br label %Finalize_Variable_is_alpha
-
-Finalize_Variable_is_alpha:                       ; preds = %FINALIZE_SYMTABLE_string_10
   br label %Finalize_Variable_num
 
-Finalize_Variable_num:                            ; preds = %Finalize_Variable_is_alpha
+Finalize_Variable_num:                            ; preds = %FINALIZE_SYMTABLE_string_10
   %115 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
   %116 = load i8*, i8** %115, align 8
   call void @_lfortran_free(i8* %116)

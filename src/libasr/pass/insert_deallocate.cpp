@@ -9,14 +9,6 @@
 
 namespace LCompilers {
 
-// hard code avoided types (handled by llvm backend) -- We're transitioing the deallocation process into the backend. 
-auto const avoided_type = [](ASR::ttype_t* const t) {
-                        return (ASRUtils::extract_type(t)->type == ASR::String)
-                            || (ASRUtils::extract_type(t)->type == ASR::Integer)
-                            || (ASRUtils::extract_type(t)->type == ASR::Complex)
-                            || (ASRUtils::extract_type(t)->type == ASR::Real)
-                            || (ASRUtils::extract_type(t)->type == ASR::UnsignedInteger)
-                            || (ASRUtils::type_get_past_allocatable_pointer(t)->type == ASR::Array); };
 
 class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>
 {
@@ -43,7 +35,6 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                 ASRUtils::is_array(ASRUtils::symbol_type(s)) ||
                 ASRUtils::is_struct(*ASRUtils::symbol_type(s))) &&
                 ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
-                if(avoided_type(ASRUtils::symbol_type(s))) return false;
                 return true;
             }
             return false;
@@ -297,8 +288,8 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
 
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
-    InsertDeallocate v(al);
-    v.visit_TranslationUnit(unit);
+    // InsertDeallocate v(al);
+    // v.visit_TranslationUnit(unit);
 
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);

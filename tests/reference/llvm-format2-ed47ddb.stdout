@@ -37,9 +37,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_format2
 
 FINALIZE_SYMTABLE_format2:                        ; preds = %return
-  br label %Finalize_Variable_a
-
-Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_format2
   ret i32 0
 }
 

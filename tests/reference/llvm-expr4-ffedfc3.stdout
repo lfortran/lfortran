@@ -21,21 +21,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
 
 FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
-  br label %Finalize_Variable___lfortran_evaluate_11
-
-Finalize_Variable___lfortran_evaluate_11:         ; preds = %FINALIZE_SYMTABLE___lfortran_evaluate_1
-  br label %Finalize_Variable___lfortran_evaluate_12
-
-Finalize_Variable___lfortran_evaluate_12:         ; preds = %Finalize_Variable___lfortran_evaluate_11
-  br label %Finalize_Variable___lfortran_evaluate_13
-
-Finalize_Variable___lfortran_evaluate_13:         ; preds = %Finalize_Variable___lfortran_evaluate_12
-  br label %Finalize_Variable___lfortran_evaluate_14
-
-Finalize_Variable___lfortran_evaluate_14:         ; preds = %Finalize_Variable___lfortran_evaluate_13
-  br label %Finalize_Variable___lfortran_evaluate_15
-
-Finalize_Variable___lfortran_evaluate_15:         ; preds = %Finalize_Variable___lfortran_evaluate_14
   %0 = load float, float* %__lfortran_evaluate_16, align 4
   ret float %0
 }

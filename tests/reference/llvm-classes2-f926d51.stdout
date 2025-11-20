@@ -164,12 +164,6 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
-  br label %Finalize_Variable_p2d
-
-Finalize_Variable_p2d:                            ; preds = %FINALIZE_SYMTABLE_main
-  br label %Finalize_Variable_res
-
-Finalize_Variable_res:                            ; preds = %Finalize_Variable_p2d
   ret i32 0
 }
 
