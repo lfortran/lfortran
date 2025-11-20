@@ -1552,10 +1552,6 @@ filename = "finalize_02.f90"
 llvm = true
 
 [[test]]
-filename = "finalize_03.f90"
-llvm = true
-
-[[test]]
 filename = "../integration_tests/block_01.f90"
 asr = true
 

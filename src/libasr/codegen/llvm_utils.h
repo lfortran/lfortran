@@ -1234,7 +1234,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
                     if(struct_sym->m_parent){ // Check parent
-                        ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(struct_sym->m_parent);
+                        ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                         finalizable_struct |= is_finalizable_type(parent_struct->m_struct_signature, parent_struct);
                     }
                     for(size_t i = 0; (i < struc_t->n_data_member_types) && !finalizable_struct; i++) {
