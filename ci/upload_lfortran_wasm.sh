@@ -53,7 +53,7 @@ python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_ha
 echo "Wiping git history and creating fresh orphaned commit..."
 rm -rf .git
 
-git init
+git init -b main
 git config user.name "Deploy"
 git config user.email "noreply@deploylfortran.com"
 
