@@ -8,7 +8,22 @@ deploy_repo_push="git@github.com:lfortran/wasm_builds.git"
 
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
 git_ref=${GITHUB_REF}
-dest_dir="release"
+
+# Determine dest_dir based on git ref
+# - Main branch pushes go to "dev" (debug builds)
+# - Tags starting with 'v' go to "release" (release builds)
+if [[ ${git_ref} == "refs/heads/main" ]]; then
+    dest_dir="dev"
+    echo "Main branch detected: using dest_dir=${dest_dir}"
+elif [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
+    dest_dir="release"
+    echo "Release tag detected: using dest_dir=${dest_dir}"
+else
+    # We are either on a non-main branch or tagged with a tag that does
+    # not start with v*. We run the script for testing but do not upload.
+    dest_dir="release"
+    echo "Not a main branch, not tagged with v*, using dest_dir=${dest_dir} for testing..."
+fi
 
 lfortran_version=$(<version)
 
@@ -33,9 +48,16 @@ cp $D/src/bin/lfortran.data ${dest_dir}/${git_hash}/lfortran.data
 echo "$git_hash" > ${dest_dir}/latest_commit # overwrite the file instead of appending to it
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
 
+# Wipe git history to keep repository size small
+# This ensures only one commit exists, making old builds unreachable for GitHub GC
+echo "Wiping git history and creating fresh orphaned commit..."
+rm -rf .git
+
+git init
 git config user.name "Deploy"
 git config user.email "noreply@deploylfortran.com"
-COMMIT_MESSAGE="Deploying on $(date "+%Y-%m-%d %H:%M:%S")"
+
+COMMIT_MESSAGE="Deploy ${dest_dir} build ${git_hash} on $(date "+%Y-%m-%d %H:%M:%S")"
 
 git add .
 git commit -m "${COMMIT_MESSAGE}"
@@ -65,7 +87,8 @@ fi
 ssh-add <(echo "$SSH_PRIVATE_KEY_WASM_BUILDS" | base64 -d)
 set -x
 
-
-git push ${deploy_repo_push} main:main
-echo "New commit pushed at:"
+# Force push since we're creating a fresh orphaned commit each time
+# This keeps the repository at exactly one reachable commit
+git push --force ${deploy_repo_push} main:main
+echo "New orphaned commit force-pushed at:"
 echo "https://github.com/lfortran/wasm_builds/commit/${dest_commit}"
