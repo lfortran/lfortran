@@ -20,9 +20,9 @@ elif [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
     echo "Release tag detected: using dest_dir=${dest_dir}"
 else
     # We are either on a non-main branch or tagged with a tag that does
-    # not start with v*. We skip the upload.
-    echo "Not a main branch, not tagged with v*, skipping upload..."
-    exit 0
+    # not start with v*. We run the script for testing but do not upload.
+    dest_dir="release"
+    echo "Not a main branch, not tagged with v*, using dest_dir=${dest_dir} for testing..."
 fi
 
 lfortran_version=$(<version)
@@ -64,6 +64,19 @@ git commit -m "${COMMIT_MESSAGE}"
 
 git show HEAD -p --stat
 dest_commit=$(git show HEAD -s --format=%H)
+
+if [[ ${git_ref} == "refs/heads/main" ]]; then
+    echo "The pipeline was triggered from the main branch"
+else
+    if [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
+        echo "The pipeline was triggered from a tag 'v*'"
+    else
+        # We are either on a non-main branch, or tagged with a tag that does
+        # not start with v*. We skip the upload.
+        echo "Not a main branch, not tagged with v*, skipping..."
+        exit 0
+    fi
+fi
 
 set +x
 if [[ "${SSH_PRIVATE_KEY_WASM_BUILDS}" == "" ]]; then
