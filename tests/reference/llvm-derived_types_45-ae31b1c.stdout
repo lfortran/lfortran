@@ -128,40 +128,30 @@ else7:                                            ; preds = %ifcont5
   br label %ifcont8
 
 ifcont8:                                          ; preds = %else7, %then6
-  %26 = load %myint*, %myint** %ins, align 8
-  %27 = ptrtoint %myint* %26 to i64
-  %28 = icmp ne i64 %27, 0
-  br i1 %28, label %then9, label %else10
-
-then9:                                            ; preds = %ifcont8
-  %29 = alloca i8*, align 8
-  %30 = bitcast %myint* %26 to i8*
-  store i8* %30, i8** %29, align 8
-  %31 = load i8*, i8** %29, align 8
-  call void @_lfortran_free(i8* %31)
-  store %myint* null, %myint** %ins, align 8
-  br label %ifcont11
-
-else10:                                           ; preds = %ifcont8
-  br label %ifcont11
-
-ifcont11:                                         ; preds = %else10, %then9
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont11
+return:                                           ; preds = %ifcont8
   br label %FINALIZE_SYMTABLE_derived_types_45
 
 FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
   br label %Finalize_Variable_ins
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
-  %32 = load %myint*, %myint** %ins, align 8
-  %33 = bitcast %myint* %32 to i8*
-  call void @_lfortran_free(i8* %33)
-  br label %Finalize_Variable_temp_struct_var__
+  %26 = load %myint*, %myint** %ins, align 8
+  %27 = icmp ne %myint* %26, null
+  br i1 %27, label %is_allocated.then, label %is_allocated.else
 
-Finalize_Variable_temp_struct_var__:              ; preds = %Finalize_Variable_ins
+is_allocated.then:                                ; preds = %Finalize_Variable_ins
+  %28 = getelementptr %myint, %myint* %26, i32 0, i32 1
+  %29 = bitcast %myint* %26 to i8*
+  call void @_lfortran_free(i8* %29)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable_ins
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret i32 0
 }
 
@@ -171,8 +161,8 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
-declare void @_lfortran_free(i8*)
-
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(i8*)
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

@@ -141,24 +141,6 @@ return:                                           ; preds = %ifcont20
   br label %FINALIZE_SYMTABLE_boz_01
 
 FINALIZE_SYMTABLE_boz_01:                         ; preds = %return
-  br label %Finalize_Variable_boz_1
-
-Finalize_Variable_boz_1:                          ; preds = %FINALIZE_SYMTABLE_boz_01
-  br label %Finalize_Variable_boz_2
-
-Finalize_Variable_boz_2:                          ; preds = %Finalize_Variable_boz_1
-  br label %Finalize_Variable_boz_3
-
-Finalize_Variable_boz_3:                          ; preds = %Finalize_Variable_boz_2
-  br label %Finalize_Variable_boz_4
-
-Finalize_Variable_boz_4:                          ; preds = %Finalize_Variable_boz_3
-  br label %Finalize_Variable_boz_5
-
-Finalize_Variable_boz_5:                          ; preds = %Finalize_Variable_boz_4
-  br label %Finalize_Variable_boz_6
-
-Finalize_Variable_boz_6:                          ; preds = %Finalize_Variable_boz_5
   ret i32 0
 }
 

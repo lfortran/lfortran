@@ -90,12 +90,6 @@ return:                                           ; preds = %ifcont10
   br label %FINALIZE_SYMTABLE_variables_03
 
 FINALIZE_SYMTABLE_variables_03:                   ; preds = %return
-  br label %Finalize_Variable_b
-
-Finalize_Variable_b:                              ; preds = %FINALIZE_SYMTABLE_variables_03
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %Finalize_Variable_b
   ret i32 0
 }
 

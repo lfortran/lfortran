@@ -60,15 +60,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_complex2
 
 FINALIZE_SYMTABLE_complex2:                       ; preds = %return
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_complex2
-  br label %Finalize_Variable_y
-
-Finalize_Variable_y:                              ; preds = %Finalize_Variable_x
-  br label %Finalize_Variable_z
-
-Finalize_Variable_z:                              ; preds = %Finalize_Variable_y
   ret i32 0
 }
 

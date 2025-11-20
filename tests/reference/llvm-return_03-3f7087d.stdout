@@ -65,9 +65,6 @@ return:                                           ; preds = %ifcont, %then
   br label %FINALIZE_SYMTABLE_main1
 
 FINALIZE_SYMTABLE_main1:                          ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_main1
   ret void
 }
 

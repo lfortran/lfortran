@@ -24,9 +24,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE__lcompilers_execute_command_line_
 
 FINALIZE_SYMTABLE__lcompilers_execute_command_line_: ; preds = %return
-  br label %Finalize_Variable__lcompilers_exit_status
-
-Finalize_Variable__lcompilers_exit_status:        ; preds = %FINALIZE_SYMTABLE__lcompilers_execute_command_line_
   ret void
 }
 
@@ -48,9 +45,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE__lcompilers_execute_command_line_1
 
 FINALIZE_SYMTABLE__lcompilers_execute_command_line_1: ; preds = %return
-  br label %Finalize_Variable__lcompilers_exit_status
-
-Finalize_Variable__lcompilers_exit_status:        ; preds = %FINALIZE_SYMTABLE__lcompilers_execute_command_line_1
   ret void
 }
 

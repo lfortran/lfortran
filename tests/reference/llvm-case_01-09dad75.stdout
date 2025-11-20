@@ -166,12 +166,6 @@ return:                                           ; preds = %ifcont23
   br label %FINALIZE_SYMTABLE_case_01
 
 FINALIZE_SYMTABLE_case_01:                        ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_case_01
-  br label %Finalize_Variable_out
-
-Finalize_Variable_out:                            ; preds = %Finalize_Variable_i
   ret i32 0
 }
 

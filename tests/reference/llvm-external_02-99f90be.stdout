@@ -31,9 +31,6 @@ return:                                           ; preds = %unreachable_after_r
   br label %FINALIZE_SYMTABLE_cobylb
 
 FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
-  br label %Finalize_Variable_con
-
-Finalize_Variable_con:                            ; preds = %FINALIZE_SYMTABLE_cobylb
   ret void
 }
 

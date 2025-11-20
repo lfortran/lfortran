@@ -230,9 +230,6 @@ return:                                           ; preds = %ifcont17
   br label %FINALIZE_SYMTABLE_intrinsics_02
 
 FINALIZE_SYMTABLE_intrinsics_02:                  ; preds = %return
-  br label %Finalize_Variable_y
-
-Finalize_Variable_y:                              ; preds = %FINALIZE_SYMTABLE_intrinsics_02
   ret i32 0
 }
 

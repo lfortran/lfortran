@@ -352,15 +352,6 @@ return:                                           ; preds = %loop.end33
   br label %FINALIZE_SYMTABLE_doloop_04
 
 FINALIZE_SYMTABLE_doloop_04:                      ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_doloop_04
-  br label %Finalize_Variable_j
-
-Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
-  br label %Finalize_Variable_k
-
-Finalize_Variable_k:                              ; preds = %Finalize_Variable_j
   ret i32 0
 }
 

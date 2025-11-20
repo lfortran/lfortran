@@ -308,9 +308,6 @@ Finalize_Variable___libasr__created__var__1_return_slot: ; preds = %Finalize_Var
   %31 = getelementptr %string_descriptor, %string_descriptor* %__libasr__created__var__1_return_slot, i32 0, i32 0
   %32 = load i8*, i8** %31, align 8
   call void @_lfortran_free(i8* %32)
-  br label %Finalize_Variable_value
-
-Finalize_Variable_value:                          ; preds = %Finalize_Variable___libasr__created__var__1_return_slot
   ret i32 0
 }
 

@@ -1632,7 +1632,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
-            llvm::Value *x, std::vector<llvm::Value *> &idx) {
+            llvm::Value *x, const std::vector<llvm::Value *> &idx) {
 #if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
         // Validate that the type parameter matches the pointer's pointee type
         // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed

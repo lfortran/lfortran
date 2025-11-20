@@ -57,9 +57,6 @@ Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_s
   %5 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
   %6 = load i8*, i8** %5, align 8
   call void @_lfortran_free(i8* %6)
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %Finalize_Variable_char
   ret i32 0
 }
 

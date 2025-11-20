@@ -21,9 +21,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_complex1
 
 FINALIZE_SYMTABLE_complex1:                       ; preds = %return
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_complex1
   ret i32 0
 }
 

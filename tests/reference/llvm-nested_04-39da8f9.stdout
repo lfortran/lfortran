@@ -47,12 +47,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_b
 
 FINALIZE_SYMTABLE_b:                              ; preds = %return
-  br label %Finalize_Variable_y
-
-Finalize_Variable_y:                              ; preds = %FINALIZE_SYMTABLE_b
-  br label %Finalize_Variable_yy
-
-Finalize_Variable_yy:                             ; preds = %Finalize_Variable_y
   %7 = load i32, i32* %b, align 4
   ret i32 %7
 }
@@ -139,9 +133,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_nested_04
 
 FINALIZE_SYMTABLE_nested_04:                      ; preds = %return
-  br label %Finalize_Variable_test
-
-Finalize_Variable_test:                           ; preds = %FINALIZE_SYMTABLE_nested_04
   ret i32 0
 }
 

@@ -69,9 +69,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_circle_print
 
 FINALIZE_SYMTABLE_circle_print:                   ; preds = %return
-  br label %Finalize_Variable_area
-
-Finalize_Variable_area:                           ; preds = %FINALIZE_SYMTABLE_circle_print
   ret void
 }
 
@@ -142,9 +139,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_circle_test
 
 FINALIZE_SYMTABLE_circle_test:                    ; preds = %return
-  br label %Finalize_Variable_c
-
-Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_circle_test
   ret i32 0
 }
 

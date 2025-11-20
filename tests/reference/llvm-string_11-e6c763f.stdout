@@ -174,21 +174,6 @@ return:                                           ; preds = %loop.end11
   br label %FINALIZE_SYMTABLE__lcompilers_index_str
 
 FINALIZE_SYMTABLE__lcompilers_index_str:          ; preds = %return
-  br label %Finalize_Variable_found
-
-Finalize_Variable_found:                          ; preds = %FINALIZE_SYMTABLE__lcompilers_index_str
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %Finalize_Variable_found
-  br label %Finalize_Variable_j
-
-Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
-  br label %Finalize_Variable_k
-
-Finalize_Variable_k:                              ; preds = %Finalize_Variable_j
-  br label %Finalize_Variable_pos
-
-Finalize_Variable_pos:                            ; preds = %Finalize_Variable_k
   %76 = load i32, i32* %_lcompilers_index_str, align 4
   ret i32 %76
 }
@@ -350,21 +335,6 @@ return:                                           ; preds = %loop.end11
   br label %FINALIZE_SYMTABLE__lcompilers_index_str1
 
 FINALIZE_SYMTABLE__lcompilers_index_str1:         ; preds = %return
-  br label %Finalize_Variable_found
-
-Finalize_Variable_found:                          ; preds = %FINALIZE_SYMTABLE__lcompilers_index_str1
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %Finalize_Variable_found
-  br label %Finalize_Variable_j
-
-Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
-  br label %Finalize_Variable_k
-
-Finalize_Variable_k:                              ; preds = %Finalize_Variable_j
-  br label %Finalize_Variable_pos
-
-Finalize_Variable_pos:                            ; preds = %Finalize_Variable_k
   %76 = load i32, i32* %_lcompilers_index_str1, align 4
   ret i32 %76
 }

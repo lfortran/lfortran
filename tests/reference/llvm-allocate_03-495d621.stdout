@@ -609,12 +609,6 @@ Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_a
   %258 = load i32*, i32** %257, align 8
   %259 = bitcast i32* %258 to i8*
   call void @_lfortran_free(i8* %259)
-  br label %Finalize_Variable_r
-
-Finalize_Variable_r:                              ; preds = %Finalize_Variable_c
-  br label %Finalize_Variable_stat
-
-Finalize_Variable_stat:                           ; preds = %Finalize_Variable_r
   ret i32 0
 }
 

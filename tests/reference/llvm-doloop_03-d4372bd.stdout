@@ -234,12 +234,6 @@ return:                                           ; preds = %ifcont28
   br label %FINALIZE_SYMTABLE_doloop_03
 
 FINALIZE_SYMTABLE_doloop_03:                      ; preds = %return
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %FINALIZE_SYMTABLE_doloop_03
-  br label %Finalize_Variable_j
-
-Finalize_Variable_j:                              ; preds = %Finalize_Variable_i
   ret i32 0
 }
 

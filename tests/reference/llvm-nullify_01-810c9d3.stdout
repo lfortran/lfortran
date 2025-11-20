@@ -23,9 +23,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_nullify_01
 
 FINALIZE_SYMTABLE_nullify_01:                     ; preds = %return
-  br label %Finalize_Variable_t1
-
-Finalize_Variable_t1:                             ; preds = %FINALIZE_SYMTABLE_nullify_01
   ret i32 0
 }
 

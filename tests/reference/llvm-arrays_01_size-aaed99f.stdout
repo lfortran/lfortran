@@ -585,21 +585,6 @@ return:                                           ; preds = %ifcont94
   br label %FINALIZE_SYMTABLE_arrays_01
 
 FINALIZE_SYMTABLE_arrays_01:                      ; preds = %return
-  br label %Finalize_Variable_a
-
-Finalize_Variable_a:                              ; preds = %FINALIZE_SYMTABLE_arrays_01
-  br label %Finalize_Variable_b
-
-Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
-  br label %Finalize_Variable_i
-
-Finalize_Variable_i:                              ; preds = %Finalize_Variable_b
-  br label %Finalize_Variable_size_a
-
-Finalize_Variable_size_a:                         ; preds = %Finalize_Variable_i
-  br label %Finalize_Variable_size_b
-
-Finalize_Variable_size_b:                         ; preds = %Finalize_Variable_size_a
   ret i32 0
 }
 

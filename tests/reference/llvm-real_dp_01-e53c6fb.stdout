@@ -38,15 +38,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_real_dp_01
 
 FINALIZE_SYMTABLE_real_dp_01:                     ; preds = %return
-  br label %Finalize_Variable_v
-
-Finalize_Variable_v:                              ; preds = %FINALIZE_SYMTABLE_real_dp_01
-  br label %Finalize_Variable_x
-
-Finalize_Variable_x:                              ; preds = %Finalize_Variable_v
-  br label %Finalize_Variable_zero
-
-Finalize_Variable_zero:                           ; preds = %Finalize_Variable_x
   ret i32 0
 }
 
