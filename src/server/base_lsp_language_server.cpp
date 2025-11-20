@@ -34,8 +34,12 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &taskType
     ) : server(server)
       , taskType(taskType)
+      , steadyStart(std::chrono::steady_clock::now())
     {
-        // empty
+        if (server != nullptr) {
+            server->logger.trace()
+                << "Begin " << taskType << std::endl;
+        }
     }
 
     RunTracer::~RunTracer() {
@@ -44,6 +48,15 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto RunTracer::stop() -> void {
         if (!stopped) {
+            if (server != nullptr) {
+                auto steadyEnd = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    steadyEnd - steadyStart
+                );
+                server->logger.trace()
+                    << "End " << taskType << " after "
+                    << elapsed.count() << " ms" << std::endl;
+            }
             server->stopRunning(taskType);
             stopped = true;
         }

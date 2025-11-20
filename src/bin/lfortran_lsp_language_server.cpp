@@ -1169,12 +1169,23 @@ namespace LCompilers::LanguageServerProtocol {
         TextDocument_FormattingResult result;
         if (clientSupportsFormatting) {
             const std::string &uri = params.textDocument.uri;
+            logger.trace()
+                << "Document formatting request for uri=" << uri
+                << " tabSize=" << params.options.tabSize
+                << ", insertSpaces="
+                << (params.options.insertSpaces ? "true" : "false")
+                << std::endl;
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             const std::shared_ptr<CompilerOptions> compilerOptions =
                 getCompilerOptions(*document);
             auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
             const std::string &text = document->text();
             const std::string &path = document->path().string();
+            logger.trace()
+                << "Document formatting input path=" << path
+                << " text.size=" << text.size()
+                << std::endl;
+            auto formatStart = std::chrono::steady_clock::now();
             auto formatted = lfortran.format(
                 path,
                 text,
@@ -1183,6 +1194,14 @@ namespace LCompilers::LanguageServerProtocol {
                 params.options.tabSize,
                 true  //-> indent_unit
             );
+            auto formatEnd = std::chrono::steady_clock::now();
+            auto formatElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                formatEnd - formatStart
+            );
+            logger.trace()
+                << "Document formatting completed in " << formatElapsed.count()
+                << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                << std::endl;
             std::vector<TextEdit> edits;
             if (formatted.ok) {
                 // TODO: Specify the reformatted document in terms of a diff
@@ -1199,6 +1218,9 @@ namespace LCompilers::LanguageServerProtocol {
                     static_cast<uinteger_t>(document->lastColumn(end.line));
                 edit.newText = formatted.result;
             }
+            logger.trace()
+                << "Document formatting produced " << edits.size()
+                << " edit(s)." << std::endl;
             result = std::move(edits);
         } else {
             result = nullptr;
