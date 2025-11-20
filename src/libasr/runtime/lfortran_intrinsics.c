@@ -2078,7 +2078,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
                                s_info.current_element_type == INTEGER_64_TYPE) {
-                        snprintf(result, sizeof(buffer), "%"PRId64, integer_val);
+                        snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
+                        result = append_to_string(result, buffer);
                     } else if (s_info.current_element_type == CHAR_PTR_TYPE ||
                         s_info.current_element_type == STRING_DESCRIPTOR_TYPE) {
                         result = append_to_string_NTI (result, strlen(result), char_val, s_info.current_arg_info.current_string_len);
