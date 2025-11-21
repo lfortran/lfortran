@@ -43,6 +43,7 @@ namespace LCompilers::LanguageServerProtocol {
         BaseLspLanguageServer *server;
         const std::string &taskType;
         bool stopped{false};
+        std::chrono::steady_clock::time_point steadyStart;
     }; // class RunTracer
 
     class BaseLspLanguageServer : public LspLanguageServer {
@@ -57,13 +58,14 @@ namespace LCompilers::LanguageServerProtocol {
             const std::string &extensionId,
             const std::string &compilerVersion,
             int parentProcessId,
-            std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
-            std::shared_ptr<lsc::LspConfig> workspaceConfig,
-            std::atomic_bool &start,
-            std::condition_variable &startChanged,
-            std::mutex &startMutex
-        );
+        std::shared_ptr<lsc::LspConfigTransformer> lspConfigTransformer,
+        std::shared_ptr<lsc::LspConfig> workspaceConfig,
+        std::atomic_bool &start,
+        std::condition_variable &startChanged,
+        std::mutex &startMutex
+    );
 
+        friend class RunTracer;
         lsl::Logger logger;
         const std::string configSection;
         const std::string extensionId;
