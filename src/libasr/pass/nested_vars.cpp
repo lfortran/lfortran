@@ -397,11 +397,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
                         } else {
-                            var_type = var_type_;
-                        }
-                        if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_allocatable(var->m_type)) ) {
-                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
-                                ASRUtils::type_get_past_allocatable(var_type)));
+                            auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
+                            var_type = pointer_var_type_;
                         }
                     }
                 }
