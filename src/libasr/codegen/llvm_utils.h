@@ -411,7 +411,9 @@ class ASRToLLVMVisitor;
             // Gets string's length and data
             std::pair<llvm::Value*, llvm::Value*> get_string_length_data(ASR::String_t* str_type, llvm::Value* str,
                 bool get_pointer_to_data=false, bool get_pointer_to_len=false);
-            
+
+            llvm::Value* ensure_non_opaque_pointer(llvm::Value* ptr, llvm::Type* element_type,
+                const std::string &name="");
 
             /*
                 Calculates the pointer position, And return pointer to it.

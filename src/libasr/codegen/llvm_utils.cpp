@@ -1997,6 +1997,31 @@ namespace LCompilers {
         return std::make_pair(data, len);
     }
 
+    llvm::Value* LLVMUtils::ensure_non_opaque_pointer(llvm::Value* ptr, llvm::Type* element_type,
+            const std::string &name) {
+        if (!ptr || !ptr->getType()->isPointerTy()) {
+            return ptr;
+        }
+
+        llvm::PointerType *ptr_type = llvm::cast<llvm::PointerType>(ptr->getType());
+#if LLVM_VERSION_MAJOR >= 15
+        llvm::Type *target_ptr_type = element_type->getPointerTo(ptr_type->getAddressSpace());
+        if (ptr->getType() == target_ptr_type) {
+            return ptr;
+        }
+        return builder->CreateBitCast(ptr, target_ptr_type, name);
+#else
+        if (ptr_type->getPointerElementType() == element_type) {
+            return ptr;
+        }
+        llvm::Type *target_ptr_type = element_type->getPointerTo(ptr_type->getAddressSpace());
+        if (ptr->getType() == target_ptr_type) {
+            return ptr;
+        }
+        return builder->CreateBitCast(ptr, target_ptr_type, name);
+#endif
+    }
+
 
 
     // TODO : Refactor names of the following two functions.
@@ -2142,7 +2167,10 @@ namespace LCompilers {
 
 
     llvm::Value* LLVMUtils::get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr, bool get_pointer_to_data /*default*/){
-        LCOMPILERS_ASSERT(is_proper_array_of_strings_llvm_var(type, arr_ptr))
+        if (!is_proper_array_of_strings_llvm_var(type, arr_ptr)) {
+            // Handle character arrays
+            return arr_ptr;
+        }
         LCOMPILERS_ASSERT(ASRUtils::is_array_of_strings(type))
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);

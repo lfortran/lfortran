@@ -9106,6 +9106,8 @@ public:
         llvm::Value *str_item {};
         {
             llvm::Value* str_data /*  i8*  */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data = llvm_utils->ensure_non_opaque_pointer(
+                str_data, llvm::Type::getInt8Ty(context), "string_item_data");
             llvm::Value* idx_INT64 = llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context));
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
@@ -9158,6 +9160,8 @@ public:
         } else {
             llvm::Value* str_data{}, *str_len{};
             std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data = llvm_utils->ensure_non_opaque_pointer(
+                str_data, llvm::Type::getInt8Ty(context), "string_section_data");
             tmp = lfortran_str_slice(str_data, str_len, left, right, step, left_present, right_present);
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
             tmp = llvm_utils->create_string_descriptor(
@@ -9204,6 +9208,8 @@ public:
         llvm::Value* str_data {}; // Shifted from Original by value = start
         {
             llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            str_data_orig = llvm_utils->ensure_non_opaque_pointer(
+                str_data_orig, llvm::Type::getInt8Ty(context), "string_section_data");
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
             str_data = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data_orig, start, "StrSliceGEP");
@@ -10262,10 +10268,36 @@ public:
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
+        llvm::Value* source_descriptor = source;
+        if (is_array && source_descriptor->getType()->isPointerTy()) {
+#if LLVM_VERSION_MAJOR >= 15
+            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_source))) {
+                ASR::ttype_t *bare_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_source));
+                if (bare_type) {
+                    llvm::Type *bare_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_source, bare_type, module.get());
+                    if (bare_llvm_type) {
+                        llvm::Type *loaded_type = bare_llvm_type->isPointerTy() ?
+                            bare_llvm_type : bare_llvm_type->getPointerTo();
+                        source_descriptor = builder->CreateLoad(loaded_type, source_descriptor);
+                    }
+                }
+            }
+#else
+            if (source_descriptor->getType()->getPointerElementType()->isPointerTy()) {
+                source_descriptor = builder->CreateLoad(
+                    source_descriptor->getType()->getPointerElementType(),
+                    source_descriptor);
+            }
+#endif
+        }
         if (ASRUtils::is_character(*expr_type(x.m_source))) {
             tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
-                        llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
-                        llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+                        llvm_utils->get_stringArray_data(expr_type(x.m_source), source_descriptor) :
+                        llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), source_descriptor);
+            source_ptr = llvm_utils->ensure_non_opaque_pointer(
+                source_ptr, llvm::Type::getInt8Ty(context), "transfer_source_data");
         } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
         } else if (is_array) {
@@ -10293,16 +10325,113 @@ public:
         switch(ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_mold))->type){
             case(ASR::String) : {
                 llvm::Value* str;
+                ASR::String_t* mold_string_type = ASRUtils::get_string_type(x.m_mold);
                 { // Create String Based On PhysicalType + Setup
-                    str = llvm_utils->create_string(ASRUtils::get_string_type(x.m_mold), "bit_cast_expr_return");
+                    str = llvm_utils->create_string(mold_string_type, "bit_cast_expr_return");
                     setup_string(str, ASRUtils::expr_type(x.m_mold));
                 }
 
-                { // Cast Ptr + Store In String
-                    llvm::Value* casted_to_i8 /* i8* */  = builder->CreateBitCast(source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
-                    llvm::Value* str_data_ptr /* i8** */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_mold), str, true);
-                    builder->CreateStore(casted_to_i8, str_data_ptr); // Observe that we didn't allocate memory, We used the casted ptr.
+                llvm::Value* mold_descriptor = nullptr;
+                {
+                    int64_t saved_ptr_loads = ptr_loads;
+                    ptr_loads = 0;
+                    this->visit_expr_load_wrapper(x.m_mold, 0, true);
+                    ptr_loads = saved_ptr_loads;
+                    mold_descriptor = tmp;
+                    tmp = nullptr;
                 }
+                if (mold_descriptor) {
+                    llvm_utils->clone_string_state(str, mold_descriptor, mold_string_type);
+                }
+
+                llvm::Value* dest_data = llvm_utils->get_string_data(mold_string_type, str);
+                llvm::Value* dest_len = llvm_utils->get_string_length(mold_string_type, str);
+                llvm::Value* dest_kind = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), mold_string_type->m_kind);
+                llvm::Value* dest_bytes = dest_len;
+                if (mold_string_type->m_kind != 1) {
+                    dest_bytes = builder->CreateMul(dest_bytes, dest_kind);
+                }
+
+                ASR::ttype_t* source_expr_type = ASRUtils::expr_type(x.m_source);
+                ASR::ttype_t* source_type_no_alloc = ASRUtils::type_get_past_allocatable_pointer(source_expr_type);
+                bool source_is_character = ASRUtils::is_character(*source_expr_type);
+                llvm::Value* source_bytes = nullptr;
+                llvm::DataLayout data_layout(module->getDataLayout());
+                auto get_num_elems = [&]() -> llvm::Value* {
+                    ASR::array_physical_typeType physical_type
+                        = ASRUtils::extract_physical_type(source_expr_type);
+                    if (physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+                        physical_type = ASRUtils::is_fixed_size_array(source_expr_type) ?
+                            ASR::array_physical_typeType::FixedSizeArray :
+                            ASR::array_physical_typeType::DescriptorArray;
+                    }
+                    switch( physical_type ) {
+                        case ASR::array_physical_typeType::DescriptorArray:
+                        case ASR::array_physical_typeType::AssumedRankArray:
+                        case ASR::array_physical_typeType::ISODescriptorArray:
+                        case ASR::array_physical_typeType::NumPyArray: {
+                            llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_source, source_type_no_alloc, module.get());
+                            return arr_descr->get_array_size(
+                                llvm_array_type, source_descriptor, nullptr, 4);
+                        }
+                        default: {
+                            return get_array_size_from_asr_type(source_type_no_alloc);
+                        }
+                    }
+                };
+
+                if (source_is_character) {
+                    ASR::String_t* source_string_type = ASRUtils::get_string_type(x.m_source);
+                    llvm::Value* total_chars = nullptr;
+                    if (is_array) {
+                        llvm::Value* num_elems = get_num_elems();
+                        num_elems = llvm_utils->convert_kind(
+                            num_elems, llvm::Type::getInt64Ty(context));
+                        llvm::Value* elem_len = llvm_utils->get_stringArray_length(
+                            source_expr_type, source_descriptor);
+                        total_chars = builder->CreateMul(num_elems, elem_len);
+                    } else {
+                        total_chars = llvm_utils->get_string_length(
+                            source_string_type, source_descriptor);
+                    }
+                    llvm::Value* source_kind = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), source_string_type->m_kind);
+                    source_bytes = builder->CreateMul(total_chars, source_kind);
+                } else if (is_array) {
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(source_type_no_alloc);
+                    llvm::Type* element_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_source, element_type, module.get());
+                    llvm::Value* num_elems = get_num_elems();
+                    num_elems = llvm_utils->convert_kind(
+                        num_elems, llvm::Type::getInt64Ty(context));
+                    uint64_t elem_size = data_layout.getTypeAllocSize(element_llvm_type);
+                    source_bytes = builder->CreateMul(
+                        num_elems,
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size));
+                } else {
+                    llvm::Type* scalar_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_source, source_type_no_alloc, module.get());
+                    uint64_t scalar_size = data_layout.getTypeAllocSize(scalar_llvm_type);
+                    source_bytes = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), scalar_size);
+                }
+
+                llvm::Value* source_i8_ptr = builder->CreateBitCast(
+                    source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+                builder->CreateMemSet(dest_data,
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
+                    dest_bytes, llvm::MaybeAlign());
+
+                llvm::Value* copy_bytes = dest_bytes;
+                if (source_bytes) {
+                    llvm::Value* cmp = builder->CreateICmpSLE(dest_bytes, source_bytes);
+                    copy_bytes = builder->CreateSelect(cmp, dest_bytes, source_bytes);
+                }
+
+                builder->CreateMemCpy(dest_data, llvm::MaybeAlign(),
+                    source_i8_ptr, llvm::MaybeAlign(), copy_bytes);
 
                 tmp = str;
             break;
