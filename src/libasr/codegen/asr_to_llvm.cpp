@@ -10255,9 +10255,15 @@ public:
             return;
         }
         llvm::Value* source{};
-        this->visit_expr_load_wrapper(x.m_source,
-            ASRUtils::is_character(*expr_type(x.m_source)) ? 0 : ptr_loads,
-            true);
+        int64_t p_load = 0 ;
+        if(ASRUtils::is_character(*expr_type(x.m_source))){
+            const bool source_is_descriptor_array_= ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_source)))
+                                                    && ASRUtils::extract_physical_type(expr_type(x.m_source)) == ASR::DescriptorArray;
+            p_load = source_is_descriptor_array_? 1 : 0;
+        } else {
+            p_load = ptr_loads;
+        }
+        this->visit_expr_load_wrapper(x.m_source, p_load, true);
         source = tmp;
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
@@ -10291,20 +10297,11 @@ public:
 
         /* Handle The Return Of The Expression (String, Array, Integer_8, etc.) */
         switch(ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_mold))->type){
-            case(ASR::String) : {
-                llvm::Value* str;
-                { // Create String Based On PhysicalType + Setup
-                    str = llvm_utils->create_string(ASRUtils::get_string_type(x.m_mold), "bit_cast_expr_return");
-                    setup_string(str, ASRUtils::expr_type(x.m_mold));
-                }
-
-                { // Cast Ptr + Store In String
-                    llvm::Value* casted_to_i8 /* i8* */  = builder->CreateBitCast(source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
-                    llvm::Value* str_data_ptr /* i8** */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_mold), str, true);
-                    builder->CreateStore(casted_to_i8, str_data_ptr); // Observe that we didn't allocate memory, We used the casted ptr.
-                }
-
-                tmp = str;
+            case(ASR::String) : {// Create StringView : data = bitcasted source, length = mold's length
+                llvm::Value* const casted_to_i8 /* i8* */  = builder->CreateBitCast(source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+                llvm::Value* const str_view /*non-owning*/ = llvm_utils->create_stringView(ASRUtils::get_string_type(x.m_mold), 
+                                                                casted_to_i8, get_string_length(x.m_mold), "bit_cast_expr_return");
+                tmp = str_view;
             break;
             } default : {
                 // Do nothing for now.
