@@ -202,12 +202,12 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             present_replacer.visit_Function(*s);
         }
 
-        bool is_presence_optional(ASR::symbol_t* sym, bool set_presence_to_required=false) {
+        bool is_presence_optional(ASR::symbol_t* sym, bool set_presence_to_wasoptional=false) {
             if( ASR::is_a<ASR::Variable_t>(*sym) ) {
                 ASR::Variable_t* sym_ = ASR::down_cast<ASR::Variable_t>(sym);
                 if (sym_->m_presence == ASR::presenceType::Optional) {
-                    if( set_presence_to_required ) {
-                        sym_->m_presence = ASR::presenceType::Required;
+                    if( set_presence_to_wasoptional ) {
+                        sym_->m_presence = ASR::presenceType::WasOptional;
                     }
                     return true;
                 }
