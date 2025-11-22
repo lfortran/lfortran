@@ -508,12 +508,30 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
                 ASR::ttype_t* arg_type = func_arg_j->m_type;
+                ASR::ttype_t* orig_arg_type = ASRUtils::duplicate_type(al, arg_type);
+                // Pass in a FixedSizeArray of same rank when non-allocatable DescriptorArray is expected
+                if (ASRUtils::is_array(arg_type) &&
+                    !ASRUtils::is_allocatable(arg_type) &&
+                    ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                    for (size_t i = 0; i < n_dims; i++) {
+                        ASR::dimension_t dim;
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1, int_type));
+                        dim.m_start = one;
+                        dim.m_length = one;
+                        dims.push_back(al, dim);
+                    }
+                    arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc, ASRUtils::extract_type(arg_type), dims.p, n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                }
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                     x.m_args[i - is_method].loc, dummy_variable_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
-                arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg_type->base.loc, arg_type));
+                arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg_type->base.loc, orig_arg_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
                     x.m_args[i - is_method].loc, pointer_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
