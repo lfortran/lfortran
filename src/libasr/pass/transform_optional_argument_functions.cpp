@@ -332,7 +332,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
 template <typename T>
 bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
-    const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx) {
+    const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx, Vec<ASR::stmt_t*>& pass_result) {
     ASR::Function_t* owning_function = nullptr;
     if( scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
         ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner)) ) {
@@ -502,6 +502,32 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     &x.m_args[i - is_method].m_value, 1, 0, logical_t, nullptr));
                 is_present = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.m_args[i - is_method].loc,
                     is_allocated, ASR::logicalbinopType::And, is_present, logical_t, nullptr));
+
+                // If the argument is allocated then pass in the actual argument
+                // else pass in a dummy variable allocated on the stack
+                // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
+                ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
+                ASR::ttype_t* arg_type = func_arg_j->m_type;
+                std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
+                ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
+                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+
+                std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
+                arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg_type->base.loc, arg_type));
+                ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
+                    x.m_args[i - is_method].loc, pointer_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+
+                ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+
+                std::vector<ASR::stmt_t*> if_body, else_body;
+                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, x.m_args[i - is_method].m_value)));
+                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, dummy_variable)));
+
+                pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));
+
+                ASR::call_arg_t replaced_arg;
+                replaced_arg.m_value = pointer_variable;
+                new_args.p[new_args.n - 1] = replaced_arg;
             }
             present_arg.m_value = is_present;
             new_args.push_back(al, present_arg);
@@ -527,6 +553,7 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
 
     Allocator& al;
     std::set<ASR::expr_t*> new_func_calls;
+    Vec<ASR::stmt_t*>& pass_result;
 
     public:
 
@@ -534,13 +561,13 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
     SymbolTable* current_scope;
 
     ReplaceFunctionCallsWithOptionalArguments(Allocator& al_,
-        std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx_) :
-        al(al_), sym2optionalargidx(sym2optionalargidx_), current_scope(nullptr)
+        std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx_, Vec<ASR::stmt_t*>& pass_result_) :
+        al(al_), pass_result(pass_result_), sym2optionalargidx(sym2optionalargidx_), current_scope(nullptr)
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> new_args;
-        if( !fill_new_args(new_args, al, *x, current_scope, sym2optionalargidx) ||
+        if( !fill_new_args(new_args, al, *x, current_scope, sym2optionalargidx, pass_result) ||
             new_func_calls.find(*current_expr) != new_func_calls.end() ) {
             return ;
         }
@@ -558,13 +585,46 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
 {
     private:
 
+        Allocator& al;
         ReplaceFunctionCallsWithOptionalArguments replacer;
+        Vec<ASR::stmt_t*> pass_result;
+        Vec<ASR::stmt_t*>* parent_body;
 
     public:
 
         ReplaceFunctionCallsWithOptionalArgumentsVisitor(Allocator& al_,
             std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx_) :
-        replacer(al_, sym2optionalargidx_) {}
+        al(al_), replacer(al_, sym2optionalargidx_, pass_result), parent_body(nullptr) {
+            pass_result.n = 0;
+            pass_result.reserve(al_, 0);
+        }
+
+        void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, n_body);
+            if( parent_body ) {
+                for (size_t j=0; j < pass_result.size(); j++) {
+                    parent_body->push_back(al, pass_result[j]);
+                }
+            }
+            for (size_t i = 0; i < n_body; i++) {
+                pass_result.n = 0;
+                pass_result.reserve(al, 1);
+                Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
+                parent_body = &body;
+                visit_stmt(*m_body[i]);
+                parent_body = parent_body_copy;
+                if( pass_result.size() > 0 ) {
+                    for (size_t j=0; j < pass_result.size(); j++) {
+                        body.push_back(al, pass_result[j]);
+                    }
+                }
+                body.push_back(al, m_body[i]);
+            }
+            m_body = body.p;
+            n_body = body.size();
+            pass_result.n = 0;
+        }
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -590,7 +650,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             Vec<ASR::call_arg_t> new_args;
-            if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx) ) {
+            if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx, pass_result) ) {
                 return ;
             }
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
