@@ -392,7 +392,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
             if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
-                ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
+                ASR::ttype_t* arg_type = func_arg_j->m_type;
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
                     arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
@@ -497,27 +497,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 x.m_args[i - is_method].m_value &&
                 ASRUtils::is_allocatable(x.m_args[i - is_method].m_value) &&
                 !ASRUtils::is_allocatable(func_arg_j->m_type) ) {
-                ASR::expr_t* arg_expr = x.m_args[i - is_method].m_value;
-                ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(arg_expr);
-                // Create a temporary variable if arg_expr is a FunctionCall
-                // This is to avoid calling the function more than once
-                if (ASR::is_a<ASR::FunctionCall_t>(*arg_expr)) {
-                    std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_functioncall_");
-                    ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                        x.m_args[i - is_method].loc, dummy_variable_name, al, scope,
-                        arg_expr_type, ASR::intentType::Local);
-                    ASR::stmt_t* assignment = ASRUtils::STMT(
-                            ASRUtils::make_Assignment_t_util(al, x.m_args[i - is_method].loc, dummy_variable,
-                                arg_expr, nullptr, false, ASRUtils::is_array(arg_expr_type)));
-                    pass_result.push_back(al, assignment);
-                    arg_expr = dummy_variable;
-                }
-                Vec<ASR::expr_t*> arg_expr_vec;
-                arg_expr_vec.reserve(al, 1);
-                arg_expr_vec.push_back(al, arg_expr);
                 ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
                     al, x.m_args[i - is_method].loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
-                    arg_expr_vec.p, arg_expr_vec.n, 0, logical_t, nullptr));
+                    &x.m_args[i - is_method].m_value, 1, 0, logical_t, nullptr));
                 is_present = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.m_args[i - is_method].loc,
                     is_allocated, ASR::logicalbinopType::And, is_present, logical_t, nullptr));
 
@@ -525,55 +507,21 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // else pass in a dummy variable allocated on the stack
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                ASR::ttype_t* dummy_variable_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
-                if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
-                    dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
-                }
-                ASR::ttype_t* pointer_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
-                // Don't declare AssumedLength strings, they are only arguments
-                if (ASRUtils::is_string_only(dummy_variable_type) || ASRUtils::is_array_of_strings(dummy_variable_type)) {
-                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
-                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(dummy_variable_type))->m_len_kind = ASR::ExpressionLength;
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(dummy_variable_type))->m_len = one;
-                }
-                // Pass in a FixedSizeArray of same rank when non-allocatable DescriptorArray is expected
-                if (ASRUtils::is_array(dummy_variable_type) &&
-                    !ASRUtils::is_allocatable(dummy_variable_type) &&
-                    ASRUtils::extract_physical_type(dummy_variable_type) == ASR::array_physical_typeType::DescriptorArray) {
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 1);
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(dummy_variable_type);
-                    for (size_t i = 0; i < n_dims; i++) {
-                        ASR::dimension_t dim;
-                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
-                        dim.m_start = one;
-                        dim.m_length = one;
-                        dims.push_back(al, dim);
-                    }
-                    ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
-                        phy_type = ASR::array_physical_typeType::PointerArray;
-                    }
-                    dummy_variable_type = ASRUtils::TYPE(
-                            ASR::make_Array_t(
-                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
-                }
+                ASR::ttype_t* arg_type = func_arg_j->m_type;
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
-                pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
+                arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg_type->base.loc, arg_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i - is_method].loc, pointer_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
-                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
-                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, x.m_args[i - is_method].m_value)));
+                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, dummy_variable)));
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));
 
@@ -654,44 +602,24 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
-            for (size_t i = 0; i < n_body; i++) {
-                body.push_back(al, m_body[i]);
-            }
             if( parent_body ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
                     parent_body->push_back(al, pass_result[j]);
                 }
             }
-            // pass_result can contain FunctionCalls which need to be replaced
-            // Run the pass till no more statements are added to body
-            bool converge = false;
-            const int NUM_TRIES = 10;
-            for (size_t k = 0; k < NUM_TRIES; k++) {
-                Vec<ASR::stmt_t*> new_body;
-                new_body.reserve(al, body.n);
-                for (size_t i = 0; i < body.n; i++) {
-                    pass_result.n = 0;
-                    pass_result.reserve(al, 1);
-                    Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
-                    parent_body = &new_body;
-                    visit_stmt(*body[i]);
-                    parent_body = parent_body_copy;
-                    if( pass_result.size() > 0 ) {
-                        for (size_t j=0; j < pass_result.size(); j++) {
-                            new_body.push_back(al, pass_result[j]);
-                        }
+            for (size_t i = 0; i < n_body; i++) {
+                pass_result.n = 0;
+                pass_result.reserve(al, 1);
+                Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
+                parent_body = &body;
+                visit_stmt(*m_body[i]);
+                parent_body = parent_body_copy;
+                if( pass_result.size() > 0 ) {
+                    for (size_t j=0; j < pass_result.size(); j++) {
+                        body.push_back(al, pass_result[j]);
                     }
-                    new_body.push_back(al, body[i]);
                 }
-                if (body.n == new_body.n) {
-                    converge = true;
-                    break;
-                }
-                body.n = new_body.n;
-                body.p = new_body.p;
-            }
-            if (!converge) {
-                throw LCompilersException("FunctionCall nesting is too high, didn't converge in " + std::to_string(NUM_TRIES) + " tries.");
+                body.push_back(al, m_body[i]);
             }
             m_body = body.p;
             n_body = body.size();
