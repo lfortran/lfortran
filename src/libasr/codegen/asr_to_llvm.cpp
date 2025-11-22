@@ -14644,13 +14644,15 @@ public:
                     ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(x.m_args[i])));
-                    if(arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray){
+                    //Copy only when we have DescriptorArray Type, where not referencing through pointer
+                    //TODO: Check for non-unit strides, and create a copy only when having non-unit strides.
+                    bool copy_needed = (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) &&
+                                        ASR::is_a<ASR::Var_t>(*x.m_args[i]);
+                    if(copy_needed){
                         // For DescriptorArray, we need to create a contiguous copy
                         // because the descriptor may have non-unit strides (e.g., from array sections)
                         // and the backend expects properly strided elements in output
-
                         ASR::ttype_t* source_array_type = ASRUtils::expr_type(x.m_args[i]);
-
                         // Visit the expression to get the descriptor
                         int64_t ptr_loads_copy2 = ptr_loads;
                         ptr_loads = 1 - !LLVM::is_llvm_pointer(*source_array_type);
@@ -14659,143 +14661,12 @@ public:
                         llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_args[i], ASRUtils::type_get_past_allocatable_pointer(source_array_type), module.get());
                         ptr_loads = ptr_loads_copy2;
-
-                        // Get element type
                         llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_args[i], ASRUtils::extract_type(source_array_type), module.get());
-
-                        // Get rank from the descriptor
                         int rank = ASRUtils::extract_n_dims_from_ttype(source_array_type);
-
-                        // Get total number of elements
-                        llvm::Value* total_elements = arr_descr->get_array_size(
-                            source_llvm_type, source_desc, nullptr, 8);
-
-                        // Allocate contiguous data buffer for the copy
-                        llvm::Value* data_buffer = llvm_utils->CreateAlloca(
-                            *builder, elem_type, total_elements, "desc_array_copy");
-
-                        // Get dimension bounds from the descriptor for iteration
-                        // We need to iterate through all elements and copy them
-                        llvm::Value* dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(
-                            source_llvm_type, source_desc, true);
-
-                        // Get source data pointer
-                        llvm::Value* src_data = arr_descr->get_pointer_to_data(source_llvm_type, source_desc);
-                        src_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), src_data);
-
-                        // Destination index for contiguous buffer
-                        llvm::Value *dest_idx_ptr = builder->CreateAlloca(
-                            llvm::Type::getInt64Ty(context), nullptr, "dest_idx_ptr");
-                        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0), dest_idx_ptr);
-                        
-                        //Create Loop Index Variables for each dimension
-                        std::vector<llvm::Value*> loop_idx_ptrs(rank);
-                        std::vector<llvm::Value*> lbs(rank);
-                        std::vector<llvm::Value*> ubs(rank);
-                        for(int d=0;d<rank;d++){
-                            llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                                dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
-                                lbs[d] = arr_descr->get_lower_bound(dim_des);
-                                ubs[d] = arr_descr->get_upper_bound(dim_des);
-                            loop_idx_ptrs[d] = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr,
-                                "loop_idx_ptr_" + std::to_string(d));
-                            builder->CreateStore(lbs[d], loop_idx_ptrs[d]);
-                        }
-
-                        std::vector<llvm::BasicBlock*> loop_heads(rank);
-                        std::vector<llvm::BasicBlock*> loop_bodies(rank);
-                        std::vector<llvm::BasicBlock*> loop_incs(rank);
-                        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(
-                            context, "copy_loop_end", builder->GetInsertBlock()->getParent());
-                        llvm::BasicBlock* innermost_body = llvm::BasicBlock::Create(
-                            context, "copy_innermost", builder->GetInsertBlock()->getParent());
-                        for(int d=0;d<rank;d++){
-                            loop_heads[d] = llvm::BasicBlock::Create(
-                                context, "copy_loop_head_" + std::to_string(d),
-                                builder->GetInsertBlock()->getParent());
-                            loop_incs[d] = llvm::BasicBlock::Create(
-                                context, "copy_loop_inc_" + std::to_string(d),
-                                builder->GetInsertBlock()->getParent());
-                        }
-                        builder->CreateBr(loop_heads[0]);
-                        // Create nested loops
-                        for(int d=0;d<rank;d++){
-                            builder->SetInsertPoint(loop_heads[d]);
-                            llvm::Value* idx = llvm_utils->CreateLoad2(
-                                llvm::Type::getInt32Ty(context), loop_idx_ptrs[d]);
-                            llvm::Value* cond = builder->CreateICmpSLE(
-                                idx, ubs[d]);
-                            llvm::BasicBlock* true_dest = (d == rank - 1) ? innermost_body : loop_heads[d + 1];
-                            llvm::BasicBlock* false_dest = (d == 0) ? loop_end : loop_incs[d - 1];
-                            builder->CreateCondBr(cond, true_dest, false_dest);
-                        }
-
-                        builder->SetInsertPoint(innermost_body);
-
-                        // Manually compute the linear index using strides from descriptor
-                        // For each dimension: offset += (idx - lb) * stride
-                        llvm::Value* linear_offset = llvm::ConstantInt::get(
-                            llvm::Type::getInt32Ty(context), 0);
-
-                        for(int d = 0; d < rank; d++){
-                            llvm::Value* idx = llvm_utils->CreateLoad2(
-                                llvm::Type::getInt32Ty(context), loop_idx_ptrs[d]);
-
-                            // Get stride for this dimension
-                            llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                                dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
-                            llvm::Value* stride = arr_descr->get_stride(dim_des);
-                            llvm::Value* lb = arr_descr->get_lower_bound(dim_des);
-
-                            // offset += (idx - lb) * stride
-                            llvm::Value* idx_minus_lb = builder->CreateSub(idx, lb);
-                            llvm::Value* dim_offset = builder->CreateMul(idx_minus_lb, stride);
-                            linear_offset = builder->CreateAdd(linear_offset, dim_offset);
-                        }
-
-                        // Add the descriptor's base offset
-                        llvm::Value* base_offset = arr_descr->get_offset(source_llvm_type, source_desc);
-                        linear_offset = builder->CreateAdd(linear_offset, base_offset);
-
-                        // Get element from source data using computed offset
-                        llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
-                        llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
-
-                        llvm::Value* dest_idx = builder->CreateLoad(
-                            llvm::Type::getInt64Ty(context), dest_idx_ptr);
-                        llvm::Value* dest_ptr = builder->CreateGEP(
-                            elem_type, data_buffer, dest_idx);
-                        builder->CreateStore(elem_val, dest_ptr);
-
-                        llvm::Value* new_dest_idx = builder->CreateAdd(
-                            dest_idx, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1));
-                        builder->CreateStore(new_dest_idx, dest_idx_ptr);
-
-                        builder->CreateBr(loop_incs[rank - 1]);
-
-                        // Generate loop increments
-                        for (int d = rank - 1; d >= 0; d--) {
-                            builder->SetInsertPoint(loop_incs[d]);
-
-                            // Increment this dimension's index
-                            llvm::Value* idx = builder->CreateLoad(
-                                llvm::Type::getInt32Ty(context), loop_idx_ptrs[d]);
-                            llvm::Value* new_idx = builder->CreateAdd(
-                                idx, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
-                            builder->CreateStore(new_idx, loop_idx_ptrs[d]);
-
-                            // Reset all inner loop indices to their lower bounds
-                            for (int inner = d + 1; inner < rank; inner++) {
-                                builder->CreateStore(lbs[inner], loop_idx_ptrs[inner]);
-                            }
-
-                            builder->CreateBr(loop_heads[d]);
-                        }
-
-                        builder->SetInsertPoint(loop_end);
-
-                        tmp = data_buffer;
+                        // Create contiguous copy using the array descriptor utility
+                        tmp = arr_descr->create_contiguous_copy_from_descriptor(
+                            source_llvm_type, source_desc, elem_type, rank);
                     } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,

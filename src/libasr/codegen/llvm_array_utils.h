@@ -322,6 +322,16 @@ namespace LCompilers {
                 llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4) = 0;
 
+                /*
+                * Creates a contiguous copy of data from a DescriptorArray.
+                * Helpful when having strided access to an array
+                * Returns a pointer to the newly allocated contiguous buffer.
+                */
+                virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, int rank) = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
@@ -508,6 +518,11 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4);
+
+                virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, int rank);
 
         };
 
