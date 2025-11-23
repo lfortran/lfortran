@@ -324,13 +324,21 @@ namespace LCompilers {
 
                 /*
                 * Creates a contiguous copy of data from a DescriptorArray.
-                * Helpful when having strided access to an array
+                * Helpful when having strided access to an array.
                 * Returns a pointer to the newly allocated contiguous buffer.
+                * Allocation is done on heap using lfortran_malloc,
+                * So, please make sure to free the memory after use.
+                *
+                * Note: Similar logic exists in ASR passes (pass/print_arr.cpp & pass/array_op.cpp).
+                * But, the ASR pass for print statements was disabled in #6351.
+                * Enabling it opened other issues, hence this separate LLVM implementation
+                * to handle strided arrays for writing array into strings (used in print statements), 
+                * by storing in a contiguous buffer first.
                 */
                 virtual
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank) = 0;
+                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
         };
 
@@ -522,7 +530,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank);
+                    llvm::Type* elem_type, int rank, llvm::Module* module);
 
         };
 
