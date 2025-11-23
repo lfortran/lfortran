@@ -9710,7 +9710,8 @@ public:
         for( size_t i = 0; i < x.n_object_list; i++ ) {
             this->visit_expr(*(x.m_object_list[i]));
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            ASR::ttype_t* type_ = ASRUtils::expr_type(expr);
+            ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(expr));
             if( type == nullptr ) {
                 type = type_;
             } else {
@@ -9927,7 +9928,8 @@ public:
         for( size_t i = 0; i < x.n_values; i++ ) {
             this->visit_expr(*(x.m_values[i]));
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            ASR::ttype_t* type_ = ASRUtils::expr_type(expr);
+            ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(expr));
             if( type == nullptr ) {
                 type = type_;
             } else {
