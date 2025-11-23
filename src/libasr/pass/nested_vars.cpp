@@ -181,6 +181,12 @@ public:
         current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
     }
+    /// Is a variable declared in a module scope
+    bool is_module_variable(ASR::Variable_t* const v){
+        ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
+        return  ASR::is_a<ASR::symbol_t>(*asr_owner) &&
+                ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+    }
 
     void visit_Var(const ASR::Var_t &x) {
         // Only attempt if we are actually in a nested function
@@ -190,6 +196,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                if(is_module_variable(v)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope, it is a
                 // "needed global" since we need to be able to access it from the
@@ -397,11 +404,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
                         } else {
-                            var_type = var_type_;
-                        }
-                        if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_allocatable(var->m_type)) ) {
-                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
-                                ASRUtils::type_get_past_allocatable(var_type)));
+                            auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
+                            var_type = pointer_var_type_;
                         }
                     }
                 }
