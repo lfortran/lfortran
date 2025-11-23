@@ -580,6 +580,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::dimension_t* compile_time_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
+            if( n_dims == 0 ) {
+                ASR::ttype_t* scalar_type = ASRUtils::type_get_past_allocatable_pointer(array_type);
+                if( scalar_type && ASR::is_a<ASR::String_t>(*scalar_type) ) {
+                    ASRUtils::ASRBuilder builder(al, array->base.loc);
+                    ASR::expr_t* length = builder.StringLen(array);
+                    dims.push_back(al, length);
+                    return;
+                }
+            }
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::expr_t* length = compile_time_dims[i].m_length;
                 if( length == nullptr ) {
