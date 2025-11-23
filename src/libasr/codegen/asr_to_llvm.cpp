@@ -14634,6 +14634,9 @@ public:
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                     string_lengths_cnt));
 
+            // This vector is used to keep track of all contiguous buffer copies created for arrays
+            // which are allocated on heap, and need to be freed after the function call.
+            std::vector<llvm::Value*> contiguous_copies_to_free;
             // Push the args.
             for (size_t i=0; i<x.n_args; i++) {
                 // Push the args as raw pointers
@@ -14651,7 +14654,7 @@ public:
                     if(copy_needed){
                         // For DescriptorArray, we need to create a contiguous copy
                         // because the descriptor may have non-unit strides (e.g., from array sections)
-                        // and the backend expects properly strided elements in output
+                        // and the string format runtime function expects contiguous arrays for inputs
                         ASR::ttype_t* source_array_type = ASRUtils::expr_type(x.m_args[i]);
                         // Visit the expression to get the descriptor
                         int64_t ptr_loads_copy2 = ptr_loads;
@@ -14666,7 +14669,9 @@ public:
                         int rank = ASRUtils::extract_n_dims_from_ttype(source_array_type);
                         // Create contiguous copy using the array descriptor utility
                         tmp = arr_descr->create_contiguous_copy_from_descriptor(
-                            source_llvm_type, source_desc, elem_type, rank);
+                            source_llvm_type, source_desc, elem_type, rank, module.get());
+                        // Track this heap allocation to free after function call
+                        contiguous_copies_to_free.push_back(tmp);
                     } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
@@ -14733,6 +14738,10 @@ public:
                 ptr_loads = ptr_load_copy;
             }
             tmp = llvm_utils->string_format_fortran(args);
+            // Free contiguous copies that were heap-allocated
+            for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
+                llvm_utils->lfortran_free(copy_ptr);
+            }
 
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);

@@ -1159,7 +1159,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::create_contiguous_copy_from_descriptor(
             llvm::Type* source_llvm_type, llvm::Value* source_desc,
-            llvm::Type* elem_type, int rank) {
+            llvm::Type* elem_type, int rank, llvm::Module* module) {
             // Get dimension bounds from the descriptor first
             llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
                 source_llvm_type, source_desc, true);
@@ -1179,10 +1179,16 @@ namespace LCompilers {
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
                 num_elements = builder->CreateMul(num_elements, extents[d]);
             }
-            // Allocate contiguous data buffer for only the 
+            // Allocate contiguous data buffer on heap for only the
             // Number of elements to be copied
-            llvm::Value* data_buffer = llvm_utils->CreateAlloca(
-                *builder, elem_type, num_elements, "desc_array_copy");
+            llvm::DataLayout data_layout(module->getDataLayout());
+            uint64_t elem_size = data_layout.getTypeAllocSize(elem_type);
+            llvm::Value* llvm_elem_size = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), elem_size);
+            llvm::Value* total_size = builder->CreateMul(num_elements, llvm_elem_size);
+            llvm::Value* data_buffer_i8 = lfortran_malloc(context, *module, *builder, total_size);
+            llvm::Value* data_buffer = builder->CreateBitCast(
+                data_buffer_i8, elem_type->getPointerTo());
             llvm::Value* src_data = get_pointer_to_data(source_llvm_type, source_desc);
             src_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), src_data);
             // Single flat loop over all elements
@@ -1224,7 +1230,6 @@ namespace LCompilers {
                     builder->CreateStore(new_iter, iter_ptr);
                 }
             );
-
             return data_buffer;
         }
 
