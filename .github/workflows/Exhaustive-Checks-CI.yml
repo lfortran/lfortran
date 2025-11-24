@@ -36,7 +36,7 @@ jobs:
           (github.event_name == 'pull_request' &&
            contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           path: src
@@ -99,7 +99,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -168,7 +168,7 @@ jobs:
 #      matrix:
 #        os: ["ubuntu-latest"]
 #    steps:
-#      - uses: actions/checkout@v5
+#      - uses: actions/checkout@v6
 #        with:
 #          fetch-depth: 0
 #      - uses: prefix-dev/setup-pixi@v0.8.1
@@ -220,7 +220,7 @@ jobs:
         llvm-version: ["7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -509,7 +509,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -544,7 +544,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -568,7 +568,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -620,7 +620,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -681,7 +681,7 @@ jobs:
       USER: lfortran
       PROJECT: lfortran
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

@@ -44,7 +44,7 @@ jobs:
           - os: windows-2025
             llvm-version: "11"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -376,7 +376,7 @@ jobs:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
