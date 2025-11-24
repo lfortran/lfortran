@@ -2275,33 +2275,70 @@ namespace LCompilers {
             initial_string, true, "string_const");
     }
 
-    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const){
+    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const){
         LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerArray)
         /*
             Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
-            We'll create fake duplicate-string type with length = OriginalStringLengthInArray * ArraySize
+            We'll create a global string with the total length (all elements concatenated),
+            but the descriptor should have the original element length.
         */
         std::string sequence((char*)arr_const->m_data, arr_const->m_n_data);
-        ASR::ttype_t* fake_string_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(arr_const->m_type));
-        { // Modify length
-            ASR::String_t* fake_string = ASR::down_cast<ASR::String_t>(fake_string_type);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*fake_string->m_len))
-            int64_t &fake_string_len = ASR::down_cast<ASR::IntegerConstant_t>(fake_string->m_len)->m_n;
-            fake_string_len*= ASRUtils::get_fixed_size_of_array(arr_const->m_type);
-        }
-        llvm::Value* global_arraystring = declare_global_string(
-            ASRUtils::get_string_type(fake_string_type), sequence, true, "stringArray_const");
-        //Make sure to set the length properly (Set length with the actual array's element length)
-        if(ASRUtils::get_string_type(fake_string_type)->m_physical_type == ASR::DescriptorString){
-            int64_t str_len;
-             ASRUtils::extract_value(ASRUtils::get_string_type(arr_const->m_type)->m_len, str_len);
-            builder->CreateStore(
-                llvm::ConstantInt::get(context, llvm::APInt(64, str_len) ),
-                get_string_length(ASRUtils::get_string_type(fake_string_type), global_arraystring, true));
+
+        // Get the element string type and its length
+        ASR::String_t* elem_string = ASRUtils::get_string_type(arr_const->m_type);
+        int64_t elem_len;
+        ASRUtils::extract_value(elem_string->m_len, elem_len);
+
+        // Calculate total length (element length * array size)
+        int64_t total_len = elem_len * ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+
+        // Pad the sequence to the total length
+        sequence.resize(total_len, ' ');
+
+        // For DescriptorString, we need to create a global variable with the correct initializer
+        if(elem_string->m_physical_type == ASR::DescriptorString){
+            // Create the character array type [total_len x i8]
+            llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), total_len);
+
+            // Create the constant data
+            llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
+
+            // Create global variable for the character data
+            llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
+                *module,
+                char_array_type,
+                true,  // is_const
+                llvm::GlobalValue::PrivateLinkage,
+                const_data_as_array,
+                "stringArray_const_data"
+            );
+
+            // Create GEP to get pointer to the data
+            llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+            llvm::Constant *char_ptr = llvm::ConstantExpr::getInBoundsGetElementPtr(
+                char_array_type,
+                global_string_as_array,
+                {zero_const, zero_const});
+
+            // Create the descriptor with the element length (not total length)
+            llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, elem_len));
+            llvm::Constant* string_descriptor_constant = llvm::ConstantStruct::get(
+                llvm::dyn_cast<llvm::StructType>(string_descriptor),
+                {char_ptr, len_constant});
+
+            // Create global variable for the descriptor
+            llvm::GlobalVariable* global_string_desc = new llvm::GlobalVariable(
+                *module,
+                string_descriptor,
+                true,  // is_const
+                llvm::GlobalValue::PrivateLinkage,
+                string_descriptor_constant,
+                "stringArray_const");
+
+            return global_string_desc;
         } else {
             throw LCompilersException("Unhandled case");
         }
-        return global_arraystring;
     }
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
