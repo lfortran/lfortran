@@ -9214,7 +9214,10 @@ public:
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
-        if (x.m_value) { return this->visit_expr_wrapper(x.m_value, true); }
+        // Don't use compile-time value when this is an assignment target
+        if (x.m_value && !is_assignment_target) {
+            return this->visit_expr_wrapper(x.m_value, true);
+        }
 
         // TODO : Find some way to use the helper functions based on the frontend,
         // We are using fortran only for now.
