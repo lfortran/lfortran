@@ -1157,6 +1157,82 @@ namespace LCompilers {
             builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
         }
 
+        llvm::Value* SimpleCMODescriptor::create_contiguous_copy_from_descriptor(
+            llvm::Type* source_llvm_type, llvm::Value* source_desc,
+            llvm::Type* elem_type, int rank, llvm::Module* module) {
+            // Get dimension bounds from the descriptor first
+            llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
+                source_llvm_type, source_desc, true);
+            // Collect bounds and compute actual number of elements to copy
+            std::vector<llvm::Value*> extents(rank);
+            // Calculate number of elements as product of (ub - lb + 1) for each dimension
+            llvm::Value* num_elements = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            for (int d = 0; d < rank; d++) {
+                llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                    dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                llvm::Value* lb = get_lower_bound(dim_des_elem);
+                llvm::Value* ub = get_upper_bound(dim_des_elem);
+                // extent = ub - lb + 1
+                extents[d] = builder->CreateSub(ub, lb);
+                extents[d] = builder->CreateAdd(extents[d],
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                num_elements = builder->CreateMul(num_elements, extents[d]);
+            }
+            // Allocate contiguous data buffer on heap for only the
+            // Number of elements to be copied
+            llvm::DataLayout data_layout(module->getDataLayout());
+            uint64_t elem_size = data_layout.getTypeAllocSize(elem_type);
+            llvm::Value* llvm_elem_size = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), elem_size);
+            llvm::Value* total_size = builder->CreateMul(num_elements, llvm_elem_size);
+            llvm::Value* data_buffer_i8 = lfortran_malloc(context, *module, *builder, total_size);
+            llvm::Value* data_buffer = builder->CreateBitCast(
+                data_buffer_i8, elem_type->getPointerTo());
+            llvm::Value* src_data = get_pointer_to_data(source_llvm_type, source_desc);
+            src_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), src_data);
+            // Single flat loop over all elements
+            llvm::Value* iter_ptr = builder->CreateAlloca(
+                llvm::Type::getInt32Ty(context), nullptr, "copy_iter");
+            builder->CreateStore(llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0), iter_ptr);
+            llvm_utils->create_loop("copy_array",
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iter_ptr);
+                    return builder->CreateICmpSLT(iter, num_elements);
+                },
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iter_ptr);
+                    llvm::Value* linear_offset = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 0);
+                    llvm::Value* remaining = iter;
+                    for (int d = 0; d < rank; d++) {
+                        llvm::Value* dim_idx = builder->CreateSRem(remaining, extents[d]);
+                        remaining = builder->CreateSDiv(remaining, extents[d]);
+                        llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                            dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                        llvm::Value* stride = get_stride(dim_des_elem);
+                        llvm::Value* dim_offset = builder->CreateMul(dim_idx, stride);
+                        linear_offset = builder->CreateAdd(linear_offset, dim_offset);
+                    }
+                    llvm::Value* base_offset = get_offset(source_llvm_type, source_desc);
+                    linear_offset = builder->CreateAdd(linear_offset, base_offset);
+                    // Copy element
+                    llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
+                    llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
+                    llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
+                    builder->CreateStore(elem_val, dest_ptr);
+                    // Increment iterator
+                    llvm::Value* new_iter = builder->CreateAdd(iter,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                    builder->CreateStore(new_iter, iter_ptr);
+                }
+            );
+            return data_buffer;
+        }
+
     } // LLVMArrUtils
 
 } // namespace LCompilers
