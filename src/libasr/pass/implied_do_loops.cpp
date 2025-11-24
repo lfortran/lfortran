@@ -27,6 +27,39 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
     bool realloc_lhs, allocate_target;
 
+    ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
+        if( expr == nullptr ) {
+            return nullptr;
+        }
+        if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for( size_t i = 0; i < idl->n_values; i++ ) {
+                ASR::expr_t* candidate = get_first_scalar_expr(idl->m_values[i]);
+                if( candidate != nullptr ) {
+                    return candidate;
+                }
+            }
+            return nullptr;
+        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*expr) ) {
+            ASR::ArrayConstructor_t* arr_cons = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+            for( size_t i = 0; i < arr_cons->n_args; i++ ) {
+                ASR::expr_t* candidate = get_first_scalar_expr(arr_cons->m_args[i]);
+                if( candidate != nullptr ) {
+                    return candidate;
+                }
+            }
+            return nullptr;
+        } else if( ASR::is_a<ASR::ArrayConstant_t>(*expr) ) {
+            ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(expr);
+            int64_t array_size = ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+            if( array_size <= 0 ) {
+                return nullptr;
+            }
+            return ASRUtils::fetch_ArrayConstant_value(al, arr_const, 0);
+        }
+        return expr;
+    }
+
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
         std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
@@ -297,10 +330,19 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
 
         // Case: `keywords = [character(len=ii) :: value]`
         // we need to allocate at runtime at string length (Here `ii`) is runtime
-        if (ASRUtils::is_character(*x->m_type)) {
-            ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(x->m_type));
-            if (!ASRUtils::is_value_constant(string_type->m_len)) {
+        ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        if (element_type && ASRUtils::is_character(*element_type)) {
+            ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(element_type);
+            bool len_is_constant = ASRUtils::is_value_constant(string_type->m_len);
+            if( !len_is_constant ) {
                 non_const_len_expr = string_type->m_len;
+                if( non_const_len_expr == nullptr && x->n_args > 0 ) {
+                    ASR::expr_t* sample_expr = get_first_scalar_expr(x->m_args[0]);
+                    if( sample_expr ) {
+                        ASRUtils::ASRBuilder builder(al, loc);
+                        non_const_len_expr = builder.StringLen(sample_expr);
+                    }
+                }
                 is_allocatable = true;
             }
         }
