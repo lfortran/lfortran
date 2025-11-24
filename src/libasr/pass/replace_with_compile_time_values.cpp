@@ -50,6 +50,14 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
         replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayItem);
     }
 
+    void replace_StringSection(ASR::StringSection_t* x) {
+        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringSection);
+    }
+
+    void replace_StringItem(ASR::StringItem_t* x) {
+        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringItem);
+    }
+
     void replace_expr(ASR::expr_t* x) {
         if( x == nullptr || inside_prohibited_expression ) {
             return ;
@@ -105,6 +113,36 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
 
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
         visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayItem);
+    }
+
+    void visit_StringSection(const ASR::StringSection_t& x) {
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringSection);
+    }
+
+    void visit_StringItem(const ASR::StringItem_t& x) {
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        // Don't replace the assignment target with its compile-time value
+        // (e.g., ch(5:5) should not become "4" when used as an assignment target)
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+
+        // Visit the target without calling the replacer
+        bool inside_prohibited_expression_copy = replacer.inside_prohibited_expression;
+        replacer.inside_prohibited_expression = true;
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &(xx.m_target);
+        replacer.current_expr = current_expr;
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        current_expr = current_expr_copy;
+        replacer.inside_prohibited_expression = inside_prohibited_expression_copy;
+
+        // Visit the value normally (can be replaced)
+        current_expr = &(xx.m_value);
+        replacer.current_expr = current_expr;
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        current_expr = current_expr_copy;
     }
 
 };
