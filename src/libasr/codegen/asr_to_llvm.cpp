@@ -7201,6 +7201,16 @@ public:
                                              module.get(), true);
             }
         } else {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                std::string target_type = "unknown";
+                if (x.m_target->type == ASR::exprType::StringConstant) {
+                    target_type = "StringConstant (this is likely a bug in an ASR pass that incorrectly "
+                                  "constant-folded an assignment target like ch(5:5) = 'X')";
+                } else {
+                    target_type = "type " + std::to_string(x.m_target->type);
+                }
+                throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
+            }
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
             h = get_hash((ASR::asr_t*)asr_target);
             target = llvm_symtab[h];
@@ -9214,8 +9224,14 @@ public:
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
-        if (x.m_value) { return this->visit_expr_wrapper(x.m_value, true); }
+        // Don't use compile-time constant value when this is an assignment target
+        // For assignment targets, we need the actual mutable location in the string,
+        // not a constant value that would cause writes to read-only constant memory
+        if (x.m_value && !is_assignment_target) {
+            return this->visit_expr_wrapper(x.m_value, true);
+        }
 
+        // Compute the actual substring location for reading or writing
         // TODO : Find some way to use the helper functions based on the frontend,
         // We are using fortran only for now.
         if(true){ // Fortran
