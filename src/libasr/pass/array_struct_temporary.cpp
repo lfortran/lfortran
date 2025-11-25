@@ -1798,6 +1798,41 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             replace_expr_with_temporary_variable(xx.m_v, x.m_v, "_array_size_v");
         }
     }
+
+    /**
+     * In case `x.test` expression needs temporaries
+     *
+     * FROM :
+     *      DO while(any(x == skip_tokens))
+     *       ...
+     *      END DO
+     * TO :
+     *     DO while (.true.)
+     *      temp1 = x == skip_tokens
+     *      temp2 = Any(temp1)
+     *          if (temp2 == .false.) exit
+     *      ...
+     *     END DO
+     */
+    void visit_WhileLoop(const ASR::WhileLoop_t &x){
+        Vec<ASR::stmt_t*>* const current_body_temp = current_body; 
+        Vec<ASR::stmt_t*> while_test_body_{};
+        while_test_body_.reserve(al, 0);
+        current_body = &while_test_body_; 
+        visit_expr(*x.m_test);
+        if (!while_test_body_.empty()){ // Temps Created! 
+            ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+            while_test_body_.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            for(size_t i = 0; i< x.n_body; i++){
+                while_test_body_.push_back(al, x.m_body[i]);
+            }
+            const_cast<ASR::WhileLoop_t&>(x).m_body = while_test_body_.p; 
+            const_cast<ASR::WhileLoop_t&>(x).n_body = while_test_body_.n;
+            const_cast<ASR::WhileLoop_t&>(x).m_test = builder.logical_true(); 
+        }
+        current_body = current_body_temp;
+        CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);      
+    }
 };
 
 class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemporary> {
