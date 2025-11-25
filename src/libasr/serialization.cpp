@@ -310,7 +310,21 @@ public:
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
         current_scope = current_scope_copy;
     }
-
+    /**
+     *Enum Symbols live inside module scopes.
+     *Help finding Enum symbol.
+     *Does `ext_sym_enum_name` exists inside some module (loaded module) ? 
+     *Returns enum symbol if exists, nullptr if not
+    */
+    ASR::symbol_t* enum_in_module(const std::string ext_sym_enum_name){
+        for(auto &sym : global_symtab->get_scope()){
+            if(ASR::is_a<ASR::Module_t>(*sym.second)){
+                ASR::symbol_t* enum_sym = ASR::down_cast<ASR::Module_t>(sym.second)->m_symtab->get_symbol(ext_sym_enum_name);
+                if(enum_sym) { return enum_sym; }
+            }
+        }
+        return nullptr;
+    }
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
@@ -381,6 +395,10 @@ public:
                     + original_name + "' was not found in the module '"
                     + module_name + "' (but the module was found)");
             }
+        } else if(ASR::symbol_t* enum_sym = enum_in_module(module_name)){ // External -> External in module -> points to internal enum symboltable
+            ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(enum_sym);
+            ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+            xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);;
         } else {
             if( attempt <= 1 ) {
                 fixed_external_syms = false;

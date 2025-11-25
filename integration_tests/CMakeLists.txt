@@ -2194,6 +2194,7 @@ RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
 RUN(NAME enum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME enum_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME enum_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRAFILES enum_06_module.f90)
 
 RUN(NAME array_section_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
