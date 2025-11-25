@@ -2197,21 +2197,43 @@ LFORTRAN_API void _lfortran_complex_mul_64(struct _lfortran_complex_64* a,
 LFORTRAN_API void _lfortran_complex_div_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
+    // Use Smith's algorithm for numerical stability
+    // This avoids overflow/underflow issues with very large or small numbers
     float p = a->re, q = a->im;
-    float r = b->re, s = -(b->im);
-    float mod_b = r*r + s*s;
-    result->re = (p*r - q*s)/mod_b;
-    result->im = (p*s + q*r)/mod_b;
+    float r = b->re, s = b->im;
+    
+    if (fabsf(r) >= fabsf(s)) {
+        float ratio = s / r;
+        float denom = r + s * ratio;
+        result->re = (p + q * ratio) / denom;
+        result->im = (q - p * ratio) / denom;
+    } else {
+        float ratio = r / s;
+        float denom = s + r * ratio;
+        result->re = (p * ratio + q) / denom;
+        result->im = (q * ratio - p) / denom;
+    }
 }
 
 LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
+    // Use Smith's algorithm for numerical stability
+    // This avoids overflow/underflow issues with very large or small numbers
     double p = a->re, q = a->im;
-    double r = b->re, s = -(b->im);
-    double mod_b = r*r + s*s;
-    result->re = (p*r - q*s)/mod_b;
-    result->im = (p*s + q*r)/mod_b;
+    double r = b->re, s = b->im;
+    
+    if (fabs(r) >= fabs(s)) {
+        double ratio = s / r;
+        double denom = r + s * ratio;
+        result->re = (p + q * ratio) / denom;
+        result->im = (q - p * ratio) / denom;
+    } else {
+        double ratio = r / s;
+        double denom = s + r * ratio;
+        result->re = (p * ratio + q) / denom;
+        result->im = (q * ratio - p) / denom;
+    }
 }
 
 #undef CMPLX
