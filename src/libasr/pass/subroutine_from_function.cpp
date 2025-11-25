@@ -632,7 +632,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         pass_result_TMP.p   = pass_result.p;
         pass_result_TMP.n   = pass_result.n;
         pass_result_TMP.max = pass_result.max;
-        pass_result_TMP.reserve_called = pass_result.reserve_called;
 
         pass_result.reserve(al, 0); // Reset
         visit_expr(*x.m_test);
@@ -650,7 +649,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         pass_result.p   = pass_result_TMP.p;
         pass_result.n   = pass_result_TMP.n;
         pass_result.max = pass_result_TMP.max;
-        pass_result.reserve_called = pass_result_TMP.reserve_called;
         CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);      
     }
 };
