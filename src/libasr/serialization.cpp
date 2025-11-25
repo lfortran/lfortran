@@ -311,12 +311,10 @@ public:
         current_scope = current_scope_copy;
     }
     /**
-     *Enum Symbols live inside module scopes.
-     *Help finding Enum symbol.
-     *Does `ext_sym_enum_name` exists inside some module (loaded module) ? 
-     *Returns enum symbol if exists, nullptr if not
-    */
-    ASR::symbol_t* enum_in_module(const std::string ext_sym_enum_name){
+     * Searches for an enum symbol by name across all loaded modules in the global symbol table.
+     * Enum symbols are defined within module scopes; returns the symbol if found, otherwise nullptr.
+     */
+    ASR::symbol_t* enum_in_module(const std::string &ext_sym_enum_name){
         for(auto &sym : global_symtab->get_scope()){
             if(ASR::is_a<ASR::Module_t>(*sym.second)){
                 ASR::symbol_t* enum_sym = ASR::down_cast<ASR::Module_t>(sym.second)->m_symtab->get_symbol(ext_sym_enum_name);
@@ -399,6 +397,9 @@ public:
             ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(enum_sym);
             ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
             xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);;
+            if(!xx.m_external) { 
+                throw LCompilersException("Enumerator variable : '"+ original_name +"' not found, but enum symtab found.");
+            }
         } else {
             if( attempt <= 1 ) {
                 fixed_external_syms = false;
