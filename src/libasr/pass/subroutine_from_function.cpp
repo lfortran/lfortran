@@ -612,6 +612,45 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
             }
         }
+
+    /**
+     * In case `x.test` expression needs temporaries
+     *
+     * FROM :
+     *      do while(ff(flag) == "Hello")
+     *       ...
+     *      END DO
+     * TO :
+     *     DO while (.true.)
+     *      temp1 = ff(flag)
+     *      if ((temp1 == "Hello") == .false.) exit
+     *      ...
+     *     END DO
+     */
+    void visit_WhileLoop(const ASR::WhileLoop_t &x){
+        Vec<ASR::stmt_t*> pass_result_TMP; // Move pass_result
+        pass_result_TMP.p   = pass_result.p;
+        pass_result_TMP.n   = pass_result.n;
+        pass_result_TMP.max = pass_result.max;
+
+        pass_result.reserve(al, 0); // Reset
+        visit_expr(*x.m_test);
+        if (!pass_result.empty()){ // Temps Created!
+            ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+            pass_result.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            for(size_t i = 0; i< x.n_body; i++){
+                pass_result.push_back(al, x.m_body[i]);
+            }
+            const_cast<ASR::WhileLoop_t&>(x).m_body = pass_result.p; 
+            const_cast<ASR::WhileLoop_t&>(x).n_body = pass_result.n;
+            const_cast<ASR::WhileLoop_t&>(x).m_test = builder.logical_true();
+        }
+        // Move back
+        pass_result.p   = pass_result_TMP.p;
+        pass_result.n   = pass_result_TMP.n;
+        pass_result.max = pass_result_TMP.max;
+        CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);      
+    }
 };
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
