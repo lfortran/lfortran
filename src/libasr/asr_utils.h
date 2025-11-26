@@ -6700,8 +6700,11 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // TODO: Make this a regular error. The current asr_utils.h is
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
+                // Skip type check for implicit interface functions (FORTRAN 77 sequence association)
+                bool is_implicit_interface = (func_type->m_deftype == ASR::deftypeType::Interface);
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
+                LCOMPILERS_ASSERT_MSG( is_implicit_interface ||
+                    ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
                     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
                         ASRUtils::get_type_code(orig_arg_type) + ")");
             }
