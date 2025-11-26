@@ -7958,9 +7958,15 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
-            
+
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
+        } else if (
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            // Convert DescriptorArray to UnboundedPointerArray by extracting pointer to data with offset
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, tmp));
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -8668,14 +8674,27 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        // Get the kind from ASR type to determine the correct complex LLVM type
+        ASR::ttype_t* left_type_asr = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_left))));
+        int a_kind = ASR::down_cast<ASR::Complex_t>(left_type_asr)->m_kind;
+        llvm::Type *complex_type = llvm_utils->getComplexType(a_kind);
+
         this->visit_expr_wrapper(x.m_left, true);
         llvm::Value *left = tmp;
+        if (left->getType()->isPointerTy()) {
+            left = llvm_utils->CreateLoad2(complex_type, left);
+        }
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        llvm::Value* real_left = complex_re(left, left->getType());
-        llvm::Value* real_right = complex_re(right, right->getType());
-        llvm::Value* img_left = complex_im(left, left->getType());
-        llvm::Value* img_right = complex_im(right, right->getType());
+        if (right->getType()->isPointerTy()) {
+            right = llvm_utils->CreateLoad2(complex_type, right);
+        }
+        llvm::Value* real_left = complex_re(left, complex_type);
+        llvm::Value* real_right = complex_re(right, complex_type);
+        llvm::Value* img_left = complex_im(left, complex_type);
+        llvm::Value* img_right = complex_im(right, complex_type);
         llvm::Value *real_res, *img_res;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
@@ -14574,6 +14593,36 @@ public:
                     LCOMPILERS_ASSERT(false);
                     break;
                 }
+            }
+            case ASR::array_physical_typeType::UnboundedPointerArray: {
+                // Treat unbounded pointer arrays like descriptor arrays for bounds
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
+                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                dim_val = builder->CreateSub(dim_val, const_1);
+                llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
+                llvm::Value* res = nullptr;
+                if( x.m_bound == ASR::arrayboundType::LBound ) {
+                    res = arr_descr->get_lower_bound(dim_struct);
+                } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                    res = arr_descr->get_upper_bound(dim_struct);
+                }
+                tmp = res;
+                break;
+            }
+            case ASR::array_physical_typeType::AssumedRankArray: {
+                // Treat assumed rank arrays like descriptor arrays for bounds
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
+                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                dim_val = builder->CreateSub(dim_val, const_1);
+                llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
+                llvm::Value* res = nullptr;
+                if( x.m_bound == ASR::arrayboundType::LBound ) {
+                    res = arr_descr->get_lower_bound(dim_struct);
+                } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                    res = arr_descr->get_upper_bound(dim_struct);
+                }
+                tmp = res;
+                break;
             }
             default: {
                 LCOMPILERS_ASSERT(false);

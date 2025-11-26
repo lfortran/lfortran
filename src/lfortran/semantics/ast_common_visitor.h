@@ -1144,9 +1144,9 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                              operand_type, value);
             return;
         } else if (ASRUtils::is_complex(*operand_type)) {
-            if (ASRUtils::expr_value(operand) != nullptr) {
-                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    ASRUtils::expr_value(operand));
+            ASR::expr_t* operand_value = ASRUtils::expr_value(operand);
+            if (operand_value != nullptr && ASR::is_a<ASR::ComplexConstant_t>(*operand_value)) {
+                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(operand_value);
                 std::complex<double> op_value(c->m_re, c->m_im);
                 std::complex<double> result;
                 result = -op_value;

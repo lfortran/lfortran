@@ -6615,21 +6615,18 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         current_scope = arg_var->m_parent_symtab;
                         sym_name = arg_var->m_name;
                     }
-                    if (current_scope) {
-                        ASR::Array_t* orig_arg_array_t = nullptr;
-                        ASR::Array_t* arg_array_t = nullptr;
-                        if (orig_arg_type->type == ASR::ttypeType::Array) {
-                            orig_arg_array_t = ASR::down_cast<ASR::Array_t>(orig_arg_type);
-                            Vec<ASR::dimension_t> dim;
-                            dim.reserve(al, 1);
-                            ASR::dimension_t dim_;
-                            dim_.m_start = nullptr;
-                            dim_.m_length = nullptr;
-                            dim_.loc = arg->base.loc;
-                            dim.push_back(al, dim_);
-                            arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
+                    if (current_scope && orig_arg_type->type == ASR::ttypeType::Array) {
+                        ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                        Vec<ASR::dimension_t> dim;
+                        dim.reserve(al, 1);
+                        ASR::dimension_t dim_;
+                        dim_.m_start = nullptr;
+                        dim_.m_length = nullptr;
+                        dim_.loc = arg->base.loc;
+                        dim.push_back(al, dim_);
+                        ASR::Array_t* arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                             dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray);
-                        }
+
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
@@ -6663,15 +6660,15 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
                         args_.push_back(al, thousand);
 
-                        Vec<ASR::dimension_t> dim;
-                        dim.reserve(al, 1);
-                        ASR::dimension_t dim_;
-                        dim_.m_start = one;
-                        dim_.m_length = one;
-                        dim_.loc = arg->base.loc;
-                        dim.push_back(al, dim_);
+                        Vec<ASR::dimension_t> dim2;
+                        dim2.reserve(al, 1);
+                        ASR::dimension_t dim2_;
+                        dim2_.m_start = one;
+                        dim2_.m_length = one;
+                        dim2_.loc = arg->base.loc;
+                        dim2.push_back(al, dim2_);
 
-                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim2.p, dim2.size(), ASR::array_physical_typeType::FixedSizeArray));
                         ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, arg->base.loc, args_.p, args_.size(), array_type, ASR::arraystorageType::ColMajor);
 
                         ASR::asr_t* cptr_to_pointer = ASR::make_CPtrToPointer_t(al, arg->base.loc, ASRUtils::EXPR(pointer_to_cptr), cast_expr, ASRUtils::EXPR(array_constant), nullptr);
@@ -6684,7 +6681,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::dimension_t dims_;
                         dims_.m_start = nullptr;
                         dims_.m_length = nullptr;
-                        dim_.loc = arg->base.loc;
+                        dims_.loc = arg->base.loc;
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
@@ -6700,8 +6697,11 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // TODO: Make this a regular error. The current asr_utils.h is
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
+                // Skip type check for implicit interface functions (FORTRAN 77 sequence association)
+                bool is_implicit_interface = (func_type->m_deftype == ASR::deftypeType::Interface);
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
+                LCOMPILERS_ASSERT_MSG( is_implicit_interface ||
+                    ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
                     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
                         ASRUtils::get_type_code(orig_arg_type) + ")");
             }
