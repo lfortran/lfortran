@@ -216,7 +216,7 @@ expr
     | Num(int n, string? kind)
     | Real(string n)
     | Complex(expr re, expr im)
-    | String(string s)
+    | String(string s, string? kind)
     | Substring(string s, fnarg* args)
     | BOZ(string s)
     | Name(identifier id, struct_member* member)
