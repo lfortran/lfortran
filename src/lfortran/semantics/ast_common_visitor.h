@@ -2303,7 +2303,10 @@ public:
     }
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
-        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        // Unwrap Pointer/Allocatable wrappers to get the underlying Array type
+        // This handles EQUIVALENCE cases where variables become pointers to arrays
+        ASR::ttype_t* unwrapped_type = ASRUtils::type_get_past_allocatable_pointer(obj_type);
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(unwrapped_type);
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         bool is_real = 0;
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
@@ -2365,8 +2368,14 @@ public:
                 object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
             } else {
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
+                if (size_of_array == -1) {
+                    // For pointer arrays (e.g., from EQUIVALENCE), dimensions may be deferred.
+                    // In DATA statements with a single array, use the number of provided values
+                    // as the array size since that's what the programmer expects to initialize.
+                    size_of_array = a->n_value - curr_value;
+                }
             }
-            if (size_of_array == -1) {
+            if (size_of_array == -1 || size_of_array == 0) {
                 throw LCompilersException("ICE: Array size could not be computed");
             }
             int tmp_curr_value = (int) curr_value;
@@ -2419,9 +2428,18 @@ public:
             dim.m_start = one;
             dim.m_length = x_n_args;
             dims.push_back(al, dim);
-            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+            // For ArrayConstant, we need an Array type, not Pointer/Allocatable wrapper.
+            // Unwrap pointer/allocatable before duplicating, then create the array type directly.
+            ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(obj_type);
+            if (ASR::is_a<ASR::Array_t>(*base_type)) {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base_type);
+                base_type = arr->m_type; // Get the element type (e.g., Real)
+            }
+            ASR::ttype_t* array_const_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                base_type, dims.p, dims.size(), ASR::abiType::Source, false,
+                ASR::array_physical_typeType::FixedSizeArray, false, false);
             tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
-                body.size(), obj_type, ASR::arraystorageType::ColMajor);
+                body.size(), array_const_type, ASR::arraystorageType::ColMajor);
             ASR::Variable_t* v2 = nullptr;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
                 ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);

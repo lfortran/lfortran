@@ -1509,7 +1509,13 @@ namespace LCompilers {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t* m_dims;
+            // Try to get dimensions from the variable's type first
             int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims);
+            // If the variable has deferred dimensions (e.g., pointer from EQUIVALENCE),
+            // use the ArrayConstant's type which has the actual dimensions
+            if (n_dims > 0 && m_dims != nullptr && m_dims[0].m_length == nullptr) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
+            }
             Vec<int> strides;
             strides.resize(al, n_dims);
             // compute stride vars for each dimension in column major order
