@@ -45,11 +45,17 @@ struct IntSuffix {
     Str int_kind;
 };
 
+struct StrSuffix {
+    Str str_s;
+    Str str_kind;
+};
+
 union YYSTYPE {
     int64_t n;
     Str string;
 
     IntSuffix int_suffix;
+    StrSuffix str_suffix;
 
     AST::ast_t* ast;
     Vec<AST::ast_t*> vec_ast;

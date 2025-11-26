@@ -54,6 +54,38 @@ public:
         s.n = strlen(s.p);
     }
 
+    // Parse string literal with optional kind prefix (e.g., tfc_"#" or "#")
+    // Extracts both the string content and the kind prefix (if present)
+    void lex_string(Allocator &al, StrSuffix &str_suffix, char ch) const
+    {
+        // Check for kind prefix: kind_"..." or kind_'...'
+        unsigned char *p = tok;
+        str_suffix.str_kind.p = nullptr;
+        str_suffix.str_kind.n = 0;
+        
+        while (p < cur && *p != ch) {
+            if (*p == '_' && p + 1 < cur && *(p + 1) == ch) {
+                // Found kind prefix
+                str_suffix.str_kind.p = (char*)tok;
+                str_suffix.str_kind.n = p - tok;
+                
+                // String starts after '_' and opening quote
+                str_suffix.str_s.p = (char*)(p + 2);
+                str_suffix.str_s.n = cur - (p + 2) - 1; // -1 for closing quote
+                str_suffix.str_s.p = str_unescape_fortran(al, str_suffix.str_s, ch);
+                str_suffix.str_s.n = strlen(str_suffix.str_s.p);
+                return;
+            }
+            p++;
+        }
+        
+        // No kind prefix found - just extract string
+        str_suffix.str_s.p = (char*) tok + 1;
+        str_suffix.str_s.n = cur-tok-2;
+        str_suffix.str_s.p = str_unescape_fortran(al, str_suffix.str_s, ch);
+        str_suffix.str_s.n = strlen(str_suffix.str_s.p);
+    }
+
     // Return the current token's location
     void token_loc(Location &loc) const
     {

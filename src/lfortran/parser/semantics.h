@@ -19,6 +19,8 @@
 // This is only used in parser.tab.cc, nowhere else, so we simply include
 // everything from LCompilers::LFortran::AST to save typing:
 using namespace LCompilers::LFortran::AST;
+using LCompilers::LFortran::StrSuffix;
+using LCompilers::LFortran::IntSuffix;
 using LCompilers::Location;
 using LCompilers::Vec;
 using LCompilers::LFortran::FnArg;
@@ -1049,7 +1051,7 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
 #define INTEGER3(x) (x.int_n.as_smallint())
 #define REAL(x, l) make_Real_t(p.m_a, l, x.c_str(p.m_a))
 #define COMPLEX(x, y, l) make_Complex_t(p.m_a, l, EXPR(x), EXPR(y))
-#define STRING(x, l) make_String_t(p.m_a, l, x.c_str(p.m_a))
+#define STRING(x, l) make_String_t(p.m_a, l, x.str_s.c_str(p.m_a), str2str_null(p.m_a, x.str_kind))
 #define BOZ(x, l) make_BOZ_t(p.m_a, l, x.c_str(p.m_a))
 #define ASSIGN(label, variable, l) make_Assign_t(p.m_a, l, 0, label, name2char(variable), nullptr)
 #define ASSIGNMENT(x, y, l) make_Assignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
@@ -1307,7 +1309,7 @@ ast_t* builtin3(Allocator &al,
 #define FLUSH(args0, l) builtin1(p.m_a, args0, l, make_Flush_t)
 #define ENDFILE(args0, l) builtin1(p.m_a, args0, l, make_Endfile_t)
 
-#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.c_str(p.m_a), nullptr)
+#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.str_s.c_str(p.m_a), nullptr)
 #define INQUIRE0(args0, l) builtin2(p.m_a, args0, empty_vecast(), l, \
             make_Inquire_t)
 #define INQUIRE(args0, args, l) builtin2(p.m_a, args0, args, l, make_Inquire_t)
@@ -1896,7 +1898,7 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
             construct_name += " " + omp_stmt[i];
         } else {
             m_clauses.push_back(al, EXPR(make_String_t(al, loc,
-                LCompilers::s2c(al, omp_stmt[i]))));
+                LCompilers::s2c(al, omp_stmt[i]), nullptr)));
         }
     }
     return make_Pragma_t(al, loc, 0, LCompilers::LFortran::AST::OMPPragma, m_end,
@@ -2271,7 +2273,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), temp_args, l)
 
-ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
+ast_t* SUBSTRING_(Allocator &al, const StrSuffix &str,
         const Vec<FnArg> &args, Location &l, LCompilers::diag::Diagnostics &diagnostics) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
@@ -2283,7 +2285,7 @@ ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         }
         v.push_back(al, item.arg);
     }
-    return make_Substring_t(al, l, str.c_str(al), v.p, v.size());
+    return make_Substring_t(al, l, str.str_s.c_str(al), v.p, v.size());
 }
 
 #define SUBSTRING(str, args, l) SUBSTRING_(p.m_a, str, args, l, p.diag)
