@@ -171,6 +171,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         }
     ],
+    "SelectedLogicalKind": [
+        {
+            "args": [("int",)],
+            "return": "int32"
+        }
+    ],
     "Logical": [
         {
             "args": [("bool", )],
