@@ -422,9 +422,13 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
             if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && !(x->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
-              arr->m_dims = ASR::down_cast<ASR::Array_t>(
-                  ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
-                      ASRUtils::expr_type(x->m_arg))))->m_dims;
+                // Get source dimensions - deep copy to avoid dangling pointers
+                ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(x->m_arg))));
+                // Deep copy dimensions instead of sharing pointer to avoid corruption
+                arr->m_dims = ASRUtils::duplicate_dimensions(v.al, src_arr->m_dims, src_arr->n_dims);
+                arr->n_dims = src_arr->n_dims;
             }
         }
     }
@@ -471,6 +475,35 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         edit_symbol_reference(name)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
+    }
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_arg));
+        call_replacer();
+        current_expr = current_expr_copy;
+        if (x.m_arg && visit_expr_after_replacement) {
+            visit_expr(*x.m_arg);
+        }
+        // After call_replacer(), the node may have been replaced with x.m_arg
+        // (see replace_ArrayPhysicalCast). In that case, x is now dangling
+        // and we must not access x.m_type. Check if replacement happened by
+        // comparing the current expression type.
+        if (current_expr_copy && *current_expr_copy &&
+            ASR::is_a<ASR::ArrayPhysicalCast_t>(**current_expr_copy)) {
+            // Node was NOT replaced, safe to continue visiting
+            visit_ttype(*x.m_type);
+            if (x.m_value) {
+                if (call_replacer_on_value) {
+                    current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+                    call_replacer();
+                    current_expr = current_expr_copy;
+                }
+                if (x.m_value && visit_expr_after_replacement) {
+                    visit_expr(*x.m_value);
+                }
+            }
+        }
     }
 
     void visit_Module(const ASR::Module_t& x) {
