@@ -110,6 +110,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedIntKind,
     SelectedRealKind,
     SelectedCharKind,
+    SelectedLogicalKind,
     Adjustl,
     Adjustr,
     StringConcat,
@@ -4818,6 +4819,66 @@ namespace SelectedCharKind {
     }
 
 } // namespace SelectedCharKind
+
+namespace SelectedLogicalKind {
+
+    static inline ASR::expr_t *eval_SelectedLogicalKind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t bits = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t kind;
+        if (bits <= 8) {
+            kind = 1;
+        } else if (bits <= 16) {
+            kind = 2;
+        } else if (bits <= 32) {
+            kind = 4;
+        } else if (bits <= 64) {
+            kind = 8;
+        } else if (bits <= 128) {
+            kind = 16;
+        } else {
+            kind = -1;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.i32(kind);
+    }
+
+    static inline ASR::expr_t* instantiate_SelectedLogicalKind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_selected_logical_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        fill_func_arg("bits", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        body.push_back(al, b.If(b.LtE(args[0], b.i_t(8, arg_types[0])), {
+            b.Assignment(result, b.i_t(1, return_type))
+        }, {
+            b.If(b.LtE(args[0], b.i_t(16, arg_types[0])), {
+                b.Assignment(result, b.i_t(2, return_type))
+            }, {
+                b.If(b.LtE(args[0], b.i_t(32, arg_types[0])), {
+                    b.Assignment(result, b.i_t(4, return_type))
+                }, {
+                    b.If(b.LtE(args[0], b.i_t(64, arg_types[0])), {
+                        b.Assignment(result, b.i_t(8, return_type))
+                    }, {
+                        b.If(b.LtE(args[0], b.i_t(128, arg_types[0])), {
+                            b.Assignment(result, b.i_t(16, return_type))
+                        }, {
+                            b.Assignment(result, b.i_t(-1, return_type))
+                        })
+                    })
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SelectedLogicalKind
 
 namespace Kind {
 

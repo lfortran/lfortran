@@ -120,6 +120,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(SelectedCharKind)
+        INTRINSIC_NAME_CASE(SelectedLogicalKind)
         INTRINSIC_NAME_CASE(Present)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
@@ -515,6 +516,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
             {&SelectedCharKind::instantiate_SelectedCharKind, &SelectedCharKind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedLogicalKind),
+            {&SelectedLogicalKind::instantiate_SelectedLogicalKind, &SelectedLogicalKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -768,6 +771,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "selected_real_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
             "selected_char_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedLogicalKind),
+            "selected_logical_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
             "kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
@@ -1020,6 +1025,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"present", {&Present::create_Present, &Present::eval_Present}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
                 {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
+                {"selected_logical_kind", {&SelectedLogicalKind::create_SelectedLogicalKind, &SelectedLogicalKind::eval_SelectedLogicalKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
                 {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
                 {"rrspacing", {&Rrspacing::create_Rrspacing, &Rrspacing::eval_Rrspacing}},
