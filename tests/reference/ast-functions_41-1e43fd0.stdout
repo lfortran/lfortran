@@ -57,7 +57,7 @@
             [(Print
                 0
                 ()
-                [(String "This is a non-recursive subroutine")]
+                [(String "This is a non-recursive subroutine" ())]
                 ()
             )]
             []
@@ -86,7 +86,7 @@
             [(Print
                 0
                 ()
-                [(String "This is a non-recursive function")]
+                [(String "This is a non-recursive function" ())]
                 ()
             )
             (Assignment

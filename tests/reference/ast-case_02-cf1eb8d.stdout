@@ -68,7 +68,7 @@
                 (Print
                     0
                     ()
-                    [(String "Excellent!")]
+                    [(String "Excellent!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -91,7 +91,7 @@
                 (Print
                     0
                     ()
-                    [(String "Very good!")]
+                    [(String "Very good!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -114,7 +114,7 @@
                 (Print
                     0
                     ()
-                    [(String "Well done!")]
+                    [(String "Well done!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -137,7 +137,7 @@
                 (Print
                     0
                     ()
-                    [(String "Not bad!")]
+                    [(String "Not bad!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -160,7 +160,7 @@
                 (Print
                     0
                     ()
-                    [(String "You passed!")]
+                    [(String "You passed!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -183,7 +183,7 @@
                 (Print
                     0
                     ()
-                    [(String "Better try again!")]
+                    [(String "Better try again!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -202,7 +202,7 @@
                 (Print
                     0
                     ()
-                    [(String "Invalid marks")]
+                    [(String "Invalid marks" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -220,7 +220,7 @@
         (Print
             0
             ()
-            [(String "Your marks are ")
+            [(String "Your marks are " ())
             marks]
             (TriviaNode
                 []
@@ -259,7 +259,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Invalid marks")]
+                    [(String "Invalid marks" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -276,7 +276,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Excellent!")]
+                    [(String "Excellent!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -293,7 +293,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Very good!")]
+                    [(String "Very good!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -310,7 +310,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Well done!")]
+                    [(String "Well done!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -327,7 +327,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Not bad!")]
+                    [(String "Not bad!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -344,7 +344,7 @@
                 [(Print
                     0
                     ()
-                    [(String "You passed!")]
+                    [(String "You passed!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -361,7 +361,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Better try again!")]
+                    [(String "Better try again!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -379,7 +379,7 @@
         (Print
             0
             ()
-            [(String "Your marks are ")
+            [(String "Your marks are " ())
             marks]
             (TriviaNode
                 []
@@ -403,7 +403,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Excellent!")]
+                    [(String "Excellent!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -420,7 +420,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Very good!")]
+                    [(String "Very good!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -433,7 +433,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Invalid marks")]
+                    [(String "Invalid marks" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -450,7 +450,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Well done!")]
+                    [(String "Well done!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -467,7 +467,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Not bad!")]
+                    [(String "Not bad!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -484,7 +484,7 @@
                 [(Print
                     0
                     ()
-                    [(String "You passed!")]
+                    [(String "You passed!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -501,7 +501,7 @@
                 [(Print
                     0
                     ()
-                    [(String "Better try again!")]
+                    [(String "Better try again!" ())]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -519,7 +519,7 @@
         (Print
             0
             ()
-            [(String "Your marks are ")
+            [(String "Your marks are " ())
             marks]
             (TriviaNode
                 []

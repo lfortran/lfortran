@@ -2,7 +2,7 @@
     [(Print
         0
         ()
-        [(String "OK")]
+        [(String "OK" ())]
         ()
     )
     contains]
