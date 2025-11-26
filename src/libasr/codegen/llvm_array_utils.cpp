@@ -583,7 +583,8 @@ namespace LCompilers {
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
-            llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) {
+            llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm,
+            bool is_unbounded_pointer_to_data) {
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -595,7 +596,7 @@ namespace LCompilers {
                 }
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
-                llvm_diminfo, section_first_indices, value_rank, false, lm);
+                llvm_diminfo, section_first_indices, value_rank, false, lm, is_unbounded_pointer_to_data);
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
                     "Only descriptor strings are supported for now");
@@ -627,7 +628,7 @@ namespace LCompilers {
                 get_offset(target_type_llvm,target, false));
 
             llvm::Value* target_dim_des_array = get_pointer_to_dimension_descriptor_array(target_type_llvm, target);
-            int j = 0, r = 1;
+            int j = 0, r = is_unbounded_pointer_to_data ? 0 : 1;
             llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -651,8 +652,15 @@ namespace LCompilers {
                                          get_dimension_size(target_dim_des, false));
                     j++;
                 }
-                stride = builder->CreateMul(stride, llvm_diminfo[r]);
-                r += 2;
+                if (is_unbounded_pointer_to_data) {
+                    // For unbounded pointer arrays (assumed-size), we don't have dimension
+                    // size info. For 1D arrays, stride is simply 1. For multi-D, we'd need
+                    // runtime info which isn't available, so we keep stride as 1.
+                    r += 1;
+                } else {
+                    stride = builder->CreateMul(stride, llvm_diminfo[r]);
+                    r += 2;
+                }
             }
             LCOMPILERS_ASSERT(j == target_rank);
             builder->CreateStore(

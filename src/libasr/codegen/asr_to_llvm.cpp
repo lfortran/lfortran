@@ -6294,6 +6294,7 @@ public:
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
+            arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -6309,18 +6310,22 @@ public:
             // Fill in m_dims:
             [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
+            bool is_unbounded = (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray);
             Vec<llvm::Value*> llvm_diminfo;
-            llvm_diminfo.reserve(al, value_rank * 2);
+            // For UnboundedPointerArray, we only have lower bounds (no lengths)
+            llvm_diminfo.reserve(al, is_unbounded ? value_rank : value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
                 visit_expr_wrapper(m_dims[i].m_start, true);
                 llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                if (!is_unbounded) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    llvm_diminfo.push_back(al, tmp);
+                }
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
-                llvm_diminfo.p, value_rank, target_rank, location_manager);
+                llvm_diminfo.p, value_rank, target_rank, location_manager, is_unbounded);
         } else {
             arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
@@ -14595,18 +14600,42 @@ public:
                 }
             }
             case ASR::array_physical_typeType::UnboundedPointerArray: {
-                // Treat unbounded pointer arrays like descriptor arrays for bounds
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
-                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-                dim_val = builder->CreateSub(dim_val, const_1);
-                llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
-                llvm::Value* res = nullptr;
+                // UnboundedPointerArray (assumed-size) has no runtime dimension descriptor.
+                // Use ASR dimension info for LBOUND. UBOUND is undefined for assumed-size.
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x.m_type)), module.get());
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
                 if( x.m_bound == ASR::arrayboundType::LBound ) {
-                    res = arr_descr->get_lower_bound(dim_struct);
-                } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                    res = arr_descr->get_upper_bound(dim_struct);
+                    // LBOUND: use ASR dimension m_start like PointerArray
+                    llvm::AllocaInst *target = llvm_utils->CreateAlloca(
+                        target_type, nullptr, "array_bound");
+                    llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                    for( int i = 0; i < n_dims; i++ ) {
+                        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+                        llvm::Value* cond = builder->CreateICmpEQ(dim_val,
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, i + 1)));
+                        builder->CreateCondBr(cond, thenBB, elseBB);
+                        builder->SetInsertPoint(thenBB);
+                        {
+                            this->visit_expr_wrapper(m_dims[i].m_start, true);
+                            tmp = builder->CreateSExtOrTrunc(tmp, target_type);
+                            builder->CreateStore(tmp, target);
+                        }
+                        builder->CreateBr(mergeBB);
+                        start_new_block(elseBB);
+                    }
+                    start_new_block(mergeBB);
+                    tmp = llvm_utils->CreateLoad2(target_type, target);
+                } else {
+                    // UBOUND: undefined for assumed-size arrays (last dim has no length)
+                    // This should not be generated by the semantic phase.
+                    // Return 0 as a fallback to avoid crashing.
+                    tmp = llvm::ConstantInt::get(target_type, 0);
                 }
-                tmp = res;
                 break;
             }
             case ASR::array_physical_typeType::AssumedRankArray: {

@@ -182,7 +182,8 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) = 0;
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm,
+                    bool is_unbounded_pointer_to_data = false) = 0;
 
                 /*
                 * Returns the llvm::Type* associated with the
@@ -440,7 +441,8 @@ namespace LCompilers {
                     llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
-                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm);
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm,
+                    bool is_unbounded_pointer_to_data = false);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);

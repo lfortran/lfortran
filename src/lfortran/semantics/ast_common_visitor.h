@@ -6579,6 +6579,15 @@ public:
                 al(al_), current_expr(nullptr) {}
 
             void replace_ArrayItem(ASR::ArrayItem_t* x) {
+                // Skip conversion for UnboundedPointerArray (assumed-size arrays)
+                // because UBOUND is undefined for assumed-size arrays
+                ASR::ttype_t* arr_type = ASRUtils::expr_type(x->m_v);
+                ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(arr_type);
+                if (physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                    // Keep as ArrayItem - don't convert to ArraySection
+                    return;
+                }
+
                 Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
                 ASRUtils::ASRBuilder b(al, x->base.base.loc);
 
