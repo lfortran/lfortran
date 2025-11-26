@@ -13515,6 +13515,19 @@ public:
             if (pass_arg) {
                 args.push_back(pass_arg);
             }
+            // LLVM < 15 uses typed pointers and requires exact type match.
+            // Bitcast arguments when types don't match (e.g., float* vs %array*)
+            #if LLVM_VERSION_MAJOR < 15
+            llvm::FunctionType* fn_type = fn->getFunctionType();
+            for (size_t i = 0; i < args.size() && i < fn_type->getNumParams(); i++) {
+                llvm::Type* expected_type = fn_type->getParamType(i);
+                llvm::Type* actual_type = args[i]->getType();
+                if (expected_type != actual_type &&
+                    expected_type->isPointerTy() && actual_type->isPointerTy()) {
+                    args[i] = builder->CreateBitCast(args[i], expected_type);
+                }
+            }
+            #endif
             builder->CreateCall(fn, args);
         }
     }
