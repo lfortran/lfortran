@@ -9705,6 +9705,32 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         double val = x.m_r;
+        // Handle the case where a RealConstant has Complex type
+        // This happens in FORTRAN 77 with: COMPLEX ONE / PARAMETER (ONE = 1.0E+0)
+        if (ASR::is_a<ASR::Complex_t>(*x.m_type)) {
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            llvm::Value *re, *im;
+            llvm::Type *type;
+            switch (a_kind) {
+                case 4: {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat((float)val));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat((float)0.0));
+                    type = complex_type_4;
+                    break;
+                }
+                case 8: {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat(val));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
+                    type = complex_type_8;
+                    break;
+                }
+                default: {
+                    throw CodeGenError("RealConstant with Complex type: kind not supported");
+                }
+            }
+            tmp = complex_from_floats(re, im, type);
+            return;
+        }
         int a_kind = ((ASR::Real_t*)(&(x.m_type->base)))->m_kind;
         switch( a_kind ) {
 
