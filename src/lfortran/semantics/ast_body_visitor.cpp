@@ -2352,7 +2352,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        uint64_t scope_hash = get_hash(current_scope->asr_owner);
+        // Use current_scope pointer as key - same as used in symboltable visitor phase
+        uint64_t scope_hash = (uint64_t)current_scope;
         if (data_structure.find(scope_hash) != data_structure.end()) {
             for(auto it: data_structure[scope_hash]) {
                 body.push_back(al, it);
@@ -2424,7 +2425,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        uint64_t scope_hash = get_hash(current_scope->asr_owner);
+        // Use current_scope pointer as key - same as used in symboltable visitor phase
+        uint64_t scope_hash = (uint64_t)current_scope;
         if (data_structure.find(scope_hash) != data_structure.end()) {
             for(auto it: data_structure[scope_hash]) {
                 body.push_back(al, it);
@@ -2816,7 +2818,8 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        uint64_t scope_hash = get_hash(current_scope->asr_owner);
+        // Use current_scope pointer as key - same as used in symboltable visitor phase
+        uint64_t scope_hash = (uint64_t)current_scope;
         if (data_structure.find(scope_hash) != data_structure.end()) {
             for(auto it: data_structure[scope_hash]) {
                 body.push_back(al, it);
@@ -2894,7 +2897,8 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        uint64_t scope_hash = get_hash(current_scope->asr_owner);
+        // Use current_scope pointer as key - same as used in symboltable visitor phase
+        uint64_t scope_hash = (uint64_t)current_scope;
         if (data_structure.find(scope_hash) != data_structure.end()) {
             for(auto it: data_structure[scope_hash]) {
                 body.push_back(al, it);
@@ -2965,7 +2969,8 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        uint64_t scope_hash = get_hash(current_scope->asr_owner);
+        // Use current_scope pointer as key - same as used in symboltable visitor phase
+        uint64_t scope_hash = (uint64_t)current_scope;
         if (data_structure.find(scope_hash) != data_structure.end()) {
             for(auto it: data_structure[scope_hash]) {
                 body.push_back(al, it);

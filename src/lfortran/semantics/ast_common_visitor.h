@@ -3613,7 +3613,9 @@ public:
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
                                 ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                data_structure[get_hash(current_scope->asr_owner)].push_back(stmt);
+                                // Use current_scope pointer as key since asr_owner is not set yet
+                                // during symboltable visitor phase (Program/Function not created)
+                                data_structure[(uint64_t)current_scope].push_back(stmt);
                             } else {
                                 if (AST::is_a<AST::FuncCallOrArray_t>(*eq1)) {
                                     ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
@@ -3643,7 +3645,7 @@ public:
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq2, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                    data_structure[get_hash(current_scope->asr_owner)].push_back(stmt);
+                                    data_structure[(uint64_t)current_scope].push_back(stmt);
                                 } else if (AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
                                     ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
@@ -3672,7 +3674,7 @@ public:
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq1, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                    data_structure[get_hash(current_scope->asr_owner)].push_back(stmt);
+                                    data_structure[(uint64_t)current_scope].push_back(stmt);
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
