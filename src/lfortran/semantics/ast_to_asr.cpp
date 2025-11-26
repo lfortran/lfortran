@@ -32,7 +32,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint64_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
@@ -48,7 +48,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint64_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm);
 
 void load_rtlib() {
@@ -69,7 +69,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> instantiate_symbols;
     std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> entry_functions;
     std::map<std::string, std::vector<int>> entry_function_arguments_mapping;
-    std::vector<ASR::stmt_t*> data_structure;
+    std::map<uint64_t, std::vector<ASR::stmt_t*>> data_structure;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
