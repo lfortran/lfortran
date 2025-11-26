@@ -866,37 +866,58 @@ time_section "🧪 Testing SNAP" '
 ##########################
 # Section 12: LAPACK
 ##########################
-time_section "Testing LAPACK (Reference-LAPACK)" '
+time_section "Testing Reference-LAPACK (cmake build)" '
   git clone https://github.com/Reference-LAPACK/lapack.git
   cd lapack
 
   # Use a specific tag for reproducibility
   git checkout v3.12.0
 
-  # Test subset of LAPACK routines that compile successfully with LFortran
-  # Full LAPACK has 2030 files, 2013 compile successfully (99.2%)
-  mkdir -p lf_build
+  # Patch LAPACKE to skip FortranCInterface_VERIFY for LFortran
+  python3 - <<PY
+from pathlib import Path
+path = Path("LAPACKE/include/CMakeLists.txt")
+needle = "  FortranCInterface_VERIFY()"
+replacement = (
+    "  if (CMAKE_Fortran_COMPILER MATCHES \"lfortran\")\n"
+    "    message(STATUS \"Skipping FortranCInterface_VERIFY for LFortran\")\n"
+    "    set(FortranCInterface_GLOBAL_FOUND 1)\n"
+    "    set(FortranCInterface_MODULE_FOUND 1)\n"
+    "  else()\n"
+    "    FortranCInterface_VERIFY()\n"
+    "  endif()"
+)
+text = path.read_text()
+if needle in text:
+    path.write_text(text.replace(needle, replacement, 1))
+    print("Patched LAPACKE CMakeLists.txt")
+else:
+    print("Patch target not found (may already be patched)")
+PY
 
-  # Compile key routines with --std=legacy (fixed-form, legacy-array-sections, implicit-interface)
-  print_subsection "Compiling core LAPACK routines"
-  for f in SRC/sgetf2.f SRC/sgetrf.f SRC/sgetrs.f SRC/dgetf2.f SRC/dgetrf.f SRC/dgetrs.f \
-           SRC/spotf2.f SRC/spotrf.f SRC/dpotf2.f SRC/dpotrf.f \
-           SRC/sgeqrf.f SRC/dgeqrf.f SRC/sorgqr.f SRC/dorgqr.f \
-           SRC/ssyev.f SRC/dsyev.f SRC/ssteqr.f SRC/dsteqr.f \
-           SRC/slange.f SRC/dlange.f SRC/slaswp.f SRC/dlaswp.f; do
-    $FC --std=legacy -c "$f" -o "lf_build/$(basename "$f" .f).o"
-  done
+  # Build Reference-LAPACK with cmake
+  # Flags: --cpp (preprocessing), --fixed-form-infer (detect .f/.F as fixed),
+  #        --implicit-interface, --legacy-array-sections (F77 sequence association)
+  print_subsection "Building Reference-LAPACK with cmake"
+  mkdir build && cd build
 
-  print_subsection "Compiling BLAS routines"
-  for f in BLAS/SRC/sgemm.f BLAS/SRC/dgemm.f BLAS/SRC/sgemv.f BLAS/SRC/dgemv.f \
-           BLAS/SRC/strsm.f BLAS/SRC/dtrsm.f BLAS/SRC/strmm.f BLAS/SRC/dtrmm.f \
-           BLAS/SRC/sscal.f BLAS/SRC/dscal.f BLAS/SRC/saxpy.f BLAS/SRC/daxpy.f \
-           BLAS/SRC/scopy.f BLAS/SRC/dcopy.f BLAS/SRC/sdot.f BLAS/SRC/ddot.f; do
-    $FC --std=legacy -c "$f" -o "lf_build/$(basename "$f" .f).o"
-  done
+  cmake -DCMAKE_Fortran_COMPILER=$FC \
+        -DCMAKE_Fortran_FLAGS="--cpp --fixed-form-infer --implicit-interface --legacy-array-sections" \
+        -DBUILD_INDEX64_EXT_API=OFF \
+        -DBUILD_COMPLEX=OFF \
+        -DBUILD_COMPLEX16=OFF \
+        -DBUILD_TESTING=OFF \
+        -DCBLAS=OFF \
+        -DLAPACKE=OFF \
+        ..
 
-  print_success "Done with LAPACK"
-  cd ..
+  make -j8
+
+  # Verify libraries were built
+  ls -la lib/libblas.a lib/liblapack.a
+
+  print_success "Successfully built Reference-LAPACK (BLAS + LAPACK libraries)"
+  cd ../..
   rm -rf lapack
 '
 
