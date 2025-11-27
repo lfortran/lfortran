@@ -454,7 +454,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if syntax_only_cc:
-        run_test(filename, "asr", "lfortran --continue-compilation --show-ast --no-color {infile}",
+        run_test(filename, "ast", "lfortran --continue-compilation --show-ast --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
