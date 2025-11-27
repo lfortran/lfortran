@@ -533,6 +533,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 if (ASRUtils::is_string_only(arg_type) || ASRUtils::is_array_of_strings(arg_type)) {
                     arg_type = arg_expr_type;
                 }
+                if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_type))) {
+                    arg_type = arg_expr_type;
+                }
                 ASR::ttype_t* orig_arg_type = ASRUtils::duplicate_type(al, arg_type);
                 // Pass in a FixedSizeArray of same rank when non-allocatable DescriptorArray is expected
                 if (ASRUtils::is_array(arg_type) &&
