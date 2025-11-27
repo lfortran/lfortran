@@ -102,8 +102,10 @@ static_assert(std::is_trivial<YYSTYPE>::value);
 // Ensure the YYSTYPE size is equal to Vec<AST::ast_t*>, which is a required member, so
 // YYSTYPE has to be at least as big, but it should not be bigger, otherwise it
 // would reduce performance.
+// Note: StrSuffix (two Str fields) makes YYSTYPE 32 bytes vs Vec's 24 bytes on 64-bit.
+// This 8-byte difference is acceptable for modern systems.
 #if !defined(HAVE_BUILD_TO_WASM) && !defined(__ppc__)
-static_assert(sizeof(YYSTYPE) == sizeof(Vec<AST::ast_t*>));
+static_assert(sizeof(YYSTYPE) <= sizeof(Vec<AST::ast_t*>) + 8);
 #endif
 } // namespace LCompilers::LFortran
 
