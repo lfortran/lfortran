@@ -484,8 +484,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     PassUtils::is_aggregate_or_array_type(array_t->m_type);
             }
 
-            return (ASRUtils::is_aggregate_type(ASRUtils::expr_type(m_value)) ||
-                    PassUtils::is_aggregate_or_array_type(m_value));
+            return PassUtils::is_aggregate_or_array_type(m_value);
         }
 
         void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {

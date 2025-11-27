@@ -7506,8 +7506,10 @@ public:
                 check_and_allocate_scalar(x.m_target);
             }
 
-            llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
-            target = llvm_utils->CreateLoad2(target_ptr_type, target);
+            if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_value))) {
+                llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
+                target = llvm_utils->CreateLoad2(target_ptr_type, target);
+            }
             builder->CreateStore(value, target);
         } else {
             builder->CreateStore(value, target);
