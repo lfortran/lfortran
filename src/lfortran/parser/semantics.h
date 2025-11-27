@@ -1044,6 +1044,14 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
+char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
+    if (s == nullptr) {
+        return nullptr;
+    } else {
+        return str2str_null(al, *s);
+    }
+}
+
 #define SYMBOL(x, l) make_Name_t(p.m_a, l, x.c_str(p.m_a), nullptr, 0)
 // `x.int_n` is of type BigInt but we store the int64_t directly in AST
 #define INTEGER(x, l) make_Num_t(p.m_a, l, x.int_n.n, str2str_null(p.m_a, x.int_kind))
@@ -1051,7 +1059,7 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
 #define INTEGER3(x) (x.int_n.as_smallint())
 #define REAL(x, l) make_Real_t(p.m_a, l, x.c_str(p.m_a))
 #define COMPLEX(x, y, l) make_Complex_t(p.m_a, l, EXPR(x), EXPR(y))
-#define STRING(x, l) make_String_t(p.m_a, l, x.str_s.c_str(p.m_a), str2str_null(p.m_a, x.str_kind))
+#define STRING(x, l) make_String_t(p.m_a, l, x.str_s.c_str(p.m_a), strptr2str_null(p.m_a, x.str_kind))
 #define BOZ(x, l) make_BOZ_t(p.m_a, l, x.c_str(p.m_a))
 #define ASSIGN(label, variable, l) make_Assign_t(p.m_a, l, 0, label, name2char(variable), nullptr)
 #define ASSIGNMENT(x, y, l) make_Assignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
