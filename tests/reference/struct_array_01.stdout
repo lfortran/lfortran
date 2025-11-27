@@ -1,0 +1,440 @@
+([1m[35mTranslationUnit[39m[0m
+    ([33mSymbolTable[39m
+        1
+        {
+            test:
+                ([1m[35mProgram[39m[0m
+                    ([33mSymbolTable[39m
+                        4
+                        {
+                            1_int_t_i:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    1_int_t_i
+                                    3 [33mi[39m
+                                    int_t
+                                    []
+                                    i
+                                    [1m[32mPublic[39m[0m
+                                ),
+                            int_t:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    int_t
+                                    2 [33mint_t[39m
+                                    types_m
+                                    []
+                                    int_t
+                                    [1m[32mPublic[39m[0m
+                                ),
+                            t_all:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    t_all
+                                    2 [33mt_all[39m
+                                    types_m
+                                    []
+                                    t_all
+                                    [1m[32mPublic[39m[0m
+                                ),
+                            t_one:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    t_one
+                                    2 [33mt_one[39m
+                                    types_m
+                                    []
+                                    t_one
+                                    [1m[32mPublic[39m[0m
+                                ),
+                            t_three:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    t_three
+                                    2 [33mt_three[39m
+                                    types_m
+                                    []
+                                    t_three
+                                    [1m[32mPublic[39m[0m
+                                ),
+                            t_two:
+                                ([1m[35mExternalSymbol[39m[0m
+                                    4
+                                    t_two
+                                    2 [33mt_two[39m
+                                    types_m
+                                    []
+                                    t_two
+                                    [1m[32mPublic[39m[0m
+                                )
+                        })
+                    test
+                    [types_m]
+                    [([1m[35mPrint[39m[0m
+                        ([1m[35mStringFormat[39m[0m
+                            ()
+                            [([1m[35mStringConstant[39m[0m
+                                "T_ALL(1)%i ="
+                                ([1m[35mString[39m[0m 1 ([1m[35mIntegerConstant[39m[0m [36m12[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m) [1m[32mExpressionLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ([1m[35mStructInstanceMember[39m[0m
+                                ([1m[35mArrayItem[39m[0m
+                                    ([1m[35mVar[39m[0m 4 [33mt_all[39m)
+                                    [(()
+                                    ([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m)
+                                    ())]
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    [1m[32mColMajor[39m[0m
+                                    ()
+                                )
+                                4 [33m1_int_t_i[39m
+                                ([1m[35mInteger[39m[0m 4)
+                                ()
+                            )]
+                            [1m[32mFormatFortran[39m[0m
+                            ([1m[35mAllocatable[39m[0m
+                                ([1m[35mString[39m[0m 1 () [1m[32mDeferredLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ()
+                        )
+                    )
+                    ([1m[35mPrint[39m[0m
+                        ([1m[35mStringFormat[39m[0m
+                            ()
+                            [([1m[35mStringConstant[39m[0m
+                                "T_ALL(2)%i ="
+                                ([1m[35mString[39m[0m 1 ([1m[35mIntegerConstant[39m[0m [36m12[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m) [1m[32mExpressionLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ([1m[35mStructInstanceMember[39m[0m
+                                ([1m[35mArrayItem[39m[0m
+                                    ([1m[35mVar[39m[0m 4 [33mt_all[39m)
+                                    [(()
+                                    ([1m[35mIntegerConstant[39m[0m [36m2[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m)
+                                    ())]
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    [1m[32mColMajor[39m[0m
+                                    ()
+                                )
+                                4 [33m1_int_t_i[39m
+                                ([1m[35mInteger[39m[0m 4)
+                                ()
+                            )]
+                            [1m[32mFormatFortran[39m[0m
+                            ([1m[35mAllocatable[39m[0m
+                                ([1m[35mString[39m[0m 1 () [1m[32mDeferredLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ()
+                        )
+                    )
+                    ([1m[35mPrint[39m[0m
+                        ([1m[35mStringFormat[39m[0m
+                            ()
+                            [([1m[35mStringConstant[39m[0m
+                                "T_ALL(3)%i ="
+                                ([1m[35mString[39m[0m 1 ([1m[35mIntegerConstant[39m[0m [36m12[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m) [1m[32mExpressionLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ([1m[35mStructInstanceMember[39m[0m
+                                ([1m[35mArrayItem[39m[0m
+                                    ([1m[35mVar[39m[0m 4 [33mt_all[39m)
+                                    [(()
+                                    ([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m)
+                                    ())]
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    [1m[32mColMajor[39m[0m
+                                    ()
+                                )
+                                4 [33m1_int_t_i[39m
+                                ([1m[35mInteger[39m[0m 4)
+                                ()
+                            )]
+                            [1m[32mFormatFortran[39m[0m
+                            ([1m[35mAllocatable[39m[0m
+                                ([1m[35mString[39m[0m 1 () [1m[32mDeferredLength[39m[0m [1m[32mDescriptorString[39m[0m)
+                            )
+                            ()
+                        )
+                    )]
+                ),
+            types_m:
+                ([1m[35mModule[39m[0m
+                    ([33mSymbolTable[39m
+                        2
+                        {
+                            int_t:
+                                ([1m[35mStruct[39m[0m
+                                    ([33mSymbolTable[39m
+                                        3
+                                        {
+                                            i:
+                                                ([1m[35mVariable[39m[0m
+                                                    3
+                                                    i
+                                                    []
+                                                    [1m[32mLocal[39m[0m
+                                                    ()
+                                                    ()
+                                                    [1m[32mDefault[39m[0m
+                                                    ([1m[35mInteger[39m[0m 4)
+                                                    ()
+                                                    [1m[32mSource[39m[0m
+                                                    [1m[32mPublic[39m[0m
+                                                    [1m[32mRequired[39m[0m
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    int_t
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [i]
+                                    []
+                                    [1m[32mSource[39m[0m
+                                    [1m[32mPublic[39m[0m
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            t_all:
+                                ([1m[35mVariable[39m[0m
+                                    2
+                                    t_all
+                                    []
+                                    [1m[32mLocal[39m[0m
+                                    ([1m[35mArrayConstructor[39m[0m
+                                        [([1m[35mStructConstant[39m[0m
+                                            2 [33mint_t[39m
+                                            [(([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                            ([1m[35mStructType[39m[0m
+                                                [([1m[35mInteger[39m[0m 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        ([1m[35mStructConstant[39m[0m
+                                            2 [33mint_t[39m
+                                            [(([1m[35mIntegerConstant[39m[0m [36m2[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                            ([1m[35mStructType[39m[0m
+                                                [([1m[35mInteger[39m[0m 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        ([1m[35mStructConstant[39m[0m
+                                            2 [33mint_t[39m
+                                            [(([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                            ([1m[35mStructType[39m[0m
+                                                [([1m[35mInteger[39m[0m 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        ([1m[35mArray[39m[0m
+                                            ([1m[35mStructType[39m[0m
+                                                [([1m[35mInteger[39m[0m 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [(([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m)
+                                            ([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                            [1m[32mFixedSizeArray[39m[0m
+                                        )
+                                        ()
+                                        [1m[32mColMajor[39m[0m
+                                    )
+                                    ()
+                                    [1m[32mParameter[39m[0m
+                                    ([1m[35mArray[39m[0m
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [(([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m)
+                                        ([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        [1m[32mFixedSizeArray[39m[0m
+                                    )
+                                    2 [33mint_t[39m
+                                    [1m[32mSource[39m[0m
+                                    [1m[32mPublic[39m[0m
+                                    [1m[32mRequired[39m[0m
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_one:
+                                ([1m[35mVariable[39m[0m
+                                    2
+                                    t_one
+                                    []
+                                    [1m[32mLocal[39m[0m
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m1[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    [1m[32mParameter[39m[0m
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 [33mint_t[39m
+                                    [1m[32mSource[39m[0m
+                                    [1m[32mPublic[39m[0m
+                                    [1m[32mRequired[39m[0m
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_three:
+                                ([1m[35mVariable[39m[0m
+                                    2
+                                    t_three
+                                    []
+                                    [1m[32mLocal[39m[0m
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m3[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    [1m[32mParameter[39m[0m
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 [33mint_t[39m
+                                    [1m[32mSource[39m[0m
+                                    [1m[32mPublic[39m[0m
+                                    [1m[32mRequired[39m[0m
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_two:
+                                ([1m[35mVariable[39m[0m
+                                    2
+                                    t_two
+                                    []
+                                    [1m[32mLocal[39m[0m
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m2[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    ([1m[35mStructConstant[39m[0m
+                                        2 [33mint_t[39m
+                                        [(([1m[35mIntegerConstant[39m[0m [36m2[39m ([1m[35mInteger[39m[0m 4) [1m[32mDecimal[39m[0m))]
+                                        ([1m[35mStructType[39m[0m
+                                            [([1m[35mInteger[39m[0m 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    [1m[32mParameter[39m[0m
+                                    ([1m[35mStructType[39m[0m
+                                        [([1m[35mInteger[39m[0m 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 [33mint_t[39m
+                                    [1m[32mSource[39m[0m
+                                    [1m[32mPublic[39m[0m
+                                    [1m[32mRequired[39m[0m
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    types_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
