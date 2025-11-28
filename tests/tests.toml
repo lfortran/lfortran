@@ -2745,8 +2745,16 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "optional1.f90"
+filename = "optional_01.f90"
 asr = true
+
+[[test]]
+filename = "optional_02.f90"
+pass = "transform_optional_argument_functions"
+
+[[test]]
+filename = "optional_03.f90"
+pass = "transform_optional_argument_functions"
 
 [[test]]
 filename = "attributes1.f90"
