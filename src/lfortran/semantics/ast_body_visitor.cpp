@@ -4748,6 +4748,39 @@ public:
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+                ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                std::string var_name = var->m_name;
+                if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
+                    diag.add(diag::Diagnostic(
+                        "Assumed-rank arrays are not supported in print statements",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                } else {
+                    int rank = assumed_rank_arrays[var_name];
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
+                    for (int r = 0; r < rank; r++) {
+                        ASR::dimension_t dim;
+                        dim.loc = x.base.base.loc;
+                        dim.m_start = nullptr;
+                        dim.m_length = nullptr;
+                        dims.push_back(al, dim);
+                    }
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(expr));
+                    ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                        elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
+                        ASR::array_physical_typeType::DescriptorArray, false, false, true
+                    );
+                    ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+                        ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+                    );
+                    expr = ASRUtils::EXPR(array_cast);
+                }
+            }
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
