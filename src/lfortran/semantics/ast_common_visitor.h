@@ -6639,22 +6639,21 @@ public:
                                 array_index.m_step = b.i32( j + 1 );
                                 array_indices.push_back(al, array_index);
                             }
-                            // Create a 1D array type for the section result, matching what
-                            // the function parameter expects (which is inferred from the first call)
+                            // Create an ArraySection with 1D DescriptorArray type
+                            // The implicit interface already expects 1D PointerArray parameters,
+                            // and LLVM will handle the conversion via ArrayPhysicalCast
                             ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(array_item->m_v));
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = array_item->base.base.loc;
+                            dim.m_start = nullptr;
+                            dim.m_length = nullptr;
+                            dims.push_back(al, dim);
                             ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, array_item->base.base.loc,
-                                elem_type, nullptr, 0, ASR::array_physical_typeType::DescriptorArray));
+                                elem_type, dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray));
                             x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
-
-                            // Also update the function's parameter type to match the 1D array
-                            // This fixes implicit interfaces that were inferred with wrong dimensionality
-                            f_type->m_arg_types[it.first] = new_type;
-                            if (ASR::is_a<ASR::Var_t>(*f->m_args[it.first])) {
-                                ASR::Var_t* var_expr = ASR::down_cast<ASR::Var_t>(f->m_args[it.first]);
-                                ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-                                param_var->m_type = new_type;
-                            }
                         }
                     }
                 }
@@ -9605,14 +9604,21 @@ public:
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in BindC, so that
-                    // the C ABI is just a pointer
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var_type))
-                    );
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
-                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
-                        array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
+                    // For arrays like A(n, m) we use A(*) - a 1D assumed-size array
+                    // This matches Fortran's implicit interface behavior where arrays
+                    // are passed as pointers and can be reshaped
+                    // Use DescriptorArray to match LFortran's assumed-size array ABI
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    dims.push_back(al, empty_dim);
+
+                    var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc,
+                        elem_type, dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray));
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -9637,8 +9643,8 @@ public:
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
-                // Use Source ABI for arrays (to match how actual Fortran functions are compiled)
-                // BindC for non-array types
+                // Use Source ABI for arrays to match LFortran's calling convention
+                // Arrays (including assumed-size) use descriptors in LFortran
                 ASR::abiType param_abi = ASR::abiType::BindC;
                 if (ASRUtils::is_array(var_type)) {
                     param_abi = ASR::abiType::Source;
