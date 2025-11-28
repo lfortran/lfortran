@@ -58,7 +58,7 @@
             [(Print
                 0
                 ()
-                [(String "b()")]
+                [(String "b()" ())]
                 ()
             )
             (Assignment
@@ -100,7 +100,7 @@
                 [(Print
                     0
                     ()
-                    [(String "d()")]
+                    [(String "d()" ())]
                     ()
                 )
                 (Assignment

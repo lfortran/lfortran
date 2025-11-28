@@ -101,7 +101,7 @@
         (Print
             0
             ()
-            [(String "colours%rgb : ")
+            [(String "colours%rgb : " ())
             rgb [(colours
             [])]]
             ()

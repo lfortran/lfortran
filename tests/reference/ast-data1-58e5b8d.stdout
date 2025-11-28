@@ -263,7 +263,7 @@
             0
             [(DataStmtSet
                 [myname]
-                [(String "xyz")]
+                [(String "xyz" ())]
             )
             (DataStmtSet
                 [miles]
@@ -288,7 +288,7 @@
                 fullname [(yourname
                 [])]]
                 [35
-                (String "abc")]
+                (String "abc" ())]
             )]
             ()
         )
@@ -613,7 +613,7 @@
         (Print
             0
             ()
-            [(String "Your name is: ")
+            [(String "Your name is: " ())
             fullname [(yourname
             [])]]
             ()
@@ -621,7 +621,7 @@
         (Print
             0
             ()
-            [(String "Your age is: ")
+            [(String "Your age is: " ())
             age [(yourname
             [])]]
             ()
@@ -678,7 +678,7 @@
         (Print
             0
             ()
-            [(String "My name is: ")
+            [(String "My name is: " ())
             myname]
             ()
         )

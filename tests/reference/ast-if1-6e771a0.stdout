@@ -35,7 +35,7 @@
             [(Print
                 0
                 ()
-                [(String "correct")]
+                [(String "correct" ())]
                 ()
             )]
             []
@@ -50,7 +50,7 @@
             [(Print
                 0
                 ()
-                [(String "incorrect")]
+                [(String "incorrect" ())]
                 ()
             )]
             []
@@ -82,7 +82,7 @@
         (Print
             50
             ()
-            [(String "i < 0")]
+            [(String "i < 0" ())]
             ()
         )
         (GoTo
@@ -95,7 +95,7 @@
         (Print
             60
             ()
-            [(String "i == 0")]
+            [(String "i == 0" ())]
             ()
         )
         (GoTo
@@ -108,7 +108,7 @@
         (Print
             70
             ()
-            [(String "i > 0")]
+            [(String "i > 0" ())]
             ()
         )]
         []
