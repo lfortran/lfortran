@@ -9607,7 +9607,35 @@ public:
                     // For arrays like A(n, m) we use A(*) - a 1D assumed-size array
                     // This matches Fortran's implicit interface behavior where arrays
                     // are passed as pointers and can be reshaped
-                    // Use DescriptorArray to match LFortran's assumed-size array ABI
+
+                    // Check if the actual function already exists to match its signature
+                    // Default to DescriptorArray (matches assumed-size arrays like x(*))
+                    ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    // Search up the scope chain for the actual function definition
+                    ASR::symbol_t* func_sym = nullptr;
+                    SymbolTable* search_scope = parent_scope;
+                    while (search_scope && !func_sym) {
+                        func_sym = search_scope->resolve_symbol(func_name);
+                        if (!func_sym) {
+                            search_scope = search_scope->parent;
+                        }
+                    }
+                    // Get past ExternalSymbol wrappers to find the actual function
+                    if (func_sym) {
+                        func_sym = ASRUtils::symbol_get_past_external(func_sym);
+                    }
+                    if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
+                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                        // Check if this function has array parameters we can match
+                        if (i < func->n_args && func->m_args[i] && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                            // Match the physical type of the actual function's parameter
+                            ASR::Array_t* func_param_array = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                                    ASRUtils::expr_type(func->m_args[i]))));
+                            phys_type = func_param_array->m_physical_type;
+                        }
+                    }
+
                     ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
@@ -9618,7 +9646,7 @@ public:
                     dims.push_back(al, empty_dim);
 
                     var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc,
-                        elem_type, dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray));
+                        elem_type, dims.p, dims.size(), phys_type));
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
