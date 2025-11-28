@@ -6569,62 +6569,12 @@ public:
 
     void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections, SymbolTable* current_scope) {
 
-    class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
-        private:
-            Allocator& al;
-            bool only_top_level;
-        public:
-            ASR::expr_t** current_expr;
-
-            ReplaceArrayItemWithArraySection(Allocator& al_) :
-                al(al_), only_top_level(true), current_expr(nullptr) {}
-
-            void replace_ArrayItem(ASR::ArrayItem_t* x) {
-                // Only convert the top-level ArrayItem in a subroutine call argument.
-                // Don't recursively convert nested ArrayItems that are used as indices.
-                if (!only_top_level) {
-                    return;
-                }
-
-                Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
-                ASRUtils::ASRBuilder b(al, x->base.base.loc);
-
-                for ( size_t i = 0; i < x->n_args; i++ ) {
-                    ASR::array_index_t array_index;
-                    array_index.loc = x->m_args[i].loc;
-                    array_index.m_left = x->m_args[i].m_right;
-                    array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
-                    if ( ASRUtils::expr_value(array_index.m_right) ) {
-                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
-                    }
-                    array_index.m_step = b.i32( i + 1 );
-                    array_indices.push_back(al, array_index);
-                }
-                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
-                *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
-                    array_indices.p, array_indices.n, new_type, nullptr));
-
-                // After converting the top-level ArrayItem, don't convert any nested ones
-                only_top_level = false;
-            }
-
-    };
-
     class LegacyArraySectionsVisitor : public ASR::CallReplacerOnExpressionsVisitor<LegacyArraySectionsVisitor> {
         private:
             Allocator& al;
-            ReplaceArrayItemWithArraySection replacer;
         public:
-            ASR::expr_t** current_expr;
             LegacyArraySectionsVisitor(Allocator& al_) :
-                al(al_), replacer(al_), current_expr(nullptr) {}
-
-            void call_replacer_() {
-                replacer.current_expr = current_expr;
-                replacer.only_top_level = true;  // Reset for each argument
-                replacer.replace_expr(*current_expr);
-                current_expr = replacer.current_expr;
-            }
+                al(al_) {}
 
             void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
                 Vec<ASR::stmt_t*> body;
@@ -6670,12 +6620,28 @@ public:
                     // iterate only over args of type array.
                     for( auto it: array_arg_index ) {
                         ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
-                        if ( arg_expr != nullptr ) {
-                            ASR::expr_t** current_expr_copy = current_expr;
-                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
-                            call_replacer_();
-                            x.m_args[it.first].m_value = *current_expr;
-                            current_expr = current_expr_copy;
+                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
+                            // Directly convert top-level ArrayItem to ArraySection
+                            // without recursing into nested ArrayItems in the indices
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                            Vec<ASR::array_index_t> array_indices;
+                            array_indices.reserve(al, array_item->n_args);
+                            ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
+
+                            for ( size_t j = 0; j < array_item->n_args; j++ ) {
+                                ASR::array_index_t array_index;
+                                array_index.loc = array_item->m_args[j].loc;
+                                array_index.m_left = array_item->m_args[j].m_right;  // Use index as-is, don't recurse
+                                array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
+                                if ( ASRUtils::expr_value(array_index.m_right) ) {
+                                    array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                                }
+                                array_index.m_step = b.i32( j + 1 );
+                                array_indices.push_back(al, array_index);
+                            }
+                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(array_item->m_v));
+                            x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc, array_item->m_v,
+                                array_indices.p, array_indices.n, new_type, nullptr));
                         }
                     }
                 }
