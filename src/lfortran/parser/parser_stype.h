@@ -45,7 +45,7 @@ struct IntSuffix {
     Str int_kind;
 };
 
-struct StrSuffix {
+struct StrPrefix {
     Str str_s;
     Str* str_kind;  // Pointer to kind string allocated in Arena, or nullptr
 };
@@ -55,7 +55,7 @@ union YYSTYPE {
     Str string;
 
     IntSuffix int_suffix;
-    StrSuffix str_suffix;
+    StrPrefix str_prefix;
 
     AST::ast_t* ast;
     Vec<AST::ast_t*> vec_ast;

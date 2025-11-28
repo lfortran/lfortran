@@ -118,7 +118,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
 
-%token <str_suffix> TK_STRING
+%token <str_prefix> TK_STRING
 %token <string> TK_COMMENT
 %token <string> TK_EOLCOMMENT
 %token <string> TK_PRAGMA_DECL
