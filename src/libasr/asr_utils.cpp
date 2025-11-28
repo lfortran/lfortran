@@ -1077,9 +1077,11 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         }
         for (size_t i=0;i<submods.size();i++) {
             ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
-            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
-            submod->m_symtab->parent = symtab;
-            submod->m_loaded_from_mod = true;
+            if (symtab->get_symbol(std::string(submod->m_name)) == nullptr) {
+                symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+                submod->m_symtab->parent = symtab;
+                submod->m_loaded_from_mod = true;
+            }
         }
     }
 
