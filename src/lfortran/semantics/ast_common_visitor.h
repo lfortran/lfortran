@@ -6639,9 +6639,19 @@ public:
                                 array_index.m_step = b.i32( j + 1 );
                                 array_indices.push_back(al, array_index);
                             }
-                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(array_item->m_v));
+                            // Create a 1D array type for the section result, matching what
+                            // the function parameter expects (which is inferred from the first call)
+                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(array_item->m_v));
+                            ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, array_item->base.base.loc,
+                                elem_type, nullptr, 0, ASR::array_physical_typeType::DescriptorArray));
                             x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
+
+                            // Also update the function's parameter type to match the 1D array
+                            // This fixes implicit interfaces that were inferred with wrong dimensionality
+                            f_type->m_arg_types[it.first] = new_type;
+                            ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(f->m_args[it.first]);
+                            param_var->m_type = new_type;
                         }
                     }
                 }
