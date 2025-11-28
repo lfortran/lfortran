@@ -9634,12 +9634,18 @@ public:
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
+                // Use Source ABI for arrays (to match how actual Fortran functions are compiled)
+                // BindC for non-array types
+                ASR::abiType param_abi = ASR::abiType::BindC;
+                if (ASRUtils::is_array(var_type)) {
+                    param_abi = ASR::abiType::Source;
+                }
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
                     nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(var_expr),
-                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                    param_abi, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_or_overwrite_symbol(arg_name, v);
             }
@@ -9647,6 +9653,17 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 v)));
         }
+
+        // Determine ABI for the function based on whether it has array parameters
+        ASR::abiType func_abi = ASR::abiType::BindC;
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(args[i])->m_v);
+            if (arg_var->m_abi == ASR::abiType::Source) {
+                func_abi = ASR::abiType::Source;
+                break;
+            }
+        }
+
         ASR::ttype_t *type = old_type;
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
@@ -9658,7 +9675,7 @@ public:
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                func_abi, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -9675,7 +9692,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            func_abi, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
