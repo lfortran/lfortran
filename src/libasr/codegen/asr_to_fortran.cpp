@@ -1693,6 +1693,7 @@ public:
         else if(intrinsic_func_name == "SelectedRealKind") intrinsic_func_name = "selected_real_kind";
         else if(intrinsic_func_name == "SelectedIntKind") intrinsic_func_name = "selected_int_kind";
         else if(intrinsic_func_name == "SelectedCharKind") intrinsic_func_name = "selected_char_kind";
+        else if(intrinsic_func_name == "SelectedLogicalKind") intrinsic_func_name = "selected_logical_kind";
         else if(intrinsic_func_name == "LogGamma") intrinsic_func_name = "log_gamma";
         else if(intrinsic_func_name == "SetExponent") intrinsic_func_name = "set_exponent";
         else if(intrinsic_func_name == "Mergebits") intrinsic_func_name = "merge_bits";
