@@ -12377,6 +12377,18 @@ public:
                                 llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                 tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
+                            // If both are struct arrays and types don't match, bitcast to orig_arg_type
+                            if (ASRUtils::is_array(orig_arg->m_type) && ASRUtils::is_array(arg->m_type) &&
+                                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg->m_type))) {
+                                llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                                    al, orig_arg->base.base.loc, &orig_arg->base)),
+                                    orig_arg->m_type, module.get());
+                                llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
+                                if (llvm_orig_arg_type != llvm_arg_type) {
+                                    tmp = builder->CreateBitCast(tmp, llvm_orig_arg_type->getPointerTo());
+                                }
+                            }
                         }
                     } else {
                         if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(

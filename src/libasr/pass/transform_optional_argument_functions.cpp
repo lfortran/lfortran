@@ -392,7 +392,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
             if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
-                ASR::ttype_t* arg_type = func_arg_j->m_type;
+                ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
                     arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
@@ -525,16 +525,16 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // else pass in a dummy variable allocated on the stack
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                ASR::ttype_t* arg_type = func_arg_j->m_type;
+                ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
-                    arg_type = ASRUtils::duplicate_type(al, arg_expr_type);
+                    arg_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 }
                 // Don't declare AssumedLength strings, they are only arguments
                 if (ASRUtils::is_string_only(arg_type) || ASRUtils::is_array_of_strings(arg_type)) {
-                    arg_type = arg_expr_type;
+                    arg_type = ASRUtils::duplicate_type(al, arg_expr_type);
                 }
                 if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_type))) {
-                    arg_type = arg_expr_type;
+                    arg_type = ASRUtils::duplicate_type(al, arg_expr_type);
                 }
                 ASR::ttype_t* orig_arg_type = ASRUtils::duplicate_type(al, arg_type);
                 // Pass in a FixedSizeArray of same rank when non-allocatable DescriptorArray is expected
