@@ -6650,8 +6650,11 @@ public:
                             // Also update the function's parameter type to match the 1D array
                             // This fixes implicit interfaces that were inferred with wrong dimensionality
                             f_type->m_arg_types[it.first] = new_type;
-                            ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(f->m_args[it.first]);
-                            param_var->m_type = new_type;
+                            if (ASR::is_a<ASR::Var_t>(*f->m_args[it.first])) {
+                                ASR::Var_t* var_expr = ASR::down_cast<ASR::Var_t>(f->m_args[it.first]);
+                                ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
+                                param_var->m_type = new_type;
+                            }
                         }
                     }
                 }
