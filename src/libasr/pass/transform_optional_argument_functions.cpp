@@ -525,49 +525,55 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // else pass in a dummy variable allocated on the stack
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
+                ASR::ttype_t* dummy_variable_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
-                    arg_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 }
+                ASR::ttype_t* pointer_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 // Don't declare AssumedLength strings, they are only arguments
-                if (ASRUtils::is_string_only(arg_type) || ASRUtils::is_array_of_strings(arg_type)) {
-                    arg_type = ASRUtils::duplicate_type(al, arg_expr_type);
+                if (ASRUtils::is_string_only(dummy_variable_type) || ASRUtils::is_array_of_strings(dummy_variable_type)) {
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(dummy_variable_type))->m_len_kind = ASR::ExpressionLength;
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(dummy_variable_type))->m_len = one;
                 }
-                if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_type))) {
-                    arg_type = ASRUtils::duplicate_type(al, arg_expr_type);
-                }
-                ASR::ttype_t* orig_arg_type = ASRUtils::duplicate_type(al, arg_type);
                 // Pass in a FixedSizeArray of same rank when non-allocatable DescriptorArray is expected
-                if (ASRUtils::is_array(arg_type) &&
-                    !ASRUtils::is_allocatable(arg_type) &&
-                    ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
+                if (ASRUtils::is_array(dummy_variable_type) &&
+                    !ASRUtils::is_allocatable(dummy_variable_type) &&
+                    ASRUtils::extract_physical_type(dummy_variable_type) == ASR::array_physical_typeType::DescriptorArray) {
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(dummy_variable_type);
                     for (size_t i = 0; i < n_dims; i++) {
                         ASR::dimension_t dim;
-                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4));
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1, int_type));
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
                         dim.m_start = one;
                         dim.m_length = one;
                         dims.push_back(al, dim);
                     }
-                    arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc, ASRUtils::extract_type(arg_type), dims.p, n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
+                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
+                        phy_type = ASR::array_physical_typeType::PointerArray;
+                    }
+                    dummy_variable_type = ASRUtils::TYPE(
+                            ASR::make_Array_t(
+                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
                 }
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i - is_method].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
-                arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg_type->base.loc, ASRUtils::type_get_past_allocatable_pointer(orig_arg_type)));
+                pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, pointer_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i - is_method].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
-                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, arg_expr)));
-                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, arg_type->base.loc, pointer_variable, dummy_variable)));
+                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
+                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));
 
