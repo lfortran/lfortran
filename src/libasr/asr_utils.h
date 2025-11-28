@@ -2888,6 +2888,11 @@ static inline bool is_only_upper_bound_empty(ASR::dimension_t& dim) {
     return (dim.m_start != nullptr && dim.m_length == nullptr);
 }
 
+// Returns true if dimension has no length (assumed-size), regardless of start
+static inline bool is_dimension_assumed_size(ASR::dimension_t& dim) {
+    return (dim.m_length == nullptr);
+}
+
 inline bool is_assumed_rank_array(ASR::ttype_t* x) {
     if (!ASR::is_a<ASR::Array_t>(*x)) {
         return false;
@@ -3145,7 +3150,12 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 physical_type = ASR::array_physical_typeType::PointerArray;
-            } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
+            } else if ( is_argument && is_dimension_star && ASRUtils::is_dimension_assumed_size(m_dims[n_dims-1]) ) {
+                // Assumed-size dummy arrays (x(*)) use UnboundedPointerArray.
+                // Must check is_argument to avoid implied-shape arrays (parameter arrays).
+                // This handles both cases:
+                // - x(*) where only upper bound is empty (m_start != nullptr)
+                // - x(*) where both bounds are empty (Fortran 77 style)
                 physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
             }
         }

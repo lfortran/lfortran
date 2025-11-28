@@ -3077,9 +3077,15 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start;
+                    if( m_dims[idim].m_start != nullptr ) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        // Default lower bound is 1 in Fortran
+                        dim_start = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -7881,6 +7887,15 @@ public:
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::PointerArray) {
             PointerToData_to_Descriptor(m_arg, m_type, m_type_for_dimensions);
+        } else if(
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            // Extract data pointer from descriptor for assumed-size arrays
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -14302,6 +14317,7 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::PointerArray:
+            case ASR::array_physical_typeType::UnboundedPointerArray:
             case ASR::array_physical_typeType::SIMDArray:
             case ASR::array_physical_typeType::FixedSizeArray: {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_v,
