@@ -56,15 +56,15 @@ public:
 
     // Parse string literal with optional kind prefix (e.g., tfc_"#" or "#")
     // Extracts both the string content and the kind prefix (if present)
-    // The kind prefix is allocated in Arena as a Str* to keep StrSuffix at 24 bytes
-    void lex_string(Allocator &al, StrSuffix &str_suffix, char ch) const
+    // The kind prefix is allocated in Arena as a Str* to keep StrPrefix at 24 bytes
+    void lex_string(Allocator &al, StrPrefix &str_prefix, char ch) const
     {
         // The tokenizer has already identified this as a string with or without prefix
         // tok points to the start, cur points past the closing quote
         // Format: [kind_]"content" or [kind_]'content'
         
         unsigned char *p = tok;
-        str_suffix.str_kind = nullptr;
+        str_prefix.str_kind = nullptr;
         
         // Find the opening quote (first occurrence of ch)
         while (p < cur && *p != ch) {
@@ -74,21 +74,21 @@ public:
         // Check if there's a kind prefix (underscore immediately before opening quote)
         if (p > tok && *(p - 1) == '_' && p - 1 > tok) {
             // Found kind prefix: everything from tok to (p-1) excluding the '_'
-            str_suffix.str_kind = al.make_new<Str>();
-            str_suffix.str_kind->p = (char*)tok;
-            str_suffix.str_kind->n = (p - 1) - tok;
+            str_prefix.str_kind = al.make_new<Str>();
+            str_prefix.str_kind->p = (char*)tok;
+            str_prefix.str_kind->n = (p - 1) - tok;
             
             // String content starts after opening quote, ends before closing quote
-            str_suffix.str_s.p = (char*)(p + 1);
-            str_suffix.str_s.n = cur - p - 2; // cur is past closing quote
-            str_suffix.str_s.p = str_unescape_fortran(al, str_suffix.str_s, ch);
-            str_suffix.str_s.n = strlen(str_suffix.str_s.p);
+            str_prefix.str_s.p = (char*)(p + 1);
+            str_prefix.str_s.n = cur - p - 2; // cur is past closing quote
+            str_prefix.str_s.p = str_unescape_fortran(al, str_prefix.str_s, ch);
+            str_prefix.str_s.n = strlen(str_prefix.str_s.p);
         } else {
             // No kind prefix - just extract string between quotes
-            str_suffix.str_s.p = (char*) tok + 1;
-            str_suffix.str_s.n = cur - tok - 2;
-            str_suffix.str_s.p = str_unescape_fortran(al, str_suffix.str_s, ch);
-            str_suffix.str_s.n = strlen(str_suffix.str_s.p);
+            str_prefix.str_s.p = (char*) tok + 1;
+            str_prefix.str_s.n = cur - tok - 2;
+            str_prefix.str_s.p = str_unescape_fortran(al, str_prefix.str_s, ch);
+            str_prefix.str_s.n = strlen(str_prefix.str_s.p);
         }
     }
 

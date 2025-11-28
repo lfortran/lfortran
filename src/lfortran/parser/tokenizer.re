@@ -749,8 +749,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
-            string1 { lex_string(al, yylval.str_suffix, '"'); RET(TK_STRING) }
-            string2 { lex_string(al, yylval.str_suffix, '\''); RET(TK_STRING) }
+            string1 { lex_string(al, yylval.str_prefix, '"'); RET(TK_STRING) }
+            string2 { lex_string(al, yylval.str_prefix, '\''); RET(TK_STRING) }
 
             defop { token(yylval.string); RET(TK_DEF_OP) }
             name { token(yylval.string); RET(TK_NAME) }

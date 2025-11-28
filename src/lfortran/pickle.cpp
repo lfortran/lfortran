@@ -70,10 +70,10 @@ std::string pickle(int token, const LFortran::YYSTYPE &yystype,
             t += "_" + yystype.int_suffix.int_kind.str();
         }
     } else if (token == yytokentype::TK_STRING) {
-        if (yystype.str_suffix.str_kind) {
-            t += " " + yystype.str_suffix.str_kind->str() + "_";
+        if (yystype.str_prefix.str_kind) {
+            t += " " + yystype.str_prefix.str_kind->str() + "_";
         }
-        t = t + " " + "\"" + str_escape_c(yystype.str_suffix.str_s.str()) + "\"";
+        t = t + " " + "\"" + str_escape_c(yystype.str_prefix.str_s.str()) + "\"";
     } else if (token == yytokentype::TK_BOZ_CONSTANT) {
         t += " " + yystype.string.str();
     }

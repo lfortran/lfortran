@@ -19,7 +19,7 @@
 // This is only used in parser.tab.cc, nowhere else, so we simply include
 // everything from LCompilers::LFortran::AST to save typing:
 using namespace LCompilers::LFortran::AST;
-using LCompilers::LFortran::StrSuffix;
+using LCompilers::LFortran::StrPrefix;
 using LCompilers::LFortran::IntSuffix;
 using LCompilers::Location;
 using LCompilers::Vec;
@@ -2281,7 +2281,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), temp_args, l)
 
-ast_t* SUBSTRING_(Allocator &al, const StrSuffix &str,
+ast_t* SUBSTRING_(Allocator &al, const StrPrefix &str,
         const Vec<FnArg> &args, Location &l, LCompilers::diag::Diagnostics &diagnostics) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
