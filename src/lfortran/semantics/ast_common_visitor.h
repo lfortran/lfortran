@@ -6572,13 +6572,20 @@ public:
     class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
         private:
             Allocator& al;
+            bool only_top_level;
         public:
             ASR::expr_t** current_expr;
 
             ReplaceArrayItemWithArraySection(Allocator& al_) :
-                al(al_), current_expr(nullptr) {}
+                al(al_), only_top_level(true), current_expr(nullptr) {}
 
             void replace_ArrayItem(ASR::ArrayItem_t* x) {
+                // Only convert the top-level ArrayItem in a subroutine call argument.
+                // Don't recursively convert nested ArrayItems that are used as indices.
+                if (!only_top_level) {
+                    return;
+                }
+
                 Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
                 ASRUtils::ASRBuilder b(al, x->base.base.loc);
 
@@ -6596,6 +6603,9 @@ public:
                 ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
                 *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
                     array_indices.p, array_indices.n, new_type, nullptr));
+
+                // After converting the top-level ArrayItem, don't convert any nested ones
+                only_top_level = false;
             }
 
     };
@@ -6611,6 +6621,7 @@ public:
 
             void call_replacer_() {
                 replacer.current_expr = current_expr;
+                replacer.only_top_level = true;  // Reset for each argument
                 replacer.replace_expr(*current_expr);
                 current_expr = replacer.current_expr;
             }
