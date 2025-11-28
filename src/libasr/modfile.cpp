@@ -210,8 +210,18 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
         serialized_lm.file_ends.push_back(b.read_int32());
     }
 
-    lm.files.push_back(serialized_lm.files[0]);
-    lm.file_ends.push_back(serialized_lm.file_ends[0] + lm.file_ends.back());
+    // Adjust out_start and out_start0 by the current file_ends offset
+    // so positions from this modfile map correctly in the combined LocationManager
+    uint32_t offset = lm.file_ends.back();
+    LCompilers::LocationManager::FileLocations adjusted_file = serialized_lm.files[0];
+    for (size_t i = 0; i < adjusted_file.out_start.size(); i++) {
+        adjusted_file.out_start[i] += offset;
+    }
+    for (size_t i = 0; i < adjusted_file.out_start0.size(); i++) {
+        adjusted_file.out_start0[i] += offset;
+    }
+    lm.files.push_back(adjusted_file);
+    lm.file_ends.push_back(serialized_lm.file_ends[0] + offset);
 
     asr_binary = b.read_string();
     return true;
