@@ -665,7 +665,8 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
             // pass_result can contain FunctionCalls which need to be replaced
             // Run the pass till no more statements are added to body
             bool converge = false;
-            while (!converge) {
+            const int NUM_TRIES = 10;
+            for (size_t k = 0; k < NUM_TRIES; k++) {
                 Vec<ASR::stmt_t*> new_body;
                 new_body.reserve(al, body.n);
                 for (size_t i = 0; i < body.n; i++) {
@@ -684,9 +685,13 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
                 }
                 if (body.n == new_body.n) {
                     converge = true;
+                    break;
                 }
                 body.n = new_body.n;
                 body.p = new_body.p;
+            }
+            if (!converge) {
+                throw LCompilersException("FunctionCall nesting is too high, didn't converge in " + std::to_string(NUM_TRIES) + " tries.");
             }
             m_body = body.p;
             n_body = body.size();
