@@ -7884,6 +7884,14 @@ public:
             m_old == ASR::array_physical_typeType::PointerArray) {
             PointerToData_to_Descriptor(m_arg, m_type, m_type_for_dimensions);
         } else if(
+            m_new == ASR::array_physical_typeType::DescriptorArray &&
+            m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+            // UnboundedPointerArray is a simple pointer to data (for assumed-size arrays).
+            // When converting to DescriptorArray for implicit interface calls,
+            // we pass the pointer as-is. The actual callee function also uses
+            // UnboundedPointerArray, so no conversion is needed - just pass through.
+            // The 'tmp' already holds the pointer value.
+        } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get()));
