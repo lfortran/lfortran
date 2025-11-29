@@ -288,8 +288,8 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
 
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
-    // InsertDeallocate v(al);
-    // v.visit_TranslationUnit(unit);
+    InsertDeallocate v(al);
+    v.visit_TranslationUnit(unit);
 
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);

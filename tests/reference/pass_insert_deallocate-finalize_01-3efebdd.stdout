@@ -105,7 +105,10 @@
                                                                 )
                                                         })
                                                     bl
-                                                    [(Exit
+                                                    [(ImplicitDeallocate
+                                                        [(Var 7 arr_in_block)]
+                                                    )
+                                                    (Exit
                                                         bl
                                                     )
                                                     (Return)]
@@ -161,8 +164,16 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(Return)]
+                                        [(ImplicitDeallocate
+                                            [(Var 6 arr_real)
+                                            (Var 6 str)]
+                                        )
+                                        (Return)]
                                         []
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 6 arr_real)
+                                        (Var 6 str)]
                                     )]
                                     ()
                                     Public
@@ -240,6 +251,10 @@
                         ()
                         .false.
                     )
+                    (ImplicitDeallocate
+                        [(Var 5 arr)
+                        (Var 5 str)]
+                    )
                     (Return)]
                 ),
             finalize_01_mod:
@@ -315,8 +330,17 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(Return)]
-                                        [(Return)]
+                                        [(ImplicitDeallocate
+                                            [(Var 4 arr)]
+                                        )
+                                        (Return)]
+                                        [(ImplicitDeallocate
+                                            [(Var 4 arr)]
+                                        )
+                                        (Return)]
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 4 arr)]
                                     )]
                                     ()
                                     Public
@@ -400,6 +424,9 @@
                                         ()
                                         ()
                                         ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 3 str)]
                                     )
                                     (Return)
                                     (DoLoop
