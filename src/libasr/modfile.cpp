@@ -275,7 +275,13 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> load_modfile(Allocator &al, const 
         return ErrorMessage(error_message);
     }
     // take offset as last second element of file_ends
-    uint32_t offset = lm.file_ends[lm.file_ends.size()-2];
+    // This is the offset BEFORE the current modfile's FileLocations was added
+    uint32_t offset;
+    if (lm.file_ends.size() >= 2) {
+        offset = lm.file_ends[lm.file_ends.size()-2];
+    } else {
+        offset = 0;
+    }
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab, offset);
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;
