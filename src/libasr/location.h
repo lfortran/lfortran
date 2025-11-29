@@ -127,6 +127,13 @@ struct LocationManager {
     // Every character in the output code has a corresponding location in the
     // original code, so this function always succeeds
     uint32_t output_to_input_pos(uint32_t out_pos, bool show_last) const {
+        // Check if out_pos is beyond all known file ranges
+        // This can happen when locations from loaded modfiles don't map to the
+        // current LocationManager state (e.g., symbols imported from modules
+        // that were compiled in a different context with different offsets)
+        if (!file_ends.empty() && out_pos > file_ends.back()) {
+            return 0;
+        }
         // Determine where the error is from using position, i.e., loc
         uint32_t index = bisection(file_ends, out_pos);
         if (index != 0 && index == file_ends.size()) index -= 1;
@@ -137,6 +144,11 @@ struct LocationManager {
         if (files[index].preprocessor) {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].out_start0, in_pos)-1;
+            // Check for out-of-bounds access which can happen with invalid
+            // locations from imported symbols
+            if (interval0 >= files[index].interval_type0.size()) {
+                return 0;
+            }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
                 uint32_t rel_pos0 = in_pos - files[index].out_start0[interval0];
