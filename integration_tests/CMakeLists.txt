@@ -2032,11 +2032,14 @@ RUN(NAME class_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -c --cpp EXTRAFILES class_63_module_1.f90 class_63_module_2.f90)
 # Reproducer for modfile preprocessor interval bug: compile module with --cpp,
 # then compile a separate main that uses the generated modfile.
-add_test(NAME mod_cpp_modfile_crash
-    COMMAND bash -lc
-    "${CMAKE_Fortran_COMPILER} --cpp -J ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_BINARY_DIR} -c ${CMAKE_CURRENT_SOURCE_DIR}/mod_cpp_mod.f90 && ${CMAKE_Fortran_COMPILER} --cpp --realloc-lhs-arrays -J ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/mod_cpp_main.f90 ${CMAKE_CURRENT_BINARY_DIR}/mod_cpp_mod.o -o ${CMAKE_CURRENT_BINARY_DIR}/mod_cpp_main.exe"
-)
-set_tests_properties(mod_cpp_modfile_crash PROPERTIES LABELS "llvm")
+# Only run with lfortran (not gfortran) since it tests lfortran-specific modfile handling.
+if(NOT CMAKE_Fortran_COMPILER MATCHES "gfortran")
+    add_test(NAME mod_cpp_modfile_crash
+        COMMAND bash -lc
+        "${CMAKE_Fortran_COMPILER} --cpp -J ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_BINARY_DIR} -c ${CMAKE_CURRENT_SOURCE_DIR}/mod_cpp_mod.f90 && ${CMAKE_Fortran_COMPILER} --cpp --realloc-lhs-arrays -J ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/mod_cpp_main.f90 ${CMAKE_CURRENT_BINARY_DIR}/mod_cpp_mod.o -o ${CMAKE_CURRENT_BINARY_DIR}/mod_cpp_main.exe"
+    )
+    set_tests_properties(mod_cpp_modfile_crash PROPERTIES LABELS "llvm")
+endif()
 RUN(NAME class_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_65 LABELS gfortran)
 RUN(NAME class_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
