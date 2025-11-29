@@ -596,7 +596,7 @@ class ASRToLLVMVisitor;
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type,
-                ASR::ttype_t* asr_src_type, llvm::Module* module);
+                ASR::ttype_t* asr_src_type, llvm::Module* module, ASR::expr_t* dest_expr = nullptr);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -960,6 +960,15 @@ class ASRToLLVMVisitor;
         void finalize_struct(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
 
+            // TODO: handle class wrapper correctly
+            llvm::Value* ptr_ = ptr;
+            if (ASRUtils::is_class_type(t)) {
+                // For class types, we need to get the actual derived type
+                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                ptr_ = llvm_utils_->CreateLoad2(get_llvm_type(
+                    struct_sym->m_struct_signature, struct_sym)->getPointerTo(), 
+                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+            }
             // Finalize members
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
@@ -974,7 +983,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                     insert_BB_for_readability(BB_str_label.c_str());
                 } 
 
-                llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
+                llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr_, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
 
                 finalize(member_ptr, member_asr_type, get_struct_sym(member_variable), true);
@@ -985,7 +994,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                 if(!is_finalizable_type(parent_struct->m_struct_signature, parent_struct)) { return; }
                 insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
-                llvm::Value* const parent_ptr = llvm_utils_->create_gep2(get_llvm_type(t, struct_sym), ptr, 0);
+                llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
+                    get_llvm_type(struct_sym->m_struct_signature, struct_sym), ptr_, 0);
                 finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct);
                 /// Parent is inlined -- Not allocated separately.
             }
@@ -1201,14 +1211,14 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             verify(ptr, get_llvm_type(struct_->m_struct_signature, struct_)->getPointerTo());
             LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&struct_->base),
                               "This utility shouldn't be called on unlimited polymorphic struct type")
-            const int VTABLE_OR_PARRENT_OFFSET = 1;
-            const int actual_idx = idx + VTABLE_OR_PARRENT_OFFSET;
 
-            llvm::Value* const fetched_member = llvm_utils_->create_gep2(get_llvm_type(struct_->m_struct_signature, struct_), ptr, actual_idx);
+            bool is_extended = struct_->m_parent != nullptr;
+            llvm::Value* const fetched_member = llvm_utils_->create_gep2(get_llvm_type(struct_->m_struct_signature, struct_), ptr, idx + is_extended);
             auto const fetched_member_variable = ASR::down_cast<ASR::Variable_t>(struct_->m_symtab->get_symbol(struct_->m_members[idx]));
             auto const fetched_member_asr_type = fetched_member_variable->m_type;
-            if(LLVM::is_llvm_pointer(*fetched_member_asr_type)){
-                auto const loaded_fetched_member = llvm_utils_->CreateLoad2(get_llvm_type(fetched_member_asr_type, get_struct_sym(fetched_member_variable)), fetched_member);
+            if(LLVM::is_llvm_pointer(*fetched_member_asr_type)) {
+                auto const loaded_fetched_member = llvm_utils_->CreateLoad2(
+                    get_llvm_type(fetched_member_asr_type, get_struct_sym(fetched_member_variable)), fetched_member);
                 return loaded_fetched_member;
             }
             return fetched_member;
@@ -1449,13 +1459,12 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             llvm::LLVMContext& context;
             LLVMUtils* llvm_utils;
             llvm::IRBuilder<>* builder;
-            std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
             std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
 
         public:
-
+            std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
             std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
             std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
@@ -1484,7 +1493,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void create_type_info_for_struct(ASR::symbol_t* struct_sym,
                                             llvm::Module* module);
 
-            llvm::Function* get_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
+            llvm::Function* define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
+            void fill_allocate_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
 
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
                                                         llvm::Module* module);
@@ -1497,7 +1507,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void fill_intrinsic_type_copy_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
-                                ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
+                ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module, ASR::expr_t* dest_expr = nullptr);
     };
 
     class LLVMTuple {
