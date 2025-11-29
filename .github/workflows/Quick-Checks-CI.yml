@@ -102,8 +102,9 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
+            # Enable libstdc++ assertions to surface latent bounds bugs (needed to repro mod_cpp_modfile_crash)
+            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
+            export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             export WIN=0
             shell ci/build.sh
 
