@@ -93,6 +93,16 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
         }
     }
 
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
+        vars.push_back(al, const_cast<ASR::expr_t*>(&(x.base)));
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+        if (ASRUtils::is_array(x.m_type)) {
+            vars.push_back(al, const_cast<ASR::expr_t*>(&(x.base)));
+        }
+    }
+
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
 
     }
@@ -2351,6 +2361,10 @@ class ReplaceExprWithTemporaryVisitor:
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_elemental_expr(x.m_value);
         if(  is_assignment_target_array_section_item || 
             ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && 
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
+            (lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            !ASRUtils::is_simd_array(x.m_value) &&
+            !ASRUtils::is_allocatable(x.m_target) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
