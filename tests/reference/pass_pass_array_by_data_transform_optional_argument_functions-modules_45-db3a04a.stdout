@@ -303,6 +303,121 @@
                                     (SymbolTable
                                         6
                                         {
+                                            __libasr_created_dummy_variable_:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_dummy_variable_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_dummy_variable_1:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_dummy_variable_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_dummy_variable_2:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_dummy_variable_2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_dummy_variable_3:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_dummy_variable_3
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_dummy_variable_4:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_dummy_variable_4
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    2 file_scope_flag
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             __libasr_created_variable_:
                                                 (Variable
                                                     6
@@ -314,6 +429,131 @@
                                                     Default
                                                     (Logical 4)
                                                     ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_pointer_:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable_pointer_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_pointer_1:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable_pointer_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_pointer_2:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable_pointer_2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_pointer_3:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable_pointer_3
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_created_variable_pointer_4:
+                                                (Variable
+                                                    6
+                                                    __libasr_created_variable_pointer_4
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    2 file_scope_flag
                                                     Source
                                                     Public
                                                     Required
@@ -875,7 +1115,97 @@
                                     (Var 6 profiles)
                                     (Var 6 profindex)
                                     (Var 6 os_valid)]
-                                    [(Assignment
+                                    [(If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 6 flags)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_)
+                                            (Var 6 flags)
+                                        )]
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_)
+                                            (Var 6 __libasr_created_dummy_variable_)
+                                        )]
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 6 c_flags)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_1)
+                                            (Var 6 c_flags)
+                                        )]
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_1)
+                                            (Var 6 __libasr_created_dummy_variable_1)
+                                        )]
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 6 cxx_flags)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_2)
+                                            (Var 6 cxx_flags)
+                                        )]
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_2)
+                                            (Var 6 __libasr_created_dummy_variable_2)
+                                        )]
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 6 link_time_flags)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_3)
+                                            (Var 6 link_time_flags)
+                                        )]
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_3)
+                                            (Var 6 __libasr_created_dummy_variable_3)
+                                        )]
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(Var 6 file_scope_flags)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_4)
+                                            (Var 6 file_scope_flags)
+                                        )]
+                                        [(Associate
+                                            (Var 6 __libasr_created_variable_pointer_4)
+                                            (Var 6 __libasr_created_dummy_variable_4)
+                                        )]
+                                    )
+                                    (Assignment
                                         (ArrayItem
                                             (Var 6 profiles)
                                             [(()
@@ -928,7 +1258,7 @@
                                             [((Var 6 profile_name))
                                             ((Var 6 compiler_name))
                                             ((Var 6 os_type))
-                                            ((Var 6 flags))
+                                            ((Var 6 __libasr_created_variable_pointer_))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
@@ -945,7 +1275,7 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 c_flags))
+                                            ((Var 6 __libasr_created_variable_pointer_1))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
@@ -962,7 +1292,7 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 cxx_flags))
+                                            ((Var 6 __libasr_created_variable_pointer_2))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
@@ -979,7 +1309,7 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 link_time_flags))
+                                            ((Var 6 __libasr_created_variable_pointer_3))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
@@ -996,7 +1326,7 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 file_scope_flags))
+                                            ((Var 6 __libasr_created_variable_pointer_4))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
