@@ -1,0 +1,9 @@
+[0;31;1msemantic error[0;0m[0;1m: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.[0;0m
+ [0;34;1m-->[0;0m tests/errors/assigned_fmt_write.f90:7:3
+  [0;34;1m|[0;0m
+[0;34;1m7 |[0;0m   WRITE (6, I)
+  [0;34;1m|[0;0m   [0;31;1m^^^^^^^^^^^^ [0;0m
+
+
+[0;1mNote[0;0m: Please report unclear, confusing or incorrect messages as bugs at
+https://github.com/lfortran/lfortran/issues.
