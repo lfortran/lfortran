@@ -1,0 +1,440 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            test:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            1_int_t_i:
+                                (ExternalSymbol
+                                    4
+                                    1_int_t_i
+                                    3 i
+                                    int_t
+                                    []
+                                    i
+                                    Public
+                                ),
+                            int_t:
+                                (ExternalSymbol
+                                    4
+                                    int_t
+                                    2 int_t
+                                    types_m
+                                    []
+                                    int_t
+                                    Public
+                                ),
+                            t_all:
+                                (ExternalSymbol
+                                    4
+                                    t_all
+                                    2 t_all
+                                    types_m
+                                    []
+                                    t_all
+                                    Public
+                                ),
+                            t_one:
+                                (ExternalSymbol
+                                    4
+                                    t_one
+                                    2 t_one
+                                    types_m
+                                    []
+                                    t_one
+                                    Public
+                                ),
+                            t_three:
+                                (ExternalSymbol
+                                    4
+                                    t_three
+                                    2 t_three
+                                    types_m
+                                    []
+                                    t_three
+                                    Public
+                                ),
+                            t_two:
+                                (ExternalSymbol
+                                    4
+                                    t_two
+                                    2 t_two
+                                    types_m
+                                    []
+                                    t_two
+                                    Public
+                                )
+                        })
+                    test
+                    [types_m]
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T_ALL(1)%i ="
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 4 t_all)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                4 1_int_t_i
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T_ALL(2)%i ="
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 4 t_all)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                4 1_int_t_i
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T_ALL(3)%i ="
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 4 t_all)
+                                    [(()
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                4 1_int_t_i
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                ),
+            types_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            int_t:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    int_t
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [i]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            t_all:
+                                (Variable
+                                    2
+                                    t_all
+                                    []
+                                    Local
+                                    (ArrayConstructor
+                                        [(StructConstant
+                                            2 int_t
+                                            [((IntegerConstant 1 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (StructConstant
+                                            2 int_t
+                                            [((IntegerConstant 2 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (StructConstant
+                                            2 int_t
+                                            [((IntegerConstant 3 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        (Array
+                                            (StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                        ColMajor
+                                    )
+                                    ()
+                                    Parameter
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    2 int_t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_one:
+                                (Variable
+                                    2
+                                    t_one
+                                    []
+                                    Local
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 1 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 1 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    Parameter
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 int_t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_three:
+                                (Variable
+                                    2
+                                    t_three
+                                    []
+                                    Local
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 3 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 3 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    Parameter
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 int_t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            t_two:
+                                (Variable
+                                    2
+                                    t_two
+                                    []
+                                    Local
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 2 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    (StructConstant
+                                        2 int_t
+                                        [((IntegerConstant 2 (Integer 4) Decimal))]
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                    )
+                                    Parameter
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 int_t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    types_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

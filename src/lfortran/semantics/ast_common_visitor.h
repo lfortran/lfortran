@@ -4268,57 +4268,105 @@ public:
                             throw SemanticAbort();
                         }
                     } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
-                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
-                        if (array_init->n_args > 0) {
-                            bool is_correct_type_func = false;
-                            bool is_correct_type_implieddoloop = false;
-                            AST::FuncCallOrArray_t* func_call = nullptr;
-
-                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
-                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
-                            
-                            if (is_correct_type_func) {
-                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
-                            }
-                            else if (is_correct_type_implieddoloop) {
-                                AST::ImpliedDoLoop_t* idoloop = AST::down_cast<AST::ImpliedDoLoop_t>(array_init->m_args[0]);
-                                // Check if the implied do loop values construct the correct type
-                                if (idoloop->n_values > 0) {
-                                    if (AST::is_a<AST::FuncCallOrArray_t>(*idoloop->m_values[0])) {
-                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(idoloop->m_values[0]);
-                                    }
-                                    else if (AST::is_a<AST::Name_t>(*idoloop->m_values[0])){
-                                        // TODO:: Check if Array Type Matches Do Loop Assignment Type, 
-                                        is_correct_type_implieddoloop = true;
-                                    }
-                                    } else {
-                                        is_correct_type_implieddoloop = false;
-                                    }
-                                } else {
-                                    is_correct_type_implieddoloop = false;
-                            }
-                            if ((!is_correct_type_func && !is_correct_type_implieddoloop) ||
-                                (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0)) {
-                                diag.add(Diagnostic(
-                                    "Array members must me of the same type as the struct",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{array_init->m_args[0]->base.loc})
-                                    }));
-                                throw SemanticAbort();
+                    AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                    if (array_init->n_args > 0) {
+                        bool is_correct_type_func = false;
+                        bool is_correct_type_implieddoloop = false;
+                        bool is_correct_type_name = false;
+                        AST::FuncCallOrArray_t* func_call = nullptr;
+                        ASR::Struct_t* name_struct = nullptr;
+                        is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
+                        is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
+                        is_correct_type_name = AST::is_a<AST::Name_t>(*array_init->m_args[0]);
+                        if (is_correct_type_func) {
+                            func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
+                        }
+                        else if (is_correct_type_implieddoloop) {
+                            AST::ImpliedDoLoop_t* idoloop = AST::down_cast<AST::ImpliedDoLoop_t>(array_init->m_args[0]);
+                            // Check if the implied do loop values construct the correct type
+                            if (idoloop->n_values > 0) {
+                                if (AST::is_a<AST::FuncCallOrArray_t>(*idoloop->m_values[0])) {
+                                    func_call = AST::down_cast<AST::FuncCallOrArray_t>(idoloop->m_values[0]);
+                                }
+                                else if (AST::is_a<AST::Name_t>(*idoloop->m_values[0])){
+                                    // TODO:: Check if Array Type Matches Do Loop Assignment Type,
+                                    is_correct_type_implieddoloop = true;
+                                }
+                            } else {
+                                is_correct_type_implieddoloop = false;
                             }
                         }
-
-                        visit_ArrayInitializer(*array_init);
+                        else if (is_correct_type_name) {
+                            AST::Name_t* name = AST::down_cast<AST::Name_t>(array_init->m_args[0]);
+                            std::string name_id = to_lower(std::string(name->m_id));
+                            ASR::symbol_t* name_symbol = current_scope->resolve_symbol(name_id);
+                            if (name_symbol != nullptr && ASR::is_a<ASR::Variable_t>(*name_symbol)) {
+                                ASR::Variable_t* name_vari = ASR::down_cast<ASR::Variable_t>(name_symbol);
+                                name_struct = ASR::down_cast<ASR::Struct_t>(name_vari->m_type_declaration);
+                            }
+                        }
+                        if ((!is_correct_type_func && !is_correct_type_implieddoloop && !is_correct_type_name) ||
+                            (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0) ||
+                            (name_struct != nullptr && strcmp(name_struct->m_name, sym_type->m_name) != 0)) {
+                            diag.add(Diagnostic(
+                                "Array members must be of the same type as the struct",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{array_init->m_args[0]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                    // Detect if this is a derived-type array then build ArrayConstructor instead of ArrayConstant
+                    ASR::ttype_t *target_type = current_variable_type_;
+                    target_type = ASRUtils::type_get_past_pointer(target_type);
+                    target_type = ASRUtils::type_get_past_allocatable(target_type);
+                    target_type = ASRUtils::type_get_past_array(target_type);  // Get element type
+                    if (ASR::is_a<ASR::StructType_t>(*target_type)) {
+                        // Build ArrayConstructor for derived types
+                        Vec<ASR::expr_t*> elems;
+                        elems.reserve(al, array_init->n_args);
+                        for (size_t k = 0; k < array_init->n_args; k++) {
+                            this->visit_expr(*array_init->m_args[k]);
+                            ASR::expr_t* elem = ASRUtils::EXPR(tmp);
+                            if (ASR::is_a<ASR::Var_t>(*elem)) {
+                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(elem);
+                                if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                                    ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                    // If its a parameter with a value, use the value directly
+                                    if (var_sym->m_storage == ASR::storage_typeType::Parameter && var_sym->m_value) {
+                                        elem = var_sym->m_value;
+                                    }
+                                }
+                            }
+                            elems.push_back(al, elem);
+                        }
+                        // Need to wrap element type back into array type
+                        ASR::ttype_t *array_type = current_variable_type_;
+                        array_type = ASRUtils::type_get_past_pointer(array_type);
+                        array_type = ASRUtils::type_get_past_allocatable(array_type);
+                        tmp = ASR::make_ArrayConstructor_t(
+                            al,
+                            array_init->base.base.loc,
+                            elems.p,
+                            elems.size(),
+                            array_type,  // Using full array type, not element type
+                            nullptr,
+                            ASR::arraystorageType::ColMajor
+                        );
                         init_expr = ASRUtils::EXPR(tmp);
                     } else {
-                        diag.add(Diagnostic(
-                            "Only function call assignment is allowed for now",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }));
-                        throw SemanticAbort();
+                        // Normal path for non-struct types
+                        visit_ArrayInitializer(*array_init);
+                        init_expr = ASRUtils::EXPR(tmp);
                     }
-
+                } else {
+                    diag.add(Diagnostic(
+                        "Only function call assignment is allowed for now",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
                         if( ASRUtils::is_value_constant(value) ) {

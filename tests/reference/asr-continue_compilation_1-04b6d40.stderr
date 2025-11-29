@@ -51,7 +51,7 @@ semantic error: Symbol is already declared in the same scope
 95 |     double precision array
    |                      ~~~~~ original declaration
 
-semantic error: Array members must me of the same type as the struct
+semantic error: Array members must be of the same type as the struct
    --> tests/errors/continue_compilation_1.f90:100:53
     |
 100 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
