@@ -4851,3 +4851,7 @@ llvm = true
 [[test]]
 filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
 llvm = true
+
+[[test]]
+filename = "struct_array_01.f90"
+asr = true
