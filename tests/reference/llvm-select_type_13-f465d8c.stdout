@@ -1,9 +1,12 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%shape = type { i32 (...)** }
+%shape_class = type <{ i32 (...)**, %shape* }>
+%shape = type {}
 %string_descriptor = type <{ i8*, i64 }>
+%circle_class = type <{ i32 (...)**, %circle* }>
 %circle = type { %shape, float }
+%rectangle_class = type <{ i32 (...)**, %rectangle* }>
 %rectangle = type { %shape, float, float }
 
 @_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
@@ -11,10 +14,10 @@ source_filename = "LFortran"
 @_VTable_shape = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_shape to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* null] }, align 8
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
 @_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (float (%circle*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (float (%circle_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
 @_Name_rectangle = private unnamed_addr constant [10 x i8] c"rectangle\00", align 1
 @_Type_Info_rectangle = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_rectangle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (float (%rectangle*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
+@_VTable_rectangle = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (float (%rectangle_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [20 x i8] c"Matched as rectangle"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([20 x i8], [20 x i8]* @string_const_data, i32 0, i32 0), i64 20 }>
@@ -71,213 +74,108 @@ source_filename = "LFortran"
 @string_const.11 = private global %string_descriptor <{ i8* getelementptr inbounds ([16 x i8], [16 x i8]* @string_const_data.10, i32 0, i32 0), i64 16 }>
 @39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @__module_select_type_13_module_circle_area(%circle* %this) {
+define float @__module_select_type_13_module_circle_area(%circle_class* %this) {
 .entry:
   %circle_area = alloca float, align 4
-  %0 = getelementptr %circle, %circle* %this, i32 0, i32 1
-  %1 = load float, float* %0, align 4
-  %2 = fmul float 0x400921FA00000000, %1
-  %3 = getelementptr %circle, %circle* %this, i32 0, i32 1
-  %4 = load float, float* %3, align 4
-  %5 = fmul float %2, %4
-  store float %5, float* %circle_area, align 4
+  %0 = getelementptr %circle_class, %circle_class* %this, i32 0, i32 1
+  %1 = load %circle*, %circle** %0, align 8
+  %2 = getelementptr %circle, %circle* %1, i32 0, i32 1
+  %3 = load float, float* %2, align 4
+  %4 = fmul float 0x400921FA00000000, %3
+  %5 = getelementptr %circle_class, %circle_class* %this, i32 0, i32 1
+  %6 = load %circle*, %circle** %5, align 8
+  %7 = getelementptr %circle, %circle* %6, i32 0, i32 1
+  %8 = load float, float* %7, align 4
+  %9 = fmul float %4, %8
+  store float %9, float* %circle_area, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_circle_area
 
 FINALIZE_SYMTABLE_circle_area:                    ; preds = %return
-  %6 = load float, float* %circle_area, align 4
-  ret float %6
+  %10 = load float, float* %circle_area, align 4
+  ret float %10
 }
 
-define float @__module_select_type_13_module_rectangle_area(%rectangle* %this) {
+define float @__module_select_type_13_module_rectangle_area(%rectangle_class* %this) {
 .entry:
   %rectangle_area = alloca float, align 4
-  %0 = getelementptr %rectangle, %rectangle* %this, i32 0, i32 1
-  %1 = load float, float* %0, align 4
-  %2 = getelementptr %rectangle, %rectangle* %this, i32 0, i32 2
+  %0 = getelementptr %rectangle_class, %rectangle_class* %this, i32 0, i32 1
+  %1 = load %rectangle*, %rectangle** %0, align 8
+  %2 = getelementptr %rectangle, %rectangle* %1, i32 0, i32 1
   %3 = load float, float* %2, align 4
-  %4 = fmul float %1, %3
-  store float %4, float* %rectangle_area, align 4
+  %4 = getelementptr %rectangle_class, %rectangle_class* %this, i32 0, i32 1
+  %5 = load %rectangle*, %rectangle** %4, align 8
+  %6 = getelementptr %rectangle, %rectangle* %5, i32 0, i32 2
+  %7 = load float, float* %6, align 4
+  %8 = fmul float %3, %7
+  store float %8, float* %rectangle_area, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_rectangle_area
 
 FINALIZE_SYMTABLE_rectangle_area:                 ; preds = %return
-  %5 = load float, float* %rectangle_area, align 4
-  ret float %5
-}
-
-define linkonce_odr void @_copy_select_type_13_module_shape(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %shape*
-  %3 = bitcast i8* %1 to %shape*
-  %4 = bitcast %shape* %2 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %shape* %3 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = bitcast %shape* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
-  ret void
-}
-
-define linkonce_odr void @_allocate_struct_select_type_13_module_shape(i8** %0) {
-entry:
-  %1 = call i8* @_lfortran_malloc(i64 8)
-  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 8, i1 false)
-  store i8* %1, i8** %0, align 8
-  %2 = bitcast i8* %1 to %shape*
-  ret void
-}
-
-declare i8* @_lfortran_malloc(i64)
-
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
-
-define linkonce_odr void @_copy_select_type_13_module_circle(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %circle*
-  %3 = bitcast i8* %1 to %circle*
-  %4 = bitcast %circle* %2 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %circle* %3 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = getelementptr %circle, %circle* %2, i32 0, i32 1
-  %8 = load float, float* %7, align 4
-  %9 = getelementptr %circle, %circle* %3, i32 0, i32 1
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
-  store float %8, float* %9, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %10 = getelementptr %circle, %circle* %2, i32 0, i32 0
-  %11 = getelementptr %circle, %circle* %3, i32 0, i32 0
-  %12 = bitcast %circle* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
-  ret void
-}
-
-define linkonce_odr void @_allocate_struct_select_type_13_module_circle(i8** %0) {
-entry:
-  %1 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
-  store i8* %1, i8** %0, align 8
-  %2 = bitcast i8* %1 to %circle*
-  %3 = getelementptr %circle, %circle* %2, i32 0, i32 1
-  %4 = getelementptr %circle, %circle* %2, i32 0, i32 0
-  ret void
-}
-
-define linkonce_odr void @_copy_select_type_13_module_rectangle(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %rectangle*
-  %3 = bitcast i8* %1 to %rectangle*
-  %4 = bitcast %rectangle* %2 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %rectangle* %3 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 1
-  %8 = load float, float* %7, align 4
-  %9 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 1
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
-  store float %8, float* %9, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %10 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 2
-  %11 = load float, float* %10, align 4
-  %12 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 2
-  br i1 true, label %then1, label %else2
-
-then1:                                            ; preds = %ifcont
-  store float %11, float* %12, align 4
-  br label %ifcont3
-
-else2:                                            ; preds = %ifcont
-  br label %ifcont3
-
-ifcont3:                                          ; preds = %else2, %then1
-  %13 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 0
-  %14 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 0
-  %15 = bitcast %rectangle* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
-  ret void
-}
-
-define linkonce_odr void @_allocate_struct_select_type_13_module_rectangle(i8** %0) {
-entry:
-  %1 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
-  store i8* %1, i8** %0, align 8
-  %2 = bitcast i8* %1 to %rectangle*
-  %3 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 1
-  %4 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 2
-  %5 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 0
-  ret void
+  %9 = load float, float* %rectangle_area, align 4
+  ret float %9
 }
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %s1 = alloca %shape*, align 8
-  store %shape* null, %shape** %s1, align 8
-  %s2 = alloca %shape*, align 8
-  store %shape* null, %shape** %s2, align 8
-  %2 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
-  %3 = bitcast i8* %2 to %shape*
-  store %shape* %3, %shape** %s1, align 8
-  %4 = load %shape*, %shape** %s1, align 8
-  %5 = bitcast %shape* %4 to %circle*
-  %6 = bitcast %shape* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
-  %7 = getelementptr %circle, %circle* %5, i32 0, i32 1
-  %8 = getelementptr %circle, %circle* %5, i32 0, i32 0
-  %9 = alloca i1, align 1
-  %10 = load %shape*, %shape** %s1, align 8
-  %11 = ptrtoint %shape* %10 to i64
-  %12 = icmp eq i64 %11, 0
-  br i1 %12, label %then1, label %else
+  %s1 = alloca %shape_class*, align 8
+  store %shape_class* null, %shape_class** %s1, align 8
+  %s2 = alloca %shape_class*, align 8
+  store %shape_class* null, %shape_class** %s2, align 8
+  %2 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 4, i1 false)
+  %3 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
+  %4 = bitcast i8* %3 to %shape_class*
+  store %shape_class* %4, %shape_class** %s1, align 8
+  %5 = load %shape_class*, %shape_class** %s1, align 8
+  %6 = getelementptr %shape_class, %shape_class* %5, i32 0, i32 1
+  %7 = bitcast i8* %2 to %shape*
+  store %shape* %7, %shape** %6, align 8
+  %8 = load %shape*, %shape** %6, align 8
+  %9 = bitcast %shape* %8 to %circle*
+  %10 = bitcast %shape_class* %4 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %10, align 8
+  %11 = getelementptr %circle, %circle* %9, i32 0, i32 1
+  %12 = getelementptr %circle, %circle* %9, i32 0, i32 0
+  %13 = alloca i1, align 1
+  %14 = load %shape_class*, %shape_class** %s1, align 8
+  %15 = ptrtoint %shape_class* %14 to i64
+  %16 = icmp eq i64 %15, 0
+  br i1 %16, label %then1, label %else
 
 then:                                             ; preds = %ifcont
   br label %"~select_type_block_.start"
 
 then1:                                            ; preds = %.entry
-  %13 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %13, align 8
-  %14 = bitcast i32 (...)*** %13 to i8*
-  %15 = call i8* @__lfortran_dynamic_cast(i8* %14, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %16 = icmp ne i8* %15, null
-  store i1 %16, i1* %9, align 1
+  %17 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %17, align 8
+  %18 = bitcast i32 (...)*** %17 to i8*
+  %19 = call i8* @__lfortran_dynamic_cast(i8* %18, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %20 = icmp ne i8* %19, null
+  store i1 %20, i1* %13, align 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %17 = bitcast %shape* %10 to i8*
-  %18 = call i8* @__lfortran_dynamic_cast(i8* %17, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %19 = icmp ne i8* %18, null
-  store i1 %19, i1* %9, align 1
+  %21 = bitcast %shape_class* %14 to i8*
+  %22 = call i8* @__lfortran_dynamic_cast(i8* %21, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %23 = icmp ne i8* %22, null
+  store i1 %23, i1* %13, align 1
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then1
-  %20 = load i1, i1* %9, align 1
-  br i1 %20, label %then, label %else2
+  %24 = load i1, i1* %13, align 1
+  br i1 %24, label %then, label %else2
 
 "~select_type_block_.start":                      ; preds = %then
-  %21 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %21, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %25 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %25, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %"~select_type_block_.end"
 
 "~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
@@ -287,42 +185,42 @@ ifcont:                                           ; preds = %else, %then1
   br label %ifcont17
 
 else2:                                            ; preds = %ifcont
-  %22 = alloca i1, align 1
-  %23 = load %shape*, %shape** %s1, align 8
-  %24 = ptrtoint %shape* %23 to i64
-  %25 = icmp eq i64 %24, 0
-  br i1 %25, label %then4, label %else5
+  %26 = alloca i1, align 1
+  %27 = load %shape_class*, %shape_class** %s1, align 8
+  %28 = ptrtoint %shape_class* %27 to i64
+  %29 = icmp eq i64 %28, 0
+  br i1 %29, label %then4, label %else5
 
 then3:                                            ; preds = %ifcont6
   br label %"~select_type_block_1.start"
 
 then4:                                            ; preds = %else2
-  %26 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %26, align 8
-  %27 = bitcast i32 (...)*** %26 to i8*
-  %28 = call i8* @__lfortran_dynamic_cast(i8* %27, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %29 = icmp ne i8* %28, null
-  store i1 %29, i1* %22, align 1
+  %30 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %30, align 8
+  %31 = bitcast i32 (...)*** %30 to i8*
+  %32 = call i8* @__lfortran_dynamic_cast(i8* %31, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %33 = icmp ne i8* %32, null
+  store i1 %33, i1* %26, align 1
   br label %ifcont6
 
 else5:                                            ; preds = %else2
-  %30 = bitcast %shape* %23 to i8*
-  %31 = call i8* @__lfortran_dynamic_cast(i8* %30, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %32 = icmp ne i8* %31, null
-  store i1 %32, i1* %22, align 1
+  %34 = bitcast %shape_class* %27 to i8*
+  %35 = call i8* @__lfortran_dynamic_cast(i8* %34, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %36 = icmp ne i8* %35, null
+  store i1 %36, i1* %26, align 1
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %then4
-  %33 = load i1, i1* %22, align 1
-  br i1 %33, label %then3, label %else16
+  %37 = load i1, i1* %26, align 1
+  br i1 %37, label %then3, label %else16
 
 "~select_type_block_1.start":                     ; preds = %then3
-  %34 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %34, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
-  %35 = load %shape*, %shape** %s1, align 8
-  %36 = ptrtoint %shape* %35 to i64
-  %37 = icmp eq i64 %36, 0
-  br i1 %37, label %then7, label %ifcont8
+  %38 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %38, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %39 = load %shape_class*, %shape_class** %s1, align 8
+  %40 = ptrtoint %shape_class* %39 to i64
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %then7, label %ifcont8
 
 then7:                                            ; preds = %"~select_type_block_1.start"
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([130 x i8], [130 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @4, i32 0, i32 0))
@@ -330,14 +228,16 @@ then7:                                            ; preds = %"~select_type_block
   unreachable
 
 ifcont8:                                          ; preds = %"~select_type_block_1.start"
-  %38 = bitcast %shape* %35 to %circle*
-  %39 = getelementptr %circle, %circle* %38, i32 0, i32 1
-  store float 1.000000e+01, float* %39, align 4
-  %40 = alloca i64, align 8
-  %41 = load %shape*, %shape** %s1, align 8
-  %42 = ptrtoint %shape* %41 to i64
-  %43 = icmp eq i64 %42, 0
-  br i1 %43, label %then9, label %ifcont10
+  %42 = getelementptr %shape_class, %shape_class* %39, i32 0, i32 1
+  %43 = load %shape*, %shape** %42, align 8
+  %44 = bitcast %shape* %43 to %circle*
+  %45 = getelementptr %circle, %circle* %44, i32 0, i32 1
+  store float 1.000000e+01, float* %45, align 4
+  %46 = alloca i64, align 8
+  %47 = load %shape_class*, %shape_class** %s1, align 8
+  %48 = ptrtoint %shape_class* %47 to i64
+  %49 = icmp eq i64 %48, 0
+  br i1 %49, label %then9, label %ifcont10
 
 then9:                                            ; preds = %ifcont8
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @7, i32 0, i32 0))
@@ -345,29 +245,31 @@ then9:                                            ; preds = %ifcont8
   unreachable
 
 ifcont10:                                         ; preds = %ifcont8
-  %44 = bitcast %shape* %41 to %circle*
-  %45 = getelementptr %circle, %circle* %44, i32 0, i32 1
-  %46 = load float, float* %45, align 4
-  %47 = alloca float, align 4
-  store float %46, float* %47, align 4
-  %48 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %40, i32 0, i32 0, float* %47)
-  %49 = load i64, i64* %40, align 4
+  %50 = getelementptr %shape_class, %shape_class* %47, i32 0, i32 1
+  %51 = load %shape*, %shape** %50, align 8
+  %52 = bitcast %shape* %51 to %circle*
+  %53 = getelementptr %circle, %circle* %52, i32 0, i32 1
+  %54 = load float, float* %53, align 4
+  %55 = alloca float, align 4
+  store float %54, float* %55, align 4
+  %56 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %46, i32 0, i32 0, float* %55)
+  %57 = load i64, i64* %46, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %50 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %48, i8** %50, align 8
-  %51 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %49, i64* %51, align 4
-  %52 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %53 = load i8*, i8** %52, align 8
-  %54 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %55 = load i64, i64* %54, align 4
-  %56 = trunc i64 %55 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %53, i32 %56, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %48)
-  %57 = load %shape*, %shape** %s1, align 8
-  %58 = ptrtoint %shape* %57 to i64
-  %59 = icmp eq i64 %58, 0
-  br i1 %59, label %then11, label %ifcont12
+  %58 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %56, i8** %58, align 8
+  %59 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %57, i64* %59, align 4
+  %60 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %61 = load i8*, i8** %60, align 8
+  %62 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %63 = load i64, i64* %62, align 4
+  %64 = trunc i64 %63 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %61, i32 %64, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %56)
+  %65 = load %shape_class*, %shape_class** %s1, align 8
+  %66 = ptrtoint %shape_class* %65 to i64
+  %67 = icmp eq i64 %66, 0
+  br i1 %67, label %then11, label %ifcont12
 
 then11:                                           ; preds = %ifcont10
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @10, i32 0, i32 0))
@@ -375,11 +277,13 @@ then11:                                           ; preds = %ifcont10
   unreachable
 
 ifcont12:                                         ; preds = %ifcont10
-  %60 = bitcast %shape* %57 to %circle*
-  %61 = getelementptr %circle, %circle* %60, i32 0, i32 1
-  %62 = load float, float* %61, align 4
-  %63 = fcmp une float %62, 1.000000e+01
-  br i1 %63, label %then13, label %else14
+  %68 = getelementptr %shape_class, %shape_class* %65, i32 0, i32 1
+  %69 = load %shape*, %shape** %68, align 8
+  %70 = bitcast %shape* %69 to %circle*
+  %71 = getelementptr %circle, %circle* %70, i32 0, i32 1
+  %72 = load float, float* %71, align 4
+  %73 = fcmp une float %72, 1.000000e+01
+  br i1 %73, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
@@ -399,54 +303,60 @@ ifcont15:                                         ; preds = %else14, %then13
   br label %ifcont17
 
 else16:                                           ; preds = %ifcont6
-  %64 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %64, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
+  %74 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %74, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
   br label %ifcont17
 
 ifcont17:                                         ; preds = %else16, %"FINALIZE_SYMTABLE_~select_type_block_1", %"FINALIZE_SYMTABLE_~select_type_block_"
-  %65 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %65, i8 0, i32 16, i1 false)
-  %66 = bitcast i8* %65 to %shape*
-  store %shape* %66, %shape** %s2, align 8
-  %67 = load %shape*, %shape** %s2, align 8
-  %68 = bitcast %shape* %67 to %rectangle*
-  %69 = bitcast %shape* %66 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %69, align 8
-  %70 = getelementptr %rectangle, %rectangle* %68, i32 0, i32 1
-  %71 = getelementptr %rectangle, %rectangle* %68, i32 0, i32 2
-  %72 = getelementptr %rectangle, %rectangle* %68, i32 0, i32 0
-  %73 = alloca i1, align 1
-  %74 = load %shape*, %shape** %s2, align 8
-  %75 = ptrtoint %shape* %74 to i64
-  %76 = icmp eq i64 %75, 0
-  br i1 %76, label %then19, label %else20
+  %75 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %75, i8 0, i32 8, i1 false)
+  %76 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %76, i8 0, i32 16, i1 false)
+  %77 = bitcast i8* %76 to %shape_class*
+  store %shape_class* %77, %shape_class** %s2, align 8
+  %78 = load %shape_class*, %shape_class** %s2, align 8
+  %79 = getelementptr %shape_class, %shape_class* %78, i32 0, i32 1
+  %80 = bitcast i8* %75 to %shape*
+  store %shape* %80, %shape** %79, align 8
+  %81 = load %shape*, %shape** %79, align 8
+  %82 = bitcast %shape* %81 to %rectangle*
+  %83 = bitcast %shape_class* %77 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %83, align 8
+  %84 = getelementptr %rectangle, %rectangle* %82, i32 0, i32 1
+  %85 = getelementptr %rectangle, %rectangle* %82, i32 0, i32 2
+  %86 = getelementptr %rectangle, %rectangle* %82, i32 0, i32 0
+  %87 = alloca i1, align 1
+  %88 = load %shape_class*, %shape_class** %s2, align 8
+  %89 = ptrtoint %shape_class* %88 to i64
+  %90 = icmp eq i64 %89, 0
+  br i1 %90, label %then19, label %else20
 
 then18:                                           ; preds = %ifcont21
   br label %"~select_type_block_2.start"
 
 then19:                                           ; preds = %ifcont17
-  %77 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %77, align 8
-  %78 = bitcast i32 (...)*** %77 to i8*
-  %79 = call i8* @__lfortran_dynamic_cast(i8* %78, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %80 = icmp ne i8* %79, null
-  store i1 %80, i1* %73, align 1
+  %91 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %91, align 8
+  %92 = bitcast i32 (...)*** %91 to i8*
+  %93 = call i8* @__lfortran_dynamic_cast(i8* %92, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %94 = icmp ne i8* %93, null
+  store i1 %94, i1* %87, align 1
   br label %ifcont21
 
 else20:                                           ; preds = %ifcont17
-  %81 = bitcast %shape* %74 to i8*
-  %82 = call i8* @__lfortran_dynamic_cast(i8* %81, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
-  %83 = icmp ne i8* %82, null
-  store i1 %83, i1* %73, align 1
+  %95 = bitcast %shape_class* %88 to i8*
+  %96 = call i8* @__lfortran_dynamic_cast(i8* %95, i8* bitcast ({ i8*, i8* }* @_Type_Info_circle to i8*), i1 false)
+  %97 = icmp ne i8* %96, null
+  store i1 %97, i1* %87, align 1
   br label %ifcont21
 
 ifcont21:                                         ; preds = %else20, %then19
-  %84 = load i1, i1* %73, align 1
-  br i1 %84, label %then18, label %else22
+  %98 = load i1, i1* %87, align 1
+  br i1 %98, label %then18, label %else22
 
 "~select_type_block_2.start":                     ; preds = %then18
-  %85 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %85, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i32 1)
+  %99 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %99, i32 17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i32 1)
   br label %"~select_type_block_2.end"
 
 "~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
@@ -456,42 +366,42 @@ ifcont21:                                         ; preds = %else20, %then19
   br label %ifcont47
 
 else22:                                           ; preds = %ifcont21
-  %86 = alloca i1, align 1
-  %87 = load %shape*, %shape** %s2, align 8
-  %88 = ptrtoint %shape* %87 to i64
-  %89 = icmp eq i64 %88, 0
-  br i1 %89, label %then24, label %else25
+  %100 = alloca i1, align 1
+  %101 = load %shape_class*, %shape_class** %s2, align 8
+  %102 = ptrtoint %shape_class* %101 to i64
+  %103 = icmp eq i64 %102, 0
+  br i1 %103, label %then24, label %else25
 
 then23:                                           ; preds = %ifcont26
   br label %"~select_type_block_3.start"
 
 then24:                                           ; preds = %else22
-  %90 = alloca i32 (...)**, align 8
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %90, align 8
-  %91 = bitcast i32 (...)*** %90 to i8*
-  %92 = call i8* @__lfortran_dynamic_cast(i8* %91, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %93 = icmp ne i8* %92, null
-  store i1 %93, i1* %86, align 1
+  %104 = alloca i32 (...)**, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %104, align 8
+  %105 = bitcast i32 (...)*** %104 to i8*
+  %106 = call i8* @__lfortran_dynamic_cast(i8* %105, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %107 = icmp ne i8* %106, null
+  store i1 %107, i1* %100, align 1
   br label %ifcont26
 
 else25:                                           ; preds = %else22
-  %94 = bitcast %shape* %87 to i8*
-  %95 = call i8* @__lfortran_dynamic_cast(i8* %94, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
-  %96 = icmp ne i8* %95, null
-  store i1 %96, i1* %86, align 1
+  %108 = bitcast %shape_class* %101 to i8*
+  %109 = call i8* @__lfortran_dynamic_cast(i8* %108, i8* bitcast ({ i8*, i8* }* @_Type_Info_rectangle to i8*), i1 false)
+  %110 = icmp ne i8* %109, null
+  store i1 %110, i1* %100, align 1
   br label %ifcont26
 
 ifcont26:                                         ; preds = %else25, %then24
-  %97 = load i1, i1* %86, align 1
-  br i1 %97, label %then23, label %else46
+  %111 = load i1, i1* %100, align 1
+  br i1 %111, label %then23, label %else46
 
 "~select_type_block_3.start":                     ; preds = %then23
-  %98 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %98, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1)
-  %99 = load %shape*, %shape** %s2, align 8
-  %100 = ptrtoint %shape* %99 to i64
-  %101 = icmp eq i64 %100, 0
-  br i1 %101, label %then27, label %ifcont28
+  %112 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %112, i32 20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1)
+  %113 = load %shape_class*, %shape_class** %s2, align 8
+  %114 = ptrtoint %shape_class* %113 to i64
+  %115 = icmp eq i64 %114, 0
+  br i1 %115, label %then27, label %ifcont28
 
 then27:                                           ; preds = %"~select_type_block_3.start"
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([130 x i8], [130 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0))
@@ -499,13 +409,15 @@ then27:                                           ; preds = %"~select_type_block
   unreachable
 
 ifcont28:                                         ; preds = %"~select_type_block_3.start"
-  %102 = bitcast %shape* %99 to %rectangle*
-  %103 = getelementptr %rectangle, %rectangle* %102, i32 0, i32 1
-  store float 5.000000e+00, float* %103, align 4
-  %104 = load %shape*, %shape** %s2, align 8
-  %105 = ptrtoint %shape* %104 to i64
-  %106 = icmp eq i64 %105, 0
-  br i1 %106, label %then29, label %ifcont30
+  %116 = getelementptr %shape_class, %shape_class* %113, i32 0, i32 1
+  %117 = load %shape*, %shape** %116, align 8
+  %118 = bitcast %shape* %117 to %rectangle*
+  %119 = getelementptr %rectangle, %rectangle* %118, i32 0, i32 1
+  store float 5.000000e+00, float* %119, align 4
+  %120 = load %shape_class*, %shape_class** %s2, align 8
+  %121 = ptrtoint %shape_class* %120 to i64
+  %122 = icmp eq i64 %121, 0
+  br i1 %122, label %then29, label %ifcont30
 
 then29:                                           ; preds = %ifcont28
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([130 x i8], [130 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @22, i32 0, i32 0))
@@ -513,14 +425,16 @@ then29:                                           ; preds = %ifcont28
   unreachable
 
 ifcont30:                                         ; preds = %ifcont28
-  %107 = bitcast %shape* %104 to %rectangle*
-  %108 = getelementptr %rectangle, %rectangle* %107, i32 0, i32 2
-  store float 4.000000e+00, float* %108, align 4
-  %109 = alloca i64, align 8
-  %110 = load %shape*, %shape** %s2, align 8
-  %111 = ptrtoint %shape* %110 to i64
-  %112 = icmp eq i64 %111, 0
-  br i1 %112, label %then31, label %ifcont32
+  %123 = getelementptr %shape_class, %shape_class* %120, i32 0, i32 1
+  %124 = load %shape*, %shape** %123, align 8
+  %125 = bitcast %shape* %124 to %rectangle*
+  %126 = getelementptr %rectangle, %rectangle* %125, i32 0, i32 2
+  store float 4.000000e+00, float* %126, align 4
+  %127 = alloca i64, align 8
+  %128 = load %shape_class*, %shape_class** %s2, align 8
+  %129 = ptrtoint %shape_class* %128 to i64
+  %130 = icmp eq i64 %129, 0
+  br i1 %130, label %then31, label %ifcont32
 
 then31:                                           ; preds = %ifcont30
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @25, i32 0, i32 0))
@@ -528,15 +442,17 @@ then31:                                           ; preds = %ifcont30
   unreachable
 
 ifcont32:                                         ; preds = %ifcont30
-  %113 = bitcast %shape* %110 to %rectangle*
-  %114 = getelementptr %rectangle, %rectangle* %113, i32 0, i32 1
-  %115 = load float, float* %114, align 4
-  %116 = alloca float, align 4
-  store float %115, float* %116, align 4
-  %117 = load %shape*, %shape** %s2, align 8
-  %118 = ptrtoint %shape* %117 to i64
-  %119 = icmp eq i64 %118, 0
-  br i1 %119, label %then33, label %ifcont34
+  %131 = getelementptr %shape_class, %shape_class* %128, i32 0, i32 1
+  %132 = load %shape*, %shape** %131, align 8
+  %133 = bitcast %shape* %132 to %rectangle*
+  %134 = getelementptr %rectangle, %rectangle* %133, i32 0, i32 1
+  %135 = load float, float* %134, align 4
+  %136 = alloca float, align 4
+  store float %135, float* %136, align 4
+  %137 = load %shape_class*, %shape_class** %s2, align 8
+  %138 = ptrtoint %shape_class* %137 to i64
+  %139 = icmp eq i64 %138, 0
+  br i1 %139, label %then33, label %ifcont34
 
 then33:                                           ; preds = %ifcont32
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @28, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @27, i32 0, i32 0))
@@ -544,29 +460,31 @@ then33:                                           ; preds = %ifcont32
   unreachable
 
 ifcont34:                                         ; preds = %ifcont32
-  %120 = bitcast %shape* %117 to %rectangle*
-  %121 = getelementptr %rectangle, %rectangle* %120, i32 0, i32 2
-  %122 = load float, float* %121, align 4
-  %123 = alloca float, align 4
-  store float %122, float* %123, align 4
-  %124 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %109, i32 0, i32 0, float* %116, float* %123)
-  %125 = load i64, i64* %109, align 4
+  %140 = getelementptr %shape_class, %shape_class* %137, i32 0, i32 1
+  %141 = load %shape*, %shape** %140, align 8
+  %142 = bitcast %shape* %141 to %rectangle*
+  %143 = getelementptr %rectangle, %rectangle* %142, i32 0, i32 2
+  %144 = load float, float* %143, align 4
+  %145 = alloca float, align 4
+  store float %144, float* %145, align 4
+  %146 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %127, i32 0, i32 0, float* %136, float* %145)
+  %147 = load i64, i64* %127, align 4
   %stringFormat_desc35 = alloca %string_descriptor, align 8
-  %126 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
-  store i8* %124, i8** %126, align 8
-  %127 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 1
-  store i64 %125, i64* %127, align 4
-  %128 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
-  %129 = load i8*, i8** %128, align 8
-  %130 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 1
-  %131 = load i64, i64* %130, align 4
-  %132 = trunc i64 %131 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %129, i32 %132, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %124)
-  %133 = load %shape*, %shape** %s2, align 8
-  %134 = ptrtoint %shape* %133 to i64
-  %135 = icmp eq i64 %134, 0
-  br i1 %135, label %then36, label %ifcont37
+  %148 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
+  store i8* %146, i8** %148, align 8
+  %149 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 1
+  store i64 %147, i64* %149, align 4
+  %150 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
+  %151 = load i8*, i8** %150, align 8
+  %152 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 1
+  %153 = load i64, i64* %152, align 4
+  %154 = trunc i64 %153 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %151, i32 %154, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %146)
+  %155 = load %shape_class*, %shape_class** %s2, align 8
+  %156 = ptrtoint %shape_class* %155 to i64
+  %157 = icmp eq i64 %156, 0
+  br i1 %157, label %then36, label %ifcont37
 
 then36:                                           ; preds = %ifcont34
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @30, i32 0, i32 0))
@@ -574,11 +492,13 @@ then36:                                           ; preds = %ifcont34
   unreachable
 
 ifcont37:                                         ; preds = %ifcont34
-  %136 = bitcast %shape* %133 to %rectangle*
-  %137 = getelementptr %rectangle, %rectangle* %136, i32 0, i32 1
-  %138 = load float, float* %137, align 4
-  %139 = fcmp une float %138, 5.000000e+00
-  br i1 %139, label %then38, label %else39
+  %158 = getelementptr %shape_class, %shape_class* %155, i32 0, i32 1
+  %159 = load %shape*, %shape** %158, align 8
+  %160 = bitcast %shape* %159 to %rectangle*
+  %161 = getelementptr %rectangle, %rectangle* %160, i32 0, i32 1
+  %162 = load float, float* %161, align 4
+  %163 = fcmp une float %162, 5.000000e+00
+  br i1 %163, label %then38, label %else39
 
 then38:                                           ; preds = %ifcont37
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0))
@@ -589,10 +509,10 @@ else39:                                           ; preds = %ifcont37
   br label %ifcont40
 
 ifcont40:                                         ; preds = %else39, %then38
-  %140 = load %shape*, %shape** %s2, align 8
-  %141 = ptrtoint %shape* %140 to i64
-  %142 = icmp eq i64 %141, 0
-  br i1 %142, label %then41, label %ifcont42
+  %164 = load %shape_class*, %shape_class** %s2, align 8
+  %165 = ptrtoint %shape_class* %164 to i64
+  %166 = icmp eq i64 %165, 0
+  br i1 %166, label %then41, label %ifcont42
 
 then41:                                           ; preds = %ifcont40
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([131 x i8], [131 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @34, i32 0, i32 0))
@@ -600,11 +520,13 @@ then41:                                           ; preds = %ifcont40
   unreachable
 
 ifcont42:                                         ; preds = %ifcont40
-  %143 = bitcast %shape* %140 to %rectangle*
-  %144 = getelementptr %rectangle, %rectangle* %143, i32 0, i32 2
-  %145 = load float, float* %144, align 4
-  %146 = fcmp une float %145, 4.000000e+00
-  br i1 %146, label %then43, label %else44
+  %167 = getelementptr %shape_class, %shape_class* %164, i32 0, i32 1
+  %168 = load %shape*, %shape** %167, align 8
+  %169 = bitcast %shape* %168 to %rectangle*
+  %170 = getelementptr %rectangle, %rectangle* %169, i32 0, i32 2
+  %171 = load float, float* %170, align 4
+  %172 = fcmp une float %171, 4.000000e+00
+  br i1 %172, label %then43, label %else44
 
 then43:                                           ; preds = %ifcont42
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @37, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0))
@@ -624,8 +546,8 @@ ifcont45:                                         ; preds = %else44, %then43
   br label %ifcont47
 
 else46:                                           ; preds = %ifcont26
-  %147 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.11, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* %147, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0), i32 1)
+  %173 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.11, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* %173, i32 16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0), i32 1)
   br label %ifcont47
 
 ifcont47:                                         ; preds = %else46, %"FINALIZE_SYMTABLE_~select_type_block_3", %"FINALIZE_SYMTABLE_~select_type_block_2"
@@ -639,13 +561,15 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
   br label %Finalize_Variable_s1
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
-  %148 = load %shape*, %shape** %s1, align 8
-  %149 = icmp ne %shape* %148, null
-  br i1 %149, label %is_allocated.then, label %is_allocated.else
+  %174 = load %shape_class*, %shape_class** %s1, align 8
+  %175 = icmp ne %shape_class* %174, null
+  br i1 %175, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %Finalize_Variable_s1
-  %150 = bitcast %shape* %148 to i8*
-  call void @_lfortran_free(i8* %150)
+  %176 = getelementptr %shape_class, %shape_class* %174, i32 0, i32 1
+  %177 = load %shape*, %shape** %176, align 8
+  %178 = bitcast %shape_class* %174 to i8*
+  call void @_lfortran_free(i8* %178)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %Finalize_Variable_s1
@@ -655,13 +579,15 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
   br label %Finalize_Variable_s2
 
 Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
-  %151 = load %shape*, %shape** %s2, align 8
-  %152 = icmp ne %shape* %151, null
-  br i1 %152, label %is_allocated.then48, label %is_allocated.else49
+  %179 = load %shape_class*, %shape_class** %s2, align 8
+  %180 = icmp ne %shape_class* %179, null
+  br i1 %180, label %is_allocated.then48, label %is_allocated.else49
 
 is_allocated.then48:                              ; preds = %Finalize_Variable_s2
-  %153 = bitcast %shape* %151 to i8*
-  call void @_lfortran_free(i8* %153)
+  %181 = getelementptr %shape_class, %shape_class* %179, i32 0, i32 1
+  %182 = load %shape*, %shape** %181, align 8
+  %183 = bitcast %shape_class* %179 to i8*
+  call void @_lfortran_free(i8* %183)
   br label %is_allocated.ifcont50
 
 is_allocated.else49:                              ; preds = %Finalize_Variable_s2
@@ -672,6 +598,131 @@ is_allocated.ifcont50:                            ; preds = %is_allocated.else49
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+define linkonce_odr void @_copy_select_type_13_module_shape(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %shape*
+  %3 = bitcast i8* %1 to %shape*
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_shape(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = load i8*, i8** %0, align 8
+  %3 = bitcast i8* %2 to %shape_class*
+  %4 = bitcast %shape_class* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %shape_class, %shape_class* %3, i32 0, i32 1
+  %6 = call i8* @_lfortran_malloc(i64 0)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 0, i1 false)
+  %7 = bitcast i8* %6 to %shape*
+  store %shape* %7, %shape** %5, align 8
+  ret void
+}
+
+define linkonce_odr void @_copy_select_type_13_module_circle(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %circle*
+  %3 = bitcast i8* %1 to %circle*
+  %4 = getelementptr %circle, %circle* %2, i32 0, i32 1
+  %5 = load float, float* %4, align 4
+  %6 = getelementptr %circle, %circle* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store float %5, float* %6, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %7 = getelementptr %circle, %circle* %2, i32 0, i32 0
+  %8 = getelementptr %circle, %circle* %3, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_circle(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = load i8*, i8** %0, align 8
+  %3 = bitcast i8* %2 to %circle_class*
+  %4 = bitcast %circle_class* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %circle_class, %circle_class* %3, i32 0, i32 1
+  %6 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
+  %7 = bitcast i8* %6 to %circle*
+  store %circle* %7, %circle** %5, align 8
+  %8 = getelementptr %circle, %circle* %7, i32 0, i32 1
+  %9 = getelementptr %circle, %circle* %7, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_copy_select_type_13_module_rectangle(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %rectangle*
+  %3 = bitcast i8* %1 to %rectangle*
+  %4 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 1
+  %5 = load float, float* %4, align 4
+  %6 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store float %5, float* %6, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %7 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 2
+  %8 = load float, float* %7, align 4
+  %9 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 2
+  br i1 true, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store float %8, float* %9, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %10 = getelementptr %rectangle, %rectangle* %2, i32 0, i32 0
+  %11 = getelementptr %rectangle, %rectangle* %3, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_select_type_13_module_rectangle(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = load i8*, i8** %0, align 8
+  %3 = bitcast i8* %2 to %rectangle_class*
+  %4 = bitcast %rectangle_class* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %rectangle_class, %rectangle_class* %3, i32 0, i32 1
+  %6 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 8, i1 false)
+  %7 = bitcast i8* %6 to %rectangle*
+  store %rectangle* %7, %rectangle** %5, align 8
+  %8 = getelementptr %rectangle, %rectangle* %7, i32 0, i32 1
+  %9 = getelementptr %rectangle, %rectangle* %7, i32 0, i32 2
+  %10 = getelementptr %rectangle, %rectangle* %7, i32 0, i32 0
+  ret void
+}
 
 declare i8* @__lfortran_dynamic_cast(i8*, i8*, i1)
 

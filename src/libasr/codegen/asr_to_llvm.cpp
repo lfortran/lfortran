@@ -1925,7 +1925,7 @@ public:
                         llvm::Value* class_ptr = tmp;
 
                         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
-                        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                        // ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
                         llvm::Value* class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                             llvm::APInt(64, get_class_hash(struct_sym)));
 
@@ -4571,7 +4571,7 @@ public:
              !ASRUtils::is_character(*v->m_type)) {
             if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) {
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                // ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
                 llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(v->m_type, struct_sym, module.get());
                 llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                         llvm::APInt(64, get_class_hash(struct_sym)));
@@ -5407,50 +5407,50 @@ public:
     void declare_vars(const T &x, bool create_vtabs=true) {
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
-        // if( create_vtabs ) {
-        //     std::set<std::string> variable_type_names;
-        //     std::vector<ASR::symbol_t*> struct_types;
-        //     // Collects all Struct symbols and StructType variables type names in x.m_symtab and its parent symtabs
-        //     collect_variable_types_and_struct_types(variable_type_names, struct_types, x.m_symtab);
-        //     for( size_t i = 0; i < struct_types.size(); i++ ) {
-        //         ASR::symbol_t* struct_type = struct_types[i];
-        //         bool create_vtab = false;
-        //         for( const std::string& variable_type_name: variable_type_names ) {
-        //             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-        //                 ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
-        //             ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
-        //             if (ASRUtils::is_allocatable_or_pointer(var->m_type) &&
-        //                   ASRUtils::is_class_type(ASRUtils::extract_type(var->m_type))) {
-        //                 create_vtab = true;
-        //                 break;
-        //             }
-        //             bool is_vtab_needed = false;
-        //             ASR::symbol_t* temp_struct_type = struct_type;
-        //             while( !is_vtab_needed && temp_struct_type ) {
-        //                 if( temp_struct_type == class_sym ) {
-        //                     is_vtab_needed = true;
-        //                 } else {
-        //                     temp_struct_type = ASR::down_cast<ASR::Struct_t>(
-        //                         ASRUtils::symbol_get_past_external(temp_struct_type))->m_parent;
-        //                 }
-        //             }
-        //             if( is_vtab_needed ) {
-        //                 create_vtab = true;
-        //                 break;
-        //             }
-        //         }
-        //         if( create_vtab ) {
-        //             if (compiler_options.new_classes) {
-        //                 struct_api->create_new_vtable_for_struct_type(
-        //                     ASRUtils::symbol_get_past_external(struct_types[i]), module.get());
-        //             } else {
-        //                 create_vtab_for_struct_type(
-        //                     ASRUtils::symbol_get_past_external(struct_types[i]),
-        //                     x.m_symtab);
-        //             }
-        //         }
-        //     }
-        // }
+        if( create_vtabs && !compiler_options.new_classes ) {
+            std::set<std::string> variable_type_names;
+            std::vector<ASR::symbol_t*> struct_types;
+            // Collects all Struct symbols and StructType variables type names in x.m_symtab and its parent symtabs
+            collect_variable_types_and_struct_types(variable_type_names, struct_types, x.m_symtab);
+            for( size_t i = 0; i < struct_types.size(); i++ ) {
+                ASR::symbol_t* struct_type = struct_types[i];
+                bool create_vtab = false;
+                for( const std::string& variable_type_name: variable_type_names ) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                        ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
+                    ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                    if (ASRUtils::is_allocatable_or_pointer(var->m_type) &&
+                          ASRUtils::is_class_type(ASRUtils::extract_type(var->m_type))) {
+                        create_vtab = true;
+                        break;
+                    }
+                    bool is_vtab_needed = false;
+                    ASR::symbol_t* temp_struct_type = struct_type;
+                    while( !is_vtab_needed && temp_struct_type ) {
+                        if( temp_struct_type == class_sym ) {
+                            is_vtab_needed = true;
+                        } else {
+                            temp_struct_type = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(temp_struct_type))->m_parent;
+                        }
+                    }
+                    if( is_vtab_needed ) {
+                        create_vtab = true;
+                        break;
+                    }
+                }
+                if( create_vtab ) {
+                    if (compiler_options.new_classes) {
+                        struct_api->create_new_vtable_for_struct_type(
+                            ASRUtils::symbol_get_past_external(struct_types[i]), module.get());
+                    } else {
+                        create_vtab_for_struct_type(
+                            ASRUtils::symbol_get_past_external(struct_types[i]),
+                            x.m_symtab);
+                    }
+                }
+            }
+        }
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
@@ -6516,7 +6516,7 @@ public:
             } else if (is_target_class && !is_value_class) {
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
                 if ( compiler_options.new_classes ) {
-                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
+                    // ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
                     // if (type2vtab.find(struct_sym) == type2vtab.end() ||
                     //     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
                     //     struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
