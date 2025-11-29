@@ -13086,8 +13086,26 @@ public:
 
     template<typename T>
     void bounds_check_call(T& x, bool subroutinecall_was_functioncall = false) {
+        ASR::Function_t* function = nullptr;
+        ASR::symbol_t* m_name = ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_nopass = false;
+        if (ASR::is_a<ASR::Function_t>(*m_name)) {
+            function = ASR::down_cast<ASR::Function_t>(m_name);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*m_name)) {
+            ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
+                ASR::StructMethodDeclaration_t>(m_name);
+            function = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+            is_nopass = clss_proc->m_is_nopass;
+        } else if (ASR::is_a<ASR::Variable_t>(*m_name)) {
+            // Ignore functions passed in as arguments
+            return;
+        } else {
+            throw CodeGenError("bounds_check_call: Symbol type not supported");
+        }
+        bool is_method = x.m_dt && !is_nopass;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
+            ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i].m_value);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
                 // Use strict bounds checking if SubroutineCall was a FunctionCall before getting converted by subroutine_from_function
@@ -13219,6 +13237,36 @@ public:
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
                     }
+                }
+            } else if (ASRUtils::is_allocatable(arg_expr_type)) {
+                ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
+                ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i + is_method]);
+                LCOMPILERS_ASSERT(func_arg_variable != nullptr);
+                if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
+                    ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 1 - !LLVM::is_llvm_pointer(*arg_expr_type);
+                    this->visit_expr_wrapper(arg_expr, false);
+                    ptr_loads = ptr_loads_copy;
+
+                    llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_expr_type, module.get());
+                    llvm::Value* cond = nullptr;
+                    if (ASRUtils::is_string_only(arg_expr_type)) {
+                        tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
+                    }
+                    cond = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(tmp,
+                            llvm::Type::getInt64Ty(context)),
+                        builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
+                            llvm::Type::getInt64Ty(context)));
+                    llvm_utils->generate_runtime_error(cond,
+                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                            infile,
+                            arg_expr->base.loc,
+                            location_manager,
+                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+
                 }
             }
         }
