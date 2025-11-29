@@ -9636,7 +9636,25 @@ public:
                         }
                     }
 
-                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
+                    // Preserve outer pointer/allocatable wrappers while reshaping the array.
+                    ASR::ttype_t* wrapped_type = var_type;
+                    ASR::ttypeType wrappers[2];
+                    size_t n_wrappers = 0;
+                    while (true) {
+                        if (ASR::is_a<ASR::Pointer_t>(*wrapped_type)) {
+                            wrappers[n_wrappers++] = ASR::ttypeType::Pointer;
+                            wrapped_type = ASR::down_cast<ASR::Pointer_t>(wrapped_type)->m_type;
+                            continue;
+                        }
+                        if (ASR::is_a<ASR::Allocatable_t>(*wrapped_type)) {
+                            wrappers[n_wrappers++] = ASR::ttypeType::Allocatable;
+                            wrapped_type = ASR::down_cast<ASR::Allocatable_t>(wrapped_type)->m_type;
+                            continue;
+                        }
+                        break;
+                    }
+
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(wrapped_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
                     ASR::dimension_t empty_dim;
@@ -9645,8 +9663,20 @@ public:
                     empty_dim.m_length = nullptr;
                     dims.push_back(al, empty_dim);
 
-                    var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc,
+                    ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc,
                         elem_type, dims.p, dims.size(), phys_type));
+
+                    // Re-apply wrappers (outermost first) to match original storage attributes.
+                    while (n_wrappers > 0) {
+                        n_wrappers--;
+                        if (wrappers[n_wrappers] == ASR::ttypeType::Pointer) {
+                            new_array_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, new_array_type));
+                        } else if (wrappers[n_wrappers] == ASR::ttypeType::Allocatable) {
+                            new_array_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, new_array_type));
+                        }
+                    }
+
+                    var_type = new_array_type;
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
