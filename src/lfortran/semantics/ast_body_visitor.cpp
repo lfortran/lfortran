@@ -4290,7 +4290,11 @@ public:
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
                 ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                create_implicit_interface_function(x, sub_name, false, type);
+                // Here we are synthesising a brand new implicit interface
+                // for an unresolved procedure symbol (not a dummy argument),
+                // so use descriptor arrays for any array arguments.
+                create_implicit_interface_function(x, sub_name, false, type,
+                    /*use_descriptor_arrays=*/true);
                 original_sym = current_scope->resolve_symbol(sub_name);
                 LCOMPILERS_ASSERT(original_sym!=nullptr);
             }
@@ -4570,7 +4574,12 @@ public:
                     // in verify(). But we should give an error earlier as well.
                     ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(original_sym)->m_type;
                     current_scope->erase_symbol(sub_name);
-                    create_implicit_interface_function(x, sub_name, false, old_type);
+                    // In this path we are upgrading a dummy variable (like `fnc`)
+                    // to a procedure in the current scope. Keep pointer-based array
+                    // semantics for the implicit interface so that the procedure
+                    // type stays compatible with the actual implementation.
+                    create_implicit_interface_function(x, sub_name, false, old_type,
+                        /*use_descriptor_arrays=*/false);
                     original_sym = current_scope->resolve_symbol(sub_name);
                     LCOMPILERS_ASSERT(original_sym!=nullptr);
 

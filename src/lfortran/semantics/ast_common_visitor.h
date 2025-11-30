@@ -1081,7 +1081,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         }
     }
 
-    ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+        ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
     if ( ASRUtils::is_array(right_type) ) {
         left_type = ASRUtils::duplicate_type(al, right_type);
     }
@@ -9581,7 +9581,8 @@ public:
     }
 
     template <class Call>
-    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
+    void create_implicit_interface_function(const Call &x, std::string func_name,
+            bool add_return, ASR::ttype_t* old_type, bool use_descriptor_arrays) {
         is_implicit_interface = true;
         implicit_interface_parent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
@@ -9608,9 +9609,14 @@ public:
                     // This matches Fortran's implicit interface behavior where arrays
                     // are passed as pointers and can be reshaped
 
-                    // Check if the actual function already exists to match its signature
-                    // Default to DescriptorArray (matches assumed-size arrays like x(*))
-                    ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    // Check if the actual function already exists to match its signature.
+                    // Default physical type depends on context:
+                    //  - descriptor arrays when synthesising a new implicit interface
+                    //  - pointer arrays when upgrading a dummy variable to a procedure
+                    ASR::array_physical_typeType phys_type =
+                        use_descriptor_arrays ?
+                        ASR::array_physical_typeType::DescriptorArray :
+                        ASR::array_physical_typeType::PointerArray;
                     // Search up the scope chain for the actual function definition
                     ASR::symbol_t* func_sym = nullptr;
                     SymbolTable* search_scope = parent_scope;
@@ -9721,10 +9727,17 @@ public:
                 v)));
         }
 
-        // Determine ABI for the function based on whether it has array parameters
+        // Determine ABI for the function based on whether it has array parameters.
+        // Some arguments can be procedures (Function_t), so only inspect Variable_t symbols.
         ASR::abiType func_abi = ASR::abiType::BindC;
         for (size_t i = 0; i < args.size(); i++) {
-            ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(args[i])->m_v);
+            ASR::Var_t *arg_var_expr = ASR::down_cast<ASR::Var_t>(args[i]);
+            ASR::symbol_t *arg_sym = arg_var_expr->m_v;
+            ASR::symbol_t *arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym_underlying)) {
+                continue;
+            }
+            ASR::Variable_t *arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym_underlying);
             if (arg_var->m_abi == ASR::abiType::Source) {
                 func_abi = ASR::abiType::Source;
                 break;
@@ -10215,7 +10228,12 @@ public:
                      implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() ) {
                     type = implicit_dictionary[var_name_first_letter];
                 }
-                create_implicit_interface_function(x, var_name, true, type);
+                // Here we are synthesising an implicit interface for an
+                // unresolved function symbol (not a dummy argument), so use
+                // descriptor arrays for any array arguments, matching the
+                // behaviour of other implicit interface tests.
+                create_implicit_interface_function(x, var_name, true, type,
+                    /*use_descriptor_arrays=*/true);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
                 // check if external sym is updated, or: say if signature of external_sym and original_sym are different
@@ -10288,13 +10306,18 @@ public:
                     }
                 }
                 ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
-                create_implicit_interface_function(x, var_name, true, old_type);
+                // Same as above: synthesise a fresh implicit interface for
+                // an unresolved function, keeping descriptor-based arrays.
+                create_implicit_interface_function(x, var_name, true, old_type,
+                    /*use_descriptor_arrays=*/true);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
                 if (!in_current_scope && is_external_procedure) {
                     SymbolTable* temp_scope = current_scope;
                     current_scope = sym_scope;
-                    create_implicit_interface_function(x, var_name, true, old_type);
+                    // For subsequent re-use, keep descriptor arrays as well.
+                    create_implicit_interface_function(x, var_name, true, old_type,
+                        /*use_descriptor_arrays=*/true);
                     current_scope = temp_scope;
                     LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
                 }
