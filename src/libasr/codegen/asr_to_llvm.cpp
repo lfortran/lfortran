@@ -7888,9 +7888,9 @@ public:
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
             // UnboundedPointerArray is a simple pointer to data (for assumed-size arrays).
             // When converting to DescriptorArray for implicit interface calls,
-            // we pass the pointer as-is. The actual callee function also uses
-            // UnboundedPointerArray, so no conversion is needed - just pass through.
-            // The 'tmp' already holds the pointer value.
+            // we keep passing the raw data pointer; the actual callee is expected
+            // to use the classic assumed-size ABI as well.
+            // The 'tmp' value already holds the pointer.
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {

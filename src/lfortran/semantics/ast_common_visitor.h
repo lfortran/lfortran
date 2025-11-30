@@ -9605,18 +9605,24 @@ public:
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) - a 1D assumed-size array
+                    // For arrays like A(n, m) we use A(*) - a 1D assumed-size array.
                     // This matches Fortran's implicit interface behavior where arrays
-                    // are passed as pointers and can be reshaped
+                    // are passed as pointers and can be reshaped.
 
-                    // Check if the actual function already exists to match its signature.
-                    // Default physical type depends on context:
-                    //  - descriptor arrays when synthesising a new implicit interface
-                    //  - pointer arrays when upgrading a dummy variable to a procedure
-                    ASR::array_physical_typeType phys_type =
-                        use_descriptor_arrays ?
-                        ASR::array_physical_typeType::DescriptorArray :
-                        ASR::array_physical_typeType::PointerArray;
+                    // Start from the physical type of the actual argument. Assumed-size
+                    // arrays (UnboundedPointerArray) must keep their pointer-based ABI,
+                    // while other arrays can be represented either as descriptors
+                    // (for Source ABI wrappers) or as PointerArray (for classic F77 ABI).
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(var_type))
+                    );
+                    ASR::array_physical_typeType phys_type = array_type->m_physical_type;
+                    if (phys_type != ASR::array_physical_typeType::UnboundedPointerArray) {
+                        phys_type = use_descriptor_arrays ?
+                            ASR::array_physical_typeType::DescriptorArray :
+                            ASR::array_physical_typeType::PointerArray;
+                    }
                     // Search up the scope chain for the actual function definition
                     ASR::symbol_t* func_sym = nullptr;
                     SymbolTable* search_scope = parent_scope;
