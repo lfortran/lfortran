@@ -23,11 +23,15 @@ reference how to contribute to the project.
   - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`
   - `cmake --build build -j`
 - Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
-- Tests: `./run_tests.py` (compiler); `cd integration_tests && ./run_tests.py -j16`
+- Tests: `./run_tests.py` (compiler); LLVM integration via CMake/CTest:
+  - `cd integration_tests && rm -rf build-lfortran-llvm && mkdir build-lfortran-llvm && cd build-lfortran-llvm`
+  - `cmake -DLFORTRAN_BACKEND=llvm -DCMAKE_Fortran_COMPILER=../../build/src/bin/lfortran -DCMAKE_Fortran_FLAGS_DEBUG=\"\" -DCURRENT_BINARY_DIR=. ..`
+  - `make -j$(nproc)`
+  - `LFORTRAN_TEST_ENV_VAR=\"STATUS OK!\" ctest -L llvm -j$(nproc)`
 - Local integration tip (LLVM): some evaluator/diagnostic paths require precise
   location info. When running integration tests locally with the LLVM backend,
   prefer injecting the flag via environment rather than changing CMake:
-  - `cd integration_tests && FFLAGS="--debug-with-line-column" ./run_tests.py -j8`
+  - `cd integration_tests && FFLAGS=\"--debug-with-line-column\" ./run_tests.py -b llvm`
   This mirrors CI closely while enabling line/column emission.
 
 ## Quick Smoke Test
@@ -105,7 +109,7 @@ reference how to contribute to the project.
 - If possible, still add a test under `integration_tests/`, but only register `gfortran` (not `llvm`), then register this test in `tests/tests.toml` with the needed outputs (`ast`, `asr`, `llvm`, `run`, etc.). Use `.f90` or `.f` (fixed-form auto-handled). Only if that cannot be done, add a new test into `tests/`.
   - See `tests/tests.toml` for examples; reference outputs live under `tests/reference/`.
 - Multi-file modules: set `extrafiles = "mod1.f90,mod2.f90"`.
-- Run locally: `./run_tests.py -j16` (use `-s` to debug).
+- Run locally: `./run_tests.py` (use `-s` to debug a specific test).
 - Update references only when outputs intentionally change: `./run_tests.py -t path/to/test -u -s`.
 - Error messages: add to `tests/errors/continue_compilation_1.f90` and update references.
  - If your integration test does not compile yet, temporarily validate the change by adding a reference test that checks AST/ASR construction (enable `asr = true` and/or `ast = true` in `tests/tests.toml`). Promote it to an integration test once end‑to‑end compilation succeeds.
@@ -116,7 +120,7 @@ reference how to contribute to the project.
   Ensure the current `build/src/bin` is first on `PATH` when running tests.
 
 ### Common Commands
-- Run all tests: `ctest` and `./run_tests.py -j16`
+- Run all tests: `ctest` and `./run_tests.py`
 - Run a specific test: `./run_tests.py -t pattern -s`
 
 References

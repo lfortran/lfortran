@@ -12741,12 +12741,14 @@ public:
 
             // For LAPACK-style sequence association, ensure that arguments
             // corresponding to PointerArray dummies are lowered to data
-            // pointers, not array descriptors. This is particularly important
-            // under LLVM11 where typed pointers differentiate `%array*`
-            // descriptors from `float*` data pointers.
+            // pointers, not array descriptors. Restrict this to cases where
+            // both the dummy and the actual expression are arrays, and where
+            // the lowered LLVM value still has descriptor type.
             if (orig_arg &&
                 ASRUtils::is_array(
-                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) &&
+                ASRUtils::is_array(
+                    ASRUtils::expr_type(x.m_args[i].m_value))) {
                 ASR::ttype_t *impl_type =
                     ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type);
                 ASR::Array_t *impl_array = ASR::down_cast<ASR::Array_t>(impl_type);
@@ -12769,13 +12771,22 @@ public:
                                     ASRUtils::type_get_past_pointer(
                                         arg_expr_type)),
                                 module.get());
-                        llvm::Value *desc = tmp;
-                        tmp = llvm_utils->CreateLoad2(
-                            data_type->getPointerTo(),
-                            arr_descr->get_pointer_to_data(arr_type, desc));
-                        tmp = llvm_utils->create_ptr_gep2(
-                            data_type, tmp,
-                            arr_descr->get_offset(arr_type, desc));
+
+                        // Only reinterpret as a descriptor when the lowered
+                        // LLVM value is still a pointer to the descriptor
+                        // struct. If it already is a data pointer (e.g. after
+                        // an earlier ArrayPhysicalCast), leave it unchanged.
+                        llvm::Type *expected_desc_ptr_type =
+                            arr_type->getPointerTo();
+                        if (tmp->getType() == expected_desc_ptr_type) {
+                            llvm::Value *desc = tmp;
+                            tmp = llvm_utils->CreateLoad2(
+                                data_type->getPointerTo(),
+                                arr_descr->get_pointer_to_data(arr_type, desc));
+                            tmp = llvm_utils->create_ptr_gep2(
+                                data_type, tmp,
+                                arr_descr->get_offset(arr_type, desc));
+                        }
                     }
                 }
             }
