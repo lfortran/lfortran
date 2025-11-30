@@ -1,7 +1,9 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%point = type { i32 (...)** }
+%point_class = type <{ i32 (...)**, %point* }>
+%point = type {}
+%point2d_class = type <{ i32 (...)**, %point2d* }>
 %point2d = type { %point, float, float }
 
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
@@ -9,158 +11,99 @@ source_filename = "LFortran"
 @_VTable_point = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8* }* @_Type_Info_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point to i8*), i8* null] }, align 8
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
 @_Type_Info_point2d = linkonce_odr unnamed_addr constant { i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* bitcast ({ i8* }* @_Type_Info_point to i8*) }, align 8
-@_VTable_point2d = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point2d to i8*), i8* bitcast (float (%point2d*)* @__module_defs_r2d to i8*)] }, align 8
+@_VTable_point2d = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8* }* @_Type_Info_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_defs_point2d to i8*), i8* bitcast (void (i8**)* @_allocate_struct_defs_point2d to i8*), i8* bitcast (float (%point2d_class*)* @__module_defs_r2d to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @__module_defs_r2d(%point2d* %this) {
+define float @__module_defs_r2d(%point2d_class* %this) {
 .entry:
   %r2d = alloca float, align 4
-  %0 = getelementptr %point2d, %point2d* %this, i32 0, i32 1
-  %1 = load float, float* %0, align 4
-  %simplified_pow_operation = fmul float %1, %1
-  %2 = getelementptr %point2d, %point2d* %this, i32 0, i32 2
+  %0 = getelementptr %point2d_class, %point2d_class* %this, i32 0, i32 1
+  %1 = load %point2d*, %point2d** %0, align 8
+  %2 = getelementptr %point2d, %point2d* %1, i32 0, i32 1
   %3 = load float, float* %2, align 4
-  %simplified_pow_operation1 = fmul float %3, %3
-  %4 = fadd float %simplified_pow_operation, %simplified_pow_operation1
-  %5 = call float @llvm.sqrt.f32(float %4)
-  store float %5, float* %r2d, align 4
+  %simplified_pow_operation = fmul float %3, %3
+  %4 = getelementptr %point2d_class, %point2d_class* %this, i32 0, i32 1
+  %5 = load %point2d*, %point2d** %4, align 8
+  %6 = getelementptr %point2d, %point2d* %5, i32 0, i32 2
+  %7 = load float, float* %6, align 4
+  %simplified_pow_operation1 = fmul float %7, %7
+  %8 = fadd float %simplified_pow_operation, %simplified_pow_operation1
+  %9 = call float @llvm.sqrt.f32(float %8)
+  store float %9, float* %r2d, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_r2d
 
 FINALIZE_SYMTABLE_r2d:                            ; preds = %return
-  %6 = load float, float* %r2d, align 4
-  ret float %6
-}
-
-define linkonce_odr void @_copy_defs_point(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %point*
-  %3 = bitcast i8* %1 to %point*
-  %4 = bitcast %point* %2 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %point* %3 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = bitcast %point* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %7, align 8
-  ret void
-}
-
-define linkonce_odr void @_allocate_struct_defs_point(i8** %0) {
-entry:
-  %1 = call i8* @_lfortran_malloc(i64 8)
-  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 8, i1 false)
-  store i8* %1, i8** %0, align 8
-  %2 = bitcast i8* %1 to %point*
-  ret void
-}
-
-declare i8* @_lfortran_malloc(i64)
-
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
-
-define linkonce_odr void @_copy_defs_point2d(i8* %0, i8* %1) {
-entry:
-  %2 = bitcast i8* %0 to %point2d*
-  %3 = bitcast i8* %1 to %point2d*
-  %4 = bitcast %point2d* %2 to i32 (...)***
-  %5 = load i32 (...)**, i32 (...)*** %4, align 8
-  %6 = bitcast %point2d* %3 to i32 (...)***
-  store i32 (...)** %5, i32 (...)*** %6, align 8
-  %7 = getelementptr %point2d, %point2d* %2, i32 0, i32 1
-  %8 = load float, float* %7, align 4
-  %9 = getelementptr %point2d, %point2d* %3, i32 0, i32 1
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
-  store float %8, float* %9, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %10 = getelementptr %point2d, %point2d* %2, i32 0, i32 2
-  %11 = load float, float* %10, align 4
-  %12 = getelementptr %point2d, %point2d* %3, i32 0, i32 2
-  br i1 true, label %then1, label %else2
-
-then1:                                            ; preds = %ifcont
-  store float %11, float* %12, align 4
-  br label %ifcont3
-
-else2:                                            ; preds = %ifcont
-  br label %ifcont3
-
-ifcont3:                                          ; preds = %else2, %then1
-  %13 = getelementptr %point2d, %point2d* %2, i32 0, i32 0
-  %14 = getelementptr %point2d, %point2d* %3, i32 0, i32 0
-  %15 = bitcast %point2d* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
-  ret void
-}
-
-define linkonce_odr void @_allocate_struct_defs_point2d(i8** %0) {
-entry:
-  %1 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
-  store i8* %1, i8** %0, align 8
-  %2 = bitcast i8* %1 to %point2d*
-  %3 = getelementptr %point2d, %point2d* %2, i32 0, i32 1
-  %4 = getelementptr %point2d, %point2d* %2, i32 0, i32 2
-  %5 = getelementptr %point2d, %point2d* %2, i32 0, i32 0
-  ret void
+  %10 = load float, float* %r2d, align 4
+  ret float %10
 }
 
 ; Function Attrs: nounwind readnone speculatable willreturn
-declare float @llvm.sqrt.f32(float) #1
+declare float @llvm.sqrt.f32(float) #0
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %p2d = alloca %point2d, align 8
-  %2 = bitcast %point2d* %p2d to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %2, align 8
-  %3 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
-  %4 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
-  %5 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 0
-  %ptr = alloca %point*, align 8
-  store %point* null, %point** %ptr, align 8
+  %2 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
+  %3 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
+  %4 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 0
+  %ptr = alloca %point_class*, align 8
+  store %point_class* null, %point_class** %ptr, align 8
   %res = alloca float, align 4
-  %6 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
-  store float 3.000000e+00, float* %6, align 4
-  %7 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
-  store float 4.000000e+00, float* %7, align 4
-  %8 = bitcast %point2d* %p2d to %point*
-  store %point* %8, %point** %ptr, align 8
-  %9 = load %point*, %point** %ptr, align 8
-  %10 = bitcast %point* %9 to float (%point*)***
-  %11 = load float (%point*)**, float (%point*)*** %10, align 8
-  %12 = getelementptr inbounds float (%point*)*, float (%point*)** %11, i32 2
-  %13 = load float (%point*)*, float (%point*)** %12, align 8
-  %14 = call float %13(%point* %9)
-  store float %14, float* %res, align 4
-  %15 = load float, float* %res, align 4
-  %16 = fcmp une float %15, 5.000000e+00
-  br i1 %16, label %then, label %else
+  %5 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 1
+  store float 3.000000e+00, float* %5, align 4
+  %6 = getelementptr %point2d, %point2d* %p2d, i32 0, i32 2
+  store float 4.000000e+00, float* %6, align 4
+  %7 = load %point_class*, %point_class** %ptr, align 8
+  %8 = icmp eq %point_class* %7, null
+  br i1 %8, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  call void @exit(i32 1)
+  %9 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %9, i8 0, i32 8, i1 false)
+  %10 = bitcast i8* %9 to %point_class*
+  store %point_class* %10, %point_class** %ptr, align 8
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  %11 = load %point_class*, %point_class** %ptr, align 8
+  %12 = bitcast %point_class* %11 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  %13 = getelementptr %point_class, %point_class* %11, i32 0, i32 1
+  %14 = bitcast %point2d* %p2d to %point*
+  store %point* %14, %point** %13, align 8
+  %15 = load %point_class*, %point_class** %ptr, align 8
+  %16 = bitcast %point_class* %15 to float (%point_class*)***
+  %17 = load float (%point_class*)**, float (%point_class*)*** %16, align 8
+  %18 = getelementptr inbounds float (%point_class*)*, float (%point_class*)** %17, i32 2
+  %19 = load float (%point_class*)*, float (%point_class*)** %18, align 8
+  %20 = call float %19(%point_class* %15)
+  store float %20, float* %res, align 4
+  %21 = load float, float* %res, align 4
+  %22 = fcmp une float %21, 5.000000e+00
+  br i1 %22, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %ifcont3
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return
@@ -169,11 +112,95 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #1
+
+define linkonce_odr void @_copy_defs_point(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %point*
+  %3 = bitcast i8* %1 to %point*
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_defs_point(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = load i8*, i8** %0, align 8
+  %3 = bitcast i8* %2 to %point_class*
+  %4 = bitcast %point_class* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %point_class, %point_class* %3, i32 0, i32 1
+  %6 = call i8* @_lfortran_malloc(i64 0)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 0, i1 false)
+  %7 = bitcast i8* %6 to %point*
+  store %point* %7, %point** %5, align 8
+  ret void
+}
+
+define linkonce_odr void @_copy_defs_point2d(i8* %0, i8* %1) {
+entry:
+  %2 = bitcast i8* %0 to %point2d*
+  %3 = bitcast i8* %1 to %point2d*
+  %4 = getelementptr %point2d, %point2d* %2, i32 0, i32 1
+  %5 = load float, float* %4, align 4
+  %6 = getelementptr %point2d, %point2d* %3, i32 0, i32 1
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  store float %5, float* %6, align 4
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %7 = getelementptr %point2d, %point2d* %2, i32 0, i32 2
+  %8 = load float, float* %7, align 4
+  %9 = getelementptr %point2d, %point2d* %3, i32 0, i32 2
+  br i1 true, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store float %8, float* %9, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %10 = getelementptr %point2d, %point2d* %2, i32 0, i32 0
+  %11 = getelementptr %point2d, %point2d* %3, i32 0, i32 0
+  ret void
+}
+
+define linkonce_odr void @_allocate_struct_defs_point2d(i8** %0) {
+entry:
+  %1 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %1, i8 0, i32 16, i1 false)
+  store i8* %1, i8** %0, align 8
+  %2 = load i8*, i8** %0, align 8
+  %3 = bitcast i8* %2 to %point2d_class*
+  %4 = bitcast %point2d_class* %3 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  %5 = getelementptr %point2d_class, %point2d_class* %3, i32 0, i32 1
+  %6 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 8, i1 false)
+  %7 = bitcast i8* %6 to %point2d*
+  store %point2d* %7, %point2d** %5, align 8
+  %8 = getelementptr %point2d, %point2d* %7, i32 0, i32 1
+  %9 = getelementptr %point2d, %point2d* %7, i32 0, i32 2
+  %10 = getelementptr %point2d, %point2d* %7, i32 0, i32 0
+  ret void
+}
+
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
 declare void @_lpython_free_argv()
 
-attributes #0 = { argmemonly nounwind willreturn writeonly }
-attributes #1 = { nounwind readnone speculatable willreturn }
+attributes #0 = { nounwind readnone speculatable willreturn }
+attributes #1 = { argmemonly nounwind willreturn writeonly }

@@ -35,8 +35,8 @@ define i32 @main(i32 %0, i8** %1) {
   store i64 10, i64* %x1, align 4
   %2 = call i8* @_lfortran_malloc(i64 8)
   call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 8, i1 false)
-  %3 = call i8* @_lfortran_malloc(i64 8)
-  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 8, i1 false)
+  %3 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   %4 = bitcast i8* %3 to %"~unlimited_polymorphic_type"*
   store %"~unlimited_polymorphic_type"* %4, %"~unlimited_polymorphic_type"** %var, align 8
   %5 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
@@ -140,8 +140,10 @@ Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_u
   br i1 %34, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %Finalize_Variable_var
-  %35 = bitcast %"~unlimited_polymorphic_type"* %33 to i8*
-  call void @_lfortran_free(i8* %35)
+  %35 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %33, i32 0, i32 1
+  %36 = load %"~unlimited_polymorphic_type"*, i8** %35, align 8
+  %37 = bitcast %"~unlimited_polymorphic_type"* %33 to i8*
+  call void @_lfortran_free(i8* %37)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %Finalize_Variable_var
