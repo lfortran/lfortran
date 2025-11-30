@@ -10244,11 +10244,16 @@ public:
                     type = implicit_dictionary[var_name_first_letter];
                 }
                 // Here we are synthesising an implicit interface for an
-                // unresolved function symbol (not a dummy argument), so use
-                // descriptor arrays for any array arguments, matching the
-                // behaviour of other implicit interface tests.
+                // unresolved function symbol (not a dummy argument). For
+                // external procedures that follow classic Fortran 77 style
+                // implicit interfaces (for example LAPACK or MINPACK style
+                // libraries), we must preserve pointer based array ABIs
+                // (PointerArray). For locally reinterpreted variables and
+                // intrinsic style functions we continue to use descriptor
+                // arrays to match existing implicit interface tests.
+                bool use_descriptor_arrays = !is_external_procedure;
                 create_implicit_interface_function(x, var_name, true, type,
-                    /*use_descriptor_arrays=*/true);
+                    use_descriptor_arrays);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
                 // check if external sym is updated, or: say if signature of external_sym and original_sym are different
@@ -10330,9 +10335,10 @@ public:
                 if (!in_current_scope && is_external_procedure) {
                     SymbolTable* temp_scope = current_scope;
                     current_scope = sym_scope;
-                    // For subsequent re-use, keep descriptor arrays as well.
+                    // For subsequent re-use of a true external procedure,
+                    // keep the pointer based ABI as well.
                     create_implicit_interface_function(x, var_name, true, old_type,
-                        /*use_descriptor_arrays=*/true);
+                        /*use_descriptor_arrays=*/false);
                     current_scope = temp_scope;
                     LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
                 }
