@@ -1278,6 +1278,7 @@ RUN(NAME intrinsics_394 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx kind cast regression
 RUN(NAME intrinsics_396 LABELS gfortran llvm)
 RUN(NAME intrinsics_397 LABELS llvm llvm_wasm llvm_wasm_emcc) # selected_logical_kind
+RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc 
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
