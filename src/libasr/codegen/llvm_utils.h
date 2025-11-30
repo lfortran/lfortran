@@ -595,8 +595,7 @@ class ASRToLLVMVisitor;
             void set_set_api(ASR::Set_t* set_type);
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
-                ASR::ttype_t* asr_dest_type,
-                ASR::ttype_t* asr_src_type, llvm::Module* module, ASR::expr_t* dest_expr = nullptr);
+                ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
@@ -1507,7 +1506,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
             void fill_intrinsic_type_copy_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
-                ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module, ASR::expr_t* dest_expr = nullptr);
+                ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
     };
 
     class LLVMTuple {
