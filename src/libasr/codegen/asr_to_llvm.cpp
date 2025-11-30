@@ -12826,7 +12826,7 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
             bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
-            if (ASRUtils::is_allocatable(arg_type)) {
+            if (LLVM::is_llvm_pointer(*arg_type)) {
                 check_and_allocate_scalar(arg, dest_arg, dest_type);
             }
             llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
