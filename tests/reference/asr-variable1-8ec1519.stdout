@@ -46,10 +46,10 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
-                                                        PointerArray
+                                                        DescriptorArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -93,10 +93,10 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
-                                                        PointerArray
+                                                        DescriptorArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -197,21 +197,21 @@
                                             (Complex 4)
                                             [(()
                                             ())]
-                                            PointerArray
+                                            DescriptorArray
                                         )
                                         (Integer 4)
                                         (Array
                                             (Complex 4)
                                             [(()
                                             ())]
-                                            PointerArray
+                                            DescriptorArray
                                         )
                                         (Complex 4)
                                         (Complex 4)
                                         (Complex 4)
                                         (Complex 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -417,9 +417,31 @@
                     [(SubroutineCall
                         2 matveca
                         ()
-                        [((Var 2 x))
+                        [((ArrayPhysicalCast
+                            (Var 2 x)
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (Complex 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 m))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
                         ((Var 2 m))
-                        ((Var 2 y))
+                        ((ArrayPhysicalCast
+                            (Var 2 y)
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (Complex 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 n))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
                         ((Var 2 p1))
                         ((Var 2 p2))
                         ((Var 2 p3))

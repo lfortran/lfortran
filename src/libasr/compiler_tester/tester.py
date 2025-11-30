@@ -555,8 +555,11 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     global no_color
     no_color = args.no_color
 
-    # Remove all old test references while updating
-    if update_reference:
+    # Remove all old test references only when updating the whole suite
+    # (no test/backend filters). For filtered updates, let do_update_reference()
+    # overwrite just the references for the selected tests.
+    if update_reference and not specific_tests and not specific_backends \
+            and not excluded_tests and not excluded_backends:
         log.debug("REMOVE: old test references")
         cmd = "rm -rf ./tests/reference/*"
         log.debug(f"+ {cmd}")

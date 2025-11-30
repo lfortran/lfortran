@@ -77,10 +77,10 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
-                                                        PointerArray
+                                                        DescriptorArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -103,10 +103,10 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
-                                                        PointerArray
+                                                        DescriptorArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -123,16 +123,16 @@
                                             (Integer 4)
                                             [(()
                                             ())]
-                                            PointerArray
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
-                                            PointerArray
+                                            DescriptorArray
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -217,8 +217,30 @@
                     [(SubroutineCall
                         2 driver
                         ()
-                        [((Var 2 a))
-                        ((Var 2 b))]
+                        [((ArrayPhysicalCast
+                            (Var 2 a)
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 n))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (Var 2 b)
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 n))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))]
                         ()
                         .false.
                     )]
