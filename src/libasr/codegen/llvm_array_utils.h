@@ -292,7 +292,7 @@ namespace LCompilers {
                     bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "") = 0;
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp) = 0;
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) = 0;
 
                 virtual
                 void reset_is_allocated_flag(llvm::Type* tmp_typ, llvm::Value* array, llvm::Type* llvm_data_type) = 0;
@@ -498,7 +498,7 @@ namespace LCompilers {
                     bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "");
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp);
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp);
 
                 virtual
                 void reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array, llvm::Type* llvm_data_type);

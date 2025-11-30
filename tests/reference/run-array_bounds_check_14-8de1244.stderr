@@ -1,0 +1,2 @@
+At 16:12 of file tests/errors/array_bounds_check_14.f90
+Runtime error: Argument 1 of subroutine f_integer____0 is unallocated.
