@@ -3276,7 +3276,9 @@ public:
                     llvm::Value* dim_size = arr_descr->get_upper_bound(dim_desc);
                     expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(32, 1))));
                 }
-                tmp = is_contiguous;
+                // Unallocated array is contiguous
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, array_type, x.m_array);
+                tmp = builder->CreateOr(is_contiguous, builder->CreateNot(is_allocated));
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:
@@ -13114,16 +13116,26 @@ public:
                 bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
-                    this->visit_expr_wrapper(arr_cast->m_arg, false);
+                    ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
+                    this->visit_expr_wrapper(arr_cast->m_arg, true);
                     ptr_loads = ptr_loads_copy;
+
                     llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(arr_cast->m_arg,
                         ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arr_cast->m_arg)),
                         module.get(), ASRUtils::expr_abi(arr_cast->m_arg));
-                    if (is_a<ASR::StructInstanceMember_t>(*arr_cast->m_arg)) {
-                        tmp = llvm_utils->CreateLoad2(arr_type->getPointerTo(), tmp);
-                    }
                     llvm::Value* arg = tmp;
+
+                    // Throw error if descriptor array is not allocated
+                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_type, arr_cast->m_arg);
+                    llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
+                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                            infile,
+                            arg_expr->base.loc,
+                            location_manager,
+                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+
+                    // Throw error if shapes don't match
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
                     llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
@@ -13246,19 +13258,34 @@ public:
                     ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 1 - !LLVM::is_llvm_pointer(*arg_expr_type);
-                    this->visit_expr_wrapper(arg_expr, false);
+                    this->visit_expr_wrapper(arg_expr, true);
                     ptr_loads = ptr_loads_copy;
 
-                    llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_expr_type, module.get());
                     llvm::Value* cond = nullptr;
-                    if (ASRUtils::is_string_only(arg_expr_type)) {
+                    llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_expr_type, module.get());
+                    const bool is_descriptor_array = ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type))
+                                                            && ASRUtils::extract_physical_type(arg_expr_type) == ASR::DescriptorArray;
+                    if (is_descriptor_array) {
+                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(arg_expr,
+                            ASRUtils::type_get_past_allocatable_pointer(arg_expr_type),
+                            module.get(), ASRUtils::expr_abi(arg_expr));
+                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(tmp, arr_type, arg_expr);
+                        cond = builder->CreateNot(is_allocated);
+                    } else if (ASRUtils::is_string_only(arg_expr_type)) {
                         tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
+                        cond = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(tmp,
+                                llvm::Type::getInt64Ty(context)),
+                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
+                                llvm::Type::getInt64Ty(context)));
+                    } else {
+                        cond = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(tmp,
+                                llvm::Type::getInt64Ty(context)),
+                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
+                                llvm::Type::getInt64Ty(context)));
                     }
-                    cond = builder->CreateICmpEQ(
-                        builder->CreatePtrToInt(tmp,
-                            llvm::Type::getInt64Ty(context)),
-                        builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
-                            llvm::Type::getInt64Ty(context)));
+
                     llvm_utils->generate_runtime_error(cond,
                             "Runtime error: Argument %d of subroutine %s is unallocated.\n",
                             infile,
@@ -13266,7 +13293,6 @@ public:
                             location_manager,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
-
                 }
             }
         }
