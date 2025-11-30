@@ -832,6 +832,19 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        //check positional fmt argument (second arg)
+        if (a_fmt != nullptr) {
+            ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
+            if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
+                diag.add(Diagnostic(
+                    "Assigned format (using integer variable as format specifier) is not supported. "
+                    "Use character variables instead.",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         std::vector<ASR::asr_t*> newline_for_advance;
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
@@ -992,7 +1005,18 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    a_fmt = ASRUtils::EXPR(tmp);
+                    a_fmt = ASRUtils::EXPR(tmp); 
+                    // check that fmt is not integer
+                    ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
+                    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
+                        diag.add(Diagnostic(
+                            "Assigned format (using integer variable as format specifier) is not supported. "
+                            "Use character variables instead.",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
             } else if( m_arg_str == std::string("advance") ) {
                 if( a_end != nullptr ) {
@@ -4739,6 +4763,18 @@ public:
         if (x.m_fmt != nullptr) {
             this->visit_expr(*x.m_fmt);
             fmt = ASRUtils::EXPR(tmp);
+            //check if fmt is integer variable
+            ASR::ttype_t* fmt_type = ASRUtils::expr_type(fmt);
+            if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) &&
+                ASR::is_a<ASR::Var_t>(*fmt)) {
+                diag.add(Diagnostic(
+                    "Assigned format (using integer variable as format specifier) is not supported. "
+                    "Use character variables instead.",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         } else {
             if (compiler_options.print_leading_space) {
                 current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
