@@ -12742,8 +12742,7 @@ public:
             // For LAPACK-style sequence association, ensure that arguments
             // corresponding to PointerArray dummies are lowered to data
             // pointers, not array descriptors. Restrict this to cases where
-            // both the dummy and the actual expression are arrays, and where
-            // the lowered LLVM value still has descriptor type.
+            // both the dummy and the actual expression are arrays.
             if (orig_arg &&
                 ASRUtils::is_array(
                     ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) &&
@@ -12759,6 +12758,22 @@ public:
                     ASR::array_physical_typeType arg_phys =
                         ASRUtils::extract_physical_type(arg_expr_type);
                     if (arg_phys == ASR::array_physical_typeType::DescriptorArray) {
+                        ASR::expr_t *arg_expr = x.m_args[i].m_value;
+                        // Do not rely on LLVM pointer types (opaque in LLVM 15+).
+                        // Decide whether we have a data pointer based on the ASR:
+                        //  * ArraySection lowers directly to a data pointer
+                        //  * ArrayPhysicalCast to PointerArray/Unbounded also
+                        //    produces a data pointer.
+                        bool is_data_pointer = ASR::is_a<ASR::ArraySection_t>(*arg_expr);
+                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
+                            ASR::ArrayPhysicalCast_t *cast =
+                                ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+                            if (cast->m_new
+                                    != ASR::array_physical_typeType::DescriptorArray) {
+                                is_data_pointer = true;
+                            }
+                        }
+
                         llvm::Type *data_type =
                             llvm_utils->get_type_from_ttype_t_util(
                                 x.m_args[i].m_value,
@@ -12772,13 +12787,12 @@ public:
                                         arg_expr_type)),
                                 module.get());
 
-                        // Only reinterpret as a descriptor when the lowered
-                        // LLVM value is still a pointer to the descriptor
-                        // struct. If it already is a data pointer (e.g. after
-                        // an earlier ArrayPhysicalCast), leave it unchanged.
-                        llvm::Type *expected_desc_ptr_type =
-                            arr_type->getPointerTo();
-                        if (tmp->getType() == expected_desc_ptr_type) {
+                        // Only reinterpret as a descriptor when we know we
+                        // still have a descriptor-based value at the ASR level.
+                        // If the expression already lowered to a data pointer,
+                        // leave it unchanged to avoid misinterpreting data as
+                        // a descriptor (which would crash on some platforms).
+                        if (!is_data_pointer) {
                             llvm::Value *desc = tmp;
                             tmp = llvm_utils->CreateLoad2(
                                 data_type->getPointerTo(),
