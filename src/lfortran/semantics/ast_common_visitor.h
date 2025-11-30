@@ -9689,7 +9689,16 @@ public:
                     if (func_sym) {
                         func = ASR::down_cast<ASR::Function_t>(func_sym);
                     }
-                    if (func && func->n_args > 0 && func->n_args <= x.n_args && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                    if (func && func->n_args > 0 && func->n_args <= x.n_args &&
+                        ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                        // Match the physical type of the actual function's parameter
+                        ASR::Array_t* func_param_array = ASR::down_cast<ASR::Array_t>(
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::expr_type(func->m_args[i]))));
+                        ASR::array_physical_typeType phys_type =
+                            func_param_array->m_physical_type;
+
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
                         size_t n_dims = array_item->n_args;
                         Vec<ASR::dimension_t> empty_dims;
@@ -9701,7 +9710,7 @@ public:
                             empty_dim.m_length = nullptr;
                             empty_dims.push_back(al, empty_dim);
                         }
-                        var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
+                        var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, phys_type, true);
                     }
                 }
                 SetChar variable_dependencies_vec;

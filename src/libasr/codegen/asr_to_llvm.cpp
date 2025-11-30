@@ -12186,6 +12186,36 @@ public:
         std::vector<llvm::Value *> args;
         for (size_t i=0; i<x.n_args; i++) {
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
+
+            // When lowering calls to an implicit-interface wrapper, try to
+            // align argument ABI with the actual implementation, if it can be
+            // found in an enclosing scope. This is crucial for LAPACK-style
+            // sequence association where the implementation uses pointer
+            // arrays but the wrapper uses descriptor-based arguments.
+            if (ASR::is_a<ASR::Function_t>(*func_subrout)) {
+                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(func_subrout);
+                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(*f);
+                if (ftype->m_deftype == ASR::deftypeType::Interface) {
+                    SymbolTable *st = ASRUtils::symbol_parent_symtab(func_subrout);
+                    std::string fname = ASRUtils::symbol_name(func_subrout);
+                    while (st) {
+                        ASR::symbol_t *cand = st->resolve_symbol(fname);
+                        if (cand && cand != func_subrout) {
+                            cand = const_cast<ASR::symbol_t*>(
+                                ASRUtils::symbol_get_past_external(cand));
+                            if (ASR::is_a<ASR::Function_t>(*cand)) {
+                                ASR::Function_t *cf = ASR::down_cast<ASR::Function_t>(cand);
+                                ASR::FunctionType_t *cft = ASRUtils::get_FunctionType(*cf);
+                                if (cft->m_deftype == ASR::deftypeType::Implementation) {
+                                    func_subrout = cand;
+                                    break;
+                                }
+                            }
+                        }
+                        st = st->parent;
+                    }
+                }
+            }
             ASR::abiType x_abi = (ASR::abiType) 0;
             ASR::intentType orig_arg_intent = ASR::intentType::Unspecified;
             std::uint32_t m_h;
@@ -12454,7 +12484,54 @@ public:
                     }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
-                this->visit_expr_wrapper(x.m_args[i].m_value);
+                ASR::ArrayPhysicalCast_t* arr_cast =
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i].m_value);
+                bool lowered_with_impl_abi = false;
+
+                // If the implementation dummy is an array with PointerArray
+                // physical type (classic Fortran sequence-association ABI),
+                // but the call site uses a descriptor-based ArrayPhysicalCast,
+                // we lower the argument directly to a data pointer that matches
+                // the implementation ABI. The descriptor remains available in
+                // the ASR for bounds_check_call().
+                if (orig_arg &&
+                    ASRUtils::is_array(
+                        ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                    ASR::ttype_t *impl_type =
+                        ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type);
+                    ASR::Array_t *impl_array = ASR::down_cast<ASR::Array_t>(impl_type);
+                    ASR::array_physical_typeType impl_phys =
+                        impl_array->m_physical_type;
+
+                    if (impl_phys == ASR::array_physical_typeType::PointerArray) {
+                        ASR::array_physical_typeType old_ptype =
+                            ASRUtils::extract_physical_type(
+                                ASRUtils::expr_type(arr_cast->m_arg));
+
+                        // Only handle cases where we can legally convert the
+                        // actual to a raw data pointer using existing
+                        // ArrayPhysicalCastUtil logic. For other combinations
+                        // we fall back to the default handling below.
+                        if (old_ptype == ASR::array_physical_typeType::FixedSizeArray ||
+                            old_ptype == ASR::array_physical_typeType::DescriptorArray ||
+                            old_ptype == ASR::array_physical_typeType::PointerArray) {
+                            int64_t ptr_loads_copy = ptr_loads;
+                            ptr_loads = 2 - LLVM::is_llvm_pointer(
+                                *ASRUtils::expr_type(arr_cast->m_arg));
+                            this->visit_expr_wrapper(arr_cast->m_arg, false);
+                            ptr_loads = ptr_loads_copy;
+
+                            visit_ArrayPhysicalCastUtil(tmp, arr_cast->m_arg,
+                                orig_arg->m_type, orig_arg->m_type,
+                                old_ptype, impl_phys);
+                            lowered_with_impl_abi = true;
+                        }
+                    }
+                }
+
+                if (!lowered_with_impl_abi) {
+                    this->visit_expr_wrapper(x.m_args[i].m_value);
+                }
             } else if( ASR::is_a<ASR::FunctionType_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(
@@ -12658,6 +12735,47 @@ public:
                         } else {
                             tmp = value;
                         }
+                    }
+                }
+            }
+
+            // For LAPACK-style sequence association, ensure that arguments
+            // corresponding to PointerArray dummies are lowered to data
+            // pointers, not array descriptors. This is particularly important
+            // under LLVM11 where typed pointers differentiate `%array*`
+            // descriptors from `float*` data pointers.
+            if (orig_arg &&
+                ASRUtils::is_array(
+                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                ASR::ttype_t *impl_type =
+                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type);
+                ASR::Array_t *impl_array = ASR::down_cast<ASR::Array_t>(impl_type);
+                if (impl_array->m_physical_type ==
+                        ASR::array_physical_typeType::PointerArray) {
+                    ASR::ttype_t *arg_expr_type =
+                        ASRUtils::expr_type(x.m_args[i].m_value);
+                    ASR::array_physical_typeType arg_phys =
+                        ASRUtils::extract_physical_type(arg_expr_type);
+                    if (arg_phys == ASR::array_physical_typeType::DescriptorArray) {
+                        llvm::Type *data_type =
+                            llvm_utils->get_type_from_ttype_t_util(
+                                x.m_args[i].m_value,
+                                ASRUtils::extract_type(arg_expr_type),
+                                module.get());
+                        llvm::Type *arr_type =
+                            llvm_utils->get_type_from_ttype_t_util(
+                                x.m_args[i].m_value,
+                                ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(
+                                        arg_expr_type)),
+                                module.get());
+                        llvm::Value *desc = tmp;
+                        tmp = llvm_utils->CreateLoad2(
+                            data_type->getPointerTo(),
+                            arr_descr->get_pointer_to_data(arr_type, desc));
+                        tmp = llvm_utils->create_ptr_gep2(
+                            data_type, tmp,
+                            arr_descr->get_offset(arr_type, desc));
                     }
                 }
             }
