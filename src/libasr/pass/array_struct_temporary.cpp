@@ -1111,6 +1111,12 @@ ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
             return ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
         }
+        case ASR::exprType::ArraySection: {
+            return extract_symbol(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        }
+        case ASR::exprType::ArrayItem: {
+            return extract_symbol(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        }
         default: {
             return nullptr;
         }
