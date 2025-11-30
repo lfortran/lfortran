@@ -1962,7 +1962,7 @@ public:
                             ASRUtils::type_get_past_pointer(
                                 ASRUtils::type_get_past_allocatable(cur_type))),
                         module.get(), abt);
-                    llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, llvm_data_type, tmp_expr);
+                    llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
                         call_lfortran_free(free_fn, typ,  llvm_data_type);
                     }, [](){});
@@ -3040,9 +3040,8 @@ public:
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
             }
-            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
-                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Runtime Error: Array '%s' is indexed but not allocated.\n",
@@ -3277,7 +3276,7 @@ public:
                     expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(32, 1))));
                 }
                 // Unallocated array is contiguous
-                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, array_type, x.m_array);
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, x.m_array);
                 tmp = builder->CreateOr(is_contiguous, builder->CreateNot(is_allocated));
                 break;
             }
@@ -7621,8 +7620,7 @@ public:
                         ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
                         visit_expr_load_wrapper(v, 1);
                         llvm::Value* target_desc = tmp;
-                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(v, ASRUtils::type_get_past_allocatable_pointer(target_variable->m_type), module.get(), ASRUtils::expr_abi(v));
-                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, type, v);
+                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, v);
                         // With move don't throw error when target is unallocated
                         if (!x.m_move_allocation) {
                             llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
@@ -13126,7 +13124,7 @@ public:
                     llvm::Value* arg = tmp;
 
                     // Throw error if descriptor array is not allocated
-                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_type, arr_cast->m_arg);
+                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
                     llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
                             "Runtime error: Argument %d of subroutine %s is unallocated.\n",
                             infile,
@@ -13266,10 +13264,7 @@ public:
                     const bool is_descriptor_array = ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type))
                                                             && ASRUtils::extract_physical_type(arg_expr_type) == ASR::DescriptorArray;
                     if (is_descriptor_array) {
-                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(arg_expr,
-                            ASRUtils::type_get_past_allocatable_pointer(arg_expr_type),
-                            module.get(), ASRUtils::expr_abi(arg_expr));
-                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(tmp, arr_type, arg_expr);
+                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(tmp, arg_expr);
                         cond = builder->CreateNot(is_allocated);
                     } else if (ASRUtils::is_string_only(arg_expr_type)) {
                         tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
@@ -13585,9 +13580,7 @@ public:
         }
         if( n_dims > 0 ) {
             visit_expr_load_wrapper(arg, 1, true);
-            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(arg,
-                ASRUtils::extract_type(asr_type), module.get(), ASRUtils::expr_abi(arg));
-            tmp = arr_descr->get_is_allocated_flag(tmp, llvm_data_type, arg);
+            tmp = arr_descr->get_is_allocated_flag(tmp, arg);
         } else if (ASRUtils::is_character(*expr_type(arg))) {
             visit_expr_load_wrapper(arg, 0);
             tmp = builder->CreateICmpNE(
