@@ -12219,6 +12219,7 @@ public:
             ASR::abiType x_abi = (ASR::abiType) 0;
             ASR::intentType orig_arg_intent = ASR::intentType::Unspecified;
             std::uint32_t m_h;
+            bool arg_lowered_to_data_pointer = false;
             ASR::Variable_t *orig_arg = nullptr;
             std::string orig_arg_name = "";
             if( func_subrout->type == ASR::symbolType::Function ) {
@@ -12525,6 +12526,7 @@ public:
                                 orig_arg->m_type, orig_arg->m_type,
                                 old_ptype, impl_phys);
                             lowered_with_impl_abi = true;
+                            arg_lowered_to_data_pointer = true;
                         }
                     }
                 }
@@ -12792,7 +12794,7 @@ public:
                         // If the expression already lowered to a data pointer,
                         // leave it unchanged to avoid misinterpreting data as
                         // a descriptor (which would crash on some platforms).
-                        if (!is_data_pointer) {
+                        if (!is_data_pointer && !arg_lowered_to_data_pointer) {
                             llvm::Value *desc = tmp;
                             tmp = llvm_utils->CreateLoad2(
                                 data_type->getPointerTo(),

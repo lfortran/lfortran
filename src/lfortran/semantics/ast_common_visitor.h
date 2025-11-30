@@ -9610,15 +9610,21 @@ public:
                     // are passed as pointers and can be reshaped.
 
                     // Start from the physical type of the actual argument. Assumed-size
-                    // arrays (UnboundedPointerArray) must keep their pointer-based ABI,
-                    // while other arrays can be represented either as descriptors
+                    // arrays (UnboundedPointerArray) and classic Fortran 77 style
+                    // pointer-based arrays (PointerArray) must keep their pointer-based
+                    // ABI. Other arrays can be represented either as descriptors
                     // (for Source ABI wrappers) or as PointerArray (for classic F77 ABI).
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(var_type))
                     );
                     ASR::array_physical_typeType phys_type = array_type->m_physical_type;
-                    if (phys_type != ASR::array_physical_typeType::UnboundedPointerArray) {
+                    // Preserve PointerArray / UnboundedPointerArray when the actual
+                    // argument is already using pointer-based storage. This is
+                    // essential for Fortran 77 style libraries such as LAPACK
+                    // and MINPACK that rely on sequence association.
+                    if (phys_type != ASR::array_physical_typeType::UnboundedPointerArray
+                        && phys_type != ASR::array_physical_typeType::PointerArray) {
                         phys_type = use_descriptor_arrays ?
                             ASR::array_physical_typeType::DescriptorArray :
                             ASR::array_physical_typeType::PointerArray;

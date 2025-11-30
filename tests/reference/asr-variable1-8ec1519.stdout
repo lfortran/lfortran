@@ -46,7 +46,7 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -93,7 +93,7 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -197,14 +197,14 @@
                                             (Complex 4)
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)
                                         (Array
                                             (Complex 4)
                                             [(()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Complex 4)
                                         (Complex 4)
@@ -417,31 +417,9 @@
                     [(SubroutineCall
                         2 matveca
                         ()
-                        [((ArrayPhysicalCast
-                            (Var 2 x)
-                            PointerArray
-                            DescriptorArray
-                            (Array
-                                (Complex 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 m))]
-                                DescriptorArray
-                            )
-                            ()
-                        ))
+                        [((Var 2 x))
                         ((Var 2 m))
-                        ((ArrayPhysicalCast
-                            (Var 2 y)
-                            PointerArray
-                            DescriptorArray
-                            (Array
-                                (Complex 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 n))]
-                                DescriptorArray
-                            )
-                            ()
-                        ))
+                        ((Var 2 y))
                         ((Var 2 p1))
                         ((Var 2 p2))
                         ((Var 2 p3))
