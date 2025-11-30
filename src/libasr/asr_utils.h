@@ -2036,11 +2036,15 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             // } else {
             //     res = symbol_name(d->m_derived_type);
             // }
+            ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
             } else {
                 res = "StructType";
+            }
+            if (!struct_type->m_is_cstruct) {
+                res = res + "_Class";
             }
             break;
         }

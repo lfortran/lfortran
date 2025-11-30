@@ -1829,13 +1829,7 @@ public:
                     curr_struct = dertype2parent[curr_struct];
                 }
                 int dt_idx = 0;
-                // if (compiler_options.new_classes && 
-                //         dertype2parent.find(curr_struct) == dertype2parent.end()) {
-                //     // Offset by 1 to bypass `vptr` at index 0.
-                //     dt_idx = name2memidx[curr_struct][member_name] + 1;
-                // } else {
-                    dt_idx = name2memidx[curr_struct][member_name];
-                // }
+                dt_idx = name2memidx[curr_struct][member_name];
                 std::vector<llvm::Value*> idx_vars = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                     llvm::ConstantInt::get(context, llvm::APInt(32, dt_idx))};
                 if (dt->getType() != name2dertype[curr_struct]->getPointerTo()) {
@@ -5209,6 +5203,9 @@ public:
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
                     static_cast<llvm::PointerType*>(type)), ptr);
             }
+            // std::cout<< "Allocated variable " << v->m_name << " of type ";
+            // type->print(llvm::outs()); llvm::outs() << "\n";
+            // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(
