@@ -7670,6 +7670,15 @@ public:
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
+            ASR::Variable_t* target_variable_dbg =
+                ASRUtils::expr_to_variable_or_null(x.m_target);
+            if (target_variable_dbg) {
+                std::string target_name_dbg = target_variable_dbg->m_name;
+                if (target_name_dbg.rfind("__libasr_created__", 0) == 0) {
+                    return;
+                }
+            }
+
             // Check for errors in array operations in the RHS of the assignment
             generate_binop_checks(x.m_components, x.n_components);
 
@@ -7678,6 +7687,27 @@ public:
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::dimension_t* m_dims = nullptr;
             size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
+
+            ASR::expr_t* value_expr = nullptr;
+            if( x.n_components > 0 ) {
+                value_expr = x.m_components[0];
+                ASR::dimension_t* value_dims = nullptr;
+                ASR::ttype_t* value_type = ASRUtils::expr_type(value_expr);
+                size_t value_rank = ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
+                if( value_rank != rank ) {
+                    for( size_t i = 0; i < x.n_components; i++ ) {
+                        ASR::ttype_t* component_type = ASRUtils::expr_type(x.m_components[i]);
+                        ASR::dimension_t* component_dims = nullptr;
+                        size_t component_rank = ASRUtils::extract_dimensions_from_ttype(component_type, component_dims);
+                        if( component_rank == rank ) {
+                            value_expr = x.m_components[i];
+                            break;
+                        }
+                    }
+                }
+            }
+            LCOMPILERS_ASSERT(value_expr);
+
             for (size_t dim = 0; dim < rank; dim++) {
                 ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
@@ -7688,9 +7718,9 @@ public:
                 visit_expr(*target_size_asr);
                 llvm::Value* target_size = tmp;
 
-                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_components[0]->base.loc,
-                    x.m_components[0], dim_asr, type32, nullptr));
-                visit_expr(*x_m_components_0_size);
+                ASR::expr_t* value_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, value_expr->base.loc,
+                    value_expr, dim_asr, type32, nullptr));
+                visit_expr(*value_size_asr);
                 llvm::Value* value_size = tmp;
 
                 ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
@@ -7956,7 +7986,15 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::SIMDArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            // pass
+            llvm::Type* simd_type = llvm_utils->get_type_from_ttype_t_util(
+                m_type, nullptr, module.get());
+            if (tmp->getType()->isPointerTy()) {
+                llvm::Type* simd_ptr_type = simd_type->getPointerTo();
+                llvm::Value* vec_ptr = builder->CreateBitCast(tmp, simd_ptr_type);
+                tmp = llvm_utils->CreateLoad2(simd_type, vec_ptr);
+            } else {
+                LCOMPILERS_ASSERT(tmp->getType() == simd_type);
+            }
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::SIMDArray) {
@@ -14519,7 +14557,7 @@ public:
 
     void visit_ArraySizeUtil(ASR::expr_t* m_v, ASR::ttype_t* m_type,
         ASR::expr_t* m_dim=nullptr, ASR::expr_t* m_value=nullptr) {
-        if( m_value ) {
+        if( m_value && m_dim == nullptr ) {
             visit_expr_wrapper(m_value, true);
             return ;
         }

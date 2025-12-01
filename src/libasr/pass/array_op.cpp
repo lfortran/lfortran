@@ -251,9 +251,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         remove_original_stmt_if_size_0(x->m_type)
+        if (result_expr == nullptr) {
+            return;
+        }
         pass_result.reserve(al, x->m_n_data);
         const Location& loc = x->base.base.loc;
-        LCOMPILERS_ASSERT(result_expr != nullptr);
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::extract_type(result_type);
 
@@ -341,7 +343,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         pass_result.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
-        LCOMPILERS_ASSERT(result_expr != nullptr);
+        if (result_expr == nullptr) {
+            return;
+        }
 
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASRUtils::ExprStmtDuplicator duplicator(al);
@@ -533,7 +537,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
+            ASR::expr_t* index_var = nullptr;
+            if (static_cast<size_t>(loop_depth) < var2indices[i].size()) {
+                index_var = var2indices[i].p[loop_depth];
+            }
             if( index_var == nullptr ) {
                 continue;
             }
@@ -552,7 +559,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
+            ASR::expr_t* index_var = nullptr;
+            if (static_cast<size_t>(loop_depth) < var2indices[i].size()) {
+                index_var = var2indices[i].p[loop_depth];
+            }
             if( index_var == nullptr ) {
                 continue;
             }
@@ -576,7 +586,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
-            ASR::expr_t* index_var = var2indices[i].p[loop_depth];
+            ASR::expr_t* index_var = nullptr;
+            if (static_cast<size_t>(loop_depth) < var2indices[i].size()) {
+                index_var = var2indices[i].p[loop_depth];
+            }
             if( index_var == nullptr ) {
                 continue;
             }
