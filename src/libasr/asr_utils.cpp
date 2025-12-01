@@ -2642,6 +2642,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
     size_t expr1_ndims) {
     ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+    ASR::ttype_t* cast_target_type = expr1_type;
 
     // Special case: broadcasting a scalar to an ArraySection where the
     // section size is fully compile-time constant. In this case we build
@@ -2726,6 +2727,25 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             value = ASRUtils::expr_value(value);
         }
         ret_type = value_type;
+
+        // For descriptor-based ArraySection targets the declared element
+        // type typically carries "empty" dimensions (start/length unset)
+        // to signal that bounds come from the runtime descriptor. That is
+        // fine for general use, but the ASR verifier requires fully
+        // specified dimensions on the ArrayPhysicalCast target type.
+        //
+        // Build a dedicated cast target type that:
+        //   * keeps the physical type of the original expr1_type, but
+        //   * uses the concrete 1D section shape stored in dims_sec.
+        //
+        // This keeps descriptor semantics while giving the verifier and
+        // codegen a precise shape for the cast result.
+        if (ASR::is_a<ASR::Array_t>(*expr1_type)) {
+            cast_target_type = ASRUtils::duplicate_type(
+                al, expr1_type, &dims_sec,
+                ASRUtils::extract_physical_type(expr1_type),
+                /*override_physical_type=*/true);
+        }
     } else if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
         Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
         for( size_t i = 0; i < expr1_ndims; i++ ) {
@@ -2791,7 +2811,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
                     al, loc, expr2,
                     ASRUtils::extract_physical_type(ret_type),
                     ASRUtils::extract_physical_type(expr1_type),
-                    expr1_type, nullptr));
+                    cast_target_type, nullptr));
         }
         return;
     }
