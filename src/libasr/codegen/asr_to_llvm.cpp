@@ -474,12 +474,24 @@ public:
         ptr_loads = 2;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
-            LCOMPILERS_ASSERT(m_dim.m_start != nullptr);
-            visit_expr(*(m_dim.m_start));
-            llvm::Value* start = tmp;
-            LCOMPILERS_ASSERT(m_dim.m_length != nullptr);
-            load_array_size_deep_copy(m_dim.m_length);
-            llvm::Value* end = tmp;
+            llvm::Value* start = nullptr;
+            if( m_dim.m_start ) {
+                visit_expr(*(m_dim.m_start));
+                start = tmp;
+            } else {
+                start = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context),
+                    llvm::APInt(32, 1));
+            }
+            llvm::Value* end = nullptr;
+            if( m_dim.m_length ) {
+                load_array_size_deep_copy(m_dim.m_length);
+                end = tmp;
+            } else {
+                end = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context),
+                    llvm::APInt(32, 1));
+            }
             llvm_dims.push_back(std::make_pair(start, end));
         }
         ptr_loads = ptr_loads_copy;
@@ -7911,9 +7923,11 @@ public:
     }
 
     void PointerToData_to_Descriptor(ASR::expr_t* expr, ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions) {
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(m_type)), module.get());
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(m_type);
+        llvm::Type* element_type = llvm_utils->get_el_type(expr,
+            ASRUtils::extract_type(array_type), module.get());
+        llvm::Type* target_type = llvm_utils->arr_api->get_array_type(
+            expr, array_type, element_type, false);
         llvm::AllocaInst *target = llvm_utils->CreateAlloca(
             target_type, nullptr, "array_descriptor");
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
@@ -7921,9 +7935,7 @@ public:
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
         llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
-        llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_allocatable(m_type), module.get());
-        fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
+        fill_array_details(target_type, target, llvm_data_type, m_dims, n_dims, false, false);
         if( LLVM::is_llvm_pointer(*m_type) ) {
             llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                 target_type->getPointerTo(), nullptr, "array_descriptor_ptr");
@@ -8049,23 +8061,7 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
-            // UnboundedPointerArray is a simple pointer to data (for assumed-size arrays).
-            // When converting to DescriptorArray for implicit interface calls,
-            // we keep passing the raw data pointer; the actual callee is expected
-            // to use the classic assumed-size ABI as well.
-            // The 'tmp' value already holds the pointer.
-
-            ASR::ttype_t* arr_type_ = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(m_type));
-            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
-                arr_type_, module.get());
-            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                target_type, nullptr, "array_descriptor");
-            llvm::Type* data_type_local = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::extract_type(m_type), module.get());
-            builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(arr_type_);
-            arr_descr->reset_array_details(target_type, target, target, n_dims);
-            tmp = target;
+            PointerToData_to_Descriptor(m_arg, m_type, m_type_for_dimensions);
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -8148,19 +8144,9 @@ public:
                     tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));                                                                     
                 } else if (                                                                                                                                                      
                     m_new == ASR::array_physical_typeType::DescriptorArray &&                                                                                                    
-                    m_old == ASR::array_physical_typeType::UnboundedPointerArray) {                                                                                              
-                                                                                                                                                                                 
-            ASR::ttype_t* arr_type_ = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(m_type));
-            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
-                arr_type_, module.get());
-            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                target_type, nullptr, "array_descriptor");
-            llvm::Type* data_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::extract_type(m_type), module.get());
-            builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(arr_type_);
-                        arr_descr->reset_array_details(target_type, target, target, n_dims);
-                        tmp = target;
+                    m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+
+                    PointerToData_to_Descriptor(m_arg, m_type, m_type_for_dimensions);
                     } else if (
                         m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
                         m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -8172,18 +8158,12 @@ public:
                     } else if (
                         m_new == ASR::array_physical_typeType::PointerArray &&
                         m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
-
-                        ASR::ttype_t* arr_type_ = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(m_type));
-                        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
-                            arr_type_, module.get());
-                        llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                            target_type, nullptr, "array_descriptor");
-                        llvm::Type* data_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::extract_type(m_type), module.get());
-                        builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(arr_type_);
-                        arr_descr->reset_array_details(target_type, target, target, n_dims);
-                        tmp = target;
+                        // UnboundedPointerArray and PointerArray share the same
+                        // raw data representation (a pointer to the first element).
+                        // In contexts such as implicit-interface calls (e.g. LAPACK
+                        // SGEQL2), the implementation ABI expects a plain data
+                        // pointer, so no additional descriptor construction is
+                        // required here. `tmp` already holds the correct pointer.
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }                                                                                                                                                                
