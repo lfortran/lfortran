@@ -1294,7 +1294,7 @@ public:
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
                     llvm::Value* amount_to_allocate{};
                     if(curr_arg.m_len_expr){ // Visit desired length to be allocated.
-                        visit_expr_load_wrapper(curr_arg.m_len_expr, 1);
+                        visit_expr_wrapper(curr_arg.m_len_expr, true);
                         amount_to_allocate = tmp;
                     } else {
                         amount_to_allocate = nullptr;
