@@ -2643,6 +2643,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     size_t expr1_ndims) {
     ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
     ASR::ttype_t* cast_target_type = expr1_type;
+    ASR::ttype_t* expr1_base_type = ASRUtils::type_get_past_array(expr1_type);
 
     // Special case: broadcasting a scalar to an ArraySection where the
     // section size is fully compile-time constant. In this case we build
@@ -2654,7 +2655,9 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     if (ASR::is_a<ASR::ArraySection_t>(*expr1)) {
         arr_sec = ASR::down_cast<ASR::ArraySection_t>(expr1);
         int64_t sec_size = ASRUtils::get_fixed_size_of_ArraySection(arr_sec);
-        if (sec_size > 0 &&
+        bool is_target_character = ASRUtils::is_character(*expr1_base_type);
+        if (is_target_character &&
+            sec_size > 0 &&
             ASRUtils::is_value_constant(expr2) &&
             sec_size <= 256) {
             use_section_shape = true;
