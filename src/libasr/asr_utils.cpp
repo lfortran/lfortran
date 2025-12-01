@@ -2642,6 +2642,24 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2, ASR::dimension_t* expr1_mdims,
     size_t expr1_ndims) {
     ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
+
+    // Special case: broadcasting a scalar to an ArraySection where the
+    // section size is fully compile-time constant. In this case we build
+    // a concrete ArrayConstructor of the section's size and let the generic
+    // array assignment machinery handle the copy. This avoids backend
+    // descriptor/stride mismatches for descriptor-based character arrays.
+    bool use_section_shape = false;
+    ASR::ArraySection_t* arr_sec = nullptr;
+    if (ASR::is_a<ASR::ArraySection_t>(*expr1)) {
+        arr_sec = ASR::down_cast<ASR::ArraySection_t>(expr1);
+        int64_t sec_size = ASRUtils::get_fixed_size_of_ArraySection(arr_sec);
+        if (sec_size > 0 &&
+            ASRUtils::is_value_constant(expr2) &&
+            sec_size <= 256) {
+            use_section_shape = true;
+        }
+    }
+
     Vec<ASR::expr_t*> shape_args;
     shape_args.reserve(al, 1);
     shape_args.push_back(al, expr1);
@@ -2663,28 +2681,73 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
     ASR::ttype_t* ret_type = nullptr;
-    if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
+
+    if (use_section_shape) {
+        int64_t sec_size = ASRUtils::get_fixed_size_of_ArraySection(arr_sec);
+        LCOMPILERS_ASSERT(sec_size > 0);
+
+        Vec<ASR::expr_t*> lengths; lengths.reserve(al, 1);
+        lengths.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, sec_size,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));
+        dest_shape = EXPR(ASRUtils::make_ArrayConstructor_t_util(
+            al, loc, lengths.p, lengths.size(), dest_shape_type,
+            ASR::arraystorageType::ColMajor));
+
+        Vec<ASR::dimension_t> dims_sec;
+        dims_sec.reserve(al, 1);
+        ASR::dimension_t dim_sec;
+        dim_sec.loc = loc;
+        dim_sec.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, sec_size,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dim_sec.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, 1,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dims_sec.push_back(al, dim_sec);
+
+        ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(
+            al, loc,
+            ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)),
+            dims_sec.p, dims_sec.size(),
+            is_value_character_array ?
+                ASR::array_physical_typeType::PointerArray :
+                ASR::array_physical_typeType::FixedSizeArray));
+
+        Vec<ASR::expr_t*> values;
+        values.reserve(al, sec_size);
+        for (int64_t i = 0; i < sec_size; i++) {
+            values.push_back(al, expr2);
+        }
+        value = EXPR(ASRUtils::make_ArrayConstructor_t_util(
+            al, loc, values.p, values.size(), value_type,
+            ASR::arraystorageType::ColMajor));
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*value) && ASRUtils::expr_value(value)) {
+            value = ASRUtils::expr_value(value);
+        }
+        ret_type = value_type;
+    } else if( ASRUtils::is_fixed_size_array(expr1_mdims, expr1_ndims) ) {
         Vec<ASR::expr_t*> lengths; lengths.reserve(al, expr1_ndims);
         for( size_t i = 0; i < expr1_ndims; i++ ) {
             lengths.push_back(al, ASRUtils::expr_value(expr1_mdims[i].m_length));
         }
         dest_shape = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, lengths.p,
             lengths.size(), dest_shape_type, ASR::arraystorageType::ColMajor));
-        Vec<ASR::dimension_t> dims;
-        dims.reserve(al, 1);
-        ASR::dimension_t dim;
-        dim.loc = loc;
-        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        Vec<ASR::dimension_t> dims_arr;
+        dims_arr.reserve(al, 1);
+        ASR::dimension_t dim_arr;
+        dim_arr.loc = loc;
+        dim_arr.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims),
             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+        dim_arr.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
             1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-        dims.push_back(al, dim);
+        dims_arr.push_back(al, dim_arr);
 
         if( ASRUtils::is_value_constant(expr2) &&
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-                ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
+                ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims_arr.p, dims_arr.size(),
                 is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
@@ -2714,6 +2777,25 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ret_type = expr1_type;
         }
     }
+
+    // If we successfully built a fully constant broadcasted array `value`,
+    // use it directly instead of introducing an ArrayBroadcast node.
+    // This lets assignments like `array(:) = 1` lower to ordinary constant
+    // array assignments with correct descriptor semantics.
+    if (value) {
+        expr2 = value;
+        if (ASRUtils::extract_physical_type(expr1_type) !=
+                ASRUtils::extract_physical_type(ret_type)) {
+            expr2 = ASRUtils::EXPR(
+                ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, loc, expr2,
+                    ASRUtils::extract_physical_type(ret_type),
+                    ASRUtils::extract_physical_type(expr1_type),
+                    expr1_type, nullptr));
+        }
+        return;
+    }
+
     expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, ret_type, value));
 
     if (ASRUtils::extract_physical_type(expr1_type) != ASRUtils::extract_physical_type(ret_type)) {

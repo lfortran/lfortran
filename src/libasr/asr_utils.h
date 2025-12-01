@@ -2840,14 +2840,44 @@ static inline int64_t get_fixed_size_of_ArraySection(ASR::ArraySection_t* x) {
     }
     int64_t array_size = 1;
     for (size_t i = 0; i < x->n_args; i++) {
-        if (x->m_args[i].m_left && x->m_args[i].m_right && ASRUtils::is_value_constant(x->m_args[i].m_right) &&
-            ASRUtils::is_value_constant(x->m_args[i].m_left)) {
-            ASR::IntegerConstant_t* start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_left));
-            ASR::IntegerConstant_t* end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_right));
-            array_size = array_size * (end->m_n - start->m_n + 1);
+        ASR::expr_t* left = x->m_args[i].m_left;
+        ASR::expr_t* right = x->m_args[i].m_right;
+        ASR::expr_t* step = x->m_args[i].m_step;
+
+        int64_t lb = 1, ub = -1, st = 1;
+
+        if (left && ASRUtils::is_value_constant(left)) {
+            ASR::IntegerConstant_t* start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(left));
+            lb = start->m_n;
         } else {
+            // Non-constant or omitted left bound is not supported here.
             return -1;
         }
+
+        if (right && ASRUtils::is_value_constant(right)) {
+            ASR::IntegerConstant_t* end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(right));
+            ub = end->m_n;
+        } else {
+            // Non-constant or omitted right bound is not supported here.
+            return -1;
+        }
+
+        if (step) {
+            if (!ASRUtils::is_value_constant(step)) {
+                return -1;
+            }
+            ASR::IntegerConstant_t* step_const = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(step));
+            st = step_const->m_n;
+            if (st == 0) {
+                return -1;
+            }
+        }
+
+        int64_t len = (ub - lb) / st + 1;
+        if (len < 0) {
+            len = 0;
+        }
+        array_size *= len;
     }
     return array_size;
 }

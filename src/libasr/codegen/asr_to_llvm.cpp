@@ -3097,9 +3097,16 @@ public:
             } else if( physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start = nullptr;
+                    if( m_dims[idim].m_start ) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        dim_start = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -6317,33 +6324,53 @@ public:
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
 
-        // Compute static dimension information from the declared shape of the
-        // base array. This is used by the data-only descriptor builder for
-        // both pointer-based and descriptor-based arrays.
-        ASR::dimension_t* m_dims = nullptr;
-        [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
-        LCOMPILERS_ASSERT(array_value_rank == value_rank);
+        // Compute dimension information for the base array. For descriptor-based
+        // arrays we must use the runtime descriptor contents, since the declared
+        // shape can be deferred; for static pointer / fixed-size arrays we keep
+        // using the compile-time shape from `array_type`.
         Vec<llvm::Value*> llvm_diminfo;
         llvm_diminfo.reserve(al, value_rank * 2);
-        for( int i = 0; i < value_rank; i++ ) {
-            if( m_dims[i].m_start ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-            } else {
-                // Default lower bound is 1 when not explicitly specified.
-                tmp = llvm::ConstantInt::get(
-                    llvm_utils->getIntType(4), llvm::APInt(32, 1));
+        if (arr_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+            llvm::Type* array_type_llvm = llvm_utils->get_type_from_ttype_t_util(
+                array_section->m_v,
+                ASRUtils::type_get_past_allocatable_pointer(value_array_type),
+                module.get());
+            llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                array_type_llvm, value_desc);
+            for (int i = 0; i < value_rank; i++) {
+                llvm::Value* dim_idx = llvm::ConstantInt::get(
+                    llvm_utils->getIntType(4), llvm::APInt(32, i));
+                llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(
+                    dim_des_arr, dim_idx);
+                llvm::Value* lb = arr_descr->get_lower_bound(dim_desc, true);
+                llvm::Value* len = arr_descr->get_dimension_size(dim_desc, true);
+                llvm_diminfo.push_back(al, lb);
+                llvm_diminfo.push_back(al, len);
             }
-            llvm_diminfo.push_back(al, tmp);
-            if( m_dims[i].m_length ) {
-                visit_expr_wrapper(m_dims[i].m_length, true);
-            } else {
-                // For dimensions without an explicit length (e.g., the final
-                // dimension of an assumed-size array), use one as a placeholder.
-                // It is only used to compute strides for following dimensions.
-                tmp = llvm::ConstantInt::get(
-                    llvm_utils->getIntType(4), llvm::APInt(32, 1));
+        } else {
+            ASR::dimension_t* m_dims = nullptr;
+            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            LCOMPILERS_ASSERT(array_value_rank == value_rank);
+            for( int i = 0; i < value_rank; i++ ) {
+                if( m_dims[i].m_start ) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                } else {
+                    // Default lower bound is 1 when not explicitly specified.
+                    tmp = llvm::ConstantInt::get(
+                        llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                }
+                llvm_diminfo.push_back(al, tmp);
+                if( m_dims[i].m_length ) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                } else {
+                    // For dimensions without an explicit length (e.g., the final
+                    // dimension of an assumed-size array), use one as a placeholder.
+                    // It is only used to compute strides for following dimensions.
+                    tmp = llvm::ConstantInt::get(
+                        llvm_utils->getIntType(4), llvm::APInt(32, 1));
+                }
+                llvm_diminfo.push_back(al, tmp);
             }
-            llvm_diminfo.push_back(al, tmp);
         }
 
         // Normalise the base pointer so that value_data always points to the
