@@ -3054,27 +3054,47 @@ public:
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
-            if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
-                array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
-                (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
+            ASR::array_physical_typeType physical_type = array_t->m_physical_type;
+            bool needs_diminfo = (
+                physical_type == ASR::array_physical_typeType::PointerArray ||
+                physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                physical_type == ASR::array_physical_typeType::SIMDArray ||
+                physical_type == ASR::array_physical_typeType::DescriptorArray ||
+                (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
+                 ASRUtils::is_fixed_size_array(x_mv_type))
+            );
+            if( needs_diminfo ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    if (is_intent_in) {
-                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_start = nullptr;
+                    if( m_dims[idim].m_start ) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
                     } else {
-                        load_array_size_deep_copy(m_dims[idim].m_length);
+                        dim_start = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1));
                     }
-                    llvm::Value* dim_size = tmp;
+                    llvm::Value* dim_size = nullptr;
+                    if( m_dims[idim].m_length ) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
+                        if (is_intent_in) {
+                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        } else {
+                            load_array_size_deep_copy(m_dims[idim].m_length);
+                        }
+                        dim_size = tmp;
+                    } else {
+                        dim_size = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
                 }
                 ptr_loads = ptr_loads_copy;
-            } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
+            } else if( physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
@@ -5104,6 +5124,9 @@ public:
                     */
                     if( abi_type == ASR::abiType::Source && is_v_arg ) {
                         type = arr_descr->get_argument_type(type, m_h, v->m_name, arr_arg_type_cache);
+                        is_array_type = false;
+                    } else if( abi_type == ASR::abiType::BindC && is_v_arg ) {
+                        type = type_->getPointerTo();
                         is_array_type = false;
                     } else if( abi_type == ASR::abiType::Intrinsic &&
                         fname2arg_type.find(m_name) != fname2arg_type.end() ) {

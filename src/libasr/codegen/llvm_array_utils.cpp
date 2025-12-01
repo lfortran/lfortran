@@ -824,17 +824,58 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
-                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
-                llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module));
-                if(ASRUtils::is_character(*asr_type)){
-                    tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
-                } else {
-                    if( polymorphic ) {
-                        full_array = llvm_utils->create_gep2(type, full_array, 1);
-                        full_array = builder->CreateBitCast(llvm_utils->CreateLoad2(llvm::Type::getVoidTy(context)->getPointerTo(), full_array), polymorphic_type->getPointerTo());
-                        tmp = llvm_utils->create_ptr_gep2(polymorphic_type, full_array, idx);
+
+                llvm::Type *array_pointee_type = nullptr;
+                if( array->getType()->isPointerTy() ) {
+                    array_pointee_type = array->getType()->getPointerElementType();
+                }
+
+                bool has_descriptor =
+                    array_pointee_type &&
+                    array_pointee_type->isStructTy() &&
+                    array_pointee_type == array_type;
+
+                bool has_data_only_repr =
+                    array_pointee_type &&
+                    array_pointee_type == type;
+
+                if( has_data_only_repr && llvm_diminfo ) {
+                    idx = cmo_convertor_single_element_data_only(
+                             llvm_diminfo, m_args, n_args, check_for_bounds,
+                             lm, is_unbounded_pointer_to_data, array_name,
+                             infile, expr->base.loc);
+                    if( ASRUtils::is_character(*asr_type) ) {
+                        tmp = llvm_utils->get_string_element_in_array(
+                            ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)),
+                            array, idx);
                     } else {
-                        tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
+                        tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    }
+                } else {
+                    LCOMPILERS_ASSERT(has_descriptor);
+                    idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
+                    llvm::Value* full_array = llvm_utils->CreateLoad2(
+                        type->getPointerTo(),
+                        get_pointer_to_data(expr,
+                            ASRUtils::type_get_past_allocatable_pointer(asr_type),
+                            array, llvm_utils->module));
+                    if(ASRUtils::is_character(*asr_type)){
+                        tmp = llvm_utils->get_string_element_in_array(
+                            ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)),
+                            full_array, idx);
+                    } else {
+                        if( polymorphic ) {
+                            full_array = llvm_utils->create_gep2(type, full_array, 1);
+                            full_array = builder->CreateBitCast(
+                                llvm_utils->CreateLoad2(
+                                    llvm::Type::getVoidTy(context)->getPointerTo(),
+                                    full_array),
+                                polymorphic_type->getPointerTo());
+                            tmp = llvm_utils->create_ptr_gep2(
+                                polymorphic_type, full_array, idx);
+                        } else {
+                            tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
+                        }
                     }
                 }
             }
