@@ -25,10 +25,10 @@ contains
         y = y + 1
     end subroutine intent_inout_test
 
-
-
-
-
+    subroutine assumed_rank(x)
+        integer, intent(in) :: x(..)
+        print *, x
+    end subroutine assumed_rank
 
 
 
