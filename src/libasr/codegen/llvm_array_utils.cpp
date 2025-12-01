@@ -841,8 +841,7 @@ namespace LCompilers {
             return tmp;
         }
 
-        llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array,
-            llvm::Type* llvm_data_type, ASR::expr_t* array_exp) {
+        llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
             llvm::PointerType* memory_holder_type;
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
@@ -864,7 +863,9 @@ namespace LCompilers {
             // Handle an array of strings
             memory_holder_type = ASRUtils::is_character(*array_type) ?
                 llvm_utils->character_type
-                : llvm_data_type->getPointerTo();
+                : llvm_utils->get_type_from_ttype_t_util(
+                    array_exp,
+                    ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
 
             if(ASRUtils::is_character(*array_type)){
                 llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(

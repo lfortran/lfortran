@@ -2877,7 +2877,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                                         offset_val);
                             }
-                            llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, llvm_data_type, src_expr);
+                            llvm::Value *is_allocated = arr_api->get_is_allocated_flag(src, src_expr);
                             create_if_else(is_allocated, [=]() {            
                                 arr_api->copy_array(llvm_array_type, src, llvm_array_type, dest, module, asr_src_type, false);
                             }, [=]() {

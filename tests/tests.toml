@@ -3899,6 +3899,10 @@ filename = "errors/scalar_allocation_check_03.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_04.f90"
+run = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -3945,6 +3949,14 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_12.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_13.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_14.f90"
 run = true
 
 [[test]]
