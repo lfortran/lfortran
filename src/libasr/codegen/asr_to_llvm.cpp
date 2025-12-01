@@ -12569,7 +12569,8 @@ public:
                     ASR::array_physical_typeType impl_phys =
                         impl_array->m_physical_type;
 
-                    if (impl_phys == ASR::array_physical_typeType::PointerArray) {
+                    if (impl_phys == ASR::array_physical_typeType::PointerArray ||
+                        impl_phys == ASR::array_physical_typeType::UnboundedPointerArray) {
                         ASR::array_physical_typeType old_ptype =
                             ASRUtils::extract_physical_type(
                                 ASRUtils::expr_type(arr_cast->m_arg));
@@ -12819,7 +12820,9 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type);
                 ASR::Array_t *impl_array = ASR::down_cast<ASR::Array_t>(impl_type);
                 if (impl_array->m_physical_type ==
-                        ASR::array_physical_typeType::PointerArray) {
+                        ASR::array_physical_typeType::PointerArray ||
+                    impl_array->m_physical_type ==
+                        ASR::array_physical_typeType::UnboundedPointerArray) {
                     ASR::ttype_t *arg_expr_type =
                         ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::array_physical_typeType arg_phys =
