@@ -60,6 +60,7 @@ private:
     bool _processing_dims = false;
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
+    bool _processing_assumed_rank_array = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -1046,7 +1047,12 @@ public:
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
             bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
             _inside_array_physical_cast_type = true;
+            bool _processing_assumed_rank_array_copy = _processing_assumed_rank_array;
+            if (x.m_old == ASR::array_physical_typeType::AssumedRankArray) {
+                _processing_assumed_rank_array = true;
+            }
             visit_ttype(*x.m_type);
+            _processing_assumed_rank_array = _processing_assumed_rank_array_copy;
             _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
@@ -1267,7 +1273,7 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
-        if (_inside_array_physical_cast_type && !_inside_call) {
+        if (_inside_array_physical_cast_type && !_inside_call && !_processing_assumed_rank_array) {
             require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
                     "Dimensions in ArrayPhysicalCast must be present if not inside a call",
                     x.loc);
