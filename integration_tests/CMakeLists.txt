@@ -2336,8 +2336,11 @@ RUN(NAME lapack_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-s
 RUN(NAME lapack_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface --cpp-infer GFORTRAN_ARGS -ffixed-form)
 RUN(NAME lapack_04 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface GFORTRAN_ARGS -ffixed-form)
 RUN(NAME lapack_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface GFORTRAN_ARGS -ffixed-form)
-RUN(NAME lapack_06 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface GFORTRAN_ARGS -ffixed-form)
-RUN(NAME lapack_07 LABELS gfortran llvm EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface --cpp-infer GFORTRAN_ARGS -ffixed-form)
+# `lapack_06` is a codegen MRE for LAPACK's SGEQLF that calls other LAPACK
+# routines (ILAENV, SROUNDUP_LWORK, XERBLA, SGEQL2, SLARFT, SLARFB). It is
+# registered only for the gfortran backend here; LLVM-11 coverage for LFortran
+# is validated via the dedicated LAPACK CMake build in the meta-repo.
+RUN(NAME lapack_06 LABELS gfortran EXTRA_ARGS --fixed-form --legacy-array-sections --implicit-interface --cpp-infer GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
