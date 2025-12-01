@@ -351,7 +351,7 @@ semantic error: Invalid argument `end` supplied
 247 |     CLOSE(end=200)
     |     ^^^^^^^^^^^^^^ 
 
-semantic error: The first argument of `cmplx` intrinsic must be present
+semantic error: Missing actual argument 'x' in call to 'cmplx'
    --> tests/errors/continue_compilation_2.f90:249:14
     |
 249 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
@@ -902,3 +902,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 464 |     lhs = rhs
     |     ^^^   ^^^ type mismatch (string and string[:])
+
+semantic error: Missing actual argument 'string' in call to 'index'
+   --> tests/errors/continue_compilation_2.f90:465:14
+    |
+465 |     print *, index( substring = 'de', back = .true. )
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -462,6 +462,7 @@ program continue_compilation_2
     !size_intrinsic_check
     print *, size(ichar_runtime)
     lhs = rhs
+    print *, index( substring = 'de', back = .true. )
     contains
     logical function f(x)
         integer, intent(in), optional :: x
