@@ -823,21 +823,19 @@ namespace LCompilers {
                 }
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
-                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
+                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type),
+                    llvm_utils->module);
 
-                llvm::Type *array_pointee_type = nullptr;
-                if( array->getType()->isPointerTy() ) {
-                    array_pointee_type = array->getType()->getPointerElementType();
-                }
+                llvm::Type *array_ptr_type = array->getType();
 
                 bool has_descriptor =
-                    array_pointee_type &&
-                    array_pointee_type->isStructTy() &&
-                    array_pointee_type == array_type;
+                    array_ptr_type &&
+                    array_type->isStructTy() &&
+                    array_ptr_type == array_type->getPointerTo();
 
                 bool has_data_only_repr =
-                    array_pointee_type &&
-                    array_pointee_type == type;
+                    array_ptr_type &&
+                    array_ptr_type == type->getPointerTo();
 
                 if( has_data_only_repr && llvm_diminfo ) {
                     idx = cmo_convertor_single_element_data_only(

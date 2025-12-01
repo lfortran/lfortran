@@ -7993,13 +7993,12 @@ public:
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                 ASRUtils::expr_value(m_arg) == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                llvm::Type* t = tmp->getType();
-                if (t->isPointerTy() && t->getPointerElementType()->isArrayTy()) {
-                     std::vector<llvm::Value*> idx = {
+                if (arr_type->isArrayTy()) {
+                    std::vector<llvm::Value*> idx = {
                         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 0))
                     };
-                    tmp = builder->CreateInBoundsGEP(t->getPointerElementType(), tmp, idx);
+                    tmp = builder->CreateInBoundsGEP(arr_type, tmp, idx);
                 } else {
                     tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
