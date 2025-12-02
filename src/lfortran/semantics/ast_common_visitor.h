@@ -6569,51 +6569,12 @@ public:
 
     void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections, SymbolTable* current_scope) {
 
-    class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
-        private:
-            Allocator& al;
-        public:
-            ASR::expr_t** current_expr;
-
-            ReplaceArrayItemWithArraySection(Allocator& al_) :
-                al(al_), current_expr(nullptr) {}
-
-            void replace_ArrayItem(ASR::ArrayItem_t* x) {
-                Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
-                ASRUtils::ASRBuilder b(al, x->base.base.loc);
-
-                for ( size_t i = 0; i < x->n_args; i++ ) {
-                    ASR::array_index_t array_index;
-                    array_index.loc = x->m_args[i].loc;
-                    array_index.m_left = x->m_args[i].m_right;
-                    array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
-                    if ( ASRUtils::expr_value(array_index.m_right) ) {
-                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
-                    }
-                    array_index.m_step = b.i32( i + 1 );
-                    array_indices.push_back(al, array_index);
-                }
-                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
-                *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
-                    array_indices.p, array_indices.n, new_type, nullptr));
-            }
-
-    };
-
     class LegacyArraySectionsVisitor : public ASR::CallReplacerOnExpressionsVisitor<LegacyArraySectionsVisitor> {
         private:
             Allocator& al;
-            ReplaceArrayItemWithArraySection replacer;
         public:
-            ASR::expr_t** current_expr;
             LegacyArraySectionsVisitor(Allocator& al_) :
-                al(al_), replacer(al_), current_expr(nullptr) {}
-
-            void call_replacer_() {
-                replacer.current_expr = current_expr;
-                replacer.replace_expr(*current_expr);
-                current_expr = replacer.current_expr;
-            }
+                al(al_) {}
 
             void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
                 Vec<ASR::stmt_t*> body;
@@ -6659,12 +6620,40 @@ public:
                     // iterate only over args of type array.
                     for( auto it: array_arg_index ) {
                         ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
-                        if ( arg_expr != nullptr ) {
-                            ASR::expr_t** current_expr_copy = current_expr;
-                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
-                            call_replacer_();
-                            x.m_args[it.first].m_value = *current_expr;
-                            current_expr = current_expr_copy;
+                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
+                            // Directly convert top-level ArrayItem to ArraySection
+                            // without recursing into nested ArrayItems in the indices
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                            Vec<ASR::array_index_t> array_indices;
+                            array_indices.reserve(al, array_item->n_args);
+                            ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
+
+                            for ( size_t j = 0; j < array_item->n_args; j++ ) {
+                                ASR::array_index_t array_index;
+                                array_index.loc = array_item->m_args[j].loc;
+                                array_index.m_left = array_item->m_args[j].m_right;  // Use index as-is, don't recurse
+                                array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
+                                if ( ASRUtils::expr_value(array_index.m_right) ) {
+                                    array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                                }
+                                array_index.m_step = b.i32( j + 1 );
+                                array_indices.push_back(al, array_index);
+                            }
+                            // Create an ArraySection with 1D DescriptorArray type
+                            // The implicit interface already expects 1D PointerArray parameters,
+                            // and LLVM will handle the conversion via ArrayPhysicalCast
+                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(array_item->m_v));
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = array_item->base.base.loc;
+                            dim.m_start = nullptr;
+                            dim.m_length = nullptr;
+                            dims.push_back(al, dim);
+                            ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, array_item->base.base.loc,
+                                elem_type, dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray));
+                            x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc, array_item->m_v,
+                                array_indices.p, array_indices.n, new_type, nullptr));
                         }
                     }
                 }
@@ -9624,14 +9613,49 @@ public:
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in BindC, so that
-                    // the C ABI is just a pointer
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var_type))
-                    );
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
-                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
-                        array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
+                    // For arrays like A(n, m) we use A(*) - a 1D assumed-size array
+                    // This matches Fortran's implicit interface behavior where arrays
+                    // are passed as pointers and can be reshaped
+
+                    // Check if the actual function already exists to match its signature
+                    // Default to DescriptorArray (matches assumed-size arrays like x(*))
+                    ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    // Search up the scope chain for the actual function definition
+                    ASR::symbol_t* func_sym = nullptr;
+                    SymbolTable* search_scope = parent_scope;
+                    while (search_scope && !func_sym) {
+                        func_sym = search_scope->resolve_symbol(func_name);
+                        if (!func_sym) {
+                            search_scope = search_scope->parent;
+                        }
+                    }
+                    // Get past ExternalSymbol wrappers to find the actual function
+                    if (func_sym) {
+                        func_sym = ASRUtils::symbol_get_past_external(func_sym);
+                    }
+                    if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
+                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                        // Check if this function has array parameters we can match
+                        if (i < func->n_args && func->m_args[i] && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                            // Match the physical type of the actual function's parameter
+                            ASR::Array_t* func_param_array = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                                    ASRUtils::expr_type(func->m_args[i]))));
+                            phys_type = func_param_array->m_physical_type;
+                        }
+                    }
+
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t empty_dim;
+                    empty_dim.loc = var_type->base.loc;
+                    empty_dim.m_start = nullptr;
+                    empty_dim.m_length = nullptr;
+                    dims.push_back(al, empty_dim);
+
+                    var_type = ASRUtils::TYPE(ASR::make_Array_t(al, var_type->base.loc,
+                        elem_type, dims.p, dims.size(), phys_type));
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -9656,12 +9680,18 @@ public:
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
+                // Use Source ABI for arrays to match LFortran's calling convention
+                // Arrays (including assumed-size) use descriptors in LFortran
+                ASR::abiType param_abi = ASR::abiType::BindC;
+                if (ASRUtils::is_array(var_type)) {
+                    param_abi = ASR::abiType::Source;
+                }
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
                     nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(var_expr),
-                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                    param_abi, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_or_overwrite_symbol(arg_name, v);
             }
@@ -9669,6 +9699,17 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 v)));
         }
+
+        // Determine ABI for the function based on whether it has array parameters
+        ASR::abiType func_abi = ASR::abiType::BindC;
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(args[i])->m_v);
+            if (arg_var->m_abi == ASR::abiType::Source) {
+                func_abi = ASR::abiType::Source;
+                break;
+            }
+        }
+
         ASR::ttype_t *type = old_type;
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
@@ -9680,7 +9721,7 @@ public:
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                func_abi, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -9697,7 +9738,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            func_abi, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
