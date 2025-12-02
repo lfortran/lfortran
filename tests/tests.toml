@@ -4745,6 +4745,12 @@ filename = "errors/show_errors1.f90"
 show_errors = true
 
 [[test]]
+filename = "errors/mod_cpp_modfile_main.f90"
+show_errors = true
+options = "--cpp"
+extrafiles = "errors/mod_cpp_modfile_module.f90"
+
+[[test]]
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
