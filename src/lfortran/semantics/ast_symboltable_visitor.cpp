@@ -40,6 +40,8 @@ public:
     bool in_submodule = false;
     bool is_interface = false;
     bool in_program = false;
+    int program_count = 0; // To track number of program units in a single file
+    Location first_program_loc; // Location of the first program unit
     std::string interface_name = "";
     ASR::symbol_t *current_module_sym;
 
@@ -70,7 +72,8 @@ public:
         }
         LCOMPILERS_ASSERT(current_scope != nullptr);
         global_scope = current_scope;
-
+        // Reset program counter for this translation unit 
+        program_count = 0;
         // Create the TU early, so that asr_owner is set, so that
         // ASRUtils::get_tu_symtab() can be used, which has an assert
         // for asr_owner.
@@ -416,6 +419,20 @@ public:
     }
 
     void visit_Program(const AST::Program_t &x) {
+        // Check for multiple program units in the same file 
+        program_count++;
+        if (program_count == 1) {
+            first_program_loc = x.base.base.loc;
+        } else if (program_count >= 2) {
+            diag.add(diag::Diagnostic(
+            "Multiple main programs in the same file",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("first main program defined here", {first_program_loc}),
+                    diag::Label("second main program defined here", {x.base.base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         generic_procedures.clear();
