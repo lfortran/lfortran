@@ -4665,6 +4665,15 @@ line = 22
 column = 18
 
 [[test]]
+filename = "lookup_name_class63.f90"
+asr = true
+lookup_name = true
+line = 8
+column = 43
+options = "--cpp"
+extrafiles = "lookup_name_class63_module_1.f90, lookup_name_class63_module_2.f90"
+
+[[test]]
 filename = "errors/func_parameter_type.f90"
 asr = true
 
