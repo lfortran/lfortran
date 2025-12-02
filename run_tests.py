@@ -260,7 +260,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extrafile_ = os.path.join("tests", extrafile_)
                 modfile = extrafile_[:-4] + ".mod"
                 if not os.path.exists(modfile):
-                    run_cmd("lfortran -c {}".format(extrafile_))
+                    run_cmd("lfortran {} -c {}".format(options, extrafile_))
         if not skip_test:
             run_test(
                 filename,
@@ -351,7 +351,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     extrafile_ = os.path.join("tests", extrafile_)
                     modfile = extrafile_[:-4] + ".mod"
                     if not os.path.exists(modfile):
-                        run_cmd("lfortran -c {}".format(extrafile_))
+                        run_cmd("lfortran {} -c {}".format(options, extrafile_))
 
             if not skip_test:
                 run_test(
@@ -453,7 +453,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extrafile_ = os.path.join("tests", extrafile_)
                 modfile = extrafile_[:-4] + ".mod"
                 if not os.path.exists(modfile):
-                    run_cmd("lfortran -c {}".format(extrafile_))
+                    run_cmd("lfortran {} -c {}".format(options, extrafile_))
         if not skip_test:
             run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
                 filename,
