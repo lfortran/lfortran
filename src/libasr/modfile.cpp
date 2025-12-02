@@ -210,58 +210,8 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
         serialized_lm.file_ends.push_back(b.read_int32());
     }
 
-    // Adjust out_start and out_start0 by the current file_ends offset
-    // so positions from this modfile map correctly in the combined LocationManager
-    const uint32_t offset = lm.file_ends.empty() ? 0 : lm.file_ends.back();
-    const LCompilers::LocationManager::FileLocations &source_file =
-        serialized_lm.files[0];
-    LCompilers::LocationManager::FileLocations adjusted_file = source_file;
-    for (size_t i = 0; i < adjusted_file.out_start.size(); i++) {
-        adjusted_file.out_start[i] += offset;
-    }
-    const uint32_t file_end_local = serialized_lm.file_ends[0];
-    const uint32_t file_end_with_offset = file_end_local + offset;
-    if (adjusted_file.preprocessor) {
-        // Ensure the preprocessor interval vectors are well-formed:
-        // out_start0 must contain interval boundaries (N+1 items) and the other
-        // vectors must contain interval metadata (N items). Some modfiles
-        // written without the offset ended up with empty interval vectors;
-        // synthesize a 1:1 mapping to keep LocationManager bisection safe.
-        if (adjusted_file.out_start0.empty()) {
-            adjusted_file.out_start0.push_back(0);
-        }
-        if (adjusted_file.out_start0.back() != file_end_local) {
-            adjusted_file.out_start0.push_back(file_end_local);
-        }
-
-        const size_t intervals0 = adjusted_file.out_start0.size() - 1;
-        if (adjusted_file.interval_type0.size() < intervals0) {
-            adjusted_file.interval_type0.resize(intervals0, 0);
-        }
-        if (adjusted_file.in_start0.size() < intervals0) {
-            adjusted_file.in_start0.resize(intervals0, 0);
-            for (size_t i = 0; i < intervals0; i++) {
-                if (i < source_file.in_start0.size()) {
-                    adjusted_file.in_start0[i] = source_file.in_start0[i];
-                } else {
-                    adjusted_file.in_start0[i] = adjusted_file.out_start0[i];
-                }
-            }
-        }
-        if (adjusted_file.in_size0.size() < intervals0) {
-            adjusted_file.in_size0.resize(intervals0, 0);
-            for (size_t i = 0; i < intervals0; i++) {
-                if (i < source_file.in_size0.size()) {
-                    adjusted_file.in_size0[i] = source_file.in_size0[i];
-                } else {
-                    adjusted_file.in_size0[i] = adjusted_file.out_start0[i + 1] -
-                        adjusted_file.out_start0[i];
-                }
-            }
-        }
-    }
-    lm.files.push_back(adjusted_file);
-    lm.file_ends.push_back(file_end_with_offset);
+    lm.files.push_back(serialized_lm.files[0]);
+    lm.file_ends.push_back(serialized_lm.file_ends[0] + lm.file_ends.back());
 
     asr_binary = b.read_string();
     return true;
@@ -275,13 +225,7 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> load_modfile(Allocator &al, const 
         return ErrorMessage(error_message);
     }
     // take offset as last second element of file_ends
-    // This is the offset BEFORE the current modfile's FileLocations was added
-    uint32_t offset;
-    if (lm.file_ends.size() >= 2) {
-        offset = lm.file_ends[lm.file_ends.size()-2];
-    } else {
-        offset = 0;
-    }
+    uint32_t offset = lm.file_ends[lm.file_ends.size()-2];
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab, offset);
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;
