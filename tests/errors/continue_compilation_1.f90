@@ -117,7 +117,7 @@ program continue_compilation_1
     type(bspline_3d) :: s3_in_program
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
-
+    integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
 
 
 
@@ -349,4 +349,19 @@ program continue_compilation_1
     q1: do q1 = 1, 3
         print *, q1
     end do q1
-end program
+
+    ! Test assigned format WRITE 
+    ASSIGN 0012 TO fmt_i1
+    0012 FORMAT (" **** ASSIGN FORMAT NUMBER TO INTEGER VARIABLE ****" )
+    WRITE (6, fmt_i1)
+
+    ! Test assigned format PRINT 
+    assign 100 to fmt_i2
+    100 format (A)
+    print fmt_i2, "test"
+
+    ! Test assigned format READ 
+    assign 13 to fmt_i3
+    13 format ()
+    read (5, fmt_i3)
+end program 
