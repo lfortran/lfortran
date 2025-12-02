@@ -1254,20 +1254,8 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {
-                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
-                            llvm_type = llvm::ArrayType::get(character_type,
-                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
-                            break;
-                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
-                            // Treat it as a DescriptorArray
-                            is_array_type = true;
-                            llvm::Type* el_type = character_type;
-                            llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
-                            break;
-                        } else {
-                            LCOMPILERS_ASSERT(false);
-                            break;
-                        }
+                        llvm_type = character_type;
+                        break;
                     }
                     case ASR::array_physical_typeType::AssumedRankArray: {
                         llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);

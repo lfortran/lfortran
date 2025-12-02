@@ -19,6 +19,68 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+
+/**
+ * @param string_expr string to be casted
+ * @param array_type type of array to cast to
+ * @return ASR Cast node with cast_kind = `StringToArray`
+*/
+inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type){
+    LCOMPILERS_ASSERT(is_string_only(expr_type(string_expr)))
+    LCOMPILERS_ASSERT(is_array_of_strings(array_type))
+    if(extract_n_dims_from_ttype(array_type) != 1) throw LCompilersException("Can't cast string to array of n_dims != 1");
+
+    ASR::ttype_t*  const array_type_dup = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(array_type);
+    ASR::Array_t*  const array_t = ASR::down_cast<ASR::Array_t>(type_get_past_allocatable_pointer(array_type_dup));
+    ASR::String_t* const dest_string_t = get_string_type(array_type_dup);
+    const bool is_length_present = dest_string_t->m_len_kind == ASR::ExpressionLength;
+    const bool is_size_present = !is_dimension_empty(array_type_dup); 
+
+    // Notice We're transforming a string into array;
+    // Resulting array should have proper length + size. 
+    if(is_length_present && is_size_present){ // character()
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                            , ASR::StringToArray, array_type_dup, nullptr));
+    } else if(is_length_present && !is_size_present){
+        ASRBuilder b(al, string_expr->base.loc);
+        ASR::expr_t* const castedString_len = extract_kind_from_ttype_t(expr_type(dest_string_t->m_len)) != 4? 
+                                                b.i2i_t(b.StringLen(string_expr), expr_type(dest_string_t->m_len)) 
+                                              : b.StringLen(string_expr);
+        ASR::expr_t* const arr_size = b.Div(castedString_len, dest_string_t->m_len);
+        array_t->m_dims[0].m_start  = b.i32(1);
+        array_t->m_dims[0].m_length = arr_size;
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                , ASR::StringToArray, array_type_dup, nullptr));
+    } else if(!is_length_present && is_size_present){
+        ASRBuilder b(al, string_expr->base.loc);
+        if(is_fixed_size_array(array_type_dup)){
+            ASR::expr_t* const string_len = b.Div(b.i2i_t(b.StringLen(string_expr), 
+                                                    ASRUtils::TYPE(ASR::make_Integer_t(al, string_expr->base.loc, 8))), 
+                                                get_compile_time_array_size(al, array_type_dup));
+            dest_string_t->m_len = string_len;
+            dest_string_t->m_len_kind = ASR::ExpressionLength;
+        } else {
+            dest_string_t->m_len = b.StringLen(string_expr);
+            dest_string_t->m_len_kind = ASR::ExpressionLength;
+        }
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                , ASR::StringToArray, array_type_dup, nullptr));
+    } else {
+        ASRBuilder b(al, string_expr->base.loc);
+        dest_string_t->m_len = b.StringLen(string_expr);
+        dest_string_t->m_len_kind = ASR::ExpressionLength;
+        array_t->m_dims[0].m_start  = b.i32(1);
+        array_t->m_dims[0].m_length = b.i32(1);
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                , ASR::StringToArray, array_type_dup, nullptr));
+    }
+
+}
+
 // depth-first graph traversal
 void visit(
     std::string const& a,

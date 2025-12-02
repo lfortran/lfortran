@@ -405,7 +405,23 @@ class ASRToLLVMVisitor;
             */
             bool is_string_length_setable(ASR::String_t* string_t);
 
+            /**
+             * Gets string's consecutive memory data (char*).
+             * @param str_type ASR string type node of the string you're operating on.
+             * @param str LLVM physical-string. Pass it in one of these forms (`string_descriptor*`, `char*`)
+             * @param get_pointer_to_data flag to get a reference to the `char*` (`char**`). 
+             * @return an LLVM value of `char*` or `char**` (based on `get_pointer_to_data` flag)
+            */
+
             llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
+
+            /**
+             * Gets string's length
+             * @param str_type ASR string type node of the string you're operating on.
+             * @param str LLVM physical-string. Pass it in one of these forms (`string_descriptor*`, `char*`)
+             * @param get_pointer_to_data flag to get the length `i64` by reference (`i64*`). 
+             * @return an LLVM value of `i64` or `i64*` (based on `get_pointer_to_data` flag)
+            */
             llvm::Value* get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len=false);
 
             // Gets string's length and data
