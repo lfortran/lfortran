@@ -210,8 +210,20 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
         serialized_lm.file_ends.push_back(b.read_int32());
     }
 
-    lm.files.push_back(serialized_lm.files[0]);
-    lm.file_ends.push_back(serialized_lm.file_ends[0] + lm.file_ends.back());
+    // Append the module's location information into the current LocationManager.
+    // The serialized LocationManager was built with the module starting at 0,
+    // so we shift its output positions by the current global offset while
+    // keeping input positions unchanged.
+    const uint32_t offset = lm.file_ends.empty() ? 0 : lm.file_ends.back();
+    LCompilers::LocationManager::FileLocations adjusted_file = serialized_lm.files[0];
+    for (size_t i = 0; i < adjusted_file.out_start.size(); i++) {
+        adjusted_file.out_start[i] += offset;
+    }
+    // Note: we do NOT adjust out_start0 because the preprocessor remapping
+    // operates on positions that are already file-relative (after the first
+    // level of remapping via out_start/in_start).
+    lm.files.push_back(adjusted_file);
+    lm.file_ends.push_back(serialized_lm.file_ends[0] + offset);
 
     asr_binary = b.read_string();
     return true;
