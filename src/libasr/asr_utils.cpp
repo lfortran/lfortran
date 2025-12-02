@@ -1496,7 +1496,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
                             if( a_name == nullptr ) {
-                                err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                                if (i >= n_interface_proc) {
+                                    err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                                } else {
+                                    a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                                al, loc, curr_scope, s2c(al, matched_func_name), proc,
+                                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                                nullptr, 0, func->m_name, ASR::accessType::Public));
+                                    curr_scope->add_symbol(matched_func_name, a_name);
+                                }
                             }
                             ASR::ttype_t *return_type = nullptr;
                             if( ASRUtils::get_FunctionType(func)->m_elemental &&
@@ -2095,7 +2103,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
                             if( a_name == nullptr ) {
-                                err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                                if (i >= n_interface_proc) {
+                                    err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                                } else {
+                                    a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                                al, loc, curr_scope, s2c(al, matched_func_name), proc,
+                                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                                nullptr, 0, func->m_name, ASR::accessType::Public));
+                                    curr_scope->add_symbol(matched_func_name, a_name);
+                                }
                             }
                             ASR::ttype_t *return_type = nullptr;
                             if( ASRUtils::get_FunctionType(func)->m_elemental &&
