@@ -7771,6 +7771,22 @@ public:
                 throw SemanticAbort();
             }
         }
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(array))) {
+            ASR::Variable_t* var = ASRUtils::EXPR2VAR(array);
+            if (assumed_rank_arrays.find(var->m_name) == assumed_rank_arrays.end()) {
+                diag.add(Diagnostic("Assumed rank arrays cannot be used as `source` argument to reshape intrinsic",
+                                    Level::Error, Stage::Semantic, {Label("", {array->base.loc})}));
+                throw SemanticAbort();
+            } else {
+                int rank = assumed_rank_arrays[var->m_name];
+                ASR::ttype_t* array_type = ASRUtils::create_array_type_with_empty_dims(al, rank, 
+                                                ASRUtils::extract_type(ASRUtils::expr_type(array)));
+                array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, array->base.loc, array, ASR::array_physical_typeType::AssumedRankArray,
+                    ASR::array_physical_typeType::DescriptorArray, array_type, nullptr
+                ));
+            }
+        }
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
                                                             ASRUtils::expr_type(array));
         ASR::ttype_t* shape_type = ASRUtils::expr_type(newshape);
