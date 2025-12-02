@@ -1741,6 +1741,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 );
             }
         }
+        if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_array) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_array)->m_old ==
+            ASR::array_physical_typeType::AssumedRankArray ) {
+            return ; 
+        }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
