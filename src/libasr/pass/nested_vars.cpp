@@ -920,6 +920,35 @@ public:
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
         visit_expr(*x.m_array);
     }
+
+    // Generic helper to preserve calls_present across recursive transform_stmts
+    // Used for compound statements (loops, if, where, etc.) that:
+    // 1. Visit conditional/test expressions (which may contain function calls)
+    // 2. Recursively call transform_stmts on body (which resets calls_present)
+    // 3. Handle calls_present to preserve calls_present from condition separately.
+    template<typename BaseVisitorCall>
+    void visit_compound_stmt_with_test(BaseVisitorCall base_visitor) {
+        // Save calls_present before processing body
+        bool calls_present_in_condition = calls_present;
+        // Call base visitor to process body (which may reset calls_present)
+        base_visitor();
+        // Restore: preserve both condition calls AND body calls
+        calls_present = calls_present || calls_present_in_condition;
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        visit_expr(*x.m_test);
+        visit_compound_stmt_with_test([&]() {
+            PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
+        });
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        visit_expr(*x.m_test);
+        visit_compound_stmt_with_test([&]() {
+            PassUtils::PassVisitor<AssignNestedVars>::visit_If(x);
+        });
+    }
 };
 
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
