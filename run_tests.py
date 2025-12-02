@@ -462,22 +462,29 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if show_errors:
+        skip_test = False
         for extrafile in extrafiles:
             extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * show_errors   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
 
             if len(extrafile_) > 0:
                 extrafile_ = os.path.join("tests", extrafile_)
                 modfile = extrafile_[:-4] + ".mod"
                 if not os.path.exists(modfile):
                     run_cmd("lfortran {} -c {}".format(options, extrafile_))
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-errors --continue-compilation --no-color {infile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        if not skip_test:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-errors --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if syntax_only_cc:
         run_test(filename, "ast", "lfortran --continue-compilation --show-ast --no-color {infile}",
