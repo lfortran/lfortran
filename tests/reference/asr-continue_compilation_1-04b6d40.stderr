@@ -820,3 +820,21 @@ semantic error: DO loop label 'q1' already defined
     |
 351 |        end do q1
     | ...^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:356:5
+    |
+356 |     WRITE (6, fmt_i1)
+    |     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:361:5
+    |
+361 |     print fmt_i2, "test"
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:366:5
+    |
+366 |     read (5, fmt_i3)
+    |     ^^^^^^^^^^^^^^^^ 
