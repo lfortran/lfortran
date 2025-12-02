@@ -48,6 +48,10 @@ cp $D/src/bin/lfortran.data ${dest_dir}/${git_hash}/lfortran.data
 echo "$git_hash" > ${dest_dir}/latest_commit # overwrite the file instead of appending to it
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
 
+# Move back to wasm_builds/ directory to perform git operations
+# This ensures docs/ remains as a subdirectory in the committed structure
+cd ..
+
 # Wipe git history to keep repository size small
 # This ensures only one commit exists, making old builds unreachable for GitHub GC
 echo "Wiping git history and creating fresh orphaned commit..."
