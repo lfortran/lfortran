@@ -28,6 +28,12 @@ semantic error: Assumed-rank arrays are not supported in print statements
 30 |         print *, x
    |                  ^ 
 
+semantic error: Assumed rank arrays cannot be used as `source` argument to reshape intrinsic
+  --> tests/errors/continue_compilation_3.f90:31:26
+   |
+31 |         print *, reshape(x, [size(x)])
+   |                          ^ 
+
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_3.f90:68:26
    |
