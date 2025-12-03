@@ -857,7 +857,7 @@ namespace LCompilers {
             ASR::ttype_t* const cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
             ASR::ttype_t* const l_type = ASRUtils::expr_type(left);
             ASR::ttype_t* const r_type = ASRUtils::expr_type(right);
-            LCOMPILERS_ASSERT(l_type->type == r_type->type)
+            LCOMPILERS_ASSERT(ASRUtils::extract_type(l_type)->type == ASRUtils::extract_type(r_type)->type)
             // TODO: compute `value`:
 
             ASRUtils::ASRBuilder b(al, loc);
