@@ -425,7 +425,7 @@ public:
             first_program_loc = x.base.base.loc;
         } else if (program_count >= 2) {
             diag.add(diag::Diagnostic(
-            "Multiple main programs in the same file",
+            "More than one main program found",
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("first main program defined here", {first_program_loc}),
                     diag::Label("second main program defined here", {x.base.base.loc})

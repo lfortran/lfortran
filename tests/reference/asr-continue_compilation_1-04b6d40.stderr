@@ -129,7 +129,7 @@ semantic error: BOZ literal constant cannot be used in binary operations
 119 |     integer::tt = b'01' * 3
     |                   ^^^^^^^^^ 
 
-semantic error: Multiple main programs in the same file
+semantic error: More than one main program found
    --> tests/errors/continue_compilation_1.f90:64:1 - 367:11
     |
  64 |    program continue_compilation_1
