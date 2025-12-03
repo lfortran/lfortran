@@ -44,6 +44,7 @@ public:
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
     bool is_first_section=false;
+    int program_count = 0;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
         CompilerOptions &compiler_options,
@@ -165,6 +166,7 @@ public:
     }
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
+        program_count = 0;
         ASR::TranslationUnit_t *unit = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
         current_scope = unit->m_symtab;
         Vec<ASR::asr_t*> items;
@@ -2434,6 +2436,10 @@ public:
 
 
     void visit_Program(const AST::Program_t &x) {
+        program_count++;
+        if (program_count >= 2) {
+        return;  // Just skip 
+        }
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);

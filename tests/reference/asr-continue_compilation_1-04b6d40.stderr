@@ -129,6 +129,23 @@ semantic error: BOZ literal constant cannot be used in binary operations
 119 |     integer::tt = b'01' * 3
     |                   ^^^^^^^^^ 
 
+semantic error: Multiple main programs in the same file
+   --> tests/errors/continue_compilation_1.f90:64:1 - 367:11
+    |
+ 64 |    program continue_compilation_1
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+367 |    end program 
+    | ...^^^^^^^^^^^ first main program defined here
+    |
+369 |    program second_program_test
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+372 |    end program second_program_test
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:136:8
     |

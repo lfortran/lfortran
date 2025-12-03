@@ -431,7 +431,7 @@ public:
                     diag::Label("second main program defined here", {x.base.base.loc})
                 }
             ));
-            throw SemanticAbort();
+            return;
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);

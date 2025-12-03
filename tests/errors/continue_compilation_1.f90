@@ -365,3 +365,8 @@ program continue_compilation_1
     13 format ()
     read (5, fmt_i3)
 end program 
+! Test for multiple PROGRAM units in same file
+program second_program_test
+    implicit none
+    print *, "This is a second program - should cause error"
+end program second_program_test
