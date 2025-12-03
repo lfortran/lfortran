@@ -2816,6 +2816,12 @@ static inline bool is_fixed_size_array(ASR::dimension_t* m_dims, size_t n_dims) 
     return true;
 }
 
+inline bool is_stringToArray_cast(ASR::expr_t* const expr){
+    LCOMPILERS_ASSERT(expr)
+    return  ASR::is_a<ASR::Cast_t>(*expr)
+            && ASR::down_cast<ASR::Cast_t>(expr)->m_kind == ASR::StringToArray;
+}
+
 static inline bool is_fixed_size_array(ASR::ttype_t* type) {
     ASR::dimension_t* m_dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
@@ -6554,6 +6560,15 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
     }
 }
 
+inline bool is_stringToArray_cast_needed(ASR::ttype_t* const argument_ty, ASR::ttype_t* const parameter_ty){
+    ASR::ttype_t* const argument_ty_past  = ASRUtils::type_get_past_allocatable_pointer(argument_ty);
+    ASR::ttype_t* const parameter_ty_past = ASRUtils::type_get_past_allocatable_pointer(parameter_ty);
+    return ASRUtils::is_array_of_strings(parameter_ty_past)
+        && argument_ty_past->type  == ASR::String;
+}
+
+ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type);
+
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, bool nopass, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
@@ -6791,6 +6806,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::AssumedRankArray;
                 }
             }
+        }
+        if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
+            LCOMPILERS_ASSERT_MSG(extract_n_dims_from_ttype(orig_arg_type)==1, "Casting string to array of rank == 1 is only possible")
+            a_args[i].m_value = &cast_string_to_array(al, arg, orig_arg_type)->base;
         }
     }
 }
