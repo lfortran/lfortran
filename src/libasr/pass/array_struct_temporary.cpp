@@ -1093,13 +1093,16 @@ bool is_elemental_expr(ASR::expr_t* value) {
 }
 
 bool is_temporary_needed(ASR::expr_t* value) {
-    bool is_expr_with_no_type = value && (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
+    if(!value) { return false; }
+    bool is_expr_with_no_type = (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
         value->type) == exprs_with_no_type.end()) && ASRUtils::is_array(ASRUtils::expr_type(value));
-    bool is_non_empty_fixed_size_array = value && (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
+    bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
         (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
         ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
-    return value && is_expr_with_no_type &&
-            !is_elemental_expr(value) && is_non_empty_fixed_size_array;
+    return is_expr_with_no_type 
+        && !ASRUtils::is_stringToArray_cast(value)
+        && !is_elemental_expr(value) 
+        && is_non_empty_fixed_size_array;
 }
 
 ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
