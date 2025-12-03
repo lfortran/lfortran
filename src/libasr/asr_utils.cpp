@@ -55,16 +55,8 @@ inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const strin
                 , ASR::StringToArray, array_type_dup, nullptr));
     } else if(!is_length_present && is_size_present){
         ASRBuilder b(al, string_expr->base.loc);
-        if(is_fixed_size_array(array_type_dup)){
-            ASR::expr_t* const string_len = b.Div(b.i2i_t(b.StringLen(string_expr), 
-                                                    ASRUtils::TYPE(ASR::make_Integer_t(al, string_expr->base.loc, 8))), 
-                                                get_compile_time_array_size(al, array_type_dup));
-            dest_string_t->m_len = string_len;
-            dest_string_t->m_len_kind = ASR::ExpressionLength;
-        } else {
-            dest_string_t->m_len = b.StringLen(string_expr);
-            dest_string_t->m_len_kind = ASR::ExpressionLength;
-        }
+        dest_string_t->m_len = b.StringLen(string_expr);
+        dest_string_t->m_len_kind = ASR::ExpressionLength;
        return ASR::down_cast2<ASR::Cast_t>(
                 ASR::make_Cast_t(al, string_expr->base.loc, string_expr
                 , ASR::StringToArray, array_type_dup, nullptr));
