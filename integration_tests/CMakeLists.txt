@@ -449,6 +449,7 @@ RUN(NAME if_02 FAIL LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c
 RUN(NAME if_03 FAIL LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c)
 RUN(NAME if_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME if_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
+RUN(NAME if_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # select case range 
 
 RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME while_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
@@ -559,6 +560,7 @@ RUN(NAME functions_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME functions_50 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_51 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_52 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_53 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME common_01 LABELS gfortran)
