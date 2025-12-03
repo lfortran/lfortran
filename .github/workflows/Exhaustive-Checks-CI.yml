@@ -57,7 +57,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ( cd src && ./build0.sh )
-            export CXXFLAGS="-Werror"
+            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
@@ -335,6 +335,7 @@ jobs:
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
             export EMSDK_PATH=$HOME/ext/emsdk
+            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
@@ -638,7 +639,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
           ./build0.sh
-          export CXXFLAGS="-Werror"
+          export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
