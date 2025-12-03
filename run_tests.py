@@ -247,14 +247,29 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if lookup_name:
-        run_test(
-            filename,
-            "lookup_name",
-            "lfortran --lookup-name --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * lookup_name   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+
+            if len(extrafile_) > 0:
+                extrafile_ = os.path.join("tests", extrafile_)
+                modfile = extrafile_[:-4] + ".mod"
+                if not os.path.exists(modfile):
+                    run_cmd("lfortran {} -c {}".format(options, extrafile_))
+        if not skip_test:
+            run_test(
+                filename,
+                "lookup_name",
+                "lfortran --lookup-name --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
     if rename_symbol:
         run_test(
             filename,
@@ -336,7 +351,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     extrafile_ = os.path.join("tests", extrafile_)
                     modfile = extrafile_[:-4] + ".mod"
                     if not os.path.exists(modfile):
-                        run_cmd("lfortran -c {}".format(extrafile_))
+                        run_cmd("lfortran {} -c {}".format(options, extrafile_))
 
             if not skip_test:
                 run_test(
@@ -438,7 +453,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extrafile_ = os.path.join("tests", extrafile_)
                 modfile = extrafile_[:-4] + ".mod"
                 if not os.path.exists(modfile):
-                    run_cmd("lfortran -c {}".format(extrafile_))
+                    run_cmd("lfortran {} -c {}".format(options, extrafile_))
         if not skip_test:
             run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
                 filename,
@@ -447,11 +462,29 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if show_errors:
-        run_test(filename, "asr", "lfortran --show-errors --continue-compilation --no-color {infile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * show_errors   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+
+            if len(extrafile_) > 0:
+                extrafile_ = os.path.join("tests", extrafile_)
+                modfile = extrafile_[:-4] + ".mod"
+                if not os.path.exists(modfile):
+                    run_cmd("lfortran {} -c {}".format(options, extrafile_))
+        if not skip_test:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-errors --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if syntax_only_cc:
         run_test(filename, "ast", "lfortran --continue-compilation --show-ast --no-color {infile}",

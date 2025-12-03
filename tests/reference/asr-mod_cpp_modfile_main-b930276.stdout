@@ -1,0 +1,1 @@
+{"uri":"file://tests/errors/mod_cpp_modfile_main.f90","diagnostics":[{"source":"lpyth","range":{"start":{"line":5,"character":10},"end":{"line":5,"character":10}},"message":"Type mismatch in argument `a`: expected `integer` but got `real`","severity":0}]}
