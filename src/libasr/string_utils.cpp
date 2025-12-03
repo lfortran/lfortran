@@ -136,17 +136,18 @@ bool read_file(const std::string &filename, std::string &text)
 
     std::ifstream::pos_type filesize = ifs.tellg();
     if (filesize < 0) return false;
-    if (filesize == 0) {
-        text = "";
+    const std::size_t size = static_cast<std::size_t>(filesize);
+    if (size == 0) {
+        text.clear();
         return true;
     }
 
     ifs.seekg(0, std::ios::beg);
 
-    std::vector<char> bytes(filesize);
-    ifs.read(&bytes[0], filesize);
+    std::vector<char> bytes(size);
+    ifs.read(bytes.data(), filesize);
 
-    text = std::string(&bytes[0], filesize);
+    text.assign(bytes.data(), size);
     return true;
 }
 
