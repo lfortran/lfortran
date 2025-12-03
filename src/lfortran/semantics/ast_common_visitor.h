@@ -5528,6 +5528,25 @@ public:
         ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(
             ASRUtils::symbol_type(v));
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(root_v_type);
+        bool is_assumed_rank = false;
+        if (ASRUtils::is_assumed_rank_array(root_v_type)) {
+            is_assumed_rank = true;
+            std::string var_name = ASRUtils::symbol_name(v);
+            if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
+                diag.add(Diagnostic(
+                    "Assumed-rank array `" + var_name +
+                    "` cannot be accessed outside a select rank block",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{loc})
+                    }));
+                throw SemanticAbort();
+            } else {
+                size_t rank = assumed_rank_arrays[var_name];
+                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, rank, ASRUtils::extract_type(root_v_type));
+                root_v_type = new_type;
+                n_dims = rank;
+            }
+        }
         if (ASRUtils::is_array(root_v_type) && n_dims != n_args) {
             std::string var_name = ASRUtils::symbol_name(v);
             diag.add(Diagnostic(
@@ -5550,6 +5569,12 @@ public:
                         al, v_expr->base.loc, v_expr, v_ext, struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+            if (is_assumed_rank) {
+                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, 
+                    v_Var, ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, 
+                    root_v_type, nullptr));
+                v_Var = cast_expr;
+            }
         }
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
