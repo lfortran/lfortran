@@ -246,6 +246,9 @@ public:
                         }
                     }
                 }
+                if (arr_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    bounds = "..";
+                }
                 r = get_type(arr_type->m_type, type_decl) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
@@ -780,7 +783,7 @@ public:
             r += " = ";
             visit_expr(*x.m_symbolic_value);
             r += src;
-        } else if (x.m_value) {
+        } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 r += " => ";
             } else {
@@ -1330,6 +1333,58 @@ public:
         if (x.n_default > 0) {
             r += indent;
             r += "case default\n";
+            inc_indent();
+            for(size_t i = 0; i < x.n_default; i ++) {
+                visit_stmt(*x.m_default[i]);
+                r += src;
+            }
+            dec_indent();
+        }
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        src = r;
+    }
+
+    void visit_SelectRank(const ASR::SelectRank_t &x) {
+        std::string r = indent;
+        r += "select rank";
+        r += " (";
+        visit_expr(*x.m_selector);
+        r += src;
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        inc_indent();
+        if (x.n_body > 0) {
+            for(size_t i=0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::RankExpr_t>(*x.m_body[i])) {
+                    ASR::RankExpr_t* rank_expr = ASR::down_cast<ASR::RankExpr_t>(x.m_body[i]);
+                    r += indent;
+                    r += "rank(";
+                    visit_expr(*rank_expr->m_rank);
+                    r += src;
+                    r += ")\n";
+                    inc_indent();
+                    for(size_t j=0; j < rank_expr->n_body; j++) {
+                        if (ASR::is_a<ASR::BlockCall_t>(*rank_expr->m_body[j])) {
+                            ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_expr->m_body[j]);
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
+                            ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                            for(size_t k=0; k < block->n_body; k++) {
+                                visit_stmt(*block->m_body[k]);
+                                r += src;
+                            }
+                        }
+                    }
+                    dec_indent();
+                }
+            }
+        }
+        // Rank Default
+        if (x.n_default > 0) {
+            r += indent;
+            r += "rank default\n";
             inc_indent();
             for(size_t i = 0; i < x.n_default; i ++) {
                 visit_stmt(*x.m_default[i]);
