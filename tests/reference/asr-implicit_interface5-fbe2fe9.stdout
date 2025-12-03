@@ -80,7 +80,7 @@
                                                         PointerArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -106,7 +106,7 @@
                                                         PointerArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -132,7 +132,7 @@
                                             PointerArray
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.

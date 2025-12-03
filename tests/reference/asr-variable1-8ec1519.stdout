@@ -49,7 +49,7 @@
                                                         PointerArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -96,7 +96,7 @@
                                                         PointerArray
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -211,7 +211,7 @@
                                         (Complex 4)
                                         (Complex 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.

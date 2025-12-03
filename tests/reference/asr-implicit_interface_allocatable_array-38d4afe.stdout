@@ -103,11 +103,11 @@
                                                             (Real 4)
                                                             [(()
                                                             ())]
-                                                            PointerArray
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -126,11 +126,11 @@
                                                 (Real 4)
                                                 [(()
                                                 ())]
-                                                PointerArray
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -186,14 +186,16 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Array
-                                                        (Real 4)
-                                                        [(()
-                                                        ())]
-                                                        PointerArray
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -207,14 +209,16 @@
                                     sub2
                                     (FunctionType
                                         [(Integer 4)
-                                        (Array
-                                            (Real 4)
-                                            [(()
-                                            ())]
-                                            PointerArray
+                                        (Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -257,18 +261,7 @@
                         2 sub1
                         ()
                         [((IntegerConstant 1 (Integer 4) Decimal))
-                        ((ArrayPhysicalCast
-                            (Var 2 r_g)
-                            DescriptorArray
-                            PointerArray
-                            (Array
-                                (Real 4)
-                                [(()
-                                ())]
-                                PointerArray
-                            )
-                            ()
-                        ))]
+                        ((Var 2 r_g))]
                         ()
                         .false.
                     )
@@ -276,20 +269,7 @@
                         2 sub2
                         ()
                         [((IntegerConstant 1 (Integer 4) Decimal))
-                        ((ArrayPhysicalCast
-                            (Var 2 r_t)
-                            DescriptorArray
-                            PointerArray
-                            (Pointer
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerArray
-                                )
-                            )
-                            ()
-                        ))]
+                        ((Var 2 r_t))]
                         ()
                         .false.
                     )]
