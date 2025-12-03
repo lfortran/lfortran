@@ -28,8 +28,8 @@ contains
     subroutine assumed_rank(x)
         integer, intent(in) :: x(..)
         print *, x
+        print *, reshape(x, [size(x)])
     end subroutine assumed_rank
-
 
 
 
