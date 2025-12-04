@@ -863,7 +863,7 @@ time_section "🧪 Testing SNAP" '
 '
 
 ##########################
-# Section 11: LAPACK
+# Section 12: LAPACK
 ##########################
 time_section "🧪 Testing LAPACK" '
     export PATH="$(pwd)/../src/bin:$PATH"
@@ -873,8 +873,6 @@ time_section "🧪 Testing LAPACK" '
     git checkout lf_07
     git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
-    micromamba create -f environment_unix.yml
-    micromamba activate lapack
     ./build_lf.sh
 '
 
