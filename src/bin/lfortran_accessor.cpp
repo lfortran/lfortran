@@ -248,8 +248,20 @@ namespace LCompilers::LLanguageServer {
             lm.files.push_back(fl);
             lm.file_ends.push_back(text.size());
         }
+        auto astStart = std::chrono::steady_clock::now();
+        std::cerr << "[LFortranAccessor::format] formatting file="
+                  << filename << " text.size=" << text.size()
+                  << " indent=" << indent << " indent_unit="
+                  << (indent_unit ? "true" : "false") << std::endl;
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
             r = fe.get_ast2(text, lm, diagnostics);
+        auto astEnd = std::chrono::steady_clock::now();
+        auto astElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            astEnd - astStart
+        );
+        std::cerr << "[LFortranAccessor::format] get_ast2 done in "
+                  << astElapsed.count() << " ms (ok="
+                  << (r.ok ? "true" : "false") << ")" << std::endl;
         std::cerr << diagnostics.render(lm, compiler_options);
         if (!r.ok) {
             LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -257,9 +269,17 @@ namespace LCompilers::LLanguageServer {
         }
         LCompilers::LFortran::AST::TranslationUnit_t* ast = r.result;
 
+        auto astToSrcStart = std::chrono::steady_clock::now();
         // AST -> Source
         std::string source = LCompilers::LFortran::ast_to_src(*ast, color,
             indent, indent_unit);
+        auto astToSrcEnd = std::chrono::steady_clock::now();
+        auto astToSrcElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            astToSrcEnd - astToSrcStart
+        );
+        std::cerr << "[LFortranAccessor::format] ast_to_src completed in "
+                  << astToSrcElapsed.count() << " ms, output size="
+                  << source.size() << std::endl;
 
         return source;
     }
