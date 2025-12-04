@@ -29,8 +29,8 @@ contains
         integer, intent(in) :: x(..)
         print *, x
         print *, reshape(x, [size(x)])
+        print *, x(1)
     end subroutine assumed_rank
-
 
 
 
