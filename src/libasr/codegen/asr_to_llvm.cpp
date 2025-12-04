@@ -657,6 +657,41 @@ public:
                         visit_expr_load_wrapper(str_expr, ASRUtils::is_allocatable_or_pointer(exp_type) ? 1 : 0);
                         return get_string_length_in_array(str_expr, tmp);
                     } else {
+                        // Handling Logic for ArrayItem accessing empty array
+                        // In this case, return length from array descriptors
+                        if (ASR::is_a<ASR::ArrayItem_t>(*str_expr)) {
+                            ASR::expr_t* arr_expr = ASR::down_cast<ASR::ArrayItem_t>(str_expr)->m_v;
+                            ASR::ttype_t* arr_type_asr = ASRUtils::expr_type(arr_expr);
+                            if (ASRUtils::is_array(arr_type_asr)) {
+                                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(
+                                    ASRUtils::type_get_past_allocatable_pointer(arr_type_asr));
+                                if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                                    visit_expr_load_wrapper(arr_expr, ASRUtils::is_allocatable_or_pointer(arr_type_asr) ? 1 : 0);
+                                    llvm::Value* arr_desc = tmp;
+                                    llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(arr_expr,
+                                        ASRUtils::type_get_past_allocatable_pointer(arr_type_asr), module.get());
+                                    llvm::Value* is_empty = builder->CreateICmpEQ(
+                                        arr_descr->get_array_size(arr_type_llvm, arr_desc, nullptr, 4),
+                                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
+
+                                    llvm::Value* len_result = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "");
+                                    llvm_utils->create_if_else(is_empty, [&]() {
+                                        llvm::Value* str_desc = builder->CreateLoad(string_descriptor->getPointerTo(),
+                                            llvm_utils->create_gep2(arr_type_llvm, arr_desc, 0));
+                                        llvm::Value* len_val = builder->CreateLoad(llvm::Type::getInt64Ty(context),
+                                            llvm_utils->create_gep2(string_descriptor, str_desc, 1));
+                                        builder->CreateStore(len_val, len_result);
+                                    }, [&]() {
+                                        visit_expr_load_wrapper(str_expr, 0);
+                                        llvm::Value* len_val = builder->CreateLoad(llvm::Type::getInt64Ty(context),
+                                            llvm_utils->create_gep2(string_descriptor, tmp, 1));
+                                        builder->CreateStore(len_val, len_result);
+                                    });
+                                    return llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), len_result);
+                                }
+                            }
+                        }
+                        // Accessing Non-array string or non-empty ArrayItem
                         visit_expr_load_wrapper(str_expr, 0);
                         LCOMPILERS_ASSERT(llvm_utils->is_proper_string_llvm_variable(str, tmp))
                         return builder->CreateLoad(
