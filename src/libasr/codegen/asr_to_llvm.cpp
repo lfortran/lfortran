@@ -9978,7 +9978,7 @@ public:
         double re = x.m_re;
         double im = x.m_im;
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        llvm::Value *re2, *im2;
+        llvm::Constant *re2, *im2;
         llvm::Type *type;
         switch( a_kind ) {
             case 4: {
@@ -9997,7 +9997,11 @@ public:
                 throw CodeGenError("kind type is not supported");
             }
         }
-        tmp = complex_from_floats(re2, im2, type);
+        // Create a compile-time constant struct for ComplexConstant
+        // Complex numbers are represented as {real, imaginary} structs
+        std::vector<llvm::Constant*> elements = {re2, im2};
+        llvm::StructType* struct_type = llvm::cast<llvm::StructType>(type);
+        tmp = llvm::ConstantStruct::get(struct_type, elements);
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
