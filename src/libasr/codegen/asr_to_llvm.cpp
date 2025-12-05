@@ -9939,35 +9939,35 @@ public:
         tmp = complex_from_floats(re2, im2, type);
     }
 
-void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-    double re = x.m_re;
-    double im = x.m_im;
-    int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-    llvm::Constant *re2, *im2;
-    llvm::Type *type;
-    switch( a_kind ) {
-        case 4: {
-            re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
-            im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
-            type = complex_type_4;
-            break;
+    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+        double re = x.m_re;
+        double im = x.m_im;
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        llvm::Constant *re2, *im2;
+        llvm::Type *type;
+        switch( a_kind ) {
+            case 4: {
+                re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
+                type = complex_type_4;
+                break;
+            }
+            case 8: {
+                re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
+                type = complex_type_8;
+                break;
+            }
+            default: {
+                throw CodeGenError("kind type is not supported");
+            }
         }
-        case 8: {
-            re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
-            im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
-            type = complex_type_8;
-            break;
-        }
-        default: {
-            throw CodeGenError("kind type is not supported");
-        }
+        // Create a compile-time constant struct for ComplexConstant
+        // Complex numbers are represented as {real, imaginary} structs
+        std::vector<llvm::Constant*> elements = {re2, im2};
+        llvm::StructType* struct_type = llvm::cast<llvm::StructType>(type);
+        tmp = llvm::ConstantStruct::get(struct_type, elements);
     }
-    // Create a compile-time constant struct for ComplexConstant
-    // Complex numbers are represented as {real, imaginary} structs
-    std::vector<llvm::Constant*> elements = {re2, im2};
-    llvm::StructType* struct_type = llvm::cast<llvm::StructType>(type);
-    tmp = llvm::ConstantStruct::get(struct_type, elements);
-}
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
         int val;
