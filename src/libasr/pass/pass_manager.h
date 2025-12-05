@@ -271,7 +271,6 @@ namespace LCompilers {
                 "select_case",
                 "unused_functions",
                 "unique_symbols",
-                "insert_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
