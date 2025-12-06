@@ -862,6 +862,20 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 '
 
+##########################
+# Section 12: LAPACK
+##########################
+time_section "🧪 Testing LAPACK" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone https://github.com/gxyd/lapack.git
+    cd lapack
+    git fetch origin lf_07
+    git checkout lf_07
+    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    cd build
+    ./build_lf.sh
+'
+
 
 ##################################
 # Final Summary and Cleanup
