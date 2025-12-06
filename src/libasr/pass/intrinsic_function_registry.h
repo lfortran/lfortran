@@ -980,6 +980,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
+                {"_lfortran_compiler_options", {&CompilerOptions::create_CompilerOptions, &CompilerOptions::eval_CompilerOptions}},
                 {"compiler_options", {&CompilerOptions::create_CompilerOptions, &CompilerOptions::eval_CompilerOptions}},
                 {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},

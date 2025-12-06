@@ -1722,6 +1722,13 @@ public:
             src = out;
             return;
         }
+        if ( x.m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CompilerOptions) ) {
+            src = "";
+            visit_expr(*x.m_value); // we will always have a value
+            out += src;
+            src = out;
+            return;
+        }
         src = "";
         out += func_name;
         if (to_lower(func_name) == "cmplx") {
