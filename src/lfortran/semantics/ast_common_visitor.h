@@ -5076,7 +5076,7 @@ public:
             }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                    ASRUtils::type_get_past_allocatable(type)));type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+                    ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
             if (a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
