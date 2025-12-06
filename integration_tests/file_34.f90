@@ -1,0 +1,15 @@
+program file_34
+    implicit none
+    integer :: unit_num
+    character(len=100) :: result
+
+    open(file="test.txt", newunit=unit_num, delim="quote")
+    write(unit_num,*) "hello world"
+
+    rewind(unit_num)
+
+    read(unit_num,*) result
+    close(unit_num)
+
+    if (result /= "hello world") error stop
+end program file_34

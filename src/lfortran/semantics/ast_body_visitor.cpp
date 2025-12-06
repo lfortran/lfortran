@@ -260,7 +260,7 @@ public:
 
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, 
-            *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr;
+            *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -512,6 +512,26 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("delim")) {
+                if (a_delim != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `delim` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_delim = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_delim_type = ASRUtils::expr_type(a_delim);
+                if (!ASRUtils::is_character(*a_delim_type)) {
+                    diag.add(Diagnostic(
+                        "`delim` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else {
                 const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
@@ -537,7 +557,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
