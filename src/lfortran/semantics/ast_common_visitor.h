@@ -1349,6 +1349,7 @@ public:
         {"selected_real_kind", IntrinsicSignature({"p", "r", "radix"}, 0, 3)},
         {"nearest", IntrinsicSignature({"x", "s"}, 2, 2)},
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
+        {"_lfortran_compiler_options", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
