@@ -16,4 +16,9 @@ test_env_var = ""
 call get_environment_variable("LFORTRAN_TEST_ENV_VAR_MISSING", test_env_var, status=stat)
 if (stat == 0) error stop
 if (trim(test_env_var) /= "") error stop
+
+! Test with only name and status (no value parameter)
+call get_environment_variable("LFORTRAN_TEST_ENV_VAR", status=stat)
+if (stat /= 0) error stop
+
 END PROGRAM
