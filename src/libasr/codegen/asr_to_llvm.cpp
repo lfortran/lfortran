@@ -4493,6 +4493,15 @@ public:
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
+        // Skip function call for AssumedLength strings
+        // Their descriptors come from the original parameter inside subroutines
+        if (ASRUtils::is_character(*m_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(m_type));
+            if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                return;
+            }
+        }
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
