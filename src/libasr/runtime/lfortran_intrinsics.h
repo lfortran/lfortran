@@ -288,6 +288,7 @@ LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 LFORTRAN_API char *_lfortran_get_env_variable(char *name);
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver);
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int32_t name_len);
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
