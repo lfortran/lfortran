@@ -1329,8 +1329,11 @@ public:
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
                     llvm::Value* amount_to_allocate{};
                     if(curr_arg.m_len_expr){ // Visit desired length to be allocated.
+                        int ptr_loads_copy = ptr_loads;
+                        ptr_loads = 1;
                         visit_expr_wrapper(curr_arg.m_len_expr, true);
                         amount_to_allocate = tmp;
+                        ptr_loads = ptr_loads_copy;
                     } else {
                         amount_to_allocate = nullptr;
                     }
@@ -5993,6 +5996,10 @@ public:
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
+        } 
+        if (ASRUtils::is_descriptorString(ASRUtils::expr_type(x.m_arg))) {
+            tmp = llvm_utils->create_gep2(llvm_utils->string_descriptor, tmp, 0);
+            tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, tmp);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
@@ -6111,18 +6118,8 @@ public:
             ASR::ttype_t* contained_type = ASRUtils::get_contained_type(fptr_type);
 
             if (ASR::is_a<ASR::String_t>(*contained_type)) {
-                // Character descriptor: struct { i32 len, i8* ptr }
-                llvm::Type* i8_ty = llvm::IntegerType::get(context, 8);
-                llvm::Type* i8_ptr_ty = llvm::PointerType::get(i8_ty, 0);
-                llvm::Type* char_desc_type = llvm::StructType::get(
-                    llvm::Type::getInt32Ty(context), i8_ptr_ty);
-                llvm::Value* data_ptr = builder->CreateBitCast(llvm_cptr, i8_ptr_ty);
-                llvm::Value* fptr_cast = builder->CreateBitCast(llvm_fptr, char_desc_type->getPointerTo());
-                llvm::Value* gep_len = llvm_utils->create_gep2(char_desc_type, fptr_cast, 0);  // .len
-                llvm::Value* gep_data = llvm_utils->create_gep2(char_desc_type, fptr_cast, 1); // .ptr
-
-                llvm::Value* len_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1); // dummy length
-                builder->CreateStore(len_val, gep_len);
+                llvm::Value* data_ptr = builder->CreateBitCast(llvm_cptr, llvm_utils->i8_ptr);
+                llvm::Value* gep_data = llvm_utils->create_gep2(llvm_utils->string_descriptor, llvm_fptr, 0);
                 builder->CreateStore(data_ptr, gep_data);
                 return;
             }
