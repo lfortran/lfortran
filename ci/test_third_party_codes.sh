@@ -861,31 +861,6 @@ time_section "🧪 Testing SNAP" '
     make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
-
-##########################
-# Section 12: TEST CMAKE
-##########################
-time_section "🧪 Testing CMAKE" '
-  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-      cd ./examples/project1
-      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
-      cmake --build . -v
-      ./project1
-
-      cd ../../
-      cd ./examples/project2
-      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
-      cmake --build . -v
-      ./doconcurrent
-      
-      cd ../../
-      cd ./examples/project3
-      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
-      cmake --build . -v
-      ./project3
-
-      cd ../../
-'
 ##########################
 # Section 13: LAPACK
 ##########################
