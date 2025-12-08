@@ -8,4 +8,5 @@ program test_inquire_size
     inquire(fh, size=length)
     close(fh)
     print *, "File size =", length, "bytes"
+    if(length /= 9) error stop
 end program test_inquire_size
