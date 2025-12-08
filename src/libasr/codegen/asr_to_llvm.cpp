@@ -11371,6 +11371,7 @@ public:
         llvm::Value *iomsg_data{},  *iomsg_len{};
         llvm::Value *iostat{};
         llvm::Value *action{}, *action_len{};
+        llvm::Value *position{}, *position_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -11419,6 +11420,12 @@ public:
             action = llvm::Constant::getNullValue(character_type);
             action_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        if (x.m_position) {
+            std::tie(position, position_len) = get_string_data_and_length(x.m_position);
+        } else {
+            position = llvm::Constant::getNullValue(character_type);
+            position_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -11433,7 +11440,8 @@ public:
                         character_type, i64, //access, access_len
                         character_type, i64, //iomsg, iomsg_len
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
-                        character_type, i64 // action, action_len
+                        character_type, i64, // action, action_len
+                        character_type, i64, // position, position_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -11445,7 +11453,8 @@ public:
             access_data, access_len,
             iomsg_data, iomsg_len,
             iostat,
-            action, action_len});
+            action, action_len,
+            position, position_len});
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
