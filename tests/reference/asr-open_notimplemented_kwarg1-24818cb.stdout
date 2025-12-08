@@ -12,7 +12,6 @@
                     open_notimplemented_kwargs
                     []
                     [(FileOpen
-                        0
                         (IntegerConstant 10 (Integer 4) Decimal)
                         (StringConstant
                             "file_01_data.txt"
@@ -30,6 +29,7 @@
                             "read"
                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                     )]
                 )
         })

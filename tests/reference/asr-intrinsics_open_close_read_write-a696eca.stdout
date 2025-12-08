@@ -320,7 +320,6 @@
                         []
                     )
                     (FileOpen
-                        0
                         (Var 2 u_ptr)
                         (StringConstant
                             "data.dat"
@@ -330,6 +329,7 @@
                             "replace"
                             (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -397,7 +397,6 @@
                         999
                     )
                     (FileOpen
-                        999
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
                             "data.dat"
@@ -407,6 +406,7 @@
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
