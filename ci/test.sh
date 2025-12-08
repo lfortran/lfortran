@@ -43,7 +43,7 @@ if [[ $WIN != "1" ]]; then
     set +x
     if [[ $MACOS == "1" ]]; then
         # we can't use $nproc, it overwhelms system resources on macOS
-        NPROC=2
+        NPROC=4
         # ideally, we should use something like below, but it raises
         # error with shell
         # NPROC=$(( $(NPROC) / 2))
