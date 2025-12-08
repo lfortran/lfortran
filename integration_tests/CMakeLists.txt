@@ -1970,6 +1970,7 @@ RUN(NAME file_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

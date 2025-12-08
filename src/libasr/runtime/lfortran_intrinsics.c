@@ -3827,8 +3827,13 @@ _lfortran_open(int32_t unit_num,
     }
     bool ini_form = true;
     if (form == NULL) {
-        form = "formatted";
-        form_len = 9;
+        if (access != NULL && streql(access, "stream")) {
+            form = "unformatted";
+            form_len = 11;
+        } else {
+            form = "formatted";
+            form_len = 9;
+        }
         ini_form = false;
     }
     bool ini_access = true;
