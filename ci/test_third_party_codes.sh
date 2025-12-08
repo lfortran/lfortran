@@ -863,9 +863,34 @@ time_section "🧪 Testing SNAP" '
 '
 
 ##########################
-# Section 12: LAPACK
+# Section 12: TEST CMAKE
+##########################
+time_section "🧪 Testing CMAKE" '
+  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+      cd ./examples/project1
+      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
+      cmake --build . -v
+      ./project1
+
+      cd ../../
+      cd ./examples/project2
+      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
+      cmake --build . -v
+      ./doconcurrent
+      
+      cd ../../
+      cd ./examples/project3
+      FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
+      cmake --build . -v
+      ./project3
+
+      cd ../../
+'
+##########################
+# Section 13: LAPACK
 ##########################
 time_section "🧪 Testing LAPACK" '
+    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
     export PATH="$(pwd)/../src/bin:$PATH"
     git clone https://github.com/gxyd/lapack.git
     cd lapack
@@ -874,6 +899,7 @@ time_section "🧪 Testing LAPACK" '
     git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
     ./build_lf.sh
+    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
 '
 
 
