@@ -1329,11 +1329,8 @@ public:
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
                     llvm::Value* amount_to_allocate{};
                     if(curr_arg.m_len_expr){ // Visit desired length to be allocated.
-                        int ptr_loads_copy = ptr_loads;
-                        ptr_loads = 1;
-                        visit_expr_wrapper(curr_arg.m_len_expr, true);
+                        visit_expr_load_wrapper(curr_arg.m_len_expr, 1, true);
                         amount_to_allocate = tmp;
-                        ptr_loads = ptr_loads_copy;
                     } else {
                         amount_to_allocate = nullptr;
                     }
@@ -6005,10 +6002,8 @@ public:
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
-        } 
-        if (ASRUtils::is_descriptorString(ASRUtils::expr_type(x.m_arg))) {
-            tmp = llvm_utils->create_gep2(llvm_utils->string_descriptor, tmp, 0);
-            tmp = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, tmp);
+        } else if(ASRUtils::is_string_only(expr_type(x.m_arg))){ // Targetted physicalType is `char*`
+            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
@@ -6120,23 +6115,21 @@ public:
                 llvm::Type* cptr_llvm_type = llvm_utils->get_type_from_ttype_t_util(cptr, ASRUtils::expr_type(cptr), module.get());
                 llvm_cptr = llvm_utils->CreateLoad2(cptr_llvm_type, llvm_cptr);
             }
-            ptr_loads = 0;
-            this->visit_expr(*fptr);
-            llvm::Value* llvm_fptr = tmp;
-            ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
-            ASR::ttype_t* contained_type = ASRUtils::get_contained_type(fptr_type);
-
-            if (ASR::is_a<ASR::String_t>(*contained_type)) {
-                llvm::Value* data_ptr = builder->CreateBitCast(llvm_cptr, llvm_utils->i8_ptr);
-                llvm::Value* gep_data = llvm_utils->create_gep2(llvm_utils->string_descriptor, llvm_fptr, 0);
-                builder->CreateStore(data_ptr, gep_data);
-                return;
+            this->visit_expr_load_wrapper(fptr, 0);
+            llvm::Value*  const llvm_fptr = tmp;
+            ASR::ttype_t* const fptr_type = ASRUtils::expr_type(fptr);
+            if (ASRUtils::is_string_only(fptr_type)) {
+                llvm::Value* const cptr_to_charPTR = builder->CreateBitCast(llvm_cptr, llvm_utils->character_type);
+                llvm::Value* const charPTR_ref = llvm_utils->get_string_data(ASRUtils::get_string_type(fptr_type), llvm_fptr, true);
+                builder->CreateStore(cptr_to_charPTR, charPTR_ref);
+            } else {
+                llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
+                    ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)), module.get());
+                llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_type->getPointerTo());
+                builder->CreateStore(llvm_cptr, llvm_fptr);
             }
             ptr_loads = ptr_loads_copy;
-            llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
-                ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)), module.get());
-            llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_type->getPointerTo());
-            builder->CreateStore(llvm_cptr, llvm_fptr);
+            tmp = nullptr;
         }
     }
 
