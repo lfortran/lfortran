@@ -280,7 +280,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6
+            openmpi=5.0.3
 
       - uses: hendrikmuhs/ccache-action@main
         with:
