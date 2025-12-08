@@ -5404,14 +5404,22 @@ LFORTRAN_API void _lpython_close(int64_t fd)
     }
 }
 
-LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len)
+LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat)
 {
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL);
+
+    if (iostat) {
+        *iostat = 0;
+    }
     if (!filep) {
         return;
     }
     if (fclose(filep) != 0) {
+        if (iostat) {
+            *iostat = 1;
+            return;
+        }
         printf("Error in closing the file!\n");
         exit(1);
     }
@@ -5438,6 +5446,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
 
     if (delete_requested || is_temp_file) {
         if (remove(file_name) != 0) {
+            if (iostat) {
+                *iostat = 2;
+                return;
+            }
             printf("Error in deleting file!\n");
             exit(1);
         }

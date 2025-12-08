@@ -4493,6 +4493,15 @@ public:
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
+        // Skip function call for AssumedLength strings
+        // Their descriptors come from the original parameter inside subroutines
+        if (ASRUtils::is_character(*m_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(m_type));
+            if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                return;
+            }
+        }
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
@@ -11648,6 +11657,7 @@ public:
     void visit_FileClose(const ASR::FileClose_t &x) {
         llvm::Value *unit_val;
         llvm::Value *status, *status_len;
+        llvm::Value *iostat;
         this->visit_expr_wrapper(x.m_unit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         if (x.m_status) {
@@ -11660,18 +11670,27 @@ public:
             status = llvm::Constant::getNullValue(character_type);
             status_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = llvm::ConstantInt::getNullValue(llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
         std::string runtime_func_name = "_lfortran_close";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         llvm::Type::getInt32Ty(context),
-                        character_type, llvm::Type::getInt64Ty(context),
+                        character_type, llvm::Type::getInt64Ty(context), llvm::Type::getInt32Ty(context)->getPointerTo()
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        tmp = builder->CreateCall(fn, {unit_val, status, status_len});
+        tmp = builder->CreateCall(fn, {unit_val, status, status_len, iostat});
     }
 
     void visit_Print(const ASR::Print_t &x) {

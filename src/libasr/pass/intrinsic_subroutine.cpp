@@ -166,6 +166,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
                     visit_Function(*ASR::down_cast<ASR::Function_t>(
                         item.second));
                 }
+                if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                    visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
+                }
             }
 
             transform_stmts(xx.m_body, xx.n_body);
