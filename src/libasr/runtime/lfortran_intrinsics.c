@@ -4157,12 +4157,6 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             long p = ftell(fp);
             *pos = (int32_t)p + 1;
         }
-        if (size != NULL && fp != NULL) {
-            long current_pos = ftell(fp);
-            fseek(fp, 0, SEEK_END);
-            *size = ftell(fp);
-            fseek(fp, current_pos, SEEK_SET);
-        }
     }
 }
 
