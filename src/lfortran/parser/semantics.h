@@ -1871,13 +1871,29 @@ return make_Program_t(al, a_loc,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
-    int64_t n = LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Num_t>(repeat)->m_n;
-    for (int64_t i=0; i<n; i++) {
-        v.push_back(al, e);
-    }
+
+        if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Num_t>(*repeat)) {
+                auto *num = LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Num_t>(repeat);
+
+                int64_t n;
+                n = num->m_n;
+
+                for (int64_t i = 0; i < n; i++) {
+                v.push_back(al, e);
+                }
+        }
+        else{
+               v.push_back(al,e); 
+        }
+
+        return;
+
+
 }
+
 #define REPEAT_LIST_ADD(l, r, x) repeat_list_add(l, p.m_a, r, x)
 
 #define WHILE(cond, trivia, body, l) make_WhileLoop_t(p.m_a, l, 0, nullptr, \
