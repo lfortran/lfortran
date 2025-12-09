@@ -10004,13 +10004,35 @@ public:
         }
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
-
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        // FIX: Handle implicit declaration of implied do loop variable
+        std::string var_name = to_lower(x.m_var);
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(var_name);
         if (a_sym == nullptr) {
-            diag.add(Diagnostic("The implied do loop variable '" +
-                to_lower(x.m_var) + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            // declare the loop variable 
+            ASR::ttype_t* var_type = nullptr;
+            // Apply implicit typing rules based on first character of variable name
+            char first_char = var_name[0];
+            if (first_char >= 'i' && first_char <= 'n') {
+                // Integer type 
+                var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+            } else {
+                // Real type
+                var_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+            }
+            // Create an implicit variable in the current scope
+            ASR::intentType intent = ASR::intentType::Local;
+            ASR::abiType abi = ASR::abiType::Source;
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            //build a new Variable_t symbol
+            a_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                al, x.base.base.loc,
+                current_scope, s2c(al, var_name), variable_dependencies_vec.p,
+                variable_dependencies_vec.size(), intent, nullptr, nullptr,
+                ASR::storage_typeType::Default, var_type, nullptr,
+                abi, ASR::Public, ASR::presenceType::Required, false,
+                false, false, nullptr, false, false));
+            current_scope->add_symbol(var_name, a_sym);
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
