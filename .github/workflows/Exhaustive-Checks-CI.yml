@@ -217,7 +217,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
+        llvm-version: ["7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21.1.0"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v6
@@ -393,7 +393,7 @@ jobs:
             ./run_tests.py -b llvm_submodule -sc
 
       - name: Test Linux LLVM 17-21
-        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21'))}}
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21.1.0'))}}
         shell: bash -e -l {0}
         run: |
             ctest --output-on-failure
