@@ -15,5 +15,4 @@ dependencies:
   - bison=3.4
   - rapidjson=1.1.0
   - ninja=1.11.1
-  - zstd-static=1.5.6
   - cmake=3.29.1
