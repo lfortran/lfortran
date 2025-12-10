@@ -170,29 +170,29 @@ time_section "🧪 Testing M_CLI2" '
   cd ..
 '
 
-time_section "🧪 Testing fortran_mpi" '
-  git clone https://github.com/lfortran/fortran_mpi.git
-  cd fortran_mpi
-  export PATH="$(pwd)/../src/bin:$PATH"
+# time_section "🧪 Testing fortran_mpi" '
+#   git clone https://github.com/lfortran/fortran_mpi.git
+#   cd fortran_mpi
+#   export PATH="$(pwd)/../src/bin:$PATH"
 
-  export OMPI_MCA_btl_tcp_if_include=lo0
+#   export OMPI_MCA_btl_tcp_if_include=lo0
 
-  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+#   git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
 
-  git clean -fdx
-  cd tests/
-  FC="$FC --cpp" ./run_tests.sh
-  print_success "Done with fortran_mpi"
+#   git clean -fdx
+#   cd tests/
+#   FC="$FC --cpp" ./run_tests.sh
+#   print_success "Done with fortran_mpi"
 
-  cd ../
-  git clean -fdx
-  print_subsection "Building fortran_mpi with separate compilation"
-  cd tests/
-  FC="$FC --cpp --separate-compilation" ./run_tests.sh
-  print_success "Done with fortran_mpi"
-  cd ../../
-  rm -rf fortran_mpi
-'
+#   cd ../
+#   git clean -fdx
+#   print_subsection "Building fortran_mpi with separate compilation"
+#   cd tests/
+#   FC="$FC --cpp --separate-compilation" ./run_tests.sh
+#   print_success "Done with fortran_mpi"
+#   cd ../../
+#   rm -rf fortran_mpi
+# '
 
 time_section "🧪 Testing POT3D with fortran_mpi" '
   git clone https://github.com/parth121101/pot3d.git

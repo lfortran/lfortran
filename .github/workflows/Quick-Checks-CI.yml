@@ -49,6 +49,15 @@ jobs:
           fetch-depth: 0
 
       - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            llvmdev=21.1.0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: ${{!(contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21'))}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
