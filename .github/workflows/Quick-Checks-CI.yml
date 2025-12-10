@@ -102,7 +102,7 @@ jobs:
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
@@ -369,7 +369,7 @@ jobs:
             ./run_tests.py -b wasm -f
 
       - name: Check Bison Grammar for Essential Conflicts
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         shell: bash -e -l {0}
         run: |
           ./ci/grammar_conflicts.sh
@@ -377,7 +377,7 @@ jobs:
       # Run last. Script checks out to first commit in PR history
       - name: Check for Added Binary Files
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           python3 check_binary_file_in_git_history.py
 
