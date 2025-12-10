@@ -40,7 +40,7 @@ jobs:
           - os: ubuntu-latest
             llvm-version: "11"
           - os: ubuntu-latest
-            llvm-version: "21"
+            llvm-version: "21.1.0"
           - os: windows-2025
             llvm-version: "11"
     steps:
@@ -68,7 +68,7 @@ jobs:
           micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4 openmpi=5.0.6 zlib=1.3.1 llvmdev=${{ matrix.llvm-version }}
           if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
             micromamba install zstd-static=1.5.6 nodejs=18.20.4 kokkos=4.4.01
-          elif [[ "${{ matrix.llvm-version }}" == "21" ]]; then
+          elif [[ "${{ matrix.llvm-version }}" == "21.1.0" ]]; then
             micromamba install zstd-static=1.5.7
           fi
           if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" != "11" ]]; then
@@ -93,7 +93,7 @@ jobs:
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
         run: |
           echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
@@ -360,7 +360,7 @@ jobs:
             ./run_tests.py -b wasm -f
 
       - name: Check Bison Grammar for Essential Conflicts
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
         shell: bash -e -l {0}
         run: |
           ./ci/grammar_conflicts.sh
@@ -368,7 +368,7 @@ jobs:
       # Run last. Script checks out to first commit in PR history
       - name: Check for Added Binary Files
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21.1.0')
         run: |
           python3 check_binary_file_in_git_history.py
 
