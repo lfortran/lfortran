@@ -11206,11 +11206,11 @@ public:
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
-                int ptr_copy = ptr_loads;
+                int ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_values[i]);
                 var_to_read_into = tmp; tmp =nullptr;
-                ptr_loads = ptr_copy;
+                ptr_loads = ptr_loads_copy;
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
                 llvm::Function *fn;
                 if (ASR::is_a<ASR::Var_t>(*x.m_values[i]) &&
@@ -11333,6 +11333,14 @@ public:
                         std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(type), var_to_read_into, true);
                         builder->CreateCall(fn, {str_data, str_len, unit_val});
                     } else {
+                        if (ASR::is_a<ASR::Allocatable_t>(*type)
+                            || ASR::is_a<ASR::Pointer_t>(*type)) {
+                            llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_values[i],
+                                ASRUtils::type_get_past_allocatable_pointer(type),
+                                module.get())->getPointerTo();
+                            var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
+                        }
                         builder->CreateCall(fn, {var_to_read_into, unit_val});
                     }
                 }
