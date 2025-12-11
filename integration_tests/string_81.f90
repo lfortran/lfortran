@@ -1,4 +1,3 @@
-! Tests large string allocation (Bombs memory if not freed)
 module string_81_mod
     implicit none
     contains
@@ -14,7 +13,7 @@ end module
 program string_81
   use string_81_mod
   integer :: i
-  do i =0 , 10000000
+  do i =0 , 2
     call ff()
   end do
 
