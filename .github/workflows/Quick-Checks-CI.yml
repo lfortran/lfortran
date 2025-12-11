@@ -53,7 +53,7 @@ jobs:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
           create-args: >-
-            llvmdev=${{ matrix.os == 'ubuntu' && matrix.llvm-version == '21' && '21.1.0' || matrix.llvm-version }}
+            llvmdev=${{ matrix.llvm-version }}
 
 
       - name: Install Windows Packages
