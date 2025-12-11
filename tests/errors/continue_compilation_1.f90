@@ -173,47 +173,12 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ! Test for DATA implied-do undeclared variable (issue #8996)
+    real :: array_data(5)
+    integer, parameter :: nelems_data = 5
+    DATA (array_data(i), i=1,5) /nelems_data*3.1415/
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
-    !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
 
