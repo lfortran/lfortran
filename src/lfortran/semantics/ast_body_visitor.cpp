@@ -557,7 +557,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_position);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_position);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }

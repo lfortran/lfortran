@@ -320,6 +320,7 @@
                         []
                     )
                     (FileOpen
+                        0
                         (Var 2 u_ptr)
                         (StringConstant
                             "data.dat"
@@ -397,6 +398,7 @@
                         999
                     )
                     (FileOpen
+                        999
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
                             "data.dat"
