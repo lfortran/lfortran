@@ -170,57 +170,57 @@ time_section "🧪 Testing M_CLI2" '
   cd ..
 '
 
-# time_section "🧪 Testing fortran_mpi" '
-#   git clone https://github.com/lfortran/fortran_mpi.git
-#   cd fortran_mpi
-#   export PATH="$(pwd)/../src/bin:$PATH"
+time_section "🧪 Testing fortran_mpi" '
+  git clone https://github.com/lfortran/fortran_mpi.git
+  cd fortran_mpi
+  export PATH="$(pwd)/../src/bin:$PATH"
 
-#   export OMPI_MCA_btl_tcp_if_include=lo0
+  export OMPI_MCA_btl_tcp_if_include=lo0
 
-#   git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
 
-#   git clean -fdx
-#   cd tests/
-#   FC="$FC --cpp" ./run_tests.sh
-#   print_success "Done with fortran_mpi"
+  git clean -fdx
+  cd tests/
+  FC="$FC --cpp" ./run_tests.sh
+  print_success "Done with fortran_mpi"
 
-#   cd ../
-#   git clean -fdx
-#   print_subsection "Building fortran_mpi with separate compilation"
-#   cd tests/
-#   FC="$FC --cpp --separate-compilation" ./run_tests.sh
-#   print_success "Done with fortran_mpi"
-#   cd ../../
-#   rm -rf fortran_mpi
-# '
+  cd ../
+  git clean -fdx
+  print_subsection "Building fortran_mpi with separate compilation"
+  cd tests/
+  FC="$FC --cpp --separate-compilation" ./run_tests.sh
+  print_success "Done with fortran_mpi"
+  cd ../../
+  rm -rf fortran_mpi
+'
 
-# time_section "🧪 Testing POT3D with fortran_mpi" '
-#   git clone https://github.com/parth121101/pot3d.git
-#   cd pot3d
-#   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-#   git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
+time_section "🧪 Testing POT3D with fortran_mpi" '
+  git clone https://github.com/parth121101/pot3d.git
+  cd pot3d
+  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+  git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
 
-#   git clone https://github.com/lfortran/fortran_mpi
-#   cd fortran_mpi
-#   git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
-#   cp src/mpi.f90 ../src/
-#   cp src/mpi_c_bindings.f90 ../src/
-#   cp src/mpi_constants.c ../src/
-#   cd ..
+  git clone https://github.com/lfortran/fortran_mpi
+  cd fortran_mpi
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  cp src/mpi.f90 ../src/
+  cp src/mpi_c_bindings.f90 ../src/
+  cp src/mpi_constants.c ../src/
+  cd ..
 
-#   print_subsection "Building with default flags"
-#   FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  print_subsection "Building with default flags"
+  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-#   print_subsection "Building with optimization flags"
-#   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  print_subsection "Building with optimization flags"
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-#   print_subsection "Building POT3D in separate compilation mode"
-#   FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  print_subsection "Building POT3D in separate compilation mode"
+  FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
-#   print_success "Done with POT3D"
-#   cd ..
-#   rm -rf pot3d
-# '
+  print_success "Done with POT3D"
+  cd ..
+  rm -rf pot3d
+'
 
 
 ##########################
