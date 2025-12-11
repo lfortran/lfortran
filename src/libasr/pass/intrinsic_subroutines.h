@@ -883,18 +883,33 @@ namespace GetEnvironmentVariable {
     }
 
     static inline ASR::asr_t* create_GetEnvironmentVariable(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        // Encode which optional parameters are present in overload_id
+        // Bit 0: value present, Bit 1: length present, Bit 2: status present, Bit 3: trim_name present
+        int64_t overload_id = 0;
+        if (args.size() > 1 && args[1]) overload_id |= (1 << 0); // value
+        if (args.size() > 2 && args[2]) overload_id |= (1 << 1); // length
+        if (args.size() > 3 && args[3]) overload_id |= (1 << 2); // status
+        if (args.size() > 4 && args[4]) overload_id |= (1 << 3); // trim_name
+
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
         m_args.push_back(al, args[0]);
         for (int i = 1; i < int(args.size()); i++) {
             if(args[i]) m_args.push_back(al, args[i]);
         }
-        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable), m_args.p, m_args.n, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable), m_args.p, m_args.n, overload_id);
     }
 
     static inline ASR::stmt_t* instantiate_GetEnvironmentVariable(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-                
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+
+        // Decode which optional parameters are present from overload_id
+        // Bit 0: value, Bit 1: length, Bit 2: status, Bit 3: trim_name
+        bool has_value = (overload_id & (1 << 0)) != 0;
+        bool has_length = (overload_id & (1 << 1)) != 0;
+        bool has_status = (overload_id & (1 << 2)) != 0;
+        bool has_trim_name = (overload_id & (1 << 3)) != 0;
+
         std::string c_func_name = "_lfortran_get_environment_variable";
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
@@ -944,8 +959,8 @@ namespace GetEnvironmentVariable {
             // Declare interface `_lfortran_get_length_of_environment_variable`
             std::string c_func_name = "_lfortran_get_length_of_environment_variable";
             ASR::symbol_t *_lfortran_get_length_of_environment_variable = b.create_c_func_subroutines_with_return_type(
-                c_func_name, fn_symtab, 2, 
-                {   b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1), 
+                c_func_name, fn_symtab, 2,
+                {   b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
                     int32},
                 int32);
             fn_symtab->add_symbol(c_func_name, _lfortran_get_length_of_environment_variable);
@@ -975,37 +990,76 @@ namespace GetEnvironmentVariable {
             // Deallocate `envVar_string_holder`
             body.push_back(al, b.Deallocate(envVar_string_holder));
 
-            if (arg_types.size() >= 3) {
-                fill_func_arg_sub("length", arg_types[2], InOut);
-                body.push_back(al, b.Assignment(args[2], length_to_allocate)); // Reuse `length_to_allocate`
+            // Handle optional parameters based on which ones are present
+            int arg_idx = 2; // Start after name and value
+            if (has_length) {
+                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                body.push_back(al, b.Assignment(args[arg_idx], length_to_allocate));
+                arg_idx++;
             }
-            if (arg_types.size() >= 4) {
-                fill_func_arg_sub("status", arg_types[3], InOut);
+            if (has_status) {
+                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                // Declare interface `_lfortran_get_environment_variable_status`
+                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
+                    status_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                     int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
+                dep.push_back(al, s2c(al, status_func_name));
+                // Call the status function and assign result
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
+                arg_idx++;
             }
-            if (arg_types.size() >= 5) {
-                fill_func_arg_sub("trim_name", arg_types[4], InOut);
+            if (has_trim_name) {
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
             }
-        } else if ( arg_types.size() >= 2 && ASRUtils::is_integer(*arg_types[1]) ) {
-            // this is the case where args[1] is `length`
-            c_func_name = "_lfortran_get_length_of_environment_variable";
-            fill_func_arg_sub("length", arg_types[1], InOut);
-            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2, 
-                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                int32},
-                arg_types[1]);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-            call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-            call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
-            body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
+        } else if ( !has_value && arg_types.size() >= 2 ) {
+            // this is the case where value is not provided
+            // args[1] onwards could be: length, status, or trim_name
+            int arg_idx = 1;
 
-            if (arg_types.size() >= 3) {
-                fill_func_arg_sub("status", arg_types[2], InOut);
+            if (has_length) {
+                c_func_name = "_lfortran_get_length_of_environment_variable";
+                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                    int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(c_func_name, s);
+                dep.push_back(al, s2c(al, c_func_name));
+                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+                call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(s, call_args, arg_types[arg_idx])));
+                arg_idx++;
             }
 
-            if (arg_types.size() >= 4) {
-                fill_func_arg_sub("trim_name", arg_types[3], InOut);
+            if (has_status) {
+                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                // Declare interface `_lfortran_get_environment_variable_status`
+                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
+                    status_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                     int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
+                dep.push_back(al, s2c(al, status_func_name));
+                // Call the status function and assign result
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
+                arg_idx++;
+            }
+
+            if (has_trim_name) {
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
             }
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

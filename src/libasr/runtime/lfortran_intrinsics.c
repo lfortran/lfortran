@@ -5934,13 +5934,26 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver) {
     char* C_name = to_c_string(name , name_len); // C-Style String (Null Terminated)
     if (C_name == NULL || ! getenv(C_name)) {
-        memcpy(receiver, " ", 1);
-        receiver[1] = '\0';
+        // When variable doesn't exist, leave receiver unchanged (Fortran standard)
+        // For backwards compatibility when status is not checked, set to blank
+        receiver[0] = '\0';
         return;
-    } 
+    }
     int32_t len = strlen(getenv(C_name));
     memcpy(receiver, getenv(C_name), len);
     receiver[len] = '\0';
+}
+
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int32_t name_len) {
+    char* C_name = to_c_string(name, name_len); // C-Style String (Null Terminated)
+    if (C_name == NULL) {
+        return 2; // Error: invalid name
+    }
+    char *value = getenv(C_name);
+    if (value == NULL) {
+        return 1; // Variable does not exist
+    }
+    return 0; // Success: variable exists
 }
 
 LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(fchar *name, int32_t name_len) {
