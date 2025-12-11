@@ -11227,33 +11227,8 @@ public:
             args.push_back(advance);
             args.push_back(advance_length);
             this->visit_expr_wrapper(x.m_fmt, true);
-
-
-            ASR::ttype_t *fmt_type = expr_type(x.m_fmt);
-
-            if (ASRUtils::is_character(*fmt_type)) {
-                this->visit_expr_wrapper(x.m_fmt, true);
-                llvm::Value *fmt_data = llvm_utils->get_string_data(
-                    ASRUtils::get_string_type(fmt_type), tmp);
-                llvm::Value *fmt_len = llvm_utils->get_string_length(
-                    ASRUtils::get_string_type(fmt_type), tmp);
-
-                args.push_back(fmt_data);
-                args.push_back(fmt_len);
-
-            } else if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_fmt)) {
-                // label like READ(5, 100)
-                throw CodeGenError(
-                    "use a character format string instead, e.g. READ(5, '(I3)')",
-                    x.m_fmt->base.loc
-                );
-            } else {
-                throw CodeGenError(
-                    "Format specifier must be a character expression",
-                    x.m_fmt->base.loc
-                );
-            }
-
+            args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
+            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values * 2 /*(str_data, str_len)*/)));
             for (size_t i=0; i<x.n_values; i++) {
                 this->visit_expr_load_wrapper(x.m_values[i], 0);
