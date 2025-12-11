@@ -74,44 +74,12 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    subroutine test_implicit_loop_var()
+        implicit none
+        integer :: n(3)
+        n = [(42, i = 1, 3)]  
+    end subroutine test_implicit_loop_var
+    
 end module
 
 

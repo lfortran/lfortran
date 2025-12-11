@@ -5096,6 +5096,13 @@ public:
         std::string loop_var_name = to_lower(x.m_var);
         ASR::symbol_t* loop_var_sym = current_scope->resolve_symbol(loop_var_name);
         if (loop_var_sym == nullptr) {
+        // Check if implicit typing is enabled
+        if (!compiler_options.implicit_typing) {
+            diag.add(Diagnostic("The implied do loop variable '" +
+                loop_var_name + "' is not declared",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
             // Implicitly declare the loop variable 
             ASR::ttype_t* var_type = nullptr;
             // Apply implicit typing rules 
