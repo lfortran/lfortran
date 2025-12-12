@@ -1,0 +1,13 @@
+{
+    "basename": "asr-mod_cpp_modfile_main-b930276",
+    "cmd": "lfortran --show-errors --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/mod_cpp_modfile_main.f90",
+    "infile_hash": "b3036641b1564cc91322e11a16d3c5bf4dcb9fdbd26d0d7dfe909f41",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-mod_cpp_modfile_main-b930276.stdout",
+    "stdout_hash": "bfbf45d63389018d48e483ea986064c62eb9e0143610bc14d1ac6635",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
