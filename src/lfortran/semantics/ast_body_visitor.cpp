@@ -1778,26 +1778,20 @@ public:
             throw SemanticAbort();
         }
 
-        tmp = ASR::make_Allocate_t(al, x.base.base.loc,
-                                    alloc_args_vec.p, alloc_args_vec.size(),
-                                    stat, errmsg, source);
-
+        // Perform all validation checks BEFORE creating any ASR nodes
+        // to avoid creating malformed ASR when continuing compilation after errors
         if (source) {
-            current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
-                                        alloc_args_vec.p, alloc_args_vec.size(),
-                                        stat, errmsg, source)));
-            // Pushing assignment statements to source
             for (size_t i = 0; i < alloc_args_vec.n ; i++) {
-                if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
-                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(
-                        ASRUtils::make_Assignment_t_util(
-                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs_arrays, false
-                        )
-                    );
-                    current_body->push_back(al, assign_stmt);
-                }
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
                 ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
+
+                ASR::dimension_t* source_m_dims = nullptr;
+                ASR::dimension_t* var_m_dims = alloc_args_vec.p[i].m_dims;
+                ASR::dimension_t* var_m_dims_decl = nullptr;
+                size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
+                size_t var_n_dims = alloc_args_vec.p[i].n_dims;
+                size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
+
                 if (!ASRUtils::check_equal_type(source_type, var_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
@@ -1809,47 +1803,63 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-                {
-                    ASR::dimension_t* source_m_dims = nullptr;
-                    ASR::dimension_t* var_m_dims = alloc_args_vec.p[i].m_dims;
-                    ASR::dimension_t* var_m_dims_decl = nullptr;
-                    size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
-                    size_t var_n_dims = alloc_args_vec.p[i].n_dims;
-                    size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
 
-                    if (source_n_dims != 0 && ((var_n_dims != 0 && var_n_dims != source_n_dims) || (var_n_dims == 0 && source_n_dims != var_n_dims_decl))) {
-                        diag.add(Diagnostic(
-                            "Dimension mismatch in `allocate` statement.",
-                            Level::Error, Stage::Semantic, {
-                                Label("mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
-                            }));
-                        throw SemanticAbort();
-                    } else if (source_n_dims == 0 && (var_n_dims == 0 && var_n_dims_decl != 0)) {
-                        diag.add(Diagnostic(
-                            "Cannot allocate an array from a scalar source.",
-                            Level::Error, Stage::Semantic, {
-                                Label("allocated variable is an array, but `source` is a scalar",
-                                    {alloc_args_vec.p[i].m_a->base.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
+                if (source_n_dims != 0 && ((var_n_dims != 0 && var_n_dims != source_n_dims) || (var_n_dims == 0 && source_n_dims != var_n_dims_decl))) {
+                    diag.add(Diagnostic(
+                        "Dimension mismatch in `allocate` statement.",
+                        Level::Error, Stage::Semantic, {
+                            Label("mismatch in dimensions between allocated variable and `source`", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                        }));
+                    throw SemanticAbort();
+                } else if (source_n_dims == 0 && (var_n_dims == 0 && var_n_dims_decl != 0)) {
+                    diag.add(Diagnostic(
+                        "Cannot allocate an array from a scalar source.",
+                        Level::Error, Stage::Semantic, {
+                            Label("allocated variable is an array, but `source` is a scalar",
+                                {alloc_args_vec.p[i].m_a->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
 
-                    if (source_m_dims && var_m_dims) {
-                        for (size_t j = 0; j < var_n_dims; j++) {
-                            int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
-                            int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
+                // Check individual dimension shapes
+                if (source_m_dims && var_m_dims) {
+                    for (size_t j = 0; j < var_n_dims; j++) {
+                        int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
+                        int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
 
-                            if (source_dim_shape != -1 && var_dim_shape != -1 && source_dim_shape != var_dim_shape) {
-                                diag.add(Diagnostic(
-                                            "Shape mismatch in `allocate` statement.",
-                                            Level::Error, Stage::Semantic, {
-                                                Label("shape mismatch in dimension " + std::to_string(j+1),
-                                                    {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
-                                            }));
-                                        throw SemanticAbort();
-                            }
+                        if (source_dim_shape != -1 && var_dim_shape != -1 && source_dim_shape != var_dim_shape) {
+                            diag.add(Diagnostic(
+                                        "Shape mismatch in `allocate` statement.",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("shape mismatch in dimension " + std::to_string(j+1),
+                                                {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
+                                        }));
+                                    throw SemanticAbort();
                         }
                     }
+                }
+            }
+        }
+
+        tmp = ASR::make_Allocate_t(al, x.base.base.loc,
+                                    alloc_args_vec.p, alloc_args_vec.size(),
+                                    stat, errmsg, source);
+
+        if (source) {
+            current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
+                                        alloc_args_vec.p, alloc_args_vec.size(),
+                                        stat, errmsg, source)));
+            // Pushing assignment statements to source
+            for (size_t i = 0; i < alloc_args_vec.n ; i++) {
+                // Create assignment statement only for non-struct types
+                // All validation was already done above before creating the Allocate ASR node
+                if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(
+                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs_arrays, false
+                        )
+                    );
+                    current_body->push_back(al, assign_stmt);
                 }
             }
             tmp = nullptr;
