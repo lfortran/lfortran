@@ -2002,39 +2002,40 @@ public:
 
     void dimension_variable(AST::var_sym_t const & s, const Location& loc) {
 	std::string sym = to_lower(s.m_name);
-	bool is_proc_arg = (std::find(current_procedure_args.begin(),
-	    current_procedure_args.end(), sym) != current_procedure_args.end());
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
 	    if (compiler_options.implicit_typing) {
-		ASR::intentType intent = is_proc_arg ?
-		    ASRUtils::intent_unspecified : ASRUtils::intent_local;
-		get_sym = declare_implicit_variable2(
-		    s.loc, sym, intent,
-		    implicit_dictionary[std::string(1, sym[0])]);
-	    } else {
-		if (symbols_having_only_attributes_without_type.find(sym)
-		        == symbols_having_only_attributes_without_type.end()) {
-		    ASR::intentType intent;
-		    ASR::abiType abi;
-		    if (is_proc_arg) {
-		        intent = ASRUtils::intent_unspecified;
-		        abi = current_procedure_abi_type;
-		    } else {
-		        intent = ASRUtils::intent_local;
-		        abi = ASR::abiType::Source;
-		    }
-		    get_sym = ASR::down_cast<ASR::symbol_t>(
-		        ASRUtils::make_Variable_t_util(al, loc, current_scope,
-		                                       s.m_name, nullptr, 0, intent, nullptr,
-		                                       nullptr, ASR::storage_typeType::Default, nullptr,
-		                                       nullptr, abi, ASR::accessType::Public,
-		                                       ASR::presenceType::Required,
-		                                       false, false, false));
+		ASR::intentType intent;
+		if (std::find(current_procedure_args.begin(),
+			      current_procedure_args.end(), sym) !=
+		    current_procedure_args.end()) {
+		    intent = ASRUtils::intent_unspecified;
 		} else {
-		    get_sym = symbols_having_only_attributes_without_type[sym];
+		    intent = ASRUtils::intent_local;
 		}
+		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
+	    } else {
+		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
+	            ASR::intentType intent;
+	            ASR::abiType abi;
+	            if (std::find(current_procedure_args.begin(),
+	                    current_procedure_args.end(), sym) !=
+	                    current_procedure_args.end()) {
+	                intent = ASRUtils::intent_unspecified;
+	                abi = current_procedure_abi_type;
+	            } else {
+	                intent = ASRUtils::intent_local;
+	                abi = ASR::abiType::Source;
+	            }
+	            get_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope,
+	                                                    s.m_name, nullptr, 0, intent, nullptr,
+	                                                    nullptr, ASR::storage_typeType::Default, nullptr, nullptr,
+	                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
+	                                                    false, false, false));
+	        } else {
+	            get_sym = symbols_having_only_attributes_without_type[sym];
+	        }
 	    }
 	}
 
@@ -2047,13 +2048,12 @@ public:
             if ( v->m_type ) {
                 is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
             }
-	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
-	                 is_proc_arg, s.m_name);
+	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type, false, s.m_name);
 
 	    bool is_star_dimension = false;
 
 	    if (s.n_dim > 0) {
-		is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
+		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
@@ -2075,16 +2075,12 @@ public:
 	    }
 
 	    if ( v->m_type ) {
-		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
-		                               : ASR::abiType::Source;
-	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
-	                                            dims.size(), al,
-	                                            abi, is_proc_arg,
-	                                            is_star_dimension)) {
+            	if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
+						    ASR::abiType::Source, false, is_star_dimension)) {
 	            diag.add(Diagnostic(
 			         "Cannot set dimension for variable of non-numerical type",
 			         Level::Error, Stage::Semantic, {
-				     Label("",{loc})
+			             Label("",{loc})
 			         }));
 	            throw SemanticAbort();
             	}
@@ -2094,16 +2090,10 @@ public:
 	                                			v->m_symbolic_value, v->m_value);
 	            	v->m_dependencies = variable_dependencies_vec.p;
 	            	v->n_dependencies = variable_dependencies_vec.size();
-	    } else {
-		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
-		                               : ASR::abiType::Source;
-	        v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr,
-	                                               dims.p, dims.size(),
-	                                               abi, is_proc_arg,
-	                                               ASR::array_physical_typeType::DescriptorArray,
-	                                               false, is_star_dimension);
-	        symbols_having_only_attributes_without_type[sym] = get_sym;
-	    }
+            } else {
+                v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr, dims.p, dims.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, is_star_dimension);
+                symbols_having_only_attributes_without_type[sym] = get_sym;
+            }
 	} else {
 	    diag.add(Diagnostic(
 			 "Cannot attribute non-variable type with dimension",
@@ -4132,6 +4122,9 @@ public:
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
+                                if (is_argument && is_dimension_star) {
+                                    symbol_variable->m_type = type;
+                                } else
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                                     if(ASRUtils::is_string_only(type)){
@@ -4209,6 +4202,9 @@ public:
                     } else if ( is_implicitly_declared ) {
                         ASR::symbol_t* symbol = current_scope->get_symbol(sym);
                         ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if (is_argument && is_dimension_star) {
+                            symbol_variable->m_type = type;
+                        } else
                         if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                             array_type->m_type = type;
