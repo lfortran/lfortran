@@ -260,7 +260,7 @@ public:
 
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, 
-            *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr;
+            *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr, *a_recl = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -532,8 +532,28 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-            } else {
-                const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "position", "pad"};
+            } else if (m_arg_str == std::string("recl")) {
+                if (a_recl != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_recl = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_recl_type = ASRUtils::expr_type(a_recl);
+                if (!ASRUtils::is_integer(*a_recl_type)) {
+                    diag.add(Diagnostic(
+                        "`recl` must be of type, Integer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }else {
+                const std::unordered_set<std::string> unsupported_args {"err", "blank", "fileopt", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -557,7 +577,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
