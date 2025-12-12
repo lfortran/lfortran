@@ -400,12 +400,7 @@ public:
     void debug_emit_loc(const T &x) {
         Location loc = x.base.base.loc;
         uint32_t line, column;
-        if (compiler_options.emit_debug_line_column) {
-            debug_get_line_column(loc.first, line, column);
-        } else {
-            line = loc.first;
-            column = 0;
-        }
+        debug_get_line_column(loc.first, line, column);
         builder->SetCurrentDebugLocation(
             llvm::DILocation::get(debug_current_scope->getContext(),
                 line, column, debug_current_scope));
@@ -418,11 +413,7 @@ public:
             debug_CU->getDirectory());
         llvm::DIScope *FContext = debug_Unit;
         uint32_t line, column;
-        if (compiler_options.emit_debug_line_column) {
-            debug_get_line_column(x.base.base.loc.first, line, column);
-        } else {
-            line = 0;
-        }
+        debug_get_line_column(x.base.base.loc.first, line, column);
         std::string fn_debug_name = x.m_name;
         llvm::DIBasicType *return_type_info = nullptr;
         if constexpr (std::is_same_v<T, ASR::Function_t>){
@@ -5268,12 +5259,7 @@ public:
                 // Reset the debug location
                 builder->SetCurrentDebugLocation(nullptr);
                 uint32_t line, column;
-                if (compiler_options.emit_debug_line_column) {
-                    debug_get_line_column(v->base.base.loc.first, line, column);
-                } else {
-                    line = v->base.base.loc.first;
-                    column = 0;
-                }
+                debug_get_line_column(v->base.base.loc.first, line, column);
                 std::string type_name;
                 uint32_t type_size, type_encoding;
                 get_type_debug_info(v->m_type, type_name, type_size,

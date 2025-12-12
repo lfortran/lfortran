@@ -23,7 +23,6 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-I TEXT ...`: Include path
 - `-J TEXT`: Where to save mod files
 - `-g`: Compile with debugging information
-- `--debug-with-line-column`: Convert the linear location info into line + column in the debugging information
 - `-D TEXT ...`: Define `<macro>=<value>` (or 1 if `<value>` omitted)
 - `--version`: Display compiler version information
 - `-W TEXT ...`: Linker flags

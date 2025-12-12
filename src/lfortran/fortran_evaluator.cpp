@@ -372,10 +372,6 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
-    if (compiler_options.emit_debug_info && !compiler_options.emit_debug_line_column) {
-        // Auto-enable line/column emission when debug info is requested.
-        compiler_options.emit_debug_line_column = true;
-    }
     // ASR -> LLVM
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
