@@ -5096,32 +5096,7 @@ public:
         std::string loop_var_name = to_lower(x.m_var);
         ASR::symbol_t* loop_var_sym = current_scope->resolve_symbol(loop_var_name);
         if (loop_var_sym == nullptr) {
-        // Check if implicit typing is enabled
-        if (!compiler_options.implicit_typing) {
-            diag.add(Diagnostic("The implied do loop variable '" +
-                loop_var_name + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-            // Implicitly declare the loop variable 
-            ASR::ttype_t* var_type = nullptr;
-            // Apply implicit typing rules 
-            char first_char = loop_var_name[0];
-            if (first_char >= 'i' && first_char <= 'n') {
-                var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            } else {
-                var_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
-            }
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            loop_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-                al, x.base.base.loc,
-                current_scope, s2c(al, loop_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, var_type, nullptr,
-                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
-                false, false, nullptr, false, false));
-            current_scope->add_symbol(loop_var_name, loop_var_sym);
+            loop_var_sym = create_implicit_loop_variable(x.base.base.loc, loop_var_name, current_scope);
         }
         var = replace_with_common_block_variables(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, loop_var_sym)));
         }
