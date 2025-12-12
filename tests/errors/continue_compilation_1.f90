@@ -57,12 +57,6 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
-    subroutine test_implicit_loop_var()
-        implicit none
-        integer :: n(3)
-        n = [(42, i = 1, 3)]  
-    end subroutine test_implicit_loop_var
-    
 end module
 
 
@@ -124,7 +118,7 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
-
+    integer, parameter :: arr_implicit(3) = [(42, j_implicit = 1, 3)]
 
 
     ! Use the space above to insert new declarations, and remove the line, so
@@ -370,6 +364,9 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
+
+    ! Test implicit loop variable without declaration (i_implicit should error)
+    a = [(42, i_implicit = 1, 3)]
 end program 
 ! Test for multiple PROGRAM units in same file
 program second_program_test
