@@ -861,6 +861,21 @@ time_section "🧪 Testing SNAP" '
     make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
+##########################
+# Section 13: LAPACK
+##########################
+time_section "🧪 Testing LAPACK" '
+    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone https://github.com/gxyd/lapack.git
+    cd lapack
+    git fetch origin lf_07
+    git checkout lf_07
+    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    cd build
+    ./build_lf.sh
+    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
+'
 
 
 ##################################
