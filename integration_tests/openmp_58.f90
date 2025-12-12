@@ -13,8 +13,10 @@ program openmp_58
   !$omp single
   !$omp taskloop shared(A)
   do i = 1, N
-        total = total + A(index) * 2
-        index=index+1
+        !$omp critical
+            total = total + A(index) * 2
+            index=index+1
+        !$omp end critical
     end do
   !$omp end taskloop
   !$omp end single
