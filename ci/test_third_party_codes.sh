@@ -227,12 +227,14 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 # Section 1: stdlib (Less Workarounds)
 ##########################
 time_section "🧪 Testing stdlib (Less Workarounds)" '
-  git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git
+  # Temporarily use krystophny fork with double-allocation fix
+  # until https://github.com/Pranavchiku/stdlib-fortran-lang/pull/1 is merged
+  git clone https://github.com/krystophny/stdlib-fortran-lang.git
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-22
-  git checkout ae4c42431b31f8ad8f6fdd40bcc9e08a88f8b373
+  git checkout fix/double-allocate-logger
+  git checkout 5bd20c3e3dd7128ed8b675786b8db0611f1abf16
   micromamba install -c conda-forge fypp
 
   git clean -fdx
