@@ -1,0 +1,11 @@
+semantic error: arguments of `repeat` intrinsic must be scalar
+ --> tests/errors/mre_parameter.f90:3:38
+  |
+3 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'ar1' is not declared
+ --> tests/errors/mre_parameter.f90:4:14
+  |
+4 |     print *, ar1
+  |              ^^^ 'ar1' is undeclared
