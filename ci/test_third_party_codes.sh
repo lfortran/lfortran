@@ -863,7 +863,7 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 '
 ##########################
-# Section 13: LAPACK
+# Section 13: LAPACK (patched fork)
 ##########################
 time_section "🧪 Testing LAPACK" '
     micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
@@ -876,6 +876,63 @@ time_section "🧪 Testing LAPACK" '
     cd build
     ./build_lf.sh
     micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
+'
+
+##########################
+# Section 14: Vanilla Reference-LAPACK
+##########################
+time_section "🧪 Testing Vanilla Reference-LAPACK" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git
+    cd lapack
+
+    # Patch to skip FortranCInterface_VERIFY (LFortran does not pass it yet)
+    sed -i "s/if(CMAKE_Fortran_COMPILER AND CMAKE_C_COMPILER)/if(CMAKE_Fortran_COMPILER AND CMAKE_C_COMPILER AND NOT SKIP_FORTRAN_C_INTERFACE)/" LAPACKE/include/CMakeLists.txt
+
+    print_subsection "Building BLAS and LAPACK libraries"
+    cmake -S . -B build -G Ninja \
+        -DCMAKE_Fortran_COMPILER=$FC \
+        -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_INDEX64=OFF \
+        -DBUILD_INDEX64_EXT_API=OFF \
+        -DBUILD_COMPLEX=OFF \
+        -DBUILD_COMPLEX16=OFF \
+        -DBUILD_TESTING=OFF \
+        -DLAPACKE=OFF \
+        -DCBLAS=OFF \
+        -DSKIP_FORTRAN_C_INTERFACE=ON
+
+    cmake --build build -j8
+
+    print_subsection "Testing LAPACK at runtime with DGESV"
+    cat > /tmp/test_lapack.f90 << "FORTRAN_EOF"
+program test_lapack
+    implicit none
+    integer, parameter :: n = 3
+    real(8) :: A(n, n), b(n), x(n)
+    integer :: ipiv(n), info
+    A(1,1) = 1.0d0; A(1,2) = 2.0d0; A(1,3) = 3.0d0
+    A(2,1) = 4.0d0; A(2,2) = 5.0d0; A(2,3) = 6.0d0
+    A(3,1) = 7.0d0; A(3,2) = 8.0d0; A(3,3) = 10.0d0
+    b(1) = 1.0d0; b(2) = 2.0d0; b(3) = 3.0d0
+    x = b
+    call dgesv(n, 1, A, n, ipiv, x, n, info)
+    if (info /= 0) error stop
+    if (abs(x(1) - (-1.0d0/3.0d0)) > 1.0d-10) error stop
+    if (abs(x(2) - (2.0d0/3.0d0)) > 1.0d-10) error stop
+    if (abs(x(3) - 0.0d0) > 1.0d-10) error stop
+    print *, "LAPACK DGESV test PASSED"
+end program
+FORTRAN_EOF
+
+    $FC --implicit-interface --separate-compilation /tmp/test_lapack.f90 \
+        -L$(pwd)/build/lib -llapack -lblas -o /tmp/test_lapack
+    run_test /tmp/test_lapack
+
+    print_success "Done with Vanilla Reference-LAPACK"
+    cd ..
+    rm -rf lapack
 '
 
 
