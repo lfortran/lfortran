@@ -9,7 +9,7 @@ program openmp_31
 
     do j = 1, 100
         print *, phi(1)
-        !$omp atomic update
+        !$omp atomic
         phi(1) = phi(1) + 1
     end do
 
