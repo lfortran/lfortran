@@ -1,5 +1,5 @@
-! MRE from LAPACK stfsm.f: ArraySection on 0-based assumed-size array
-! Pattern: A(0:*) sliced as A(m:) triggers ArrayBound in codegen
+! MRE from LAPACK stfsm.f: 0-based assumed-size dummy A(0:*)
+! Pattern: sequence association when passing A(m) to X(*)
 program lapack_06
     implicit none
     real :: A(0:10)
@@ -13,8 +13,8 @@ subroutine stfsm(A)
     real :: A(0:*)
     integer :: M
     M = 5
-    ! This triggers ArraySection with ArrayBound on assumed-size
-    call sub(A(M:))
+    ! Sequence association: pass element A(M) to assumed-size dummy X(*)
+    call sub(A(M))
 end subroutine
 
 subroutine sub(X)
