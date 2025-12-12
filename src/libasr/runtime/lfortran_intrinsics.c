@@ -5813,10 +5813,23 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     strcpy(filename, base_name);
     strcat(filename, "_lines.dat.txt");
     int64_t fd = _lpython_open(filename, "r");
+    free(filename);
+    if (fd < 0) {
+        d->stack_size = 0;
+        return;
+    }
     uint32_t size = get_file_size(fd);
+    if (size == 0) {
+        _lpython_close(fd);
+        d->stack_size = 0;
+        return;
+    }
     char *file_contents = _lpython_read(fd, size);
     _lpython_close(fd);
-    free(filename);
+    if (file_contents == NULL) {
+        d->stack_size = 0;
+        return;
+    }
 
     char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     bool address = true;
@@ -5847,7 +5860,10 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
 
 char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len) {
     FILE *fp = fopen(filename, "r");
-    if (!fp) exit(1);
+    if (!fp) {
+        *out_len = 0;
+        return NULL;
+    }
 
     char *line = NULL;
     size_t cap = 0;
@@ -5890,6 +5906,9 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     struct Stacktrace d = get_stacktrace_addresses();
     get_local_address(&d);
     get_local_info_dwarfdump(&d);
+    if (d.stack_size == 0) {
+        return;
+    }
 
 #ifdef HAVE_LFORTRAN_MACHO
     for (int32_t i = d.local_pc_size-1; i >= 0; i--) {
@@ -5899,7 +5918,10 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
         uint64_t index = bisection(d.addresses, d.stack_size, d.local_pc[i]);
         int64_t line_len;
         char* line = read_line_from_file(source_filename, d.line_numbers[index], &line_len);
-        char* trimmed = remove_whitespace(line, &line_len);  // updated to be len-aware
+        char* trimmed = "";
+        if (line != NULL) {
+            trimmed = remove_whitespace(line, &line_len);
+        }
         if(use_colors) {
             fprintf(stderr, DIM "  File " S_RESET
                 BOLD MAGENTA "\"%s\"" C_RESET S_RESET
