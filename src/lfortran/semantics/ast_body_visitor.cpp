@@ -3710,6 +3710,25 @@ public:
                     );
                     throw SemanticAbort();
             }
+            if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                // Allocate the target if the value is a function call returning an allocatable
+                // array and the target is allocatable
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.loc = x.base.base.loc;
+                alloc_arg.m_a = target;
+                alloc_arg.m_dims = nullptr;
+                alloc_arg.n_dims = 0;
+                alloc_arg.m_len_expr = nullptr;
+                alloc_arg.m_sym_subclass = nullptr;
+                alloc_arg.m_type = nullptr;
+                Vec<ASR::alloc_arg_t> alloc_args;
+                alloc_args.reserve(al, 1);
+                alloc_args.push_back(al, alloc_arg);
+                ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, target->base.loc,
+                                            alloc_args.p, alloc_args.n,
+                                            nullptr, nullptr, nullptr));
+                current_body->push_back(al, alloc_stmt);
+            }
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
