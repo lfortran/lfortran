@@ -2002,14 +2002,14 @@ public:
 
     void dimension_variable(AST::var_sym_t const & s, const Location& loc) {
 	std::string sym = to_lower(s.m_name);
+	bool is_proc_arg = (std::find(current_procedure_args.begin(),
+	    current_procedure_args.end(), sym) != current_procedure_args.end());
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
 	    if (compiler_options.implicit_typing) {
 		ASR::intentType intent;
-		if (std::find(current_procedure_args.begin(),
-			      current_procedure_args.end(), sym) !=
-		    current_procedure_args.end()) {
+		if (is_proc_arg) {
 		    intent = ASRUtils::intent_unspecified;
 		} else {
 		    intent = ASRUtils::intent_local;
@@ -2019,9 +2019,7 @@ public:
 		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
 	            ASR::intentType intent;
 	            ASR::abiType abi;
-	            if (std::find(current_procedure_args.begin(),
-	                    current_procedure_args.end(), sym) !=
-	                    current_procedure_args.end()) {
+	            if (is_proc_arg) {
 	                intent = ASRUtils::intent_unspecified;
 	                abi = current_procedure_abi_type;
 	            } else {
@@ -2048,12 +2046,13 @@ public:
             if ( v->m_type ) {
                 is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
             }
-	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type, false, s.m_name);
+	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
+	                 is_proc_arg, s.m_name);
 
 	    bool is_star_dimension = false;
 
 	    if (s.n_dim > 0) {
-		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+		is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
@@ -2075,8 +2074,12 @@ public:
 	    }
 
 	    if ( v->m_type ) {
-            	if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
-						    ASR::abiType::Source, false, is_star_dimension)) {
+		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
+		                               : ASR::abiType::Source;
+	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
+	                                            dims.size(), al,
+	                                            abi, is_proc_arg,
+	                                            is_star_dimension)) {
 	            diag.add(Diagnostic(
 			         "Cannot set dimension for variable of non-numerical type",
 			         Level::Error, Stage::Semantic, {
@@ -2091,7 +2094,12 @@ public:
 	            	v->m_dependencies = variable_dependencies_vec.p;
 	            	v->n_dependencies = variable_dependencies_vec.size();
             } else {
-                v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr, dims.p, dims.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, is_star_dimension);
+		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
+		                               : ASR::abiType::Source;
+                v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr,
+                    dims.p, dims.size(), abi, is_proc_arg,
+                    ASR::array_physical_typeType::DescriptorArray, false,
+                    is_star_dimension);
                 symbols_having_only_attributes_without_type[sym] = get_sym;
             }
 	} else {
