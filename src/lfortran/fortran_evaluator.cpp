@@ -372,19 +372,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
-    if (compiler_options.emit_debug_info) {
-        if (!compiler_options.emit_debug_line_column) {
-            diagnostics.add(LCompilers::diag::Diagnostic(
-                "The `emit_debug_line_column` is not enabled; please use the "
-                "`--debug-with-line-column` option to get the correct "
-                "location information",
-                LCompilers::diag::Level::Error,
-                LCompilers::diag::Stage::Semantic, {})
-            );
-            Error err;
-            return err;
-        }
-    }
+    // Debug info generation does not require line/column metadata.
     // ASR -> LLVM
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res

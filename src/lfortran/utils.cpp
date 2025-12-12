@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <iostream>
+#include <filesystem>
 
 #include <bin/tpl/whereami/whereami.h>
 
@@ -115,7 +116,17 @@ std::string get_dwarf_scripts_dir()
     switch (execution_mode)
     {
         case ExecutionMode::LFortranDevelopment:
-            return lfortran_exec_path_dir + "/../libasr";
+        {
+            std::string candidate_src = lfortran_exec_path_dir + "/../../../src/libasr";
+            if (std::filesystem::exists(candidate_src + "/dwarf_convert.py")) {
+                return candidate_src;
+            }
+            std::string candidate_build = lfortran_exec_path_dir + "/../libasr";
+            if (std::filesystem::exists(candidate_build + "/dwarf_convert.py")) {
+                return candidate_build;
+            }
+            return candidate_build;
+        }
         case ExecutionMode::LFortranCtest:
             return lfortran_exec_path_dir + "/../../libasr";
         case ExecutionMode::LFortranInstalled:

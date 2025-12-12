@@ -656,6 +656,12 @@ public:
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
         ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ttype)) {
+            ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(ttype);
+            if (arr_type->m_physical_type != x->m_new) {
+                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, x->m_new, true);
+            }
+        }
         ASR::expr_t *value = duplicate_expr(x->m_value);
         return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
             arg, x->m_old, x->m_new, ttype, value);
@@ -720,6 +726,7 @@ public:
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(expr, a->m_type);
+                ASR::array_physical_typeType phys = a->m_physical_type;
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
                 Vec<ASR::dimension_t> new_dims;
@@ -732,8 +739,13 @@ public:
                     new_dim.m_length = duplicate_expr(old_dim.m_length);
                     new_dims.push_back(al, new_dim);
                 }
+                if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                    return ASRUtils::make_Array_t_util(al, t->base.loc,
+                        t, new_dims.p, new_dims.size());
+                }
                 return ASRUtils::make_Array_t_util(al, t->base.loc,
-                    t, new_dims.p, new_dims.size());
+                    t, new_dims.p, new_dims.size(), ASR::abiType::Source,
+                    false, phys, true);
             }
             case (ASR::ttypeType::Allocatable): {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
@@ -972,6 +984,7 @@ public:
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(expr, a->m_type);
+                ASR::array_physical_typeType phys = a->m_physical_type;
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
                 Vec<ASR::dimension_t> new_dims;
@@ -984,8 +997,13 @@ public:
                     new_dim.m_length = duplicate_expr(old_dim.m_length);
                     new_dims.push_back(al, new_dim);
                 }
+                if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                    return ASRUtils::make_Array_t_util(al, t->base.loc,
+                        t, new_dims.p, new_dims.size());
+                }
                 return ASRUtils::make_Array_t_util(al, t->base.loc,
-                    t, new_dims.p, new_dims.size());
+                    t, new_dims.p, new_dims.size(), ASR::abiType::Source,
+                    false, phys, true);
             }
             default : return ttype;
         }
@@ -1344,6 +1362,7 @@ public:
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(expr, a->m_type);
+                ASR::array_physical_typeType phys = a->m_physical_type;
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
                 Vec<ASR::dimension_t> new_dims;
@@ -1356,8 +1375,13 @@ public:
                     new_dim.m_length = duplicate_expr(old_dim.m_length);
                     new_dims.push_back(al, new_dim);
                 }
+                if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                    return ASRUtils::make_Array_t_util(al, t->base.loc,
+                        t, new_dims.p, new_dims.size());
+                }
                 return ASRUtils::make_Array_t_util(al, t->base.loc,
-                    t, new_dims.p, new_dims.size());
+                    t, new_dims.p, new_dims.size(), ASR::abiType::Source,
+                    false, phys, true);
             }
             case (ASR::ttypeType::Allocatable) : {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
@@ -1654,6 +1678,12 @@ public:
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
         ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ttype)) {
+            ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(ttype);
+            if (arr_type->m_physical_type != x->m_new) {
+                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, x->m_new, true);
+            }
+        }
         ASR::expr_t *value = duplicate_expr(x->m_value);
         return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
             arg, x->m_old, x->m_new, ttype, value);
@@ -1755,6 +1785,7 @@ public:
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(expr, a->m_type);
+                ASR::array_physical_typeType phys = a->m_physical_type;
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
                 Vec<ASR::dimension_t> new_dims;
@@ -1767,8 +1798,13 @@ public:
                     new_dim.m_length = duplicate_expr(old_dim.m_length);
                     new_dims.push_back(al, new_dim);
                 }
+                if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                    return ASRUtils::make_Array_t_util(al, t->base.loc,
+                        t, new_dims.p, new_dims.size());
+                }
                 return ASRUtils::make_Array_t_util(al, t->base.loc,
-                    t, new_dims.p, new_dims.size());
+                    t, new_dims.p, new_dims.size(), ASR::abiType::Source,
+                    false, phys, true);
             }
             case (ASR::ttypeType::Allocatable): {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
