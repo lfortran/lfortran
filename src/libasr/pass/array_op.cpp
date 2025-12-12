@@ -1138,6 +1138,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             cv.visit_expr(*d_value);
 
             if (debug_inserted.find(&x) == debug_inserted.end()) {
+                ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
+                // Deallocate temporaries before doing a move assignment to them
+                if (x.m_move_allocation &&
+                    target_variable &&
+                    ASRUtils::is_allocatable_or_pointer(target_variable->m_type) &&
+                    ASRUtils::symbol_StorageType((ASR::symbol_t *)target_variable) == ASR::storage_typeType::Default) {
+                    if (std::string(target_variable->m_name).rfind("__libasr_created") != std::string::npos) {
+                        Vec<ASR::expr_t*> v;
+                        v.reserve(al, 1);
+                        v.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.m_target->base.loc, (ASR::symbol_t *)target_variable)));
+
+                        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                            al, xx.base.base.loc, v.p, v.size())));
+                    }
+                }
                 pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
