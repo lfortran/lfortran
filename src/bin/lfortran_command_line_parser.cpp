@@ -319,6 +319,11 @@ namespace LCompilers::CommandLineInterface {
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
 
+        // If debug info is requested, also emit line/column data by default.
+        if (compiler_options.emit_debug_info && !compiler_options.emit_debug_line_column) {
+            compiler_options.emit_debug_line_column = true;
+        }
+
         for (auto &f_flag : opts.f_flags) {
             if (f_flag == "PIC") {
                 // Position Independent Code
