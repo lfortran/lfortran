@@ -6687,12 +6687,30 @@ public:
                     // iterate only over args of type array.
                     for( auto it: array_arg_index ) {
                         ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
-                        if ( arg_expr != nullptr ) {
-                            ASR::expr_t** current_expr_copy = current_expr;
-                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
-                            call_replacer_();
-                            x.m_args[it.first].m_value = *current_expr;
-                            current_expr = current_expr_copy;
+                        // Only convert top-level ArrayItem to ArraySection.
+                        // Do NOT recurse into nested ArrayItem expressions in indices.
+                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                            Vec<ASR::array_index_t> array_indices;
+                            array_indices.reserve(al, array_item->n_args);
+                            ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
+
+                            for ( size_t j = 0; j < array_item->n_args; j++ ) {
+                                ASR::array_index_t array_index;
+                                array_index.loc = array_item->m_args[j].loc;
+                                array_index.m_left = array_item->m_args[j].m_right;
+                                array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
+                                if ( ASRUtils::expr_value(array_index.m_right) ) {
+                                    array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                                }
+                                array_index.m_step = b.i32( j + 1 );
+                                array_indices.push_back(al, array_index);
+                            }
+                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, ASRUtils::expr_type(array_item->m_v));
+                            x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
+                                al, array_item->base.base.loc, array_item->m_v,
+                                array_indices.p, array_indices.n, new_type, nullptr));
                         }
                     }
                 }
