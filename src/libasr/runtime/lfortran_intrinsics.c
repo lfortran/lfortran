@@ -5913,8 +5913,6 @@ static inline uint64_t bisection(const uint64_t vec[],
     return i1;
 }
 
-#endif // HAVE_RUNTIME_STACKTRACE
-
 static inline void print_stacktrace_raw_addresses(struct Stacktrace *d, bool use_colors) {
     if (d->pc_size == 0) {
         return;
@@ -5934,6 +5932,8 @@ static inline void print_stacktrace_raw_addresses(struct Stacktrace *d, bool use
         }
     }
 }
+
+#endif // HAVE_RUNTIME_STACKTRACE
 
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_RUNTIME_STACKTRACE
