@@ -9040,6 +9040,8 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         llvm::Value *zero, *cond;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
@@ -9368,6 +9370,8 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
@@ -9472,6 +9476,8 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
             llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
