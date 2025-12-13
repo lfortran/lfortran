@@ -173,10 +173,8 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
-
-
-
-
+    integer, allocatable :: allocate_int = 1
+    character(:), allocatable :: allocate_char = "H"
 
 
 
