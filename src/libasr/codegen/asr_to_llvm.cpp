@@ -3182,14 +3182,6 @@ public:
             }
 
             // Original Check: for single-element access on allocatable, keep the runtime error
-
-            // Allow passing unallocated allocatable arrays.
-            // In this case, we return the descriptor pointer directly without indexing.
-            if (ASRUtils::is_allocatable(x_mv_type)) {
-                // Return the descriptor pointer directly (do not load).
-                tmp = array;
-                return;
-            }
             if (compiler_options.po.bounds_checking &&
                 ASRUtils::is_allocatable(x_mv_type) &&
                 is_single_element_access) {
