@@ -777,8 +777,16 @@ public:
                 break;
             }
             case ASR::AssumedLength:
-                LCOMPILERS_ASSERT_MSG(false,
-                    "Shouldn't define assumed length string variable (They're only arguments) ")
+                if (len) {
+                    int ptr_load_cpy = ptr_loads;
+                    ptr_loads = 1;
+                    visit_expr(*len);
+                    ptr_loads = ptr_load_cpy;
+                    tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+                    llvm::Value* len_ptr = llvm_utils->get_string_length(str_type, str, true);
+                    builder->CreateStore(tmp, len_ptr);
+                    tmp = nullptr;
+                }
                 break;
             case ASR::DeferredLength:
                 // Do nothing, deferred length strings doesn't have information to set it up with.
@@ -1683,11 +1691,13 @@ public:
                         llvm::Value* ptr_;
 
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
-                            builder->CreateStore(llvm::Constant::getNullValue(type), ptr_);
-                            if (ASRUtils::is_character(*expr_type(x.m_args[i].m_a))) {
-                                llvm::Value* str_desc = create_and_setup_string_for_array(
-                                    expr_type(x.m_args[i].m_a), nullptr, false, "arr_desc_str_desc");
-                                builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
+                            if (use_realloc) {
+                                builder->CreateStore(llvm::Constant::getNullValue(type), ptr_);
+                                if (ASRUtils::is_character(*expr_type(x.m_args[i].m_a))) {
+                                    llvm::Value* str_desc = create_and_setup_string_for_array(
+                                        expr_type(x.m_args[i].m_a), nullptr, false, "arr_desc_str_desc");
+                                    builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
+                                }
                             }
                             arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
