@@ -6948,6 +6948,11 @@ public:
                             for (size_t i = 0; i < temp_function_dependencies.n; i++) {
                                 current_function_dependencies.push_back(al, temp_function_dependencies[i]);
                             }
+                        } else {
+                            expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, array_arg_idx[i], expected_phys, true
+                            );
+                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
                         }
 
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
