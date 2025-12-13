@@ -1260,13 +1260,31 @@ namespace MoveAlloc {
             fill_func_arg_sub("to", arg_types[1], InOut);
         }
 
-        Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
-        allocated_args.push_back(al, args[0]);
+        Vec<ASR::expr_t*> allocated_args_from; allocated_args_from.reserve(al, 1);
+        allocated_args_from.push_back(al, args[0]);
 
         // ASR node for `allocated(from)`
         ASR::expr_t* is_from_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(IntrinsicImpureFunctions::Allocated),
-                allocated_args.p, allocated_args.n, 0, logical, nullptr));
+                allocated_args_from.p, allocated_args_from.n, 0, logical, nullptr));
+
+        Vec<ASR::expr_t*> allocated_args_to; allocated_args_to.reserve(al, 1);
+        allocated_args_to.push_back(al, args[1]);
+
+        // ASR node for `allocated(to)`
+        ASR::expr_t* is_to_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicImpureFunctions::Allocated),
+                allocated_args_to.p, allocated_args_to.n, 0, logical, nullptr));
+
+        // If `to` is already allocated, deallocate it first.
+        // This matches standard MOVE_ALLOC semantics and avoids double-allocation at runtime.
+        Vec<ASR::expr_t*> deallocate_to_args; deallocate_to_args.reserve(al, 1);
+        deallocate_to_args.push_back(al, args[1]);
+        ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            al, loc, deallocate_to_args.p, deallocate_to_args.n));
+        std::vector<ASR::stmt_t*> deallocate_to_body;
+        deallocate_to_body.push_back(deallocate_to);
+        body.push_back(al, b.If(is_to_allocated, deallocate_to_body, {}));
 
         std::vector<ASR::stmt_t*> if_body;
 
