@@ -147,11 +147,11 @@ semantic error: `parameter` attribute conflicts with `pointer` attribute
 100 |     integer, pointer, parameter :: v => null()
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: `parameter` attribute conflicts with `allocatable` attribute
-   --> tests/errors/continue_compilation_2.f90:101:5
+semantic error: An ALLOCATABLE variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_2.f90:101:40
     |
 101 |     integer, allocatable, parameter :: v=1
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |                                        ^^^ 
 
 semantic error: `kind` argument of `int` intrinsic must be a scalar
    --> tests/errors/continue_compilation_2.f90:162:54
