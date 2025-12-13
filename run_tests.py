@@ -737,7 +737,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename, "run_dbg",
-                "lfortran {infile} -g --debug-with-line-column --no-color",
+                "lfortran {infile} -g --no-color",
             filename,
             update_reference,
             verify_hash,
