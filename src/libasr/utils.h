@@ -132,7 +132,6 @@ struct CompilerOptions {
     std::string target = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
-    bool emit_debug_line_column = false;
     bool enable_cpython = false;
     bool enable_symengine = false;
     bool link_numpy = false;

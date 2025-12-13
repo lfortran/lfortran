@@ -8,7 +8,9 @@ endmacro(ADDTEST)
 
 macro(ADDTESTC name)
     add_executable(${name} ${name}.c)
-    target_link_libraries(${name} lfortran_lib  ${ARGN})
+    # Link only to specified libraries, not lfortran_lib which brings in C++
+    # flags from xeus-zmq that are invalid for C compilation (-Wreorder)
+    target_link_libraries(${name} ${ARGN})
     add_test(${name} ${PROJECT_BINARY_DIR}/${name})
 endmacro(ADDTESTC)
 

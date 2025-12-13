@@ -270,6 +270,23 @@ semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
 215 |     integer :: aRank1(..)
     |                ^^^^^^^^^^ 
 
+semantic error: More than one main program found
+   --> tests/errors/continue_compilation_2.f90:92:1 - 472:11
+    |
+ 92 |    program continue_compilation_2
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+472 |    end program
+    | ...^^^^^^^^^^^ first main program defined here
+    |
+475 |    program second_program_test
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+478 |    end program second_program_test
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
    |
