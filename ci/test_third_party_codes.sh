@@ -266,10 +266,11 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-10
+  git checkout lf-11
   micromamba install -c conda-forge fpm
-  git checkout b2145f590722bc377051e9aef16e86bdc0ac0252
-  fpm --compiler=$FC build
+  git checkout 15dbdeeda22c3b19cc106e7844c056af758ccd88
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
   cd ..
 '
@@ -860,6 +861,21 @@ time_section "🧪 Testing SNAP" '
     make clean
     make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
+'
+##########################
+# Section 13: LAPACK
+##########################
+time_section "🧪 Testing LAPACK" '
+    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone https://github.com/gxyd/lapack.git
+    cd lapack
+    git fetch origin lf_07
+    git checkout lf_07
+    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    cd build
+    ./build_lf.sh
+    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
 '
 
 

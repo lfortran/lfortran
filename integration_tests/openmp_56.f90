@@ -7,6 +7,7 @@ program openmp_56
 
     !$omp parallel
         !$omp task shared(counter)
+            !$omp atomic
             counter=counter+1
             print *, "Task done by TID:-",omp_get_thread_num()
         !$omp end task

@@ -400,12 +400,7 @@ public:
     void debug_emit_loc(const T &x) {
         Location loc = x.base.base.loc;
         uint32_t line, column;
-        if (compiler_options.emit_debug_line_column) {
-            debug_get_line_column(loc.first, line, column);
-        } else {
-            line = loc.first;
-            column = 0;
-        }
+        debug_get_line_column(loc.first, line, column);
         builder->SetCurrentDebugLocation(
             llvm::DILocation::get(debug_current_scope->getContext(),
                 line, column, debug_current_scope));
@@ -418,11 +413,7 @@ public:
             debug_CU->getDirectory());
         llvm::DIScope *FContext = debug_Unit;
         uint32_t line, column;
-        if (compiler_options.emit_debug_line_column) {
-            debug_get_line_column(x.base.base.loc.first, line, column);
-        } else {
-            line = 0;
-        }
+        debug_get_line_column(x.base.base.loc.first, line, column);
         std::string fn_debug_name = x.m_name;
         llvm::DIBasicType *return_type_info = nullptr;
         if constexpr (std::is_same_v<T, ASR::Function_t>){
@@ -5268,12 +5259,7 @@ public:
                 // Reset the debug location
                 builder->SetCurrentDebugLocation(nullptr);
                 uint32_t line, column;
-                if (compiler_options.emit_debug_line_column) {
-                    debug_get_line_column(v->base.base.loc.first, line, column);
-                } else {
-                    line = v->base.base.loc.first;
-                    column = 0;
-                }
+                debug_get_line_column(v->base.base.loc.first, line, column);
                 std::string type_name;
                 uint32_t type_size, type_encoding;
                 get_type_debug_info(v->m_type, type_name, type_size,
@@ -9040,6 +9026,8 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         llvm::Value *zero, *cond;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
@@ -9368,6 +9356,8 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
@@ -9472,6 +9462,8 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
+        load_unlimited_polymorpic_value(x.m_left, left_val);
+        load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
             llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
@@ -11206,11 +11198,11 @@ public:
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
-                int ptr_copy = ptr_loads;
+                int ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_values[i]);
                 var_to_read_into = tmp; tmp =nullptr;
-                ptr_loads = ptr_copy;
+                ptr_loads = ptr_loads_copy;
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
                 llvm::Function *fn;
                 if (ASR::is_a<ASR::Var_t>(*x.m_values[i]) &&
@@ -11333,6 +11325,14 @@ public:
                         std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(type), var_to_read_into, true);
                         builder->CreateCall(fn, {str_data, str_len, unit_val});
                     } else {
+                        if (ASR::is_a<ASR::Allocatable_t>(*type)
+                            || ASR::is_a<ASR::Pointer_t>(*type)) {
+                            llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_values[i],
+                                ASRUtils::type_get_past_allocatable_pointer(type),
+                                module.get())->getPointerTo();
+                            var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
+                        }
                         builder->CreateCall(fn, {var_to_read_into, unit_val});
                     }
                 }
