@@ -3097,10 +3097,27 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
             if( array_size == nullptr ) {
                 array_size = array_section_size;
             } else {
-                builder.Add(array_section_size, array_size);
+                array_size = builder.Add(array_section_size, array_size);
             }
         } else {
-            constant_size += 1;
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(element)));
+            if( ASRUtils::is_array(element_type) ) {
+                if( ASRUtils::is_fixed_size_array(element_type) ) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
+                    constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+                } else {
+                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                    if( array_size == nullptr ) {
+                        array_size = element_array_size;
+                    } else {
+                        array_size = builder.Add(array_size, element_array_size);
+                    }
+                }
+            } else {
+                constant_size += 1;
+            }
         }
     }
     ASR::expr_t* constant_size_asr = nullptr;

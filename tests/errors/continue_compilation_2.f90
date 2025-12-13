@@ -470,3 +470,9 @@ program continue_compilation_2
     end function
 
 end program
+
+! Test for multiple PROGRAM units in same file
+program second_program_test
+    implicit none
+    print *, "This is a second program - should cause error"
+end program second_program_test

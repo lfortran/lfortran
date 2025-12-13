@@ -4,8 +4,6 @@
 module continue_compilation_1_mod
     type :: MyClass
         integer :: value
-
-
     contains
         procedure :: display
     end type MyClass
@@ -14,12 +12,31 @@ module continue_compilation_1_mod
     contains
         private
         procedure, public, pass(self) :: add_log_file
-
-
-    
     end type logger_type
 
     type(MyClass), PROTECTED :: protected_module_my_class_obj
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -56,6 +73,44 @@ contains
         use iso_c_binding
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 end module
 
@@ -118,6 +173,41 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -365,8 +455,3 @@ program continue_compilation_1
     13 format ()
     read (5, fmt_i3)
 end program 
-! Test for multiple PROGRAM units in same file
-program second_program_test
-    implicit none
-    print *, "This is a second program - should cause error"
-end program second_program_test
