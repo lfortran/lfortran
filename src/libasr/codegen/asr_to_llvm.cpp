@@ -3168,18 +3168,6 @@ public:
             }
             // Decide whether this is a single-element access or a slice / pass-through.
             bool is_single_element_access = (x.n_args == 1);
-            // If this is an allocatable array and it's NOT a single-element access (i.e. slice / pass),
-            // just return the descriptor (may be unallocated) — that's legal in Fortran.
-            if (ASRUtils::is_allocatable(x_mv_type) && !is_single_element_access) {
-                // Ensure 'array' is loaded (Value) not a pointer (Alloca)
-                if (array->getType()->isPointerTy()) {
-                    llvm::Type *descr_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
-                    // CreateLoad requires the type
-                    array = builder->CreateLoad(descr_type, array);
-                }
-                tmp = array;
-                return;
-            }
 
             // Original Check: for single-element access on allocatable, keep the runtime error
             if (compiler_options.po.bounds_checking &&
