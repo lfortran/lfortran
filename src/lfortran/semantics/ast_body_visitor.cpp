@@ -1143,55 +1143,57 @@ public:
 
         read_write = (_type == AST::stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
-        Vec<ASR::expr_t*> overload_args;
-        overload_args.reserve(al, 1);
-        overload_args.push_back(al, a_values_vec[0]);
-        overload_args.push_back(al, a_unit);
-        if (formatted) {
-            if (a_fmt) { // iotype
-                overload_args.push_back(al, a_fmt);
-            } else {
-                ASR::ttype_t* char_type = ASRUtils::TYPE(
-                    ASR::make_String_t(
-                        al, loc, 1,
-                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 12,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                        ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
-                ASR::expr_t* list_directed = ASRUtils::EXPR(
-                    ASR::make_StringConstant_t(al, loc, s2c(al, "LISTDIRECTED"), char_type));
-                overload_args.push_back(al, list_directed);
+        if (n_values > 0) {
+            Vec<ASR::expr_t*> overload_args;
+            overload_args.reserve(al, 2);
+            overload_args.push_back(al, a_values_vec[0]);
+            overload_args.push_back(al, a_unit);
+            if (formatted) {
+                if (a_fmt) { // iotype
+                    overload_args.push_back(al, a_fmt);
+                } else {
+                    ASR::ttype_t* char_type = ASRUtils::TYPE(
+                        ASR::make_String_t(
+                            al, loc, 1,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 12,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                            ASR::string_length_kindType::ExpressionLength,
+                            ASR::string_physical_typeType::DescriptorString));
+                    ASR::expr_t* list_directed = ASRUtils::EXPR(
+                        ASR::make_StringConstant_t(al, loc, s2c(al, "LISTDIRECTED"), char_type));
+                    overload_args.push_back(al, list_directed);
+                }
+                const Location& loc = read_write_stmt.base.loc;
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                // v_list
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+                dims.push_back(al, dim);
+                ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
+                    ASR::array_physical_typeType::FixedSizeArray));
+                Vec<ASR::expr_t*> arr_args;
+                arr_args.reserve(al, 0);
+                overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+                        al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
             }
-            const Location& loc = read_write_stmt.base.loc;
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            // v_list
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
-            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
-            dims.push_back(al, dim);
-            ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
-                ASR::array_physical_typeType::FixedSizeArray));
-            Vec<ASR::expr_t*> arr_args;
-            arr_args.reserve(al, 0);
-            overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
-                    al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
-        }
-        overload_args.push_back(al, a_iostat);
-        overload_args.push_back(al, a_iomsg);
-        if( n_values > 0 && ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
-            current_scope, asr, al, read_write_stmt.base.loc, current_function_dependencies,
-            current_module_dependencies,
-            [&](const std::string &msg, const Location &loc) {
-                diag.add(Diagnostic(
-                    msg,
-                    Level::Error, Stage::Semantic, {
-                        Label("",{loc})
-                    }));
-                throw SemanticAbort(); }) ) {
-            overloaded_stmt = ASRUtils::STMT(asr);
+            overload_args.push_back(al, a_iostat);
+            overload_args.push_back(al, a_iomsg);
+            if (ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
+                current_scope, asr, al, read_write_stmt.base.loc, current_function_dependencies,
+                current_module_dependencies,
+                [&](const std::string &msg, const Location &loc) {
+                    diag.add(Diagnostic(
+                        msg,
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort(); }) ) {
+                overloaded_stmt = ASRUtils::STMT(asr);
+            }
         }
 
         if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {

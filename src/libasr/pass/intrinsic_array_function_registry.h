@@ -313,6 +313,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
+    if (args.size() < 1) return nullptr;
     ASR::expr_t* array = args[0];
     if (!array) return nullptr;
     ASR::expr_t* value = nullptr, *args_value0 = nullptr;
@@ -329,23 +330,21 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     }
     ASR::ArrayConstant_t *mask = nullptr;
     ASR::expr_t* dim = b.i32(1);
-    ASR::expr_t* arg1 = (args.size() > 1) ? args[1] : nullptr;
-    ASR::expr_t* arg2 = (args.size() > 2) ? args[2] : nullptr;
-    if (arg1 && is_logical(*ASRUtils::expr_type(arg1))) {
-        if (ASR::is_a<ASR::ArrayConstant_t>(*arg1)) {
-            mask = ASR::down_cast<ASR::ArrayConstant_t>(arg1);
-        } else if (ASR::is_a<ASR::LogicalConstant_t>(*arg1)) {
-            std::vector<ASR::expr_t*> mask_values(size, arg1);
+    if (args.size() > 1 && args[1] && is_logical(*ASRUtils::expr_type(args[1]))) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*args[1])) {
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(args[1]);
+        } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[1])) {
+            std::vector<ASR::expr_t*> mask_values(size, args[1]);
             ASR::expr_t *arr = b.ArrayConstant(mask_values, logical, false);
             mask = ASR::down_cast<ASR::ArrayConstant_t>(arr);
         } else {
             return nullptr;
         }
-    } else if (arg2) {
-        if (ASR::is_a<ASR::ArrayConstant_t>(*arg2)) {
-            mask = ASR::down_cast<ASR::ArrayConstant_t>(arg2);
-        } else if (ASR::is_a<ASR::LogicalConstant_t>(*arg2)) {
-            std::vector<ASR::expr_t*> mask_values(size, arg2);
+    } else if (args.size() > 2 && args[2]) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*args[2])) {
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(args[2]);
+        } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[2])) {
+            std::vector<ASR::expr_t*> mask_values(size, args[2]);
             ASR::expr_t *arr = b.ArrayConstant(mask_values, logical, false);
             mask = ASR::down_cast<ASR::ArrayConstant_t>(arr);
         } else {
