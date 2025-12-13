@@ -838,3 +838,9 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
+
+semantic error: The loop variable 'i_implicit' is not declared
+   --> tests/errors/continue_compilation_1.f90:369:10
+    |
+369 |     a = [(42, i_implicit = 1, 3)]
+    |          ^^^^^^^^^^^^^^^^^^^^^^^ 
