@@ -2002,14 +2002,14 @@ public:
 
     void dimension_variable(AST::var_sym_t const & s, const Location& loc) {
 	std::string sym = to_lower(s.m_name);
+	bool is_proc_arg = (std::find(current_procedure_args.begin(),
+	    current_procedure_args.end(), sym) != current_procedure_args.end());
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
 	    if (compiler_options.implicit_typing) {
 		ASR::intentType intent;
-		if (std::find(current_procedure_args.begin(),
-			      current_procedure_args.end(), sym) !=
-		    current_procedure_args.end()) {
+		if (is_proc_arg) {
 		    intent = ASRUtils::intent_unspecified;
 		} else {
 		    intent = ASRUtils::intent_local;
@@ -2019,9 +2019,7 @@ public:
 		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
 	            ASR::intentType intent;
 	            ASR::abiType abi;
-	            if (std::find(current_procedure_args.begin(),
-	                    current_procedure_args.end(), sym) !=
-	                    current_procedure_args.end()) {
+	            if (is_proc_arg) {
 	                intent = ASRUtils::intent_unspecified;
 	                abi = current_procedure_abi_type;
 	            } else {
@@ -2048,12 +2046,13 @@ public:
             if ( v->m_type ) {
                 is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
             }
-	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type, false, s.m_name);
+	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
+	                 is_proc_arg, s.m_name);
 
 	    bool is_star_dimension = false;
 
 	    if (s.n_dim > 0) {
-		is_star_dimension = (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar);
+		is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
@@ -2075,8 +2074,12 @@ public:
 	    }
 
 	    if ( v->m_type ) {
-            	if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(), dims.size(), al,
-						    ASR::abiType::Source, false, is_star_dimension)) {
+		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
+		                               : ASR::abiType::Source;
+	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
+	                                            dims.size(), al,
+	                                            abi, is_proc_arg,
+	                                            is_star_dimension)) {
 	            diag.add(Diagnostic(
 			         "Cannot set dimension for variable of non-numerical type",
 			         Level::Error, Stage::Semantic, {
@@ -2085,13 +2088,18 @@ public:
 	            throw SemanticAbort();
             	}
             	SetChar variable_dependencies_vec;
-            	variable_dependencies_vec.reserve(al, 1);
-            	ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type,
-                                			v->m_symbolic_value, v->m_value);
-            	v->m_dependencies = variable_dependencies_vec.p;
-            	v->n_dependencies = variable_dependencies_vec.size();
+	            	variable_dependencies_vec.reserve(al, 1);
+	            	ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type,
+	                                			v->m_symbolic_value, v->m_value);
+	            	v->m_dependencies = variable_dependencies_vec.p;
+	            	v->n_dependencies = variable_dependencies_vec.size();
             } else {
-                v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr, dims.p, dims.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, is_star_dimension);
+		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
+		                               : ASR::abiType::Source;
+                v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr,
+                    dims.p, dims.size(), abi, is_proc_arg,
+                    ASR::array_physical_typeType::DescriptorArray, false,
+                    is_star_dimension);
                 symbols_having_only_attributes_without_type[sym] = get_sym;
             }
 	} else {
@@ -2117,12 +2125,21 @@ public:
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         _processing_dimensions = true;
-        dims.reserve(al, n_dim);
-        for (size_t i=0; i<n_dim; i++) {
-            ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
-            ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
-            dim.m_length = nullptr; dim.m_start = nullptr;
-            dim.loc = m_dim[i].loc;
+	    dims.reserve(al, n_dim);
+	    for (size_t i=0; i<n_dim; i++) {
+	        if (is_argument &&
+	                m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
+	                && i != n_dim-1) {
+	            diag.add(diag::Diagnostic(
+	                "Assumed-size '*' is only permitted in the last dimension",
+	                diag::Level::Error, diag::Stage::Semantic, {
+	                    diag::Label("", {m_dim[i].loc})}));
+	            throw SemanticAbort();
+	        }
+	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
+	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
+	        dim.m_length = nullptr; dim.m_start = nullptr;
+	        dim.loc = m_dim[i].loc;
             if (m_dim[i].m_start) {
                 if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_start)){
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_start,
@@ -4022,7 +4039,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                    if (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
                     for(size_t i=0; i<s.n_dim; i++) {
@@ -4063,6 +4080,23 @@ public:
                     ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
                 }
                 current_variable_type_ = type;
+                if (is_argument && current_scope->asr_owner
+                    && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                    ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                    if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
+                        ASR::Function_t *owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
+                        ASR::FunctionType_t *owner_ft = ASR::down_cast<ASR::FunctionType_t>(owner_func->m_function_signature);
+                        for (size_t j = 0; j < owner_func->n_args; j++) {
+                            if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[j])) {
+                                ASR::Var_t *arg_var = ASR::down_cast<ASR::Var_t>(owner_func->m_args[j]);
+                                if (std::string(ASRUtils::symbol_name(arg_var->m_v)) == sym) {
+                                    owner_ft->m_arg_types[j] = type;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* char_length { nullptr };
@@ -4096,6 +4130,9 @@ public:
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
+                                if (is_argument && is_dimension_star) {
+                                    symbol_variable->m_type = type;
+                                } else
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                                     if(ASRUtils::is_string_only(type)){
@@ -4173,6 +4210,9 @@ public:
                     } else if ( is_implicitly_declared ) {
                         ASR::symbol_t* symbol = current_scope->get_symbol(sym);
                         ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if (is_argument && is_dimension_star) {
+                            symbol_variable->m_type = type;
+                        } else
                         if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                             array_type->m_type = type;
@@ -6607,6 +6647,9 @@ public:
                 al(al_), current_expr(nullptr) {}
 
             void replace_ArrayItem(ASR::ArrayItem_t* x) {
+                ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
+                ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(array_type);
+                bool is_unbounded = (phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                 Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
                 ASRUtils::ASRBuilder b(al, x->base.base.loc);
 
@@ -6614,14 +6657,22 @@ public:
                     ASR::array_index_t array_index;
                     array_index.loc = x->m_args[i].loc;
                     array_index.m_left = x->m_args[i].m_right;
-                    array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
-                    if ( ASRUtils::expr_value(array_index.m_right) ) {
-                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                    if (is_unbounded && i == x->n_args - 1) {
+                        array_index.m_right = array_index.m_left;
+                        array_index.m_step = b.i32(1);
+                    } else {
+                        array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
+                        if ( ASRUtils::expr_value(array_index.m_right) ) {
+                            array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                        }
+                        array_index.m_step = b.i32( i + 1 );
                     }
-                    array_index.m_step = b.i32( i + 1 );
                     array_indices.push_back(al, array_index);
                 }
-                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
+                ASR::array_physical_typeType section_phys_type = is_unbounded ? phys_type
+                    : ASR::array_physical_typeType::DescriptorArray;
+                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, array_type,
+                    section_phys_type, is_unbounded);
                 *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
                     array_indices.p, array_indices.n, new_type, nullptr));
             }
@@ -6677,20 +6728,26 @@ public:
             void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
                 if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
-                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                    std::map<int, ASR::ttype_t*> array_arg_index;
+                    std::vector<int> array_arg_index;
                     for (size_t i = 0; i < f->n_args; i++) {
                         if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                            array_arg_index[i] = f_type->m_arg_types[i];
+                            array_arg_index.push_back(i);
                         }
                     }
                     // iterate only over args of type array.
-                    for( auto it: array_arg_index ) {
-                        ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
+                    for( int arg_i: array_arg_index ) {
+                        ASR::expr_t* arg_expr = x.m_args[arg_i].m_value;
+                        ASR::ttype_t* dummy_type = ASRUtils::expr_type(f->m_args[arg_i]);
+                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(dummy_type);
+                        bool expected_unbounded = (expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                         // Only convert top-level ArrayItem to ArraySection.
                         // Do NOT recurse into nested ArrayItem expressions in indices.
                         if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
                             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+                            ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
+                            ASR::array_physical_typeType actual_phys_type = ASRUtils::extract_physical_type(array_type);
+                            bool unbounded_tail = expected_unbounded ||
+                                (actual_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                             Vec<ASR::array_index_t> array_indices;
                             array_indices.reserve(al, array_item->n_args);
                             ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
@@ -6699,16 +6756,24 @@ public:
                                 ASR::array_index_t array_index;
                                 array_index.loc = array_item->m_args[j].loc;
                                 array_index.m_left = array_item->m_args[j].m_right;
-                                array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
-                                if ( ASRUtils::expr_value(array_index.m_right) ) {
-                                    array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                                if (unbounded_tail && j == array_item->n_args - 1) {
+                                    array_index.m_right = array_index.m_left;
+                                    array_index.m_step = b.i32(1);
+                                } else {
+                                    array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
+                                    if ( ASRUtils::expr_value(array_index.m_right) ) {
+                                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                                    }
+                                    array_index.m_step = b.i32( j + 1 );
                                 }
-                                array_index.m_step = b.i32( j + 1 );
                                 array_indices.push_back(al, array_index);
                             }
+                            ASR::array_physical_typeType section_phys_type = unbounded_tail ?
+                                ASR::array_physical_typeType::UnboundedPointerArray :
+                                ASR::array_physical_typeType::DescriptorArray;
                             ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, ASRUtils::expr_type(array_item->m_v));
-                            x.m_args[it.first].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
+                                al, array_type, section_phys_type, unbounded_tail);
+                            x.m_args[arg_i].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
                                 al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
                         }
@@ -6825,11 +6890,10 @@ public:
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
         if (compiler_options.legacy_array_sections) {
             // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
-            ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
             std::map<int, ASR::ttype_t*> array_arg_idx;
             for (size_t i = 0; i < f->n_args; i++) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                    array_arg_idx[i] = f_type->m_arg_types[i];
+                    array_arg_idx[i] = ASRUtils::expr_type(f->m_args[i]);
                 }
             }
             Vec<ASR::call_arg_t> args_with_array_section;
@@ -6838,7 +6902,8 @@ public:
                 // check if i is in array_arg_idx
                 if (array_arg_idx.find(i) != array_arg_idx.end()) {
                     ASR::call_arg_t arg = args[i];
-                    ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
+                    ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(array_arg_idx[i]);
+                    ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
@@ -6883,6 +6948,11 @@ public:
                             for (size_t i = 0; i < temp_function_dependencies.n; i++) {
                                 current_function_dependencies.push_back(al, temp_function_dependencies[i]);
                             }
+                        } else {
+                            expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, array_arg_idx[i], expected_phys, true
+                            );
+                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
                         }
 
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
@@ -6896,28 +6966,20 @@ public:
                             array_indices.push_back(al, array_item->m_args[i]);
                         }
 
+                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
-
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
-
                         ASR::array_index_t array_idx;
                         array_idx.loc = array_item->base.base.loc;
                         array_idx.m_left = idx;
-                        array_idx.m_right = array_bound;
+                        array_idx.m_right = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
                         array_idx.m_step = one;
-
                         array_indices.p[0] = array_idx;
-
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     ASRUtils::TYPE(descriptor_array), nullptr));
-
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
-
-                        ASR::expr_t* array_section_cast = ASRUtils::EXPR(array_cast);
-
-                        arg.m_value = array_section_cast;
+                                                ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), expected_phys_type, ASRUtils::TYPE(expected_array), nullptr);
+                        arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);
                     } else {
@@ -9698,21 +9760,16 @@ public:
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
                     if (func_sym) {
-                        func = ASR::down_cast<ASR::Function_t>(func_sym);
-                    }
-                    if (func && func->n_args > 0 && func->n_args <= x.n_args && ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(var_expr);
-                        size_t n_dims = array_item->n_args;
-                        Vec<ASR::dimension_t> empty_dims;
-                        empty_dims.reserve(al, n_dims);
-                        for( size_t i = 0; i < n_dims; i++ ) {
-                            ASR::dimension_t empty_dim;
-                            empty_dim.loc = var_type->base.loc;
-                            empty_dim.m_start = nullptr;
-                            empty_dim.m_length = nullptr;
-                            empty_dims.push_back(al, empty_dim);
+                        func_sym = ASRUtils::symbol_get_past_external(func_sym);
+                        if (ASR::is_a<ASR::Function_t>(*func_sym)) {
+                            func = ASR::down_cast<ASR::Function_t>(func_sym);
                         }
-                        var_type = ASRUtils::duplicate_type(al, var_type, &empty_dims, ASR::array_physical_typeType::DescriptorArray, true);
+                    }
+                    if (func && func->n_args > 0 && func->n_args <= x.n_args &&
+                        ASRUtils::is_array(ASRUtils::expr_type(func->m_args[i]))) {
+                        ASR::ttype_t *expected_arg_type = ASRUtils::expr_type(func->m_args[i]);
+                        ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(expected_arg_type);
+                        var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
                     }
                 }
                 SetChar variable_dependencies_vec;
