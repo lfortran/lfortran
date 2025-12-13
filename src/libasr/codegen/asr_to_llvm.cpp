@@ -1683,6 +1683,12 @@ public:
                         llvm::Value* ptr_;
 
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
+                            builder->CreateStore(llvm::Constant::getNullValue(type), ptr_);
+                            if (ASRUtils::is_character(*expr_type(x.m_args[i].m_a))) {
+                                llvm::Value* str_desc = create_and_setup_string_for_array(
+                                    expr_type(x.m_args[i].m_a), nullptr, false, "arr_desc_str_desc");
+                                builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
+                            }
                             arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
                             LLVM::CreateStore(
