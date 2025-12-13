@@ -3048,7 +3048,13 @@ public:
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
             }
-            if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
+            // Decide whether this is a single-element access or a slice / pass-through.
+            bool is_single_element_access = (x.n_args == 1);
+
+            // Original Check: for single-element access on allocatable, keep the runtime error
+            if (compiler_options.po.bounds_checking &&
+                ASRUtils::is_allocatable(x_mv_type) &&
+                is_single_element_access) {
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
@@ -7722,6 +7728,8 @@ public:
                         llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, v);
                         // With move don't throw error when target is unallocated
                         if (!x.m_move_allocation) {
+                            // Allow unallocated allocatable arrays
+                            if (!ASRUtils::is_allocatable(target_variable->m_type)) {
                             llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                             llvm_utils->generate_runtime_error(is_not_allocated,
                                 "Runtime Error: Array '%s' is not allocated.\n\n"
@@ -7730,6 +7738,7 @@ public:
                                     x.m_target->base.loc,
                                     location_manager,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name));
+                            }
                         }
 
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
