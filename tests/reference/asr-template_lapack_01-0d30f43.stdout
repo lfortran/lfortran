@@ -2080,14 +2080,14 @@
                                         ((ArrayPhysicalCast
                                             (Var 15 a)
                                             DescriptorArray
-                                            DescriptorArray
+                                            PointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
                                                 ())
                                                 (()
                                                 ())]
-                                                DescriptorArray
+                                                PointerArray
                                             )
                                             ()
                                         ))
@@ -2095,14 +2095,14 @@
                                         ((ArrayPhysicalCast
                                             (Var 15 b)
                                             DescriptorArray
-                                            DescriptorArray
+                                            PointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
                                                 ())
                                                 (()
                                                 ())]
-                                                DescriptorArray
+                                                PointerArray
                                             )
                                             ()
                                         ))
@@ -2118,30 +2118,7 @@
                                             ()
                                             ()
                                         ))
-                                        ((ArrayPhysicalCast
-                                            (Var 15 c)
-                                            PointerArray
-                                            DescriptorArray
-                                            (Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (ArraySize
-                                                    (Var 15 a)
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Integer 4)
-                                                    ()
-                                                ))
-                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                (ArraySize
-                                                    (Var 15 b)
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    (Integer 4)
-                                                    ()
-                                                ))]
-                                                DescriptorArray
-                                            )
-                                            ()
-                                        ))
+                                        ((Var 15 c))
                                         ((Var 15 m))]
                                         ()
                                         .false.
@@ -2172,7 +2149,7 @@
                                                         (Var 12 lda))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2221,7 +2198,7 @@
                                                         (Var 12 ldb))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2270,7 +2247,7 @@
                                                         (Var 12 ldc))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2500,7 +2477,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)
                                         (Array
@@ -2513,7 +2490,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)
                                         (Real 8)
@@ -2527,7 +2504,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)]
                                         ()
@@ -2583,7 +2560,7 @@
                                                         (Var 11 lda))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2632,7 +2609,7 @@
                                                         (Var 11 ldb))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2681,7 +2658,7 @@
                                                         (Var 11 ldc))
                                                         (()
                                                         ())]
-                                                        DescriptorArray
+                                                        PointerArray
                                                     )
                                                     ()
                                                     Source
@@ -2881,7 +2858,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)
                                         (Array
@@ -2894,7 +2871,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)
                                         (Real 4)
@@ -2908,7 +2885,7 @@
                                             ))
                                             (()
                                             ())]
-                                            DescriptorArray
+                                            PointerArray
                                         )
                                         (Integer 4)]
                                         ()
@@ -4192,14 +4169,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 24 a)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4207,14 +4184,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 24 b)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4230,30 +4207,7 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 24 c)
-                                                            PointerArray
-                                                            DescriptorArray
-                                                            (Array
-                                                                (Real 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 24 a)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))
-                                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 24 b)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                DescriptorArray
-                                                            )
-                                                            ()
-                                                        ))
+                                                        ((Var 24 c))
                                                         ((Var 24 m))]
                                                         ()
                                                         .false.
@@ -4565,14 +4519,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 25 a)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4580,14 +4534,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 25 b)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -4603,30 +4557,7 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 25 c)
-                                                            PointerArray
-                                                            DescriptorArray
-                                                            (Array
-                                                                (Real 8)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 25 a)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))
-                                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 25 b)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                DescriptorArray
-                                                            )
-                                                            ()
-                                                        ))
+                                                        ((Var 25 c))
                                                         ((Var 25 m))]
                                                         ()
                                                         .false.
@@ -5136,14 +5067,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 22 a)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5151,14 +5082,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 22 b)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5174,30 +5105,7 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 22 c)
-                                                            PointerArray
-                                                            DescriptorArray
-                                                            (Array
-                                                                (Real 8)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 22 a)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))
-                                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 22 b)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                DescriptorArray
-                                                            )
-                                                            ()
-                                                        ))
+                                                        ((Var 22 c))
                                                         ((Var 22 m))]
                                                         ()
                                                         .false.
@@ -5509,14 +5417,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 21 a)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5524,14 +5432,14 @@
                                                         ((ArrayPhysicalCast
                                                             (Var 21 b)
                                                             DescriptorArray
-                                                            DescriptorArray
+                                                            PointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
                                                                 ())
                                                                 (()
                                                                 ())]
-                                                                DescriptorArray
+                                                                PointerArray
                                                             )
                                                             ()
                                                         ))
@@ -5547,30 +5455,7 @@
                                                             ()
                                                             ()
                                                         ))
-                                                        ((ArrayPhysicalCast
-                                                            (Var 21 c)
-                                                            PointerArray
-                                                            DescriptorArray
-                                                            (Array
-                                                                (Real 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 21 a)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))
-                                                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (ArraySize
-                                                                    (Var 21 b)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                DescriptorArray
-                                                            )
-                                                            ()
-                                                        ))
+                                                        ((Var 21 c))
                                                         ((Var 21 m))]
                                                         ()
                                                         .false.
