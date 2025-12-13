@@ -3061,22 +3061,34 @@ public:
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
+            bool check_for_bounds = compiler_options.po.bounds_checking;
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
                 (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    if (is_intent_in) {
-                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_start = nullptr;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
                     } else {
-                        load_array_size_deep_copy(m_dims[idim].m_length);
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                     }
-                    llvm::Value* dim_size = tmp;
+                    llvm::Value* dim_size = nullptr;
+                    if (m_dims[idim].m_length) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
+                        if (is_intent_in) {
+                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        } else {
+                            load_array_size_deep_copy(m_dims[idim].m_length);
+                        }
+                        dim_size = tmp;
+                    } else {
+                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                        check_for_bounds = false;
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
                 }
@@ -3084,9 +3096,14 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
+                    llvm::Value* dim_start = nullptr;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    }
                     llvm_diminfo.push_back(al, dim_start);
                 }
                 ptr_loads = ptr_loads_copy;
@@ -3119,7 +3136,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    compiler_options.po.bounds_checking, array_name, infile);
+                                                    check_for_bounds, array_name, infile);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -6254,16 +6271,46 @@ public:
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
         Vec<llvm::Value*> non_sliced_indices; non_sliced_indices.reserve(al, value_rank);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
+        ASR::dimension_t* m_dims = nullptr;
+        [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+        LCOMPILERS_ASSERT(array_value_rank == value_rank);
         for( int i = 0; i < value_rank; i++ ) {
             lbs.p[i] = nullptr; ubs.p[i] = nullptr; ds.p[i] = nullptr;
             non_sliced_indices.p[i] = nullptr;
             if( array_section->m_args[i].m_step != nullptr ) {
-                visit_expr_wrapper(array_section->m_args[i].m_left, true);
-                lbs.p[i] = tmp;
-                visit_expr_wrapper(array_section->m_args[i].m_right, true);
-                ubs.p[i] = tmp;
-                visit_expr_wrapper(array_section->m_args[i].m_step, true);
-                ds.p[i] = tmp;
+                if (array_section->m_args[i].m_left) {
+                    visit_expr_wrapper(array_section->m_args[i].m_left, true);
+                    lbs.p[i] = tmp;
+                } else if (m_dims[i].m_start) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                    lbs.p[i] = tmp;
+                } else {
+                    lbs.p[i] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                }
+
+                if (array_section->m_args[i].m_right) {
+                    visit_expr_wrapper(array_section->m_args[i].m_right, true);
+                    ubs.p[i] = tmp;
+                } else {
+                    llvm::Value *lbound = builder->CreateSExtOrTrunc(lbs.p[i], llvm::Type::getInt32Ty(context));
+                    if (m_dims[i].m_length) {
+                        visit_expr_wrapper(m_dims[i].m_length, true);
+                        llvm::Value *length = builder->CreateSExtOrTrunc(tmp, llvm::Type::getInt32Ty(context));
+                        ubs.p[i] = builder->CreateSub(builder->CreateAdd(lbound, length),
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                    } else {
+                        // Assumed-size dimension - ubound is undefined, avoid crash and use lbound.
+                        ubs.p[i] = lbound;
+                    }
+                }
+
+                if (array_section->m_args[i].m_step) {
+                    visit_expr_wrapper(array_section->m_args[i].m_step, true);
+                    ds.p[i] = tmp;
+                } else {
+                    ds.p[i] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                }
                 target_rank++;
             } else {
                 visit_expr_wrapper(array_section->m_args[i].m_right, true);
@@ -6275,7 +6322,6 @@ public:
         llvm::Value* target_dim_des_val = llvm_utils->CreateAlloca(arr_descr->get_dimension_descriptor_type(false),
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
-        ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -6289,17 +6335,26 @@ public:
                     module.get());
                 value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
             }
-            ASR::dimension_t* m_dims = nullptr;
-            // Fill in m_dims:
-            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
-            LCOMPILERS_ASSERT(array_value_rank == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
-                visit_expr_wrapper(m_dims[i].m_start, true);
-                llvm_diminfo.push_back(al, tmp);
-                visit_expr_wrapper(m_dims[i].m_length, true);
-                llvm_diminfo.push_back(al, tmp);
+                llvm::Value *dim_start = nullptr;
+                if (m_dims[i].m_start) {
+                    visit_expr_wrapper(m_dims[i].m_start, true);
+                    dim_start = tmp;
+                } else {
+                    dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                }
+                llvm_diminfo.push_back(al, dim_start);
+
+                llvm::Value *dim_length = nullptr;
+                if (m_dims[i].m_length) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    dim_length = tmp;
+                } else {
+                    dim_length = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                }
+                llvm_diminfo.push_back(al, dim_length);
             }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
@@ -14752,19 +14807,33 @@ public:
                     builder->SetInsertPoint(thenBB);
                     {
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
-                            this->visit_expr_wrapper(m_dims[i].m_start, true);
-                            tmp = builder->CreateSExtOrTrunc(tmp, target_type);
-                            builder->CreateStore(tmp, target);
+                            llvm::Value *lbound = nullptr;
+                            if (m_dims[i].m_start) {
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                lbound = tmp;
+                            } else {
+                                lbound = llvm::ConstantInt::get(target_type, 1);
+                            }
+                            builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                             llvm::Value *lbound = nullptr, *length = nullptr;
-                            this->visit_expr_wrapper(m_dims[i].m_start, true);
-                            lbound = tmp;
-                            load_array_size_deep_copy(m_dims[i].m_length);
-                            length = tmp;
-                            builder->CreateStore(
-                                builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                      llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
-                                target);
+                            if (m_dims[i].m_start) {
+                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                lbound = tmp;
+                            } else {
+                                lbound = llvm::ConstantInt::get(target_type, 1);
+                            }
+                            if (m_dims[i].m_length) {
+                                load_array_size_deep_copy(m_dims[i].m_length);
+                                length = tmp;
+                                builder->CreateStore(
+                                    builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
+                                          llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
+                                    target);
+                            } else {
+                                // Assumed-size dimension - ubound is undefined, avoid crash and return lbound.
+                                builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
+                            }
                         }
                     }
                     builder->CreateBr(mergeBB);
