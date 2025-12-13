@@ -1365,7 +1365,8 @@ public:
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                    if (!realloc && compiler_options.po.bounds_checking) {
+                    if (!realloc && compiler_options.po.bounds_checking &&
+                        ASRUtils::is_allocatable(tmp_expr)) {
                         llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         llvm::Value* is_allocated = builder->CreateICmpNE(
                             builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
@@ -1641,6 +1642,8 @@ public:
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
+                bool use_realloc = realloc ||
+                    (compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(tmp_expr));
                 llvm::Value* ptr_val = x_arr;
 #if LLVM_VERSION_MAJOR >= 17
                 llvm::Type* i8_ptr_ty
@@ -1652,7 +1655,9 @@ public:
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
-                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr) {
+                if (!use_realloc && compiler_options.po.bounds_checking &&
+                    ASRUtils::is_allocatable(tmp_expr) &&
+                    x_arr && x_arr->getType() != nullptr) {
                     llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
                     std::string var_name = "";
@@ -1688,7 +1693,7 @@ public:
                                         type, llvm_data_type,
                     expr_type(x.m_args[i].m_a),
                     curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr,
-                    realloc);
+                    use_realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                     && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
                     llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
