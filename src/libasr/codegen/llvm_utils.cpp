@@ -8785,20 +8785,28 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
 
             if (llvm_utils->compiler_options.po.realloc_lhs_arrays && ASRUtils::is_allocatable(src_expr)) {
-                uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
-                llvm::Value* total_memory = builder->CreateMul(num_elements,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
-                llvm_utils->lfortran_free(dest_data);
-                llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
+                // Check if src_data is not null before realloc operations
+                llvm::Value* src_data_not_null = builder->CreateICmpNE(
+                    src_data, llvm::Constant::getNullValue(src_data->getType()));
+                llvm_utils->create_if_else(src_data_not_null, [&]() {
+                    uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
+                    llvm::Value* total_memory = builder->CreateMul(num_elements,
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_type_size)));
+                    llvm_utils->lfortran_free(dest_data);
+                    llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
+                    llvm::Value* reloaded_dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
+                                            llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
+                    llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(context, *module, *builder, reloaded_dest_data, total_memory);
+                    reloaded_dest_data = builder->CreateBitCast(
+                        reallocated_arr, llvm_data_type->getPointerTo());
+                    builder->CreateStore(reloaded_dest_data, llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
+                    llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
+                    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                            offset_val);
+                }, [&]() {});
+                // Reload dest_data after reallocation since it may have changed
                 dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
-                                        llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
-                llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(context, *module, *builder, dest_data, total_memory);
-                dest_data = builder->CreateBitCast(
-                    reallocated_arr, llvm_data_type->getPointerTo());
-                builder->CreateStore(dest_data, llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
-                llvm::Value* offset_val = llvm_utils->create_gep2(llvm_array_type, dest, 1);
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                                        offset_val);
+                                llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
             }
 
             // Get Copy function
