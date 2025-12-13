@@ -4875,3 +4875,7 @@ llvm = true
 [[test]]
 filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/transfer_09.f90"
+asr = true

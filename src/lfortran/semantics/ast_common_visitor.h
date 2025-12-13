@@ -8795,20 +8795,35 @@ public:
         } else {
             if( ASR::is_a<ASR::ArrayConstant_t>(*mold) ||
                 ASRUtils::is_array(ASRUtils::expr_type(mold)) ) {
-                // TODO: Make resulting array size more efficient by
-                // considering bit length of source.
-                ASR::ttype_t *int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                ASR::expr_t* one = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(al, x.base.base.loc, 1,
-                                                int_type));
-                ASR::expr_t* b64 = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(al, x.base.base.loc, 64,
-                                                int_type));
+                // Calculate resulting array size from source and mold byte sizes
+                ASR::ttype_t* src_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
+                ASR::ttype_t* src_elem = ASRUtils::type_get_past_array(src_type);
+                int64_t src_bytes = ASRUtils::extract_kind_from_ttype_t(src_elem);
+                // If compile time size known, assign it for better memory usage
+                // Else, it is set to default(64) for runtime-sized sources
+                if( ASRUtils::is_array(src_type) ) {
+                    int64_t n_elem = ASRUtils::get_fixed_size_of_array(src_type);
+                    src_bytes = (n_elem > 0 && src_bytes > 0) ? n_elem * src_bytes : -1;
+                }
+                int64_t result_size = 64; // Fallback for runtime-sized sources
+                if( src_bytes > 0 ) {
+                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(
+                            ASRUtils::expr_type(mold))));
+                    if( mold_bytes > 0 ) {
+                        result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
+                    }
+                }
+
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, x.base.base.loc, compiler_options.po.default_integer_kind));
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
-                size_dim.m_start = one;
-                size_dim.m_length = b64;
+                size_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, x.base.base.loc, 1, int_type));
+                size_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, x.base.base.loc, result_size, int_type));
                 new_dims.push_back(al, size_dim);
             }
         }
