@@ -2003,10 +2003,10 @@ int link_executable(const std::vector<std::string> &infiles,
             // TODO: Replace the following hardcoded part
             std::string cmd = "";
 #ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
-                + file_name + ".out.dSYM > ";
+            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
+                + outfile + ".dSYM > ";
 #else
-            cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
+            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
 #endif
             std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
             cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
