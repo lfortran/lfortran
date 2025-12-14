@@ -4062,7 +4062,7 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                        s_intent == ASRUtils::intent_inout), s.m_name);
+                        s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = nullptr;
@@ -4141,8 +4141,7 @@ public:
                             if ( symbol_variable->m_type ) {
                                 if (is_argument && is_dimension_star) {
                                     symbol_variable->m_type = type;
-                                } else
-                                if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                                     if(ASRUtils::is_string_only(type)){
                                         array_type->m_physical_type = ASR::PointerArray; // Making sure it's PointerArray
@@ -4221,8 +4220,7 @@ public:
                         ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
-                        } else
-                        if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                        } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                             array_type->m_type = type;
                             if ( ASR::is_a<ASR::String_t>(*type)) {
@@ -7609,7 +7607,19 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            ASR::dimension_t* v_Var_dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(v_Var), v_Var_dims);
+            // For assumed-size arrays, ubound requires DIM to avoid the last dimension
+            if (bound == ASR::arrayboundType::UBound &&
+                n_dims > 0 && v_Var_dims[n_dims - 1].m_length == nullptr) {
+                diag.add(Diagnostic(
+                    "The DIM argument must be present when calling UBOUND "
+                    "on an assumed-size array",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -7637,6 +7647,17 @@ public:
                     "Dimension " + std::to_string(const_dim) +
                     " is invalid. Rank of the array, " +
                     std::to_string(v_Var_n_dims),
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            // For assumed-size arrays, ubound of the last dimension is undefined
+            if (bound == ASR::arrayboundType::UBound &&
+                const_dim == v_Var_n_dims &&
+                v_Var_dims[const_dim - 1].m_length == nullptr) {
+                diag.add(Diagnostic(
+                    "The upper bound of an assumed-size array's last "
+                    "dimension is not defined",
                     Level::Error, Stage::Semantic, {
                         Label("", {x.base.base.loc})}));
                 throw SemanticAbort();

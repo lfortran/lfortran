@@ -6360,7 +6360,7 @@ public:
                         ubs.p[i] = builder->CreateSub(builder->CreateAdd(lbound, length),
                             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
                     } else {
-                        // Assumed-size dimension - ubound is undefined, avoid crash and use lbound.
+                        // Assumed-size array: last dimension has no length
                         ubs.p[i] = lbound;
                     }
                 }
@@ -15003,7 +15003,7 @@ public:
                                           llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                                     target);
                             } else {
-                                // Assumed-size dimension - ubound is undefined, avoid crash and return lbound.
+                                // Assumed-size array: last dimension has no length
                                 builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
                             }
                         }
