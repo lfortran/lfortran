@@ -934,7 +934,7 @@ program test_dgesv
 end program
 TESTEOF
 
-    lfortran --implicit-interface test_dgesv.f90 -L build/lib -lblas -llapack -o test_dgesv
+    lfortran --implicit-interface test_dgesv.f90 -L build/lib -llapack -lblas -o test_dgesv
     ./test_dgesv
 '
 
