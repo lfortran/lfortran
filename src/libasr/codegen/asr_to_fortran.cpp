@@ -1755,7 +1755,6 @@ public:
         else if(intrinsic_func_name == "StringLenTrim") intrinsic_func_name = "len_trim";
         else if(intrinsic_func_name == "StringTrim") intrinsic_func_name = "trim";
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
-        else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
@@ -2039,6 +2038,11 @@ public:
             src.append(x.m_s);
         }
         src += "\"";
+        last_expr_precedence = Precedence::Ext;
+    }
+
+    void visit_CompilerOptions(const ASR::CompilerOptions_t &/*x*/) {
+        src = "compiler_options()";
         last_expr_precedence = Precedence::Ext;
     }
 
