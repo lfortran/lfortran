@@ -10,6 +10,6 @@ program intrinsics_400
     print *, "Fortran Compiler Options: ", co
     
     if (len(cv) == 0) error stop
-    if (len(co) == 0) error stop
+    ! if (len(co) == 0) error stop ! The output of compiler options can be empty (gfortran outputs platform dependent options)
     
 end program intrinsics_400
