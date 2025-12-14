@@ -887,11 +887,20 @@ time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
     git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-vanilla
     cd lapack-vanilla
 
-    # Patch CMakeLists.txt to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
-    sed -i "/FortranCInterface_VERIFY/d" CMakeLists.txt
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
 
     # Configure with LFortran
     cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
       -DCMAKE_Fortran_COMPILER=lfortran \
       -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
       -DCMAKE_BUILD_TYPE=Release \
