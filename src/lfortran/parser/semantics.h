@@ -1875,7 +1875,8 @@ return make_Program_t(al, a_loc,
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
 
-        if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Num_t>(*repeat)) {
+        if (static_cast<int>(repeat->type)
+    == static_cast<int>(LCompilers::LFortran::AST::Num_t::class_type) ) {
                 auto *num = LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Num_t>(repeat);
 
                 int64_t n;
