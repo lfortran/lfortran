@@ -7598,12 +7598,14 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
-            ASR::dimension_t* v_Var_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(v_Var), v_Var_dims);
-            // For assumed-size arrays, ubound requires DIM to avoid the last dimension
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            // For assumed-size arrays (UnboundedPointerArray), ubound requires DIM
+            ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(v_Var));
             if (bound == ASR::arrayboundType::UBound &&
-                n_dims > 0 && v_Var_dims[n_dims - 1].m_length == nullptr) {
+                ASR::is_a<ASR::Array_t>(*v_Var_type) &&
+                ASR::down_cast<ASR::Array_t>(v_Var_type)->m_physical_type ==
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
                 diag.add(Diagnostic(
                     "The DIM argument must be present when calling UBOUND "
                     "on an assumed-size array",
@@ -7642,10 +7644,14 @@ public:
                         Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            // For assumed-size arrays, ubound of the last dimension is undefined
+            // For assumed-size arrays (UnboundedPointerArray), ubound of the last dimension is undefined
+            ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(v_Var));
             if (bound == ASR::arrayboundType::UBound &&
                 const_dim == v_Var_n_dims &&
-                v_Var_dims[const_dim - 1].m_length == nullptr) {
+                ASR::is_a<ASR::Array_t>(*v_Var_type) &&
+                ASR::down_cast<ASR::Array_t>(v_Var_type)->m_physical_type ==
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
                 diag.add(Diagnostic(
                     "The upper bound of an assumed-size array's last "
                     "dimension is not defined",
