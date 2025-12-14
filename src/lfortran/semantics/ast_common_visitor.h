@@ -7019,6 +7019,17 @@ public:
     ASR::asr_t* create_Function(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        
+        // Special handling for compiler_options(): replace with CompilerOptions ASR node
+        if (std::string(ASRUtils::symbol_name(f2)) == "compiler_options") {
+            Vec<ASR::expr_t*> expr_args;
+            expr_args.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                expr_args.push_back(al, args[i].m_value);
+            }
+            return ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("compiler_options")(al, loc, expr_args, diag);
+        }
+        
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
