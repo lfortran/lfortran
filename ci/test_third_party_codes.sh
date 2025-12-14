@@ -906,6 +906,8 @@ time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_INDEX64=OFF \
       -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=OFF \
+      -DBUILD_COMPLEX16=OFF \
       -DBUILD_TESTING=OFF
 
     # Build BLAS and LAPACK libraries
