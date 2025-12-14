@@ -6332,6 +6332,7 @@ public:
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
         Vec<llvm::Value*> non_sliced_indices; non_sliced_indices.reserve(al, value_rank);
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
+        ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         ASR::dimension_t* m_dims = nullptr;
         [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
         LCOMPILERS_ASSERT(array_value_rank == value_rank);
@@ -6350,8 +6351,15 @@ public:
                 }
 
                 if (array_section->m_args[i].m_right) {
-                    visit_expr_wrapper(array_section->m_args[i].m_right, true);
-                    ubs.p[i] = tmp;
+                    if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right)) {
+                        llvm::Value *lbound = builder->CreateSExtOrTrunc(
+                            lbs.p[i], llvm::Type::getInt32Ty(context));
+                        ubs.p[i] = lbound;
+                    } else {
+                        visit_expr_wrapper(array_section->m_args[i].m_right, true);
+                        ubs.p[i] = tmp;
+                    }
                 } else {
                     llvm::Value *lbound = builder->CreateSExtOrTrunc(lbs.p[i], llvm::Type::getInt32Ty(context));
                     if (m_dims[i].m_length) {
@@ -6382,8 +6390,8 @@ public:
         llvm::Value* target_dim_des_val = llvm_utils->CreateAlloca(arr_descr->get_dimension_descriptor_type(false),
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
-        ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
+            arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -8014,6 +8022,13 @@ public:
             module.get());
         llvm::Type* m_arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
         if( m_new == ASR::array_physical_typeType::PointerArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray ) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            }
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, arg, module.get()));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
+        } else if( m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
@@ -13958,6 +13973,20 @@ public:
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
                         if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, expected_arg, passed_arg, true)) {
+                            if (ASRUtils::is_array(expected_arg_type) &&
+                                !ASRUtils::is_array(passed_arg_type)) {
+                                ASR::dimension_t* expected_dims = nullptr;
+                                int expected_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                    expected_arg_type, expected_dims);
+                                bool is_assumed_size = expected_n_dims > 0 &&
+                                    expected_dims[expected_n_dims - 1].m_length == nullptr;
+                                ASR::ttype_t* expected_elem_type = ASRUtils::type_get_past_array(expected_arg_type);
+                                if (is_assumed_size &&
+                                    ASRUtils::types_equal(expected_elem_type, passed_arg_type,
+                                        expected_arg, passed_arg, true)) {
+                                    continue;
+                                }
+                            }
                             throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python_expr(expected_arg_type, expected_arg)
                                     + "`, passed `" + ASRUtils::type_to_str_python_expr(passed_arg_type, passed_arg) + "`", x.m_args[i].m_value->base.loc);
                         }
