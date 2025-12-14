@@ -10074,6 +10074,14 @@ public:
         tmp = llvm_utils->declare_string_constant(&x);
     }
 
+    void visit_CompilerOptions(const ASR::CompilerOptions_t &x) {
+        // Use the compiler options string stored in the ASR node
+        std::string options_str = std::string(x.m_compiler_options_str);
+        tmp = llvm_utils->declare_global_string(
+            ASRUtils::get_string_type(x.m_type),
+            options_str, true, "compiler_options_const");
+    }
+
     inline void fetch_ptr(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());

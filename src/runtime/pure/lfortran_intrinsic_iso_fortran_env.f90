@@ -30,5 +30,12 @@ function compiler_version() result(version)
     version = _lfortran_compiler_version() ! note: LFortran takes this and creates an IntrinsicElementalFunction
 end function compiler_version
 
+function compiler_options() result(options)
+    character(len=:), allocatable :: options
+    ! During AST->ASR conversion, this function call is replaced with a CompilerOptions ASR node
+    ! containing the compiler options string from lcompilers_commandline_options at compile time.
+    ! This ensures the options are captured when this code is compiled, not when the main program runs.
+end function compiler_options
+
 
 end module

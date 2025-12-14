@@ -141,7 +141,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     CompilerVersion,
-    CompilerOptions,
     CommandArgumentCount,
     SignFromValue,
     Logical,
@@ -1201,29 +1200,20 @@ namespace CompilerVersion {
 
 namespace CompilerOptions {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 0,
-            "compiler_options() takes no argument",
-            x.base.base.loc, diagnostics);
-    }
-
-    static ASR::expr_t *eval_CompilerOptions(Allocator &al, const Location &loc,
-            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        ASRUtils::ASRBuilder b(al, loc);
-        return b.StringConstant(lcompilers_commandline_options, character(lcompilers_commandline_options.length()));
-    }
-
     static inline ASR::asr_t* create_CompilerOptions(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASRUtils::ASRBuilder b(al, loc);
-        ASR::ttype_t *return_type = b.String(nullptr, ASR::DeferredLength);
-        ASR::expr_t *m_value = nullptr;
-        return_type = ASRUtils::extract_type(return_type);
-        m_value = eval_CompilerOptions(al, loc, return_type, args, diag);
-        if (diag.has_error()) {
+        if (args.size() != 0) {
+            diag.semantic_error_label("compiler_options() takes no arguments", {loc}, "");
             return nullptr;
         }
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
-                nullptr, 0, 0, return_type, m_value);
+        // Create CompilerOptions ASR node with the current compiler options string
+        char* c_str = s2c(al, lcompilers_commandline_options);
+        size_t str_len = lcompilers_commandline_options.length();
+        // Create a string type with the actual length of the compiler options string
+        ASR::expr_t* len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            str_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::Decimal));
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 
+            1, len_expr, ASR::ExpressionLength, ASR::DescriptorString));
+        return ASR::make_CompilerOptions_t(al, loc, c_str, return_type);
     }
 } // namespace CompilerOptions
 
