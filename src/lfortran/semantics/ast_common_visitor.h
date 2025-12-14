@@ -8862,17 +8862,37 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
                 ASR::ttype_t* src_elem = ASRUtils::type_get_past_array(src_type);
                 int64_t src_bytes = ASRUtils::extract_kind_from_ttype_t(src_elem);
-                // If compile time size known, assign it for better memory usage
-                // Else, it is set to default(64) for runtime-sized sources
+                // If compile time size known, assign mold for better memory usage
+                // Else, mold-size is set to default(64) for runtime-sized sources
                 if( ASRUtils::is_array(src_type) ) {
                     int64_t n_elem = ASRUtils::get_fixed_size_of_array(src_type);
                     src_bytes = (n_elem > 0 && src_bytes > 0) ? n_elem * src_bytes : -1;
+                } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
+                    // For scalar strings: use string length as mold size
+                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
+                    if( str_type->m_len && ASRUtils::expr_value(str_type->m_len) ) {
+                        src_bytes = ASR::down_cast<ASR::IntegerConstant_t>(
+                            ASRUtils::expr_value(str_type->m_len))->m_n;
+                    } else {
+                        src_bytes = -1; // Runtime-sized string
+                    }
                 }
                 int64_t result_size = 64; // Fallback for runtime-sized sources
                 if( src_bytes > 0 ) {
-                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(
-                        ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(
-                            ASRUtils::expr_type(mold))));
+                    ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
+                    int mold_bytes = ASRUtils::extract_kind_from_ttype_t(mold_elem_type);
+                    // For character types: mold_bytes = kind * length
+                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
+                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
+                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
+                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
+                            mold_bytes = mold_bytes * str_len;
+                        } else {
+                            mold_bytes = -1; // Runtime-sized string
+                        }
+                    }
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }

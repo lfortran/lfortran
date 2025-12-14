@@ -7273,6 +7273,25 @@ public:
             return ;
         }
 
+        // Handle BitCast (transfer intrinsic) to character arrays
+        if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            // Only handle array-related targets
+            bool is_array_target = (x.m_target->type == ASR::exprType::ArraySection) ||
+                                   (x.m_target->type == ASR::exprType::ArrayItem) ||
+                                   (x.m_target->type == ASR::exprType::Var && ASRUtils::is_array(target_type));
+            if (is_array_target) {
+                ASR::ttype_t* elem_type = target_type;
+                if(ASRUtils::is_array(target_type)){
+                    elem_type = ASRUtils::extract_type(target_type);
+                }
+                if (ASRUtils::is_character(*elem_type)){
+                    handle_bitcast_assignment_char(x);
+                    return;
+                }
+            }
+        }
+
         llvm::Value *target, *value;
         uint32_t h;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
@@ -10421,7 +10440,34 @@ public:
         }
 
         /* Handle The Return Of The Expression (String, Array, Integer_8, etc.) */
-        switch(ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_mold))->type){
+        ASR::ttype_t* mold_type_unwrapped = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_mold));
+        switch(mold_type_unwrapped->type){
+            case(ASR::Array) : {// Array result from transfer(source, array_mold)
+                // Calculate number of elements = source_size / element_size
+                ASR::Array_t* array_mold = ASR::down_cast<ASR::Array_t>(mold_type_unwrapped);
+                ASR::ttype_t* element_type = array_mold->m_type;
+
+                if (ASRUtils::is_character(*element_type)) {
+                    // For character arrays: num_elements = source_bytes / element_bytes
+                    // where element_bytes = kind * length for character(kind, len)
+                    llvm::Value* source_length = get_string_length(x.m_source);
+
+                    // Note: source_length is the total number of bytes in the source
+                    // The ASR phase has already calculated the correct array dimension
+                    // based on: num_elements = source_bytes / (kind * len)
+                    // This string view just carries the raw byte data
+                    llvm::Value* const casted_to_i8 = builder->CreateBitCast(source_ptr,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+
+                    // Create a string view representing the whole source byte data
+                    // The assignment handler will extract element_length bytes per iteration
+                    llvm::Value* const str_view = llvm_utils->create_stringView(
+                        ASRUtils::get_string_type(x.m_source),
+                        casted_to_i8, source_length, "bit_cast_expr_return");
+                    tmp = str_view;
+                }
+            break;
+            }
             case(ASR::String) : {// Create StringView : data = bitcasted source, length = mold's length
                 llvm::Value* const casted_to_i8 /* i8* */  = builder->CreateBitCast(source_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
                 llvm::Value* const str_view /*non-owning*/ = llvm_utils->create_stringView(ASRUtils::get_string_type(x.m_mold), 
@@ -12232,6 +12278,69 @@ public:
         llvm_utils->stringFormat_return.free();
     }
 
+    void handle_bitcast_assignment_char(const ASR::Assignment_t &x) {
+        // Handler for BitCast (transfer intrinsic) to character arrays
+        // Used for Element by Element assignment
+        // Note: Called only when element type to be assigned is character array
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* elem_type = target_type;
+        if (ASRUtils::is_array(target_type)) {
+            elem_type = ASRUtils::extract_type(target_type);
+        }
+        auto with_value_semantics = [&](auto func) {
+            int64_t saved = ptr_loads;
+            ptr_loads = 0;
+            func();
+            ptr_loads = saved;
+        };
+        LCOMPILERS_ASSERT(x.m_target->type == ASR::exprType::ArrayItem);
+        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+        is_assignment_target = true;
+        visit_expr(*x.m_target);
+        is_assignment_target = false;
+        llvm::Value* target_ptr = tmp;
+
+        visit_expr_wrapper(array_item->m_args[0].m_right, true);
+        llvm::Value* array_index = tmp;
+        llvm::Value* zero_based_idx = builder->CreateSub(array_index,
+            llvm::ConstantInt::get(array_index->getType(), 1));
+        
+        // Calculate byte offset: index * element_length
+        // For character(len=2): element 0 at byte 0, element 1 at byte 2, etc.
+        ASR::String_t* src_str_type = ASR::down_cast<ASR::String_t>(
+            ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_value)));
+
+        ASR::String_t* dest_str_type = ASR::down_cast<ASR::String_t>(elem_type);
+        llvm::Value* element_length_val;
+        if (dest_str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*dest_str_type->m_len)) {
+            ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(dest_str_type->m_len);
+            element_length_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), len->m_n);
+        } else {
+            // If runtime-sized, extract it or default is set at len=1 
+            element_length_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
+        }
+
+        llvm::Value* bitcast_descriptor;
+        with_value_semantics([&]() { visit_expr_wrapper(x.m_value, true); bitcast_descriptor = tmp; });
+        llvm::Value* byte_offset = builder->CreateMul(zero_based_idx, element_length_val);
+        llvm::Value* byte_ptr = builder->CreateGEP(llvm::Type::getInt8Ty(context),
+            llvm_utils->get_string_data(src_str_type, bitcast_descriptor), byte_offset);
+        
+        // Get destination string descriptor pointers and copy element_length bytes
+        auto [dest_data_ptr, dest_len_ptr] = llvm_utils->get_string_length_data(
+            dest_str_type, target_ptr, true, true);
+        llvm::Value* copy_length;
+        if (dest_str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*dest_str_type->m_len)) {
+            ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(dest_str_type->m_len);
+            copy_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len->m_n);
+        } else {
+            copy_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1);
+        }
+        llvm_utils->lfortran_str_copy_with_data(dest_data_ptr, dest_len_ptr, byte_ptr,
+            copy_length, false, false);
+        tmp = nullptr;
+        return;
+    }
 
     void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/) {
         std::string fmt {};
