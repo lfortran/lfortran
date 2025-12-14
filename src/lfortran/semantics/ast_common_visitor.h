@@ -7027,7 +7027,7 @@ public:
             for (size_t i = 0; i < args.size(); i++) {
                 expr_args.push_back(al, args[i].m_value);
             }
-            return ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("compiler_options")(al, loc, expr_args, diag);
+            return ASRUtils::CompilerOptions::create_CompilerOptions(al, loc, expr_args, diag);
         }
         
         ASR::ttype_t *return_type = nullptr;
