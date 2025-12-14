@@ -1,0 +1,5 @@
+semantic error: The loop variable 'j' is not declared
+ --> tests/../integration_tests/implied_do_loops3.f90:4:18
+  |
+4 |  real:: a(3) = (/(j*3,j=1,3)/)
+  |                  ^^^^^^^^^^^ 

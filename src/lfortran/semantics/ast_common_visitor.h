@@ -2799,25 +2799,21 @@ public:
         }
     }
 
-    ASR::symbol_t* create_implicit_loop_variable(const Location &loc,const std::string &var_name,SymbolTable* scope) {
-        // Check if implicit typing is enabled
-        if (!compiler_options.implicit_typing) {
-            diag.add(Diagnostic("The loop variable '" + var_name + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
-        }
-        // Use implicit typing dictionary
-        std::string first_char_str = std::string(1, var_name[0]);
+    ASR::symbol_t* create_implicit_loop_variable(const Location &loc, const std::string &var_name, const std::string &original_name, SymbolTable* scope) {
+        // Assert that implicit typing is enabled 
+        LCOMPILERS_ASSERT(compiler_options.implicit_typing);
+        // Use implicit typing dictionary with ORIGINAL name (not mangled)
+        std::string first_char_str = std::string(1, original_name[0]);
         ASR::ttype_t* var_type = nullptr;
         if (implicit_dictionary.find(first_char_str) != implicit_dictionary.end() &&
             implicit_dictionary[first_char_str] != nullptr) {
             var_type = implicit_dictionary[first_char_str];
         } else {
-            diag.add(Diagnostic("Cannot determine implicit type for variable '" + var_name + "'",
+            diag.add(Diagnostic("Cannot determine implicit type for variable '" + original_name + "'",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
-        // Create the variable
+        // Create the variable with mangled name but original type
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc, scope, s2c(al, var_name), variable_dependencies_vec.p,
@@ -10157,9 +10153,17 @@ public:
         size_t n_values = a_values_vec.size();
         // FIX: Handle implicit declaration of implied do loop variable
         std::string var_name = to_lower(x.m_var);
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(var_name);
+        // Always use mangled name for implicit do loop variables to avoid conflicts
+        std::string mangled_name = "__implicit_loop_" + var_name;
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(mangled_name);
         if (a_sym == nullptr) {
-            a_sym = create_implicit_loop_variable(x.base.base.loc, var_name, current_scope);
+            // Check if implicit typing is enabled
+            if (!compiler_options.implicit_typing) {
+                diag.add(Diagnostic("The loop variable '" + var_name + "' is not declared",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            a_sym = create_implicit_loop_variable(x.base.base.loc, mangled_name, var_name, current_scope);
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {

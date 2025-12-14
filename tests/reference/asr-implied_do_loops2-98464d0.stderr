@@ -1,0 +1,5 @@
+semantic error: The loop variable 'j' is not declared
+ --> tests/../integration_tests/implied_do_loops2.f90:4:22
+  |
+4 |  array = reshape([(i,(i+j,j=1,4),i=1,3)], (/3,5/))
+  |                      ^^^^^^^^^^^ 

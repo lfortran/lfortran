@@ -1,0 +1,5 @@
+semantic error: The loop variable 'i' is not declared
+ --> tests/implied_do_loop2.f90:5:12
+  |
+5 |   print *, (s, i = 1, 3)
+  |            ^^^^^^^^^^^^^ 
