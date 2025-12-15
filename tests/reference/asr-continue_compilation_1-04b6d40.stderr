@@ -129,6 +129,12 @@ semantic error: BOZ literal constant cannot be used in binary operations
 174 |     integer::tt = b'01' * 3
     |                   ^^^^^^^^^ 
 
+semantic error: DATA statement element count mismatch: 5 elements on left-hand side, 1 values on right-hand side
+   --> tests/errors/continue_compilation_1.f90:179:5
+    |
+179 |     DATA (array_data(i), i=1,5) /nelems_data*3.1415/
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:191:8
     |
