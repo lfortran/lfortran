@@ -3761,14 +3761,6 @@ public:
                     }
                 }
 
-                if (is_allocatable && s.m_initializer != nullptr) {
-                    diag.add(Diagnostic(
-                        "An ALLOCATABLE variable cannot have an initialization expression",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {s.loc})
-                        }));
-                    throw SemanticAbort();
-                }
                 if (is_char_type && sym_type->n_kind == ASR::string_length_kindType::DeferredLength &&  is_allocatable) {
                     bool has_fixed_shape = false;
                     for (size_t d = 0; d < s.n_dim; d++) {
@@ -3999,7 +3991,16 @@ public:
                         )));
                         throw SemanticAbort();
                     }
-
+    
+                    if (is_allocatable && s.m_initializer != nullptr) {
+                        diag.add(Diagnostic(
+                            "An 'allocatable' variable cannot have an initialization expression",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {s.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    
                     if (s_intent == ASRUtils::intent_out && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",
