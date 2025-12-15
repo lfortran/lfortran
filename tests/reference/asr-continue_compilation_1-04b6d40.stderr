@@ -21,36 +21,10 @@ semantic error: Dummy argument 'c' not defined
    | ...^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:93:31
+  --> tests/errors/continue_compilation_1.f90:80:19
    |
-93 |         real, intent(in) :: a(*, 10)
-   |                               ^ 
-
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:92:5 - 94:18
-   |
-92 |        subroutine assumed_size_star_pos_1(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-94 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:97:19
-   |
-97 |         real :: a(*, 10)
+80 |         real :: c(*, 10)  ! Error: star in wrong position
    |                   ^ 
-
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:96:5 - 98:18
-   |
-96 |        subroutine assumed_size_star_pos_2(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-98 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
@@ -162,21 +136,21 @@ semantic error: BOZ literal constant cannot be used in binary operations
     |                   ^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:79:18
+  --> tests/errors/continue_compilation_1.f90:81:18
    |
-79 |         print *, ubound(a, 1)
+81 |         print *, ubound(a, 1)  ! Error: last dim of assumed-size
    |                  ^^^^^^^^^^^^ 
 
 semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
-  --> tests/errors/continue_compilation_1.f90:84:18
+  --> tests/errors/continue_compilation_1.f90:82:18
    |
-84 |         print *, ubound(a)
+82 |         print *, ubound(a)     ! Error: no DIM on assumed-size
    |                  ^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:89:18
+  --> tests/errors/continue_compilation_1.f90:83:18
    |
-89 |         print *, ubound(a, 2)
+83 |         print *, ubound(b, 2)  ! Error: last dim of assumed-size
    |                  ^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
@@ -888,3 +862,7 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
+
+
+Note: Please report unclear, confusing or incorrect messages as bugs at
+https://github.com/lfortran/lfortran/issues.
