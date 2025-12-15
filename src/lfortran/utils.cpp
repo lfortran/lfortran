@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <iostream>
+#include <filesystem>
 
 #include <bin/tpl/whereami/whereami.h>
 
@@ -114,10 +115,28 @@ std::string get_dwarf_scripts_dir()
 
     switch (execution_mode)
     {
-        case ExecutionMode::LFortranDevelopment:
+        case ExecutionMode::LFortranDevelopment: {
+            std::string scripts_dir = lfortran_exec_path_dir + "/../libasr";
+            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
+                return scripts_dir;
+            }
+            scripts_dir = lfortran_exec_path_dir + "/../../../src/libasr";
+            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
+                return scripts_dir;
+            }
             return lfortran_exec_path_dir + "/../libasr";
-        case ExecutionMode::LFortranCtest:
+        }
+        case ExecutionMode::LFortranCtest: {
+            std::string scripts_dir = lfortran_exec_path_dir + "/../../libasr";
+            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
+                return scripts_dir;
+            }
+            scripts_dir = lfortran_exec_path_dir + "/../../../../src/libasr";
+            if (std::filesystem::exists(scripts_dir + "/dwarf_convert.py")) {
+                return scripts_dir;
+            }
             return lfortran_exec_path_dir + "/../../libasr";
+        }
         case ExecutionMode::LFortranInstalled:
             return lfortran_exec_path_dir + "/../share/lfortran";
         default:

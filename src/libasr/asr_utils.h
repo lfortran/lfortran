@@ -3155,8 +3155,8 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 physical_type = ASR::array_physical_typeType::PointerArray;
-            } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
-                physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+            } else if (is_dimension_star && is_argument) {
+                physical_type = ASR::array_physical_typeType::PointerArray;
             }
         }
     }

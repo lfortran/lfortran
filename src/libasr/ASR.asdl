@@ -138,6 +138,7 @@ expr
     | StringRepeat(expr left, expr right, ttype type, expr? value)
     | StringLen(expr arg, ttype type, expr? value)
     | StringItem(expr arg, expr idx, ttype type, expr? value)
+    | CompilerOptions(string compiler_options_str, ttype type)
     | StringSection(expr arg, expr? start, expr? end, expr? step, ttype type, expr? value)
     | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | StringContains(expr substr, expr str, ttype type, expr? value)

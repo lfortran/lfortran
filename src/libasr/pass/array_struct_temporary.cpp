@@ -1064,14 +1064,26 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
-        if (realloc_lhs && ASRUtils::is_allocatable(ASRUtils::expr_type(struct_var_temporary))
-            && !ASRUtils::is_array(ASRUtils::expr_type(struct_var_temporary))) {
+        if (realloc_lhs && ASRUtils::is_allocatable(ASRUtils::expr_type(struct_var_temporary))) {
             // Allocate the temporary struct type variable before assigning any value.
-            current_body->push_back(al, allocate_struct_expr(al, struct_var_temporary));
+            ASRUtils::ASRBuilder builder(al, loc);
+            Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
+            std::vector<ASR::stmt_t*> allocate_stmts;
+            if (!ASRUtils::is_array(ASRUtils::expr_type(struct_var_temporary))) {
+                allocate_stmts.push_back(allocate_struct_expr(al, struct_var_temporary));
+            }
+            allocate_stmts.push_back(ASRUtils::STMT(make_Assignment_t_util(
+                al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
+            allocated_args.push_back(al, struct_expr);
+            ASR::stmt_t* assign_stmt = builder.If(ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
+            allocate_stmts, {});
+            current_body->push_back(al, assign_stmt);
+        } else {
+            current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
         }
-
-        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-            al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
     } 
     return struct_var_temporary;
 }

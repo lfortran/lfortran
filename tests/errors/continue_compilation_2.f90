@@ -91,7 +91,7 @@ end module continue_compilation_2_mod
 ! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_2
     use continue_compilation_2_mod
-    use iso_fortran_env
+    
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
     implicit real(a-z)
@@ -463,6 +463,7 @@ program continue_compilation_2
     print *, size(ichar_runtime)
     lhs = rhs
     print *, index( substring = 'de', back = .true. )
+    print *, compiler_options()
     contains
     logical function f(x)
         integer, intent(in), optional :: x
