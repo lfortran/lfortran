@@ -4029,6 +4029,21 @@ namespace MatMul {
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
         if (is_allocatable(result)) {
+            Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, result);
+            ASR::expr_t* is_result_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0, logical, nullptr));
+
+            Vec<ASR::expr_t*> deallocate_args; deallocate_args.reserve(al, 1);
+            deallocate_args.push_back(al, result);
+            ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, deallocate_args.p, deallocate_args.n));
+
+            std::vector<ASR::stmt_t*> if_body;
+            if_body.push_back(explicit_deallocate);
+            body.push_back(al, b.If(is_result_allocated, if_body, {}));
+
             body.push_back(al, b.Allocate(result, alloc_dims));
         }
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
