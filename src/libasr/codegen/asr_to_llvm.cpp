@@ -399,7 +399,7 @@ public:
                 break;
             }
             default : {
-                type_name = "non-specified-debug-type";
+                type_name = "non-specified-debug-type-SIZE-set-to-ZERO";
                 type_size = 0;
                 type_encoding = llvm::dwarf::DW_ATE_unsigned;
                 break;
