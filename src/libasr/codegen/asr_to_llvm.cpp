@@ -173,7 +173,6 @@ public:
     std::unique_ptr<llvm::DIBuilder> DBuilder;
     llvm::DICompileUnit *debug_CU;
     llvm::DIScope *debug_current_scope;
-    std::map<uint64_t, llvm::DIScope*> llvm_symtab_fn_discope;
     llvm::DIFile *debug_Unit;
 
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
@@ -354,11 +353,18 @@ public:
 
     void get_type_debug_info(ASR::ttype_t* t, std::string &type_name,
             uint32_t &type_size, uint32_t &type_encoding) {
-        type_size = ASRUtils::extract_kind_from_ttype_t(t)*8;
-        switch( t->type ) {
+        ASR::ttype_t* t_ = ASRUtils::extract_type(t);
+
+        type_size = ASRUtils::extract_kind_from_ttype_t(t_)*8;
+        switch( t_->type ) {
             case ASR::ttypeType::Integer: {
                 type_name = "integer";
                 type_encoding = llvm::dwarf::DW_ATE_signed;
+                break;
+            }
+            case ASR::ttypeType::UnsignedInteger: {
+                type_name = "integer";
+                type_encoding = llvm::dwarf::DW_ATE_unsigned;
                 break;
             }
             case ASR::ttypeType::Logical: {
@@ -375,8 +381,29 @@ public:
                 type_encoding = llvm::dwarf::DW_ATE_float;
                 break;
             }
-            default : throw LCompilersException("Debug information for the type: `"
-                + std::to_string(t->type) + "` is not yet implemented");
+            case ASR::ttypeType::Complex: {
+                type_name = "complex";
+                type_size = 2 * ASRUtils::extract_kind_from_ttype_t(t_) * 8;
+                type_encoding = llvm::dwarf::DW_ATE_complex_float;
+                break;
+            }
+            case ASR::ttypeType::String: {
+                type_name = "character";
+                type_encoding = llvm::dwarf::DW_ATE_unsigned_char;
+                break;
+            }
+            case ASR::ttypeType::CPtr: {
+                type_name = "c_ptr";
+                type_size = 64;
+                type_encoding = llvm::dwarf::DW_ATE_address;
+                break;
+            }
+            default : {
+                type_name = "non-specified-debug-type-SIZE-set-to-ZERO";
+                type_size = 0;
+                type_encoding = llvm::dwarf::DW_ATE_unsigned;
+                break;
+            }
         }
     }
 
@@ -4347,6 +4374,8 @@ public:
 #endif
 
     void visit_Program(const ASR::Program_t &x) {
+        llvm::DIScope* debug_current_scope_copy = debug_current_scope;
+        llvm::DISubprogram *SP = nullptr;
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -4375,11 +4404,15 @@ public:
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         if (compiler_options.emit_debug_info) {
-            llvm::DISubprogram *SP;
             debug_emit_function(x, SP);
             F->setSubprogram(SP);
+            debug_current_scope = SP;
         }
         builder->SetInsertPoint(BB);
+        if (compiler_options.emit_debug_info) {
+            builder->SetCurrentDebugLocation(nullptr);
+            debug_emit_loc(x);
+        }
         // there maybe a possibility that nested function has an array variable
         // whose dimension depends on variable present in this program / function
         // thereby visit all integer variables and declare those:
@@ -4405,6 +4438,11 @@ public:
         visit_procedures(x);
 
         builder->SetInsertPoint(BB);
+        if (compiler_options.emit_debug_info) {
+            debug_current_scope = SP;
+            builder->SetCurrentDebugLocation(nullptr);
+            debug_emit_loc(x);
+        }
         // Call the `_lpython_call_initial_functions` function to assign command line argument
         // values to `argc` and `argv`, and set the random seed to the system clock.
         {
@@ -4463,6 +4501,7 @@ public:
 
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
+        if (compiler_options.emit_debug_info) debug_current_scope = debug_current_scope_copy;
         current_scope = current_scope_copy;
         loop_head.clear();
         loop_head_names.clear();
@@ -5281,9 +5320,21 @@ public:
                 uint32_t type_size, type_encoding;
                 get_type_debug_info(v->m_type, type_name, type_size,
                     type_encoding);
-                llvm::DILocalVariable *debug_var = DBuilder->createParameterVariable(
-                    debug_current_scope, v->m_name, ++debug_arg_count, debug_Unit, line,
-                    DBuilder->createBasicType(type_name, type_size, type_encoding), true);
+                llvm::DIType* di_type = DBuilder->createBasicType(
+                    type_name, type_size, type_encoding);
+                llvm::DILocalVariable* debug_var = nullptr;
+                if (v->m_intent == ASR::intentType::In ||
+                    v->m_intent == ASR::intentType::Out ||
+                    v->m_intent == ASR::intentType::InOut ||
+                    v->m_intent == ASR::intentType::Unspecified) {
+                    debug_var = DBuilder->createParameterVariable(
+                        debug_current_scope, v->m_name, ++debug_arg_count, debug_Unit, line,
+                        di_type, true);
+                } else {
+                    debug_var = DBuilder->createAutoVariable(
+                        debug_current_scope, v->m_name, debug_Unit, line,
+                        di_type, true);
+                }
                 DBuilder->insertDeclare(ptr, debug_var, DBuilder->createExpression(),
                     llvm::DILocation::get(debug_current_scope->getContext(),
                     line, 0, debug_current_scope), builder->GetInsertBlock());
@@ -5489,6 +5540,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -5509,6 +5561,12 @@ public:
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
             // declared, so there is nothing to do here
+            if (compiler_options.emit_debug_info) debug_current_scope = debug_current_scope_copy;
+            dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
+            dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
+            set_api_lp->set_is_set_present(is_set_present_copy_lp);
+            set_api_sc->set_is_set_present(is_set_present_copy_sc);
+            current_scope = current_scope_copy;
             return;
         }
         visit_procedures(x);
@@ -5521,6 +5579,7 @@ public:
 
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
+        if (compiler_options.emit_debug_info) debug_current_scope = debug_current_scope_copy;
         current_scope = current_scope_copy;
         loop_head.clear();
         loop_head_names.clear();
@@ -5530,9 +5589,9 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
+        llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
-        llvm::DISubprogram *SP = nullptr;
         std::string sym_name = x.m_name;
         if (sym_name == "main") {
             sym_name = "_xx_lcompilers_changed_main_xx";
@@ -5549,6 +5608,9 @@ public:
                 ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
                 for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
                     if( ASRUtils::is_class_type(asr_function_type->m_arg_types[i]) ) {
+                        if (compiler_options.emit_debug_info) {
+                            debug_current_scope = debug_current_scope_copy;
+                        }
                         return ;
                     }
                 }
@@ -5578,21 +5640,11 @@ public:
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
-
-                // Add Debugging information to the LLVM function F
-                if (compiler_options.emit_debug_info) {
-                    debug_emit_function(x, SP);
-                    F->setSubprogram(SP);
-                }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
-                if (compiler_options.emit_debug_info) {
-                    SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
-                }
             }
             llvm_symtab_fn[h] = F;
-            if (compiler_options.emit_debug_info) llvm_symtab_fn_discope[h] = SP;
 
             // Instantiate (pre-declare) all nested interfaces
             for (auto &item : x.m_symtab->get_scope()) {
@@ -5666,13 +5718,21 @@ public:
                 }
             }
         }
+        if (compiler_options.emit_debug_info) {
+            debug_current_scope = debug_current_scope_copy;
+        }
     }
 
     inline void define_function_entry(const ASR::Function_t& x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
-        if (compiler_options.emit_debug_info) debug_current_scope = llvm_symtab_fn_discope[h];
+        if (compiler_options.emit_debug_info) {
+            llvm::DISubprogram *SP = nullptr;
+            debug_emit_function(x, SP);
+            F->setSubprogram(SP);
+            debug_current_scope = SP;
+        }
         proc_return = llvm::BasicBlock::Create(context, "return");
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
