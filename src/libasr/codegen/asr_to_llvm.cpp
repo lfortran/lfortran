@@ -173,7 +173,6 @@ public:
     std::unique_ptr<llvm::DIBuilder> DBuilder;
     llvm::DICompileUnit *debug_CU;
     llvm::DIScope *debug_current_scope;
-    std::map<uint64_t, llvm::DIScope*> llvm_symtab_fn_discope;
     llvm::DIFile *debug_Unit;
 
     std::map<ASR::symbol_t*, std::map<SymbolTable*, llvm::Value*>> type2vtab;
@@ -354,13 +353,7 @@ public:
 
     void get_type_debug_info(ASR::ttype_t* t, std::string &type_name,
             uint32_t &type_size, uint32_t &type_encoding) {
-        ASR::ttype_t* t_ = ASRUtils::type_get_past_pointer(
-            ASRUtils::type_get_past_allocatable(t));
-        if (ASR::is_a<ASR::Array_t>(*t_)) {
-            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(t_);
-            get_type_debug_info(element_type, type_name, type_size, type_encoding);
-            return;
-        }
+        ASR::ttype_t* t_ = ASRUtils::extract_type(t);
 
         type_size = ASRUtils::extract_kind_from_ttype_t(t_)*8;
         switch( t_->type ) {
@@ -406,7 +399,7 @@ public:
                 break;
             }
             default : {
-                type_name = "unknown";
+                type_name = "non-specified-debug-type";
                 type_size = 0;
                 type_encoding = llvm::dwarf::DW_ATE_unsigned;
                 break;
@@ -5718,18 +5711,9 @@ public:
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
         if (compiler_options.emit_debug_info) {
-            llvm::DISubprogram *SP = F->getSubprogram();
-            if (!SP) {
-                auto it = llvm_symtab_fn_discope.find(h);
-                if (it != llvm_symtab_fn_discope.end()) {
-                    SP = static_cast<llvm::DISubprogram*>(it->second);
-                }
-            }
-            if (!SP) {
-                debug_emit_function(x, SP);
-                F->setSubprogram(SP);
-            }
-            llvm_symtab_fn_discope[h] = SP;
+            llvm::DISubprogram *SP = nullptr;
+            debug_emit_function(x, SP);
+            F->setSubprogram(SP);
             debug_current_scope = SP;
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
