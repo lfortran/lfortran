@@ -1,5 +1,0 @@
-semantic error: The loop variable 'i' is not declared
- --> tests/../integration_tests/format_35.f90:7:21
-  |
-7 |     write(line,fmt) (letters(i:i), i=1,26)
-  |                     ^^^^^^^^^^^^^^^^^^^^^^ 

@@ -5093,18 +5093,18 @@ public:
         ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
         if (x.m_var) {
-            std::string loop_var_name = to_lower(x.m_var);
+            const std::string loop_var_name = to_lower(x.m_var);
             ASR::symbol_t* loop_var_sym = current_scope->resolve_symbol(loop_var_name);
-            if (loop_var_sym == nullptr) {
-                // Check if implicit typing is enabled
+            if (!loop_var_sym) {
                 if (!compiler_options.implicit_typing) {
                     diag.add(Diagnostic("The loop variable '" + loop_var_name + "' is not declared",
                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
-                loop_var_sym = create_implicit_loop_variable(x.base.base.loc, loop_var_name, loop_var_name, current_scope);
+                var = ASRUtils::EXPR(resolve_variable(x.m_start->base.loc, loop_var_name));
+            } else {
+                var = replace_with_common_block_variables(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, loop_var_sym)));
             }
-            var = replace_with_common_block_variables(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, loop_var_sym)));
         }
         if (x.m_start) {
             visit_expr(*x.m_start);

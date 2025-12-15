@@ -1,5 +1,0 @@
-semantic error: The loop variable 'i' is not declared
-  --> tests/fn5.f90:27:8
-   |
-27 |       & (atleast(keywords(i), max(len(keywords), 8)), shorts(i), present_in(i), values(i)(:), i=1, size(keywords))
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

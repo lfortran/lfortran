@@ -1,5 +1,0 @@
-semantic error: The loop variable 'j' is not declared
- --> tests/../integration_tests/implied_do_loops1.f90:3:24
-  |
-3 |     integer :: a(10)=(/(j,j=1,10)/)
-  |                        ^^^^^^^^^^ 

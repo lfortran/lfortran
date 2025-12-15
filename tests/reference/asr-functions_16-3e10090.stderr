@@ -1,5 +1,0 @@
-semantic error: The loop variable 'i' is not declared
-  --> tests/../integration_tests/functions_16.f90:39:42
-   |
-39 |       allocate(indexarray(high), source=[(i, i=low, high)])
-   |                                          ^^^^^^^^^^^^^^^^ 
