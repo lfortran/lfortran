@@ -434,31 +434,47 @@ void resolve_final_procedures(
         dflt_access = ASR::Public;
     }
 
-    void visit_Module(const AST::Module_t &x) {
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-            implicit_stack.push_back(implicit_dictionary);
-        } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
+void visit_Module(const AST::Module_t &x) {
+    if (compiler_options.implicit_typing) {
+        Location a_loc = x.base.base.loc;
+        populate_implicit_dictionary(a_loc, implicit_dictionary);
+        process_implicit_statements(x, implicit_dictionary);
+        implicit_stack.push_back(implicit_dictionary);
+    } else {
+        for (size_t i = 0; i < x.n_implicit; i++) {
+            if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                diag.add(diag::Diagnostic(
+                    "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                    diag::Level::Error,
+                    diag::Stage::Semantic, {
+                        diag::Label("", {x.m_implicit[i]->base.loc})
+                    }
+                ));
+                throw SemanticAbort();
             }
         }
-        in_module = true;
-        visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
-        in_module = false;
-        if (compiler_options.implicit_typing) {
-            implicit_stack.pop_back();
-        }
+    }
+
+    ASR::symbol_t *prev_module_sym = current_module_sym;
+
+    in_module = true;
+    visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
+    in_module = false;
+
+    // NOTE: This can be nullptr for templates
+    ASR::symbol_t *tmp = current_scope->get_symbol(x.m_name);
+    if (tmp) {
+        current_module_sym = tmp;
+    }
+
+    if (compiler_options.implicit_typing) {
+        implicit_stack.pop_back();
+    }
+
+    // Resolve FINAL procedures only if the module symbol exists
+    if (current_module_sym) {
         ASR::Module_t *m =
-        ASR::down_cast<ASR::Module_t>(current_module_sym);
+            ASR::down_cast<ASR::Module_t>(current_module_sym);
 
         for (auto &it : m->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*it.second)) {
@@ -468,9 +484,13 @@ void resolve_final_procedures(
                 );
             }
         }
-
-        current_module_sym = prev_module_sym;
     }
+
+    current_module_sym = prev_module_sym;
+}
+
+
+
 
     void visit_Submodule(const AST::Submodule_t &x) {
         in_submodule = true;
