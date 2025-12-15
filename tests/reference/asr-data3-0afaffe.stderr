@@ -1,0 +1,5 @@
+semantic error: DATA statement element count mismatch: 5 elements on left-hand side, 3 values on right-hand side
+  --> tests/data3.f90:14:3
+   |
+14 |   data ivon16,ivon17,ivon18,ivon19,ivon20 / 2*119, 2*7, -427/
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

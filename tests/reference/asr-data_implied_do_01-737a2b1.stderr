@@ -1,0 +1,5 @@
+semantic error: DATA statement element count mismatch: 5 elements on left-hand side, 3 values on right-hand side
+ --> tests/../integration_tests/data_implied_do_01.f90:4:5
+  |
+4 |     DATA (a(i),i=1,5) /1.0, 2.0, 3*0.0/
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

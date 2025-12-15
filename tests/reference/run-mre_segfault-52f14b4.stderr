@@ -3,3 +3,53 @@ semantic error: Dimension mismatch in `allocate` statement.
   |
 6 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
   |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mismatch in dimensions between allocated variable and `source`
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start[0m
+[2m  File "[0m[1m[35m./csu/../csu/libc-start.c[39m[0m[2m", line 360, in __libc_start_main[0m
+[2m  File "[0m[1m[35m./csu/../sysdeps/nptl/libc_start_call_main.h[39m[0m[2m", line 58, in __libc_start_call_main[0m
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2740, in main[0m
+    return main_app(argc, argv);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2664, in main_app(int, char**)[0m
+    err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1193, in (anonymous namespace)::compile_src_to_object_file(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, bool, bool, LCompilers::CompilerOptions&, LCompilers::PassManager&, bool)[0m
+    res = fe.get_llvm3(*asr, lpm, diagnostics, lm, infile, &time_opt);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 393, in LCompilers::FortranEvaluator::get_llvm3(LCompilers::ASR::TranslationUnit_t&, LCompilers::PassManager&, LCompilers::diag::Diagnostics&, LCompilers::LocationManager&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, int*)[0m
+    *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 15104, in LCompilers::asr_to_llvm(LCompilers::ASR::TranslationUnit_t&, LCompilers::diag::Diagnostics&, llvm::LLVMContext&, Allocator&, LCompilers::PassManager&, LCompilers::CompilerOptions&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, LCompilers::LocationManager&)[0m
+    // Load result size
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/pass_manager.h[39m[0m[2m", line 318, in LCompilers::PassManager::apply_passes(Allocator&, LCompilers::ASR::TranslationUnit_t*, LCompilers::PassOptions&, LCompilers::diag::Diagnostics&)[0m
+    apply_passes(al, asr, _passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/pass_manager.h[39m[0m[2m", line 189, in LCompilers::PassManager::apply_passes(Allocator&, LCompilers::ASR::TranslationUnit_t*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>>>&, LCompilers::PassOptions&, LCompilers::diag::Diagnostics&, double&)[0m
+    _passes_db[passes[i]](al, *asr, pass_options);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/array_op.cpp[39m[0m[2m", line 1232, in LCompilers::pass_replace_array_op(Allocator&, LCompilers::ASR::TranslationUnit_t&, LCompilers::PassOptions const&)[0m
+    v.visit_TranslationUnit(unit);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_expr_call_replacer_visitor.h[39m[0m[2m", line 40, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ArrayOpVisitor>::visit_TranslationUnit(LCompilers::ASR::TranslationUnit_t const&)[0m
+    this->visit_symbol(*a.second);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 362, in LCompilers::ASR::BaseVisitor<LCompilers::ArrayOpVisitor>::visit_symbol(LCompilers::ASR::symbol_t const&)[0m
+    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 30, in void LCompilers::ASR::visit_symbol_t<LCompilers::ArrayOpVisitor>(LCompilers::ASR::symbol_t const&, LCompilers::ArrayOpVisitor&)[0m
+    case symbolType::Program: { v.visit_Program((const Program_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_expr_call_replacer_visitor.h[39m[0m[2m", line 51, in LCompilers::ASR::CallReplacerOnExpressionsVisitor<LCompilers::ArrayOpVisitor>::visit_Program(LCompilers::ASR::Program_t const&)[0m
+    self().transform_stmts(xx.m_body, xx.n_body);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/array_op.cpp[39m[0m[2m", line 497, in LCompilers::ArrayOpVisitor::transform_stmts(LCompilers::ASR::stmt_t**&, unsigned long&)[0m
+    visit_stmt(*m_body[i]);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 378, in LCompilers::ASR::BaseVisitor<LCompilers::ArrayOpVisitor>::visit_stmt(LCompilers::ASR::stmt_t const&)[0m
+    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_base_visitor.h[39m[0m[2m", line 52, in void LCompilers::ASR::visit_stmt_t<LCompilers::ArrayOpVisitor>(LCompilers::ASR::stmt_t const&, LCompilers::ArrayOpVisitor&)[0m
+    case stmtType::Allocate: { v.visit_Allocate((const Allocate_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/array_op.cpp[39m[0m[2m", line 1037, in LCompilers::ArrayOpVisitor::visit_Allocate(LCompilers::ASR::Allocate_t const&)[0m
+    generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/array_op.cpp[39m[0m[2m", line 920, in void LCompilers::ArrayOpVisitor::generate_loop<LCompilers::ASR::Assignment_t>(LCompilers::ASR::Assignment_t const&, LCompilers::Vec<LCompilers::ASR::expr_t**>&, LCompilers::Vec<LCompilers::ASR::expr_t**>&, LCompilers::Location const&)[0m
+    set_index_variables(var2indices, vars_expr, var_with_maxrank,
+[2m  File "[0m[1m[35m$DIR/src/libasr/pass/array_op.cpp[39m[0m[2m", line 561, in LCompilers::ArrayOpVisitor::set_index_variables(std::unordered_map<unsigned long, LCompilers::Vec<LCompilers::ASR::expr_t*>, std::hash<unsigned long>, std::equal_to<unsigned long>, std::allocator<std::pair<unsigned long const, LCompilers::Vec<LCompilers::ASR::expr_t*>>>>&, LCompilers::Vec<LCompilers::ASR::expr_t*>&, unsigned long, long, LCompilers::Vec<LCompilers::ASR::stmt_t*>&, LCompilers::Location const&)[0m
+    ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_utils.cpp[39m[0m[2m", line 1210, in LCompilers::ASRUtils::make_Assignment_t_util(Allocator&, LCompilers::Location const&, LCompilers::ASR::expr_t*, LCompilers::ASR::expr_t*, LCompilers::ASR::stmt_t*, bool, bool)[0m
+    bool is_allocatable = ASRUtils::is_allocatable(a_target);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_utils.h[39m[0m[2m", line 5873, in LCompilers::ASRUtils::is_allocatable(LCompilers::ASR::expr_t*)[0m
+    return ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(expr));
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_utils.h[39m[0m[2m", line 418, in LCompilers::ASRUtils::expr_type(LCompilers::ASR::expr_t const*)[0m
+    return ASR::expr_type0(f);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr_expr_type_visitor.h[39m[0m[2m", line 21, in LCompilers::ASR::expr_type0(LCompilers::ASR::expr_t const*)[0m
+    switch (f->type) {
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", in <invalid>[0m
+Segfault: Signal SIGSEGV (segmentation fault) received
