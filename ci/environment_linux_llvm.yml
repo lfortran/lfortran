@@ -2,17 +2,23 @@ name: lf
 channels:
   - conda-forge
 dependencies:
-  - toml=0.10.2
-  - pytest=8.1.1
-  - jupyter=1.0.0
-  - xeus=5.1.0
-  - xeus-zmq=3.0.0
-  - nlohmann_json=3.11.3
-  - jupyter_kernel_test=0.7.0
-  - re2c=3.1
-  - numpy=1.26.4
-  - bison=3.4
-  - rapidjson=1.1.0
-  - ninja=1.11.1
-  - zlib
-  - cmake=3.29.1
+  - bison=3.4=h58526e2_1
+  - cmake=3.29.1=hcfe8598_0
+  - jupyter=1.0.0=pyhd8ed1ab_10
+  - jupyter_kernel_test=0.7.0=pyhd8ed1ab_1
+  - make=4.3=hd18ef5c_1
+  - ninja=1.11.1=h924138e_0
+  - nlohmann_json=3.11.3=he02047a_1
+  - numpy=1.26.4=py310hb13e2d6_0
+  - openblas=0.3.21=pthreads_h320a7e8_3
+  - openmpi=5.0.6=hb85ec53_102
+  - pytest=8.1.1=pyhd8ed1ab_0
+  - python=3.10 # No exact build specified to match compatibility across `zlib` versions
+  - rapidjson=1.1.0.post20240409=h3f2d84a_2
+  - re2c=3.1=h59595ed_0
+  - toml=0.10.2=pyhcf101f3_3
+  - xeus=5.1.0=ha0a95de_0
+  - xeus-zmq=3.0.0=h130ccd7_1
+  - xonsh=0.16.0=py310hff52083_0
+  - zlib # No exact version specified to match compatibility across LLVM versions
+  
