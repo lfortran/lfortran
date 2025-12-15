@@ -74,6 +74,44 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end module
 
 
@@ -136,7 +174,7 @@ program continue_compilation_1
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, parameter :: arr_implicit(3) = [(42, j_implicit = 1, 3)]
-
+    integer :: n_decl(3) = [(42, k_implicit = 1, 3)] !declaration test (intializtion)
 
 
 
