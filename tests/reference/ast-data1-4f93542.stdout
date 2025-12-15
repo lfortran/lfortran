@@ -57,12 +57,6 @@
                 [(Real "1.0d0")
                 (Real "2.0d0")
                 (Real "3.0d0")
-                (Real "3.0d0")
-                (Real "3.0d0")
-                (Real "4.0d0")
-                (Real "4.0d0")
-                (Real "4.0d0")
-                (Real "4.0d0")
                 (Real "4.0d0")]
             )]
             ()

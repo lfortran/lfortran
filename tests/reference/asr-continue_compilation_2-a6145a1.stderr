@@ -925,9 +925,3 @@ semantic error: Missing actual argument 'string' in call to 'index'
     |
 465 |     print *, index( substring = 'de', back = .true. )
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Function 'compiler_options' not found (not user defined nor intrinsic)
-   --> tests/errors/continue_compilation_2.f90:466:14
-    |
-466 |     print *, compiler_options()
-    |              ^^^^^^^^^^^^^^^^^^ 

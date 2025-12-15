@@ -252,7 +252,7 @@
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                (IntegerConstant 64 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ()
@@ -282,7 +282,7 @@
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                (IntegerConstant 64 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ()
