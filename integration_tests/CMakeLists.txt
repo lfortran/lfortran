@@ -2631,9 +2631,7 @@ RUN(NAME openmp_09 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_10 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_11 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_12 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-# TODO: Re-enable llvm_omp once intent(out) deallocation is fixed (see PR #9039)
-# The test triggers "Attempting to allocate already allocated variable" because
-# LFortran doesn't deallocate intent(out) allocatable arrays before subroutine entry
+# TODO: Re-enable llvm_omp once intent(out) deallocation is fixed (#9097)
 RUN(NAME openmp_13 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_14 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_15 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
