@@ -74,7 +74,15 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
-
+    subroutine assumed_size_errors(a, b, c, d, e)
+        real :: a(*), b(*), c(10, *)
+        real, intent(in) :: d(*, 10)
+        real :: e(*, 10)
+        print *, ubound(a, 1)  ! error: last dim assumed-size
+        print *, ubound(b)     ! error: DIM required
+        print *, ubound(c, 2)  ! error: last dim assumed-size
+        ! d, e trigger star-position errors
+    end subroutine assumed_size_errors
 
 
 
