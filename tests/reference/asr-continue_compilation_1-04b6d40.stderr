@@ -613,218 +613,218 @@ semantic error: reshape accepts arrays for `pad` argument, found integer instead
     |                                                  ^ 
 
 semantic error: reshape accepts arrays for `order` argument, found integer instead.
-   --> tests/errors/continue_compilation_1.f90:373:55
+   --> tests/errors/continue_compilation_1.f90:381:55
     |
 373 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0], 0)
     |                                                       ^ 
 
 semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type real[:] and kind 4 source type integer[:] and kind 4 instead.
-   --> tests/errors/continue_compilation_1.f90:374:50
+   --> tests/errors/continue_compilation_1.f90:382:50
     |
 374 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [1.2])
     |                                                  ^^^^^ 
 
 semantic error: `pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type integer[:] and kind 8 source type integer[:] and kind 4 instead.
-   --> tests/errors/continue_compilation_1.f90:375:50
+   --> tests/errors/continue_compilation_1.f90:383:50
     |
 375 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], [0_8])
     |                                                  ^^^^^ 
 
 semantic error: reshape accepts `order` array with integer elements
-   --> tests/errors/continue_compilation_1.f90:377:58
+   --> tests/errors/continue_compilation_1.f90:385:58
     |
 377 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
     |                                                          ^^^^^^^^^^ 
 
 semantic error: reshape accepts `order` array as a permutation of elements from 1 to 2
-   --> tests/errors/continue_compilation_1.f90:378:58
+   --> tests/errors/continue_compilation_1.f90:386:58
     |
 378 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
     |                                                          ^^^^^^ 
 
 semantic error: `mask` argument to `count` intrinsic must be a logical array
-   --> tests/errors/continue_compilation_1.f90:380:20
+   --> tests/errors/continue_compilation_1.f90:388:20
     |
 380 |     print *, count(1)
     |                    ^ 
 
 semantic error: `mask` argument to `count` intrinsic must be a logical array
-   --> tests/errors/continue_compilation_1.f90:381:20
+   --> tests/errors/continue_compilation_1.f90:389:20
     |
 381 |     print *, count([2])
     |                    ^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:383:5
+   --> tests/errors/continue_compilation_1.f90:391:5
     |
 383 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
-   --> tests/errors/continue_compilation_1.f90:386:22
+   --> tests/errors/continue_compilation_1.f90:394:22
     |
 386 |     print *, iparity(["a", "b"])
     |                      ^^^^^^^^^^ must be of integer type
 
 semantic error: The `mask` argument to `parity` must be logical, but got string[:]
-   --> tests/errors/continue_compilation_1.f90:387:21
+   --> tests/errors/continue_compilation_1.f90:395:21
     |
 387 |     print *, parity(["a", "b"])
     |                     ^^^^^^^^^^ must be logical type
 
 semantic error: `shape` array in reshape intrinsic should be of constant size
-   --> tests/errors/continue_compilation_1.f90:390:30
+   --> tests/errors/continue_compilation_1.f90:398:30
     |
 390 |     matrix = reshape(source, shape_, pad=[0])
     |                              ^^^^^^ not a constant size array
 
 semantic error: Incompatible ranks 2 and 1 in assignment
-   --> tests/errors/continue_compilation_1.f90:390:5
+   --> tests/errors/continue_compilation_1.f90:398:5
     |
 390 |     matrix = reshape(source, shape_, pad=[0])
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
-   --> tests/errors/continue_compilation_1.f90:395:14
+   --> tests/errors/continue_compilation_1.f90:403:14
     |
 395 |     print *, c%mymember
     |              ^^^^^^^^^^ 
 
 semantic error: Character variable 'c1' only has %len and %kind members, not 'mymember'
-   --> tests/errors/continue_compilation_1.f90:397:14
+   --> tests/errors/continue_compilation_1.f90:405:14
     |
 397 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
-   --> tests/errors/continue_compilation_1.f90:399:14
+   --> tests/errors/continue_compilation_1.f90:407:14
     |
 399 |     print *, present(x,x)
     |              ^^^^^^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
-   --> tests/errors/continue_compilation_1.f90:400:14
+   --> tests/errors/continue_compilation_1.f90:408:14
     |
 400 |     print *, present()
     |              ^^^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
-   --> tests/errors/continue_compilation_1.f90:401:14
+   --> tests/errors/continue_compilation_1.f90:409:14
     |
 401 |     print *, ieor(x)
     |              ^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It accepts exactly 2 arguments.
-   --> tests/errors/continue_compilation_1.f90:402:14
+   --> tests/errors/continue_compilation_1.f90:410:14
     |
 402 |     print *, ieor()
     |              ^^^^^^ 
 
 semantic error: `exit` statements cannot be outside of loops or blocks
-   --> tests/errors/continue_compilation_1.f90:404:5
+   --> tests/errors/continue_compilation_1.f90:412:5
     |
 404 |     exit
     |     ^^^^ 
 
 semantic error: Required argument `y` at position 2 is missing in function call
-   --> tests/errors/continue_compilation_1.f90:407:18
+   --> tests/errors/continue_compilation_1.f90:415:18
     |
 407 |     call my_func(10)
     |                  ^^ 
 
 semantic error: Required argument `x` is missing in function call
-   --> tests/errors/continue_compilation_1.f90:408:5
+   --> tests/errors/continue_compilation_1.f90:416:5
     |
 408 |     call my_func()
     |     ^^^^^^^^^^^^^^ 
 
 semantic error: Required argument `extra_arg` is missing in function call
-   --> tests/errors/continue_compilation_1.f90:412:5
+   --> tests/errors/continue_compilation_1.f90:420:5
     |
 412 |     call obj%display()
     |     ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Shape mismatch in `allocate` statement.
-   --> tests/errors/continue_compilation_1.f90:414:14
+   --> tests/errors/continue_compilation_1.f90:422:14
     |
 414 |     allocate(arr4(5), source=[1, 2, 3])
     |              ^^^^^^^         ^^^^^^^^^ shape mismatch in dimension 1
 
 semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.
 Expected type: integer[:] allocatable, but got: real.
-   --> tests/errors/continue_compilation_1.f90:415:14
+   --> tests/errors/continue_compilation_1.f90:423:14
     |
 415 |     allocate(arr4(5), source=v)
     |              ^^^^^^^         ^ incompatible types in `allocate` statement
 
 semantic error: Dimension mismatch in `allocate` statement.
-   --> tests/errors/continue_compilation_1.f90:416:14
+   --> tests/errors/continue_compilation_1.f90:424:14
     |
 416 |     allocate(arr4(3), source=reshape([1, 2, 3, 4, 5, 6], [2, 3]))
     |              ^^^^^^^         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mismatch in dimensions between allocated variable and `source`
 
 semantic error: Cannot allocate an array from a scalar source.
-   --> tests/errors/continue_compilation_1.f90:417:14
+   --> tests/errors/continue_compilation_1.f90:425:14
     |
 417 |     allocate(arr4, source=7)
     |              ^^^^ allocated variable is an array, but `source` is a scalar
 
 semantic error: Argument was not specified
-   --> tests/errors/continue_compilation_1.f90:419:5
+   --> tests/errors/continue_compilation_1.f90:427:5
     |
 419 |     call logger % add_log_file(filename=filename)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 1-th argument not specified for add_log_file
 
 semantic error: Required argument `unit` is missing in function call
-   --> tests/errors/continue_compilation_1.f90:420:5
+   --> tests/errors/continue_compilation_1.f90:428:5
     |
 420 |     call logger % add_log_file()
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `allocate` statement only accepts four keyword arguments: `stat`, `errmsg`, `source` and `mold`
-   --> tests/errors/continue_compilation_1.f90:422:5
+   --> tests/errors/continue_compilation_1.f90:430:5
     |
 422 |     allocate(arr5, status=q1)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Different `character` lengths 2 and 3 in array constructor
-   --> tests/errors/continue_compilation_1.f90:425:21
+   --> tests/errors/continue_compilation_1.f90:433:21
     |
 425 |     print *, ["aa", "aaa"]
     |                     ^^^^^ 
 
 semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
-   --> tests/errors/continue_compilation_1.f90:427:25
+   --> tests/errors/continue_compilation_1.f90:435:25
     |
 427 |     print *, pack(arr2, mask1)
     |                         ^^^^^ 
 
 semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot appear in LHS of assignment
-   --> tests/errors/continue_compilation_1.f90:430:5
+   --> tests/errors/continue_compilation_1.f90:438:5
     |
 430 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid syntax of derived type for array constructor
-   --> tests/errors/continue_compilation_1.f90:432:12
+   --> tests/errors/continue_compilation_1.f90:440:12
     |
 432 |     arr = [type(MyClass) :: v1, v2, v3]
     |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
 
 semantic error: Class type `NonExistingType` is not defined
-   --> tests/errors/continue_compilation_1.f90:434:11
+   --> tests/errors/continue_compilation_1.f90:442:11
     |
 434 |     arr = [NonExistingType :: v1, v2, v3]
     |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: DATA statement element count mismatch: 8 elements on left-hand side, 10 values on right-hand side
-   --> tests/errors/continue_compilation_1.f90:437:5
+   --> tests/errors/continue_compilation_1.f90:445:5
     |
 437 |     data j2, x2, (y2(i2), i2=1,3), k2 / 1,2,3,4,5,6,7,3*8 /
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: DO loop label 'q1' already defined
-   --> tests/errors/continue_compilation_1.f90:439:9 - 441:10
+   --> tests/errors/continue_compilation_1.f90:447:9 - 449:10
     |
 439 |        q1: do q1 = 1, 3
     |            ^^^^^^^^^^^^...
@@ -834,19 +834,19 @@ semantic error: DO loop label 'q1' already defined
     | ...^^^^^^^^^^ 
 
 semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
-   --> tests/errors/continue_compilation_1.f90:446:5
+   --> tests/errors/continue_compilation_1.f90:454:5
     |
 446 |     WRITE (6, fmt_i1)
     |     ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
-   --> tests/errors/continue_compilation_1.f90:451:5
+   --> tests/errors/continue_compilation_1.f90:459:5
     |
 451 |     print fmt_i2, "test"
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
-   --> tests/errors/continue_compilation_1.f90:456:5
+   --> tests/errors/continue_compilation_1.f90:464:5
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 

@@ -1,4 +1,0 @@
-At 4:3 of file tests/errors/array_bounds_check_08.f90
-Runtime error: Array shape mismatch in subroutine 'ff'
-
-Tried to match size 5 of dimension 1 of argument number 1, but expected size is 100000

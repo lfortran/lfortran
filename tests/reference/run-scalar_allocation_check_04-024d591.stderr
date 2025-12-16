@@ -1,2 +1,0 @@
-At 3:13 of file tests/errors/scalar_allocation_check_04.f90
-Runtime error: Argument 1 of subroutine ff is unallocated.
