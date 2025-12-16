@@ -5210,7 +5210,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             *iostat = 5001;
             return;
         } else {
-            fprintf(stderr, "Runtime Error: Format mismatch between"
+            fprintf(stderr, "Runtime Error: Format mismatch between "
                 "OPEN statement and WRITE statement on unit %d.\n", unit_num);
             exit(1);
         }
