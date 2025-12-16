@@ -173,6 +173,8 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
+    integer, parameter :: arr_implicit(3) = [(42, j_implicit = 1, 3)]
+    integer :: n_decl(3) = [(42, k_implicit = 1, 3)] !declaration test (intializtion)
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
 
@@ -454,4 +456,7 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
+
+    ! Test implicit loop variable without declaration (i_implicit should error)
+    a = [(42, i_implicit = 1, 3)]
 end program 

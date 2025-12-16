@@ -10134,15 +10134,20 @@ public:
         }
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
-
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
-        if (a_sym == nullptr) {
-            diag.add(Diagnostic("The implied do loop variable '" +
-                to_lower(x.m_var) + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-        ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        // FIX: Handle implicit declaration of implied do loop variable
+        const std::string var_name = to_lower(x.m_var);
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(var_name);
+        ASR::expr_t* a_var {};
+        if (!a_sym) {
+            if (!compiler_options.implicit_typing) {
+                diag.add(Diagnostic("The loop variable '" + var_name + "' is not declared",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            a_var = ASRUtils::EXPR(resolve_variable(x.m_start->base.loc, var_name));
+        } else {
+            a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        }    
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
