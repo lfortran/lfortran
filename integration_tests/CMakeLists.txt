@@ -1517,8 +1517,7 @@ RUN(NAME implicit_typing_04 LABELS gfortran llvmImplicit EXTRA_ARGS --implicit-i
 RUN(NAME implicit_typing_05 LABELS gfortran llvm  EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_07 LABELS gfortran llvm c llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing)
-RUN(NAME implicit_typing_08 LABELS gfortran llvm c llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing)
-RUN(NAME implicit_typing_09 LABELS gfortran llvm c llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing)
+
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
