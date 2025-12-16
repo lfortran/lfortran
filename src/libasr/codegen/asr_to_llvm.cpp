@@ -12018,9 +12018,13 @@ public:
             args.push_back(end_data);
             args.push_back(end_len);
         }
-        std::string fmt_str;
-        for (size_t i=0; i<fmt.size(); i++) {
-            fmt_str += fmt[i];
+        std::string fmt_str {};
+        if(x.m_is_formatted){
+            for (size_t i=0; i<fmt.size(); i++) {
+                fmt_str += fmt[i];
+            }
+        } else {
+            // Don't provide format.
         }
         llvm::Value *fmt_data = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         llvm::Value *fmt_len = llvm::ConstantInt::get(context, llvm::APInt(64, fmt_str.length()));
