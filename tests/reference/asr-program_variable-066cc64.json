@@ -1,0 +1,13 @@
+{
+    "basename": "asr-program_variable-066cc64",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/program_variable.f90",
+    "infile_hash": "705c0c3c0189cc5dffc2065ba2a142997de885b15b886bb127ec0180",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-program_variable-066cc64.stderr",
+    "stderr_hash": "0e44a8a9d9774693baa8d86077a5a2cabd62602a6931a100bcb3cd43",
+    "returncode": 2
+}

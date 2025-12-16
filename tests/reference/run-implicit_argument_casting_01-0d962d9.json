@@ -1,0 +1,13 @@
+{
+    "basename": "run-implicit_argument_casting_01-0d962d9",
+    "cmd": "lfortran --implicit-argument-casting --disable-implicit-argument-casting --no-color {infile}",
+    "infile": "tests/../integration_tests/implicit_argument_casting_01.f90",
+    "infile_hash": "3ed389916666e17233ec1aa288c9e7cfee00c97aacc83db1aeec5c7b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-implicit_argument_casting_01-0d962d9.stderr",
+    "stderr_hash": "79cbdb3deeefc4c8dea93fb4b13541c2b274bce36ad244f5530895b1",
+    "returncode": 1
+}

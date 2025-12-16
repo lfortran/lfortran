@@ -1,0 +1,13 @@
+{
+    "basename": "pass_do_loops-loop_var_use_after_loop-e26183c",
+    "cmd": "lfortran --pass=do_loops --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/loop_var_use_after_loop.f90",
+    "infile_hash": "7155c67c016a79ec0de4c65637bdec02203cd567e2d20a7676393d09",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_do_loops-loop_var_use_after_loop-e26183c.stdout",
+    "stdout_hash": "57f5b6bdd110e08df97311e332f32324da4d03029283c8fadecad2aa",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

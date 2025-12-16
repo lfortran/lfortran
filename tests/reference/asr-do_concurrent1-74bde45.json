@@ -1,0 +1,13 @@
+{
+    "basename": "asr-do_concurrent1-74bde45",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/do_concurrent1.f90",
+    "infile_hash": "11d2f455926ea0469a0cefd4547a8df57c57d57a3c836c87f04ef3dc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-do_concurrent1-74bde45.stderr",
+    "stderr_hash": "9fd50196024a6f988e64b93331be1f4e244183f9b31b4ae5f3908653",
+    "returncode": 2
+}

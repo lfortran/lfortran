@@ -1,0 +1,80 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_29:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            random_dp:
+                                (Variable
+                                    2
+                                    random_dp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            random_sp:
+                                (Variable
+                                    2
+                                    random_sp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_29
+                    []
+                    [(IntrinsicImpureSubroutine
+                        RandomNumber
+                        [(Var 2 random_sp)]
+                        0
+                    )
+                    (IntrinsicImpureSubroutine
+                        RandomNumber
+                        [(Var 2 random_dp)]
+                        0
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 random_sp)
+                            (Var 2 random_dp)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

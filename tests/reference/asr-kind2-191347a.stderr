@@ -1,0 +1,5 @@
+semantic error: Expected initialization expression for kind
+ --> tests/errors/kind2.f90:4:6
+  |
+4 | real(*) a
+  |      ^ 

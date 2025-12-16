@@ -1,0 +1,13 @@
+{
+    "basename": "asr-ishftc_size-1254b50",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/ishftc_size.f90",
+    "infile_hash": "5765a2202b476e6d0522df41163ba488707e3b506dd4870c1b0eb7b4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-ishftc_size-1254b50.stderr",
+    "stderr_hash": "9ce5eb1db3c8a9c92204d2bd13f6466f06e862c1b75c29dfe981a7d2",
+    "returncode": 2
+}

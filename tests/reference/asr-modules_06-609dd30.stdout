@@ -1,0 +1,148 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_06:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            b:
+                                (ExternalSymbol
+                                    4
+                                    b
+                                    2 b
+                                    modules_06_a
+                                    []
+                                    b
+                                    Public
+                                ),
+                            i:
+                                (Variable
+                                    4
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    modules_06
+                    [modules_06_a]
+                    [(Assignment
+                        (Var 4 i)
+                        (FunctionCall
+                            4 b
+                            ()
+                            []
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 4 i)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                ),
+            modules_06_a:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            b:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            r:
+                                                (Variable
+                                                    3
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    b
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Print
+                                        (StringConstant
+                                            "b()"
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (Assignment
+                                        (Var 3 r)
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 3 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    modules_06_a
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -1,0 +1,104 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            m_cli2:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            a2d:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ivalu:
+                                                (Variable
+                                                    3
+                                                    ivalu
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            valu:
+                                                (Variable
+                                                    3
+                                                    valu
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    a2d
+                                    (FunctionType
+                                        [(Real 8)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 valu)]
+                                    [(Assignment
+                                        (Var 3 valu)
+                                        (IntrinsicElementalFunction
+                                            Real
+                                            [(Var 3 ivalu)]
+                                            0
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    m_cli2
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

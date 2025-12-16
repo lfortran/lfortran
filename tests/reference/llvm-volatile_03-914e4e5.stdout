@@ -1,0 +1,46 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%string_descriptor = type <{ i8*, i64 }>
+
+@y_data = private global [1 x i8] c"2"
+@y = private global %string_descriptor <{ i8* getelementptr inbounds ([1 x i8], [1 x i8]* @y_data, i32 0, i32 0), i64 1 }>
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %x = alloca %string_descriptor, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %x, align 1
+  %2 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 1
+  store i64 1, i64* %2, align 4
+  %3 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %4 = call i8* @_lfortran_malloc(i64 1)
+  store i8* %4, i8** %3, align 8
+  %5 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %6 = load i8*, i8** %5, align 8
+  call void @_lfortran_strcpy(i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 1), i8 0, i8 0, i8* %6, i64 1)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_volatile_03
+
+FINALIZE_SYMTABLE_volatile_03:                    ; preds = %return
+  br label %Finalize_Variable_x
+
+Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_volatile_03
+  %7 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  call void @_lfortran_free(i8* %8)
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i64)
+
+declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
+
+declare void @_lpython_free_argv()
+
+declare void @_lfortran_free(i8*)

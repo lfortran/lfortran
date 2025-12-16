@@ -1,0 +1,5 @@
+semantic error: Too many arguments to call `dint`
+ --> tests/errors/dint_args.f90:2:13
+  |
+2 |     print*, dint(1.0_8, 8)
+  |             ^^^^^^^^^^^^^^ 

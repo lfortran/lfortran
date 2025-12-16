@@ -1,0 +1,54 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            expr_06:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (IntegerBinOp
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        Add
+                                        (IntegerConstant 6 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant 9 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 9 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    expr_06
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

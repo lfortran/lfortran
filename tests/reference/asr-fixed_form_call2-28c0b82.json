@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fixed_form_call2-28c0b82",
+    "cmd": "lfortran --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form_call2.f",
+    "infile_hash": "94899bb360f6a9205dc9fe3c76e28e8c04775b011747845b84950eb3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fixed_form_call2-28c0b82.stdout",
+    "stdout_hash": "32d402ab5924f640d0425548951b95448215520730a6b708081d5918",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

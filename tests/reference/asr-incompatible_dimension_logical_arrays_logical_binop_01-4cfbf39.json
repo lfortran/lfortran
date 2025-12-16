@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incompatible_dimension_logical_arrays_logical_binop_01-4cfbf39",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incompatible_dimension_logical_arrays_logical_binop_01.f90",
+    "infile_hash": "4f0393569eb2e0f4081875d3cbd2cfe5df6ae707a7e7dc5c425a43d1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incompatible_dimension_logical_arrays_logical_binop_01-4cfbf39.stderr",
+    "stderr_hash": "54eeb4568bab318f2a36a8096992246f0856e7b292b55677a43d73a9",
+    "returncode": 2
+}

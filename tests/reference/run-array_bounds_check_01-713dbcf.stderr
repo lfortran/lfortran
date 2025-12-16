@@ -1,0 +1,6 @@
+At 5:5 of file tests/errors/array_bounds_check_01.f90
+Runtime Error: Array shape mismatch in assignment to 'x'
+
+Tried to match size 10 of dimension 1 of LHS with size 3 of dimension 1 of RHS.
+
+Use '--realloc-lhs-arrays' option to reallocate LHS automatically.

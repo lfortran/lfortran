@@ -1,0 +1,4 @@
+At 9:9 of file tests/errors/array_bounds_check_10.f90
+Runtime Error: Array shape mismatch in binary operation with operands 'a' and 'b'
+
+Tried to match size 2 of dimension 2 of 'a' with size 3 of dimension 2 of 'b'.

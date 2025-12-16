@@ -1,0 +1,5 @@
+style suggestion: Use complex(8) instead of complex*16
+ --> tests/implicit_typing4.f90:7:21
+  |
+7 |     IMPLICIT COMPLEX*16 (C,Z)
+  |                     ^ help: write this as 'complex(8)'

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-matrix_matmul_02-4e306e0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/matrix_matmul_02.f90",
+    "infile_hash": "79a17a2ff70856ec0617d9c468558fc401abfb6732095095410408e3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-matrix_matmul_02-4e306e0.stderr",
+    "stderr_hash": "a3d0256f40ab6b1b00a04f00667f02e4aa265d08754118958a1d920c",
+    "returncode": 2
+}

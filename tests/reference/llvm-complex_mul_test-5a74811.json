@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-complex_mul_test-5a74811",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_mul_test.f90",
+    "infile_hash": "908ba75c567d6ff4ba0e42cba3e974999d00e5d24710f4649ac212d6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-complex_mul_test-5a74811.stdout",
+    "stdout_hash": "a842793caec2d12b76799a4f5729199a493fc17dc21fe63ef5d22f70",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

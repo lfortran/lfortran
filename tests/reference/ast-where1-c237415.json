@@ -1,0 +1,13 @@
+{
+    "basename": "ast-where1-c237415",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/where1.f90",
+    "infile_hash": "cd5e0b85aa90c2bb3dff3fdc1e1e563b601c361a4b57ba16db0bf051",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-where1-c237415.stdout",
+    "stdout_hash": "73fb69d0990b9844dd3d2849ea2807edf6b55e781d9ffa13031a226b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

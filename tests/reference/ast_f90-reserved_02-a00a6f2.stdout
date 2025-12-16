@@ -1,0 +1,18 @@
+program reserved_02
+implicit none
+if (integer() /= 1) then
+    error stop
+end if
+
+
+contains
+
+integer function integer()
+integer :: function
+function = 5
+function = function/function
+integer = function
+end function integer
+
+
+end program reserved_02

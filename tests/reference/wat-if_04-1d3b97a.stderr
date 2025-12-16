@@ -1,0 +1,5 @@
+style suggestion: Use 'end if' instead of 'endif'
+  --> tests/../integration_tests/if_04.f90:25:1
+   |
+25 | endif name
+   | ^^^^^ help: write this as 'end if'

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-substring_endidx-0f7e2c9",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/substring_endidx.f90",
+    "infile_hash": "822fddebe2c138bf6639648f87d91376999e080c3364c20e939b4b35",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-substring_endidx-0f7e2c9.stderr",
+    "stderr_hash": "0364385c1f5a421621582c1588a156629243fa24183e1913f217c691",
+    "returncode": 2
+}

@@ -1,0 +1,5 @@
+semantic error: Different shape for array assignment on dimension 3(1 and 2)
+  --> tests/errors/incompatible_dimension_assignment_arr2.f90:10:5
+   |
+10 |     y = x
+   |     ^^^^^ 

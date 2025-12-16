@@ -1,0 +1,5 @@
+semantic error: Passed object dummy argument my_object not found in function arguments
+ --> tests/errors/derived_type_04.f90:7:9
+  |
+7 |         procedure(testing_interface), deferred, pass(my_object)  :: testing
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

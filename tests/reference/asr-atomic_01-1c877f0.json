@@ -1,0 +1,13 @@
+{
+    "basename": "asr-atomic_01-1c877f0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/atomic_01.f90",
+    "infile_hash": "e5001ac4b903b55446e4522c9f89e7d9b9553efe2a29fbcbf5e28ec4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-atomic_01-1c877f0.stderr",
+    "stderr_hash": "b5425aecd23bfaf3bcfc835e65dcb28e6209073ae0db8de396bc47dd",
+    "returncode": 2
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-intrinsics14-5a6d04e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/intrinsics14.f90",
+    "infile_hash": "e5abcb6a33f84a36c3412054dd1092db703e97cebdb5e26d69b29702",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-intrinsics14-5a6d04e.stderr",
+    "stderr_hash": "249e6e7185993869a1a130554f0fcf10c43c67fef75ae76089e4717c",
+    "returncode": 2
+}

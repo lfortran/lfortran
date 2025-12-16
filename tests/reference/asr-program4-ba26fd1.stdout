@@ -1,0 +1,629 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            program4:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            func1:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            c:
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            saved:
+                                                (Variable
+                                                    3
+                                                    saved
+                                                    []
+                                                    Local
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4)
+                                                    )
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4)
+                                                    )
+                                                    Save
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    func1
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 a)
+                                    (Var 3 b)]
+                                    [(Assignment
+                                        (Var 3 saved)
+                                        (RealBinOp
+                                            (Var 3 saved)
+                                            Add
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 c)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (RealBinOp
+                                                    (Var 3 c)
+                                                    Add
+                                                    (Var 3 a)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (Var 3 b)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 3 saved)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 3 c)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            func2:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            c:
+                                                (Variable
+                                                    4
+                                                    c
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            d:
+                                                (Variable
+                                                    4
+                                                    d
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            saved1:
+                                                (Variable
+                                                    4
+                                                    saved1
+                                                    []
+                                                    Local
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4)
+                                                    )
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4)
+                                                    )
+                                                    Save
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            saved2:
+                                                (Variable
+                                                    4
+                                                    saved2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Save
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    func2
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 a)
+                                    (Var 4 b)]
+                                    [(Assignment
+                                        (Var 4 saved1)
+                                        (RealBinOp
+                                            (Var 4 saved1)
+                                            Add
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 c)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (RealBinOp
+                                                            (Var 4 d)
+                                                            Add
+                                                            (Var 4 c)
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (Var 4 a)
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (Var 4 b)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (Var 4 saved1)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 4 saved2)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 saved2)
+                                        (RealBinOp
+                                            (Var 4 saved2)
+                                            Add
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 d)
+                                        (RealBinOp
+                                            (Var 4 d)
+                                            Add
+                                            (RealConstant
+                                                3.000000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 c)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    program4
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (RealConstant
+                            2.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func1
+                            ()
+                            [((Var 2 x))
+                            ((Var 2 y))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func1
+                            ()
+                            [((Var 2 x))
+                            ((Var 2 y))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "7.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func2
+                            ()
+                            [((Var 2 x))
+                            ((Var 2 y))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func2
+                            ()
+                            [((Var 2 x))
+                            ((Var 2 y))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "8.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)
