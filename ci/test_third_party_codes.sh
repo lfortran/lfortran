@@ -227,8 +227,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 # Section 1: stdlib (Less Workarounds)
 ##########################
 time_section "🧪 Testing stdlib (Less Workarounds)" '
-  # Temporarily use krystophny fork with double-allocation fix
-  # until https://github.com/Pranavchiku/stdlib-fortran-lang/pull/1 is merged
+  # TODO: Switch back to Pranavchiku/stdlib-fortran-lang once #9097 is fixed
   git clone https://github.com/krystophny/stdlib-fortran-lang.git
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
