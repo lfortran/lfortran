@@ -1244,8 +1244,10 @@ class ParallelRegionVisitor :
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
+                                    We skip allocation for dummy arguments as the caller provides the memory.
                                 */
-                                if (!is_interface && !dimension_empty) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                bool is_arg = check_is_argument(current_scope, ASRUtils::symbol_name(sym));
+                                if (!is_interface && !dimension_empty && !is_arg) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                             }
                         }
                         for (size_t i = 0; i < func->n_body; i++) {

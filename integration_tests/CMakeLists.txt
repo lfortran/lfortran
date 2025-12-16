@@ -2631,9 +2631,7 @@ RUN(NAME openmp_09 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_10 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_11 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_12 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-# TODO: Re-enable llvm_omp once OpenMP backend handles non-allocatable explicit-shape dummy arrays correctly
-# The OpenMP backend incorrectly allocates memory for these, triggering double-allocation error
-RUN(NAME openmp_13 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_13 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_14 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_15 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_16 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
