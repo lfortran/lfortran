@@ -5184,6 +5184,19 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     return c;
 }
 
+/**
+ * @brief Checks Format match for File Write statement and OpenFile statement
+ * OpenFile -> 'Unformatted' + FileWrite -> Binary Format (no format provided) => Match
+ * OpenFile -> 'Formatted' + FileWrite -> Formatted Format (format provided) => Match
+ * Otherwise => No Match
+ */
+bool is_write_and_open_format_match(bool unit_file_bin, const char* format_data){
+    ASSERT(format_data)
+    const bool is_openFile_formatted =  unit_file_bin == false;
+    const bool is_fileWrite_formatted =  format_data[0] != '\0';
+    return is_openFile_formatted == is_fileWrite_formatted;
+}
+
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
 {
     bool unit_file_bin;
@@ -5191,10 +5204,22 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     bool read_access, write_access;
     int delim;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim);
+
+    if(!is_write_and_open_format_match(unit_file_bin, format_data)){
+        if(iostat) {
+            *iostat = 5001;
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Format mismatch between "
+                "OPEN statement and WRITE statement on unit %d.\n", unit_num);
+            exit(1);
+        }
+    }
+    
     if (!filep) {
         filep = stdout;
     }
-    if (unit_file_bin) {
+    if (unit_file_bin) { // Unformatted
         fseek(filep, 0, SEEK_END);
         va_list args;
         va_start(args, format_len);
@@ -5245,7 +5270,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         } else {
             if(iostat != NULL) *iostat = 0;
         }
-    } else {
+    } else { // Formatted
         va_list args;
         va_start(args, format_len);
         char* str = va_arg(args, char*);

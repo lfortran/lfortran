@@ -175,6 +175,8 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, parameter :: arr_implicit(3) = [(42, j_implicit = 1, 3)]
     integer :: n_decl(3) = [(42, k_implicit = 1, 3)] !declaration test (intializtion)
+    integer, allocatable :: allocate_int = 1
+    character(:), allocatable :: allocate_char = "H"
 
 
 
