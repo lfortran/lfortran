@@ -95,16 +95,7 @@ entry:
   %4 = getelementptr %base, %base* %2, i32 0, i32 0
   %5 = load i32, i32* %4, align 4
   %6 = getelementptr %base, %base* %3, i32 0, i32 0
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
   store i32 %5, i32* %6, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
   ret void
 }
 

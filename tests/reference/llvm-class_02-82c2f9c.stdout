@@ -107,16 +107,7 @@ entry:
   %4 = getelementptr %circle, %circle* %2, i32 0, i32 0
   %5 = load float, float* %4, align 4
   %6 = getelementptr %circle, %circle* %3, i32 0, i32 0
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %entry
   store float %5, float* %6, align 4
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
   ret void
 }
 

@@ -39,45 +39,36 @@ ifcont:                                           ; preds = %else, %then
   %11 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
   %12 = load i32, i32* %11, align 4
   %13 = getelementptr %myint, %myint* %10, i32 0, i32 0
-  br i1 true, label %then1, label %else2
-
-then1:                                            ; preds = %ifcont
   store i32 %12, i32* %13, align 4
-  br label %ifcont3
-
-else2:                                            ; preds = %ifcont
-  br label %ifcont3
-
-ifcont3:                                          ; preds = %else2, %then1
   %14 = load %myint*, %myint** %ins, align 8
   %15 = ptrtoint %myint* %14 to i64
   %16 = icmp eq i64 %15, 0
-  br i1 %16, label %then4, label %ifcont5
+  br i1 %16, label %then1, label %ifcont2
 
-then4:                                            ; preds = %ifcont3
+then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([132 x i8], [132 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
-ifcont5:                                          ; preds = %ifcont3
+ifcont2:                                          ; preds = %ifcont
   %17 = getelementptr %myint, %myint* %14, i32 0, i32 0
   %18 = load i32, i32* %17, align 4
   %19 = icmp ne i32 %18, 44
-  br i1 %19, label %then6, label %else7
+  br i1 %19, label %then3, label %else4
 
-then6:                                            ; preds = %ifcont5
+then3:                                            ; preds = %ifcont2
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont8
+  br label %ifcont5
 
-else7:                                            ; preds = %ifcont5
-  br label %ifcont8
+else4:                                            ; preds = %ifcont2
+  br label %ifcont5
 
-ifcont8:                                          ; preds = %else7, %then6
+ifcont5:                                          ; preds = %else4, %then3
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont8
+return:                                           ; preds = %ifcont5
   br label %FINALIZE_SYMTABLE_derived_types_45
 
 FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return

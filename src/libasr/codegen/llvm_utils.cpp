@@ -9093,24 +9093,57 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             }
                         }, [=]() {});
                     } else {
-                        // If member is allocatable string, we need to check if it is allocated before copying
-                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
-                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
-                            std::vector<llvm::Value*> idx_vec = {
-                                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                                llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                            llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
-                            src_member_char = llvm_utils->CreateLoad2(
-                                llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
-                            is_allocated = builder->CreateICmpNE(
-                                builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
-                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        // Check if member is allocatable and needs allocation check
+                        bool needs_alloc_check = false;
+                        llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
+                        if (ASRUtils::is_allocatable(member_type) && !ASRUtils::is_array(member_type)) {
+                            // Allocatable scalar string
+                            if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(member_type))) {
+                                std::vector<llvm::Value*> idx_vec = {
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
+                                llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);
+                                src_member_char = llvm_utils->CreateLoad2(
+                                    llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
+                                is_allocated = builder->CreateICmpNE(
+                                    builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                needs_alloc_check = true;
+                            }
+                        } else if (ASRUtils::is_allocatable(member_type) && ASRUtils::is_array(member_type)) {
+                            ASR::ttype_t* arr_type = ASRUtils::type_get_past_allocatable(member_type);
+                            if (ASRUtils::extract_physical_type(arr_type) == ASR::array_physical_typeType::DescriptorArray) {
+                                llvm::Type* array_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                    arr_type, nullptr, module);
+                                llvm::Value* src_desc = llvm_utils->CreateLoad2(array_llvm_type->getPointerTo(), src_member);
+                                is_allocated = llvm_utils->arr_api->get_is_allocated_flag(src_desc, 
+                                    ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)));
+                                needs_alloc_check = true;
+                            }
                         }
-                        llvm_utils->create_if_else(is_allocated, [&]() {
-                            llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
-                            member_type, member_type,
-                            module);
-                        }, [=]() {});
+                        if (needs_alloc_check) {
+                            llvm_utils->create_if_else(is_allocated, [&]() {
+                                llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), 
+                                    src_member, dest_member,
+                                    member_type, member_type, module);
+                            }, [&]() {
+                                if (ASRUtils::is_array(member_type)) {
+                                    ASR::ttype_t* arr_type = ASRUtils::type_get_past_allocatable(member_type);
+                                    llvm::Type* array_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                        arr_type, nullptr, module);
+                                    llvm::Value* dest_desc = llvm_utils->CreateLoad2(array_llvm_type->getPointerTo(), dest_member);
+                                    // Reset the is_allocated flag to false
+                                    llvm_utils->arr_api->reset_is_allocated_flag(array_llvm_type, dest_desc,
+                                        llvm_utils->get_type_from_ttype_t_util(
+                                        ASRUtils::extract_type(arr_type), nullptr, module));
+                                }
+                            });
+                        } else {
+                            // Non-allocatable members perform direct deepcopy
+                            llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), 
+                                src_member, dest_member,
+                                member_type, member_type, module);
+                        }
                     }
                 }
                 if( struct_sym->m_parent != nullptr ) {
