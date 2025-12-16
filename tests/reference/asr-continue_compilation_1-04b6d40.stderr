@@ -900,7 +900,3 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
-
-
-Note: Please report unclear, confusing or incorrect messages as bugs at
-https://github.com/lfortran/lfortran/issues.
