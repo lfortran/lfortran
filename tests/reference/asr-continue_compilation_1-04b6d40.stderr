@@ -129,6 +129,18 @@ semantic error: BOZ literal constant cannot be used in binary operations
 174 |     integer::tt = b'01' * 3
     |                   ^^^^^^^^^ 
 
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:176:29
+    |
+176 |     integer, allocatable :: allocate_int = 1
+    |                             ^^^^^^^^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:177:34
+    |
+177 |     character(:), allocatable :: allocate_char = "H"
+    |                                  ^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
     |
