@@ -2320,7 +2320,9 @@ public:
     }
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
-        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(obj_type));
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_ttype);
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         bool is_real = 0;
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
@@ -2384,7 +2386,9 @@ public:
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
             if (size_of_array == -1) {
-                throw LCompilersException("ICE: Array size could not be computed");
+                // For equivalenced arrays, the dimensions may not be available
+                // Use the number of DATA values as the array size
+                size_of_array = a->n_value - curr_value;
             }
             int tmp_curr_value = (int) curr_value;
             curr_value += size_of_array;
