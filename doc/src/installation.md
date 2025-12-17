@@ -423,7 +423,7 @@ rm -rf /tmp/lapack-build
 cmake -S /tmp/lapack-src -B /tmp/lapack-build -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=/tmp/lfortran.cmake \
   -DCMAKE_Fortran_COMPILER=lfortran \
-  -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+  -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-typing --implicit-interface --legacy-array-sections --separate-compilation" \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_INDEX64=OFF \
   -DBUILD_INDEX64_EXT_API=OFF \
