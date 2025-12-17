@@ -44,7 +44,7 @@ public:
     Location first_program_loc; // Location of the first program unit
     std::string interface_name = "";
     ASR::symbol_t *current_module_sym;
-    Vec<std::string>final_names;
+    Vec<char*>final_names;
     ASR::ttype_t *tmp_type;
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
@@ -120,7 +120,7 @@ public:
         if (final_names.capacity() == 0) {
             final_names.reserve(al, 1);
         }
-        final_names.push_back(al, to_lower(x.m_name));
+        final_names.push_back(al, s2c(al, to_lower(x.m_name)));
     }
 
 
@@ -134,14 +134,14 @@ void resolve_final_procedures(
     finals.reserve(al, final_names.n);
 
     for (size_t i = 0; i < final_names.n; i++) {
-        const std::string &name = final_names[i];
+        char *name = final_names[i];
 
         ASR::symbol_t *sym =
             module_scope->resolve_symbol(name);
 
         if (!sym) {
             diag.add(diag::Diagnostic(
-                "FINAL procedure '" + name +
+                std::string("FINAL procedure '") + name +
                 "' not found in module scope for derived type '" +
                 std::string(struct_sym->m_name) + "'",
                 diag::Level::Error,
@@ -152,7 +152,7 @@ void resolve_final_procedures(
 
         if (!ASR::is_a<ASR::Function_t>(*sym)) {
             diag.add(diag::Diagnostic(
-                "FINAL procedure '" + name + "' must be a subroutine",
+                std::string("FINAL procedure '") + name + "' must be a subroutine",
                 diag::Level::Error,
                 diag::Stage::Semantic
             ));
@@ -162,7 +162,7 @@ void resolve_final_procedures(
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
         if (fn->m_return_var != nullptr) {
             diag.add(diag::Diagnostic(
-                "FINAL procedure '" + name + "' must be a subroutine",
+                std::string("FINAL procedure '") + name + "' must be a subroutine",
                 diag::Level::Error,
                 diag::Stage::Semantic
             ));
@@ -2036,11 +2036,9 @@ void visit_Module(const AST::Module_t &x) {
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
-        Vec<ASR::symbol_t*>final_procs;
         dt_name = to_lower(x.m_name);
         final_names.reserve(al, 1);
-        final_names.n = 0; 
-        final_procs.n = 0;
+        final_names.n = 0;
 
         bool is_abstract = false;
         bool is_deferred = false;
