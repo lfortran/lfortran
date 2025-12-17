@@ -56,7 +56,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
@@ -2410,12 +2410,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data = data_structure[current_scope->counter];
+        if (scope_data.size()>0) {
+            for(auto it: scope_data) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data.clear();
 
         transform_stmts(body, x.n_body, x.m_body);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
@@ -2485,12 +2486,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_prog = data_structure[current_scope->counter];
+        if (scope_data_prog.size()>0) {
+            for(auto it: scope_data_prog) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_prog.clear();
 
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
@@ -2876,12 +2878,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_sub = data_structure[current_scope->counter];
+        if (scope_data_sub.size()>0) {
+            for(auto it: scope_data_sub) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_sub.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -2953,12 +2956,13 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_func = data_structure[current_scope->counter];
+        if (scope_data_func.size()>0) {
+            for(auto it: scope_data_func) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_func.clear();
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -3023,12 +3027,13 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_func2 = data_structure[current_scope->counter];
+        if (scope_data_func2.size()>0) {
+            for(auto it: scope_data_func2) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_func2.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -6053,7 +6058,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
