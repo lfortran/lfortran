@@ -396,29 +396,61 @@ cd integration_tests
 ./run_tests.py
 ```
 
-#### Build and run LAPACK tests (experimental)
+#### Build LAPACK (Reference LAPACK) with LFortran
 
-The repository vendors Reference LAPACK under `lapack/`. To build it with
-tests enabled using the just-built `lfortran` compiler:
+The repository vendors Reference LAPACK under `lapack/`. The third-party CI
+workaround currently builds the BLAS/LAPACK libraries (without running the full
+LAPACK test suite) and then sanity-checks with a small `dgesv` program.
 
 ```bash
 ./build1.sh
+export PATH="$PWD/build/src/bin:$PATH"
+
+# Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking).
+sed -i "/FortranCInterface_VERIFY/d" lapack/LAPACKE/include/CMakeLists.txt
 
 # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran.
-# Workaround (safe to keep even on newer CMake):
 cat > /tmp/lfortran.cmake <<'EOF'
 set(CMAKE_Fortran_PREPROCESS_SOURCE
-    "<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>")
+  "<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>")
 EOF
 
 cmake -S lapack -B /tmp/lapack-build -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE=/tmp/lfortran.cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DCMAKE_Fortran_COMPILER=$PWD/build/src/bin/lfortran \
-    -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections" \
-    -DBUILD_TESTING=ON
-cmake --build /tmp/lapack-build -j
-ctest --test-dir /tmp/lapack-build --output-on-failure
+  -DCMAKE_TOOLCHAIN_FILE=/tmp/lfortran.cmake \
+  -DCMAKE_Fortran_COMPILER=lfortran \
+  -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_INDEX64=OFF \
+  -DBUILD_INDEX64_EXT_API=OFF \
+  -DBUILD_COMPLEX=OFF \
+  -DBUILD_COMPLEX16=OFF \
+  -DBUILD_TESTING=OFF
+
+cmake --build /tmp/lapack-build --target blas lapack -j
+
+cat > /tmp/test_dgesv.f90 <<'EOF'
+program test_dgesv
+    implicit none
+    integer, parameter :: n = 3
+    double precision :: a(n,n), b(n), x_expected(n)
+    integer :: ipiv(n), info, i
+    a(1,:) = [2.0d0, 1.0d0, 1.0d0]
+    a(2,:) = [4.0d0, 3.0d0, 3.0d0]
+    a(3,:) = [8.0d0, 7.0d0, 9.0d0]
+    b = [4.0d0, 10.0d0, 24.0d0]
+    x_expected = [1.0d0, 1.0d0, 1.0d0]
+    call dgesv(n, 1, a, n, ipiv, b, n, info)
+    if (info /= 0) error stop "DGESV failed"
+    do i = 1, n
+        if (abs(b(i) - x_expected(i)) > 1.0d-10) error stop "Wrong solution"
+    end do
+    print *, "DGESV test passed!"
+end program
+EOF
+
+lfortran --implicit-interface /tmp/test_dgesv.f90 \
+  -L /tmp/lapack-build/lib -llapack -lblas -o /tmp/test_dgesv
+/tmp/test_dgesv
 ```
 
 #### Speed up integration tests on macOS
