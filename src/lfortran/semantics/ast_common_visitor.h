@@ -2451,14 +2451,25 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
             }
-            v2->m_value = ASRUtils::EXPR(tmp);
-            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
-            SetChar var_deps_vec;
-            var_deps_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                v2->m_symbolic_value, v2->m_value);
-            v2->m_dependencies = var_deps_vec.p;
-            v2->n_dependencies = var_deps_vec.size();
+            // For pointer types (e.g. equivalenced arrays), don't set m_value
+            // as it causes issues in LLVM codegen - create assignment instead
+            if (ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                ASR::expr_t* arr_const = ASRUtils::EXPR(tmp);
+                ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, arr_const);
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                            object->base.loc, object, arr_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                LCOMPILERS_ASSERT(current_body != nullptr)
+                current_body->push_back(al, assign_stmt);
+            } else {
+                v2->m_value = ASRUtils::EXPR(tmp);
+                v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            }
         }
     }
 
@@ -2604,14 +2615,18 @@ public:
             // y / 2 /
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-            v2->m_value = expression_value;
-            v2->m_symbolic_value = expression_value;
-            SetChar var_deps_vec;
-            var_deps_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                v2->m_symbolic_value, v2->m_value);
-            v2->m_dependencies = var_deps_vec.p;
-            v2->n_dependencies = var_deps_vec.size();
+            // For pointer types (e.g. equivalenced arrays), don't set m_value
+            // as it causes issues in LLVM codegen - rely on assignment instead
+            if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                v2->m_value = expression_value;
+                v2->m_symbolic_value = expression_value;
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            }
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
                         object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
