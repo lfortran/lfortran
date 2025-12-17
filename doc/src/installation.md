@@ -403,9 +403,19 @@ tests enabled using the just-built `lfortran` compiler:
 
 ```bash
 ./build1.sh
+
+# CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran.
+# Workaround (safe to keep even on newer CMake):
+cat > /tmp/lfortran.cmake <<'EOF'
+set(CMAKE_Fortran_PREPROCESS_SOURCE
+    "<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>")
+EOF
+
 cmake -S lapack -B /tmp/lapack-build -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=/tmp/lfortran.cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_Fortran_COMPILER=$PWD/build/src/bin/lfortran \
+    -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections" \
     -DBUILD_TESTING=ON
 cmake --build /tmp/lapack-build -j
 ctest --test-dir /tmp/lapack-build --output-on-failure
