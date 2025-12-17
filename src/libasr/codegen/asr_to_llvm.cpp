@@ -1358,7 +1358,18 @@ public:
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                    if (!realloc && compiler_options.po.bounds_checking) {
+                    // Skip double allocation check for intent(out) arguments since Fortran
+                    // standard requires automatic deallocation at procedure entry (not yet implemented)
+                    bool is_intent_out = false;
+                    if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                            is_intent_out = (var->m_intent == ASR::intentType::Out);
+                        }
+                    }
+                    if (!realloc && compiler_options.po.bounds_checking && !is_intent_out) {
                         llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         llvm::Value* is_allocated = builder->CreateICmpNE(
                             builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
@@ -1645,7 +1656,18 @@ public:
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
-                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr) {
+                // Skip double allocation check for intent(out) arguments since Fortran
+                // standard requires automatic deallocation at procedure entry (not yet implemented)
+                bool is_intent_out = false;
+                if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                        is_intent_out = (var->m_intent == ASR::intentType::Out);
+                    }
+                }
+                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr && !is_intent_out) {
                     llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
                     std::string var_name = "";
