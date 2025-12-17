@@ -3090,6 +3090,7 @@ public:
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             bool check_for_bounds = compiler_options.po.bounds_checking;
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
+                array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
                 (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
@@ -4660,6 +4661,7 @@ public:
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
                     ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(symbol_type);
                     bool is_data_only = (phy_type == ASR::array_physical_typeType::PointerArray ||
+                                        phy_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                                         phy_type == ASR::array_physical_typeType::FixedSizeArray ||
                                         (phy_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                                         ASRUtils::is_fixed_size_array(symbol_type)));
@@ -6641,6 +6643,7 @@ public:
             } else {
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerArray ||
+                      ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::UnboundedPointerArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray));
                 if( LLVM::is_llvm_pointer(*value_type) ) {
@@ -7499,8 +7502,10 @@ public:
             bool data_only_copy = false;
             ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
             ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
-            bool is_target_data_only_array = (target_ptype == ASR::array_physical_typeType::PointerArray);
-            bool is_value_data_only_array = (value_ptype == ASR::array_physical_typeType::PointerArray);
+            bool is_target_data_only_array = (target_ptype == ASR::array_physical_typeType::PointerArray ||
+                                             target_ptype == ASR::array_physical_typeType::UnboundedPointerArray);
+            bool is_value_data_only_array = (value_ptype == ASR::array_physical_typeType::PointerArray ||
+                                            value_ptype == ASR::array_physical_typeType::UnboundedPointerArray);
             bool is_target_fixed_sized_array = (target_ptype == ASR::array_physical_typeType::FixedSizeArray);
             bool is_value_fixed_sized_array = (value_ptype == ASR::array_physical_typeType::FixedSizeArray);
             bool is_target_simd_array = (target_ptype == ASR::array_physical_typeType::SIMDArray);
