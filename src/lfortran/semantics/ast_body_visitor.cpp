@@ -1933,135 +1933,127 @@ public:
         }
     }
 
-void visit_Deallocate(const AST::Deallocate_t& x) {
-    Vec<ASR::expr_t*> arg_vec;
-    arg_vec.reserve(al, x.n_args);
+    void visit_Deallocate(const AST::Deallocate_t &x) {
+        Vec<ASR::expr_t*> arg_vec;
+        arg_vec.reserve(al, x.n_args);
 
-    tmp_vec.clear();
+        tmp_vec.clear();
 
-    // Collect arguments and validate
-    for (size_t i = 0; i < x.n_args; i++) {
-        visit_expr(*x.m_args[i].m_end);
-        ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_end);
+            ASR::expr_t *arg = ASRUtils::EXPR(tmp);
 
-        ASR::symbol_t* tmp_sym = nullptr;
+            ASR::symbol_t *sym = nullptr;
 
-        if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-            tmp_sym = ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v;
-            check_for_deallocation(tmp_sym, tmp_expr->base.loc);
+            if (ASR::is_a<ASR::Var_t>(*arg)) {
+                sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*arg)) {
+                sym = ASR::down_cast<ASR::StructInstanceMember_t>(arg)->m_m;
+            } else {
+                diag.add(Diagnostic(
+                    "Cannot deallocate expression",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {arg->base.loc})}
+                ));
+                throw SemanticAbort();
+            }
 
-        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
-            tmp_sym =
-                ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_m;
-            check_for_deallocation(tmp_sym, tmp_expr->base.loc);
-
-        } else {
-            diag.add(Diagnostic(
-                "Cannot deallocate variables in expression " +
-                ASRUtils::type_to_str_python_expr(
-                    ASRUtils::expr_type(tmp_expr), tmp_expr),
-                Level::Error, Stage::Semantic, {
-                    Label("", {tmp_expr->base.loc})
-                }));
-            throw SemanticAbort();
+            check_for_deallocation(sym, arg->base.loc);
+            arg_vec.push_back(al, arg);
         }
 
-        arg_vec.push_back(al, tmp_expr);
-    }
 
-    // Emit FINAL calls before deallocation
-    for (size_t i = 0; i < arg_vec.size(); i++) {
-        ASR::expr_t *arg = arg_vec[i];
+        for (ASR::expr_t *arg : arg_vec) {
+            if (!ASR::is_a<ASR::Var_t>(*arg)) continue;
 
-        // Only variables
-        if (!ASR::is_a<ASR::Var_t>(*arg)) {
-            continue;
-        }
+            ASR::symbol_t *sym =
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v);
 
-        ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg);
-        ASR::symbol_t *sym =
-            ASRUtils::symbol_get_past_external(var->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
 
-        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-            continue;
-        }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
 
-        ASR::Variable_t *var_sym =
-            ASR::down_cast<ASR::Variable_t>(sym);
+            if (!ASRUtils::is_allocatable(var->m_type)) continue;
 
-        // Must be allocatable
-        if (!ASRUtils::is_allocatable(var_sym->m_type)) {
-            continue;
-        }
+            ASR::ttype_t *base_type =
+                ASRUtils::type_get_past_allocatable(var->m_type);
 
-        // Must be derived type
-        ASR::ttype_t *base_type =
-            ASRUtils::type_get_past_allocatable(var_sym->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*base_type)) continue;
 
-        if (!ASR::is_a<ASR::StructType_t>(*base_type)) {
-            continue;
-        }
+            ASR::symbol_t *type_sym =
+                ASRUtils::symbol_get_past_external(var->m_type_declaration);
 
-        // 🔑 Struct symbol comes from type_declaration
-        ASR::symbol_t *type_sym =
-            ASRUtils::symbol_get_past_external(
-                var_sym->m_type_declaration
-            );
+            if (!ASR::is_a<ASR::Struct_t>(*type_sym)) continue;
 
-        if (!ASR::is_a<ASR::Struct_t>(*type_sym)) {
-            continue;
-        }
+            ASR::Struct_t *dt = ASR::down_cast<ASR::Struct_t>(type_sym);
 
-        ASR::Struct_t *struct_sym =
-            ASR::down_cast<ASR::Struct_t>(type_sym);
+            for (size_t j = 0; j < dt->n_final; j++) {
+                ASR::symbol_t *final_proc =
+                    ASRUtils::symbol_get_past_external(dt->m_final[j]);
 
-        if (struct_sym->n_final == 0) {
-            continue;
-        }
+                const std::string name =
+                    ASRUtils::symbol_name(final_proc);
 
-        // Emit FINAL calls
-        for (size_t j = 0; j < struct_sym->n_final; j++) {
-            ASR::symbol_t *final_proc = struct_sym->m_final[j];
+                // Ensuring FINAL procedure is visible in current scope
+                ASR::symbol_t *visible =
+                    current_scope->resolve_symbol(name);
 
-            Vec<ASR::call_arg_t> call_args;
-            call_args.reserve(al, 1);
-            call_args.push_back(
-                al,
-                ASR::call_arg_t{x.base.base.loc, arg}
-            );
+                if (!visible) {
+                    visible = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al,
+                            x.base.base.loc,
+                            current_scope,
+                            s2c(al, name),
+                            final_proc,
+                            ASRUtils::get_sym_module(final_proc)->m_name,
+                            nullptr,
+                            0,
+                            s2c(al, name),
+                            ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(name, visible);
+                }
 
-            ASR::asr_t *call =
-                ASR::make_SubroutineCall_t(
-                    al,
-                    x.base.base.loc,
-                    final_proc,
-                    nullptr,
-                    call_args.p,
-                    call_args.size(),
-                    nullptr,
-                    false
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, 1);
+                call_args.push_back(al,
+                    ASR::call_arg_t{x.base.base.loc, arg});
+
+                tmp_vec.push_back(
+                    ASR::make_SubroutineCall_t(
+                        al,
+                        x.base.base.loc,
+                        visible,
+                        nullptr,
+                        call_args.p,
+                        call_args.size(),
+                        nullptr,
+                        false
+                    )
                 );
+            }
+        }
 
-            tmp_vec.push_back(call);
+        ASR::asr_t *dealloc =
+            ASR::make_ExplicitDeallocate_t(
+                al,
+                x.base.base.loc,
+                arg_vec.p,
+                arg_vec.size()
+            );
+
+        if (!tmp_vec.empty()) {
+            tmp_vec.push_back(dealloc);
+            tmp = nullptr;
+        } else {
+            tmp = dealloc;
         }
     }
 
-    // Explicit deallocation
-    ASR::asr_t* dealloc_asr =
-        ASR::make_ExplicitDeallocate_t(
-            al,
-            x.base.base.loc,
-            arg_vec.p,
-            arg_vec.size()
-        );
 
-    if (!tmp_vec.empty()) {
-        tmp_vec.push_back(dealloc_asr);
-        tmp = nullptr;
-    } else {
-        tmp = dealloc_asr;
-    }
-}
 
 
     void visit_Return(const AST::Return_t& x) {
