@@ -396,6 +396,21 @@ cd integration_tests
 ./run_tests.py
 ```
 
+#### Build and run LAPACK tests (experimental)
+
+The repository vendors Reference LAPACK under `lapack/`. To build it with
+tests enabled using the just-built `lfortran` compiler:
+
+```bash
+./build1.sh
+cmake -S lapack -B /tmp/lapack-build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_Fortran_COMPILER=$PWD/build/src/bin/lfortran \
+    -DBUILD_TESTING=ON
+cmake --build /tmp/lapack-build -j
+ctest --test-dir /tmp/lapack-build --output-on-failure
+```
+
 #### Speed up integration tests on macOS
 
 Integration tests run slowly because Apple checks the hash of each executable online before running.
