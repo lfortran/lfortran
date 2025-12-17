@@ -396,18 +396,22 @@ cd integration_tests
 ./run_tests.py
 ```
 
-#### Build LAPACK (Reference LAPACK) with LFortran
+#### Build and run LAPACK tests with LFortran
 
 The repository vendors Reference LAPACK under `lapack/`. The third-party CI
-workaround currently builds the BLAS/LAPACK libraries (without running the full
-LAPACK test suite) and then sanity-checks with a small `dgesv` program.
+workaround configures LAPACK with LFortran and runs its CTest suite. It also
+sanity-checks with a small `dgesv` program.
 
 ```bash
 ./build1.sh
 export PATH="$PWD/build/src/bin:$PATH"
 
+# Work on a temporary copy to avoid modifying the repo checkout.
+rm -rf /tmp/lapack-src
+cp -a lapack /tmp/lapack-src
+
 # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking).
-sed -i "/FortranCInterface_VERIFY/d" lapack/LAPACKE/include/CMakeLists.txt
+sed -i "/FortranCInterface_VERIFY/d" /tmp/lapack-src/LAPACKE/include/CMakeLists.txt
 
 # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran.
 cat > /tmp/lfortran.cmake <<'EOF'
@@ -415,7 +419,8 @@ set(CMAKE_Fortran_PREPROCESS_SOURCE
   "<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>")
 EOF
 
-cmake -S lapack -B /tmp/lapack-build -G Ninja \
+rm -rf /tmp/lapack-build
+cmake -S /tmp/lapack-src -B /tmp/lapack-build -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=/tmp/lfortran.cmake \
   -DCMAKE_Fortran_COMPILER=lfortran \
   -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
@@ -424,9 +429,10 @@ cmake -S lapack -B /tmp/lapack-build -G Ninja \
   -DBUILD_INDEX64_EXT_API=OFF \
   -DBUILD_COMPLEX=OFF \
   -DBUILD_COMPLEX16=OFF \
-  -DBUILD_TESTING=OFF
+  -DBUILD_TESTING=ON
 
-cmake --build /tmp/lapack-build --target blas lapack -j
+cmake --build /tmp/lapack-build -j
+ctest --test-dir /tmp/lapack-build --output-on-failure
 
 cat > /tmp/test_dgesv.f90 <<'EOF'
 program test_dgesv
