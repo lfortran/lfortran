@@ -178,11 +178,13 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
 
             // Don't inline functions with assumed-size array parameters
-            // (PointerArray with empty dimensions)
             ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(sym.second)->m_type;
-            if( ASRUtils::is_array(var_type) &&
-                ASRUtils::is_dimension_empty(var_type) ) {
-                return false;
+            if( ASRUtils::is_array(var_type) ) {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(var_type));
+                if( arr->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
+                    return false;
+                }
             }
 
         }
