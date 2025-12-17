@@ -286,7 +286,22 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
         }
 };
 
-// Deallocate intent(out) allocatable arguments at function entry
+// Deallocate allocatable `intent(out)` dummy arguments at function entry.
+//
+// Notes / limitations:
+//
+// - This pass only inserts an explicit `deallocate()` statement guarded by
+//   `allocated()` (and additionally by `present()` for optional dummies).
+//   Correct finalization / deep deallocation semantics are handled downstream by
+//   the runtime/codegen and are currently incomplete in some cases (#9097).
+//
+// - It only considers dummy arguments that appear as `Var` entries in
+//   `Function_t::m_args` and are `allocatable` with `intent(out)`. It does not
+//   handle pointers, components, or more complex argument expressions.
+//
+// - We intentionally skip compiler-generated intrinsic implementations
+//   (`deftype == Implementation`) to avoid changing their internal ownership
+//   conventions.
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
@@ -408,9 +423,6 @@ public:
 
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
-    // InsertDeallocate v(al);
-    // v.visit_TranslationUnit(unit);
-
     // Deallocate intent(out) allocatable arguments at function entry
     IntentOutDeallocateVisitor iod(al);
     iod.visit_TranslationUnit(unit);

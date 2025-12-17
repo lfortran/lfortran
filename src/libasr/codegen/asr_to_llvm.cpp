@@ -1358,8 +1358,14 @@ public:
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                    // Skip double allocation check for intent(out) arguments since Fortran
-                    // standard requires automatic deallocation at procedure entry (not yet implemented)
+                    // Skip double allocation check for INTENT(OUT) allocatables.
+                    //
+                    // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
+                    // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
+                    // this deallocation only in limited cases (see the `insert_deallocate` pass),
+                    // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
+                    // implemented, keeping the double-allocation runtime check enabled here would
+                    // report false positives in valid programs.
                     bool is_intent_out = false;
                     if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
@@ -1656,8 +1662,14 @@ public:
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
-                // Skip double allocation check for intent(out) arguments since Fortran
-                // standard requires automatic deallocation at procedure entry (not yet implemented)
+                // Skip double allocation check for INTENT(OUT) allocatables.
+                //
+                // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
+                // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
+                // this deallocation only in limited cases (see the `insert_deallocate` pass),
+                // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
+                // implemented, keeping the double-allocation runtime check enabled here would
+                // report false positives in valid programs.
                 bool is_intent_out = false;
                 if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
