@@ -1357,12 +1357,48 @@ public:
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
+                    llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
+                    // Skip double allocation check for INTENT(OUT) allocatables.
+                    //
+                    // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
+                    // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
+                    // this deallocation only in limited cases (see the `insert_deallocate` pass),
+                    // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
+                    // implemented, keeping the double-allocation runtime check enabled here would
+                    // report false positives in valid programs.
+                    bool is_intent_out = false;
+                    if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                            is_intent_out = (var->m_intent == ASR::intentType::Out);
+                        }
+                    }
+                    if (!realloc && compiler_options.po.bounds_checking && !is_intent_out) {
+                        llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
+                        llvm::Value* is_allocated = builder->CreateICmpNE(
+                            builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
+                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(llvm_arg_type->getPointerTo()),
+                                llvm::Type::getInt64Ty(context)));
+                        std::string var_name = "";
+                        if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                            var_name = ASRUtils::symbol_name(sym);
+                        }
+                        llvm_utils->generate_runtime_error(is_allocated,
+                            "Runtime Error: Attempting to allocate already allocated variable '%s'\n",
+                            infile,
+                            x.base.base.loc,
+                            location_manager,
+                            LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
+                    }
                     llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
                     builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
-                    llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                     builder->CreateStore(builder->CreateBitCast(
                         malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
                 } else if (ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type)) {
@@ -1625,6 +1661,39 @@ public:
 
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
+                }
+                // Skip double allocation check for INTENT(OUT) allocatables.
+                //
+                // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
+                // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
+                // this deallocation only in limited cases (see the `insert_deallocate` pass),
+                // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
+                // implemented, keeping the double-allocation runtime check enabled here would
+                // report false positives in valid programs.
+                bool is_intent_out = false;
+                if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                        is_intent_out = (var->m_intent == ASR::intentType::Out);
+                    }
+                }
+                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr && !is_intent_out) {
+                    llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
+                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
+                    std::string var_name = "";
+                    if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
+                        var_name = ASRUtils::symbol_name(sym);
+                    }
+                    llvm_utils->generate_runtime_error(is_allocated,
+                        "Runtime Error: Attempting to allocate already allocated variable '%s'\n",
+                        infile,
+                        x.base.base.loc,
+                        location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
                 }
                 llvm_utils->create_if_else(
                     builder->CreateICmpEQ(
@@ -10592,10 +10661,15 @@ public:
 
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(const_cast<ASR::expr_t*>(&x.base), ASRUtils::type_get_past_array(x.m_type), module.get());
         llvm::Type* target_llvm_type = target_base_type->getPointerTo();
+        bool is_string_to_int8 = ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) &&
+                                 ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
+                                 ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1;
+        // For string→int8 with array result, skip load (assignment handles it)
+        // For string→int8 with scalar result, do load (element-wise transfer case)
+        bool skip_string_to_int8_load = is_string_to_int8 && ASRUtils::is_array(x.m_type);
         if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
              x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && !ASRUtils::is_string_only(expr_type(x.m_mold)) &&
-                !( ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) && ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
-                ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1 ) /*Workaround (Refer to : `transfer_05`, `array_06_transfer`), scalar mold shold have scalar LHS*/ ) {
+                !skip_string_to_int8_load ) {
             tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
         }
     }

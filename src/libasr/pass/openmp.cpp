@@ -1230,6 +1230,7 @@ class ParallelRegionVisitor :
                             if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
                                 bool dimension_empty = ASRUtils::is_dimension_empty(*array_type->m_dims);
+                                bool is_arg = check_is_argument(current_scope, ASRUtils::symbol_name(sym));
                                 Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
                                 ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
                                 empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
@@ -1240,12 +1241,13 @@ class ParallelRegionVisitor :
                                         ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                 ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                                 array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                            check_is_argument(current_scope, ASRUtils::symbol_name(sym)) ? ASR::intentType::InOut : ASR::intentType::Local);
+                                            is_arg ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
+                                    We skip allocation for dummy arguments as the caller provides the memory.
                                 */
-                                if (!is_interface && !dimension_empty) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                if (!is_interface && !dimension_empty && !is_arg) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                             }
                         }
                         for (size_t i = 0; i < func->n_body; i++) {
