@@ -172,8 +172,11 @@ void resolve_final_procedures(
         finals.push_back(al, sym);
     }
 
+    if (finals.size() > 0) {
     struct_sym->m_final = finals.p;
     struct_sym->n_final = finals.size();
+    }
+
 
     final_names.n = 0;
 }
