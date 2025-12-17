@@ -108,37 +108,8 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
 class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor> {
     public:
 
-    Allocator& al;
-    ASR::expr_t* loop_index;
-
-    FixTypeVisitor(Allocator& al_): al(al_), loop_index(nullptr) {
-    }
-
-    void visit_BitCast(const ASR::BitCast_t& x) {
-        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_BitCast(x);
-        ASR::BitCast_t& xx = const_cast<ASR::BitCast_t&>(x);
-        ASR::ttype_t* source_type = ASRUtils::expr_type(xx.m_source);
-        ASR::ttype_t* result_element_type = ASRUtils::extract_type(xx.m_type);
-        // Handle transfer(string, int_array) case: convert string source to StringItem
-        // Only apply when result element type is integer (not character/string)
-        // For string→character_array, the transfer copies bytes without per-element conversion
-        if (ASRUtils::is_string_only(source_type) &&
-            ASRUtils::is_array(xx.m_type) &&
-            ASRUtils::is_integer(*result_element_type) &&
-            loop_index != nullptr) {
-            const Location& loc = x.base.base.loc;
-            // Create character(1) type for StringItem result
-            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::ttype_t* char1_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type)),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-            // Convert source to StringItem(source, loop_index)
-            xx.m_source = ASRUtils::EXPR(ASR::make_StringItem_t(
-                al, loc, xx.m_source, loop_index, char1_type, nullptr));
-            // Fix result type from array to element type
-            xx.m_type = ASRUtils::extract_type(xx.m_type);
-        }
+    FixTypeVisitor(Allocator& al_) {
+        (void)al_;      // Explicitly mark the parameter as unused
     }
 
     void visit_Cast(const ASR::Cast_t& x) {
@@ -911,21 +882,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             array_broadcast_visitor.call_replacer();
         }
 
+        FixTypeVisitor fix_types(al);
+        fix_types.current_scope = current_scope;
+        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
+            fix_types.visit_expr(*(*fix_types_args[i]));
+        }
+
         size_t var_with_maxrank = 0;
         for( size_t i = 0; i < var_ranks.size(); i++ ) {
             if( var_ranks[i] > var_ranks[var_with_maxrank] ) {
                 var_with_maxrank = i;
             }
-        }
-
-        FixTypeVisitor fix_types(al);
-        fix_types.current_scope = current_scope;
-        // Provide innermost loop index for string-to-array BitCast handling
-        if (var_ranks.size() > 0 && var_ranks[var_with_maxrank] > 0) {
-            fix_types.loop_index = var2indices[var_with_maxrank].p[0];
-        }
-        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
-            fix_types.visit_expr(*(*fix_types_args[i]));
         }
 
         ASR::do_loop_head_t do_loop_head;
@@ -1080,16 +1047,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     bool is_looping_necessary_for_bitcast(ASR::expr_t* value) {
         if (ASR::is_a<ASR::BitCast_t>(*value)) {
             ASR::BitCast_t* bit_cast = ASR::down_cast<ASR::BitCast_t>(value);
-            ASR::ttype_t* source_type = ASRUtils::expr_type(bit_cast->m_source);
-            ASR::ttype_t* result_element_type = ASRUtils::extract_type(bit_cast->m_type);
-            // Looping IS necessary for string→integer_array (transfer(string, int_array))
-            // because we need element-wise conversion from characters to integers
-            // For string→character_array, looping is NOT needed (byte-wise copy)
-            if (ASRUtils::is_string_only(source_type) &&
-                ASRUtils::is_integer(*result_element_type)) {
-                return true;
-            }
-            return !ASRUtils::is_array(source_type);
+            return !ASRUtils::is_string_only(ASRUtils::expr_type(bit_cast->m_source));
         } else {
             return false;
         }
