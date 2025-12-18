@@ -3616,7 +3616,8 @@ public:
                                 if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
                                     type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                 } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
-                                    type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, 4));
+                                    int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
+                                    type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
@@ -3656,7 +3657,8 @@ public:
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     ASR::ttype_t* type = nullptr;
                                     if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
-                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, 4));
+                                        int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
+                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
                                     } else if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
                                         type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                     } else {
@@ -3685,7 +3687,8 @@ public:
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     ASR::ttype_t* type = nullptr;
                                     if (ASR::is_a<ASR::Real_t>(*arg_type1)) {
-                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, 4));
+                                        int kind = ASR::down_cast<ASR::Real_t>(arg_type1)->m_kind;
+                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
                                     } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
                                         type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
                                     } else {
