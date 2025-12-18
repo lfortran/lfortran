@@ -1601,7 +1601,7 @@ public:
     std::map<std::string, std::string> context_map;     // TODO: refactor treatment of context map
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
-    std::vector<ASR::stmt_t*> &data_structure;
+    std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
     LCompilers::LocationManager &lm;
 
     std::map<std::string, std::vector<std::string>> generic_procedures;
@@ -1639,7 +1639,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
             LCompilers::LocationManager &lm
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
@@ -2320,7 +2320,9 @@ public:
     }
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
-        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(obj_type));
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_ttype);
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         bool is_real = 0;
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
@@ -2384,7 +2386,9 @@ public:
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
             if (size_of_array == -1) {
-                throw LCompilersException("ICE: Array size could not be computed");
+                // For equivalenced arrays, the dimensions may not be available
+                // Use the number of DATA values as the array size
+                size_of_array = a->n_value - curr_value;
             }
             int tmp_curr_value = (int) curr_value;
             curr_value += size_of_array;
@@ -2447,14 +2451,25 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
             }
-            v2->m_value = ASRUtils::EXPR(tmp);
-            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
-            SetChar var_deps_vec;
-            var_deps_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                v2->m_symbolic_value, v2->m_value);
-            v2->m_dependencies = var_deps_vec.p;
-            v2->n_dependencies = var_deps_vec.size();
+            // For pointer types (e.g. equivalenced arrays), don't set m_value
+            // as it causes issues in LLVM codegen - create assignment instead
+            if (ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                ASR::expr_t* arr_const = ASRUtils::EXPR(tmp);
+                ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, arr_const);
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                            object->base.loc, object, arr_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                LCOMPILERS_ASSERT(current_body != nullptr)
+                current_body->push_back(al, assign_stmt);
+            } else {
+                v2->m_value = ASRUtils::EXPR(tmp);
+                v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            }
         }
     }
 
@@ -2600,14 +2615,18 @@ public:
             // y / 2 /
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-            v2->m_value = expression_value;
-            v2->m_symbolic_value = expression_value;
-            SetChar var_deps_vec;
-            var_deps_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                v2->m_symbolic_value, v2->m_value);
-            v2->m_dependencies = var_deps_vec.p;
-            v2->n_dependencies = var_deps_vec.size();
+            // For pointer types (e.g. equivalenced arrays), don't set m_value
+            // as it causes issues in LLVM codegen - rely on assignment instead
+            if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                v2->m_value = expression_value;
+                v2->m_symbolic_value = expression_value;
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            }
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
                         object->base.loc, object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
@@ -3612,7 +3631,7 @@ public:
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
                                 ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                data_structure.push_back(stmt);
+                                data_structure[current_scope->counter].push_back(stmt);
                             } else {
                                 if (AST::is_a<AST::FuncCallOrArray_t>(*eq1)) {
                                     ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
@@ -3642,7 +3661,7 @@ public:
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq2, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                    data_structure.push_back(stmt);
+                                    data_structure[current_scope->counter].push_back(stmt);
                                 } else if (AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
                                     ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
@@ -3671,7 +3690,7 @@ public:
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq1, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                    data_structure.push_back(stmt);
+                                    data_structure[current_scope->counter].push_back(stmt);
                                 } else {
                                     diag.semantic_warning_label(
                                         "This equivalence statement is not implemented yet, for now we will ignore it",
