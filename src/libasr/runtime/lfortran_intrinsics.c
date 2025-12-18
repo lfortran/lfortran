@@ -5164,7 +5164,8 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 }
 
 // Type codes for _lfortran_formatted_read2:
-// 0 = character (followed by ptr, str_len)
+// 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
+// (pointer to the data pointer inside a string descriptor).
 // 1 = logical (followed by ptr)
 // 2 = int32 (followed by ptr)
 // 3 = int64 (followed by ptr)
@@ -5190,83 +5191,133 @@ LFORTRAN_API void _lfortran_formatted_read2(
         filep = stdin;
     }
 
-    // Read entire line into buffer
-    char line_buffer[4096];
-    if (fgets(line_buffer, sizeof(line_buffer), filep) == NULL) {
-        *iostat = -1;
-        *chunk = 0;
-        return;
-    }
-    // Remove trailing newline
-    line_buffer[strcspn(line_buffer, "\n")] = '\0';
-    size_t line_len = strlen(line_buffer);
-    *chunk = (int32_t)line_len;
+    *chunk = 0;
     *iostat = 0;
+    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
 
-    // Position in line buffer
-    size_t line_pos = 0;
-    // Position in format string (skip leading '(')
     int64_t fmt_pos = 0;
     if (fmt_len > 0 && fmt[0] == '(') fmt_pos = 1;
 
     va_list args;
     va_start(args, no_of_args);
 
+    bool consumed_newline = false;
     int arg_idx = 0;
     while (fmt_pos < fmt_len && arg_idx < no_of_args) {
-        // Skip whitespace and commas in format
-        while (fmt_pos < fmt_len &&
-               (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
+        while (fmt_pos < fmt_len && (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
             fmt_pos++;
         }
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
 
-        // Parse format specifier
-        char spec = toupper(fmt[fmt_pos]);
-        fmt_pos++;
+        char spec = toupper(fmt[fmt_pos++]);
 
-        // Parse optional width
         int width = 0;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
             width = width * 10 + (fmt[fmt_pos] - '0');
             fmt_pos++;
         }
 
-        // Handle specifier
         if (spec == 'A') {
-            // Character - get type_code, ptr, str_len
             int32_t type_code = va_arg(args, int32_t);
-            (void)type_code; // Should be 0
-            char* str_data = va_arg(args, char*);
+            (void)type_code;
+            char** str_data_ptr = va_arg(args, char**);
             int64_t str_len = va_arg(args, int64_t);
             arg_idx++;
 
+            char* str_data = str_data_ptr ? *str_data_ptr : NULL;
+            if (str_data == NULL) {
+                printf("Runtime Error: Unallocated string in formatted read\n");
+                va_end(args);
+                exit(1);
+            }
+
             int read_width = (width > 0) ? width : (int)str_len;
-            // Fill with spaces first
+            if (read_width < 0) read_width = 0;
+
+            char* buffer = (char*)malloc((size_t)read_width + 2);
+            if (!buffer) {
+                printf("Memory allocation failed\n");
+                va_end(args);
+                exit(1);
+            }
+
+            if (fgets(buffer, read_width + 1, filep) == NULL) {
+                *iostat = -1;
+                *chunk = 0;
+                free(buffer);
+                va_end(args);
+                return;
+            }
+
+            char* nl = strchr(buffer, '\n');
+            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
+            if (nl != NULL) {
+                *nl = '\0';
+                consumed_newline = true;
+            }
+
+            *chunk = (int32_t)field_len;
+            if (advance_no && consumed_newline && field_len != read_width) {
+                *iostat = -2;
+            }
+
             pad_with_spaces(str_data, 0, str_len);
-            // Copy from line buffer
-            size_t copy_len = (size_t)read_width;
-            if (line_pos + copy_len > line_len) {
-                copy_len = (line_pos < line_len) ? line_len - line_pos : 0;
+            if (read_width > (int)str_len) {
+                if (field_len >= read_width) {
+                    memcpy(str_data, buffer + (read_width - (int)str_len), (size_t)str_len);
+                } else if (field_len >= (int)str_len) {
+                    memcpy(str_data, buffer + (field_len - (int)str_len), (size_t)str_len);
+                } else if (field_len > 0) {
+                    memcpy(str_data, buffer, (size_t)field_len);
+                }
+            } else {
+                int copy_len = field_len;
+                if (copy_len > read_width) copy_len = read_width;
+                if (copy_len > (int)str_len) copy_len = (int)str_len;
+                if (copy_len > 0) memcpy(str_data, buffer, (size_t)copy_len);
             }
-            if (copy_len > (size_t)str_len) copy_len = (size_t)str_len;
-            if (copy_len > 0) {
-                memcpy(str_data, line_buffer + line_pos, copy_len);
-            }
-            line_pos += (size_t)read_width;
+
+            free(buffer);
+            if (*iostat == -2) break;
 
         } else if (spec == 'L') {
-            // Logical - get type_code, ptr
             int32_t type_code = va_arg(args, int32_t);
-            (void)type_code; // Should be 1
+            (void)type_code;
             int32_t* log_ptr = va_arg(args, int32_t*);
             arg_idx++;
 
             int read_width = (width > 0) ? width : 1;
-            // Find T or F in the field
-            *log_ptr = 0; // Default false
-            for (int i = 0; i < read_width && line_pos + i < line_len; i++) {
-                char c = toupper(line_buffer[line_pos + i]);
+            if (read_width < 0) read_width = 0;
+
+            char* buffer = (char*)malloc((size_t)read_width + 2);
+            if (!buffer) {
+                printf("Memory allocation failed\n");
+                va_end(args);
+                exit(1);
+            }
+            if (fgets(buffer, read_width + 1, filep) == NULL) {
+                *iostat = -1;
+                *chunk = 0;
+                free(buffer);
+                va_end(args);
+                return;
+            }
+
+            char* nl = strchr(buffer, '\n');
+            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
+            if (nl != NULL) {
+                *nl = '\0';
+                consumed_newline = true;
+            }
+
+            *chunk = (int32_t)field_len;
+            if (advance_no && consumed_newline && field_len != read_width) {
+                *iostat = -2;
+            }
+
+            *log_ptr = 0;
+            for (int i = 0; i < field_len; i++) {
+                char c = toupper(buffer[i]);
                 if (c == 'T') {
                     *log_ptr = 1;
                     break;
@@ -5275,112 +5326,148 @@ LFORTRAN_API void _lfortran_formatted_read2(
                     break;
                 }
             }
-            line_pos += (size_t)read_width;
+            free(buffer);
+            if (*iostat == -2) break;
 
         } else if (spec == 'I') {
-            // Integer - get type_code, ptr
             int32_t type_code = va_arg(args, int32_t);
             void* int_ptr = va_arg(args, void*);
             arg_idx++;
 
             int read_width = (width > 0) ? width : 10;
-            char temp[64];
-            size_t copy_len = (size_t)read_width;
-            if (line_pos + copy_len > line_len) {
-                copy_len = (line_pos < line_len) ? line_len - line_pos : 0;
+            if (read_width < 0) read_width = 0;
+
+            char* buffer = (char*)malloc((size_t)read_width + 2);
+            if (!buffer) {
+                printf("Memory allocation failed\n");
+                va_end(args);
+                exit(1);
             }
-            if (copy_len > 63) copy_len = 63;
-            memcpy(temp, line_buffer + line_pos, copy_len);
-            temp[copy_len] = '\0';
+            if (fgets(buffer, read_width + 1, filep) == NULL) {
+                *iostat = -1;
+                *chunk = 0;
+                free(buffer);
+                va_end(args);
+                return;
+            }
+
+            char* nl = strchr(buffer, '\n');
+            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
+            if (nl != NULL) {
+                *nl = '\0';
+                consumed_newline = true;
+            }
+
+            *chunk = (int32_t)field_len;
+            if (advance_no && consumed_newline && field_len != read_width) {
+                *iostat = -2;
+            }
+
             if (type_code == 2) {
-                // int32
-                *((int32_t*)int_ptr) = (int32_t)atoi(temp);
+                *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
             } else {
-                // int64
-                *((int64_t*)int_ptr) = atoll(temp);
+                *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
             }
-            line_pos += (size_t)read_width;
+
+            free(buffer);
+            if (*iostat == -2) break;
 
         } else if (spec == 'F' || spec == 'E' || spec == 'D' || spec == 'G') {
-            // Real - get type_code, ptr
             int32_t type_code = va_arg(args, int32_t);
             void* real_ptr = va_arg(args, void*);
             arg_idx++;
 
-            // Parse width.decimals (e.g., F10.5)
             int decimals = 0;
             if (fmt_pos < fmt_len && fmt[fmt_pos] == '.') {
                 fmt_pos++;
-                while (fmt_pos < fmt_len &&
-                       isdigit((unsigned char)fmt[fmt_pos])) {
+                while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
                     decimals = decimals * 10 + (fmt[fmt_pos] - '0');
                     fmt_pos++;
                 }
             }
-            (void)decimals; // Not used for reading
+            (void)decimals;
 
             int read_width = (width > 0) ? width : 15;
-            char temp[128];
-            size_t copy_len = (size_t)read_width;
-            if (line_pos + copy_len > line_len) {
-                copy_len = (line_pos < line_len) ? line_len - line_pos : 0;
+            if (read_width < 0) read_width = 0;
+
+            char* buffer = (char*)malloc((size_t)read_width + 2);
+            if (!buffer) {
+                printf("Memory allocation failed\n");
+                va_end(args);
+                exit(1);
             }
-            if (copy_len > 127) copy_len = 127;
-            memcpy(temp, line_buffer + line_pos, copy_len);
-            temp[copy_len] = '\0';
-            // Replace D with E for strtod
-            for (size_t i = 0; i < copy_len; i++) {
-                if (temp[i] == 'D' || temp[i] == 'd') temp[i] = 'E';
+            if (fgets(buffer, read_width + 1, filep) == NULL) {
+                *iostat = -1;
+                *chunk = 0;
+                free(buffer);
+                va_end(args);
+                return;
             }
+
+            char* nl = strchr(buffer, '\n');
+            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
+            if (nl != NULL) {
+                *nl = '\0';
+                consumed_newline = true;
+            }
+
+            *chunk = (int32_t)field_len;
+            if (advance_no && consumed_newline && field_len != read_width) {
+                *iostat = -2;
+            }
+
+            for (int i = 0; i < field_len; i++) {
+                if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
+            }
+
+            double v = strtod(buffer, NULL);
             if (type_code == 4) {
-                // float
-                *((float*)real_ptr) = (float)strtod(temp, NULL);
+                *((float*)real_ptr) = (float)v;
             } else {
-                // double
-                *((double*)real_ptr) = strtod(temp, NULL);
+                *((double*)real_ptr) = v;
             }
-            line_pos += (size_t)read_width;
+
+            free(buffer);
+            if (*iostat == -2) break;
 
         } else if (spec == 'X') {
-            // Skip characters
             int skip = (width > 0) ? width : 1;
-            line_pos += (size_t)skip;
+            for (int i = 0; i < skip; i++) {
+                int c = fgetc(filep);
+                if (c == EOF) {
+                    *iostat = -1;
+                    break;
+                }
+                if (c == '\n') {
+                    consumed_newline = true;
+                    if (advance_no) {
+                        *iostat = -2;
+                    }
+                    break;
+                }
+            }
+            if (*iostat != 0) break;
 
         } else if (spec == '/') {
-            // Record terminator - read next line
-            if (fgets(line_buffer, sizeof(line_buffer), filep) == NULL) {
+            int c = 0;
+            do {
+                c = fgetc(filep);
+            } while (c != '\n' && c != EOF);
+            if (c == EOF) {
                 *iostat = -1;
                 break;
             }
-            line_buffer[strcspn(line_buffer, "\n")] = '\0';
-            line_len = strlen(line_buffer);
-            line_pos = 0;
-
-        } else if (isdigit(spec)) {
-            // Repeat count (e.g., 2X, 3A6)
-            // Back up and re-parse with repeat
-            fmt_pos--; // Go back to digit
-            int repeat = 0;
-            while (fmt_pos < fmt_len &&
-                   isdigit((unsigned char)fmt[fmt_pos])) {
-                repeat = repeat * 10 + (fmt[fmt_pos] - '0');
-                fmt_pos++;
-            }
-            // Now fmt[fmt_pos] should be the actual specifier
-            // For simplicity, handle only repeat for X
-            if (fmt_pos < fmt_len && toupper(fmt[fmt_pos]) == 'X') {
-                line_pos += (size_t)repeat;
-                fmt_pos++;
-            }
-            // Other repeat cases would need loop - skip for now
+            consumed_newline = true;
         }
     }
 
     va_end(args);
 
-    // Handle advance='no'
-    if (is_streql_NCS((char*)advance, advance_length, "no", 2)) {
-        *iostat = -2;
+    if (!advance_no && !consumed_newline && *iostat == 0) {
+        int c = 0;
+        do {
+            c = fgetc(filep);
+        } while (c != '\n' && c != EOF);
     }
 }
 
