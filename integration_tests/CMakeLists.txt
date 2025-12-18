@@ -1442,6 +1442,7 @@ RUN(NAME select_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME program_02 LABELS gfortran llvm)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2076,6 +2077,8 @@ RUN(NAME class_84 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --rea
 RUN(NAME class_85 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
+
+RUN(NAME derived_type_member_procedure_call_01 LABELS gfortran llvm)
 
 RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
