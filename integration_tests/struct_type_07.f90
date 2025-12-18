@@ -1,4 +1,4 @@
-module m
+module struct_type_07_m
   implicit none
   type :: t
      real :: a
@@ -8,10 +8,10 @@ contains
     type(t) :: res(2,2)
     res%a = reshape([1.0,2.0,3.0,4.0],[2,2])
   end function f
-end module m
+end module struct_type_07_m
 
 program struct_type_07
-  use m
+  use struct_type_07_m
   implicit none
   type(t) :: result(2,2)
   

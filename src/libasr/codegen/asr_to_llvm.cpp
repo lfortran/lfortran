@@ -3589,14 +3589,6 @@ public:
         member_idx = name2memidx[current_der_type_name][member_name];
 
         xtype = name2dertype[current_der_type_name];
-        // Check if tmp points to an array of the struct type
-        if (tmp->getType()->isPointerTy()) {
-            llvm::Type* pointee_type = llvm::cast<llvm::PointerType>(tmp->getType())->getElementType();
-            if (pointee_type->isArrayTy() && pointee_type->getArrayElementType() == xtype) {
-                // tmp points to an array of structs, use the array type for GEP
-                xtype = pointee_type;
-            }
-        }
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
