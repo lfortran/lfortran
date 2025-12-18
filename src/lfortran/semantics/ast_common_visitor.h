@@ -3624,9 +3624,11 @@ public:
                                         "ignored for now"
                                     );
                                 }
-                                type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
-                                ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
-                                var__->m_type = ptr;
+                                if (type != nullptr) {
+                                    type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                    ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
+                                    var__->m_type = ptr;
+                                }
 
                                 Vec<ASR::expr_t*> args;
                                 args.reserve(al, arr->n_dims);
@@ -3655,9 +3657,12 @@ public:
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq2);
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     ASR::ttype_t* type = nullptr;
-                                    if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
+                                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(arg_type2)));
+                                    if (ASR::is_a<ASR::Real_t>(*element_type)) {
                                         type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, 4));
-                                    } else if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
+                                    } else if (ASR::is_a<ASR::Integer_t>(*element_type)) {
                                         type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
                                     } else {
                                         diag.semantic_warning_label(
@@ -3666,8 +3671,10 @@ public:
                                             "ignored for now"
                                         );
                                     }
-                                    ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
-                                    var__->m_type = ptr;
+                                    if (type != nullptr) {
+                                        ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
+                                        var__->m_type = ptr;
+                                    }
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq2, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
@@ -3684,9 +3691,12 @@ public:
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     ASR::ttype_t* type = nullptr;
-                                    if (ASR::is_a<ASR::Real_t>(*arg_type1)) {
+                                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(arg_type1)));
+                                    if (ASR::is_a<ASR::Real_t>(*element_type)) {
                                         type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, 4));
-                                    } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
+                                    } else if (ASR::is_a<ASR::Integer_t>(*element_type)) {
                                         type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
                                     } else {
                                         diag.semantic_warning_label(
@@ -3695,8 +3705,10 @@ public:
                                             "ignored for now"
                                         );
                                     }
-                                    ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type));
-                                    var__->m_type = ptr;
+                                    if (type != nullptr) {
+                                        ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type));
+                                        var__->m_type = ptr;
+                                    }
 
                                     ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq1, nullptr, nullptr);
                                     ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
