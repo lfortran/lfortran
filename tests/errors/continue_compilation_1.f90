@@ -454,4 +454,12 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
+
+    ! open_duplicate_position
+    open(unit=10, file='test.txt', position='rewind', position='append')
+    ! open_invalid_position_type_integer
+    q1 = 1
+    open(unit=20, file='test2.txt', position=q1)
+    ! open_invalid_position_type_real
+    open(unit=30, file='test3.txt', position=r1)
 end program 
