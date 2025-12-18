@@ -3383,26 +3383,36 @@ public:
                                     if (!sym_) {
                                         assgnd_storage[sym] = std::make_pair(ASR::storage_typeType::Parameter, s.m_initializer);
                                     } else {
-                                        this->visit_expr(*s.m_initializer);
-                                        ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
-                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
-                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                            v->m_storage = ASR::storage_typeType::Parameter;
-                                            if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
-                                                ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
-                                                init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
-                                            } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val)) {
-                                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(init_val);
-                                                init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
+                                        // Try to evaluate the parameter initializer
+                                        // If it fails (e.g., semantic error), don't create the parameter
+                                        // to avoid creating parameters without symbolic_value in continue-compilation mode
+                                        try {
+                                            this->visit_expr(*s.m_initializer);
+                                            ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
+                                            sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                            if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                                v->m_storage = ASR::storage_typeType::Parameter;
+                                                if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
+                                                    ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
+                                                    init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
+                                                } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val)) {
+                                                    ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(init_val);
+                                                    init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
+                                                }
+                                                v->m_symbolic_value = init_val;
+                                                v->m_value = ASRUtils::expr_value(init_val);
+                                                SetChar variable_dependencies_vec;
+                                                variable_dependencies_vec.reserve(al, 1);
+                                                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
+                                                v->m_dependencies = variable_dependencies_vec.p;
+                                                v->n_dependencies = variable_dependencies_vec.size();
                                             }
-                                            v->m_symbolic_value = init_val;
-                                            v->m_value = ASRUtils::expr_value(init_val);
-                                            SetChar variable_dependencies_vec;
-                                            variable_dependencies_vec.reserve(al, 1);
-                                            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
-                                            v->m_dependencies = variable_dependencies_vec.p;
-                                            v->n_dependencies = variable_dependencies_vec.size();
+                                        } catch (const SemanticAbort &) {
+                                            // Initialization failed - remove the variable from the symbol table
+                                            // to prevent creating a parameter without symbolic_value
+                                            current_scope->erase_symbol(sym);
+                                            throw; // Re-throw to continue error reporting
                                         }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
@@ -4434,7 +4444,16 @@ public:
                             }
                         }
                     }
-                    this->visit_expr(*s.m_initializer);
+                    try {
+                        this->visit_expr(*s.m_initializer);
+                    } catch (const SemanticAbort &) {
+                        // If parameter initialization fails, remove the variable to prevent
+                        // creating a parameter without symbolic_value
+                        if (storage_type == ASR::storage_typeType::Parameter && variable_added_to_symtab != nullptr) {
+                            current_scope->erase_symbol(sym);
+                        }
+                        throw; // Re-throw to continue error reporting
+                    }
                     current_variable_type_ = temp_current_variable_type_;
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
