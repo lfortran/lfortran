@@ -3809,7 +3809,9 @@ _lfortran_open(int32_t unit_num,
                char* action,
                int64_t action_len,
                char* delim,
-               int64_t delim_len)
+               int64_t delim_len,
+               char* position,
+               int64_t position_len)
 {
     if (iostat != NULL) {
         *iostat = 0;
@@ -3860,6 +3862,12 @@ _lfortran_open(int32_t unit_num,
         delim_len = 4;
         ini_delim = false;
     }
+    bool ini_position = true;
+    if (position == NULL) {
+       position = "asis";
+       position_len = 4;
+       ini_position = false;
+    }
     bool file_exists[1] = { false };
     FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL);
 
@@ -3868,6 +3876,7 @@ _lfortran_open(int32_t unit_num,
     trim_trailing_spaces(&form, &form_len, ini_form);
     trim_trailing_spaces(&action, &action_len, ini_action);
     trim_trailing_spaces(&delim, &delim_len, ini_delim);
+    trim_trailing_spaces(&position, &position_len, ini_position);
 
     // Prepare null-terminated names for C APIs
     char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
@@ -3876,6 +3885,7 @@ _lfortran_open(int32_t unit_num,
     char* access_c = to_c_string((const fchar*)access, access_len);
     char* action_c = to_c_string((const fchar*)action, action_len);
     char* delim_c = to_c_string((const fchar*)delim, delim_len);
+    char* position_c = to_c_string((const fchar*)position, position_len);
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
@@ -4063,6 +4073,28 @@ _lfortran_open(int32_t unit_num,
             perror(f_name_c);
             exit(1);
         }
+        if (fd != NULL) {
+            if (streql(position_c, "asis")) {
+                // keep current position
+            } else if (streql(position_c, "rewind")) {
+                rewind(fd);
+            } else if (streql(position_c, "append")) {
+                fseek(fd, 0, SEEK_END);
+            } else {
+                if (iostat != NULL) {
+                    *iostat = 5002;
+                    if ((iomsg != NULL) && (iomsg_len > 0)) {
+                        char* temp = "position specifier in open statement has invalid value.";
+                        snprintf(iomsg, iomsg_len + 1, "%s", temp);
+                        pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+                    }
+                } else {
+                    printf("Runtime error: position specifier in open statement has "
+                           "invalid value '%s'\n", position_c);
+                    exit(1);
+                }
+            }
+        }
         store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value);
         return (int64_t) fd;
     }
@@ -4071,6 +4103,7 @@ _lfortran_open(int32_t unit_num,
     free(form_c);
     free(access_c);
     free(action_c);
+    free(position_c);
     return 0;
 }
 
