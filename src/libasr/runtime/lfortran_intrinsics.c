@@ -1269,7 +1269,7 @@ void set_string_length(Serialization_Info* s_info){
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 
-                *(int64_t*)(s_info->current_arg_info.current_arg + sizeof(char*)); // Get string len.
+                *(int64_t*)((char*)s_info->current_arg_info.current_arg + sizeof(char*)); // Get string len.
     }
 }
 // Deserialize to know the physical type of string
