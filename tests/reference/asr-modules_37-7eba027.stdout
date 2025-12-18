@@ -74,9 +74,7 @@
                                                                     Default
                                                                     (Pointer
                                                                         (StructType
-                                                                            [(Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )]
+                                                                            []
                                                                             []
                                                                             .true.
                                                                             .false.
@@ -122,9 +120,7 @@
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (StructType
-                                                                    [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )]
+                                                                    []
                                                                     []
                                                                     .true.
                                                                     .false.
@@ -463,9 +459,7 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                [(Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                []
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -476,9 +470,7 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                [(Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                []
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -489,15 +481,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            [(Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
                                                         )
                                                     )
-                                                    2 build_target_t
+                                                    6 build_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -525,6 +515,7 @@
                                     )
                                     [build_target_t]
                                     [ptr]
+                                    []
                                     []
                                     Source
                                     Public
@@ -574,6 +565,7 @@
                                     )
                                     []
                                     [output_dir]
+                                    []
                                     []
                                     Source
                                     Public
@@ -750,6 +742,7 @@
                                     []
                                     []
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -801,6 +794,7 @@
                                     []
                                     [verbose]
                                     []
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -823,6 +817,7 @@
                                         .true.
                                         .false.
                                     )
+                                    []
                                     []
                                     []
                                     []
@@ -874,6 +869,7 @@
                                     )
                                     []
                                     [s]
+                                    []
                                     []
                                     Source
                                     Public

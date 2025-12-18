@@ -263,6 +263,7 @@
                                     log_units
                                     max_width]
                                     []
+                                    [2 final_logger]
                                     Source
                                     Private
                                     .false.
