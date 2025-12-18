@@ -2358,6 +2358,7 @@ RUN(NAME lapack_05 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --imp
 RUN(NAME lapack_06 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --implicit-interface)
 RUN(NAME lapack_07 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --implicit-interface)
 RUN(NAME lapack_08 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --implicit-interface)
+RUN(NAME lapack_09 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections --implicit-interface)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
