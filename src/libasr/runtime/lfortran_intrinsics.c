@@ -1266,8 +1266,10 @@ void set_string_length(Serialization_Info* s_info){
     } else {
         if(s_info->current_element_type == CHAR_PTR_TYPE ||
             s_info->current_element_type == STRING_DESCRIPTOR_TYPE ) return; // Array. length already set (Consumed from array of lengths).
-        s_info->current_arg_info.current_string_len = 
-            s_info->string_lengths.ptr[s_info->string_lengths.current_index++];
+            ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
+                    "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
+            s_info->current_arg_info.current_string_len = 
+                *(int64_t*)(s_info->current_arg_info.current_arg + sizeof(char*)); // Get string len.
     }
 }
 // Deserialize to know the physical type of string
