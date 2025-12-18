@@ -3923,6 +3923,10 @@ filename = "errors/scalar_allocation_check_04.f90"
 run = true
 
 [[test]]
+filename = "errors/matmul_unallocated_01.f90"
+run = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
