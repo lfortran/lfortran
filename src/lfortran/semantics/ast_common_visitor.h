@@ -6141,7 +6141,9 @@ public:
                         char_type = ASRUtils::TYPE(
                             ASR::make_String_t(al, loc, 1, a_len_expr, ASR::ExpressionLength, ASR::DescriptorString));
                     }
-                    return ASR::make_StringSection_t(al, loc, v_Var, l,
+                    // Replace COMMON block variable with struct member
+                    ASR::expr_t* string_var = replace_with_common_block_variables(v_Var);
+                    return ASR::make_StringSection_t(al, loc, string_var, l,
                             r, casted_step, char_type, arr_ref_val);
                 }
             }
