@@ -1,4 +1,4 @@
-module m
+module allocate_31_mod
     type, abstract :: Base
     contains
         procedure(work_interface), deferred :: work
@@ -24,10 +24,10 @@ contains
         print *, "Child work called, value =", self%value
     end subroutine
 
-end module
+end module allocate_31_mod
 
-program test_polymorphic_mold
-    use m
+program allocate_31
+    use allocate_31_mod
     implicit none
     class(Base), allocatable :: src, obj
 
@@ -50,6 +50,4 @@ program test_polymorphic_mold
 
     ! Call deferred procedure
     call obj%work()
-
-    print *, "Test passed"
-end program
+end program allocate_31
