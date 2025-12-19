@@ -12948,7 +12948,12 @@ public:
                                 tmp = llvm_utils->create_gep2(arg_llvm_type, tmp, llvm::ConstantInt::get(
                                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
                             }
-                        } else {
+                        } else if (orig_arg && orig_arg->m_abi == ASR::abiType::BindC &&
+                                   orig_arg->m_value_attr) {
+                            // Only load scalar StructInstanceMember for true BindC
+                            // pass-by-value (m_value_attr = true). For implicit
+                            // interfaces, m_value_attr is false and the callee
+                            // expects a pointer.
                             llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
                             tmp = llvm_utils->CreateLoad2(load_type, tmp);
                         }
