@@ -77,7 +77,6 @@ compilation options, output options, link options and so on.
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
 * `--print-leading-space`, Print leading white space if format is unspecified
-* `--realloc-lhs`, Reallocate left hand side automatically
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
 * `--target <value>`, Generate code for the given target
