@@ -8987,6 +8987,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::Value* dest_member_orig = dest_member;
                     llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
+                    if (ASRUtils::is_allocatable(member_type)) {
+                        if (ASRUtils::is_array(member_type)) {
+                            llvm::Value* src_descr = src_member;
+                            if (src_descr->getType()->isPointerTy()) {
+                                src_descr = llvm_utils->CreateLoad2(mem_type, src_descr);
+                            }
+                            is_allocated = llvm_utils->arr_api->get_is_allocated_flag(src_descr, ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)));
+                        } else {
+                            is_allocated = builder->CreateICmpNE(
+                                builder->CreatePtrToInt(src_member, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        }
+                    }
+
                     if (!ASRUtils::is_pointer(member_type) && 
                             ASR::is_a<ASR::StructType_t>(
                                 *ASRUtils::type_get_past_allocatable(member_type)) &&
@@ -8995,9 +9009,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 llvm_utils->compiler_options.new_classes)) {
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
-                            is_allocated = builder->CreateICmpNE(
-                                builder->CreatePtrToInt(src_member, llvm::Type::getInt64Ty(context)),
-                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         }
                         llvm_utils->create_if_else(is_allocated, [&]() {
                             // Call Struct Copy function for struct type members
