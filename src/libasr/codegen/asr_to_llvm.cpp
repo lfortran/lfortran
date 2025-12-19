@@ -1695,22 +1695,26 @@ public:
                         location_manager,
                         LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
                 }
-                llvm_utils->create_if_else(
-                    builder->CreateICmpEQ(
-                        builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
-                        builder->CreatePtrToInt(
-                            llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
-                            llvm::Type::getInt32Ty(context))),
-                    [&]() {
-                        llvm::Value* ptr_;
+                // Only generate descriptor allocation check in debug mode 
+                // In release mode, we assume the descriptor is always properly initialized on declaration
+                if (compiler_options.po.strict_bounds_checking) {
+                    llvm_utils->create_if_else(
+                        builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
+                            builder->CreatePtrToInt(
+                                llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
+                                llvm::Type::getInt32Ty(context))),
+                        [&]() {
+                            llvm::Value* ptr_;
 
-                            ptr_ = llvm_utils->CreateAlloca(*builder, type);
-                            arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
+                                ptr_ = llvm_utils->CreateAlloca(*builder, type);
+                                arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
-                            LLVM::CreateStore(
-                                *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
-                    },
-                    []() {});
+                                LLVM::CreateStore(
+                                    *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
+                        },
+                        []() {});
+                }
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                     expr_type(x.m_args[i].m_a),
