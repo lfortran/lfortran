@@ -1352,6 +1352,30 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        // Handle case where LHS is StructInstanceMember over an array
+        // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(xx.m_target);
+            ASR::expr_t* struct_var = sim->m_v;
+            // Check if the struct variable is an array
+            if (ASRUtils::is_array(ASRUtils::expr_type(struct_var))) {
+                // Check if RHS contains operations that need temporaries
+                bool needs_temp = false;
+
+                // Check for ArrayReshape
+                if (ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value)) {
+                    needs_temp = true;
+                }
+                // Can extend this for other array intrinsics: matmul, transpose, etc.
+                if (needs_temp) {
+                    std::string name_hint = "_reshape_temp_";
+                    ASR::expr_t* temp_var = call_create_and_allocate_temporary_variable(
+                        xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target
+                    );
+                    xx.m_value = temp_var;
+                }
+            }
+        }
         // e.g.; a = [b, a], where 'a' is an allocatable
         if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
