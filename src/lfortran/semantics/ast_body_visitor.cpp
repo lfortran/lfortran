@@ -1767,6 +1767,7 @@ public:
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
+            source = mold;
         }
 
         if( !cond ) {
