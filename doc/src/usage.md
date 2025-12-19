@@ -78,6 +78,8 @@ compilation options, output options, link options and so on.
 * `--openmp`, Enable OpenMP
 * `--print-leading-space`, Print leading white space if format is unspecified
 * `--realloc-lhs`, Reallocate left hand side automatically
+* `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
+* `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
 * `--target <value>`, Generate code for the given target
 * `--backend` flag is used to specify the target backend for code generation in LFortran. The supported backends are:
   
