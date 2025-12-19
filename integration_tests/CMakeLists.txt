@@ -1745,6 +1745,8 @@ RUN(NAME allocate_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME allocate_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME allocate_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
