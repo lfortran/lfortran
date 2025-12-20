@@ -1454,8 +1454,12 @@ public:
                         llvm::Value* target_struct = builder->CreateBitCast(
                             target_struct_i8, target_struct_type->getPointerTo());
 
-                        llvm_utils->deepcopy(m_source, source_handle, target_struct,
-                            ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
+                        // Only deepcopy for source=, not for mold=
+                        // mold= allocates with type but doesn't copy data
+                        if (!curr_arg.m_type) {
+                            llvm_utils->deepcopy(m_source, source_handle, target_struct,
+                                ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
+                        }
 
                         continue;
                     }

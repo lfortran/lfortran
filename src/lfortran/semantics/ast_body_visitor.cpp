@@ -1767,6 +1767,7 @@ public:
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
+            source = mold;
         }
 
         if( !cond ) {
@@ -3726,6 +3727,34 @@ public:
                         "type mismatch (" + ltype + " and " + rtype + ")"
                     );
                     throw SemanticAbort();
+            }
+            if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                // Allocate the target if the value is a function call returning an allocatable
+                // array and the target is allocatable
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.loc = x.base.base.loc;
+                alloc_arg.m_a = target;
+                alloc_arg.m_dims = nullptr;
+                alloc_arg.n_dims = 0;
+                alloc_arg.m_len_expr = nullptr;
+                alloc_arg.m_sym_subclass = nullptr;
+                alloc_arg.m_type = nullptr;
+                Vec<ASR::alloc_arg_t> alloc_args;
+                alloc_args.reserve(al, 1);
+                alloc_args.push_back(al, alloc_arg);
+                ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, target->base.loc,
+                                            alloc_args.p, alloc_args.n,
+                                            nullptr, nullptr, nullptr));
+                Vec<ASR::stmt_t*> if_body;
+                if_body.reserve(al, 1);
+                if_body.push_back(al, alloc_stmt);
+                Vec<ASR::expr_t*> allocated_args;
+                allocated_args.reserve(al, 1);
+                allocated_args.push_back(al, target);
+                ASR::expr_t* allocated_expr = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, target->base.loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated), allocated_args.p, allocated_args.n, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)), nullptr));
+                ASR::expr_t* if_test_expr = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, target->base.loc, allocated_expr, ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)), nullptr));
+                ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, target->base.loc, nullptr, if_test_expr, if_body.p, if_body.n, nullptr, 0));
+                current_body->push_back(al, if_stmt);
             }
         }
 
