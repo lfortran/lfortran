@@ -3,6 +3,8 @@ program allocate_array_descriptor_01
    
    integer, allocatable :: arr(:)
    integer :: i
+   real, allocatable :: matrix(:, :)
+   integer :: j
    
    allocate(arr(10))
 
@@ -15,9 +17,6 @@ program allocate_array_descriptor_01
    end do
    
    deallocate(arr)
-
-   real, allocatable :: matrix(:, :)
-   integer :: j
    
    allocate(matrix(5, 5))
    
