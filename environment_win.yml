@@ -2,19 +2,18 @@ name: lf
 channels:
   - conda-forge
 dependencies:
-  - llvmdev=11.1.0
-  - toml
-  - pytest
-  - jupyter
+  - llvmdev=20
+  - toml=0.10.2
+  - pytest=8.3.4
+  - jupyter=1.1.1
   - xeus=5.1.0
   - xeus-zmq=3.0.0
   - nlohmann_json=3.11.3
   - jupyter_kernel_test
   - xonsh=0.16.0
-  - re2c
-  - numpy
-  - ninja
+  - re2c=4.0
+  - numpy=2.2.0
+  - ninja=1.11.1
   - m2-bison=3.0.4
-  - git
-  - cmake
-  - zlib
+  - cmake=3.29.1
+  - zlib=1.3.1

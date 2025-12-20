@@ -11,7 +11,7 @@
 #     0.6.0-37-g3878937f-dirty
 #
 
-set -ex
+set -e
 
 version=$(git describe --tags --dirty)
 version="${version:1}"
