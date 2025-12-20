@@ -56,7 +56,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
@@ -1767,6 +1767,7 @@ public:
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
+            source = mold;
         }
 
         if( !cond ) {
@@ -2410,12 +2411,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data = data_structure[current_scope->counter];
+        if (scope_data.size()>0) {
+            for(auto it: scope_data) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data.clear();
 
         transform_stmts(body, x.n_body, x.m_body);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
@@ -2485,12 +2487,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_prog = data_structure[current_scope->counter];
+        if (scope_data_prog.size()>0) {
+            for(auto it: scope_data_prog) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_prog.clear();
 
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
@@ -2876,12 +2879,13 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_sub = data_structure[current_scope->counter];
+        if (scope_data_sub.size()>0) {
+            for(auto it: scope_data_sub) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_sub.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -2953,12 +2957,13 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_func = data_structure[current_scope->counter];
+        if (scope_data_func.size()>0) {
+            for(auto it: scope_data_func) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_func.clear();
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -3023,12 +3028,13 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if (data_structure.size()>0) {
-            for(auto it: data_structure) {
+        auto& scope_data_func2 = data_structure[current_scope->counter];
+        if (scope_data_func2.size()>0) {
+            for(auto it: scope_data_func2) {
                 body.push_back(al, it);
             }
         }
-        data_structure.clear();
+        scope_data_func2.clear();
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -3721,6 +3727,34 @@ public:
                         "type mismatch (" + ltype + " and " + rtype + ")"
                     );
                     throw SemanticAbort();
+            }
+            if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                // Allocate the target if the value is a function call returning an allocatable
+                // array and the target is allocatable
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.loc = x.base.base.loc;
+                alloc_arg.m_a = target;
+                alloc_arg.m_dims = nullptr;
+                alloc_arg.n_dims = 0;
+                alloc_arg.m_len_expr = nullptr;
+                alloc_arg.m_sym_subclass = nullptr;
+                alloc_arg.m_type = nullptr;
+                Vec<ASR::alloc_arg_t> alloc_args;
+                alloc_args.reserve(al, 1);
+                alloc_args.push_back(al, alloc_arg);
+                ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, target->base.loc,
+                                            alloc_args.p, alloc_args.n,
+                                            nullptr, nullptr, nullptr));
+                Vec<ASR::stmt_t*> if_body;
+                if_body.reserve(al, 1);
+                if_body.push_back(al, alloc_stmt);
+                Vec<ASR::expr_t*> allocated_args;
+                allocated_args.reserve(al, 1);
+                allocated_args.push_back(al, target);
+                ASR::expr_t* allocated_expr = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, target->base.loc, static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated), allocated_args.p, allocated_args.n, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)), nullptr));
+                ASR::expr_t* if_test_expr = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, target->base.loc, allocated_expr, ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)), nullptr));
+                ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, target->base.loc, nullptr, if_test_expr, if_body.p, if_body.n, nullptr, 0));
+                current_body->push_back(al, if_stmt);
             }
         }
 
@@ -6053,7 +6087,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,

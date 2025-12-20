@@ -54,9 +54,6 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     void replace_ArrayItem(ASR::ArrayItem_t* /*x*/) {
     }
 
-    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
-    }
-
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( !ASRUtils::is_elemental(x->m_name) ) {
             return ;
@@ -533,6 +530,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( i == var_with_maxrank ) {
                 continue;
             }
+            // Skip variables with lower rank than the current loop depth
+            if( loop_depth >= static_cast<int64_t>(var2indices[i].n) ) {
+                continue;
+            }
             ASR::expr_t* index_var = var2indices[i].p[loop_depth];
             if( index_var == nullptr ) {
                 continue;
@@ -550,6 +551,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                              int64_t loop_depth, Vec<ASR::stmt_t*>& dest_vec, const Location& loc) {
         for( size_t i = 0; i < var2indices.size(); i++ ) {
             if( i == var_with_maxrank ) {
+                continue;
+            }
+            // Skip variables with lower rank than the current loop depth
+            if( loop_depth >= static_cast<int64_t>(var2indices[i].n) ) {
                 continue;
             }
             ASR::expr_t* index_var = var2indices[i].p[loop_depth];
@@ -574,6 +579,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                              Vec<ASR::stmt_t*>& dest_vec, const Location& loc) {
         for( size_t i = 0; i < var2indices.size(); i++ ) {
             if( i == var_with_maxrank ) {
+                continue;
+            }
+            // Skip variables with lower rank than the current loop depth
+            if( loop_depth >= static_cast<int64_t>(var2indices[i].n) ) {
                 continue;
             }
             ASR::expr_t* index_var = var2indices[i].p[loop_depth];

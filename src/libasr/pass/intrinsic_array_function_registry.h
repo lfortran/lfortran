@@ -4028,24 +4028,8 @@ namespace MatMul {
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
-        if (is_allocatable(result)) {
-            Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
-            allocated_args.push_back(al, result);
-            ASR::expr_t* is_result_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
-                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
-                allocated_args.p, allocated_args.n, 0, logical, nullptr));
-
-            Vec<ASR::expr_t*> deallocate_args; deallocate_args.reserve(al, 1);
-            deallocate_args.push_back(al, result);
-            ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                al, loc, deallocate_args.p, deallocate_args.n));
-
-            std::vector<ASR::stmt_t*> if_body;
-            if_body.push_back(explicit_deallocate);
-            body.push_back(al, b.If(is_result_allocated, if_body, {}));
-
-            body.push_back(al, b.Allocate(result, alloc_dims));
-        }
+        // Note: allocation/reallocation for allocatable results is handled by
+        // the assignment pass based on the --realloc-lhs-arrays flag, not here.
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));

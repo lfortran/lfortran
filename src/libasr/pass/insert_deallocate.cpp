@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include<stack>
 
 
@@ -285,11 +286,146 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
         }
 };
 
+// Deallocate allocatable `intent(out)` dummy arguments at function entry.
+//
+// Notes / limitations:
+//
+// - This pass only inserts an explicit `deallocate()` statement guarded by
+//   `allocated()` (and additionally by `present()` for optional dummies).
+//   Correct finalization / deep deallocation semantics are handled downstream by
+//   the runtime/codegen and are currently incomplete in some cases (#9097).
+//
+// - It only considers dummy arguments that appear as `Var` entries in
+//   `Function_t::m_args` and are `allocatable` with `intent(out)`. It does not
+//   handle pointers, components, or more complex argument expressions.
+//
+// - We intentionally skip compiler-generated intrinsic implementations
+//   (`deftype == Implementation`) to avoid changing their internal ownership
+//   conventions.
+class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
+{
+    Allocator &al;
+public:
+    IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
+        if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+            return;
+        }
+        // Skip compiler-generated intrinsic implementations (deftype == Implementation)
+        // These functions handle their own intent(out) allocatable deallocation internally
+        if (func_type->m_deftype == ASR::deftypeType::Implementation) {
+            for (auto &a : x.m_symtab->get_scope()) {
+                visit_symbol(*a.second);
+            }
+            return;
+        }
+        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+
+        // Collect intent(out) allocatable arguments
+        Vec<ASR::stmt_t*> dealloc_stmts;
+        dealloc_stmts.reserve(al, 1);
+
+        for (size_t i = 0; i < xx.n_args; i++) {
+            ASR::expr_t* arg_expr = xx.m_args[i];
+            if (!ASR::is_a<ASR::Var_t>(*arg_expr)) continue;
+
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(arg_expr)->m_v;
+            ASR::symbol_t* arg_sym_deref = ASRUtils::symbol_get_past_external(arg_sym);
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym_deref)) continue;
+            ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym_deref);
+
+            // Check if intent(out) and allocatable
+            if (arg_var->m_intent != ASR::intentType::Out) continue;
+            if (!ASRUtils::is_allocatable(arg_var->m_type)) continue;
+
+            // Skip if this is the function's return variable (used in intrinsic implementations)
+            if (xx.m_return_var && ASR::is_a<ASR::Var_t>(*xx.m_return_var)) {
+                ASR::symbol_t* return_sym = ASR::down_cast<ASR::Var_t>(xx.m_return_var)->m_v;
+                if (arg_sym == return_sym) continue;
+            }
+
+            Location loc = arg_var->base.base.loc;
+
+            // Create: if (allocated(arg)) deallocate(arg)
+            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+
+            // Create Allocated check
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+            allocated_args.push_back(al, var_expr);
+
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
+                al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0, logical_type, nullptr));
+
+            // Create Deallocate statement
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, var_expr);
+            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.n));
+
+            // Create If statement: if (allocated(arg)) deallocate(arg)
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, dealloc_stmt);
+            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
+
+            // For optional arguments, wrap in: if (present(arg)) then ...
+            if (arg_var->m_presence == ASR::presenceType::Optional) {
+                // Create present(arg) check
+                Vec<ASR::expr_t*> present_args;
+                present_args.reserve(al, 1);
+                present_args.push_back(al, var_expr);
+                ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                    al, loc,
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
+                    present_args.p, present_args.n, 0, logical_type, nullptr));
+
+                // Wrap if_stmt in: if (present(arg)) then if_stmt end if
+                Vec<ASR::stmt_t*> present_body;
+                present_body.reserve(al, 1);
+                present_body.push_back(al, if_stmt);
+                ASR::stmt_t* present_if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                    al, loc, nullptr, is_present, present_body.p, present_body.n, nullptr, 0));
+                dealloc_stmts.push_back(al, present_if_stmt);
+            } else {
+                dealloc_stmts.push_back(al, if_stmt);
+            }
+        }
+
+        // Prepend deallocation statements to function body
+        if (dealloc_stmts.size() > 0) {
+            Vec<ASR::stmt_t*> new_body;
+            new_body.reserve(al, dealloc_stmts.size() + xx.n_body);
+            for (size_t i = 0; i < dealloc_stmts.size(); i++) {
+                new_body.push_back(al, dealloc_stmts[i]);
+            }
+            for (size_t i = 0; i < xx.n_body; i++) {
+                new_body.push_back(al, xx.m_body[i]);
+            }
+            xx.m_body = new_body.p;
+            xx.n_body = new_body.size();
+        }
+
+        // Continue visiting nested functions
+        for (auto &a : x.m_symtab->get_scope()) {
+            visit_symbol(*a.second);
+        }
+    }
+};
+
 
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
-    // InsertDeallocate v(al);
-    // v.visit_TranslationUnit(unit);
+    // Deallocate intent(out) allocatable arguments at function entry
+    IntentOutDeallocateVisitor iod(al);
+    iod.visit_TranslationUnit(unit);
 
     LoopTempVarDeallocateVisitor m(al);
     m.visit_TranslationUnit(unit);
