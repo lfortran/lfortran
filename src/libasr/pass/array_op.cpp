@@ -1089,6 +1089,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
+        bool is_target_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray;
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
 
@@ -1118,7 +1120,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         vars.reserve(al, 1);
         ArrayVarAddressCollector var_collector_target(al, vars);
         var_collector_target.current_expr = const_cast<ASR::expr_t**>(&(xx.m_target));
-        var_collector_target.call_replacer();
+        if (!is_target_assumed_rank) {
+            var_collector_target.call_replacer();
+        } else {
+            vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
+        }
         ArrayVarAddressCollector var_collector_value(al, vars);
         var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         var_collector_value.call_replacer();
