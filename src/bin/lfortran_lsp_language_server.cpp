@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <iostream>
 #include <memory>
 #include <shared_mutex>
 #include <string>
@@ -574,11 +575,17 @@ namespace LCompilers::LanguageServerProtocol {
             << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+        auto lookupStart = std::chrono::steady_clock::now();
         std::vector<lc::document_symbols> symbols =
             lfortran.lookupName(path, text, compilerOptions);
+        auto lookupEnd = std::chrono::steady_clock::now();
+        auto lookupElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            lookupEnd - lookupStart
+        );
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << symbols.size() << " symbol(s) matching the query in "
+            << lookupElapsed.count() << " ms."
             << std::endl;
         TextDocument_DefinitionResult result;
         if (symbols.size() > 0) {
@@ -586,6 +593,7 @@ namespace LCompilers::LanguageServerProtocol {
                 std::unique_ptr<std::vector<DefinitionLink>> links =
                     std::make_unique<std::vector<DefinitionLink>>();
                 links->reserve(symbols.size());
+                std::size_t linkCount = 0;
                 for (const auto &symbol : symbols) {
                     DefinitionLink &link = links->emplace_back();
                     link.targetUri = "file://" + resolve(
@@ -610,12 +618,17 @@ namespace LCompilers::LanguageServerProtocol {
                     targetRangeEnd.character =
                         targetSelectionRangeEnd.character =
                         symbol.last_column - 1;  // 1-to-0 index
+                    ++linkCount;
                 }
+                logger.trace()
+                    << "Returning " << linkCount
+                    << " definition link(s)." << std::endl;
                 result = std::move(links);
             } else {
                 std::unique_ptr<std::vector<Location>> locations =
                     std::make_unique<std::vector<Location>>();
                 locations->reserve(symbols.size());
+                std::size_t locationCount = 0;
                 for (const auto &symbol : symbols) {
                     Location &location = locations->emplace_back();
                     location.uri = "file://" + resolve(
@@ -628,7 +641,11 @@ namespace LCompilers::LanguageServerProtocol {
                     start.character = symbol.first_column - 1;  // 1-to-0 index
                     end.line = symbol.last_line - 1;  // 1-to-0 index
                     end.character = symbol.last_column - 1;  // 1-to-0 index
+                    ++locationCount;
                 }
+                logger.trace()
+                    << "Returning " << locationCount
+                    << " definition location(s)." << std::endl;
                 result = std::move(locations);
             }
         } else {
@@ -937,6 +954,13 @@ namespace LCompilers::LanguageServerProtocol {
     ) -> TextDocument_DocumentHighlightResult {
         const DocumentUri &uri = params.textDocument.uri;
         const Position &pos = params.position;
+        logger.trace()
+            << "documentHighlight request for uri=" << uri
+            << " line=" << pos.line << " column=" << pos.character
+            << std::endl;
+        std::cerr << "[documentHighlight] uri=" << uri
+                  << " line=" << pos.line
+                  << " column=" << pos.character << std::endl;
         std::shared_ptr<LspTextDocument> document = getDocument(uri);
         auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
         const std::string &path = document->path().string();
@@ -950,19 +974,31 @@ namespace LCompilers::LanguageServerProtocol {
         logger.trace()
             << "Finding all occurrences of symbol to highlight in document with URI="
             << uri << std::endl;
+        std::cerr << "[documentHighlight] invoking getAllOccurrences path=" << path
+                  << " text.size=" << text.size() << std::endl;
         // NOTE: Lock the logger to add debug statements to stderr within LFortran.
         // std::unique_lock<std::recursive_mutex> loggerLock(logger.mutex());
+        auto highlightStart = std::chrono::steady_clock::now();
         std::vector<lc::document_symbols> symbols =
             lfortran.getAllOccurrences(path, text, compilerOptions);
+        auto highlightEnd = std::chrono::steady_clock::now();
+        auto highlightElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            highlightEnd - highlightStart
+        );
         // loggerLock.unlock();
         logger.trace()
-            << "Found " << symbols.size() << " symbol(s) matching the query."
+            << "Found " << symbols.size() << " symbol(s) matching the query in "
+            << highlightElapsed.count() << " ms."
             << std::endl;
+        std::cerr << "[documentHighlight] found " << symbols.size()
+                  << " symbol(s) in " << highlightElapsed.count() << " ms"
+                  << std::endl;
         TextDocument_DocumentHighlightResult result;
         if (symbols.size() > 0) {
             std::unique_ptr<std::vector<DocumentHighlight>> highlights =
                 std::make_unique<std::vector<DocumentHighlight>>();
             highlights->reserve(symbols.size());
+            std::size_t sameDocumentCount = 0;
             for (const auto &symbol : symbols) {
                 // NOTE: Only highlight symbols from the current document
                 if (document->path() == resolve(symbol.filename, compilerOptions)) {
@@ -974,8 +1010,18 @@ namespace LCompilers::LanguageServerProtocol {
                     start.character = symbol.first_column - 1;  // 1-to-0 index
                     end.line = symbol.last_line - 1;  // 1-to-0 index
                     end.character = symbol.last_column - 1;  // 1-to-0 index
+                    ++sameDocumentCount;
+                } else {
+                    logger.trace()
+                        << "Ignoring occurrence from different file: "
+                        << symbol.filename << std::endl;
                 }
             }
+            logger.trace()
+                << "Returning " << sameDocumentCount
+                << " highlight(s) for document." << std::endl;
+            std::cerr << "[documentHighlight] returning " << sameDocumentCount
+                      << " highlight(s)" << std::endl;
             result = std::move(highlights);
         } else {
             result = nullptr;
@@ -1134,12 +1180,29 @@ namespace LCompilers::LanguageServerProtocol {
         TextDocument_FormattingResult result;
         if (clientSupportsFormatting) {
             const std::string &uri = params.textDocument.uri;
+            logger.trace()
+                << "Document formatting request for uri=" << uri
+                << " tabSize=" << params.options.tabSize
+                << ", insertSpaces="
+                << (params.options.insertSpaces ? "true" : "false")
+                << std::endl;
+            std::cerr << "[formatting] uri=" << uri
+                      << " tabSize=" << params.options.tabSize
+                      << " insertSpaces=" << (params.options.insertSpaces ? "true" : "false")
+                      << std::endl;
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             const std::shared_ptr<CompilerOptions> compilerOptions =
                 getCompilerOptions(*document);
             auto readLock = LSP_READ_LOCK(document->mutex(), "document:" + document->uri());
             const std::string &text = document->text();
             const std::string &path = document->path().string();
+            logger.trace()
+                << "Document formatting input path=" << path
+                << " text.size=" << text.size()
+                << std::endl;
+            std::cerr << "[formatting] path=" << path
+                      << " text.size=" << text.size() << std::endl;
+            auto formatStart = std::chrono::steady_clock::now();
             auto formatted = lfortran.format(
                 path,
                 text,
@@ -1148,6 +1211,18 @@ namespace LCompilers::LanguageServerProtocol {
                 params.options.tabSize,
                 true  //-> indent_unit
             );
+            auto formatEnd = std::chrono::steady_clock::now();
+            auto formatElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                formatEnd - formatStart
+            );
+            logger.trace()
+                << "Document formatting completed in " << formatElapsed.count()
+                << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                << std::endl;
+            std::cerr << "[formatting] completed in "
+                      << formatElapsed.count()
+                      << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                      << std::endl;
             std::vector<TextEdit> edits;
             if (formatted.ok) {
                 // TODO: Specify the reformatted document in terms of a diff
@@ -1164,6 +1239,11 @@ namespace LCompilers::LanguageServerProtocol {
                     static_cast<uinteger_t>(document->lastColumn(end.line));
                 edit.newText = formatted.result;
             }
+            logger.trace()
+                << "Document formatting produced " << edits.size()
+                << " edit(s)." << std::endl;
+            std::cerr << "[formatting] produced " << edits.size()
+                      << " edit(s)" << std::endl;
             result = std::move(edits);
         } else {
             result = nullptr;
@@ -1203,6 +1283,17 @@ namespace LCompilers::LanguageServerProtocol {
         TextDocument_RangeFormattingResult result;
         if (clientSupportsRangeFormatting) {
             const std::string &uri = params.textDocument.uri;
+            logger.trace()
+                << "Range formatting request for uri=" << uri
+                << " range=(" << params.range.start.line << ':'
+                << params.range.start.character << ")-("
+                << params.range.end.line << ':' << params.range.end.character
+                << ")" << std::endl;
+            std::cerr << "[rangeFormatting] uri=" << uri
+                      << " range=(" << params.range.start.line << ':'
+                      << params.range.start.character << ")-("
+                      << params.range.end.line << ':'
+                      << params.range.end.character << ")" << std::endl;
             std::shared_ptr<LspTextDocument> document = getDocument(uri);
             CompilerOptions compilerOptions = *getCompilerOptions(*document);
             compilerOptions.interactive = true;
@@ -1214,6 +1305,7 @@ namespace LCompilers::LanguageServerProtocol {
                 params.range.end.line,
                 params.range.end.character
             );
+            auto formatStart = std::chrono::steady_clock::now();
             auto formatted = lfortran.format(
                 path,
                 fragment,
@@ -1222,6 +1314,18 @@ namespace LCompilers::LanguageServerProtocol {
                 params.options.tabSize,
                 true  //-> indent_unit
             );
+            auto formatEnd = std::chrono::steady_clock::now();
+            auto formatElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                formatEnd - formatStart
+            );
+            logger.trace()
+                << "Range formatting completed in " << formatElapsed.count()
+                << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                << std::endl;
+            std::cerr << "[rangeFormatting] completed in "
+                      << formatElapsed.count()
+                      << " ms (ok=" << (formatted.ok ? "true" : "false") << ")"
+                      << std::endl;
             std::vector<TextEdit> edits;
             if (formatted.ok) {
                 // TODO: Specify the reformatted document in terms of a diff
@@ -1237,6 +1341,11 @@ namespace LCompilers::LanguageServerProtocol {
                     document->leadingIndentation(params.range.start.line)
                 );
             }
+            logger.trace()
+                << "Range formatting produced " << edits.size()
+                << " edit(s)." << std::endl;
+            std::cerr << "[rangeFormatting] produced " << edits.size()
+                      << " edit(s)" << std::endl;
             result = std::move(edits);
         } else {
             result = nullptr;

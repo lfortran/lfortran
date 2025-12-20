@@ -1,6 +1,7 @@
 #include <cctype>
 #include <chrono>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -34,8 +35,13 @@ namespace LCompilers::LanguageServerProtocol {
         const std::string &taskType
     ) : server(server)
       , taskType(taskType)
+      , steadyStart(std::chrono::steady_clock::now())
     {
-        // empty
+        if (server != nullptr) {
+            server->logger.trace()
+                << "Begin " << taskType << std::endl;
+        }
+        std::cerr << "[RunTracer] Begin " << taskType << std::endl;
     }
 
     RunTracer::~RunTracer() {
@@ -44,6 +50,17 @@ namespace LCompilers::LanguageServerProtocol {
 
     auto RunTracer::stop() -> void {
         if (!stopped) {
+            auto steadyEnd = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                steadyEnd - steadyStart
+            );
+            if (server != nullptr) {
+                server->logger.trace()
+                    << "End " << taskType << " after "
+                    << elapsed.count() << " ms" << std::endl;
+            }
+            std::cerr << "[RunTracer] End " << taskType
+                      << " after " << elapsed.count() << " ms" << std::endl;
             server->stopRunning(taskType);
             stopped = true;
         }
