@@ -26,7 +26,23 @@ semantic error: Assumed-size '*' is only permitted in the last dimension
 79 |         real, intent(in) :: d(*, 10)
    |                               ^ 
 
+semantic error: Assumed-size '*' is only permitted in the last dimension
+  --> tests/errors/continue_compilation_1.f90:80:19
+   |
+80 |         real :: e(*, 10)
+   |                   ^ 
+
 semantic error: Dummy argument 'd' not defined
+  --> tests/errors/continue_compilation_1.f90:77:5 - 85:38
+   |
+77 |        subroutine assumed_size_errors(a, b, c, d, e)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+85 |        end subroutine assumed_size_errors
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'e' not defined
   --> tests/errors/continue_compilation_1.f90:77:5 - 85:38
    |
 77 |        subroutine assumed_size_errors(a, b, c, d, e)
@@ -156,6 +172,24 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
     |
 183 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:81:18
+   |
+81 |         print *, ubound(a, 1)  ! error: last dim assumed-size
+   |                  ^^^^^^^^^^^^ 
+
+semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
+  --> tests/errors/continue_compilation_1.f90:82:18
+   |
+82 |         print *, ubound(b)     ! error: DIM required
+   |                  ^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:83:18
+   |
+83 |         print *, ubound(c, 2)  ! error: last dim assumed-size
+   |                  ^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:232:8
