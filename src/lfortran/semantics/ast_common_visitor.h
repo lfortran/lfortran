@@ -5707,10 +5707,17 @@ public:
                 ASR::is_a<ASR::Var_t>(*m_end) ) {
                 ASR::Variable_t* startv = ASRUtils::EXPR2VAR(m_start);
                 ASR::Variable_t* endv = ASRUtils::EXPR2VAR(m_end);
-                is_item = is_item && (startv == endv);
-                if( is_item ) {
-                    m_start = nullptr;
-                    m_step = nullptr;
+                if (ASR::is_a<ASR::String_t>(*root_v_type)) {
+                    // For strings, only replace substring with single character when both
+                    // start and end are the same variable
+                    is_item = is_item && (startv == endv);
+                    if( is_item ) {
+                        m_start = nullptr;
+                        m_step = nullptr;
+                    }
+                } else {
+                    // For arrays, don't replace array section with single element with array item
+                    is_item = false;
                 }
             } else {
                 is_item = is_item && (m_start == nullptr &&
