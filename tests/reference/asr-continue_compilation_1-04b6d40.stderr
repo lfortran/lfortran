@@ -1,1 +1,1 @@
-Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`.
+/bin/sh: 1: lfortran: not found
