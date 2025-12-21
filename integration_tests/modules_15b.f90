@@ -241,7 +241,7 @@ interface
     ! int f_string(char *s)
     integer(c_int) function f_string0(s) result(r) bind(c, name="f_string")
     import :: c_int, c_char
-    character(kind=c_char), dimension(*), intent(in) :: s
+    character(len=1, kind=c_char), intent(in) :: s
     end function
 
     integer(c_int) function call_fortran_i32(i) result(r) bind(c)
@@ -302,13 +302,7 @@ contains
 
 integer function f_string(s) result(r)
 character(*), intent(in) :: s
-character(kind=c_char) :: s_array(len(s)+1)
-integer :: i
-do i = 1, len(s)
-    s_array(i) = s(i:i)
-end do
-s_array(len(s)+1) = c_null_char
-r = f_string0(s_array)
+r = f_string0(s // c_null_char)
 end function
 
 integer(c_int) function fortran_i32(i) result(r) bind(c)
