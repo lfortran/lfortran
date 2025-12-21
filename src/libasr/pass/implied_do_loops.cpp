@@ -780,23 +780,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
-                    if ( ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ) {
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
-                        continue;
-                    }
-                    ASR::asr_t* array_constant = create_array_constant(x, value);
-                    string_format_stmt->m_args[i] = ASRUtils::EXPR(array_constant);
-
-                    replacer.result_var = value;
-                    resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
-                    ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(string_format_stmt->m_args[i]));
-                    this->call_replacer();
-                    current_expr = current_expr_copy_9;
-                    if( !remove_original_statement ) {
-                        this->visit_expr(*string_format_stmt->m_args[i]);
-                    }
+                    // Always convert implied do loops in print/write to actual do loops
+                    // to avoid accessing uninitialized loop variables
+                    remove_original_statement = true;
+                    pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
+                    continue;
                 } else {
                     ASR::expr_t** current_expr_copy_9 = current_expr;
                     current_expr = const_cast<ASR::expr_t**>(&(string_format_stmt->m_args[i]));
@@ -840,19 +828,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
-                    ASR::asr_t* array_constant = create_array_constant(x, value);
-
-                    write_stmt->m_values[i] = ASRUtils::EXPR(array_constant);
-
-                    replacer.result_var = value;
-                    resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
-                    ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(write_stmt->m_values[i]));
-                    this->call_replacer();
-                    current_expr = current_expr_copy_9;
-                    if( !remove_original_statement ) {
-                        this->visit_expr(*write_stmt->m_values[i]);
-                    }
+                    ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    // Always convert implied do loops in print/write to actual do loops
+                    // to avoid accessing uninitialized loop variables
+                    remove_original_statement = true;
+                    pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
+                    continue;
                 } else {
                     ASR::expr_t** current_expr_copy_9 = current_expr;
                     current_expr = const_cast<ASR::expr_t**>(&(write_stmt->m_values[i]));
