@@ -880,4 +880,3 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
-
