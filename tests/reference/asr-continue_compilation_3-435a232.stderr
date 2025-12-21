@@ -40,6 +40,12 @@ semantic error: Assumed-rank array `x` cannot be accessed outside a select rank 
 32 |         print *, x(1)
    |                  ^^^^ 
 
+semantic error: Assumed-rank array 'x' must be a dummy argument
+  --> tests/errors/continue_compilation_3.f90:33:6
+   |
+33 |      x = [1, 2]
+   |      ^ 
+
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_3.f90:68:26
    |
