@@ -1565,8 +1565,8 @@ intrinsic_type_spec
     | KW_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Tuple, $3, @$); }
     ;
     char_len_param
-    : "*"           { $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
-    | kind_arg_list { $$ = ATTR_TYPE_KIND(Character, $1, @$); } ;
+    : "*"           %dprec 2 { $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
+    | kind_arg_list %dprec 1 { $$ = ATTR_TYPE_KIND(Character, $1, @$); } ;
     
 intrinsic_type_spec_list
     : intrinsic_type_spec_list "," intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
