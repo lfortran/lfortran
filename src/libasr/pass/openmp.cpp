@@ -7,14 +7,8 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_openmp.h>
-#include <libasr/codegen/llvm_utils.h>
 
 namespace LCompilers {
-
-const int STRUCT_VTABLE_SIZE = 8;
-
-// Compile-time verification: OpenMP STRUCT_VTABLE_SIZE must match LLVM backend size
-static_assert(STRUCT_VTABLE_SIZE == LLVM_STRUCT_VTABLE_SIZE, "OpenMP STRUCT_VTABLE_SIZE must match LLVM backend LLVM_STRUCT_VTABLE_SIZE");
 
 class ReplaceArrayPhysicalCast: public ASR::BaseExprReplacer<ReplaceArrayPhysicalCast> {
     private:
@@ -3255,7 +3249,7 @@ class ParallelRegionVisitor :
                     total_size += 8;
                 }
             }
-            return total_size + STRUCT_VTABLE_SIZE;
+            return total_size + LCompilers::STRUCT_VTABLE_SIZE;
         }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,

@@ -23,10 +23,6 @@
 namespace LCompilers {
 class ASRToLLVMVisitor;
 
-    // Size of virtual function table pointer in LLVM structs
-    // This must match the pointer size on the target platform
-    static constexpr int64_t LLVM_STRUCT_VTABLE_SIZE = 8;
-
     // Platform dependent fast unique hash:
     static inline uint64_t get_hash(ASR::asr_t *node)
     {
