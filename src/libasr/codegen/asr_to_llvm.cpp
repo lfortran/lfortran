@@ -13635,6 +13635,49 @@ public:
         }
     }
 
+    bool is_operator_overloaded_function(ASR::Function_t* function) {
+        // Check if this function is part of a CustomOperator
+        SymbolTable* parent_symtab = ASRUtils::symbol_parent_symtab((ASR::symbol_t*)function);
+        if (parent_symtab == nullptr) {
+            return false;
+        }
+        ASR::symbol_t* function_sym = (ASR::symbol_t*)function;
+        
+        // Iterate through all symbols in the parent symbol table
+        for (auto &item : parent_symtab->get_scope()) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                // Check if this function is in the operator's procedure list
+                for (size_t i = 0; i < custom_op->n_procs; i++) {
+                    ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[i]);
+                    // Check if the function symbol matches (handles both direct matches and mangled names)
+                    if (proc == function_sym || 
+                        (ASR::is_a<ASR::Function_t>(*proc) && 
+                         ASR::down_cast<ASR::Function_t>(proc) == function)) {
+                        return true;
+                    }
+                    // Also check by name to handle mangled function names
+                    if (ASR::is_a<ASR::Function_t>(*proc)) {
+                        std::string proc_name = ASRUtils::symbol_name(proc);
+                        std::string function_name = ASRUtils::symbol_name(function_sym);
+                        // Strip any @operator suffix from both names
+                        size_t proc_at_pos = proc_name.find('@');
+                        std::string base_proc_name = (proc_at_pos != std::string::npos) ? proc_name.substr(0, proc_at_pos) : proc_name;
+                        size_t func_at_pos = function_name.find('@');
+                        std::string base_function_name = (func_at_pos != std::string::npos) ? function_name.substr(0, func_at_pos) : function_name;
+                        // Check if the function name starts with the base procedure name
+                        if (base_function_name == base_proc_name || 
+                            (base_function_name.length() > base_proc_name.length() &&
+                             base_function_name.find(base_proc_name + "_") == 0)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     template<typename T>
     void bounds_check_call(T& x, bool subroutinecall_was_functioncall = false) {
         ASR::Function_t* function = nullptr;
@@ -13675,14 +13718,17 @@ public:
                     llvm::Value* arg = tmp;
 
                     // Throw error if descriptor array is not allocated
-                    llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
-                    llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
-                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
-                            infile,
-                            arg_expr->base.loc,
-                            location_manager,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    // Skip this check for operator overloaded functions
+                    if (!is_operator_overloaded_function(function)) {
+                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
+                        llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
+                                "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                                infile,
+                                arg_expr->base.loc,
+                                location_manager,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    }
 
                     // Throw error if shapes don't match
                     ASR::dimension_t* m_dims = nullptr;
@@ -13832,13 +13878,16 @@ public:
                                 llvm::Type::getInt64Ty(context)));
                     }
 
-                    llvm_utils->generate_runtime_error(cond,
-                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
-                            infile,
-                            arg_expr->base.loc,
-                            location_manager,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    // Skip this check for operator overloaded functions
+                    if (!is_operator_overloaded_function(function)) {
+                        llvm_utils->generate_runtime_error(cond,
+                                "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                                infile,
+                                arg_expr->base.loc,
+                                location_manager,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)));
+                    }
                 }
             }
         }
