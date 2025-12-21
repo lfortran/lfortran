@@ -448,6 +448,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
 %type <ast> intrinsic_type_spec
+%type <ast> char_len_param
 %type <ast> declaration_type_spec
 %type <ast> var_type
 %type <ast> fn_mod
@@ -1544,11 +1545,7 @@ intrinsic_type_spec
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
-    | KW_CHARACTER "*" "(" kind_arg_list ")" {
-        $$ = ATTR_TYPE_KIND(Character, $4, @$);
-    }
-    | KW_CHARACTER "*" "(" "*" ")" {
-            $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
+    | KW_CHARACTER "*" "(" char_len_param ")" { $$ = $4; $$->loc = @$; }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); WARN_REALSTAR($3, @$); }
@@ -1567,7 +1564,10 @@ intrinsic_type_spec
     | KW_DICT "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Dict, $3, @$); }
     | KW_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Tuple, $3, @$); }
     ;
-
+    char_len_param
+    : kind_arg_list { $$ = ATTR_TYPE_KIND(Character, $1, @$); }
+    | "*"           { $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); } ;
+    
 intrinsic_type_spec_list
     : intrinsic_type_spec_list "," intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
     | intrinsic_type_spec { LIST_NEW($$); LIST_ADD($$, $1); }
