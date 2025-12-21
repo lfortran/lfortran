@@ -1052,8 +1052,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 "_array_section_pointer_", tmp_type, array_expr);
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                 al, loc, array_expr_ptr, array_expr)));
-            exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
-            array_expr = array_expr_ptr;
+            exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);          
+                array_expr = array_expr_ptr;         
         }
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, array_var_temporary, array_expr, nullptr, exprs_with_target)));
@@ -2418,8 +2418,36 @@ class ReplaceExprWithTemporaryVisitor:
             rhs_array_var = ASRUtils::extract_array_variable(x.m_value);
         }
 
-        if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
-            ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
+        bool is_allocatable_alias =
+        lhs_array_var && rhs_array_var &&
+        ASRUtils::is_allocatable(x.m_target) &&
+        is_common_symbol_present_in_lhs_and_rhs(
+            al, lhs_array_var, rhs_array_var);
+
+        if (is_allocatable_alias) {
+        ASR::expr_t** value_ptr =
+            const_cast<ASR::expr_t**>(&(x.m_value));
+            exprs_with_target.erase(x.m_value);
+            replacer.is_assignment_target_array_section_item = false;
+            replacer.force_replace_current_expr_for_array(
+                value_ptr,
+                "_assignment_value_",
+                al,
+                current_body,
+                current_scope,
+                exprs_with_target,
+                false
+            );
+
+            m_args = nullptr;
+            n_args = 0;
+            return;
+        }
+
+
+
+        if( (ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+            ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) ) {
             ASRUtils::extract_indices(x.m_target, m_args, n_args);
             bool is_assignment_target_array_section_item = replacer.is_assignment_target_array_section_item;
             replacer.is_assignment_target_array_section_item = true;
@@ -2429,7 +2457,7 @@ class ReplaceExprWithTemporaryVisitor:
             call_replacer();
             current_expr = current_expr_copy_8;
             replacer.is_assignment_target_array_section_item = is_assignment_target_array_section_item;
-            if( x.m_target != original_target ) {
+            if(!is_allocatable_alias && x.m_target != original_target ) {
                 exprs_with_target[x.m_value] = std::make_pair(x.m_target, targetType::GeneratedTargetPointerForArraySection);
             }
         }
@@ -2440,22 +2468,15 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
         replacer.lhs_var = lhs_array_var;
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+
         call_replacer();
+        
         replacer.lhs_var = nullptr;
-        bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
+        bool is_assignment_target_array_section_item = !is_allocatable_alias && ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_elemental_expr(x.m_value);
 
-        bool has_array_alias =
-        lhs_array_var && rhs_array_var &&
-        is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, rhs_array_var);
 
-        if (is_assignment_target_array_section_item ||
-            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
-            ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && has_array_alias) ||
-            (has_array_alias &&
-            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-            !ASRUtils::is_simd_array(x.m_value))) {
-
+        if (is_assignment_target_array_section_item) {
             replacer.force_replace_current_expr_for_array(
                 current_expr,
                 "_assignment_value_",
@@ -2463,9 +2484,10 @@ class ReplaceExprWithTemporaryVisitor:
                 current_body,
                 current_scope,
                 exprs_with_target,
-                is_assignment_target_array_section_item
+                true
             );
         }
+
 
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
