@@ -4045,6 +4045,11 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             case (ASR::ttypeType::String) : {
                 ASR::String_t *a2 = ASR::down_cast<ASR::String_t>(a);
                 ASR::String_t *b2 = ASR::down_cast<ASR::String_t>(b);
+                bool a_is_deferred = (a2->m_len_kind == ASR::string_length_kindType::DeferredLength);
+                bool b_is_deferred = (b2->m_len_kind == ASR::string_length_kindType::DeferredLength);
+                if (a_is_deferred != b_is_deferred) {
+                    return false;
+                }
                 return (a2->m_kind == b2->m_kind);
             }
             case (ASR::ttypeType::List) : {
@@ -4183,6 +4188,12 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::String) : {
                 ASR::String_t *a2 = ASR::down_cast<ASR::String_t>(a);
                 ASR::String_t *b2 = ASR::down_cast<ASR::String_t>(b);
+                // Check that if one type has deferred length, the other must also have deferred length
+                bool a_is_deferred = (a2->m_len_kind == ASR::string_length_kindType::DeferredLength);
+                bool b_is_deferred = (b2->m_len_kind == ASR::string_length_kindType::DeferredLength);
+                if (a_is_deferred != b_is_deferred) {
+                    return false;
+                }
                 return (a2->m_kind == b2->m_kind);
             }
             case (ASR::ttypeType::List) : {

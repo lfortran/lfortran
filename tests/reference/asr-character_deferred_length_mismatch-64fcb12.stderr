@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument `xx`: expected `string[:] allocatable` but got `string[:]`
+  --> tests/errors/character_deferred_length_mismatch.f90:11:13
+   |
+11 |     call ss(x)
+   |             ^ 

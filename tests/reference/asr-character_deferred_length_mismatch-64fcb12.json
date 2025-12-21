@@ -1,0 +1,13 @@
+{
+    "basename": "asr-character_deferred_length_mismatch-64fcb12",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/character_deferred_length_mismatch.f90",
+    "infile_hash": "7ed6502d9cf3d87df635f41771781a4fc08c48bb43b5b786feedaae2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-character_deferred_length_mismatch-64fcb12.stderr",
+    "stderr_hash": "78cdc6a58b9d8a0faaa56a82d617c0797dbc3012f3288fc9f3665d7c",
+    "returncode": 2
+}
