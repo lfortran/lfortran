@@ -11695,6 +11695,22 @@ public:
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(left))) {
+            std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(left)->m_v);
+            if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
+                diag.add(Diagnostic("Comparison operations are not allowed on assumed-rank arrays ('" + array_name + "')",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            } else {
+                size_t rank = assumed_rank_arrays[array_name];
+                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, 
+                    rank, ASRUtils::extract_type(ASRUtils::expr_type(left)));
+                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+                    left->base.loc, left, ASR::array_physical_typeType::AssumedRankArray, 
+                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                left = cast_expr;
+            }
+        }
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
