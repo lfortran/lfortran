@@ -1358,24 +1358,7 @@ public:
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                    // Skip double allocation check for INTENT(OUT) allocatables.
-                    //
-                    // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
-                    // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
-                    // this deallocation only in limited cases (see the `insert_deallocate` pass),
-                    // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
-                    // implemented, keeping the double-allocation runtime check enabled here would
-                    // report false positives in valid programs.
-                    bool is_intent_out = false;
-                    if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
-                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                            is_intent_out = (var->m_intent == ASR::intentType::Out);
-                        }
-                    }
-                    if (!realloc && compiler_options.po.bounds_checking && !is_intent_out) {
+                    if (!realloc && compiler_options.po.bounds_checking) {
                         llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         llvm::Value* is_allocated = builder->CreateICmpNE(
                             builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
@@ -1666,24 +1649,7 @@ public:
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
-                // Skip double allocation check for INTENT(OUT) allocatables.
-                //
-                // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
-                // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
-                // this deallocation only in limited cases (see the `insert_deallocate` pass),
-                // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
-                // implemented, keeping the double-allocation runtime check enabled here would
-                // report false positives in valid programs.
-                bool is_intent_out = false;
-                if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
-                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                        is_intent_out = (var->m_intent == ASR::intentType::Out);
-                    }
-                }
-                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr && !is_intent_out) {
+                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr) {
                     llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
                     std::string var_name = "";
