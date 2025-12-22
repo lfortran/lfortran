@@ -2528,15 +2528,24 @@ public:
         Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
+            if (!subrout_call->m_args[i].m_value) continue;
+            if (!subrout->m_args[i] || subrout->m_args[i]->type != ASR::exprType::Var) continue;
+
+            const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
+            const ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(orig_arg_var->m_v);
+            if (orig_sym->type != ASR::symbolType::Variable) continue;
+            ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
+
+            if (orig_var->m_intent != ASR::intentType::Out) continue;
+            if (!ASRUtils::is_allocatable(orig_var->m_type) &&
+                !ASR::is_a<ASR::StructType_t>(*orig_var->m_type)) continue;
+
             if( subrout_call->m_args[i].m_value &&
                 subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
                 const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(subrout_call->m_args[i].m_value);
                 const ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(arg_var->m_v);
                 if( sym->type == ASR::symbolType::Variable ) {
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                    const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
-                    const ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(orig_arg_var->m_v);
-                    ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
                     if( ASR::is_a<ASR::Allocatable_t>(*var->m_type) &&
                         ASR::is_a<ASR::Allocatable_t>(*orig_var->m_type) &&
                         orig_var->m_intent == ASR::intentType::Out ) {
@@ -2559,6 +2568,11 @@ public:
                             }
                         }
                     }
+                }
+            } else if (subrout_call->m_args[i].m_value->type == ASR::exprType::StructInstanceMember) {
+                ASR::ttype_t* actual_type = ASRUtils::expr_type(subrout_call->m_args[i].m_value);
+                if (ASRUtils::is_allocatable(actual_type)) {
+                    del_syms.push_back(al, subrout_call->m_args[i].m_value);
                 }
             }
         }

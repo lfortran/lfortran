@@ -2874,4 +2874,4 @@ RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 RUN(NAME issue_9063 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
-RUN(NAME intent_out_allocatable_struct_with_components LABELS gfortran llvm)
+RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
