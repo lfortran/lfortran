@@ -1044,6 +1044,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                     sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second)->m_external;
                 }
+                // Don't delete struct method declarations
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+                    ASR::StructMethodDeclaration_t* func_type = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                    not_to_be_erased.insert(ASRUtils::symbol_get_past_external(func_type->m_proc));
+                }
                 if( v.proc2newproc.find(sym) != v.proc2newproc.end() &&
                     not_to_be_erased.find(sym) == not_to_be_erased.end() ) {
                     LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))

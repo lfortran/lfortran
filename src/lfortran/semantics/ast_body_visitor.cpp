@@ -2102,6 +2102,7 @@ public:
                 }
             }
             alloc_args_vec = new_alloc_args_vec;
+            source = mold;
         }
 
         if (!cond) {
@@ -4123,6 +4124,28 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
+        
+        // Handle assumed-rank arrays (from main branch)
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {
+            std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(target)->m_v);
+            if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
+                diag.add(Diagnostic(
+                    "Assumed-rank array '" + array_name + "' must be a dummy argument",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {target->base.loc})
+                    }
+                ));
+                throw SemanticAbort();
+            } else {
+                size_t rank = assumed_rank_arrays[array_name];
+                ASR::ttype_t* target_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, rank, ASRUtils::extract_type(ASRUtils::expr_type(target)));
+                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, target->base.loc, target, ASR::array_physical_typeType::AssumedRankArray, 
+                    ASR::array_physical_typeType::DescriptorArray, target_type, nullptr));
+                target = cast_expr;
+            }
+        }
         if (auto* v = ASRUtils::extract_ExternalSymbol_Variable(target)) {
             if (v->m_is_protected) {
                 diag.add(Diagnostic("Variable " + std::string(v->m_name)
@@ -4287,19 +4310,22 @@ public:
                 al, loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
         }
-        if (target->type != ASR::exprType::Var && target->type != ASR::exprType::ArrayItem
-            && target->type != ASR::exprType::ArraySection
-            && target->type != ASR::exprType::StringSection
-            && target->type != ASR::exprType::StringItem
-            && target->type != ASR::exprType::StructInstanceMember
-            && target->type != ASR::exprType::UnionInstanceMember
-            && target->type != ASR::exprType::ComplexRe
-            && target->type != ASR::exprType::ComplexIm) {
-            diag.add(
-                Diagnostic("The LHS of assignment can only be a variable or an array reference",
-                           Level::Error,
-                           Stage::Semantic,
-                           { Label("", { x.base.base.loc }) }));
+        if (target->type != ASR::exprType::Var &&
+            target->type != ASR::exprType::ArrayItem &&
+            target->type != ASR::exprType::ArraySection &&
+            target->type != ASR::exprType::ArrayPhysicalCast &&
+            target->type != ASR::exprType::StringSection &&
+            target->type != ASR::exprType::StringItem &&
+            target->type != ASR::exprType::StructInstanceMember &&
+            target->type != ASR::exprType::UnionInstanceMember &&
+            target->type != ASR::exprType::ComplexRe &&
+            target->type != ASR::exprType::ComplexIm)
+        {
+            diag.add(Diagnostic(
+                "The LHS of assignment can only be a variable or an array reference",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
             throw SemanticAbort();
         }
 
