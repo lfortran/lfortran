@@ -52,7 +52,9 @@
                     [(Declaration
                         (AttrType
                             TypeCharacter
-                            []
+                            [(()
+                            ()
+                            Star)]
                             ()
                             ()
                             DoubleAsterisk
