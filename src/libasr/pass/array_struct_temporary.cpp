@@ -894,6 +894,11 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::ArrayPhysicalCast: {
+            // Control Flow would reach here only for assumed rank arrays
+            // where we don't have dimensions info at compile time
+            return false;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -1008,7 +1013,10 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             al, loc, array_var_temporary, array_expr)));
     } else {
         insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
-        array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
+        bool is_array_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*array_expr) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(array_expr)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+        if (!is_array_assumed_rank) {
+            array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
+        }
         if( !is_pointer_required &&
             !ASRUtils::is_simd_array(array_expr) &&
             ( (ASR::is_a<ASR::ArraySection_t>(*array_expr) &&
@@ -1194,6 +1202,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
+        ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            x_m_args_i = expr;
+        }
         ASR::expr_t* array_var_temporary = nullptr;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr) &&
@@ -2685,7 +2697,9 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        if( !ASRUtils::is_simd_array(x.m_value) ) {
+        bool is_value_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) && 
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+        if( !ASRUtils::is_simd_array(x.m_value) && !is_value_assumed_rank) {
             LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
         }
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
