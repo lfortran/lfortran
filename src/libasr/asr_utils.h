@@ -59,8 +59,9 @@
 
 namespace LCompilers  {
 
-// Size of virtual function table pointer in class structs when new_classes is enabled
-// IMPORTANT: If this changes, also update the static_assert in llvm_utils.cpp line 11
+/*
+This must be updated if there are changes in llvm struct size
+*/ 
 static constexpr int64_t STRUCT_VTABLE_SIZE = 8;
 
     namespace ASRUtils  {

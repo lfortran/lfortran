@@ -5,9 +5,13 @@
 #include <libasr/codegen/llvm_compat.h>
 #include <llvm/Support/raw_ostream.h>
 
-// STRUCT_VTABLE_SIZE used in openmp.cpp through asr_utils.h file must match the size of LLVM_STRUCT_SIZE
-static_assert(LCompilers::STRUCT_VTABLE_SIZE == 8, 
-    "STRUCT_VTABLE_SIZE must be 8 bytes (size of pointer-to-pointer on 64-bit systems)");
+/*
+Update this value and struct_vtable_size in asr_utils.h if there are changes in llvm struct size
+*/
+constexpr int64_t STRUCT_SIZE = 8;
+
+static_assert(LCompilers::STRUCT_VTABLE_SIZE == STRUCT_SIZE,
+                "STRUCT_VTABLE_SIZE defined in asr_utils must match STRUCT_SIZE");
 
 namespace LCompilers {
 
