@@ -1,4 +1,4 @@
-program pp
+program nested_19
     type t1
         integer, allocatable :: ll
     end type
@@ -17,8 +17,9 @@ program pp
     subroutine ss
         type(t3), allocatable :: t2
         allocate(t2)
+        if (.not. allocated(t2)) error stop "t2 not allocated"
         allocate(t2%z(10))
         allocate(t2%z(1)%arr(5))
     end subroutine
 
-end program
+end program nested_19
