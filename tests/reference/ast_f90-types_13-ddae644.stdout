@@ -4,7 +4,7 @@ implicit none
 
 interface
     subroutine g(d)
-    character*(*) :: d
+    character(len=*) :: d
     end subroutine g
 
     subroutine g2(d)
