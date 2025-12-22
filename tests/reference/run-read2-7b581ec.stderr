@@ -1,0 +1,5 @@
+code generation error: Internal file I/O is not yet implemented in the LLVM backend
+ --> tests/read2.f90:5:5
+  |
+5 |     read(val, *) phifile
+  |     ^^^^^^^^^^^^^^^^^^^^ 

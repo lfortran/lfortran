@@ -1,9 +1,0 @@
-code generation error: asr_to_llvm: module failed verification. Error:
-!dbg attachment points at wrong subprogram for function
-!3 = distinct !DISubprogram(name: "expr2", scope: !1, file: !1, line: 1, type: !4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
-i32 (i32, i8**)* @main
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1), !dbg !7
-!7 = !DILocation(line: 1, column: 1, scope: !8)
-!8 = distinct !DISubprogram(name: "main", scope: !1, file: !1, line: 7, type: !4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
-!8 = distinct !DISubprogram(name: "main", scope: !1, file: !1, line: 7, type: !4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
-

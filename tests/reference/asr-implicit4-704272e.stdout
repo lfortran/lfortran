@@ -146,7 +146,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
-                                        DescriptorArray
+                                        UnboundedPointerArray
                                     )
                                     ()
                                     Source
@@ -172,7 +172,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
-                                        DescriptorArray
+                                        UnboundedPointerArray
                                     )
                                     ()
                                     Source
@@ -198,7 +198,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
-                                        DescriptorArray
+                                        UnboundedPointerArray
                                     )
                                     ()
                                     Source
@@ -218,19 +218,19 @@
                             (Real 8)
                             [(()
                             ())]
-                            DescriptorArray
+                            UnboundedPointerArray
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
-                            DescriptorArray
+                            UnboundedPointerArray
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
-                            DescriptorArray
+                            UnboundedPointerArray
                         )]
                         (Integer 4)
                         Source

@@ -5,9 +5,9 @@
     "infile_hash": "d79e24fee2aba2e6b98fffd327df1e6a264fdf9cc3e5ebc77b5822d0",
     "outfile": null,
     "outfile_hash": null,
-    "returncode": 0,
+    "stdout": "asr-template_lapack_01-0d30f43.stdout",
+    "stdout_hash": "9c9775e0b3442dc30e943e724b0208bdf3a04d33e8b11f6662bb506f",
     "stderr": null,
     "stderr_hash": null,
-    "stdout": "asr-template_lapack_01-0d30f43.stdout",
-    "stdout_hash": "9c9775e0b3442dc30e943e724b0208bdf3a04d33e8b11f6662bb506f"
+    "returncode": 0
 }

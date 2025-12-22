@@ -1,0 +1,5 @@
+syntax error: Internal Compiler Error: syntax is ambiguous in the parser
+  --> tests/fixed_form_implicit3.f:13:7
+   |
+13 |       CHARACTER*(*) FUNCTION CSTAR(A)
+   |       ^^^^^^^^^^^^^ 
