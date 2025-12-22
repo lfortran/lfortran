@@ -7,11 +7,11 @@
             use_02:
                 (Program
                     (SymbolTable
-                        7
+                        6
                         {
                             dp:
                                 (ExternalSymbol
-                                    7
+                                    6
                                     dp
                                     4 real64
                                     lfortran_intrinsic_iso_fortran_env
@@ -21,7 +21,7 @@
                                 ),
                             i:
                                 (Variable
-                                    7
+                                    6
                                     i
                                     []
                                     Local
@@ -44,7 +44,7 @@
                     use_02
                     [use_02_module]
                     [(Assignment
-                        (Var 7 i)
+                        (Var 6 i)
                         (IntegerConstant 1234567890123456789 (Integer 8) Decimal)
                         ()
                         .false.
@@ -53,7 +53,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 7 i)
+                            (Var 6 i)
                             NotEq
                             (IntegerConstant 1234567890123456789 (Integer 8) Decimal)
                             (Logical 4)

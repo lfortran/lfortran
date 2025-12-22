@@ -7,16 +7,16 @@
             points:
                 (Module
                     (SymbolTable
-                        7
+                        6
                         {
                             point:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        7
                                         {
                                             x:
                                                 (Variable
-                                                    8
+                                                    7
                                                     x
                                                     []
                                                     Local
@@ -37,7 +37,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    8
+                                                    7
                                                     y
                                                     []
                                                     Local
@@ -80,11 +80,11 @@
                             point_dist_func:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        8
                                         {
                                             a:
                                                 (Variable
-                                                    9
+                                                    8
                                                     a
                                                     []
                                                     In
@@ -98,7 +98,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 point
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -111,7 +111,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    9
+                                                    8
                                                     b
                                                     []
                                                     In
@@ -125,7 +125,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 point
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -138,7 +138,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    9
+                                                    8
                                                     distance
                                                     []
                                                     ReturnVar
@@ -187,10 +187,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 9 a)
-                                    (Var 9 b)]
+                                    [(Var 8 a)
+                                    (Var 8 b)]
                                     []
-                                    (Var 9 distance)
+                                    (Var 8 distance)
                                     Public
                                     .false.
                                     .false.
@@ -199,11 +199,11 @@
                             point_dist_subrout:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        9
                                         {
                                             a:
                                                 (Variable
-                                                    10
+                                                    9
                                                     a
                                                     []
                                                     In
@@ -217,7 +217,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 point
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -230,7 +230,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    10
+                                                    9
                                                     b
                                                     []
                                                     In
@@ -244,7 +244,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 point
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -257,7 +257,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    10
+                                                    9
                                                     distance
                                                     []
                                                     Out
@@ -307,9 +307,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 10 a)
-                                    (Var 10 b)
-                                    (Var 10 distance)]
+                                    [(Var 9 a)
+                                    (Var 9 b)
+                                    (Var 9 distance)]
                                     []
                                     ()
                                     Public
@@ -319,7 +319,7 @@
                                 ),
                             rkind:
                                 (ExternalSymbol
-                                    7
+                                    6
                                     rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -338,13 +338,13 @@
             points_a:
                 (Module
                     (SymbolTable
-                        11
+                        10
                         {
                             point:
                                 (ExternalSymbol
-                                    11
+                                    10
                                     point
-                                    7 point
+                                    6 point
                                     points
                                     []
                                     point
@@ -353,13 +353,13 @@
                             point_dist_func:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        11
                                         {
                                             1_point_x:
                                                 (ExternalSymbol
-                                                    12
+                                                    11
                                                     1_point_x
-                                                    8 x
+                                                    7 x
                                                     point
                                                     []
                                                     x
@@ -367,9 +367,9 @@
                                                 ),
                                             1_point_y:
                                                 (ExternalSymbol
-                                                    12
+                                                    11
                                                     1_point_y
-                                                    8 y
+                                                    7 y
                                                     point
                                                     []
                                                     y
@@ -377,7 +377,7 @@
                                                 ),
                                             a:
                                                 (Variable
-                                                    12
+                                                    11
                                                     a
                                                     []
                                                     In
@@ -391,7 +391,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    11 point
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -404,7 +404,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    12
+                                                    11
                                                     b
                                                     []
                                                     In
@@ -418,7 +418,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    11 point
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -431,7 +431,7 @@
                                                 ),
                                             distance:
                                                 (Variable
-                                                    12
+                                                    11
                                                     distance
                                                     []
                                                     ReturnVar
@@ -480,8 +480,211 @@
                                         .false.
                                     )
                                     []
+                                    [(Var 11 a)
+                                    (Var 11 b)]
+                                    [(Assignment
+                                        (Var 11 distance)
+                                        (IntrinsicElementalFunction
+                                            Sqrt
+                                            [(RealBinOp
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 11 a)
+                                                            11 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 11 b)
+                                                            11 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 11 a)
+                                                            11 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 11 b)
+                                                            11 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 11 distance)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            point_dist_subrout:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_point_x
+                                                    7 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_point_y
+                                                    7 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            a:
+                                                (Variable
+                                                    12
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 point
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    12
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 point
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            distance:
+                                                (Variable
+                                                    12
+                                                    distance
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    point_dist_subrout
+                                    (FunctionType
+                                        [(StructType
+                                            [(Real 4)
+                                            (Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (StructType
+                                            [(Real 4)
+                                            (Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
                                     [(Var 12 a)
-                                    (Var 12 b)]
+                                    (Var 12 b)
+                                    (Var 12 distance)]
                                     [(Assignment
                                         (Var 12 distance)
                                         (IntrinsicElementalFunction
@@ -545,209 +748,6 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 12 distance)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            point_dist_subrout:
-                                (Function
-                                    (SymbolTable
-                                        13
-                                        {
-                                            1_point_x:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_point_x
-                                                    8 x
-                                                    point
-                                                    []
-                                                    x
-                                                    Public
-                                                ),
-                                            1_point_y:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_point_y
-                                                    8 y
-                                                    point
-                                                    []
-                                                    y
-                                                    Public
-                                                ),
-                                            a:
-                                                (Variable
-                                                    13
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    11 point
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    13
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    11 point
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            distance:
-                                                (Variable
-                                                    13
-                                                    distance
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
-                                        })
-                                    point_dist_subrout
-                                    (FunctionType
-                                        [(StructType
-                                            [(Real 4)
-                                            (Real 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                        (StructType
-                                            [(Real 4)
-                                            (Real 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                        (Real 4)]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 13 a)
-                                    (Var 13 b)
-                                    (Var 13 distance)]
-                                    [(Assignment
-                                        (Var 13 distance)
-                                        (IntrinsicElementalFunction
-                                            Sqrt
-                                            [(RealBinOp
-                                                (RealBinOp
-                                                    (RealBinOp
-                                                        (StructInstanceMember
-                                                            (Var 13 a)
-                                                            13 1_point_x
-                                                            (Real 4)
-                                                            ()
-                                                        )
-                                                        Sub
-                                                        (StructInstanceMember
-                                                            (Var 13 b)
-                                                            13 1_point_x
-                                                            (Real 4)
-                                                            ()
-                                                        )
-                                                        (Real 4)
-                                                        ()
-                                                    )
-                                                    Pow
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                Add
-                                                (RealBinOp
-                                                    (RealBinOp
-                                                        (StructInstanceMember
-                                                            (Var 13 a)
-                                                            13 1_point_y
-                                                            (Real 4)
-                                                            ()
-                                                        )
-                                                        Sub
-                                                        (StructInstanceMember
-                                                            (Var 13 b)
-                                                            13 1_point_y
-                                                            (Real 4)
-                                                            ()
-                                                        )
-                                                        (Real 4)
-                                                        ()
-                                                    )
-                                                    Pow
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    (Real 4)
-                                                    ()
-                                                )
-                                                (Real 4)
-                                                ()
-                                            )]
-                                            0
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
                                     ()
                                     Public
                                     .false.
@@ -756,7 +756,7 @@
                                 ),
                             rkind:
                                 (ExternalSymbol
-                                    11
+                                    10
                                     rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -808,7 +808,7 @@
             submodules_02:
                 (Program
                     (SymbolTable
-                        14
+                        13
                         {
                             
                         })

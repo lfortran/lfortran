@@ -94,12 +94,10 @@
         [(a)]
         [(AttrType
             TypeCharacter
-            [(()
-            ()
-            Star)]
+            []
             ()
             ()
-            None
+            DoubleAsterisk
         )]
         ()
         ()

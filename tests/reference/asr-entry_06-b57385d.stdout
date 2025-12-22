@@ -46,7 +46,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
-                                                        UnboundedPointerArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -66,7 +66,7 @@
                                             (Real 8)
                                             [(()
                                             ())]
-                                            UnboundedPointerArray
+                                            DescriptorArray
                                         )]
                                         (Real 8)
                                         Source
@@ -130,12 +130,12 @@
                                         [((ArrayPhysicalCast
                                             (Var 5 w)
                                             FixedSizeArray
-                                            UnboundedPointerArray
+                                            DescriptorArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                UnboundedPointerArray
+                                                DescriptorArray
                                             )
                                             ()
                                         ))]
@@ -216,7 +216,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
-                                        UnboundedPointerArray
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -236,7 +236,7 @@
                             (Real 8)
                             [(()
                             ())]
-                            UnboundedPointerArray
+                            DescriptorArray
                         )]
                         (Real 8)
                         Source
@@ -354,7 +354,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
-                                        UnboundedPointerArray
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -375,7 +375,7 @@
                             (Real 8)
                             [(()
                             ())]
-                            UnboundedPointerArray
+                            DescriptorArray
                         )]
                         (Real 8)
                         Source

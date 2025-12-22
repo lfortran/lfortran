@@ -212,19 +212,17 @@
                 []
                 ()
                 ()
-                None
+                DoubleAsterisk
                 ())]
                 ()
             )
             (Declaration
                 (AttrType
                     TypeCharacter
-                    [(()
-                    ()
-                    Star)]
+                    []
                     ()
                     ()
-                    None
+                    DoubleAsterisk
                 )
                 [(AttrIntent
                     Out
