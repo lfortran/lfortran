@@ -15,7 +15,7 @@ see the documentation in that script for details and motivation.
 %locations
 %glr-parser
 %expect    237 // shift/reduce conflicts
-%expect-rr 176 // reduce/reduce conflicts
+%expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -1565,8 +1565,8 @@ intrinsic_type_spec
     | KW_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Tuple, $3, @$); }
     ;
     char_len_param
-    : "*"           { $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
-    | kind_arg_list { $$ = ATTR_TYPE_KIND(Character, $1, @$); } ;
+    : kind_arg_list { $$ = ATTR_TYPE_KIND(Character, $1, @$); }
+    ;
     
 intrinsic_type_spec_list
     : intrinsic_type_spec_list "," intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
