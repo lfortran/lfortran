@@ -7396,6 +7396,9 @@ body_visitor(
     return tu;
 }
 
+// Replace the check_ArraySectionShapeConformance function in ast_body_visitor.cpp
+// This version uses the correct error reporting method for LFortran
+
 void
 BodyVisitor::check_ArraySectionShapeConformance(ASR::expr_t* target,
                                                 ASR::expr_t* value,
@@ -7404,178 +7407,138 @@ BodyVisitor::check_ArraySectionShapeConformance(ASR::expr_t* target,
     if (!target || !value)
         return;
 
-    // Get types
+    // Get the types of both sides
     ASR::ttype_t* target_type = ASRUtils::expr_type(target);
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
 
     if (!target_type || !value_type)
         return;
 
-    // Only check if both are arrays
-    bool target_is_array = ASRUtils::is_array(target_type);
-    bool value_is_array = ASRUtils::is_array(value_type);
-
-    if (!target_is_array && !value_is_array)
+    // Only check arrays
+    if (!ASRUtils::is_array(target_type) || !ASRUtils::is_array(value_type))
         return;
-    if (!target_is_array || !value_is_array) {
-        // One is scalar, one is array - already handled by other checks
+
+    // Get dimensions from both sides
+    std::vector<int64_t> target_dims;
+    std::vector<int64_t> value_dims;
+
+    bool target_has_dims = get_array_dims_at_compile_time(target, target_type, target_dims);
+    bool value_has_dims = get_array_dims_at_compile_time(value, value_type, value_dims);
+
+    // If we can't determine dimensions at compile time, skip check
+    if (!target_has_dims || !value_has_dims)
         return;
-    }
 
-    // Special handling for ArraySection on RHS
-    if (ASR::is_a<ASR::ArraySection_t>(*value)) {
-        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(value);
-
-        // Get target dimensions
-        std::vector<int64_t> target_dims;
-        if (!get_array_dims_at_compile_time(target, target_type, target_dims)) {
-            return;  // Can't check at compile time
-        }
-
-        // Count the number of dimensions in the section result
-        // A section dimension exists if m_right is not null (it's a range, not a scalar index)
-        size_t section_rank = 0;
-        std::vector<int64_t> section_dims;
-
-        for (size_t i = 0; i < section->n_args; i++) {
-            ASR::array_index_t& arg = section->m_args[i];
-
-            if (arg.m_right) {
-                // This is a section (left:right:step), not a scalar index
-                section_rank++;
-
-                // Try to compute size if bounds are constant
-                ASR::expr_t* left = arg.m_left ? ASRUtils::expr_value(arg.m_left) : nullptr;
-                ASR::expr_t* right = ASRUtils::expr_value(arg.m_right);
-                ASR::expr_t* step = arg.m_step ? ASRUtils::expr_value(arg.m_step) : nullptr;
-
-                // Check if all bounds are constant
-                if (left && right && ASR::is_a<ASR::IntegerConstant_t>(*left)
-                    && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-                    int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
-                    int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
-                    int64_t step_val = 1;
-
-                    if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
-                        step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
-                    }
-
-                    // Compute section size: (right - left) / step + 1
-                    int64_t size = (right_val - left_val) / step_val + 1;
-                    if (size < 0)
-                        size = 0;
-
-                    section_dims.push_back(size);
-                } else {
-                    // Can't determine size at compile time, but we know it's a dimension
-                    section_dims.push_back(-1);  // Unknown size marker
-                }
-            }
-        }
-
-        // Check rank conformance
-        if (target_dims.size() != section_rank) {
-            diag.add(Diagnostic("Different shape for array assignment at ("
-                                    + std::to_string(loc.first) + ":" + std::to_string(loc.last)
-                                    + ") - rank mismatch: " + std::to_string(target_dims.size())
-                                    + " and " + std::to_string(section_rank),
-                                Level::Error,
-                                Stage::Semantic,
-                                { Label("", { loc }) }));
-            throw SemanticAbort();
-        }
-
-        // Check dimension sizes if we could compute them
-        for (size_t i = 0; i < section_dims.size(); i++) {
-            if (section_dims[i] != -1 && target_dims[i] != section_dims[i]) {
-                diag.add(Diagnostic("Different shape for array assignment at ("
-                                        + std::to_string(loc.first) + ":" + std::to_string(loc.last)
-                                        + ") - dimension " + std::to_string(i + 1) + ": "
-                                        + std::to_string(target_dims[i]) + " and "
-                                        + std::to_string(section_dims[i]),
-                                    Level::Error,
-                                    Stage::Semantic,
-                                    { Label("", { loc }) }));
-                throw SemanticAbort();
-            }
-        }
-
-        return;
-    }
-
-    // For non-section cases, check dimensions
-    std::vector<int64_t> target_dims_regular;
-    std::vector<int64_t> value_dims_regular;
-
-    bool target_known = get_array_dims_at_compile_time(target, target_type, target_dims_regular);
-    bool value_known = get_array_dims_at_compile_time(value, value_type, value_dims_regular);
-
-    if (!target_known || !value_known) {
-        return;
-    }
-
-    // Check rank conformance
-    if (target_dims_regular.size() != value_dims_regular.size()) {
-        diag.add(Diagnostic("Different shape for array assignment at (" + std::to_string(loc.first)
-                                + ":" + std::to_string(loc.last)
-                                + ") - rank mismatch: " + std::to_string(target_dims_regular.size())
-                                + " and " + std::to_string(value_dims_regular.size()),
-                            Level::Error,
-                            Stage::Semantic,
-                            { Label("", { loc }) }));
+    // Check if ranks match
+    if (target_dims.size() != value_dims.size()) {
         throw SemanticAbort();
     }
 
-    // Check each dimension size
-    for (size_t i = 0; i < target_dims_regular.size(); i++) {
-        if (target_dims_regular[i] != value_dims_regular[i]) {
-            diag.add(Diagnostic("Different shape for array assignment at ("
-                                    + std::to_string(loc.first) + ":" + std::to_string(loc.last)
-                                    + ") - dimension " + std::to_string(i + 1) + ": "
-                                    + std::to_string(target_dims_regular[i]) + " and "
-                                    + std::to_string(value_dims_regular[i]),
-                                Level::Error,
-                                Stage::Semantic,
-                                { Label("", { loc }) }));
+    // Check if each dimension matches
+    for (size_t i = 0; i < target_dims.size(); i++) {
+        if (target_dims[i] != value_dims[i]) {
+            diag.semantic_error_label(
+                "Different shape for array assignment at (" + std::to_string(loc.first) + ":"
+                    + std::to_string(loc.last) + ") - dimension " + std::to_string(i + 1) + ": "
+                    + std::to_string(target_dims[i]) + " and " + std::to_string(value_dims[i]),
+                { loc },
+                "shape mismatch");
             throw SemanticAbort();
         }
     }
 }
 
 bool
-BodyVisitor::get_array_dims_at_compile_time(ASR::expr_t* /* expr */,
+BodyVisitor::get_array_dims_at_compile_time(ASR::expr_t* expr,
                                             ASR::ttype_t* type,
                                             std::vector<int64_t>& dims)
 {
-    ASR::ttype_t* arr_type
-        = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type));
+    // Case 1: ArraySection - compute dimensions from the section
+    if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(expr);
 
-    if (!ASR::is_a<ASR::Array_t>(*arr_type)) {
-        return false;
-    }
+        // Count the resulting dimensions (scalar indices don't contribute to rank)
+        for (size_t i = 0; i < section->n_args; i++) {
+            ASR::array_index_t& arg = section->m_args[i];
 
-    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arr_type);
+            // If no right bound, this is a scalar index - doesn't contribute to result rank
+            if (!arg.m_right)
+                continue;
 
-    for (size_t i = 0; i < array_t->n_dims; i++) {
-        ASR::dimension_t& dim = array_t->m_dims[i];
+            // This is a range (left:right:step)
+            ASR::expr_t* left = arg.m_left ? ASRUtils::expr_value(arg.m_left) : nullptr;
+            ASR::expr_t* right = ASRUtils::expr_value(arg.m_right);
+            ASR::expr_t* step = arg.m_step ? ASRUtils::expr_value(arg.m_step) : nullptr;
 
-        if (!dim.m_length)
-            return false;
+            // Check if all bounds are constant
+            if (left && right && ASR::is_a<ASR::IntegerConstant_t>(*left)
+                && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+                int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
+                int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+                int64_t step_val = 1;
 
-        ASR::expr_t* len = ASRUtils::expr_value(dim.m_length);
-        if (!len)
-            return false;
+                if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
+                    step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+                }
 
-        if (ASR::is_a<ASR::IntegerConstant_t>(*len)) {
-            int64_t size = ASR::down_cast<ASR::IntegerConstant_t>(len)->m_n;
-            dims.push_back(size);
-        } else {
-            // Not a compile-time constant
-            return false;
+                // Guard against zero or invalid step
+                if (step_val == 0) {
+                    return false;
+                }
+
+                // Compute size based on step direction
+                int64_t size;
+                if (step_val > 0) {
+                    size = std::max(0L, (right_val - left_val) / step_val + 1);
+                } else {
+                    size = std::max(0L, (left_val - right_val) / (-step_val) + 1);
+                }
+
+                dims.push_back(size);
+            } else {
+                // Can't evaluate at compile time
+                return false;
+            }
         }
+
+        return true;
     }
 
-    return true;
+    // Case 2: Regular array variable or ArrayItem - get dimensions from type
+    if (ASRUtils::is_array(type)) {
+        ASR::dimension_t* array_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, array_dims);
+
+        for (size_t i = 0; i < n_dims; i++) {
+            ASR::expr_t* start = array_dims[i].m_start;
+            ASR::expr_t* end = array_dims[i].m_length;  // Note: m_length, not m_end
+
+            if (!start || !end) {
+                return false;
+            }
+
+            ASR::expr_t* start_val = ASRUtils::expr_value(start);
+            ASR::expr_t* end_val = ASRUtils::expr_value(end);
+
+            if (!start_val || !end_val) {
+                return false;
+            }
+
+            if (ASR::is_a<ASR::IntegerConstant_t>(*start_val)
+                && ASR::is_a<ASR::IntegerConstant_t>(*end_val)) {
+                // m_length is the size, not the upper bound
+                // So the dimension size is just end_int
+                int64_t end_int = ASR::down_cast<ASR::IntegerConstant_t>(end_val)->m_n;
+                dims.push_back(end_int);
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 bool
@@ -7619,10 +7582,18 @@ BodyVisitor::compute_array_section_dims(ASR::expr_t* arr_section,
             step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
         }
 
-        // Compute section size: (right - left) / step + 1
-        int64_t size = (right_val - left_val) / step_val + 1;
-        if (size < 0)
-            size = 0;
+        // Guard against zero step
+        if (step_val == 0) {
+            return false;
+        }
+
+        // Compute section size based on step direction
+        int64_t size;
+        if (step_val > 0) {
+            size = std::max(0L, (right_val - left_val) / step_val + 1);
+        } else {
+            size = std::max(0L, (left_val - right_val) / (-step_val) + 1);
+        }
 
         dims.push_back(size);
     }
