@@ -4085,6 +4085,10 @@ ast = true
 filename = "parser/data_stmt_with_implied_do_loop.f"
 ast = true
 
+[[test]]
+filename = "parser/legacy_character_parenthesized_length.f90"
+ast = true
+
 # Parser errors
 
 [[test]]
