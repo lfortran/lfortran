@@ -4589,6 +4589,21 @@ public:
                         LCOMPILERS_ASSERT(tmp_init != nullptr)
                         // in case of declaration like:
                         // REAL :: x(2) = 1, we need to cast `tmp_init`
+                        // Pad string before implicit cast rules
+                        if (ASR::is_a<ASR::StringConstant_t>(*tmp_init)) {
+                            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(type);
+                            if (ASR::is_a<ASR::String_t>(*element_type)) {
+                                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
+                                ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(tmp_init);
+                                int64_t target_len = ASRUtils::extract_len<SemanticAbort>(str_type->m_len, x.base.base.loc, diag);                                
+                                std::string s = str_const->m_s;
+                                while ((int64_t)s.length() < target_len) {
+                                    s += " ";
+                                }                      
+                                tmp_init = ASRUtils::EXPR(ASR::make_StringConstant_t(al, str_const->base.base.loc, s2c(al, s), element_type
+                                ));
+                            }
+                        }
                         ImplicitCastRules::set_converted_value(
                             al, x.base.base.loc, &tmp_init,
                             ASRUtils::expr_type(tmp_init),
