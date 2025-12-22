@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-matmul_unallocated_01-39026d3.stderr",
-    "stderr_hash": "a94a1b0a8f4c857b17918aaa24c9ff8f59a7ce6552ca339b4d6a64bd",
-    "returncode": 1
+    "stderr_hash": "22f0962c16faf9dcf96e60ecf9df15ce5f5dbf10d5fbf0da2636c493",
+    "returncode": 10
 }
