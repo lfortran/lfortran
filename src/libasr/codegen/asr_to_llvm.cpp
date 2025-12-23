@@ -11411,7 +11411,17 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
+        ASR::ttype_t *unit_type = ASRUtils::expr_type(x.m_unit);
 
+    // Stop the ICE here for character units (Internal Files) in the backend
+    if (ASRUtils::is_character(*unit_type)) {
+        diag.codegen_error(
+            "Internal file I/O is not yet implemented in the LLVM backend",
+            x.base.base.loc
+        );
+        return; 
+    }
+    
         llvm::Value *unit_val, *iostat, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
