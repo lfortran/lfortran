@@ -1,5 +1,3 @@
-! RUN: %lfortran %s --realloc-lhs-arrays
-
 module m_dep
   type :: downloader_t
      character(len=:), allocatable :: name
