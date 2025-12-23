@@ -897,7 +897,22 @@ bool set_allocation_size(
         case ASR::exprType::ArrayPhysicalCast: {
             // Control Flow would reach here only for assumed rank arrays
             // where we don't have dimensions info at compile time
-            return false;
+            ASR::ArrayPhysicalCast_t* array_physical_cast =
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(value);
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_physical_cast->m_type);
+            allocate_dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                    al, loc, ASRUtils::get_past_array_physical_cast(array_physical_cast->m_arg),
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                    ASRUtils::expr_type(int32_one), nullptr));
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
         }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
