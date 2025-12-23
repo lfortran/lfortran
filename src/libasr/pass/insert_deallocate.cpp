@@ -429,7 +429,7 @@ public:
                         ASR::expr_t* member_expr = ASRUtils::EXPR(
                             ASRUtils::getStructInstanceMember_t(al, loc,
                             (ASR::asr_t*)var_expr, const_cast<ASR::symbol_t*>(arg_sym),
-                            struct_member.second, nullptr));
+                            struct_member.second, x.m_symtab));
 
                         // Create: if (allocated(arg%member)) deallocate(arg%member)
                         Vec<ASR::expr_t*> allocated_args;
