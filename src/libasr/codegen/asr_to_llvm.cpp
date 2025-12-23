@@ -11406,23 +11406,23 @@ public:
         return fn;
     }
 
-    void ASRToLLVMVisitor::visit_FileRead(const ASR::FileRead_t &x) {
+    void visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-        ASR::ttype_t *unit_type = ASRUtils::expr_type(x.m_unit);
-
-    // Stop the ICE here for character units (Internal Files) in the backend
-    if (ASRUtils::is_character(*unit_type)) {
-        diag.add(diag::Diagnostic(
-            "Internal file I/O is not yet implemented in the LLVM backend",
-            diag::Level::Error, diag::Stage::CodeGen, {
-                diag::Label("", {x.base.base.loc})
-                }));
-        return; 
-    }
-    
+        if (x.m_unit) {
+            ASR::ttype_t *unit_type = ASRUtils::expr_type(x.m_unit);
+            if (ASRUtils::is_character(*unit_type)) {
+                diag.add(diag::Diagnostic(
+                    "Internal file I/O is not yet implemented in the LLVM backend",
+                    diag::Level::Error, diag::Stage::CodeGen, {
+                        diag::Label("", {x.base.base.loc})
+                    }));
+                return;
+            }
+        }
+        
         llvm::Value *unit_val, *iostat, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
