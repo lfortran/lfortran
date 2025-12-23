@@ -11406,7 +11406,7 @@ public:
         return fn;
     }
 
-    void visit_FileRead(const ASR::FileRead_t &x) {
+    void ASRToLLVMVisitor::visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
@@ -11415,10 +11415,11 @@ public:
 
     // Stop the ICE here for character units (Internal Files) in the backend
     if (ASRUtils::is_character(*unit_type)) {
-        diag.codegen_error(
+        diag.add(diag::Diagnostic(
             "Internal file I/O is not yet implemented in the LLVM backend",
-            x.base.base.loc
-        );
+            diag::Level::Error, diag::Stage::CodeGen, {
+                diag::Label("", {x.base.base.loc})
+                }));
         return; 
     }
     
