@@ -2537,8 +2537,7 @@ public:
             ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
 
             if (orig_var->m_intent != ASR::intentType::Out) continue;
-            if (!ASRUtils::is_allocatable(orig_var->m_type) &&
-                !ASR::is_a<ASR::StructType_t>(*orig_var->m_type)) continue;
+            if (!ASRUtils::is_allocatable(orig_var->m_type)) continue;
 
             if( subrout_call->m_args[i].m_value &&
                 subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
