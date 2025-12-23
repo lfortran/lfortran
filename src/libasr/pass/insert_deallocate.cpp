@@ -305,6 +305,34 @@ class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeal
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
+
+    // Helper: Wrap statement in optional presence check if needed
+    ASR::stmt_t* wrap_optional_check(Location loc, ASR::expr_t* var_expr,
+                                      ASR::presenceType presence, ASR::stmt_t* stmt_to_wrap) {
+        if (presence != ASR::presenceType::Optional) {
+            return stmt_to_wrap;
+        }
+
+        // Create present(var_expr) check
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
+        Vec<ASR::expr_t*> present_args;
+        present_args.reserve(al, 1);
+        present_args.push_back(al, var_expr);
+
+        ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+            al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
+            present_args.p, present_args.n, 0, logical_type, nullptr));
+
+        // Wrap stmt_to_wrap in: if (present(var_expr)) then stmt_to_wrap end if
+        Vec<ASR::stmt_t*> present_body;
+        present_body.reserve(al, 1);
+        present_body.push_back(al, stmt_to_wrap);
+
+        return ASRUtils::STMT(ASR::make_If_t(
+            al, loc, nullptr, is_present, present_body.p, present_body.n, nullptr, 0));
+    }
+
 public:
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
 
@@ -348,11 +376,12 @@ public:
             }
 
             Location loc = arg_var->base.base.loc;
-            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
 
-            // Handle allocatable arguments
-            // Note: If the struct itself is allocatable, we deallocate it as a whole.
-            // We do NOT also deallocate its components - that would be use-after-free.
+            // Handle allocatable arguments (scalars, arrays, or structs)
+            // CRITICAL: If the struct itself is allocatable, deallocate it as a whole.
+            // Deep deallocation of nested components is handled by runtime/codegen.
+            // DO NOT manually deallocate components here - that would be use-after-free!
             if (ASRUtils::is_allocatable(arg_var->m_type)) {
                 // Create: if (allocated(arg)) deallocate(arg)
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
@@ -381,27 +410,9 @@ public:
                 ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
                     al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
 
-                // For optional arguments, wrap in: if (present(arg)) then ...
-                if (arg_var->m_presence == ASR::presenceType::Optional) {
-                    // Create present(arg) check
-                    Vec<ASR::expr_t*> present_args;
-                    present_args.reserve(al, 1);
-                    present_args.push_back(al, var_expr);
-                    ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
-                        al, loc,
-                        static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
-                        present_args.p, present_args.n, 0, logical_type, nullptr));
-
-                    // Wrap if_stmt in: if (present(arg)) then if_stmt end if
-                    Vec<ASR::stmt_t*> present_body;
-                    present_body.reserve(al, 1);
-                    present_body.push_back(al, if_stmt);
-                    ASR::stmt_t* present_if_stmt = ASRUtils::STMT(ASR::make_If_t(
-                        al, loc, nullptr, is_present, present_body.p, present_body.n, nullptr, 0));
-                    dealloc_stmts.push_back(al, present_if_stmt);
-                } else {
-                    dealloc_stmts.push_back(al, if_stmt);
-                }
+                // Wrap in optional presence check if needed
+                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
+                dealloc_stmts.push_back(al, wrapped_stmt);
             } else if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
                 // Handle non-allocatable StructType arguments with allocatable components
                 // (If the struct itself is allocatable, we already handled it above)
@@ -444,26 +455,9 @@ public:
                         ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
                             al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
 
-                        // For optional arguments, wrap in: if (present(arg)) then ...
-                        if (arg_var->m_presence == ASR::presenceType::Optional) {
-                            ASR::expr_t* var_expr_present = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
-                            Vec<ASR::expr_t*> present_args;
-                            present_args.reserve(al, 1);
-                            present_args.push_back(al, var_expr_present);
-                            ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
-                                al, loc,
-                                static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
-                                present_args.p, present_args.n, 0, logical_type, nullptr));
-
-                            Vec<ASR::stmt_t*> present_body;
-                            present_body.reserve(al, 1);
-                            present_body.push_back(al, if_stmt);
-                            ASR::stmt_t* present_if_stmt = ASRUtils::STMT(ASR::make_If_t(
-                                al, loc, nullptr, is_present, present_body.p, present_body.n, nullptr, 0));
-                            dealloc_stmts.push_back(al, present_if_stmt);
-                        } else {
-                            dealloc_stmts.push_back(al, if_stmt);
-                        }
+                        // Wrap in optional presence check if needed (reuse var_expr from above)
+                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
+                        dealloc_stmts.push_back(al, wrapped_stmt);
                     }
                 }
             }
