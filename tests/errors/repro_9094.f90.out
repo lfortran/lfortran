@@ -1,9 +1,0 @@
-[0;31;1msemantic error[0;0m[0;1m: Assumed-size '*' is only permitted in the last dimension[0;0m
- [0;34;1m-->[0;0m tests/errors/repro_9094.f90:2:15
-  [0;34;1m|[0;0m
-[0;34;1m2 |[0;0m     real :: a(*, 10) ! error: star not in last dim
-  [0;34;1m|[0;0m               [0;31;1m^ [0;0m
-
-
-[0;1mNote[0;0m: Please report unclear, confusing or incorrect messages as bugs at
-https://github.com/lfortran/lfortran/issues.
