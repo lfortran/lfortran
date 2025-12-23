@@ -351,6 +351,8 @@ public:
             ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
 
             // Handle allocatable arguments
+            // Note: If the struct itself is allocatable, we deallocate it as a whole.
+            // We do NOT also deallocate its components - that would be use-after-free.
             if (ASRUtils::is_allocatable(arg_var->m_type)) {
                 // Create: if (allocated(arg)) deallocate(arg)
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
@@ -400,10 +402,9 @@ public:
                 } else {
                     dealloc_stmts.push_back(al, if_stmt);
                 }
-            }
-
-            // Handle StructType arguments with allocatable components
-            if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
+            } else if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
+                // Handle non-allocatable StructType arguments with allocatable components
+                // (If the struct itself is allocatable, we already handled it above)
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
                 SymbolTable* sym_table_of_struct = struct_type->m_symtab;
