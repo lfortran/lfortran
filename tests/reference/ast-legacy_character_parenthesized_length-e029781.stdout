@@ -1,0 +1,55 @@
+(TranslationUnit
+    [(Program
+        legacy_test
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                [(()
+                5
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(s1
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(()
+                (+ 2 3)
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(s2
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(Print
+            0
+            ()
+            [(String "Legacy character length parsed successfully" ())]
+            ()
+        )]
+        []
+    )]
+)

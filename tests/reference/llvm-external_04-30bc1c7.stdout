@@ -3,7 +3,7 @@ source_filename = "LFortran"
 
 define void @a() {
 .entry:
-  call void @b(float ()* @f, float ()* @g)
+  call void @b(ptr @f, ptr @g)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -13,7 +13,7 @@ FINALIZE_SYMTABLE_a:                              ; preds = %return
   ret void
 }
 
-declare void @b(float ()*, float ()*)
+declare void @b(ptr, ptr)
 
 declare float @f()
 
