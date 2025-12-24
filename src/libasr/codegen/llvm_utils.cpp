@@ -193,6 +193,15 @@ namespace LCompilers {
     }
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
+
+        // Verify that the vtable pointer size matches the architecture assumption.
+        // The VTABLE_PTR_SIZE constant (8 bytes) assumes 64-bit pointers.
+        llvm::DataLayout data_layout(module->getDataLayout());
+        uint64_t actual_ptr_size = data_layout.getPointerSize();
+        LCOMPILERS_ASSERT_MSG(actual_ptr_size == ASRUtils::VTABLE_PTR_SIZE,
+            "VTable pointer size mismatch: expected " +
+            std::to_string(ASRUtils::VTABLE_PTR_SIZE) + " bytes (64-bit), but target uses " +
+            std::to_string(actual_ptr_size) + " bytes");
     }
     std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
         return LLVM::get_type_as_string(type);

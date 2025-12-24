@@ -61,6 +61,14 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
 
+// VTable pointer size in bytes (64-bit architecture assumption).
+// This represents the size of the vtable pointer field (vptr) that is
+// prepended to class instances when compiler_options.new_classes is enabled.
+// The actual vtable pointer is a pointer-to-pointer: i32 (...)**.
+// NOTE: This assumes 64-bit pointers (8 bytes). The LLVM backend validates
+// this assumption at runtime using the target's DataLayout.
+const int VTABLE_PTR_SIZE = 8;
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
