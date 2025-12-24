@@ -1190,6 +1190,7 @@ int compile_src_to_object_file(const std::string &infile,
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    t2 = std::chrono::high_resolution_clock::now();
     lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
