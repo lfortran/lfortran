@@ -39,6 +39,14 @@ module continue_compilation_1_mod
 
 
 
+    ! Test for Missing Declaration:
+    type :: ctx_missing_t
+        procedure(f_missing), pointer, nopass :: fn => null()
+    end type
+
+
+
+
 
 
 
