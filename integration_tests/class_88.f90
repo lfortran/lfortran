@@ -25,10 +25,12 @@ program test
 
   ! Test type-bound procedure call with type variable
   result_ptr => xt%tbp()
+  print *, result_ptr
   if (result_ptr /= 42) error stop "Failed: xt%tbp() should return 42"
 
   ! Test type-bound procedure call with class pointer
   result_ptr => xp%tbp()
+  print *, result_ptr
   if (result_ptr /= 42) error stop "Failed: xp%tbp() should return 42"
 
   print *, "OK"
