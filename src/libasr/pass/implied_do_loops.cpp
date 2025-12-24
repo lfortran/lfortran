@@ -437,6 +437,15 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::alloc_arg_t arg;
         // Prefer declared source length if available; else fall back to previously detected expr
         arg.m_len_expr = elem_len_expr_for_alloc ? elem_len_expr_for_alloc : non_const_len_expr;
+        
+        // If we're allocating a deferred-length string but have no length expression,
+        // we cannot proceed. In this case, revert to non-deferred type.
+        if (is_allocatable && element_type && ASRUtils::is_character(*element_type) && 
+            !arg.m_len_expr) {
+            is_allocatable = false;
+            result_type_ = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(x->m_type), &dims);
+        }
         arg.m_type = nullptr;
         arg.m_sym_subclass = nullptr;
         arg.m_dims = dims.p;
