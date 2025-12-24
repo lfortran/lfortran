@@ -141,21 +141,17 @@ void print_one_component(std::string component) {
         is_pass = true;
     }
 
-    // Apply colors for key entries
+    // Apply colors for key entries (minimal color scheme)
     if (component_name == "Total time") {
         std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
         std::cout << GREEN;
-    } else if (component_name == "Allocator usage of last chunk (MB)") {
-        std::cout << YELLOW;
-    } else if (component_name == "Allocator chunks") {
-        std::cout << CYAN;
-    } else if (component_name == "File reading" || component_name == "Src -> ASR") {
-        std::cout << MAGENTA;
-    } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
-        std::cout << RED;
-    } else if (!is_pass) {
-        std::cout << BLUE;  // Default blue for non-[PASS] entries
+    } else if (component_name == "File reading" || component_name == "Src -> ASR" ||
+               component_name == "ASR passes (total)" || component_name == "LLVM IR creation" ||
+               component_name == "ASR -> mod" || component_name == "LLVM opt" ||
+               component_name == "LLVM -> BIN" || component_name == "Linking time") {
+        std::cout << CYAN;  // Phase headers in cyan
     }
+    // All other entries (allocator info, [PASS] entries) use default white/reset color
 
     // Print in formatted table
     int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
@@ -179,11 +175,28 @@ void print_one_component(std::string component) {
 
 // Note: this function is case sensitive to the input string
 void print_time_report(const std::vector<std::string>& vector_of_time_report) {
+    // Print allocator info first
     for (const auto& entry : vector_of_time_report) {
-        // check if `Allocator usage of last chunk (MB)` or `Allocator chunks` is present
         if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
             entry.find("Allocator chunks") != std::string::npos) {
             print_one_component(entry);
+        }
+    }
+
+    // Calculate total time for ASR passes
+    double asr_passes_total = 0.0;
+    for (const auto& entry : vector_of_time_report) {
+        if (entry.find("[PASS]") != std::string::npos) {
+            // Extract time value from [PASS] entry
+            std::istringstream ss(entry);
+            std::string name, time_str;
+            std::getline(ss, name, ':');
+            ss >> time_str;
+            try {
+                asr_passes_total += std::stof(time_str);
+            } catch (...) {
+                // Skip if parsing fails
+            }
         }
     }
 
@@ -193,11 +206,31 @@ void print_time_report(const std::vector<std::string>& vector_of_time_report) {
               << std::right << std::setw(10) << "Time (ms)" << '\n';
     std::cout << std::string(60, '-') << '\n';
 
+    // Track if we've printed the ASR passes summary
+    bool printed_asr_summary = false;
+
     for (const auto& entry : vector_of_time_report) {
-        if (entry.find("Allocator usage of last chunk (MB)") == std::string::npos &&
-            entry.find("Allocator chunks") == std::string::npos) {
-            print_one_component(entry);
+        // Skip allocator info (already printed)
+        if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
+            entry.find("Allocator chunks") != std::string::npos) {
+            continue;
         }
+
+        // Skip old "ASR -> ASR passes" entry (replaced by new summary)
+        if (entry.find("ASR -> ASR passes") != std::string::npos) {
+            continue;
+        }
+
+        // Insert ASR passes summary before first [PASS] entry
+        if (!printed_asr_summary && entry.find("[PASS]") != std::string::npos) {
+            std::string summary = "ASR passes (total): " +
+                std::to_string(static_cast<int>(asr_passes_total)) + "." +
+                std::to_string(static_cast<int>((asr_passes_total - static_cast<int>(asr_passes_total)) * 1000)) + " ms";
+            print_one_component(summary);
+            printed_asr_summary = true;
+        }
+
+        print_one_component(entry);
     }
 
     std::cout << std::string(60, '-') << '\n';
@@ -1246,11 +1279,6 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "Time taken by pass: ";
-        compiler_options.po.vector_of_time_report.push_back(message);
-        for (auto it: fe.compiler_options.po.vector_of_time_report) {
-            compiler_options.po.vector_of_time_report.push_back(it);
-        }
         message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
