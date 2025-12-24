@@ -1,4 +1,4 @@
-module nested_17_mod
+module nested_19_mod
     type t
         integer :: i = 1
         integer :: arr(2) = [10, 20]
@@ -10,8 +10,8 @@ module nested_17_mod
 
 end module 
 
-program nested_17
-    use nested_17_mod
+program nested_19
+    use nested_19_mod
     integer :: i
     i  = 1
     print *, t_param%arr(i)
