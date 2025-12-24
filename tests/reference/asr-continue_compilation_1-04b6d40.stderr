@@ -21,36 +21,36 @@ semantic error: Dummy argument 'c' not defined
    | ...^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:93:31
+  --> tests/errors/continue_compilation_1.f90:79:31
    |
-93 |         real, intent(in) :: a(*, 10)
+79 |         real, intent(in) :: d(*, 10)
    |                               ^ 
 
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:92:5 - 94:18
-   |
-92 |        subroutine assumed_size_star_pos_1(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-94 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:97:19
+  --> tests/errors/continue_compilation_1.f90:80:19
    |
-97 |         real :: a(*, 10)
+80 |         real :: e(*, 10)
    |                   ^ 
 
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:96:5 - 98:18
+semantic error: Dummy argument 'd' not defined
+  --> tests/errors/continue_compilation_1.f90:77:5 - 85:38
    |
-96 |        subroutine assumed_size_star_pos_2(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+77 |        subroutine assumed_size_errors(a, b, c, d, e)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-98 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
+85 |        end subroutine assumed_size_errors
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'e' not defined
+  --> tests/errors/continue_compilation_1.f90:77:5 - 85:38
+   |
+77 |        subroutine assumed_size_errors(a, b, c, d, e)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+85 |        end subroutine assumed_size_errors
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
@@ -174,21 +174,21 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:79:18
+  --> tests/errors/continue_compilation_1.f90:81:18
    |
-79 |         print *, ubound(a, 1)
+81 |         print *, ubound(a, 1)  ! error: last dim assumed-size
    |                  ^^^^^^^^^^^^ 
 
 semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
-  --> tests/errors/continue_compilation_1.f90:84:18
+  --> tests/errors/continue_compilation_1.f90:82:18
    |
-84 |         print *, ubound(a)
+82 |         print *, ubound(b)     ! error: DIM required
    |                  ^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:89:18
+  --> tests/errors/continue_compilation_1.f90:83:18
    |
-89 |         print *, ubound(a, 2)
+83 |         print *, ubound(c, 2)  ! error: last dim assumed-size
    |                  ^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
@@ -884,16 +884,16 @@ semantic error: DO loop label 'q1' already defined
     | ...^^^^^^^^^^ 
 
 semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
-   --> tests/errors/continue_compilation_1.f90:446:5
-    |
-446 |     WRITE (6, fmt_i1)
-    |     ^^^^^^^^^^^^^^^^^ 
-
-semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
    --> tests/errors/continue_compilation_1.f90:451:5
     |
 451 |     print fmt_i2, "test"
     |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:446:5
+    |
+446 |     WRITE (6, fmt_i1)
+    |     ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
    --> tests/errors/continue_compilation_1.f90:456:5
