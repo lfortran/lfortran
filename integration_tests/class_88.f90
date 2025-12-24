@@ -1,4 +1,4 @@
-module m
+module class_88_m
   type t
     integer :: n = 0
    contains
@@ -10,10 +10,10 @@ module m
     integer, pointer :: f
     f => this%n
   end function f
-end module m
+end module
 
 program test
-  use m
+  use class_88_m
   implicit none
   type(t), target :: xt
   class(t), pointer :: xp
