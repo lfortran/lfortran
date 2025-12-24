@@ -2128,14 +2128,24 @@ public:
 	    dims.reserve(al, n_dim);
 	    for (size_t i=0; i<n_dim; i++) {
 	        if (is_argument &&
-	                m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
-	                && i != n_dim-1) {
-	            diag.add(diag::Diagnostic(
-	                "Assumed-size '*' is only permitted in the last dimension",
-	                diag::Level::Error, diag::Stage::Semantic, {
-	                    diag::Label("", {m_dim[i].loc})}));
-	            throw SemanticAbort();
-	        }
+                    m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
+                    && i != n_dim-1) {
+                diag.add(diag::Diagnostic(
+                    "Assumed-size '*' is only permitted in the last dimension",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {m_dim[i].loc})}));
+
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, m_dim[i].loc, 4));
+                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, m_dim[i].loc, 1, int_type));
+
+                ASR::dimension_t dim_dummy;
+                dim_dummy.loc = m_dim[i].loc;
+                dim_dummy.m_start = one;
+                dim_dummy.m_length = one; 
+                dims.push_back(al, dim_dummy);
+                continue;
+            }
 	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
 	        dim.m_length = nullptr; dim.m_start = nullptr;
