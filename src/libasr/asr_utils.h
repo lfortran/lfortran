@@ -4543,6 +4543,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                             ASRUtils::symbol_get_past_external(struct_t));
         LCOMPILERS_ASSERT(struct_t_module != nullptr);
 
+        if (ASR::is_a<ASR::Program_t>(*struct_t_module)) {
+            return struct_member;
+        }
+
         SymbolTable* struct_t_import_scope = scope;
         while (struct_t_import_scope->asr_owner == nullptr
                || !ASR::is_a<ASR::Module_t>(
