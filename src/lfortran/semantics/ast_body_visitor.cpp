@@ -4711,6 +4711,15 @@ public:
                     ASR::Function_t *current_function = ASR::down_cast2
                         <ASR::Function_t>(current_scope->asr_owner);
                     redo_function_argument(*current_function, sub_name);
+                } else if (!ASRUtils::is_symbol_procedure_variable(original_sym)) {
+                    // Calling a non-procedure variable without implicit-interface
+                    diag.add(Diagnostic(
+                        "Cannot call '" + sub_name + "' as a procedure; it is a variable. "
+                        "Use --implicit-interface to enable implicit procedure interfaces.",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
