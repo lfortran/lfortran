@@ -888,3 +888,15 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 451 |     print fmt_i2, "test"
     |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:446:5
+    |
+446 |     WRITE (6, fmt_i1)
+    |     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assigned format (using integer variable as format specifier) is not supported. Use character variables instead.
+   --> tests/errors/continue_compilation_1.f90:456:5
+    |
+456 |     read (5, fmt_i3)
+    |     ^^^^^^^^^^^^^^^^ 
