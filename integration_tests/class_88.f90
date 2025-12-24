@@ -28,9 +28,8 @@ program test
   if (result_ptr /= 42) error stop "Failed: xt%tbp() should return 42"
 
   ! Test type-bound procedure call with class pointer
-  ! TODO: does not work yet:
-  !result_ptr => xp%tbp()
-  !if (result_ptr /= 42) error stop "Failed: xp%tbp() should return 42"
+  result_ptr => xp%tbp()
+  if (result_ptr /= 42) error stop "Failed: xp%tbp() should return 42"
 
   print *, "OK"
 end program test
