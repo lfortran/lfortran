@@ -3139,6 +3139,12 @@ public:
             this->visit_expr(*x.m_v);
             ptr_loads = ptr_loads_copy;
             array = tmp;
+            if (!array->getType()->isPointerTy()) {
+                llvm::Value* val = array;
+                llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, val->getType());
+                builder->CreateStore(val, alloc);
+                array = alloc;
+            }
         }
 
         ASR::dimension_t* m_dims;
@@ -3668,7 +3674,15 @@ public:
             std::string member_name = member_struct->m_name;
             while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
                         (current_der_type_name != member_name)) {
-                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                if (tmp->getType()->isPointerTy()) {
+                    tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                } else {
+                    if (llvm::isa<llvm::Constant>(tmp)) {
+                        tmp = llvm::cast<llvm::Constant>(tmp)->getAggregateElement(0u);
+                    } else {
+                        tmp = builder->CreateExtractValue(tmp, 0);
+                    }
+                }
                 current_der_type_name = dertype2parent[current_der_type_name];
             }
             return;
@@ -3688,14 +3702,30 @@ public:
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
-            tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+            if (tmp->getType()->isPointerTy()) {
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+            } else {
+                if (llvm::isa<llvm::Constant>(tmp)) {
+                    tmp = llvm::cast<llvm::Constant>(tmp)->getAggregateElement(0u);
+                } else {
+                    tmp = builder->CreateExtractValue(tmp, 0);
+                }
+            }
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = 0;
         member_idx = name2memidx[current_der_type_name][member_name];
 
         xtype = name2dertype[current_der_type_name];
-        tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+        if (tmp->getType()->isPointerTy()) {
+            tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+        } else {
+            if (llvm::isa<llvm::Constant>(tmp)) {
+                tmp = llvm::cast<llvm::Constant>(tmp)->getAggregateElement(member_idx);
+            } else {
+                tmp = builder->CreateExtractValue(tmp, member_idx);
+            }
+        }
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
         member_type = ASRUtils::type_get_past_array(member_type);
