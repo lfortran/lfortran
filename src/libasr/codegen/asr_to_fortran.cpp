@@ -1195,6 +1195,11 @@ public:
             visit_expr(*x.m_form);
             r += src;
         }
+        if (x.m_position) {
+            r += ", position=";
+            visit_expr(*x.m_position);
+            r += src;
+        }
         r += ")";
         handle_line_truncation(r, 2);
         r += "\n";

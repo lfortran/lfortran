@@ -900,3 +900,21 @@ semantic error: Assigned format (using integer variable as format specifier) is 
     |
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `position` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:459:5
+    |
+459 |     open(unit=10, file='test.txt', position='rewind', position='append')
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `position` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:462:5
+    |
+462 |     open(unit=20, file='test2.txt', position=q1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `position` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:464:5
+    |
+464 |     open(unit=30, file='test3.txt', position=r1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
