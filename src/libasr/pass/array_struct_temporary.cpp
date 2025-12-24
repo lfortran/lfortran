@@ -114,8 +114,12 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 };
 
 ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
-    ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint, bool is_pointer_required) {
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    if (is_pointer_required && !ASRUtils::is_pointer(value_type)) {
+        value_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+            al, value->base.loc, value_type));
+    }
     LCOMPILERS_ASSERT(!ASRUtils::is_array(value_type));
 
     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, value_type);
