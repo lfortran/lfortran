@@ -11417,7 +11417,6 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-
         llvm::Value *unit_val, *iostat, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
@@ -12015,7 +12014,6 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
                 llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "%s%s");

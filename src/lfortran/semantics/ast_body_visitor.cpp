@@ -848,25 +848,25 @@ public:
             throw SemanticAbort();
         }
         std::vector<ASR::expr_t**> args = {&a_unit, &a_fmt};
-        for( std::uint32_t i = 0; i < n_args; i++ ) {
-            if( m_args[i].m_value != nullptr ) {
-                this->visit_expr(*m_args[i].m_value);
-                *args[i] = ASRUtils::EXPR(tmp);
+        for (std::uint32_t i = 0; i < n_args; i++) {
+        if (m_args[i].m_value != nullptr) {
+            this->visit_expr(*m_args[i].m_value);
+            *args[i] = ASRUtils::EXPR(tmp);
+
+            // Add the check for the first positional argument (UNIT)
+            if (i == 0) {
+                ASR::ttype_t *unit_type = ASRUtils::expr_type(*args[i]);
+                if (!ASRUtils::is_integer(*unit_type) && !ASRUtils::is_character(*unit_type)) {
+                    diag.add(diag::Diagnostic(
+                        "The unit must be of type Integer or Character",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {m_args[i].m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
-        //check positional fmt argument (second arg)
-        if (a_fmt != nullptr) {
-            ASR::ttype_t* fmt_type = ASRUtils::expr_type(a_fmt);
-            if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(fmt_type)) && ASR::is_a<ASR::Var_t>(*a_fmt)) {
-                diag.add(Diagnostic(
-                    "Assigned format (using integer variable as format specifier) is not supported. "
-                    "Use character variables instead.",
-                    Level::Error, Stage::Semantic, {
-                        Label("", {loc})
-                    }));
-                throw SemanticAbort();
-            }
-        }
+    }
         std::vector<ASR::asr_t*> newline_for_advance;
         for( std::uint32_t i = 0; i < n_kwargs; i++ ) {
             AST::kw_argstar_t kwarg = m_kwargs[i];
@@ -885,12 +885,12 @@ public:
                     this->visit_expr(*kwarg.m_value);
                     a_unit = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* a_unit_type = ASRUtils::expr_type(a_unit);
-                    if  (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_unit_type))) {
-                            diag.add(Diagnostic(
-                                "`unit` must be of type, Integer",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{loc})
-                                }));
+                    if(!ASRUtils::is_integer(*a_unit_type) && !ASRUtils::is_character(*a_unit_type)) {
+                            diag.add(diag::Diagnostic(
+                                "The unit must be of type Integer or Character",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {kwarg.m_value->base.loc})
+                                    }));
                             throw SemanticAbort();
                     }
                 }
