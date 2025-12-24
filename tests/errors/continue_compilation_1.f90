@@ -112,12 +112,6 @@ contains
 
 
 
-
-
-
-
-
-
 end module
 
 
@@ -461,6 +455,3 @@ program continue_compilation_1
     13 format ()
     read (5, fmt_i3)
 end program 
-
-
-
