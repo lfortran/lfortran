@@ -15497,7 +15497,7 @@ Result<bool> check_vtable_ptr_size(llvm::Module* module, diag::Diagnostics &diag
     uint64_t actual_ptr_size = data_layout.getPointerSize();
     if (actual_ptr_size != ASRUtils::VTABLE_PTR_SIZE) {
         std::string msg = "VTable pointer size mismatch: expected " +
-            std::to_string(ASRUtils::VTABLE_PTR_SIZE) + " bytes (64-bit), but target uses " +
+            std::to_string(ASRUtils::VTABLE_PTR_SIZE) + " bytes, but target uses " +
             std::to_string(actual_ptr_size) + " bytes";
         diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
             diag::Level::Error, diag::Stage::CodeGen));
