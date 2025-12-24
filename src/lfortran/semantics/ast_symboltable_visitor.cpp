@@ -1759,6 +1759,9 @@ public:
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
         );
 
+        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*f1) && in_submodule) {

@@ -1,9 +1,0 @@
-semantic error: Symbol 'and' is already defined
-  --> tests/../integration_tests/operator_overloading_12.f90:15:3 - 21:18
-   |
-15 |      elemental module function and(lhs, rhs) result(diagnosis)
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-21 |      end function and
-   | ...^^^^^^^^^^^^^^^^^^ 
