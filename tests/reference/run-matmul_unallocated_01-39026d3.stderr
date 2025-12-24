@@ -1,2 +1,0 @@
-At 10:5 of file tests/errors/matmul_unallocated_01.f90
-Runtime Error: Array 'result' is indexed but not allocated.
