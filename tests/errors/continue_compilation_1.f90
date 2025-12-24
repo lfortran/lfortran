@@ -20,6 +20,28 @@ module continue_compilation_1_mod
 
 
 
+    type :: ctx_fail_t
+        procedure(f_fail), pointer, nopass :: fn => null()
+    end type
+
+    abstract interface
+        subroutine f_fail(x)
+            real, intent(in) :: x
+        end subroutine
+    end interface
+
+    abstract interface
+        subroutine f_fail(x) 
+            real, intent(in) :: x
+        end subroutine
+    end interface
+
+
+
+
+
+
+
 
 
 

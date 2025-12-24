@@ -1,4 +1,4 @@
-semantic error: Argument(s) or return type mismatch in interface and implementation
+semantic error: Symbol 'e' is already defined
   --> tests/errors/interface_01.f90:13:3 - 17:14
    |
 13 |      module function e(x)

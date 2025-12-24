@@ -2844,3 +2844,6 @@ RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 # test for polymorphic select type
 RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
 RUN(NAME defined_op_match_01 LABELS gfortran llvm)
+
+#test for forward declaration of derived type
+RUN(NAME issue_9063 LABELS gfortran llvm)
