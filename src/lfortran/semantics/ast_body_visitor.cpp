@@ -3594,18 +3594,28 @@ public:
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
         }
-        if( target->type != ASR::exprType::Var &&
-            target->type != ASR::exprType::ArrayItem &&
-            target->type != ASR::exprType::ArraySection &&
-            target->type != ASR::exprType::ArrayPhysicalCast &&
-            target->type != ASR::exprType::StringSection &&
-            target->type != ASR::exprType::StringItem &&
-            target->type != ASR::exprType::StructInstanceMember &&
-            target->type != ASR::exprType::UnionInstanceMember &&
-            target->type != ASR::exprType::ComplexRe &&
-            target->type != ASR::exprType::ComplexIm
-        )
-        {
+        bool is_valid_lhs = (
+            target->type == ASR::exprType::Var ||
+            target->type == ASR::exprType::ArrayItem ||
+            target->type == ASR::exprType::ArraySection ||
+            target->type == ASR::exprType::ArrayPhysicalCast ||
+            target->type == ASR::exprType::StringSection ||
+            target->type == ASR::exprType::StringItem ||
+            target->type == ASR::exprType::StructInstanceMember ||
+            target->type == ASR::exprType::UnionInstanceMember ||
+            target->type == ASR::exprType::ComplexRe ||
+            target->type == ASR::exprType::ComplexIm
+        );
+
+        // Allow function calls on LHS if they return a POINTER
+        if (!is_valid_lhs && target->type == ASR::exprType::FunctionCall) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+            if (ASRUtils::is_pointer(target_type)) {
+                is_valid_lhs = true;
+            }
+        }
+
+        if (!is_valid_lhs) {
             diag.add(Diagnostic(
                 "The LHS of assignment can only be a variable or an array reference",
                 Level::Error, Stage::Semantic, {
