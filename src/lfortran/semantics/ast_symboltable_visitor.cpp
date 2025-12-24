@@ -1773,11 +1773,15 @@ public:
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
                         ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
-                        diag.add(diag::Diagnostic(
-                            "Argument(s) or return type mismatch in interface and implementation",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {tmp->loc})}));
-                        throw SemanticAbort();
+                        bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
+
+                        if (!is_placeholder) {
+                            diag.add(diag::Diagnostic(
+                                "Argument(s) or return type mismatch in interface and implementation",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {tmp->loc})}));
+                            throw SemanticAbort();
+                        }
                     }
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);

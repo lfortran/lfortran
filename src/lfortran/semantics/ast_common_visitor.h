@@ -5535,13 +5535,34 @@ public:
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {
-                diag.add(Diagnostic(
-                    "Procedure type '" + func_name
-                    + "' not declared",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{loc})
-                    }));
-                throw SemanticAbort();
+                ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, loc,
+                    nullptr, 0, nullptr, ASR::abiType::Source,        
+                    ASR::deftypeType::Interface, nullptr,                     
+                    false, false, false, false, false, nullptr, 0, false
+                    )); 
+                SymbolTable *parent_scope = current_scope->parent; 
+                SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+                ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Function_t(
+                        al, loc,
+                        fn_scope,       
+                        s2c(al, func_name),      
+                        func_type,         
+                        nullptr, 0,              
+                        nullptr, 0,              
+                        nullptr, 0,              
+                        nullptr,                 
+                        ASR::accessType::Public, 
+                        false,                   
+                        false,                   
+                        nullptr,                 
+                        nullptr, nullptr         
+                    )
+                );
+                
+                parent_scope->add_symbol(func_name, placeholder); 
+                v = placeholder;
             }
             type_declaration = v;
             v = ASRUtils::symbol_get_past_external(v);
