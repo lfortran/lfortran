@@ -4776,19 +4776,19 @@ public:
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
                         ASR::ttype_t* param_type = v->m_type;
-                    // Check if parameter expects a procedure type 
-                    if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))){
-                        if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type))){
-                            std::string passed_str =ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
-                            diag.add(diag::Diagnostic(
-                                "Type mismatch in argument `" + std::string(v->m_name) +
-                                "`: expected a procedure but got `" + passed_str + "`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {passed_arg->base.loc})
-                                }));
-                            throw SemanticAbort();
+                        // Check if parameter expects a procedure type 
+                        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))){
+                            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type))){
+                                std::string passed_str =ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
+                                diag.add(diag::Diagnostic(
+                                    "Type mismatch in argument `" + std::string(v->m_name) +
+                                    "`: expected a procedure but got `" + passed_str + "`",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {passed_arg->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
                         }
-                    }
                         // Skip type checking for implicit argument_casting, 
                         // polymorphic types (class), function types, and intrinsics
                         bool skip_check = compiler_options.implicit_argument_casting ||
