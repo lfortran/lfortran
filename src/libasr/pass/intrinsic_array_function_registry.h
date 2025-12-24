@@ -4028,8 +4028,18 @@ namespace MatMul {
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
-        // Note: allocation/reallocation for allocatable results is handled by
-        // the assignment pass based on the --realloc-lhs-arrays flag, not here.
+        // Allocate result if needed (handles both first allocation and reallocation in loops)
+        if (ASRUtils::is_allocatable(return_type_)) {
+            Vec<ASR::expr_t*> alloc_result_args; alloc_result_args.reserve(al, 1);
+            alloc_result_args.push_back(al, result);
+            ASR::expr_t *allocated_check = EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                alloc_result_args.p, alloc_result_args.n, 0, logical, nullptr));
+            body.push_back(al, b.If(allocated_check, {
+                b.Deallocate(result)
+            }, {}));
+            body.push_back(al, b.Allocate(result, alloc_dims.p, alloc_dims.n));
+        }
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
