@@ -2171,9 +2171,11 @@ public:
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
+        std::vector<std::string> old_procedure_args = current_procedure_args;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
+        current_procedure_args = old_procedure_args;
         return;
     }
 

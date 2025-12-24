@@ -1699,22 +1699,28 @@ public:
                         location_manager,
                         LCompilers::create_global_string_ptr(context, *module, *builder, var_name));
                 }
-                llvm_utils->create_if_else(
-                    builder->CreateICmpEQ(
-                        builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
-                        builder->CreatePtrToInt(
-                            llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
-                            llvm::Type::getInt32Ty(context))),
-                    [&]() {
-                        llvm::Value* ptr_;
+                // Only generate descriptor allocation check for struct members or in strict bounds checking mode
+                // For regular allocatable variables, the descriptor is always properly initialized on declaration
+                // For struct/derived type members, the descriptor may be NULL and needs initialization
+                bool is_struct_member = ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr);
+                if (is_struct_member || compiler_options.po.strict_bounds_checking) {
+                    llvm_utils->create_if_else(
+                        builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
+                            builder->CreatePtrToInt(
+                                llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
+                                llvm::Type::getInt32Ty(context))),
+                        [&]() {
+                            llvm::Value* ptr_;
 
-                            ptr_ = llvm_utils->CreateAlloca(*builder, type);
-                            arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
+                                ptr_ = llvm_utils->CreateAlloca(*builder, type);
+                                arr_descr->fill_dimension_descriptor(type, ptr_, n_dims);
 
-                            LLVM::CreateStore(
-                                *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
-                    },
-                    []() {});
+                                LLVM::CreateStore(
+                                    *builder, ptr_, (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
+                        },
+                        []() {});
+                }
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                     expr_type(x.m_args[i].m_a),
@@ -1973,6 +1979,16 @@ public:
                                     tmp_expr->base.loc);
             }
             ASR::ttype_t *cur_type = ASRUtils::expr_type(tmp_expr);
+            ASR::ttype_t *cur_type_past = ASRUtils::type_get_past_allocatable_pointer(cur_type);
+            bool in_struct = ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr);
+            ASR::Struct_t* struct_sym = nullptr;
+            if (cur_type_past->type == ASR::StructType ||
+                (cur_type_past->type == ASR::Array &&
+                 ASR::down_cast<ASR::Array_t>(cur_type_past)->m_type->type == ASR::StructType)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
+                struct_sym = ASR::down_cast<ASR::Struct_t>(sym);
+            }
             int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
             if(ASRUtils::is_character(*cur_type)) { // Handle Strings (array of strings or just string)
                 tmp = LLVM::is_llvm_pointer(*cur_type) ?
@@ -2021,8 +2037,9 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
+                        llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
-                        if (compiler_options.new_classes && 
+                        if (compiler_options.new_classes &&
                                 ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                             llvm::Value* data = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
                             llvm::Value* data_ptr;
@@ -2072,6 +2089,7 @@ public:
                         module.get(), abt);
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
+                        llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         call_lfortran_free(free_fn, typ,  llvm_data_type);
                     }, [](){});
                 }
@@ -10449,14 +10467,18 @@ public:
             case ASR::symbolType::Variable: {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x_m_v);
                 fetch_var(v);
-                return ;
+            break;
             }
             case ASR::symbolType::Function: {
-                uint32_t h = get_hash((ASR::asr_t*)x_m_v);
-                if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
+                const uint32_t h = get_hash((ASR::asr_t*)x_m_v);
+                if(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()){ // Callback fn arg.
+                    tmp = llvm_symtab_fn_arg[h];
+                } else if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
                     tmp = llvm_symtab_fn[h];
+                } else {
+                    throw CodeGenError(std::string("Can't resolve var to Function '") + ASRUtils::symbol_name(x_m_v) + "'");
                 }
-                return;
+            break;
             }
             default: {
                 throw CodeGenError("Only function and variables supported so far");
