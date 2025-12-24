@@ -13425,13 +13425,22 @@ public:
                     dt = llvm_utils->CreateLoad2(call_arg_struct_type->getPointerTo(), dt);
                 }
 
-                llvm::Value* class_wrapper = llvm_utils->CreateAlloca(*builder, 
-                    llvm_utils->get_type_from_ttype_t_util(s_m_args0,
-                    ASRUtils::type_get_past_array(ASRUtils::expr_type(s_m_args0)), module.get()));
-                
-                llvm::Value* class_value = class_wrapper;
+                llvm::Value* class_wrapper;
+                llvm::Value* class_value;
+
                 if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0))) {
-                    class_value = llvm_utils->CreateLoad2(target_struct_type->getPointerTo(), class_value);
+                    // For POINTER parameters, we need two levels:
+                    // 1. Allocate the actual class structure
+                    // 2. Allocate a pointer to it
+                    class_value = llvm_utils->CreateAlloca(*builder, target_struct_type);
+                    class_wrapper = llvm_utils->CreateAlloca(*builder, target_struct_type->getPointerTo());
+                    builder->CreateStore(class_value, class_wrapper);
+                } else {
+                    // For non-POINTER parameters, allocate class structure directly
+                    class_wrapper = llvm_utils->CreateAlloca(*builder,
+                        llvm_utils->get_type_from_ttype_t_util(s_m_args0,
+                        ASRUtils::type_get_past_array(ASRUtils::expr_type(s_m_args0)), module.get()));
+                    class_value = class_wrapper;
                 }
 
                 // Store Vptr and its member from original struct
