@@ -1,0 +1,1461 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%array = type { ptr, i32, ptr, i1, i32 }
+%dimension_descriptor = type { i32, i32, i32 }
+%string_descriptor = type <{ ptr, i64 }>
+
+@0 = private unnamed_addr constant [2 x i8] c"y\00", align 1
+@1 = private unnamed_addr constant [113 x i8] c"At 21:13 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"y\00", align 1
+@3 = private unnamed_addr constant [176 x i8] c"At 21:13 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@5 = private unnamed_addr constant [125 x i8] c"At 5:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@7 = private unnamed_addr constant [125 x i8] c"At 6:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"e\00", align 1
+@9 = private unnamed_addr constant [125 x i8] c"At 7:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@11 = private unnamed_addr constant [111 x i8] c"At 9:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@13 = private unnamed_addr constant [174 x i8] c"At 9:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@15 = private unnamed_addr constant [112 x i8] c"At 10:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@17 = private unnamed_addr constant [175 x i8] c"At 10:5 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@18 = private unnamed_addr constant [49 x i8] c"__libasr_created__subroutine_call_f_integer____0\00", align 1
+@19 = private unnamed_addr constant [127 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@20 = private unnamed_addr constant [49 x i8] c"__libasr_created__subroutine_call_f_integer____0\00", align 1
+@21 = private unnamed_addr constant [176 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@23 = private unnamed_addr constant [113 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Array '%s' is indexed but not allocated.\0A\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@25 = private unnamed_addr constant [176 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@26 = private unnamed_addr constant [15 x i8] c"f_integer____0\00", align 1
+@27 = private unnamed_addr constant [117 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Argument %d of subroutine %s is unallocated.\0A\00", align 1
+@28 = private unnamed_addr constant [15 x i8] c"f_integer____0\00", align 1
+@29 = private unnamed_addr constant [182 x i8] c"At 12:19 of file tests/errors/array_bounds_check_09.f90\0ARuntime error: Array size mismatch in subroutine '%s'\0A\0ATried to match size %d of argument number %d, but expected size is %d\0A\00", align 1
+@30 = private unnamed_addr constant [33 x i8] c"__libasr_created__integer_binop_\00", align 1
+@31 = private unnamed_addr constant [126 x i8] c"At 12:9 of file tests/errors/array_bounds_check_09.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [5 x i8] c"[I4]\00", align 1
+@33 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, ptr %1) {
+.entry:
+  %2 = alloca i32, align 4
+  %3 = alloca i64, align 8
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %call_arg_value = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %__lcompilers_i_0 = alloca i32, align 4
+  %__libasr_index_0_ = alloca i32, align 4
+  %__libasr_index_0_1 = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %__lcompilers_i_01 = alloca i32, align 4
+  %__libasr_created__integer_binop_ = alloca ptr, align 8
+  store ptr null, ptr %__libasr_created__integer_binop_, align 8
+  %arr_desc = alloca %array, align 8
+  %10 = getelementptr %array, ptr %arr_desc, i32 0, i32 2
+  %11 = alloca i32, align 4
+  store i32 1, ptr %11, align 4
+  %12 = load i32, ptr %11, align 4
+  %13 = alloca %dimension_descriptor, i32 %12, align 8
+  %14 = getelementptr %dimension_descriptor, ptr %13, i32 0, i32 1
+  store i32 1, ptr %14, align 4
+  %15 = getelementptr %dimension_descriptor, ptr %13, i32 0, i32 2
+  store i32 1, ptr %15, align 4
+  store ptr %13, ptr %10, align 8
+  %16 = getelementptr %array, ptr %arr_desc, i32 0, i32 4
+  store i32 1, ptr %16, align 4
+  %17 = getelementptr %array, ptr %arr_desc, i32 0, i32 0
+  store ptr null, ptr %17, align 8
+  store ptr %arr_desc, ptr %__libasr_created__integer_binop_, align 8
+  %__libasr_created__subroutine_call_f_integer____0 = alloca ptr, align 8
+  store ptr null, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %arr_desc2 = alloca %array, align 8
+  %18 = getelementptr %array, ptr %arr_desc2, i32 0, i32 2
+  %19 = alloca i32, align 4
+  store i32 1, ptr %19, align 4
+  %20 = load i32, ptr %19, align 4
+  %21 = alloca %dimension_descriptor, i32 %20, align 8
+  %22 = getelementptr %dimension_descriptor, ptr %21, i32 0, i32 1
+  store i32 1, ptr %22, align 4
+  %23 = getelementptr %dimension_descriptor, ptr %21, i32 0, i32 2
+  store i32 1, ptr %23, align 4
+  store ptr %21, ptr %18, align 8
+  %24 = getelementptr %array, ptr %arr_desc2, i32 0, i32 4
+  store i32 1, ptr %24, align 4
+  %25 = getelementptr %array, ptr %arr_desc2, i32 0, i32 0
+  store ptr null, ptr %25, align 8
+  store ptr %arr_desc2, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %__libasr_created__subroutine_from_function_ = alloca ptr, align 8
+  store ptr null, ptr %__libasr_created__subroutine_from_function_, align 8
+  %arr_desc3 = alloca %array, align 8
+  %26 = getelementptr %array, ptr %arr_desc3, i32 0, i32 2
+  %27 = alloca i32, align 4
+  store i32 1, ptr %27, align 4
+  %28 = load i32, ptr %27, align 4
+  %29 = alloca %dimension_descriptor, i32 %28, align 8
+  %30 = getelementptr %dimension_descriptor, ptr %29, i32 0, i32 1
+  store i32 1, ptr %30, align 4
+  %31 = getelementptr %dimension_descriptor, ptr %29, i32 0, i32 2
+  store i32 1, ptr %31, align 4
+  store ptr %29, ptr %26, align 8
+  %32 = getelementptr %array, ptr %arr_desc3, i32 0, i32 4
+  store i32 1, ptr %32, align 4
+  %33 = getelementptr %array, ptr %arr_desc3, i32 0, i32 0
+  store ptr null, ptr %33, align 8
+  store ptr %arr_desc3, ptr %__libasr_created__subroutine_from_function_, align 8
+  %__libasr_created_integer_binop_right_ = alloca ptr, align 8
+  store ptr null, ptr %__libasr_created_integer_binop_right_, align 8
+  %arr_desc4 = alloca %array, align 8
+  %34 = getelementptr %array, ptr %arr_desc4, i32 0, i32 2
+  %35 = alloca i32, align 4
+  store i32 1, ptr %35, align 4
+  %36 = load i32, ptr %35, align 4
+  %37 = alloca %dimension_descriptor, i32 %36, align 8
+  %38 = getelementptr %dimension_descriptor, ptr %37, i32 0, i32 1
+  store i32 1, ptr %38, align 4
+  %39 = getelementptr %dimension_descriptor, ptr %37, i32 0, i32 2
+  store i32 1, ptr %39, align 4
+  store ptr %37, ptr %34, align 8
+  %40 = getelementptr %array, ptr %arr_desc4, i32 0, i32 4
+  store i32 1, ptr %40, align 4
+  %41 = getelementptr %array, ptr %arr_desc4, i32 0, i32 0
+  store ptr null, ptr %41, align 8
+  store ptr %arr_desc4, ptr %__libasr_created_integer_binop_right_, align 8
+  %__libasr_index_0_5 = alloca i32, align 4
+  %__libasr_index_0_16 = alloca i32, align 4
+  %a = alloca ptr, align 8
+  store ptr null, ptr %a, align 8
+  %arr_desc7 = alloca %array, align 8
+  %42 = getelementptr %array, ptr %arr_desc7, i32 0, i32 2
+  %43 = alloca i32, align 4
+  store i32 1, ptr %43, align 4
+  %44 = load i32, ptr %43, align 4
+  %45 = alloca %dimension_descriptor, i32 %44, align 8
+  %46 = getelementptr %dimension_descriptor, ptr %45, i32 0, i32 1
+  store i32 1, ptr %46, align 4
+  %47 = getelementptr %dimension_descriptor, ptr %45, i32 0, i32 2
+  store i32 1, ptr %47, align 4
+  store ptr %45, ptr %42, align 8
+  %48 = getelementptr %array, ptr %arr_desc7, i32 0, i32 4
+  store i32 1, ptr %48, align 4
+  %49 = getelementptr %array, ptr %arr_desc7, i32 0, i32 0
+  store ptr null, ptr %49, align 8
+  store ptr %arr_desc7, ptr %a, align 8
+  %b = alloca ptr, align 8
+  store ptr null, ptr %b, align 8
+  %arr_desc8 = alloca %array, align 8
+  %50 = getelementptr %array, ptr %arr_desc8, i32 0, i32 2
+  %51 = alloca i32, align 4
+  store i32 1, ptr %51, align 4
+  %52 = load i32, ptr %51, align 4
+  %53 = alloca %dimension_descriptor, i32 %52, align 8
+  %54 = getelementptr %dimension_descriptor, ptr %53, i32 0, i32 1
+  store i32 1, ptr %54, align 4
+  %55 = getelementptr %dimension_descriptor, ptr %53, i32 0, i32 2
+  store i32 1, ptr %55, align 4
+  store ptr %53, ptr %50, align 8
+  %56 = getelementptr %array, ptr %arr_desc8, i32 0, i32 4
+  store i32 1, ptr %56, align 4
+  %57 = getelementptr %array, ptr %arr_desc8, i32 0, i32 0
+  store ptr null, ptr %57, align 8
+  store ptr %arr_desc8, ptr %b, align 8
+  %e = alloca ptr, align 8
+  store ptr null, ptr %e, align 8
+  %arr_desc9 = alloca %array, align 8
+  %58 = getelementptr %array, ptr %arr_desc9, i32 0, i32 2
+  %59 = alloca i32, align 4
+  store i32 1, ptr %59, align 4
+  %60 = load i32, ptr %59, align 4
+  %61 = alloca %dimension_descriptor, i32 %60, align 8
+  %62 = getelementptr %dimension_descriptor, ptr %61, i32 0, i32 1
+  store i32 1, ptr %62, align 4
+  %63 = getelementptr %dimension_descriptor, ptr %61, i32 0, i32 2
+  store i32 1, ptr %63, align 4
+  store ptr %61, ptr %58, align 8
+  %64 = getelementptr %array, ptr %arr_desc9, i32 0, i32 4
+  store i32 1, ptr %64, align 4
+  %65 = getelementptr %array, ptr %arr_desc9, i32 0, i32 0
+  store ptr null, ptr %65, align 8
+  store ptr %arr_desc9, ptr %e, align 8
+  %66 = load ptr, ptr %a, align 8
+  %67 = ptrtoint ptr %66 to i64
+  %68 = icmp eq i64 %67, 0
+  br i1 %68, label %merge_allocated, label %check_data
+
+check_data:                                       ; preds = %.entry
+  %69 = getelementptr %array, ptr %66, i32 0, i32 0
+  %70 = load ptr, ptr %69, align 8
+  %71 = ptrtoint ptr %70 to i64
+  %72 = icmp ne i64 %71, 0
+  br label %merge_allocated
+
+merge_allocated:                                  ; preds = %check_data, %.entry
+  %is_allocated = phi i1 [ false, %.entry ], [ %72, %check_data ]
+  br i1 %is_allocated, label %then, label %ifcont
+
+then:                                             ; preds = %merge_allocated
+  call void (ptr, ...) @_lcompilers_print_error(ptr @5, ptr @4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %merge_allocated
+  %73 = load ptr, ptr %a, align 8
+  %74 = getelementptr %array, ptr %73, i32 0, i32 1
+  store i32 0, ptr %74, align 4
+  %75 = getelementptr %array, ptr %73, i32 0, i32 2
+  %76 = load ptr, ptr %75, align 8
+  %77 = getelementptr inbounds %dimension_descriptor, ptr %76, i32 0
+  %78 = getelementptr %dimension_descriptor, ptr %77, i32 0, i32 0
+  %79 = getelementptr %dimension_descriptor, ptr %77, i32 0, i32 1
+  %80 = getelementptr %dimension_descriptor, ptr %77, i32 0, i32 2
+  store i32 1, ptr %78, align 4
+  store i32 1, ptr %79, align 4
+  store i32 3, ptr %80, align 4
+  %81 = getelementptr %array, ptr %73, i32 0, i32 0
+  %82 = alloca i32, align 4
+  store i32 12, ptr %82, align 4
+  %83 = load i32, ptr %82, align 4
+  %84 = sext i32 %83 to i64
+  %85 = call ptr @_lfortran_malloc(i64 %84)
+  store ptr %85, ptr %81, align 8
+  %86 = load ptr, ptr %b, align 8
+  %87 = ptrtoint ptr %86 to i64
+  %88 = icmp eq i64 %87, 0
+  br i1 %88, label %merge_allocated11, label %check_data10
+
+check_data10:                                     ; preds = %ifcont
+  %89 = getelementptr %array, ptr %86, i32 0, i32 0
+  %90 = load ptr, ptr %89, align 8
+  %91 = ptrtoint ptr %90 to i64
+  %92 = icmp ne i64 %91, 0
+  br label %merge_allocated11
+
+merge_allocated11:                                ; preds = %check_data10, %ifcont
+  %is_allocated12 = phi i1 [ false, %ifcont ], [ %92, %check_data10 ]
+  br i1 %is_allocated12, label %then13, label %ifcont14
+
+then13:                                           ; preds = %merge_allocated11
+  call void (ptr, ...) @_lcompilers_print_error(ptr @7, ptr @6)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont14:                                         ; preds = %merge_allocated11
+  %93 = load ptr, ptr %b, align 8
+  %94 = getelementptr %array, ptr %93, i32 0, i32 1
+  store i32 0, ptr %94, align 4
+  %95 = getelementptr %array, ptr %93, i32 0, i32 2
+  %96 = load ptr, ptr %95, align 8
+  %97 = getelementptr inbounds %dimension_descriptor, ptr %96, i32 0
+  %98 = getelementptr %dimension_descriptor, ptr %97, i32 0, i32 0
+  %99 = getelementptr %dimension_descriptor, ptr %97, i32 0, i32 1
+  %100 = getelementptr %dimension_descriptor, ptr %97, i32 0, i32 2
+  store i32 1, ptr %98, align 4
+  store i32 1, ptr %99, align 4
+  store i32 3, ptr %100, align 4
+  %101 = getelementptr %array, ptr %93, i32 0, i32 0
+  %102 = alloca i32, align 4
+  store i32 12, ptr %102, align 4
+  %103 = load i32, ptr %102, align 4
+  %104 = sext i32 %103 to i64
+  %105 = call ptr @_lfortran_malloc(i64 %104)
+  store ptr %105, ptr %101, align 8
+  %106 = load ptr, ptr %e, align 8
+  %107 = ptrtoint ptr %106 to i64
+  %108 = icmp eq i64 %107, 0
+  br i1 %108, label %merge_allocated16, label %check_data15
+
+check_data15:                                     ; preds = %ifcont14
+  %109 = getelementptr %array, ptr %106, i32 0, i32 0
+  %110 = load ptr, ptr %109, align 8
+  %111 = ptrtoint ptr %110 to i64
+  %112 = icmp ne i64 %111, 0
+  br label %merge_allocated16
+
+merge_allocated16:                                ; preds = %check_data15, %ifcont14
+  %is_allocated17 = phi i1 [ false, %ifcont14 ], [ %112, %check_data15 ]
+  br i1 %is_allocated17, label %then18, label %ifcont19
+
+then18:                                           ; preds = %merge_allocated16
+  call void (ptr, ...) @_lcompilers_print_error(ptr @9, ptr @8)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont19:                                         ; preds = %merge_allocated16
+  %113 = load ptr, ptr %e, align 8
+  %114 = getelementptr %array, ptr %113, i32 0, i32 1
+  store i32 0, ptr %114, align 4
+  %115 = getelementptr %array, ptr %113, i32 0, i32 2
+  %116 = load ptr, ptr %115, align 8
+  %117 = getelementptr inbounds %dimension_descriptor, ptr %116, i32 0
+  %118 = getelementptr %dimension_descriptor, ptr %117, i32 0, i32 0
+  %119 = getelementptr %dimension_descriptor, ptr %117, i32 0, i32 1
+  %120 = getelementptr %dimension_descriptor, ptr %117, i32 0, i32 2
+  store i32 1, ptr %118, align 4
+  store i32 1, ptr %119, align 4
+  store i32 3, ptr %120, align 4
+  %121 = getelementptr %array, ptr %113, i32 0, i32 0
+  %122 = alloca i32, align 4
+  store i32 12, ptr %122, align 4
+  %123 = load i32, ptr %122, align 4
+  %124 = sext i32 %123 to i64
+  %125 = call ptr @_lfortran_malloc(i64 %124)
+  store ptr %125, ptr %121, align 8
+  %126 = load ptr, ptr %a, align 8
+  %127 = getelementptr %array, ptr %126, i32 0, i32 2
+  %128 = load ptr, ptr %127, align 8
+  %129 = getelementptr inbounds %dimension_descriptor, ptr %128, i32 0
+  %130 = getelementptr %dimension_descriptor, ptr %129, i32 0, i32 1
+  %131 = load i32, ptr %130, align 4
+  %132 = sub i32 %131, 1
+  store i32 %132, ptr %__libasr_index_0_5, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %ifcont26, %ifcont19
+  %133 = load i32, ptr %__libasr_index_0_5, align 4
+  %134 = add i32 %133, 1
+  %135 = load ptr, ptr %a, align 8
+  %136 = getelementptr %array, ptr %135, i32 0, i32 2
+  %137 = load ptr, ptr %136, align 8
+  %138 = getelementptr inbounds %dimension_descriptor, ptr %137, i32 0
+  %139 = getelementptr %dimension_descriptor, ptr %138, i32 0, i32 1
+  %140 = load i32, ptr %139, align 4
+  %141 = getelementptr %dimension_descriptor, ptr %138, i32 0, i32 2
+  %142 = load i32, ptr %141, align 4
+  %143 = add i32 %142, %140
+  %144 = sub i32 %143, 1
+  %145 = icmp sle i32 %134, %144
+  br i1 %145, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %146 = load i32, ptr %__libasr_index_0_5, align 4
+  %147 = add i32 %146, 1
+  store i32 %147, ptr %__libasr_index_0_5, align 4
+  %148 = load i32, ptr %__libasr_index_0_5, align 4
+  %149 = load ptr, ptr %a, align 8
+  %150 = ptrtoint ptr %149 to i64
+  %151 = icmp eq i64 %150, 0
+  br i1 %151, label %merge_allocated21, label %check_data20
+
+check_data20:                                     ; preds = %loop.body
+  %152 = getelementptr %array, ptr %149, i32 0, i32 0
+  %153 = load ptr, ptr %152, align 8
+  %154 = ptrtoint ptr %153 to i64
+  %155 = icmp ne i64 %154, 0
+  br label %merge_allocated21
+
+merge_allocated21:                                ; preds = %check_data20, %loop.body
+  %is_allocated22 = phi i1 [ false, %loop.body ], [ %155, %check_data20 ]
+  %156 = xor i1 %is_allocated22, true
+  br i1 %156, label %then23, label %ifcont24
+
+then23:                                           ; preds = %merge_allocated21
+  call void (ptr, ...) @_lcompilers_print_error(ptr @11, ptr @10)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont24:                                         ; preds = %merge_allocated21
+  %157 = getelementptr %array, ptr %149, i32 0, i32 2
+  %158 = load ptr, ptr %157, align 8
+  %159 = getelementptr inbounds %dimension_descriptor, ptr %158, i32 0
+  %160 = getelementptr %dimension_descriptor, ptr %159, i32 0, i32 1
+  %161 = load i32, ptr %160, align 4
+  %162 = getelementptr %dimension_descriptor, ptr %159, i32 0, i32 2
+  %163 = load i32, ptr %162, align 4
+  %164 = sub i32 %148, %161
+  %165 = add i32 %161, %163
+  %166 = sub i32 %165, 1
+  %167 = icmp slt i32 %148, %161
+  %168 = icmp sgt i32 %148, %166
+  %169 = or i1 %167, %168
+  br i1 %169, label %then25, label %ifcont26
+
+then25:                                           ; preds = %ifcont24
+  call void (ptr, ...) @_lcompilers_print_error(ptr @13, ptr @12, i32 %148, i32 1, i32 %161, i32 %166)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont26:                                         ; preds = %ifcont24
+  %170 = getelementptr %dimension_descriptor, ptr %159, i32 0, i32 0
+  %171 = load i32, ptr %170, align 4
+  %172 = mul i32 %171, %164
+  %173 = add i32 0, %172
+  %174 = getelementptr %array, ptr %149, i32 0, i32 1
+  %175 = load i32, ptr %174, align 4
+  %176 = add i32 %173, %175
+  %177 = getelementptr %array, ptr %149, i32 0, i32 0
+  %178 = load ptr, ptr %177, align 8
+  %179 = getelementptr inbounds i32, ptr %178, i32 %176
+  store i32 3, ptr %179, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  %180 = load ptr, ptr %b, align 8
+  %181 = getelementptr %array, ptr %180, i32 0, i32 2
+  %182 = load ptr, ptr %181, align 8
+  %183 = getelementptr inbounds %dimension_descriptor, ptr %182, i32 0
+  %184 = getelementptr %dimension_descriptor, ptr %183, i32 0, i32 1
+  %185 = load i32, ptr %184, align 4
+  %186 = sub i32 %185, 1
+  store i32 %186, ptr %__libasr_index_0_16, align 4
+  br label %loop.head27
+
+loop.head27:                                      ; preds = %ifcont35, %loop.end
+  %187 = load i32, ptr %__libasr_index_0_16, align 4
+  %188 = add i32 %187, 1
+  %189 = load ptr, ptr %b, align 8
+  %190 = getelementptr %array, ptr %189, i32 0, i32 2
+  %191 = load ptr, ptr %190, align 8
+  %192 = getelementptr inbounds %dimension_descriptor, ptr %191, i32 0
+  %193 = getelementptr %dimension_descriptor, ptr %192, i32 0, i32 1
+  %194 = load i32, ptr %193, align 4
+  %195 = getelementptr %dimension_descriptor, ptr %192, i32 0, i32 2
+  %196 = load i32, ptr %195, align 4
+  %197 = add i32 %196, %194
+  %198 = sub i32 %197, 1
+  %199 = icmp sle i32 %188, %198
+  br i1 %199, label %loop.body28, label %loop.end36
+
+loop.body28:                                      ; preds = %loop.head27
+  %200 = load i32, ptr %__libasr_index_0_16, align 4
+  %201 = add i32 %200, 1
+  store i32 %201, ptr %__libasr_index_0_16, align 4
+  %202 = load i32, ptr %__libasr_index_0_16, align 4
+  %203 = load ptr, ptr %b, align 8
+  %204 = ptrtoint ptr %203 to i64
+  %205 = icmp eq i64 %204, 0
+  br i1 %205, label %merge_allocated30, label %check_data29
+
+check_data29:                                     ; preds = %loop.body28
+  %206 = getelementptr %array, ptr %203, i32 0, i32 0
+  %207 = load ptr, ptr %206, align 8
+  %208 = ptrtoint ptr %207 to i64
+  %209 = icmp ne i64 %208, 0
+  br label %merge_allocated30
+
+merge_allocated30:                                ; preds = %check_data29, %loop.body28
+  %is_allocated31 = phi i1 [ false, %loop.body28 ], [ %209, %check_data29 ]
+  %210 = xor i1 %is_allocated31, true
+  br i1 %210, label %then32, label %ifcont33
+
+then32:                                           ; preds = %merge_allocated30
+  call void (ptr, ...) @_lcompilers_print_error(ptr @15, ptr @14)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont33:                                         ; preds = %merge_allocated30
+  %211 = getelementptr %array, ptr %203, i32 0, i32 2
+  %212 = load ptr, ptr %211, align 8
+  %213 = getelementptr inbounds %dimension_descriptor, ptr %212, i32 0
+  %214 = getelementptr %dimension_descriptor, ptr %213, i32 0, i32 1
+  %215 = load i32, ptr %214, align 4
+  %216 = getelementptr %dimension_descriptor, ptr %213, i32 0, i32 2
+  %217 = load i32, ptr %216, align 4
+  %218 = sub i32 %202, %215
+  %219 = add i32 %215, %217
+  %220 = sub i32 %219, 1
+  %221 = icmp slt i32 %202, %215
+  %222 = icmp sgt i32 %202, %220
+  %223 = or i1 %221, %222
+  br i1 %223, label %then34, label %ifcont35
+
+then34:                                           ; preds = %ifcont33
+  call void (ptr, ...) @_lcompilers_print_error(ptr @17, ptr @16, i32 %202, i32 1, i32 %215, i32 %220)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont35:                                         ; preds = %ifcont33
+  %224 = getelementptr %dimension_descriptor, ptr %213, i32 0, i32 0
+  %225 = load i32, ptr %224, align 4
+  %226 = mul i32 %225, %218
+  %227 = add i32 0, %226
+  %228 = getelementptr %array, ptr %203, i32 0, i32 1
+  %229 = load i32, ptr %228, align 4
+  %230 = add i32 %227, %229
+  %231 = getelementptr %array, ptr %203, i32 0, i32 0
+  %232 = load ptr, ptr %231, align 8
+  %233 = getelementptr inbounds i32, ptr %232, i32 %230
+  store i32 3, ptr %233, align 4
+  br label %loop.head27
+
+loop.end36:                                       ; preds = %loop.head27
+  %234 = load ptr, ptr %__libasr_created__subroutine_from_function_, align 8
+  %235 = ptrtoint ptr %234 to i64
+  %236 = icmp eq i64 %235, 0
+  br i1 %236, label %merge_allocated38, label %check_data37
+
+check_data37:                                     ; preds = %loop.end36
+  %237 = getelementptr %array, ptr %234, i32 0, i32 0
+  %238 = load ptr, ptr %237, align 8
+  %239 = ptrtoint ptr %238 to i64
+  %240 = icmp ne i64 %239, 0
+  br label %merge_allocated38
+
+merge_allocated38:                                ; preds = %check_data37, %loop.end36
+  %is_allocated39 = phi i1 [ false, %loop.end36 ], [ %240, %check_data37 ]
+  br i1 %is_allocated39, label %then40, label %else
+
+then40:                                           ; preds = %merge_allocated38
+  %241 = getelementptr %array, ptr %234, i32 0, i32 0
+  %242 = load ptr, ptr %241, align 8
+  %243 = alloca ptr, align 8
+  store ptr %242, ptr %243, align 8
+  %244 = load ptr, ptr %243, align 8
+  call void @_lfortran_free(ptr %244)
+  %245 = getelementptr %array, ptr %234, i32 0, i32 0
+  store ptr null, ptr %245, align 8
+  br label %ifcont41
+
+else:                                             ; preds = %merge_allocated38
+  br label %ifcont41
+
+ifcont41:                                         ; preds = %else, %then40
+  %246 = load ptr, ptr %a, align 8
+  %247 = getelementptr %array, ptr %246, i32 0, i32 2
+  %248 = load ptr, ptr %247, align 8
+  %249 = getelementptr inbounds %dimension_descriptor, ptr %248, i32 0
+  %250 = getelementptr %dimension_descriptor, ptr %249, i32 0, i32 1
+  %251 = load i32, ptr %250, align 4
+  %252 = getelementptr %dimension_descriptor, ptr %249, i32 0, i32 0
+  %253 = load i32, ptr %252, align 4
+  %254 = icmp eq i32 %253, 1
+  %255 = and i1 true, %254
+  %256 = getelementptr %dimension_descriptor, ptr %249, i32 0, i32 1
+  %257 = load i32, ptr %256, align 4
+  %258 = getelementptr %dimension_descriptor, ptr %249, i32 0, i32 2
+  %259 = load i32, ptr %258, align 4
+  %260 = add i32 %259, %257
+  %261 = sub i32 %260, 1
+  %262 = sub i32 %261, %251
+  %263 = add i32 %262, 1
+  %264 = mul i32 1, %263
+  %265 = ptrtoint ptr %246 to i64
+  %266 = icmp eq i64 %265, 0
+  br i1 %266, label %merge_allocated43, label %check_data42
+
+check_data42:                                     ; preds = %ifcont41
+  %267 = getelementptr %array, ptr %246, i32 0, i32 0
+  %268 = load ptr, ptr %267, align 8
+  %269 = ptrtoint ptr %268 to i64
+  %270 = icmp ne i64 %269, 0
+  br label %merge_allocated43
+
+merge_allocated43:                                ; preds = %check_data42, %ifcont41
+  %is_allocated44 = phi i1 [ false, %ifcont41 ], [ %270, %check_data42 ]
+  %271 = xor i1 %is_allocated44, true
+  %272 = or i1 %255, %271
+  %273 = xor i1 %272, true
+  br i1 %273, label %then45, label %else69
+
+then45:                                           ; preds = %merge_allocated43
+  %274 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %275 = ptrtoint ptr %274 to i64
+  %276 = icmp eq i64 %275, 0
+  br i1 %276, label %merge_allocated47, label %check_data46
+
+check_data46:                                     ; preds = %then45
+  %277 = getelementptr %array, ptr %274, i32 0, i32 0
+  %278 = load ptr, ptr %277, align 8
+  %279 = ptrtoint ptr %278 to i64
+  %280 = icmp ne i64 %279, 0
+  br label %merge_allocated47
+
+merge_allocated47:                                ; preds = %check_data46, %then45
+  %is_allocated48 = phi i1 [ false, %then45 ], [ %280, %check_data46 ]
+  br i1 %is_allocated48, label %then49, label %else50
+
+then49:                                           ; preds = %merge_allocated47
+  %281 = getelementptr %array, ptr %274, i32 0, i32 0
+  %282 = load ptr, ptr %281, align 8
+  %283 = alloca ptr, align 8
+  store ptr %282, ptr %283, align 8
+  %284 = load ptr, ptr %283, align 8
+  call void @_lfortran_free(ptr %284)
+  %285 = getelementptr %array, ptr %274, i32 0, i32 0
+  store ptr null, ptr %285, align 8
+  br label %ifcont51
+
+else50:                                           ; preds = %merge_allocated47
+  br label %ifcont51
+
+ifcont51:                                         ; preds = %else50, %then49
+  %286 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %287 = ptrtoint ptr %286 to i64
+  %288 = icmp eq i64 %287, 0
+  br i1 %288, label %merge_allocated53, label %check_data52
+
+check_data52:                                     ; preds = %ifcont51
+  %289 = getelementptr %array, ptr %286, i32 0, i32 0
+  %290 = load ptr, ptr %289, align 8
+  %291 = ptrtoint ptr %290 to i64
+  %292 = icmp ne i64 %291, 0
+  br label %merge_allocated53
+
+merge_allocated53:                                ; preds = %check_data52, %ifcont51
+  %is_allocated54 = phi i1 [ false, %ifcont51 ], [ %292, %check_data52 ]
+  br i1 %is_allocated54, label %then55, label %ifcont56
+
+then55:                                           ; preds = %merge_allocated53
+  call void (ptr, ...) @_lcompilers_print_error(ptr @19, ptr @18)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont56:                                         ; preds = %merge_allocated53
+  %293 = load ptr, ptr %a, align 8
+  %294 = getelementptr %array, ptr %293, i32 0, i32 2
+  %295 = load ptr, ptr %294, align 8
+  %296 = getelementptr inbounds %dimension_descriptor, ptr %295, i32 0
+  %297 = getelementptr %dimension_descriptor, ptr %296, i32 0, i32 1
+  %298 = load i32, ptr %297, align 4
+  %299 = getelementptr %dimension_descriptor, ptr %296, i32 0, i32 2
+  %300 = load i32, ptr %299, align 4
+  %301 = add i32 %300, %298
+  %302 = sub i32 %301, 1
+  %303 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %304 = getelementptr %array, ptr %303, i32 0, i32 1
+  store i32 0, ptr %304, align 4
+  %305 = getelementptr %array, ptr %303, i32 0, i32 2
+  %306 = load ptr, ptr %305, align 8
+  %307 = getelementptr inbounds %dimension_descriptor, ptr %306, i32 0
+  %308 = getelementptr %dimension_descriptor, ptr %307, i32 0, i32 0
+  %309 = getelementptr %dimension_descriptor, ptr %307, i32 0, i32 1
+  %310 = getelementptr %dimension_descriptor, ptr %307, i32 0, i32 2
+  store i32 1, ptr %308, align 4
+  store i32 1, ptr %309, align 4
+  store i32 %302, ptr %310, align 4
+  %311 = mul i32 1, %302
+  %312 = getelementptr %array, ptr %303, i32 0, i32 0
+  %313 = alloca i32, align 4
+  %314 = mul i32 %311, 4
+  store i32 %314, ptr %313, align 4
+  %315 = load i32, ptr %313, align 4
+  %316 = sext i32 %315 to i64
+  %317 = call ptr @_lfortran_malloc(i64 %316)
+  store ptr %317, ptr %312, align 8
+  %318 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %319 = getelementptr %array, ptr %318, i32 0, i32 2
+  %320 = load ptr, ptr %319, align 8
+  %321 = getelementptr inbounds %dimension_descriptor, ptr %320, i32 0
+  %322 = getelementptr %dimension_descriptor, ptr %321, i32 0, i32 1
+  %323 = load i32, ptr %322, align 4
+  %324 = sub i32 %323, 1
+  store i32 %324, ptr %__lcompilers_i_01, align 4
+  br label %loop.head57
+
+loop.head57:                                      ; preds = %ifcont67, %ifcont56
+  %325 = load i32, ptr %__lcompilers_i_01, align 4
+  %326 = add i32 %325, 1
+  %327 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %328 = getelementptr %array, ptr %327, i32 0, i32 2
+  %329 = load ptr, ptr %328, align 8
+  %330 = getelementptr inbounds %dimension_descriptor, ptr %329, i32 0
+  %331 = getelementptr %dimension_descriptor, ptr %330, i32 0, i32 1
+  %332 = load i32, ptr %331, align 4
+  %333 = getelementptr %dimension_descriptor, ptr %330, i32 0, i32 2
+  %334 = load i32, ptr %333, align 4
+  %335 = add i32 %334, %332
+  %336 = sub i32 %335, 1
+  %337 = icmp sle i32 %326, %336
+  br i1 %337, label %loop.body58, label %loop.end68
+
+loop.body58:                                      ; preds = %loop.head57
+  %338 = load i32, ptr %__lcompilers_i_01, align 4
+  %339 = add i32 %338, 1
+  store i32 %339, ptr %__lcompilers_i_01, align 4
+  %340 = load i32, ptr %__lcompilers_i_01, align 4
+  %341 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %342 = getelementptr %array, ptr %341, i32 0, i32 2
+  %343 = load ptr, ptr %342, align 8
+  %344 = getelementptr inbounds %dimension_descriptor, ptr %343, i32 0
+  %345 = getelementptr %dimension_descriptor, ptr %344, i32 0, i32 1
+  %346 = load i32, ptr %345, align 4
+  %347 = getelementptr %dimension_descriptor, ptr %344, i32 0, i32 2
+  %348 = load i32, ptr %347, align 4
+  %349 = sub i32 %340, %346
+  %350 = add i32 %346, %348
+  %351 = sub i32 %350, 1
+  %352 = icmp slt i32 %340, %346
+  %353 = icmp sgt i32 %340, %351
+  %354 = or i1 %352, %353
+  br i1 %354, label %then59, label %ifcont60
+
+then59:                                           ; preds = %loop.body58
+  call void (ptr, ...) @_lcompilers_print_error(ptr @21, ptr @20, i32 %340, i32 1, i32 %346, i32 %351)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont60:                                         ; preds = %loop.body58
+  %355 = getelementptr %dimension_descriptor, ptr %344, i32 0, i32 0
+  %356 = load i32, ptr %355, align 4
+  %357 = mul i32 %356, %349
+  %358 = add i32 0, %357
+  %359 = getelementptr %array, ptr %341, i32 0, i32 1
+  %360 = load i32, ptr %359, align 4
+  %361 = add i32 %358, %360
+  %362 = getelementptr %array, ptr %341, i32 0, i32 0
+  %363 = load ptr, ptr %362, align 8
+  %364 = getelementptr inbounds i32, ptr %363, i32 %361
+  %365 = load i32, ptr %__lcompilers_i_01, align 4
+  %366 = load ptr, ptr %a, align 8
+  %367 = ptrtoint ptr %366 to i64
+  %368 = icmp eq i64 %367, 0
+  br i1 %368, label %merge_allocated62, label %check_data61
+
+check_data61:                                     ; preds = %ifcont60
+  %369 = getelementptr %array, ptr %366, i32 0, i32 0
+  %370 = load ptr, ptr %369, align 8
+  %371 = ptrtoint ptr %370 to i64
+  %372 = icmp ne i64 %371, 0
+  br label %merge_allocated62
+
+merge_allocated62:                                ; preds = %check_data61, %ifcont60
+  %is_allocated63 = phi i1 [ false, %ifcont60 ], [ %372, %check_data61 ]
+  %373 = xor i1 %is_allocated63, true
+  br i1 %373, label %then64, label %ifcont65
+
+then64:                                           ; preds = %merge_allocated62
+  call void (ptr, ...) @_lcompilers_print_error(ptr @23, ptr @22)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont65:                                         ; preds = %merge_allocated62
+  %374 = getelementptr %array, ptr %366, i32 0, i32 2
+  %375 = load ptr, ptr %374, align 8
+  %376 = getelementptr inbounds %dimension_descriptor, ptr %375, i32 0
+  %377 = getelementptr %dimension_descriptor, ptr %376, i32 0, i32 1
+  %378 = load i32, ptr %377, align 4
+  %379 = getelementptr %dimension_descriptor, ptr %376, i32 0, i32 2
+  %380 = load i32, ptr %379, align 4
+  %381 = sub i32 %365, %378
+  %382 = add i32 %378, %380
+  %383 = sub i32 %382, 1
+  %384 = icmp slt i32 %365, %378
+  %385 = icmp sgt i32 %365, %383
+  %386 = or i1 %384, %385
+  br i1 %386, label %then66, label %ifcont67
+
+then66:                                           ; preds = %ifcont65
+  call void (ptr, ...) @_lcompilers_print_error(ptr @25, ptr @24, i32 %365, i32 1, i32 %378, i32 %383)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont67:                                         ; preds = %ifcont65
+  %387 = getelementptr %dimension_descriptor, ptr %376, i32 0, i32 0
+  %388 = load i32, ptr %387, align 4
+  %389 = mul i32 %388, %381
+  %390 = add i32 0, %389
+  %391 = getelementptr %array, ptr %366, i32 0, i32 1
+  %392 = load i32, ptr %391, align 4
+  %393 = add i32 %390, %392
+  %394 = getelementptr %array, ptr %366, i32 0, i32 0
+  %395 = load ptr, ptr %394, align 8
+  %396 = getelementptr inbounds i32, ptr %395, i32 %393
+  %397 = load i32, ptr %396, align 4
+  store i32 %397, ptr %364, align 4
+  br label %loop.head57
+
+loop.end68:                                       ; preds = %loop.head57
+  br label %ifcont70
+
+else69:                                           ; preds = %merge_allocated43
+  %398 = load ptr, ptr %a, align 8
+  %399 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %400 = getelementptr %array, ptr %398, i32 0, i32 0
+  %401 = getelementptr %array, ptr %399, i32 0, i32 0
+  %402 = load ptr, ptr %400, align 8
+  store ptr %402, ptr %401, align 8
+  %403 = getelementptr %array, ptr %398, i32 0, i32 2
+  %404 = load ptr, ptr %403, align 8
+  %405 = getelementptr %array, ptr %399, i32 0, i32 2
+  %406 = load ptr, ptr %405, align 8
+  call void @llvm.memcpy.p0.p0.i64(ptr align 8 %406, ptr align 8 %404, i64 12, i1 false)
+  %407 = getelementptr %array, ptr %398, i32 0, i32 1
+  %408 = getelementptr %array, ptr %399, i32 0, i32 1
+  %409 = load i32, ptr %407, align 4
+  store i32 %409, ptr %408, align 4
+  br label %ifcont70
+
+ifcont70:                                         ; preds = %else69, %loop.end68
+  %410 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %411 = ptrtoint ptr %410 to i64
+  %412 = icmp eq i64 %411, 0
+  br i1 %412, label %merge_allocated72, label %check_data71
+
+check_data71:                                     ; preds = %ifcont70
+  %413 = getelementptr %array, ptr %410, i32 0, i32 0
+  %414 = load ptr, ptr %413, align 8
+  %415 = ptrtoint ptr %414 to i64
+  %416 = icmp ne i64 %415, 0
+  br label %merge_allocated72
+
+merge_allocated72:                                ; preds = %check_data71, %ifcont70
+  %is_allocated73 = phi i1 [ false, %ifcont70 ], [ %416, %check_data71 ]
+  %417 = xor i1 %is_allocated73, true
+  br i1 %417, label %then74, label %ifcont75
+
+then74:                                           ; preds = %merge_allocated72
+  call void (ptr, ...) @_lcompilers_print_error(ptr @27, i32 1, ptr @26)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont75:                                         ; preds = %merge_allocated72
+  %418 = getelementptr %array, ptr %410, i32 0, i32 4
+  %419 = load i32, ptr %418, align 4
+  %420 = icmp eq i32 %419, 1
+  br i1 %420, label %then76, label %else77
+
+then76:                                           ; preds = %ifcont75
+  br label %ifcont83
+
+else77:                                           ; preds = %ifcont75
+  %421 = getelementptr %array, ptr %410, i32 0, i32 2
+  %422 = load ptr, ptr %421, align 8
+  %423 = getelementptr %array, ptr %410, i32 0, i32 4
+  %424 = load i32, ptr %423, align 4
+  store i32 1, ptr %9, align 4
+  store i32 0, ptr %8, align 4
+  br label %loop.head78
+
+loop.head78:                                      ; preds = %loop.body79, %else77
+  %425 = load i32, ptr %8, align 4
+  %426 = icmp slt i32 %425, %424
+  br i1 %426, label %loop.body79, label %loop.end80
+
+loop.body79:                                      ; preds = %loop.head78
+  %427 = load i32, ptr %8, align 4
+  %428 = load i32, ptr %9, align 4
+  %429 = getelementptr inbounds %dimension_descriptor, ptr %422, i32 %427
+  %430 = getelementptr %dimension_descriptor, ptr %429, i32 0, i32 2
+  %431 = load i32, ptr %430, align 4
+  %432 = mul i32 %428, %431
+  store i32 %432, ptr %9, align 4
+  %433 = add i32 %427, 1
+  store i32 %433, ptr %8, align 4
+  br label %loop.head78
+
+loop.end80:                                       ; preds = %loop.head78
+  %434 = load i32, ptr %9, align 4
+  %435 = icmp slt i32 %434, 1
+  br i1 %435, label %then81, label %ifcont82
+
+then81:                                           ; preds = %loop.end80
+  call void (ptr, ...) @_lcompilers_print_error(ptr @29, ptr @28, i32 %434, i32 1, i32 1)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont82:                                         ; preds = %loop.end80
+  br label %ifcont83
+
+ifcont83:                                         ; preds = %ifcont82, %then76
+  %436 = load ptr, ptr %__libasr_created__subroutine_call_f_integer____0, align 8
+  %437 = getelementptr %array, ptr %436, i32 0, i32 0
+  %438 = load ptr, ptr %437, align 8
+  %439 = getelementptr %array, ptr %436, i32 0, i32 1
+  %440 = load i32, ptr %439, align 4
+  %441 = getelementptr inbounds i32, ptr %438, i32 %440
+  %442 = load ptr, ptr %a, align 8
+  %443 = getelementptr %array, ptr %442, i32 0, i32 2
+  %444 = load ptr, ptr %443, align 8
+  %445 = getelementptr inbounds %dimension_descriptor, ptr %444, i32 0
+  %446 = getelementptr %dimension_descriptor, ptr %445, i32 0, i32 2
+  %447 = load i32, ptr %446, align 4
+  store i32 %447, ptr %call_arg_value, align 4
+  call void @f_integer____0(ptr %441, ptr %call_arg_value, ptr %__libasr_created__subroutine_from_function_)
+  %448 = load ptr, ptr %__libasr_created__subroutine_from_function_, align 8
+  %449 = load ptr, ptr %__libasr_created_integer_binop_right_, align 8
+  %450 = getelementptr %array, ptr %449, i32 0, i32 0
+  %451 = getelementptr %array, ptr %448, i32 0, i32 0
+  %452 = load ptr, ptr %451, align 8
+  store ptr %452, ptr %450, align 8
+  store ptr null, ptr %451, align 8
+  %453 = getelementptr %array, ptr %448, i32 0, i32 1
+  %454 = load i32, ptr %453, align 4
+  %455 = getelementptr %array, ptr %449, i32 0, i32 1
+  store i32 %454, ptr %455, align 4
+  %456 = getelementptr %array, ptr %448, i32 0, i32 2
+  %457 = load ptr, ptr %456, align 8
+  %458 = getelementptr %array, ptr %448, i32 0, i32 4
+  %459 = load i32, ptr %458, align 4
+  %460 = getelementptr %array, ptr %449, i32 0, i32 2
+  %461 = load ptr, ptr %460, align 8
+  %462 = alloca i32, align 4
+  store i32 0, ptr %462, align 4
+  br label %loop.head84
+
+loop.head84:                                      ; preds = %loop.body85, %ifcont83
+  %463 = load i32, ptr %462, align 4
+  %464 = icmp slt i32 %463, %459
+  br i1 %464, label %loop.body85, label %loop.end86
+
+loop.body85:                                      ; preds = %loop.head84
+  %465 = load i32, ptr %462, align 4
+  %466 = getelementptr inbounds %dimension_descriptor, ptr %457, i32 %465
+  %467 = getelementptr inbounds %dimension_descriptor, ptr %461, i32 %465
+  call void @llvm.memcpy.p0.p0.i32(ptr %467, ptr %466, i32 12, i1 false)
+  %468 = add i32 %465, 1
+  store i32 %468, ptr %462, align 4
+  br label %loop.head84
+
+loop.end86:                                       ; preds = %loop.head84
+  %469 = getelementptr %array, ptr %449, i32 0, i32 4
+  store i32 %459, ptr %469, align 4
+  %470 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %471 = ptrtoint ptr %470 to i64
+  %472 = icmp eq i64 %471, 0
+  br i1 %472, label %merge_allocated88, label %check_data87
+
+check_data87:                                     ; preds = %loop.end86
+  %473 = getelementptr %array, ptr %470, i32 0, i32 0
+  %474 = load ptr, ptr %473, align 8
+  %475 = ptrtoint ptr %474 to i64
+  %476 = icmp ne i64 %475, 0
+  br label %merge_allocated88
+
+merge_allocated88:                                ; preds = %check_data87, %loop.end86
+  %is_allocated89 = phi i1 [ false, %loop.end86 ], [ %476, %check_data87 ]
+  br i1 %is_allocated89, label %then90, label %else91
+
+then90:                                           ; preds = %merge_allocated88
+  %477 = getelementptr %array, ptr %470, i32 0, i32 0
+  %478 = load ptr, ptr %477, align 8
+  %479 = alloca ptr, align 8
+  store ptr %478, ptr %479, align 8
+  %480 = load ptr, ptr %479, align 8
+  call void @_lfortran_free(ptr %480)
+  %481 = getelementptr %array, ptr %470, i32 0, i32 0
+  store ptr null, ptr %481, align 8
+  br label %ifcont92
+
+else91:                                           ; preds = %merge_allocated88
+  br label %ifcont92
+
+ifcont92:                                         ; preds = %else91, %then90
+  %482 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %483 = ptrtoint ptr %482 to i64
+  %484 = icmp eq i64 %483, 0
+  br i1 %484, label %merge_allocated94, label %check_data93
+
+check_data93:                                     ; preds = %ifcont92
+  %485 = getelementptr %array, ptr %482, i32 0, i32 0
+  %486 = load ptr, ptr %485, align 8
+  %487 = ptrtoint ptr %486 to i64
+  %488 = icmp ne i64 %487, 0
+  br label %merge_allocated94
+
+merge_allocated94:                                ; preds = %check_data93, %ifcont92
+  %is_allocated95 = phi i1 [ false, %ifcont92 ], [ %488, %check_data93 ]
+  br i1 %is_allocated95, label %then96, label %ifcont97
+
+then96:                                           ; preds = %merge_allocated94
+  call void (ptr, ...) @_lcompilers_print_error(ptr @31, ptr @30)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont97:                                         ; preds = %merge_allocated94
+  %489 = load ptr, ptr %a, align 8
+  %490 = getelementptr %array, ptr %489, i32 0, i32 2
+  %491 = load ptr, ptr %490, align 8
+  %492 = getelementptr inbounds %dimension_descriptor, ptr %491, i32 0
+  %493 = getelementptr %dimension_descriptor, ptr %492, i32 0, i32 2
+  %494 = load i32, ptr %493, align 4
+  %495 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %496 = getelementptr %array, ptr %495, i32 0, i32 1
+  store i32 0, ptr %496, align 4
+  %497 = getelementptr %array, ptr %495, i32 0, i32 2
+  %498 = load ptr, ptr %497, align 8
+  %499 = getelementptr inbounds %dimension_descriptor, ptr %498, i32 0
+  %500 = getelementptr %dimension_descriptor, ptr %499, i32 0, i32 0
+  %501 = getelementptr %dimension_descriptor, ptr %499, i32 0, i32 1
+  %502 = getelementptr %dimension_descriptor, ptr %499, i32 0, i32 2
+  store i32 1, ptr %500, align 4
+  store i32 1, ptr %501, align 4
+  store i32 %494, ptr %502, align 4
+  %503 = mul i32 1, %494
+  %504 = getelementptr %array, ptr %495, i32 0, i32 0
+  %505 = alloca i32, align 4
+  %506 = mul i32 %503, 4
+  store i32 %506, ptr %505, align 4
+  %507 = load i32, ptr %505, align 4
+  %508 = sext i32 %507 to i64
+  %509 = call ptr @_lfortran_malloc(i64 %508)
+  store ptr %509, ptr %504, align 8
+  %510 = load ptr, ptr %a, align 8
+  %511 = load %array, ptr %510, align 8
+  %512 = load ptr, ptr %b, align 8
+  %513 = load %array, ptr %512, align 8
+  %514 = add %array %511, %513
+  %515 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %516 = getelementptr %array, %array %514, i32 0, i32 2
+  %517 = load ptr, %array %516, align 8
+  %518 = getelementptr %array, %array %514, i32 0, i32 4
+  %519 = load i32, %array %518, align 4
+  store i32 1, ptr %7, align 4
+  store i32 0, ptr %6, align 4
+  br label %loop.head98
+
+loop.head98:                                      ; preds = %loop.body99, %ifcont97
+  %520 = load i32, ptr %6, align 4
+  %521 = icmp slt i32 %520, %519
+  br i1 %521, label %loop.body99, label %loop.end100
+
+loop.body99:                                      ; preds = %loop.head98
+  %522 = load i32, ptr %6, align 4
+  %523 = load i32, ptr %7, align 4
+  %524 = getelementptr inbounds %dimension_descriptor, ptr %517, i32 %522
+  %525 = getelementptr %dimension_descriptor, ptr %524, i32 0, i32 2
+  %526 = load i32, ptr %525, align 4
+  %527 = mul i32 %523, %526
+  store i32 %527, ptr %7, align 4
+  %528 = add i32 %522, 1
+  store i32 %528, ptr %6, align 4
+  br label %loop.head98
+
+loop.end100:                                      ; preds = %loop.head98
+  %529 = load i32, ptr %7, align 4
+  %530 = getelementptr %array, ptr %515, i32 0, i32 0
+  %531 = getelementptr %array, %array %514, i32 0, i32 0
+  %532 = mul i32 %529, 4
+  %533 = load ptr, %array %531, align 8
+  %534 = load ptr, ptr %530, align 8
+  call void @llvm.memcpy.p0.p0.i32(ptr %534, ptr %533, i32 %532, i1 false)
+  %535 = getelementptr %array, %array %514, i32 0, i32 2
+  %536 = load ptr, %array %535, align 8
+  %537 = getelementptr %array, %array %514, i32 0, i32 4
+  %538 = load i32, %array %537, align 4
+  %539 = getelementptr %array, ptr %515, i32 0, i32 2
+  %540 = load ptr, ptr %539, align 8
+  %541 = alloca i32, align 4
+  store i32 0, ptr %541, align 4
+  br label %loop.head101
+
+loop.head101:                                     ; preds = %loop.body102, %loop.end100
+  %542 = load i32, ptr %541, align 4
+  %543 = icmp slt i32 %542, %538
+  br i1 %543, label %loop.body102, label %loop.end103
+
+loop.body102:                                     ; preds = %loop.head101
+  %544 = load i32, ptr %541, align 4
+  %545 = getelementptr inbounds %dimension_descriptor, ptr %536, i32 %544
+  %546 = getelementptr inbounds %dimension_descriptor, ptr %540, i32 %544
+  call void @llvm.memcpy.p0.p0.i32(ptr %546, ptr %545, i32 12, i1 false)
+  %547 = add i32 %544, 1
+  store i32 %547, ptr %541, align 4
+  br label %loop.head101
+
+loop.end103:                                      ; preds = %loop.head101
+  %548 = getelementptr %array, ptr %515, i32 0, i32 4
+  store i32 %538, ptr %548, align 4
+  %549 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %550 = load %array, ptr %549, align 8
+  %551 = load ptr, ptr %__libasr_created_integer_binop_right_, align 8
+  %552 = load %array, ptr %551, align 8
+  %553 = add %array %550, %552
+  %554 = load ptr, ptr %e, align 8
+  %555 = getelementptr %array, %array %553, i32 0, i32 2
+  %556 = load ptr, %array %555, align 8
+  %557 = getelementptr %array, %array %553, i32 0, i32 4
+  %558 = load i32, %array %557, align 4
+  store i32 1, ptr %5, align 4
+  store i32 0, ptr %4, align 4
+  br label %loop.head104
+
+loop.head104:                                     ; preds = %loop.body105, %loop.end103
+  %559 = load i32, ptr %4, align 4
+  %560 = icmp slt i32 %559, %558
+  br i1 %560, label %loop.body105, label %loop.end106
+
+loop.body105:                                     ; preds = %loop.head104
+  %561 = load i32, ptr %4, align 4
+  %562 = load i32, ptr %5, align 4
+  %563 = getelementptr inbounds %dimension_descriptor, ptr %556, i32 %561
+  %564 = getelementptr %dimension_descriptor, ptr %563, i32 0, i32 2
+  %565 = load i32, ptr %564, align 4
+  %566 = mul i32 %562, %565
+  store i32 %566, ptr %5, align 4
+  %567 = add i32 %561, 1
+  store i32 %567, ptr %4, align 4
+  br label %loop.head104
+
+loop.end106:                                      ; preds = %loop.head104
+  %568 = load i32, ptr %5, align 4
+  %569 = getelementptr %array, ptr %554, i32 0, i32 0
+  %570 = getelementptr %array, %array %553, i32 0, i32 0
+  %571 = mul i32 %568, 4
+  %572 = load ptr, %array %570, align 8
+  %573 = load ptr, ptr %569, align 8
+  call void @llvm.memcpy.p0.p0.i32(ptr %573, ptr %572, i32 %571, i1 false)
+  %574 = getelementptr %array, %array %553, i32 0, i32 2
+  %575 = load ptr, %array %574, align 8
+  %576 = getelementptr %array, %array %553, i32 0, i32 4
+  %577 = load i32, %array %576, align 4
+  %578 = getelementptr %array, ptr %554, i32 0, i32 2
+  %579 = load ptr, ptr %578, align 8
+  %580 = alloca i32, align 4
+  store i32 0, ptr %580, align 4
+  br label %loop.head107
+
+loop.head107:                                     ; preds = %loop.body108, %loop.end106
+  %581 = load i32, ptr %580, align 4
+  %582 = icmp slt i32 %581, %577
+  br i1 %582, label %loop.body108, label %loop.end109
+
+loop.body108:                                     ; preds = %loop.head107
+  %583 = load i32, ptr %580, align 4
+  %584 = getelementptr inbounds %dimension_descriptor, ptr %575, i32 %583
+  %585 = getelementptr inbounds %dimension_descriptor, ptr %579, i32 %583
+  call void @llvm.memcpy.p0.p0.i32(ptr %585, ptr %584, i32 12, i1 false)
+  %586 = add i32 %583, 1
+  store i32 %586, ptr %580, align 4
+  br label %loop.head107
+
+loop.end109:                                      ; preds = %loop.head107
+  %587 = getelementptr %array, ptr %554, i32 0, i32 4
+  store i32 %577, ptr %587, align 4
+  %588 = alloca i64, align 8
+  %589 = load ptr, ptr %e, align 8
+  %590 = getelementptr %array, ptr %589, i32 0, i32 2
+  %591 = load ptr, ptr %590, align 8
+  %592 = getelementptr %array, ptr %589, i32 0, i32 4
+  %593 = load i32, ptr %592, align 4
+  store i64 1, ptr %3, align 4
+  store i32 0, ptr %2, align 4
+  br label %loop.head110
+
+loop.head110:                                     ; preds = %loop.body111, %loop.end109
+  %594 = load i32, ptr %2, align 4
+  %595 = icmp slt i32 %594, %593
+  br i1 %595, label %loop.body111, label %loop.end112
+
+loop.body111:                                     ; preds = %loop.head110
+  %596 = load i32, ptr %2, align 4
+  %597 = load i64, ptr %3, align 4
+  %598 = getelementptr inbounds %dimension_descriptor, ptr %591, i32 %596
+  %599 = getelementptr %dimension_descriptor, ptr %598, i32 0, i32 2
+  %600 = load i32, ptr %599, align 4
+  %601 = sext i32 %600 to i64
+  %602 = mul i64 %597, %601
+  store i64 %602, ptr %3, align 4
+  %603 = add i32 %596, 1
+  store i32 %603, ptr %2, align 4
+  br label %loop.head110
+
+loop.end112:                                      ; preds = %loop.head110
+  %604 = load i64, ptr %3, align 4
+  %605 = load ptr, ptr %e, align 8
+  %606 = getelementptr %array, ptr %605, i32 0, i32 2
+  %607 = load ptr, ptr %606, align 8
+  %608 = getelementptr inbounds %dimension_descriptor, ptr %607, i32 0
+  %609 = getelementptr %dimension_descriptor, ptr %608, i32 0, i32 1
+  %610 = load i32, ptr %609, align 4
+  %611 = getelementptr %dimension_descriptor, ptr %608, i32 0, i32 1
+  %612 = load i32, ptr %611, align 4
+  %613 = getelementptr %dimension_descriptor, ptr %608, i32 0, i32 2
+  %614 = load i32, ptr %613, align 4
+  %615 = add i32 %614, %612
+  %616 = sub i32 %615, 1
+  %617 = sub i32 %616, %610
+  %618 = add i32 %617, 1
+  %619 = mul i32 1, %618
+  %620 = mul i32 %619, 4
+  %621 = sext i32 %620 to i64
+  %622 = call ptr @_lfortran_malloc(i64 %621)
+  %623 = getelementptr %array, ptr %605, i32 0, i32 0
+  %624 = load ptr, ptr %623, align 8
+  %copy_iter = alloca i32, align 4
+  store i32 0, ptr %copy_iter, align 4
+  br label %copy_array.head
+
+copy_array.head:                                  ; preds = %copy_array.body, %loop.end112
+  %625 = load i32, ptr %copy_iter, align 4
+  %626 = icmp slt i32 %625, %619
+  br i1 %626, label %copy_array.body, label %copy_array.end
+
+copy_array.body:                                  ; preds = %copy_array.head
+  %627 = load i32, ptr %copy_iter, align 4
+  %628 = srem i32 %627, %618
+  %629 = sdiv i32 %627, %618
+  %630 = getelementptr inbounds %dimension_descriptor, ptr %607, i32 0
+  %631 = getelementptr %dimension_descriptor, ptr %630, i32 0, i32 0
+  %632 = load i32, ptr %631, align 4
+  %633 = mul i32 %628, %632
+  %634 = add i32 0, %633
+  %635 = getelementptr %array, ptr %605, i32 0, i32 1
+  %636 = load i32, ptr %635, align 4
+  %637 = add i32 %634, %636
+  %638 = getelementptr i32, ptr %624, i32 %637
+  %639 = load i32, ptr %638, align 4
+  %640 = getelementptr i32, ptr %622, i32 %627
+  store i32 %639, ptr %640, align 4
+  %641 = add i32 %627, 1
+  store i32 %641, ptr %copy_iter, align 4
+  br label %copy_array.head
+
+copy_array.end:                                   ; preds = %copy_array.head
+  %642 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %588, i32 1, i32 0, i64 %604, ptr %622)
+  call void @_lfortran_free(ptr %622)
+  %643 = load i64, ptr %588, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %644 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %642, ptr %644, align 8
+  %645 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %643, ptr %645, align 4
+  %646 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %647 = load ptr, ptr %646, align 8
+  %648 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %649 = load i64, ptr %648, align 4
+  %650 = trunc i64 %649 to i32
+  call void @_lfortran_printf(ptr @33, ptr %647, i32 %650, ptr @32, i32 1)
+  call void @_lfortran_free(ptr %642)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %copy_array.end
+  br label %FINALIZE_SYMTABLE_array_bounds_check_09
+
+FINALIZE_SYMTABLE_array_bounds_check_09:          ; preds = %return
+  br label %Finalize_Variable___libasr_created__integer_binop_
+
+Finalize_Variable___libasr_created__integer_binop_: ; preds = %FINALIZE_SYMTABLE_array_bounds_check_09
+  %651 = load ptr, ptr %__libasr_created__integer_binop_, align 8
+  %652 = getelementptr %array, ptr %651, i32 0, i32 0
+  %653 = load ptr, ptr %652, align 8
+  call void @_lfortran_free(ptr %653)
+  br label %Finalize_Variable___libasr_created__subroutine_from_function_
+
+Finalize_Variable___libasr_created__subroutine_from_function_: ; preds = %Finalize_Variable___libasr_created__integer_binop_
+  %654 = load ptr, ptr %__libasr_created__subroutine_from_function_, align 8
+  %655 = getelementptr %array, ptr %654, i32 0, i32 0
+  %656 = load ptr, ptr %655, align 8
+  call void @_lfortran_free(ptr %656)
+  br label %Finalize_Variable___libasr_created_integer_binop_right_
+
+Finalize_Variable___libasr_created_integer_binop_right_: ; preds = %Finalize_Variable___libasr_created__subroutine_from_function_
+  %657 = load ptr, ptr %__libasr_created_integer_binop_right_, align 8
+  %658 = getelementptr %array, ptr %657, i32 0, i32 0
+  %659 = load ptr, ptr %658, align 8
+  call void @_lfortran_free(ptr %659)
+  br label %Finalize_Variable_a
+
+Finalize_Variable_a:                              ; preds = %Finalize_Variable___libasr_created_integer_binop_right_
+  %660 = load ptr, ptr %a, align 8
+  %661 = getelementptr %array, ptr %660, i32 0, i32 0
+  %662 = load ptr, ptr %661, align 8
+  call void @_lfortran_free(ptr %662)
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %Finalize_Variable_a
+  %663 = load ptr, ptr %b, align 8
+  %664 = getelementptr %array, ptr %663, i32 0, i32 0
+  %665 = load ptr, ptr %664, align 8
+  call void @_lfortran_free(ptr %665)
+  br label %Finalize_Variable_e
+
+Finalize_Variable_e:                              ; preds = %Finalize_Variable_b
+  %666 = load ptr, ptr %e, align 8
+  %667 = getelementptr %array, ptr %666, i32 0, i32 0
+  %668 = load ptr, ptr %667, align 8
+  call void @_lfortran_free(ptr %668)
+  ret i32 0
+}
+
+define void @f_integer____0(ptr %x, ptr %__1x, ptr %y) {
+.entry:
+  %__libasr_index_0_ = alloca i32, align 4
+  %0 = load i32, ptr %__1x, align 4
+  %1 = mul i32 1, %0
+  %2 = sub i32 %1, 1
+  %3 = load ptr, ptr %y, align 8
+  %4 = getelementptr %array, ptr %3, i32 0, i32 1
+  store i32 0, ptr %4, align 4
+  %5 = getelementptr %array, ptr %3, i32 0, i32 2
+  %6 = load ptr, ptr %5, align 8
+  %7 = getelementptr inbounds %dimension_descriptor, ptr %6, i32 0
+  %8 = getelementptr %dimension_descriptor, ptr %7, i32 0, i32 0
+  %9 = getelementptr %dimension_descriptor, ptr %7, i32 0, i32 1
+  %10 = getelementptr %dimension_descriptor, ptr %7, i32 0, i32 2
+  store i32 1, ptr %8, align 4
+  store i32 1, ptr %9, align 4
+  store i32 %2, ptr %10, align 4
+  %11 = mul i32 1, %2
+  %12 = getelementptr %array, ptr %3, i32 0, i32 0
+  %13 = alloca i32, align 4
+  %14 = mul i32 %11, 4
+  store i32 %14, ptr %13, align 4
+  %15 = load i32, ptr %13, align 4
+  %16 = sext i32 %15 to i64
+  %17 = call ptr @_lfortran_malloc(i64 %16)
+  store ptr %17, ptr %12, align 8
+  %18 = load ptr, ptr %y, align 8
+  %19 = getelementptr %array, ptr %18, i32 0, i32 2
+  %20 = load ptr, ptr %19, align 8
+  %21 = getelementptr inbounds %dimension_descriptor, ptr %20, i32 0
+  %22 = getelementptr %dimension_descriptor, ptr %21, i32 0, i32 1
+  %23 = load i32, ptr %22, align 4
+  %24 = sub i32 %23, 1
+  store i32 %24, ptr %__libasr_index_0_, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %ifcont2, %.entry
+  %25 = load i32, ptr %__libasr_index_0_, align 4
+  %26 = add i32 %25, 1
+  %27 = load ptr, ptr %y, align 8
+  %28 = getelementptr %array, ptr %27, i32 0, i32 2
+  %29 = load ptr, ptr %28, align 8
+  %30 = getelementptr inbounds %dimension_descriptor, ptr %29, i32 0
+  %31 = getelementptr %dimension_descriptor, ptr %30, i32 0, i32 1
+  %32 = load i32, ptr %31, align 4
+  %33 = getelementptr %dimension_descriptor, ptr %30, i32 0, i32 2
+  %34 = load i32, ptr %33, align 4
+  %35 = add i32 %34, %32
+  %36 = sub i32 %35, 1
+  %37 = icmp sle i32 %26, %36
+  br i1 %37, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %38 = load i32, ptr %__libasr_index_0_, align 4
+  %39 = add i32 %38, 1
+  store i32 %39, ptr %__libasr_index_0_, align 4
+  %40 = load i32, ptr %__libasr_index_0_, align 4
+  %41 = load ptr, ptr %y, align 8
+  %42 = ptrtoint ptr %41 to i64
+  %43 = icmp eq i64 %42, 0
+  br i1 %43, label %merge_allocated, label %check_data
+
+check_data:                                       ; preds = %loop.body
+  %44 = getelementptr %array, ptr %41, i32 0, i32 0
+  %45 = load ptr, ptr %44, align 8
+  %46 = ptrtoint ptr %45 to i64
+  %47 = icmp ne i64 %46, 0
+  br label %merge_allocated
+
+merge_allocated:                                  ; preds = %check_data, %loop.body
+  %is_allocated = phi i1 [ false, %loop.body ], [ %47, %check_data ]
+  %48 = xor i1 %is_allocated, true
+  br i1 %48, label %then, label %ifcont
+
+then:                                             ; preds = %merge_allocated
+  call void (ptr, ...) @_lcompilers_print_error(ptr @1, ptr @0)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %merge_allocated
+  %49 = getelementptr %array, ptr %41, i32 0, i32 2
+  %50 = load ptr, ptr %49, align 8
+  %51 = getelementptr inbounds %dimension_descriptor, ptr %50, i32 0
+  %52 = getelementptr %dimension_descriptor, ptr %51, i32 0, i32 1
+  %53 = load i32, ptr %52, align 4
+  %54 = getelementptr %dimension_descriptor, ptr %51, i32 0, i32 2
+  %55 = load i32, ptr %54, align 4
+  %56 = sub i32 %40, %53
+  %57 = add i32 %53, %55
+  %58 = sub i32 %57, 1
+  %59 = icmp slt i32 %40, %53
+  %60 = icmp sgt i32 %40, %58
+  %61 = or i1 %59, %60
+  br i1 %61, label %then1, label %ifcont2
+
+then1:                                            ; preds = %ifcont
+  call void (ptr, ...) @_lcompilers_print_error(ptr @3, ptr @2, i32 %40, i32 1, i32 %53, i32 %58)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont2:                                          ; preds = %ifcont
+  %62 = getelementptr %dimension_descriptor, ptr %51, i32 0, i32 0
+  %63 = load i32, ptr %62, align 4
+  %64 = mul i32 %63, %56
+  %65 = add i32 0, %64
+  %66 = getelementptr %array, ptr %41, i32 0, i32 1
+  %67 = load i32, ptr %66, align 4
+  %68 = add i32 %65, %67
+  %69 = getelementptr %array, ptr %41, i32 0, i32 0
+  %70 = load ptr, ptr %69, align 8
+  %71 = getelementptr inbounds i32, ptr %70, i32 %68
+  store i32 2, ptr %71, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  br label %return
+
+return:                                           ; preds = %loop.end
+  br label %FINALIZE_SYMTABLE_f_integer____0
+
+FINALIZE_SYMTABLE_f_integer____0:                 ; preds = %return
+  ret void
+}
+
+declare ptr @_lfortran_malloc(i64)
+
+declare void @_lcompilers_print_error(ptr, ...)
+
+declare void @exit(i32)
+
+declare void @_lpython_call_initial_functions(i32, ptr)
+
+declare void @_lfortran_free(ptr)
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.memcpy.p0.p0.i64(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i64, i1 immarg) #0
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.memcpy.p0.p0.i32(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i32, i1 immarg) #0
+
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
+
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
+
+declare void @_lpython_free_argv()
+
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
+asr_to_llvm: module failed verification. Error:
+Integer arithmetic operators only work with integral types!
+  %514 = add %array %511, %513
+GEP base pointer is not a vector or a vector of pointers
+  %516 = getelementptr %array, %array %514, i32 0, i32 2
+Load operand must be a pointer.
+  %517 = load ptr, %array %516, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %518 = getelementptr %array, %array %514, i32 0, i32 4
+Load operand must be a pointer.
+  %519 = load i32, %array %518, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %531 = getelementptr %array, %array %514, i32 0, i32 0
+Load operand must be a pointer.
+  %533 = load ptr, %array %531, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %535 = getelementptr %array, %array %514, i32 0, i32 2
+Load operand must be a pointer.
+  %536 = load ptr, %array %535, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %537 = getelementptr %array, %array %514, i32 0, i32 4
+Load operand must be a pointer.
+  %538 = load i32, %array %537, align 4
+Integer arithmetic operators only work with integral types!
+  %553 = add %array %550, %552
+GEP base pointer is not a vector or a vector of pointers
+  %555 = getelementptr %array, %array %553, i32 0, i32 2
+Load operand must be a pointer.
+  %556 = load ptr, %array %555, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %557 = getelementptr %array, %array %553, i32 0, i32 4
+Load operand must be a pointer.
+  %558 = load i32, %array %557, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %570 = getelementptr %array, %array %553, i32 0, i32 0
+Load operand must be a pointer.
+  %572 = load ptr, %array %570, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %574 = getelementptr %array, %array %553, i32 0, i32 2
+Load operand must be a pointer.
+  %575 = load ptr, %array %574, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %576 = getelementptr %array, %array %553, i32 0, i32 4
+Load operand must be a pointer.
+  %577 = load i32, %array %576, align 4
+

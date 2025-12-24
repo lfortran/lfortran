@@ -1,4 +1,46 @@
-At 12:9 of file tests/errors/array_bounds_check_09.f90
-Runtime Error: Array shape mismatch in binary operation with operands '__libasr_created__integer_binop_' and '__libasr_created_integer_binop_right_'
+code generation error: asr_to_llvm: module failed verification. Error:
+Integer arithmetic operators only work with integral types!
+  %514 = add %array %511, %513
+GEP base pointer is not a vector or a vector of pointers
+  %516 = getelementptr %array, %array %514, i32 0, i32 2
+Load operand must be a pointer.
+  %517 = load ptr, %array %516, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %518 = getelementptr %array, %array %514, i32 0, i32 4
+Load operand must be a pointer.
+  %519 = load i32, %array %518, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %531 = getelementptr %array, %array %514, i32 0, i32 0
+Load operand must be a pointer.
+  %533 = load ptr, %array %531, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %535 = getelementptr %array, %array %514, i32 0, i32 2
+Load operand must be a pointer.
+  %536 = load ptr, %array %535, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %537 = getelementptr %array, %array %514, i32 0, i32 4
+Load operand must be a pointer.
+  %538 = load i32, %array %537, align 4
+Integer arithmetic operators only work with integral types!
+  %553 = add %array %550, %552
+GEP base pointer is not a vector or a vector of pointers
+  %555 = getelementptr %array, %array %553, i32 0, i32 2
+Load operand must be a pointer.
+  %556 = load ptr, %array %555, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %557 = getelementptr %array, %array %553, i32 0, i32 4
+Load operand must be a pointer.
+  %558 = load i32, %array %557, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %570 = getelementptr %array, %array %553, i32 0, i32 0
+Load operand must be a pointer.
+  %572 = load ptr, %array %570, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %574 = getelementptr %array, %array %553, i32 0, i32 2
+Load operand must be a pointer.
+  %575 = load ptr, %array %574, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %576 = getelementptr %array, %array %553, i32 0, i32 4
+Load operand must be a pointer.
+  %577 = load i32, %array %576, align 4
 
-Tried to match size 3 of dimension 1 of '__libasr_created__integer_binop_' with size 2 of dimension 1 of '__libasr_created_integer_binop_right_'.

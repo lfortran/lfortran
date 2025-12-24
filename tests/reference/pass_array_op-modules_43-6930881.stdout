@@ -98,48 +98,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            __1__libasr_index_:
-                                                (Variable
-                                                    4
-                                                    __1__libasr_index_
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            __1_t:
-                                                (Variable
-                                                    4
-                                                    __1_t
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
                                             dir_sources:
                                                 (Variable
                                                     4
@@ -357,213 +315,55 @@
                                             .false.
                                         )]
                                         [(Assignment
-                                            (Var 4 __1__libasr_index_)
-                                            (ArrayBound
-                                                (Var 4 sources)
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                (Integer 4)
-                                                LBound
-                                                ()
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
-                                        )
-                                        (DoLoop
-                                            ()
-                                            ((Var 4 __1_t)
-                                            (ArrayBound
-                                                (Var 4 sources)
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                (Integer 4)
-                                                LBound
-                                                ()
-                                            )
-                                            (ArrayBound
-                                                (Var 4 sources)
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                (Integer 4)
-                                                UBound
-                                                ()
-                                            )
-                                            ())
-                                            [(Assignment
-                                                (ArrayItem
-                                                    (Var 4 sources)
-                                                    [(()
-                                                    (Var 4 __1__libasr_index_)
-                                                    ())]
-                                                    (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    RowMajor
-                                                    ()
-                                                )
-                                                (ArrayItem
-                                                    (Var 4 sources)
-                                                    [(()
-                                                    (Var 4 __1_t)
-                                                    ())]
-                                                    (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    RowMajor
-                                                    ()
-                                                )
-                                                ()
-                                                .false.
-                                                .false.
-                                            )
-                                            (Assignment
-                                                (Var 4 __1__libasr_index_)
-                                                (IntegerBinOp
-                                                    (Var 4 __1__libasr_index_)
-                                                    Add
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Integer 4)
-                                                    ()
-                                                )
-                                                ()
-                                                .false.
-                                                .false.
-                                            )]
-                                            []
-                                        )
-                                        (Assignment
-                                            (ArraySection
-                                                (Var 4 sources)
-                                                [((Var 4 __1__libasr_index_)
-                                                (IntegerBinOp
-                                                    (IntegerBinOp
-                                                        (Var 4 __1__libasr_index_)
-                                                        Add
-                                                        (ArraySize
-                                                            (IntrinsicArrayFunction
-                                                                Pack
-                                                                [(Var 4 dir_sources)
-                                                                (ArrayPhysicalCast
-                                                                    (LogicalNot
-                                                                        (Var 4 exclude_source)
-                                                                        (Array
-                                                                            (Logical 4)
-                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                            FixedSizeArray
-                                                                        )
-                                                                        ()
-                                                                    )
-                                                                    FixedSizeArray
-                                                                    DescriptorArray
-                                                                    (Array
-                                                                        (Logical 4)
-                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                        DescriptorArray
-                                                                    )
-                                                                    ()
-                                                                )]
-                                                                2
-                                                                (Allocatable
-                                                                    (Array
-                                                                        (StructType
-                                                                            [(Integer 8)
-                                                                            (Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )
-                                                                            (Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )]
-                                                                            []
-                                                                            .true.
-                                                                            .false.
-                                                                        )
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
-                                                                )
-                                                                ()
+                                            (Var 4 sources)
+                                            (ArrayConstructor
+                                                [(Var 4 sources)
+                                                (IntrinsicArrayFunction
+                                                    Pack
+                                                    [(Var 4 dir_sources)
+                                                    (ArrayPhysicalCast
+                                                        (LogicalNot
+                                                            (Var 4 exclude_source)
+                                                            (Array
+                                                                (Logical 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                                                FixedSizeArray
                                                             )
                                                             ()
-                                                            (Integer 4)
-                                                            ()
                                                         )
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    Sub
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Integer 4)
-                                                    ()
-                                                )
-                                                (IntegerConstant 1 (Integer 4) Decimal))]
-                                                (Array
-                                                    (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (ArraySize
-                                                        (Var 4 dir_sources)
-                                                        ()
-                                                        (Integer 4)
-                                                        ()
-                                                    ))]
-                                                    PointerArray
-                                                )
-                                                ()
-                                            )
-                                            (IntrinsicArrayFunction
-                                                Pack
-                                                [(Var 4 dir_sources)
-                                                (ArrayPhysicalCast
-                                                    (LogicalNot
-                                                        (Var 4 exclude_source)
+                                                        FixedSizeArray
+                                                        DescriptorArray
                                                         (Array
                                                             (Logical 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
-                                                            FixedSizeArray
+                                                            DescriptorArray
                                                         )
                                                         ()
-                                                    )
-                                                    FixedSizeArray
-                                                    DescriptorArray
-                                                    (Array
-                                                        (Logical 4)
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                                        DescriptorArray
+                                                    )]
+                                                    2
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                [(Integer 8)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
                                                     )
                                                     ()
                                                 )]
-                                                2
                                                 (Allocatable
                                                     (Array
                                                         (StructType
@@ -578,75 +378,13 @@
                                                             .true.
                                                             .false.
                                                         )
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         DescriptorArray
                                                     )
                                                 )
                                                 ()
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
-                                        )
-                                        (Assignment
-                                            (Var 4 __1__libasr_index_)
-                                            (IntegerBinOp
-                                                (Var 4 __1__libasr_index_)
-                                                Add
-                                                (ArraySize
-                                                    (IntrinsicArrayFunction
-                                                        Pack
-                                                        [(Var 4 dir_sources)
-                                                        (ArrayPhysicalCast
-                                                            (LogicalNot
-                                                                (Var 4 exclude_source)
-                                                                (Array
-                                                                    (Logical 4)
-                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                    FixedSizeArray
-                                                                )
-                                                                ()
-                                                            )
-                                                            FixedSizeArray
-                                                            DescriptorArray
-                                                            (Array
-                                                                (Logical 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                DescriptorArray
-                                                            )
-                                                            ()
-                                                        )]
-                                                        2
-                                                        (Allocatable
-                                                            (Array
-                                                                (StructType
-                                                                    [(Integer 8)
-                                                                    (Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )
-                                                                    (Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )]
-                                                                    []
-                                                                    .true.
-                                                                    .false.
-                                                                )
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
-                                                        )
-                                                        ()
-                                                    )
-                                                    ()
-                                                    (Integer 4)
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
+                                                ColMajor
                                             )
                                             ()
                                             .false.

@@ -1,4 +1,1 @@
-At 4:5 of file tests/errors/array_bounds_check_03.f90
-Runtime Error: Array 'x' is not allocated.
-
-Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+Segmentation fault (core dumped)

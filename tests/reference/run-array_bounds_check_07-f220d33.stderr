@@ -1,4 +1,24 @@
-At 12:9 of file tests/errors/array_bounds_check_07.f90
-Runtime Error: Array shape mismatch in binary operation with operands 'x' and 'y'
+code generation error: asr_to_llvm: module failed verification. Error:
+Integer arithmetic operators only work with integral types!
+  %200 = add %array %197, %199
+GEP base pointer is not a vector or a vector of pointers
+  %202 = getelementptr %array, %array %200, i32 0, i32 2
+Load operand must be a pointer.
+  %203 = load ptr, %array %202, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %204 = getelementptr %array, %array %200, i32 0, i32 4
+Load operand must be a pointer.
+  %205 = load i32, %array %204, align 4
+GEP base pointer is not a vector or a vector of pointers
+  %217 = getelementptr %array, %array %200, i32 0, i32 0
+Load operand must be a pointer.
+  %219 = load ptr, %array %217, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %221 = getelementptr %array, %array %200, i32 0, i32 2
+Load operand must be a pointer.
+  %222 = load ptr, %array %221, align 8
+GEP base pointer is not a vector or a vector of pointers
+  %223 = getelementptr %array, %array %200, i32 0, i32 4
+Load operand must be a pointer.
+  %224 = load i32, %array %223, align 4
 
-Tried to match size 3 of dimension 1 of 'x' with size 4 of dimension 1 of 'y'.
