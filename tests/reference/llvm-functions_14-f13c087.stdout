@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-define void @find_fit(i32 ()* %expr) {
+define void @find_fit(ptr %expr) {
 .entry:
   br label %return
 
@@ -14,9 +14,9 @@ FINALIZE_SYMTABLE_find_fit:                       ; preds = %return
 
 declare i32 @expr()
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -27,6 +27,6 @@ FINALIZE_SYMTABLE_functions_14:                   ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lpython_free_argv()
