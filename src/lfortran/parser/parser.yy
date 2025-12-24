@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    237 // shift/reduce conflicts
+%expect    238 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1545,6 +1545,7 @@ intrinsic_type_spec
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
+    | KW_CHARACTER "*" "(" "*" ")" { Vec<AST::kind_arg_t> kind; kind.reserve(p.m_a, 0); $$ = ATTR_TYPE_KIND(Character, kind, @$); }
     | KW_CHARACTER "*" "(" char_len_param ")" { $$ = $4; $$->loc = @$; }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
