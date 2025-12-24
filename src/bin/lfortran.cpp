@@ -165,10 +165,10 @@ void print_one_component(std::string component) {
         int time_width = 10;
 
         std::cout << std::string(indent_width, ' ')  // Print indentation
-                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::left << std::setw(name_width) << component_name
                   << std::right << std::setw(time_width)
                   << std::fixed << std::setprecision(3) << time_float
-                  << '\n';
+                  << RESET << '\n';
     }
 }
 
