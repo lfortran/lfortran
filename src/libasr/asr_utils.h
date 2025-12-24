@@ -4246,6 +4246,14 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
 }
 
 inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions) {
+    // Check if one is a procedure type and the other isn't
+    ASR::ttype_t* x_base = ASRUtils::type_get_past_array(x);
+    ASR::ttype_t* y_base = ASRUtils::type_get_past_array(y);
+    bool x_is_procedure = ASR::is_a<ASR::FunctionType_t>(*x_base);
+    bool y_is_procedure = ASR::is_a<ASR::FunctionType_t>(*y_base);
+    if (x_is_procedure != y_is_procedure) {
+        return false;
+    } 
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
