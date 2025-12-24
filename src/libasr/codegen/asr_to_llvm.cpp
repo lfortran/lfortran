@@ -11411,18 +11411,6 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-        if (x.m_unit) {
-            ASR::ttype_t *unit_type = ASRUtils::expr_type(x.m_unit);
-            if (ASRUtils::is_character(*unit_type)) {
-                diag.add(diag::Diagnostic(
-                    "Internal file I/O is not yet implemented in the LLVM backend",
-                    diag::Level::Error, diag::Stage::CodeGen, {
-                        diag::Label("", {x.base.base.loc})
-                    }));
-                return;
-            }
-        }
-        
         llvm::Value *unit_val, *iostat, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
@@ -12020,7 +12008,6 @@ public:
             this->visit_stmt(*x.m_overloaded);
             return ;
         }
-
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
                 llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "%s%s");
