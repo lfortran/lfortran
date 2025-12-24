@@ -2130,33 +2130,20 @@ public:
 	        if (is_argument &&
                     m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar
                     && i != n_dim-1) {
-                // 1. Emit Error
                 diag.add(diag::Diagnostic(
                     "Assumed-size '*' is only permitted in the last dimension",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {m_dim[i].loc})}));
 
-                // 2. RECOVERY: Explicit 1:1 Dimension
-                // We create a dummy range 1:1. This preserves the rank and 
-                // keeps the array as "Explicit Shape" (neutral), avoiding 
-                // accidental "Assumed Shape" semantics.
-                
-                // Create the type 'integer(4)'
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, m_dim[i].loc, 4));
-                
-                // Create the constant '1'
                 ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, m_dim[i].loc, 1, int_type));
 
-                // Create the dimension object
                 ASR::dimension_t dim_dummy;
                 dim_dummy.loc = m_dim[i].loc;
                 dim_dummy.m_start = one;
-                dim_dummy.m_length = one; // start=1, length=1 implies end=1
-                
+                dim_dummy.m_length = one; 
                 dims.push_back(al, dim_dummy);
-
-                // 3. Skip complex processing
                 continue;
             }
 	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);

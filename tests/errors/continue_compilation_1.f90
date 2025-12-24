@@ -97,7 +97,11 @@ contains
         real :: a(*, 10)
     end subroutine
 
+    subroutine foo(a)
+        real :: a(*, 10) ! error: star not in last dim
+    end subroutine
 
+    
 
 
 
