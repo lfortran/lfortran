@@ -1771,14 +1771,24 @@ public:
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
 
                     if (!is_placeholder) {
-                        diag.add(diag::Diagnostic(
-                            "Symbol '" + std::string(sym_name) + "' is already defined",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {tmp->loc})
-                            }));
-                        throw SemanticAbort();
+                       if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
+                                ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
+        
+                            diag.add(diag::Diagnostic(
+                                "Argument(s) or return type mismatch in interface and implementation",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {tmp->loc})}));
+                            throw SemanticAbort();
+                        }
                     }
                     parent_scope->erase_symbol(sym_name);
+                }
+                else {
+                    diag.add(diag::Diagnostic(
+                        "Function already defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {tmp->loc})}));
+                    throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
