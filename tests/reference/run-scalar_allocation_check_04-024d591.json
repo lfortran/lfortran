@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-scalar_allocation_check_04-024d591.stderr",
-    "stderr_hash": "974174cf3dcbe8a85993665bf1b829ff1c82ad1ec9f1d1537215c7a5",
-    "returncode": 10
+    "stderr_hash": "21f62d6d21c80f079f879899ada5dcc5ca00cb30e9ee97fb7b4b0b1b",
+    "returncode": 1
 }

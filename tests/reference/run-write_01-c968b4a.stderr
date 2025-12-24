@@ -1,4 +1,1 @@
-sh: 1: clang: not found
-The command 'clang -o write_01.out /tmp/write_01.tmp_zZ8L01wht4WX6kMxLIQA6n.o  -L"$DIR/build/src/bin/../runtime" -Wl,-rpath,"$DIR/build/src/bin/../runtime" -llfortran_runtime -lm' failed.
-Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
-Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker execuatable
+Runtime Error: Format mismatch between OPEN statement and WRITE statement on unit 0.

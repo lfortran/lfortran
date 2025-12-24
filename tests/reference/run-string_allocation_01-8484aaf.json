@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-string_allocation_01-8484aaf.stderr",
-    "stderr_hash": "b83701e02193e345c608cbe91192ff3eb0057dd717cb6069c675782d",
-    "returncode": 10
+    "stderr_hash": "798d42b98a53bf914ee8d9bb8714e1bc4fdf04128ec7028805b8eaed",
+    "returncode": 1
 }

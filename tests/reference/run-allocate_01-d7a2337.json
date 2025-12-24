@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-allocate_01-d7a2337.stderr",
-    "stderr_hash": "be29fecdce448d4a5d1bca684fd5d6120cdcd6addcf6b437ef97910c",
-    "returncode": 10
+    "stderr_hash": "673d30388144c3aaf7dbe2956f5cbca2423aeb195d7e0a98d9c6f7c1",
+    "returncode": 1
 }

@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-write_01-c968b4a.stderr",
-    "stderr_hash": "7e8e2c436752a9cbaa7d5b5f48ff3fe3472a219fb10dac262dee3bc6",
-    "returncode": 10
+    "stderr_hash": "2e71ec18af4ca66ad3584331f3798a56c3a0389ffdbc0c182ef0de36",
+    "returncode": 1
 }
