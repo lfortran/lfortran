@@ -266,9 +266,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-14
+  git checkout lf-15
   micromamba install -c conda-forge fpm
-  git checkout ed292d67826c17e91503941ddd3d2ad7fa5d2139
+  git checkout e709edb424807d8d0b565169fea494c1f8f02471
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
