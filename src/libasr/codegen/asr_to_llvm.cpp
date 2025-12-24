@@ -7477,7 +7477,9 @@ public:
             x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
             x.m_target->type == ASR::exprType::DictItem ||
-            x.m_target->type == ASR::exprType::UnionInstanceMember ) {
+            x.m_target->type == ASR::exprType::UnionInstanceMember ||
+            (x.m_target->type == ASR::exprType::FunctionCall &&
+             ASRUtils::is_pointer(ASRUtils::expr_type(x.m_target))) ) {
             is_assignment_target = true;
             this->visit_expr(*x.m_target);
             is_assignment_target = false;
