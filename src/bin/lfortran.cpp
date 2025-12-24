@@ -2596,7 +2596,15 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
+            int result = compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
+            if (compiler_options.time_report) {
+                auto end_time = std::chrono::high_resolution_clock::now();
+                int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+                std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+                compiler_options.po.vector_of_time_report.push_back(message);
+                print_time_report(compiler_options.po.vector_of_time_report);
+            }
+            return result;
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2609,29 +2617,30 @@ int main_app(int argc, char *argv[]) {
         }
     }
     if (opts.arg_c) {
+        int result;
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
+            result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
                 compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
-            return compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
+            result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
                     rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
         } else if (backend == Backend::cpp) {
-            return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
+            result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
         } else if (backend == Backend::x86) {
-            return compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
+            result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
-            return compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
+            result = compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
-            return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
+            result = compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-            return handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
+            result = handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
 #else
             std::cerr << "The -c option with `--backend=mlir` requires the "
                 "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
@@ -2641,6 +2650,14 @@ int main_app(int argc, char *argv[]) {
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
+        if (compiler_options.time_report) {
+            auto end_time = std::chrono::high_resolution_clock::now();
+            int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+            print_time_report(compiler_options.po.vector_of_time_report);
+        }
+        return result;
     }
 
     int err_ = 0;
