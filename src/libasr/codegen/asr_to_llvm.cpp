@@ -15491,6 +15491,22 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
     }
 }
 
+// Check that VTABLE_PTR_SIZE matches the target's pointer size
+Result<bool> check_vtable_ptr_size(llvm::Module* module, diag::Diagnostics &diagnostics) {
+    llvm::DataLayout data_layout(module->getDataLayout());
+    uint64_t actual_ptr_size = data_layout.getPointerSize();
+    if (actual_ptr_size != ASRUtils::VTABLE_PTR_SIZE) {
+        std::string msg = "VTable pointer size mismatch: expected " +
+            std::to_string(ASRUtils::VTABLE_PTR_SIZE) + " bytes (64-bit), but target uses " +
+            std::to_string(actual_ptr_size) + " bytes";
+        diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
+            diag::Level::Error, diag::Stage::CodeGen));
+        Error error;
+        return error;
+    }
+    return true;
+}
+
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al,
@@ -15543,6 +15559,14 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
+
+    // Validate VTABLE_PTR_SIZE matches target pointer size
+    Result<bool> check_result = check_vtable_ptr_size(v.module.get(), diagnostics);
+    if (!check_result.ok) {
+        Error error;
+        return error;
+    }
+
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {
