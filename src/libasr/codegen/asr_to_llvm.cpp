@@ -3140,7 +3140,50 @@ public:
             ptr_loads = ptr_loads_copy;
             array = tmp;
         }
+        if (v && ASRUtils::is_allocatable(v->m_type)) {
+            // 1. Get the LLVM type for the array descriptor
+            // We use x.m_v (the expression) and strip the allocatable wrapper from the type
+            llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_v, 
+                ASRUtils::type_get_past_allocatable_pointer(v->m_type), 
+                module.get()
+            );
+            
+            // 2. Get the address of the data pointer (index 0 of the descriptor)
+            llvm::Value* data_ptr_addr = builder->CreateStructGEP(llvm_arr_type, array, 0);
+            
+            // 3. Load the data pointer (Explicit pointer type for LLVM 18)
+            llvm::Value* data_ptr = builder->CreateLoad(builder->getPtrTy(), data_ptr_addr);
+            
+            // 4. Create the Null Check
+            llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+            llvm::Value* is_unallocated = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(data_ptr, i64),
+                llvm::ConstantInt::get(i64, 0)
+            );
 
+            // 5. Basic Block Management
+            llvm::Function *current_func = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *then_b = llvm::BasicBlock::Create(context, "then", current_func);
+            llvm::BasicBlock *ifcont_b = llvm::BasicBlock::Create(context, "ifcont", current_func);
+
+            builder->CreateCondBr(is_unallocated, then_b, ifcont_b);
+            builder->SetInsertPoint(then_b);
+
+            // 6. Runtime Error Logic
+            llvm::Value *msg = builder->CreateGlobalStringPtr("Runtime Error: Array '%s' is indexed but not allocated.\n");
+            llvm::Value *name_ptr = builder->CreateGlobalStringPtr(array_name);
+            
+            // Look up the functions directly in the module
+            llvm::Function* fn_err = module->getFunction("_lcompilers_print_error");
+            llvm::Function* fn_ex = module->getFunction("exit");
+
+            if (fn_err) builder->CreateCall(fn_err, {msg, name_ptr});
+            if (fn_ex) builder->CreateCall(fn_ex, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
+            
+            builder->CreateUnreachable();
+            builder->SetInsertPoint(ifcont_b);
+        }
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         {
