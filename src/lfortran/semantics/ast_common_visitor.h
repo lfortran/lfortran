@@ -5551,8 +5551,9 @@ public:
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {
+                Location &attr_loc = sym_type->base.base.loc;
                 ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                    al, loc,
+                    al, attr_loc,
                     nullptr, 0, nullptr, ASR::abiType::Source,        
                     ASR::deftypeType::Interface, nullptr,                     
                     false, false, false, false, false, nullptr, 0, false
@@ -5561,7 +5562,7 @@ public:
                 SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_Function_t(
-                        al, loc,
+                        al, attr_loc,
                         fn_scope,       
                         s2c(al, func_name),      
                         func_type,         

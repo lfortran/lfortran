@@ -396,11 +396,10 @@ public:
             ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
             if (current_sym == placeholder_sym) {
                 diag.add(diag::Diagnostic(
-                    "Procedure '" + name + "' is declared but not defined",
+                    "Interface '" + name + "' is referenced but not defined",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("Declared here", {placeholder_sym->base.loc})
                     }));
-                throw SemanticAbort();
             }
         }
         pending_proc_placeholders.clear();
@@ -479,7 +478,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        in_program = false;
+        // in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -557,10 +556,10 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("Declared here", {placeholder_sym->base.loc})
                     }));
-                 throw SemanticAbort();
              }
         }
         pending_proc_placeholders.clear();
+        in_program = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1812,8 +1811,7 @@ public:
                         }
                     }
                     parent_scope->erase_symbol(sym_name);
-                }
-                else {
+                } else {
                     diag.add(diag::Diagnostic(
                         "Function already defined",
                         diag::Level::Error, diag::Stage::Semantic, {
