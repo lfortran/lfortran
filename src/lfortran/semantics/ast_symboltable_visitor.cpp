@@ -389,6 +389,21 @@ public:
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+            // Check the module's symbol table
+            ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
+            if (current_sym == placeholder_sym) {
+                diag.add(diag::Diagnostic(
+                    "Procedure '" + name + "' is declared but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+        pending_proc_placeholders.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
@@ -534,6 +549,18 @@ public:
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
+             if (current_sym == placeholder_sym) {
+                 diag.add(diag::Diagnostic(
+                    "Procedure '" + name + "' is declared but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                    }));
+                 throw SemanticAbort();
+             }
+        }
+        pending_proc_placeholders.clear();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 

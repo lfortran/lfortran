@@ -52,6 +52,12 @@ semantic error: Dummy argument 'a' not defined
 98 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Procedure 'f_missing' is declared but not defined
+  --> tests/errors/continue_compilation_1.f90:31:9
+   |
+31 |         procedure(f_missing), pointer, nopass :: fn => null()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Declared here
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
     |
@@ -131,13 +137,7 @@ semantic error: Expecting a scalar integer or parameter annotated integer variab
 163 |     logical :: mask_size(size(arr_size))
     |                          ^^^^^^^^^^^^^^ 
 
-semantic error: `protected` attribute is only allowed in specification part of a module
-   --> tests/errors/continue_compilation_1.f90:164:5
-    |
-164 |     integer, protected :: protected_attr_var
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: `protected` attribute is only allowed in specification part of a module
+semantic error: `parameter` attribute conflicts with `protected` attribute
    --> tests/errors/continue_compilation_1.f90:165:5
     |
 165 |     integer, parameter, protected :: protected_parameter_var

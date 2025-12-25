@@ -1628,6 +1628,7 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -5578,6 +5579,7 @@ public:
                 
                 parent_scope->add_symbol(func_name, placeholder); 
                 v = placeholder;
+                pending_proc_placeholders.push_back({func_name, placeholder});
             }
             type_declaration = v;
             v = ASRUtils::symbol_get_past_external(v);
