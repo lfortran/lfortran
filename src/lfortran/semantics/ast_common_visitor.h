@@ -1563,6 +1563,9 @@ public:
     using common_block_varsyms = std::map<std::string, std::vector<AST::var_sym_t>>;
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
+    // Maps variable hash to member index in the COMMON block struct
+    // (needed when variable names differ across program units)
+    std::map<uint64_t, size_t> &common_variables_member_index;
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
@@ -1634,6 +1637,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, size_t>& common_variables_member_index,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -1645,6 +1649,7 @@ public:
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash},
+          common_variables_member_index{common_variables_member_index},
           external_procedures_mapping{external_procedures_mapping},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
@@ -2254,17 +2259,34 @@ public:
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
-            std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
+            // Get the actual member name from the struct - may differ from local
+            // variable name when COMMON block uses different names in different
+            // program units (valid Fortran - COMMON maps storage, not names)
+            std::string actual_member_name = target_var_name;
+            ASR::symbol_t* struct_member_sym = struct_type->m_symtab->resolve_symbol(target_var_name);
+            if (!struct_member_sym) {
+                // Variable name differs - look up by position index
+                auto idx_it = common_variables_member_index.find(hash);
+                if (idx_it != common_variables_member_index.end()) {
+                    size_t member_idx = idx_it->second;
+                    if (member_idx < struct_type->n_members) {
+                        actual_member_name = struct_type->m_members[member_idx];
+                        struct_member_sym = struct_type->m_symtab->resolve_symbol(actual_member_name);
+                    }
+                }
+            }
+            LCOMPILERS_ASSERT(struct_member_sym != nullptr);
+
+            std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+actual_member_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
             if (!member_sym) {
-
                 member_sym = ASR::down_cast<ASR::symbol_t>(make_ExternalSymbol_t(al, target_var->base.base.loc, scope, s2c(al, member_name),
-                                                        struct_type->m_symtab->resolve_symbol(target_var_name), s2c(al, ext_sym_name), nullptr, 0, s2c(al, target_var_name), ASR::accessType::Public));
+                                                        struct_member_sym, s2c(al, ext_sym_name), nullptr, 0, s2c(al, actual_member_name), ASR::accessType::Public));
                 scope->add_symbol(member_name, member_sym);
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
+                member_sym, ASRUtils::symbol_type(struct_member_sym), nullptr);
 
             return new_target;
         } else {
@@ -2938,6 +2960,7 @@ public:
 		common_block_variables.reserve(num_cb_var);
 
 		// Add all the block variables
+		size_t member_idx = 0;
 		for (auto const &s : blk.second) {
 		    AST::expr_t* expr = s.m_initializer;
             LCOMPILERS_ASSERT(expr != nullptr)
@@ -2948,6 +2971,7 @@ public:
 		    // add variable to struct
 		    add_sym_to_struct(var_, struct_type);
 		    common_variables_hash[hash] = common_block_struct_sym;
+		    common_variables_member_index[hash] = member_idx++;
 		}
 
 		common_block_dictionary[common_block_name].first = true;
@@ -2960,6 +2984,7 @@ public:
 		    std::vector<ASR::expr_t*> & common_block_variables = cbd_it->second.second;
 		    common_block_variables.reserve(common_block_variables.size() + blk.second.size());
 
+		    size_t member_idx = common_block_variables.size();
 		    for (auto const &s : blk.second) {
 			AST::expr_t* expr = s.m_initializer;
 			this->visit_expr(*expr);
@@ -2967,6 +2992,7 @@ public:
 			uint64_t hash = get_hash((ASR::asr_t*) var_);
 			common_block_variables.push_back(ASRUtils::EXPR(tmp));
 			common_variables_hash[hash] = common_block_struct_sym;
+			common_variables_member_index[hash] = member_idx++;
 			// add variable to struct
             if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
                 add_sym_to_struct(var_, struct_type);
@@ -3022,6 +3048,7 @@ public:
             } else {
                 uint64_t hash = get_hash((ASR::asr_t*) var__);
 			    common_variables_hash[hash] = common_block_struct_sym;
+			    common_variables_member_index[hash] = i;
             }
             if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
 			    /*
