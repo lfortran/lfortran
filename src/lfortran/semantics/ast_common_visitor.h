@@ -2308,23 +2308,28 @@ public:
             ASR::symbol_t* struct_member_sym = struct_type->m_symtab->resolve_symbol(target_var_name);
             if (!struct_member_sym) {
                 // Variable name differs - look up by byte offset to find the member
-                // at the same storage position
+                // whose storage range contains the target offset. This handles:
+                // 1. Same offset, different name (exact match)
+                // 2. Reordered layout where local variable overlaps struct member
                 auto offset_it = common_variables_byte_offset.find(hash);
                 if (offset_it != common_variables_byte_offset.end()) {
                     size_t target_offset = offset_it->second;
-                    // Find the member at this byte offset
+                    // Find the member whose byte range contains target_offset
                     size_t current_offset = 0;
                     for (size_t i = 0; i < struct_type->n_members; i++) {
                         std::string member_name_str = struct_type->m_members[i];
                         ASR::symbol_t* mem_sym = struct_type->m_symtab->resolve_symbol(member_name_str);
-                        if (mem_sym && current_offset == target_offset) {
-                            actual_member_name = member_name_str;
-                            struct_member_sym = mem_sym;
-                            break;
-                        }
                         if (mem_sym && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                             ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(mem_sym);
-                            current_offset += get_type_byte_size(mem_var->m_type);
+                            size_t member_size = get_type_byte_size(mem_var->m_type);
+                            // Check if target_offset falls within this member's range
+                            if (target_offset >= current_offset &&
+                                target_offset < current_offset + member_size) {
+                                actual_member_name = member_name_str;
+                                struct_member_sym = mem_sym;
+                                break;
+                            }
+                            current_offset += member_size;
                         }
                     }
                 }
@@ -2339,8 +2344,11 @@ public:
                 scope->add_symbol(member_name, member_sym);
             }
 
+            // Use local variable's type for COMMON block access. This preserves
+            // the local view of the storage (e.g., integer array vs real array).
+            // Codegen will detect type mismatch and use byte-offset + bitcast.
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::symbol_type(struct_member_sym), nullptr);
+                member_sym, target_var->m_type, nullptr);
 
             return new_target;
         } else {

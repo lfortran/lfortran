@@ -3740,6 +3740,23 @@ public:
                 }
             }
         }
+
+        // Handle COMMON block type aliasing: when x.m_type differs from the
+        // struct member's type, bitcast to the expected type. This occurs
+        // when different program units declare different views of the same
+        // COMMON block storage (e.g., real(8) array(4) vs integer array(8)).
+        ASR::ttype_t* expected_type = x.m_type;
+        ASR::ttype_t* actual_member_type = member->m_type;
+        llvm::Type* expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
+            expected_type, module.get());
+        llvm::Type* actual_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
+            actual_member_type, module.get());
+        if (expected_llvm_type != actual_llvm_type) {
+            // Types differ - bitcast the pointer to the expected type
+            tmp = builder->CreateBitCast(tmp, expected_llvm_type->getPointerTo());
+        }
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {

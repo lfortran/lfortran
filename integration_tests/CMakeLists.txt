@@ -2399,6 +2399,8 @@ RUN(NAME common_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmImplicit)
 RUN(NAME common_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
 RUN(NAME statement_02 LABELS gfortran llvmImplicit)
