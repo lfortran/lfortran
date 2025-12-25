@@ -1,11 +1,12 @@
-! Test: CHARACTER variables in COMMON blocks
-! Verifies storage association with character types
+! Test: CHARACTER variables in COMMON blocks (F2018 8.10.3)
+! Verifies that CHARACTER data persists across program units via storage association.
+! Tests both same-layout access and different variable names for same storage.
 program common_19
     implicit none
     character(len=8) :: str1
     character(len=4) :: str2
     integer :: icheck
-    common /charblk/ str1, str2, icheck
+    common/charblk/str1, str2, icheck
 
     str1 = "ABCDEFGH"
     str2 = "1234"
@@ -22,7 +23,7 @@ subroutine sub_same_layout()
     character(len=8) :: s1
     character(len=4) :: s2
     integer :: ival
-    common /charblk/ s1, s2, ival
+    common/charblk/s1, s2, ival
 
     ! Verify values match what was set in main
     if (s1 /= "ABCDEFGH") error stop "s1 should be ABCDEFGH"
@@ -41,7 +42,7 @@ subroutine sub_diff_names()
     character(len=8) :: name1
     character(len=4) :: name2
     integer :: num
-    common /charblk/ name1, name2, num
+    common/charblk/name1, name2, num
 
     ! Verify modified values from sub_same_layout
     if (name1 /= "XXXXXXXX") error stop "name1 should be XXXXXXXX"

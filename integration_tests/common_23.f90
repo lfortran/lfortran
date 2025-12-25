@@ -1,5 +1,7 @@
-! Test: Blank (unnamed) COMMON block
-! Verifies storage association with the special blank common
+! Test: Blank (unnamed) COMMON block (F2018 8.10.3.1)
+! The blank common block (declared without a name) is a special case that
+! provides global storage shared across all program units. Unlike named
+! COMMON blocks, blank common cannot be initialized in BLOCK DATA.
 program common_23
     implicit none
     integer :: i, j

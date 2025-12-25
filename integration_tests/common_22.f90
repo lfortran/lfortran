@@ -1,11 +1,12 @@
-! Test: Multiple COMMON blocks in same program unit
-! Verifies independent storage for different COMMON block names
+! Test: Multiple independent COMMON blocks in same program unit (F2018 8.10.3)
+! Verifies that different named COMMON blocks have independent storage.
+! Modifications to one block should not affect variables in another block.
 program common_22
     implicit none
     integer :: a1, a2
     real :: b1, b2
-    common /blk1/ a1, a2
-    common /blk2/ b1, b2
+    common/blk1/a1, a2
+    common/blk2/b1, b2
 
     a1 = 10
     a2 = 20
@@ -21,8 +22,8 @@ subroutine sub_access_both()
     implicit none
     integer :: x1, x2
     real :: y1, y2
-    common /blk1/ x1, x2
-    common /blk2/ y1, y2
+    common/blk1/x1, x2
+    common/blk2/y1, y2
 
     ! Verify both blocks accessible
     if (x1 /= 10) error stop "x1 should be 10"
@@ -39,7 +40,7 @@ subroutine sub_verify_independence()
     implicit none
     ! Access only blk1 - should not affect blk2
     integer :: p, q
-    common /blk1/ p, q
+    common/blk1/p, q
 
     if (p /= 100) error stop "p should be 100"
     p = 999

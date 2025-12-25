@@ -1,10 +1,12 @@
-! Test: COMMON block value verification across program units
-! Verifies that storage association correctly shares values
+! Test: COMMON block bidirectional value sharing (F2018 8.10.3)
+! Verifies that values written in one program unit are visible in others,
+! and that modifications in subroutines are visible back in the main program.
+! Also tests that different variable names can access the same storage.
 program common_20
     implicit none
     integer :: a, b, c
     real :: x, y
-    common /valblk/ a, b, c, x, y
+    common/valblk/a, b, c, x, y
 
     ! Initialize all values
     a = 10
@@ -32,7 +34,7 @@ subroutine sub_read_verify()
     implicit none
     integer :: a, b, c
     real :: x, y
-    common /valblk/ a, b, c, x, y
+    common/valblk/a, b, c, x, y
 
     ! Verify we can read values set in main
     if (a /= 10) error stop "a should be 10"
@@ -52,7 +54,7 @@ subroutine sub_diff_names()
     ! Different variable names but same storage
     integer :: p, q, r
     real :: s, t
-    common /valblk/ p, q, r, s, t
+    common/valblk/p, q, r, s, t
 
     ! p, q, r should have values 100, 200, 300 from previous subroutine
     if (p /= 100) error stop "p should be 100"
