@@ -785,7 +785,26 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, index2var, var_with_maxrank,
                             0, parent_do_loop_body, loc);
-        do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        ASR::ttype_t* t = ASRUtils::expr_type(x.m_target);
+        t = ASRUtils::type_get_past_allocatable(t);
+        t = ASRUtils::type_get_past_pointer(t);
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(t);
+        ASR::ttype_t* element_type = array_type->m_type;
+        element_type = ASRUtils::type_get_past_allocatable(element_type);
+        element_type = ASRUtils::type_get_past_pointer(element_type);
+
+        if (ASR::is_a<ASR::StructType_t>(*element_type)) {
+            ASR::stmt_t* element_assign = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(
+                    al, loc,
+                    *target_address, *value_address,
+                    x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation
+                )
+            );
+            do_loop_body.push_back(al, element_assign);
+        } else {
+            do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
@@ -916,7 +935,41 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
-        do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        if constexpr (std::is_same_v<T, ASR::Assignment_t>) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+                ASR::ttype_t* t = ASRUtils::expr_type(x.m_target);
+                t = ASRUtils::type_get_past_allocatable(t);
+                t = ASRUtils::type_get_past_pointer(t);
+                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(t);
+                ASR::ttype_t* element_type = array_type->m_type;
+                element_type = ASRUtils::type_get_past_allocatable(element_type);
+                element_type = ASRUtils::type_get_past_pointer(element_type);
+
+                if (ASR::is_a<ASR::StructType_t>(*element_type)) {
+                    // Create a FRESH Assignment_t so intrinsic (deep) assignment is triggered
+                    ASR::stmt_t* element_assign = ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(
+                            al, loc,
+                            *vars[0],            
+                            *vars[1],            
+                            x.m_overloaded,      
+                            x.m_realloc_lhs,     
+                            x.m_move_allocation 
+                        )
+                    );
+                    do_loop_body.push_back(al, element_assign);
+                } else {
+                   
+                    do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+                }
+            } else {
+                
+                do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+            }
+        } else {
+           
+            do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,

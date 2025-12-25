@@ -2413,6 +2413,10 @@ class ReplaceExprWithTemporaryVisitor:
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
+        ASR::expr_t* rhs_array_var = nullptr;
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            rhs_array_var = ASRUtils::extract_array_variable(x.m_value);
+        }
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
             ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
             ASRUtils::extract_indices(x.m_target, m_args, n_args);
@@ -2439,15 +2443,26 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_elemental_expr(x.m_value);
-        if(  is_assignment_target_array_section_item || 
-            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && 
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
-            (lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-            !ASRUtils::is_simd_array(x.m_value) &&
-            !ASRUtils::is_allocatable(x.m_target) &&
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ) {
-            replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
-                                                exprs_with_target, is_assignment_target_array_section_item);
+        bool has_array_alias =
+        lhs_array_var && rhs_array_var &&
+        is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, rhs_array_var);
+
+        if (is_assignment_target_array_section_item ||
+            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+            ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && has_array_alias) ||
+            (has_array_alias &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            !ASRUtils::is_simd_array(x.m_value))) {
+
+            replacer.force_replace_current_expr_for_array(
+                current_expr,
+                "_assignment_value_",
+                al,
+                current_body,
+                current_scope,
+                exprs_with_target,
+                is_assignment_target_array_section_item
+            );
         }
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
