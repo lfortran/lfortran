@@ -2171,9 +2171,11 @@ public:
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
+        std::vector<std::string> old_procedure_args = current_procedure_args;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
+        current_procedure_args = old_procedure_args;
         return;
     }
 
@@ -2737,7 +2739,10 @@ public:
     }
 
     bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
-        if (ASRUtils::is_class_type(ASRUtils::expr_type(var_expr))) {
+        ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+        // Get past pointer type if present
+        var_type = ASRUtils::type_get_past_pointer(var_type);
+        if (ASRUtils::is_class_type(var_type)) {
             ASR::symbol_t* var_type_clss_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
@@ -2760,6 +2765,17 @@ public:
                         diag::Label("", {loc})}));
                 throw SemanticAbort();
             }
+            // Check for INTENT(IN) POINTER - issue warning but allow compilation
+            ASR::Variable_t* first_arg = ASRUtils::EXPR2VAR(func->m_args[0]);
+            if (ASRUtils::is_pointer(first_arg->m_type) &&
+                first_arg->m_intent == ASR::intentType::In) {
+                diag.add(diag::Diagnostic(
+                    "Passed-object dummy argument '" + std::string(first_arg->m_name) +
+                    "' of procedure '" + std::string(func->m_name) +
+                    "' that is an INTENT(IN) POINTER is not standard",
+                    diag::Level::Warning, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+            }
         } else {
             bool is_pass_arg_name_found = false;
             for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
@@ -2773,6 +2789,16 @@ public:
                             diag::Level::Error, diag::Stage::Semantic, {
                                 diag::Label("", {loc})}));
                         throw SemanticAbort();
+                    }
+                    // Check for INTENT(IN) POINTER - issue warning but allow compilation
+                    if (ASRUtils::is_pointer(v->m_type) &&
+                        v->m_intent == ASR::intentType::In) {
+                        diag.add(diag::Diagnostic(
+                            "Passed-object dummy argument '" + std::string(v->m_name) +
+                            "' of procedure '" + std::string(func->m_name) +
+                            "' that is an INTENT(IN) POINTER is not standard",
+                            diag::Level::Warning, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
                     }
                     is_pass_arg_name_found = true;
                 }
