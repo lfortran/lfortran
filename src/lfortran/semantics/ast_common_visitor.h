@@ -4392,9 +4392,16 @@ public:
 
                         visit_ArrayInitializer(*array_init);
                         init_expr = ASRUtils::EXPR(tmp);
+                    } else if ((storage_type != ASR::storage_typeType::Parameter) &&
+                            ((AST::is_a<AST::String_t>(*s.m_initializer) ||
+                             AST::is_a<AST::Num_t>(*s.m_initializer) ||
+                             AST::is_a<AST::Real_t>(*s.m_initializer) ||
+                             AST::is_a<AST::BOZ_t>(*s.m_initializer)))) {
+                        this->visit_expr(*s.m_initializer);
+                        init_expr = ASRUtils::EXPR(tmp);
                     } else {
                         diag.add(Diagnostic(
-                            "Only function call assignment is allowed for now",
+                            "Initialization with type(...) syntax only supports literal constants and constructor calls without parameter type",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }));
