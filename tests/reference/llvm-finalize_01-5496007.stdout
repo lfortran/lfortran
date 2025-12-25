@@ -1,10 +1,10 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%array = type { i32*, i32, %dimension_descriptor*, i1, i32 }
+%array = type { ptr, i32, ptr, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32 }
-%string_descriptor = type <{ i8*, i64 }>
-%array.0 = type { float*, i32, %dimension_descriptor*, i1, i32 }
+%string_descriptor = type <{ ptr, i64 }>
+%array.0 = type { ptr, i32, ptr, i1, i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
 @1 = private unnamed_addr constant [109 x i8] c"At 15:9 of file tests/finalize_01.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
@@ -12,33 +12,33 @@ source_filename = "LFortran"
 
 define void @__module_finalize_01_mod_ss() {
 .entry:
-  %arr = alloca %array*, align 8
-  store %array* null, %array** %arr, align 8
+  %arr = alloca ptr, align 8
+  store ptr null, ptr %arr, align 8
   %arr_desc = alloca %array, align 8
-  %0 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
+  %0 = getelementptr %array, ptr %arr_desc, i32 0, i32 2
   %1 = alloca i32, align 4
-  store i32 1, i32* %1, align 4
-  %2 = load i32, i32* %1, align 4
+  store i32 1, ptr %1, align 4
+  %2 = load i32, ptr %1, align 4
   %3 = alloca %dimension_descriptor, i32 %2, align 8
-  %4 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 1
-  store i32 1, i32* %4, align 4
-  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 2
-  store i32 1, i32* %5, align 4
-  store %dimension_descriptor* %3, %dimension_descriptor** %0, align 8
-  %6 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
-  store i32 1, i32* %6, align 4
-  %7 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store i32* null, i32** %7, align 8
-  store %array* %arr_desc, %array** %arr, align 8
-  %8 = load %array*, %array** %arr, align 8
-  %9 = ptrtoint %array* %8 to i64
+  %4 = getelementptr %dimension_descriptor, ptr %3, i32 0, i32 1
+  store i32 1, ptr %4, align 4
+  %5 = getelementptr %dimension_descriptor, ptr %3, i32 0, i32 2
+  store i32 1, ptr %5, align 4
+  store ptr %3, ptr %0, align 8
+  %6 = getelementptr %array, ptr %arr_desc, i32 0, i32 4
+  store i32 1, ptr %6, align 4
+  %7 = getelementptr %array, ptr %arr_desc, i32 0, i32 0
+  store ptr null, ptr %7, align 8
+  store ptr %arr_desc, ptr %arr, align 8
+  %8 = load ptr, ptr %arr, align 8
+  %9 = ptrtoint ptr %8 to i64
   %10 = icmp eq i64 %9, 0
   br i1 %10, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %11 = getelementptr %array, %array* %8, i32 0, i32 0
-  %12 = load i32*, i32** %11, align 8
-  %13 = ptrtoint i32* %12 to i64
+  %11 = getelementptr %array, ptr %8, i32 0, i32 0
+  %12 = load ptr, ptr %11, align 8
+  %13 = ptrtoint ptr %12 to i64
   %14 = icmp ne i64 %13, 0
   br label %merge_allocated
 
@@ -47,31 +47,30 @@ merge_allocated:                                  ; preds = %check_data, %.entry
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([109 x i8], [109 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @1, ptr @0)
   call void @exit(i32 1)
   unreachable
 
 ifcont:                                           ; preds = %merge_allocated
-  %15 = load %array*, %array** %arr, align 8
-  %16 = getelementptr %array, %array* %15, i32 0, i32 1
-  store i32 0, i32* %16, align 4
-  %17 = getelementptr %array, %array* %15, i32 0, i32 2
-  %18 = load %dimension_descriptor*, %dimension_descriptor** %17, align 8
-  %19 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %18, i32 0
-  %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %19, i32 0, i32 0
-  %21 = getelementptr %dimension_descriptor, %dimension_descriptor* %19, i32 0, i32 1
-  %22 = getelementptr %dimension_descriptor, %dimension_descriptor* %19, i32 0, i32 2
-  store i32 1, i32* %20, align 4
-  store i32 1, i32* %21, align 4
-  store i32 10, i32* %22, align 4
-  %23 = getelementptr %array, %array* %15, i32 0, i32 0
+  %15 = load ptr, ptr %arr, align 8
+  %16 = getelementptr %array, ptr %15, i32 0, i32 1
+  store i32 0, ptr %16, align 4
+  %17 = getelementptr %array, ptr %15, i32 0, i32 2
+  %18 = load ptr, ptr %17, align 8
+  %19 = getelementptr inbounds %dimension_descriptor, ptr %18, i32 0
+  %20 = getelementptr %dimension_descriptor, ptr %19, i32 0, i32 0
+  %21 = getelementptr %dimension_descriptor, ptr %19, i32 0, i32 1
+  %22 = getelementptr %dimension_descriptor, ptr %19, i32 0, i32 2
+  store i32 1, ptr %20, align 4
+  store i32 1, ptr %21, align 4
+  store i32 10, ptr %22, align 4
+  %23 = getelementptr %array, ptr %15, i32 0, i32 0
   %24 = alloca i32, align 4
-  store i32 40, i32* %24, align 4
-  %25 = load i32, i32* %24, align 4
+  store i32 40, ptr %24, align 4
+  %25 = load i32, ptr %24, align 4
   %26 = sext i32 %25 to i64
-  %27 = call i8* @_lfortran_malloc(i64 %26)
-  %28 = bitcast i8* %27 to i32*
-  store i32* %28, i32** %23, align 8
+  %27 = call ptr @_lfortran_malloc(i64 %26)
+  store ptr %27, ptr %23, align 8
   br i1 true, label %then1, label %else
 
 then1:                                            ; preds = %ifcont
@@ -96,52 +95,51 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_ss
-  %29 = load %array*, %array** %arr, align 8
-  %30 = getelementptr %array, %array* %29, i32 0, i32 0
-  %31 = load i32*, i32** %30, align 8
-  %32 = bitcast i32* %31 to i8*
-  call void @_lfortran_free(i8* %32)
+  %28 = load ptr, ptr %arr, align 8
+  %29 = getelementptr %array, ptr %28, i32 0, i32 0
+  %30 = load ptr, ptr %29, align 8
+  call void @_lfortran_free(ptr %30)
   ret void
 }
 
-declare void @_lcompilers_print_error(i8*, ...)
+declare void @_lcompilers_print_error(ptr, ...)
 
 declare void @exit(i32)
 
-declare i8* @_lfortran_malloc(i64)
+declare ptr @_lfortran_malloc(i64)
 
-declare void @_lfortran_free(i8*)
+declare void @_lfortran_free(ptr)
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %arr = alloca %array*, align 8
-  store %array* null, %array** %arr, align 8
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  %arr = alloca ptr, align 8
+  store ptr null, ptr %arr, align 8
   %arr_desc = alloca %array, align 8
-  %2 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
+  %2 = getelementptr %array, ptr %arr_desc, i32 0, i32 2
   %3 = alloca i32, align 4
-  store i32 1, i32* %3, align 4
-  %4 = load i32, i32* %3, align 4
+  store i32 1, ptr %3, align 4
+  %4 = load i32, ptr %3, align 4
   %5 = alloca %dimension_descriptor, i32 %4, align 8
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
-  store i32 1, i32* %6, align 4
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
-  store i32 1, i32* %7, align 4
-  store %dimension_descriptor* %5, %dimension_descriptor** %2, align 8
-  %8 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
-  store i32 1, i32* %8, align 4
-  %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store i32* null, i32** %9, align 8
-  store %array* %arr_desc, %array** %arr, align 8
+  %6 = getelementptr %dimension_descriptor, ptr %5, i32 0, i32 1
+  store i32 1, ptr %6, align 4
+  %7 = getelementptr %dimension_descriptor, ptr %5, i32 0, i32 2
+  store i32 1, ptr %7, align 4
+  store ptr %5, ptr %2, align 8
+  %8 = getelementptr %array, ptr %arr_desc, i32 0, i32 4
+  store i32 1, ptr %8, align 4
+  %9 = getelementptr %array, ptr %arr_desc, i32 0, i32 0
+  store ptr null, ptr %9, align 8
+  store ptr %arr_desc, ptr %arr, align 8
   %str = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
-  %10 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %11 = load i8*, i8** %10, align 8
-  %12 = icmp ne i8* %11, null
+  store %string_descriptor zeroinitializer, ptr %str, align 1
+  %10 = getelementptr %string_descriptor, ptr %str, i32 0, i32 0
+  %11 = load ptr, ptr %10, align 8
+  %12 = icmp ne ptr %11, null
   br i1 %12, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([67 x i8], [67 x i8]* @__Wrong_allocation, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @__Wrong_allocation)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -149,11 +147,11 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %13 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %14 = call i8* @_lfortran_malloc(i64 10)
-  store i8* %14, i8** %13, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
-  store i64 10, i64* %15, align 4
+  %13 = getelementptr %string_descriptor, ptr %str, i32 0, i32 0
+  %14 = call ptr @_lfortran_malloc(i64 10)
+  store ptr %14, ptr %13, align 8
+  %15 = getelementptr %string_descriptor, ptr %str, i32 0, i32 1
+  store i64 10, ptr %15, align 4
   call void @__module_finalize_01_mod_ss()
   call void @internal_sub()
   br label %return
@@ -169,63 +167,62 @@ FINALIZE_SYMTABLE_finalize_01:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_finalize_01
-  %16 = load %array*, %array** %arr, align 8
-  %17 = getelementptr %array, %array* %16, i32 0, i32 0
-  %18 = load i32*, i32** %17, align 8
-  %19 = bitcast i32* %18 to i8*
-  call void @_lfortran_free(i8* %19)
+  %16 = load ptr, ptr %arr, align 8
+  %17 = getelementptr %array, ptr %16, i32 0, i32 0
+  %18 = load ptr, ptr %17, align 8
+  call void @_lfortran_free(ptr %18)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr
-  %20 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %21 = load i8*, i8** %20, align 8
-  call void @_lfortran_free(i8* %21)
+  %19 = getelementptr %string_descriptor, ptr %str, i32 0, i32 0
+  %20 = load ptr, ptr %19, align 8
+  call void @_lfortran_free(ptr %20)
   ret i32 0
 }
 
 define void @internal_sub() {
 .entry:
-  %arr_real = alloca %array.0*, align 8
-  store %array.0* null, %array.0** %arr_real, align 8
+  %arr_real = alloca ptr, align 8
+  store ptr null, ptr %arr_real, align 8
   %arr_desc = alloca %array.0, align 8
-  %0 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 2
+  %0 = getelementptr %array.0, ptr %arr_desc, i32 0, i32 2
   %1 = alloca i32, align 4
-  store i32 2, i32* %1, align 4
-  %2 = load i32, i32* %1, align 4
+  store i32 2, ptr %1, align 4
+  %2 = load i32, ptr %1, align 4
   %3 = alloca %dimension_descriptor, i32 %2, align 8
-  %4 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 1
-  store i32 1, i32* %4, align 4
-  %5 = getelementptr %dimension_descriptor, %dimension_descriptor* %3, i32 0, i32 2
-  store i32 1, i32* %5, align 4
-  store %dimension_descriptor* %3, %dimension_descriptor** %0, align 8
-  %6 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 4
-  store i32 2, i32* %6, align 4
-  %7 = getelementptr %array.0, %array.0* %arr_desc, i32 0, i32 0
-  store float* null, float** %7, align 8
-  store %array.0* %arr_desc, %array.0** %arr_real, align 8
+  %4 = getelementptr %dimension_descriptor, ptr %3, i32 0, i32 1
+  store i32 1, ptr %4, align 4
+  %5 = getelementptr %dimension_descriptor, ptr %3, i32 0, i32 2
+  store i32 1, ptr %5, align 4
+  store ptr %3, ptr %0, align 8
+  %6 = getelementptr %array.0, ptr %arr_desc, i32 0, i32 4
+  store i32 2, ptr %6, align 4
+  %7 = getelementptr %array.0, ptr %arr_desc, i32 0, i32 0
+  store ptr null, ptr %7, align 8
+  store ptr %arr_desc, ptr %arr_real, align 8
   %str = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  store %string_descriptor zeroinitializer, ptr %str, align 1
   br label %bl.start
 
 bl.start:                                         ; preds = %.entry
-  %arr_in_block = alloca %array*, align 8
-  store %array* null, %array** %arr_in_block, align 8
+  %arr_in_block = alloca ptr, align 8
+  store ptr null, ptr %arr_in_block, align 8
   %arr_desc1 = alloca %array, align 8
-  %8 = getelementptr %array, %array* %arr_desc1, i32 0, i32 2
+  %8 = getelementptr %array, ptr %arr_desc1, i32 0, i32 2
   %9 = alloca i32, align 4
-  store i32 1, i32* %9, align 4
-  %10 = load i32, i32* %9, align 4
+  store i32 1, ptr %9, align 4
+  %10 = load i32, ptr %9, align 4
   %11 = alloca %dimension_descriptor, i32 %10, align 8
-  %12 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 1
-  store i32 1, i32* %12, align 4
-  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 2
-  store i32 1, i32* %13, align 4
-  store %dimension_descriptor* %11, %dimension_descriptor** %8, align 8
-  %14 = getelementptr %array, %array* %arr_desc1, i32 0, i32 4
-  store i32 1, i32* %14, align 4
-  %15 = getelementptr %array, %array* %arr_desc1, i32 0, i32 0
-  store i32* null, i32** %15, align 8
-  store %array* %arr_desc1, %array** %arr_in_block, align 8
+  %12 = getelementptr %dimension_descriptor, ptr %11, i32 0, i32 1
+  store i32 1, ptr %12, align 4
+  %13 = getelementptr %dimension_descriptor, ptr %11, i32 0, i32 2
+  store i32 1, ptr %13, align 4
+  store ptr %11, ptr %8, align 8
+  %14 = getelementptr %array, ptr %arr_desc1, i32 0, i32 4
+  store i32 1, ptr %14, align 4
+  %15 = getelementptr %array, ptr %arr_desc1, i32 0, i32 0
+  store ptr null, ptr %15, align 8
+  store ptr %arr_desc1, ptr %arr_in_block, align 8
   br label %bl.end
 
 unreachable_after_exit:                           ; No predecessors!
@@ -241,11 +238,10 @@ FINALIZE_SYMTABLE_bl:                             ; preds = %bl.end
   br label %Finalize_Variable_arr_in_block
 
 Finalize_Variable_arr_in_block:                   ; preds = %FINALIZE_SYMTABLE_bl
-  %16 = load %array*, %array** %arr_in_block, align 8
-  %17 = getelementptr %array, %array* %16, i32 0, i32 0
-  %18 = load i32*, i32** %17, align 8
-  %19 = bitcast i32* %18 to i8*
-  call void @_lfortran_free(i8* %19)
+  %16 = load ptr, ptr %arr_in_block, align 8
+  %17 = getelementptr %array, ptr %16, i32 0, i32 0
+  %18 = load ptr, ptr %17, align 8
+  call void @_lfortran_free(ptr %18)
   br label %loop.head
 
 loop.head:                                        ; preds = %unreachable_after_return2, %Finalize_Variable_arr_in_block
@@ -267,20 +263,19 @@ FINALIZE_SYMTABLE_internal_sub:                   ; preds = %return
   br label %Finalize_Variable_arr_real
 
 Finalize_Variable_arr_real:                       ; preds = %FINALIZE_SYMTABLE_internal_sub
-  %20 = load %array.0*, %array.0** %arr_real, align 8
-  %21 = getelementptr %array.0, %array.0* %20, i32 0, i32 0
-  %22 = load float*, float** %21, align 8
-  %23 = bitcast float* %22 to i8*
-  call void @_lfortran_free(i8* %23)
+  %19 = load ptr, ptr %arr_real, align 8
+  %20 = getelementptr %array.0, ptr %19, i32 0, i32 0
+  %21 = load ptr, ptr %20, align 8
+  call void @_lfortran_free(ptr %21)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr_real
-  %24 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %25 = load i8*, i8** %24, align 8
-  call void @_lfortran_free(i8* %25)
+  %22 = getelementptr %string_descriptor, ptr %str, i32 0, i32 0
+  %23 = load ptr, ptr %22, align 8
+  call void @_lfortran_free(ptr %23)
   ret void
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lpython_free_argv()

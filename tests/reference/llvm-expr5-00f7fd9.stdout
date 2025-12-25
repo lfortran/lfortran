@@ -5,18 +5,18 @@ source_filename = "LFortran"
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
   %x = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %x1 = alloca i32, align 4
-  store i32 25, i32* %x1, align 4
-  %2 = load i32, i32* %x1, align 4
+  store i32 25, ptr %x1, align 4
+  %2 = load i32, ptr %x1, align 4
   %3 = icmp eq i32 %2, 25
   br i1 %3, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void (ptr, ...) @_lcompilers_print_error(ptr @1, ptr @"ERROR STOP", ptr @0)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -34,9 +34,9 @@ FINALIZE_SYMTABLE_expr_05:                        ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
-declare void @_lcompilers_print_error(i8*, ...)
+declare void @_lcompilers_print_error(ptr, ...)
 
 declare void @exit(i32)
 

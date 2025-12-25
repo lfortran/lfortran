@@ -1,24 +1,24 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type <{ ptr, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [11 x i8] c"S-DESC-5,L\00", align 1
 @string_const_data = private constant [5 x i8] c"tf=0:"
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data, i32 0, i32 0), i64 5 }>
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 5 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.1 = private unnamed_addr constant [11 x i8] c"S-DESC-5,L\00", align 1
 @string_const_data.2 = private constant [5 x i8] c"tf=1:"
-@string_const.3 = private global %string_descriptor <{ i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.2, i32 0, i32 0), i64 5 }>
+@string_const.3 = private global %string_descriptor <{ ptr @string_const_data.2, i64 5 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %i) {
+define void @__module_overload_assignment_m_logical_gets_integer(ptr %tf, ptr %i) {
 .entry:
-  %0 = load i32, i32* %i, align 4
+  %0 = load i32, ptr %i, align 4
   %1 = icmp eq i32 %0, 0
-  store i1 %1, i1* %tf, align 1
+  store i1 %1, ptr %tf, align 1
   br label %return
 
 return:                                           ; preds = %.entry
@@ -28,46 +28,46 @@ FINALIZE_SYMTABLE_logical_gets_integer:           ; preds = %return
   ret void
 }
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %tf = alloca i1, align 1
-  store i32 0, i32* %call_arg_value, align 4
-  call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %call_arg_value)
+  store i32 0, ptr %call_arg_value, align 4
+  call void @__module_overload_assignment_m_logical_gets_integer(ptr %tf, ptr %call_arg_value)
   %2 = alloca i64, align 8
-  %3 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, %string_descriptor* @string_const, i1* %tf)
-  %4 = load i64, i64* %2, align 4
+  %3 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %2, i32 0, i32 0, ptr @string_const, ptr %tf)
+  %4 = load i64, ptr %2, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %3, i8** %5, align 8
-  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %4, i64* %6, align 4
-  %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %10 = load i64, i64* %9, align 4
+  %5 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %3, ptr %5, align 8
+  %6 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %4, ptr %6, align 4
+  %7 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %8 = load ptr, ptr %7, align 8
+  %9 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %10 = load i64, ptr %9, align 4
   %11 = trunc i64 %10 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %3)
-  store i32 1, i32* %call_arg_value1, align 4
-  call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %call_arg_value1)
+  call void @_lfortran_printf(ptr @1, ptr %8, i32 %11, ptr @0, i32 1)
+  call void @_lfortran_free(ptr %3)
+  store i32 1, ptr %call_arg_value1, align 4
+  call void @__module_overload_assignment_m_logical_gets_integer(ptr %tf, ptr %call_arg_value1)
   %12 = alloca i64, align 8
-  %13 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([11 x i8], [11 x i8]* @serialization_info.1, i32 0, i32 0), i64* %12, i32 0, i32 0, %string_descriptor* @string_const.3, i1* %tf)
-  %14 = load i64, i64* %12, align 4
+  %13 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.1, ptr %12, i32 0, i32 0, ptr @string_const.3, ptr %tf)
+  %14 = load i64, ptr %12, align 4
   %stringFormat_desc2 = alloca %string_descriptor, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  store i8* %13, i8** %15, align 8
-  %16 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  store i64 %14, i64* %16, align 4
-  %17 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  %18 = load i8*, i8** %17, align 8
-  %19 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  %20 = load i64, i64* %19, align 4
+  %15 = getelementptr %string_descriptor, ptr %stringFormat_desc2, i32 0, i32 0
+  store ptr %13, ptr %15, align 8
+  %16 = getelementptr %string_descriptor, ptr %stringFormat_desc2, i32 0, i32 1
+  store i64 %14, ptr %16, align 4
+  %17 = getelementptr %string_descriptor, ptr %stringFormat_desc2, i32 0, i32 0
+  %18 = load ptr, ptr %17, align 8
+  %19 = getelementptr %string_descriptor, ptr %stringFormat_desc2, i32 0, i32 1
+  %20 = load i64, ptr %19, align 4
   %21 = trunc i64 %20 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %18, i32 %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %13)
+  call void @_lfortran_printf(ptr @3, ptr %18, i32 %21, ptr @2, i32 1)
+  call void @_lfortran_free(ptr %13)
   call void @_lpython_free_argv()
   br label %return
 
@@ -78,12 +78,12 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
+declare ptr @_lcompilers_string_format_fortran(ptr, i64, ptr, ptr, i32, i32, ...)
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
 
-declare void @_lfortran_free(i8*)
+declare void @_lfortran_free(ptr)
 
 declare void @_lpython_free_argv()

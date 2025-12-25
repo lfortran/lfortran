@@ -1,25 +1,25 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type <{ ptr, i64 }>
 
-define i32 @__module_string_54_mod_double_(i32* %x) {
+define i32 @__module_string_54_mod_double_(ptr %x) {
 .entry:
   %ret = alloca i32, align 4
-  %0 = load i32, i32* %x, align 4
+  %0 = load i32, ptr %x, align 4
   %1 = mul i32 %0, 2
-  store i32 %1, i32* %ret, align 4
+  store i32 %1, ptr %ret, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_double_
 
 FINALIZE_SYMTABLE_double_:                        ; preds = %return
-  %2 = load i32, i32* %ret, align 4
+  %2 = load i32, ptr %ret, align 4
   ret i32 %2
 }
 
-define void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char) {
+define void @__module_string_54_mod_foo_sub(ptr %x, ptr %char) {
 .entry:
   br label %return
 
@@ -30,20 +30,20 @@ FINALIZE_SYMTABLE_foo_sub:                        ; preds = %return
   ret void
 }
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
   %x = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %char = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %char, align 1
-  %2 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 1
-  store i64 10, i64* %2, align 4
-  %3 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
-  %4 = call i8* @_lfortran_malloc(i64 10)
-  store i8* %4, i8** %3, align 8
+  store %string_descriptor zeroinitializer, ptr %char, align 1
+  %2 = getelementptr %string_descriptor, ptr %char, i32 0, i32 1
+  store i64 10, ptr %2, align 4
+  %3 = getelementptr %string_descriptor, ptr %char, i32 0, i32 0
+  %4 = call ptr @_lfortran_malloc(i64 10)
+  store ptr %4, ptr %3, align 8
   %x1 = alloca i32, align 4
-  store i32 10, i32* %x1, align 4
-  call void @__module_string_54_mod_foo_sub(i32* %x1, %string_descriptor* %char)
+  store i32 10, ptr %x1, align 4
+  call void @__module_string_54_mod_foo_sub(ptr %x1, ptr %char)
   call void @_lpython_free_argv()
   br label %return
 
@@ -54,16 +54,16 @@ FINALIZE_SYMTABLE_string_54:                      ; preds = %return
   br label %Finalize_Variable_char
 
 Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
-  %5 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
-  %6 = load i8*, i8** %5, align 8
-  call void @_lfortran_free(i8* %6)
+  %5 = getelementptr %string_descriptor, ptr %char, i32 0, i32 0
+  %6 = load ptr, ptr %5, align 8
+  call void @_lfortran_free(ptr %6)
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
-declare i8* @_lfortran_malloc(i64)
+declare ptr @_lfortran_malloc(i64)
 
 declare void @_lpython_free_argv()
 
-declare void @_lfortran_free(i8*)
+declare void @_lfortran_free(ptr)
