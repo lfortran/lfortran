@@ -2529,6 +2529,8 @@ public:
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
             if (!subrout_call->m_args[i].m_value) continue;
+            // Bounds check: call may have more args than definition (optional args)
+            if (i >= subrout->n_args) continue;
             if (!subrout->m_args[i] || subrout->m_args[i]->type != ASR::exprType::Var) continue;
 
             const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
@@ -2569,15 +2571,11 @@ public:
                         }
                     }
                 }
-            } else if (subrout_call->m_args[i].m_value->type == ASR::exprType::StructInstanceMember) {
-                // Only deallocate if BOTH dummy AND actual are allocatable
-                if (ASRUtils::is_allocatable(orig_var->m_type)) {
-                    ASR::ttype_t* actual_type = ASRUtils::expr_type(subrout_call->m_args[i].m_value);
-                    if (ASRUtils::is_allocatable(actual_type)) {
-                        del_syms.push_back(al, subrout_call->m_args[i].m_value);
-                    }
-                }
             }
+            // NOTE: StructInstanceMember actuals are NOT handled here because
+            // the pass_insert_deallocate pass adds deallocation at function entry
+            // for allocatable intent(out) dummies. Adding ImplicitDeallocate at
+            // the call site would cause double-free.
         }
         if( del_syms.size() == 0 ) {
             return nullptr;

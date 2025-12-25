@@ -341,9 +341,27 @@ public:
         if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
             return;
         }
-        // Skip compiler-generated intrinsic implementations (deftype == Implementation)
+        // Skip compiler-generated intrinsic implementations
         // These functions handle their own intent(out) allocatable deallocation internally
-        if (func_type->m_deftype == ASR::deftypeType::Implementation) {
+        // We identify them by:
+        // 1. Function name starts with "_lcompilers_" or "__libasr_created__", OR
+        // 2. deftype == Implementation AND parent module is lfortran_intrinsic_*
+        std::string func_name = x.m_name;
+        bool is_compiler_generated =
+            func_name.rfind("_lcompilers_", 0) == 0 ||
+            func_name.rfind("__libasr_created__", 0) == 0;
+        if (!is_compiler_generated && func_type->m_deftype == ASR::deftypeType::Implementation) {
+            ASR::asr_t* parent = x.m_symtab->parent->asr_owner;
+            if (parent && ASR::is_a<ASR::symbol_t>(*parent) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(parent))) {
+                std::string mod_name = ASR::down_cast<ASR::Module_t>(
+                    ASR::down_cast<ASR::symbol_t>(parent))->m_name;
+                if (mod_name.rfind("lfortran_intrinsic_", 0) == 0) {
+                    is_compiler_generated = true;
+                }
+            }
+        }
+        if (is_compiler_generated) {
             for (auto &a : x.m_symtab->get_scope()) {
                 visit_symbol(*a.second);
             }
