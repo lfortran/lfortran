@@ -2570,9 +2570,12 @@ public:
                     }
                 }
             } else if (subrout_call->m_args[i].m_value->type == ASR::exprType::StructInstanceMember) {
-                ASR::ttype_t* actual_type = ASRUtils::expr_type(subrout_call->m_args[i].m_value);
-                if (ASRUtils::is_allocatable(actual_type)) {
-                    del_syms.push_back(al, subrout_call->m_args[i].m_value);
+                // Only deallocate if BOTH dummy AND actual are allocatable
+                if (ASRUtils::is_allocatable(orig_var->m_type)) {
+                    ASR::ttype_t* actual_type = ASRUtils::expr_type(subrout_call->m_args[i].m_value);
+                    if (ASRUtils::is_allocatable(actual_type)) {
+                        del_syms.push_back(al, subrout_call->m_args[i].m_value);
+                    }
                 }
             }
         }
