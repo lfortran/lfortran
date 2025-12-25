@@ -1,21 +1,25 @@
-module nested_19_mod
-    implicit none
-
-    type t
-        integer :: i = 1
-        integer :: arr(2) = [10, 20]
-    end type t
-
-    type(t), parameter :: t_param = t()
-end module nested_19_mod
-
 program nested_19
-    use nested_19_mod
-    implicit none
+    type t1
+        integer, allocatable :: ll
+    end type
 
-    ! Check scalar component
-    if (t_param%i /= 1) error stop
+    type t2
+        type(t1),allocatable :: arr(:)
+    end type t2
 
-    ! Check array component
-    if (any(t_param%arr /= [10, 20])) error stop
+    type t3
+        type(t2) ,allocatable :: z(:)
+    end type
+
+    call ss
+
+    contains 
+    subroutine ss
+        type(t3), allocatable :: t2
+        allocate(t2)
+        if (.not. allocated(t2)) error stop "t2 not allocated"
+        allocate(t2%z(10))
+        allocate(t2%z(1)%arr(5))
+    end subroutine
+
 end program nested_19
