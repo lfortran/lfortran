@@ -858,6 +858,7 @@ RUN(NAME format_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -2214,6 +2215,8 @@ RUN(NAME implied_do_loops11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 RUN(NAME implied_do_loops12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME implied_do_loops14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST)
+RUN(NAME implied_do_loops_strings LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME implied_do_loops_print LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
