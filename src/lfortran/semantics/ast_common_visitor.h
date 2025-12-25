@@ -2258,16 +2258,30 @@ public:
         }
 
         // Get element size based on kind
-        int kind = ASRUtils::extract_kind_from_ttype_t(type);
-        if (kind > 0) {
-            element_size = static_cast<size_t>(kind);
-            // Complex types are 2x the kind (real + imaginary)
-            if (ASR::is_a<ASR::Complex_t>(*type)) {
-                element_size *= 2;
+        if (ASR::is_a<ASR::String_t>(*type)) {
+            // String (CHARACTER) types: size = len value * kind
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            int64_t str_len = 1;
+            int kind = str_type->m_len_kind;
+            if (str_type->m_len &&
+                ASRUtils::extract_value(str_type->m_len, str_len)) {
+                element_size = static_cast<size_t>(str_len * kind);
+            } else {
+                // Assumed-length or dynamic - use kind as placeholder
+                element_size = static_cast<size_t>(kind);
             }
         } else {
-            // Default to pointer size for unknown types
-            element_size = 8;
+            int kind = ASRUtils::extract_kind_from_ttype_t(type);
+            if (kind > 0) {
+                element_size = static_cast<size_t>(kind);
+                // Complex types are 2x the kind (real + imaginary)
+                if (ASR::is_a<ASR::Complex_t>(*type)) {
+                    element_size *= 2;
+                }
+            } else {
+                // Default to pointer size for unknown types
+                element_size = 8;
+            }
         }
 
         return element_size * array_size;
@@ -2301,16 +2315,20 @@ public:
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
-            // Get the actual member name from the struct - may differ from local
-            // variable name when COMMON block uses different names in different
-            // program units (valid Fortran - COMMON maps storage, not names)
+            // Resolve the struct member that corresponds to this local variable.
+            // In COMMON blocks, different program units may use different names
+            // or even different types for the same storage location (storage
+            // association). First try direct name lookup, then fall back to
+            // byte offset range matching.
             std::string actual_member_name = target_var_name;
             ASR::symbol_t* struct_member_sym = struct_type->m_symtab->resolve_symbol(target_var_name);
             if (!struct_member_sym) {
-                // Variable name differs - look up by byte offset to find the member
-                // whose storage range contains the target offset. This handles:
-                // 1. Same offset, different name (exact match)
-                // 2. Reordered layout where local variable overlaps struct member
+                // Name lookup failed - match by byte offset instead. Find the
+                // struct member whose storage range [offset, offset+size) contains
+                // the target variable's byte offset. This handles:
+                // 1. Different names for same storage location
+                // 2. Reordered layouts (e.g., real,int,int vs int,int,real)
+                // 3. Type aliasing (e.g., real(8) array vs integer array)
                 auto offset_it = common_variables_byte_offset.find(hash);
                 if (offset_it != common_variables_byte_offset.end()) {
                     size_t target_offset = offset_it->second;

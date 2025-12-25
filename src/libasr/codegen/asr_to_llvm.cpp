@@ -3741,10 +3741,12 @@ public:
             }
         }
 
-        // Handle COMMON block type aliasing: when x.m_type differs from the
-        // struct member's type, bitcast to the expected type. This occurs
-        // when different program units declare different views of the same
-        // COMMON block storage (e.g., real(8) array(4) vs integer array(8)).
+        // COMMON block type aliasing: Fortran allows different program units to
+        // view the same COMMON block storage with different types (storage
+        // association). When the local variable type (x.m_type) differs from
+        // the struct member type (member->m_type), we must bitcast the pointer
+        // to match the local view. Example: real(8) array(4) in one unit vs
+        // integer array(8) in another - both occupy 32 bytes of shared storage.
         ASR::ttype_t* expected_type = x.m_type;
         ASR::ttype_t* actual_member_type = member->m_type;
         llvm::Type* expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -3754,7 +3756,7 @@ public:
             const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
             actual_member_type, module.get());
         if (expected_llvm_type != actual_llvm_type) {
-            // Types differ - bitcast the pointer to the expected type
+            // Bitcast pointer to the local program unit's view of the storage
             tmp = builder->CreateBitCast(tmp, expected_llvm_type->getPointerTo());
         }
     }
