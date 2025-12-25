@@ -97,9 +97,9 @@ contains
         real :: a(*, 10)
     end subroutine
 
-
-
-
+    subroutine proc_param(p)
+        procedure(ubound_assumed_size_2) :: p
+    end subroutine proc_param
 
 
 
@@ -454,5 +454,7 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
-end program
 
+    !passing non procedure to procedure parameter
+    call proc_param(42)
+end program 

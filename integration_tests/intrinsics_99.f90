@@ -1,4 +1,4 @@
-module m
+module intrinsics_99_m
     implicit none
     contains
     function all_true(tf,idim) result(vec)
@@ -7,6 +7,6 @@ module m
     logical             :: vec(size(tf,dim=3-idim))
     vec = .true.
     end function all_true
-end module m
+end module
 program intrinsics_99
 end
