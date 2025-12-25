@@ -2999,7 +2999,8 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
             const_elements += 1;
         }
     }
-    if( const_elements > 1 ) {
+    // Include scalar elements in the implied-do body so mixed forms compute correctly per iteration.
+    if( const_elements > 0 ) {
         if( implied_doloop_size_ == nullptr ) {
             implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
                 make_Integer_t, const_elements, kind, loc);
