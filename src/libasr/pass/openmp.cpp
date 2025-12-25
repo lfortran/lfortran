@@ -3224,7 +3224,6 @@ class ParallelRegionVisitor :
 
         int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
             int64_t total_size = 0;
-            const int STRUCT_VTABLE_SIZE = 8;
             ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
             SymbolTable* m_symtab = task_data_struct->m_symtab;
             for (size_t i=0;i< task_data_struct->n_members; i++) {
@@ -3251,7 +3250,7 @@ class ParallelRegionVisitor :
                     total_size += 8;
                 }
             }
-            return total_size + STRUCT_VTABLE_SIZE;
+            return total_size;
         }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
