@@ -26,7 +26,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_member_index,
+        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -43,7 +43,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_member_index,
+        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -65,7 +65,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
-    std::map<uint64_t, size_t> common_variables_member_index;
+    std::map<uint64_t, size_t> common_variables_byte_offset;
     std::map<uint64_t, std::vector<std::string>> external_procedures_mapping;
     std::map<uint64_t, std::vector<std::string>> explicit_intrinsic_procedures_mapping;
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> instantiate_types;
@@ -75,7 +75,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, implicit_mapping, common_variables_hash, common_variables_member_index,
+        compiler_options, implicit_mapping, common_variables_hash, common_variables_byte_offset,
         external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
         instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
     if (res.ok) {
@@ -107,7 +107,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     if (!symtab_only) {
         auto res = body_visitor(
             al, ast, diagnostics, unit, compiler_options,
-            implicit_mapping, common_variables_hash, common_variables_member_index,
+            implicit_mapping, common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
             data_structure, lm
