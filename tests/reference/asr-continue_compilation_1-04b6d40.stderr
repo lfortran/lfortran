@@ -901,7 +901,7 @@ semantic error: Assigned format (using integer variable as format specifier) is 
 456 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument `p`: expected a procedure but got `integer`
+semantic error: Type mismatch in argument `p`: expected `FunctionType(real[:], )` but got `integer`
    --> tests/errors/continue_compilation_1.f90:459:21
     |
 459 |     call proc_param(42)
