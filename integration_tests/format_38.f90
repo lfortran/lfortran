@@ -20,5 +20,10 @@ program format_38
     write(output, '(+1p, f10.3)') value
     if (output /= "   424.300         ") error stop
 
+    ! Test format statement with + sign
+    write(output, 100) value
+    if (output /= "   424.300         ") error stop
+    100 format (+1p, f10.3)
+
     print *, "All tests passed"
 end program
