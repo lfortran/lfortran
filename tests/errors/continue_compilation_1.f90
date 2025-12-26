@@ -458,4 +458,3 @@ program continue_compilation_1
     !passing non procedure to procedure parameter
     call proc_param(42)
 end program
-
