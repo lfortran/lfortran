@@ -3235,6 +3235,97 @@ public:
         return (ASR::expr_t*) array_constant;
     }
 
+    void validate_and_adjust_character_parameter_length(
+        ASR::expr_t* init_expr, ASR::expr_t*& value, ASR::ttype_t* type,
+        const Location& loc, Allocator& al, diag::Diagnostics& diag) {
+
+        bool is_array_reshape = false;
+        if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+            is_array_reshape = true;
+        }
+        ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
+            ASRUtils::type_get_past_array(type));
+        ASR::String_t *rhs_type = nullptr;
+        if (is_array_reshape) {
+            ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
+            rhs_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(array_reshape->m_type));
+        } else {
+            LCOMPILERS_ASSERT(
+                !ASRUtils::is_allocatable_or_pointer(type) &&
+                !ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(value)))
+            rhs_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
+        }
+        int64_t lhs_len, rhs_len;
+        bool is_lhs_length_constant = ASRUtils::extract_value(lhs_type->m_len, lhs_len);
+        bool is_rhs_length_constant = ASRUtils::extract_value(rhs_type->m_len, rhs_len);
+        if( is_lhs_length_constant && is_rhs_length_constant ){
+            if((lhs_len < rhs_len)){
+                diag.semantic_warning_label(
+                    "The LHS character len="
+                        + std::to_string(lhs_len)
+                        + " and the RHS character len="
+                        + std::to_string(rhs_len)
+                        + " are not equal.",
+                    {loc},
+                    "help: consider changing the RHS character len to match the LHS character len"
+                );
+            }
+            if((lhs_len != rhs_len)) {
+                // Adjust character string by padding or trimming
+                // Notice that we only trim when variable is parameter, to have compile-time-correct string.
+                if(is_array_reshape){
+                    ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
+                    (void)adjust_array_character_length(
+                                array_reshape_t->m_array, lhs_len, rhs_len, al);
+                    if (array_reshape_t->m_value) {
+                        (void)adjust_array_character_length(
+                                    array_reshape_t->m_value, lhs_len, rhs_len, al);
+                    }
+                    {
+                        ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
+                        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
+                        {
+                            ASR::String_t* arr_const_str_t = ASRUtils::get_string_type(array_reshape_t->m_array);
+                            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(arr_const_str_t->m_len))
+                            ASR::down_cast<ASR::IntegerConstant_t>(reshape_str_t->m_len)->m_n =
+                                ASR::down_cast<ASR::IntegerConstant_t>(arr_const_str_t->m_len)->m_n;
+                        }
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                    value = adjust_array_character_length(value, lhs_len,
+                        rhs_len, al);
+                } else {
+                    value = adjust_character_length(value, lhs_len,
+                        rhs_len, init_expr->base.loc, al);
+                }
+            }
+
+        }
+        if(!is_rhs_length_constant){
+                diag.add(Diagnostic(
+                "The RHS character len must be known at compile time",
+                Level::Error, Stage::Semantic, {
+                    Label("",{rhs_type->base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+
+        if (lhs_type->m_len_kind == ASR::DeferredLength) {
+            diag.add(Diagnostic(
+                "The LHS character length must not be deferred (allocatable) in a parameter declaration",
+                Level::Error, Stage::Semantic, {
+                    Label("",{loc})
+                }));
+            throw SemanticAbort();
+        }
+        // Change length kind from AssumedLength to ExpressionLength + Set Length
+        if(lhs_type->m_len_kind == ASR::AssumedLength){
+            lhs_type->m_len = rhs_type->m_len;
+            lhs_type->m_len_kind = ASR::ExpressionLength;
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -4393,11 +4484,10 @@ public:
 
                         visit_ArrayInitializer(*array_init);
                         init_expr = ASRUtils::EXPR(tmp);
-                    } else if ((storage_type != ASR::storage_typeType::Parameter) &&
-                            ((AST::is_a<AST::String_t>(*s.m_initializer) ||
+                    } else if (AST::is_a<AST::String_t>(*s.m_initializer) ||
                              AST::is_a<AST::Num_t>(*s.m_initializer) ||
                              AST::is_a<AST::Real_t>(*s.m_initializer) ||
-                             AST::is_a<AST::BOZ_t>(*s.m_initializer)))) {
+                             AST::is_a<AST::BOZ_t>(*s.m_initializer)){
                         this->visit_expr(*s.m_initializer);
                         init_expr = ASRUtils::EXPR(tmp);
                     } else {
@@ -4437,6 +4527,12 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
+                    }
+                    // Apply character validation for type() syntax & parameter type
+                    if (storage_type == ASR::storage_typeType::Parameter &&
+                        init_expr && ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(type))) {
+                        validate_and_adjust_character_parameter_length(
+                            init_expr, value, type, x.base.base.loc, al, diag);
                     }
                 } else if (s.m_initializer != nullptr) {
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
@@ -4490,91 +4586,8 @@ public:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
                     if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
-                        bool is_array_reshape = false;
-                        if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
-                            is_array_reshape = true;
-                        }
-                        ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
-                            ASRUtils::type_get_past_array(type));
-                        ASR::String_t *rhs_type = nullptr;
-                        if (is_array_reshape) {
-                            ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
-                            rhs_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(array_reshape->m_type));
-                        } else {
-                            LCOMPILERS_ASSERT(
-                                !ASRUtils::is_allocatable_or_pointer(type) &&
-                                !ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(value)))
-                            rhs_type = ASR::down_cast<ASR::String_t>(
-                                ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
-                        }
-                        int64_t lhs_len, rhs_len;
-                        bool is_lhs_length_constant = ASRUtils::extract_value(lhs_type->m_len, lhs_len);
-                        bool is_rhs_length_constant = ASRUtils::extract_value(rhs_type->m_len, rhs_len);
-                        if( is_lhs_length_constant && is_rhs_length_constant ){
-                            if((lhs_len < rhs_len)){
-                                diag.semantic_warning_label(
-                                    "The LHS character len="
-                                        + std::to_string(lhs_len)
-                                        + " and the RHS character len="
-                                        + std::to_string(rhs_len)
-                                        + " are not equal.",
-                                    {x.base.base.loc},
-                                    "help: consider changing the RHS character len to match the LHS character len"
-                                );
-                            }
-                            if((lhs_len != rhs_len)) {
-                                // Adjust character string by padding or trimming
-                                // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                if(is_array_reshape){
-                                    ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
-                                    (void)adjust_array_character_length(
-                                                array_reshape_t->m_array, lhs_len, rhs_len, al);
-                                    if (array_reshape_t->m_value) {
-                                        (void)adjust_array_character_length(
-                                                    array_reshape_t->m_value, lhs_len, rhs_len, al);
-                                    }
-                                    {
-                                        ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
-                                        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
-                                        {
-                                            ASR::String_t* arr_const_str_t = ASRUtils::get_string_type(array_reshape_t->m_array);
-                                            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(arr_const_str_t->m_len))
-                                            ASR::down_cast<ASR::IntegerConstant_t>(reshape_str_t->m_len)->m_n = 
-                                                ASR::down_cast<ASR::IntegerConstant_t>(arr_const_str_t->m_len)->m_n;
-                                        }
-                                    }
-                                } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {   
-                                    value = adjust_array_character_length(value, lhs_len,
-                                        rhs_len, al);
-                                } else {
-                                    value = adjust_character_length(value, lhs_len,
-                                        rhs_len, init_expr->base.loc, al);
-                                }
-                            }
-                            
-                        }
-                        if(!is_rhs_length_constant){
-                                diag.add(Diagnostic(
-                                "The RHS character len must be known at compile time",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{rhs_type->base.base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-
-                        if (lhs_type->m_len_kind == ASR::DeferredLength) {
-                            diag.add(Diagnostic(
-                                "The LHS character length must not be deferred (allocatable) in a parameter declaration",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-                        // Change length kind from AssumedLength to ExpressionLength + Set Length
-                        if(lhs_type->m_len_kind == ASR::AssumedLength){
-                            lhs_type->m_len = rhs_type->m_len;
-                            lhs_type->m_len_kind = ASR::ExpressionLength;
-                        }
+                        validate_and_adjust_character_parameter_length(
+                            init_expr, value, type, x.base.base.loc, al, diag);
                     }
 
                     ASR::expr_t* tmp_init = init_expr;
