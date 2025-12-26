@@ -6585,153 +6585,71 @@ void fill_new_dims(ASR::Array_t* t,
         }
     }
 
-    ASR::asr_t* create_StructMethodDeclaration(
-        const Location &loc,
-        AST::fnarg_t* m_args, size_t n_args,
-        AST::keyword_t* m_kwargs, size_t n_kwargs,
-        size_t n_member, ASR::symbol_t *v,
-        ASR::expr_t *v_expr
-    ) {
+    ASR::asr_t* create_StructMethodDeclaration(const Location &loc,
+                AST::fnarg_t* m_args, size_t n_args,
+                AST::keyword_t* m_kwargs, size_t n_kwargs,
+                 size_t n_member, ASR::symbol_t *v,
+                    ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-
-        ASR::StructMethodDeclaration_t *v_class_proc =
-            ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                ASRUtils::symbol_get_past_external(v)
-            );
-
-        ASR::Function_t* func =
-            ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
-
+        ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
 
-        // Insert `self` for non-nopass
         if (!v_class_proc->m_is_nopass) {
             ASR::call_arg_t self_arg;
             self_arg.loc = v_expr->base.loc;
             self_arg.m_value = v_expr;
-            args.push_front(al, self_arg);
+            args.push_front(al, self_arg);  // push self arg in case of class procedure
         }
-
-        // Handle elemental return shape
-        ASR::expr_t* first_array_arg =
-            ASRUtils::find_first_array_arg_if_elemental(func, args);
-
+        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
-            size_t array_n_dims =
-                ASRUtils::extract_dimensions_from_ttype(
-                    ASRUtils::expr_type(first_array_arg), array_dims
-                );
-
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(first_array_arg), array_dims
+            );
             Vec<ASR::dimension_t> new_dims;
             new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-
-            type = ASRUtils::duplicate_type(
-                al,
-                ASRUtils::get_FunctionType(func)->m_return_var_type,
-                &new_dims
-            );
+            type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            if (!v_class_proc->m_is_nopass) {
+                ASR::call_arg_t self_arg;
+                self_arg.loc = func->m_args[0]->base.loc;
+                self_arg.m_value = func->m_args[0];
+                args = {};
+                args.reserve(al, func->n_args);
+                visit_expr_list(m_args, n_args, args);
+                args.push_front(al, self_arg);  // push self arg to fulfill correct number of args in definition
+            }
+            // Set the correct return type.
             type = handle_return_type(type, func->m_return_var->base.loc, args, func);
         }
-
-        // Resolve kwargs
+        if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
+        if (!v_class_proc->m_is_nopass) {
+            args = {};
+            visit_expr_list(m_args, n_args, args);
+        }
         if (n_kwargs > 0) {
             diag::Diagnostics diags;
-            visit_kwargs(
-                args, m_kwargs, n_kwargs,
-                func->m_args, func->n_args,
-                loc, func, diags,
-                n_member, v_class_proc->m_is_nopass
-            );
-            if (diags.has_error()) {
-                diag.diagnostics.insert(
-                    diag.diagnostics.end(),
-                    diags.diagnostics.begin(),
-                    diags.diagnostics.end()
-                );
+            visit_kwargs(args, m_kwargs, n_kwargs,
+                            func->m_args, func->n_args, loc, func,
+                            diags, n_member, v_class_proc->m_is_nopass);
+            if( diags.has_error() ) {
+                diag.diagnostics.insert(diag.diagnostics.end(),
+                    diags.diagnostics.begin(), diags.diagnostics.end());
                 throw SemanticAbort();
             }
         }
-
-        ASRUtils::set_absent_optional_arguments_to_null(
-            args, func, al, v_expr, v_class_proc->m_is_nopass
-        );
-
-        /* ---------------------------------------------------------
-        FINAL FIX: hoist function-call arguments HERE
-        --------------------------------------------------------- */
-        Vec<ASR::call_arg_t> final_args;
-        final_args.reserve(al, args.size());
-
-        for (size_t i = 0; i < args.size(); i++) {
-            ASR::call_arg_t arg = args[i];
-            ASR::expr_t* val = arg.m_value;
-
-            if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
-                std::string tmp_name = current_scope->get_unique_name("_tmp");
-                ASR::ttype_t* val_type = ASRUtils::expr_type(val);
-
-                ASR::symbol_t* tmp_sym =
-                    ASR::down_cast<ASR::symbol_t>(
-                        ASRUtils::make_Variable_t_util(
-                            al, val->base.loc,
-                            current_scope,
-                            s2c(al, tmp_name),
-                            nullptr, 0,
-                            ASR::intentType::Local,
-                            nullptr, nullptr,
-                            ASR::storage_typeType::Default,
-                            val_type, nullptr,
-                            ASR::abiType::Source,
-                            ASR::accessType::Private,
-                            ASR::presenceType::Required,
-                            false
-                        )
-                    );
-
-                current_scope->add_symbol(tmp_name, tmp_sym);
-
-                ASR::stmt_t* assign =
-                    ASRUtils::STMT(
-                        ASR::make_Assignment_t(
-                            al, val->base.loc,
-                            ASRUtils::EXPR(
-                                ASR::make_Var_t(al, val->base.loc, tmp_sym)
-                            ),
-                            val, nullptr, false, false
-                        )
-                    );
-
-                current_body->push_back(al, assign);
-
-                arg.m_value =
-                    ASRUtils::EXPR(
-                        ASR::make_Var_t(al, val->base.loc, tmp_sym)
-                    );
-            }
-
-            final_args.push_back(al, arg);
-        }
-
-        args = std::move(final_args);
-        /* --------------------------------------------------------- */
-
-        ASRUtils::insert_module_dependency(
-            v, al, current_module_dependencies
-        );
-
-        return ASRUtils::make_FunctionCall_t_util(
-            al, loc,
-            v, nullptr,
-            args.p, args.size(),
-            type, nullptr,
-            v_expr,
-            current_scope,
-            current_function_dependencies
-        );
+        ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
+        return ASRUtils::make_FunctionCall_t_util(al, loc,
+                v, nullptr, args.p, args.size(), type, nullptr,
+                v_expr, current_scope, current_function_dependencies);
     }
 
 

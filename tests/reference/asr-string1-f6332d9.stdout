@@ -51,6 +51,27 @@
                                     (SymbolTable
                                         13
                                         {
+                                            _tmp:
+                                                (Variable
+                                                    13
+                                                    _tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
@@ -188,27 +209,27 @@
                                     [f_string_cptr_n]
                                     [(Var 13 cptr)]
                                     [(Assignment
+                                        (Var 13 _tmp)
+                                        (FunctionCall
+                                            13 c_strlen
+                                            ()
+                                            [((Var 13 cptr))]
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
                                         (Var 13 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
                                             [((Var 13 cptr))
-                                            ((FunctionCall
-                                                13 c_strlen
-                                                ()
-                                                [((Var 13 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ))]
-                                            (String 1 (FunctionCall
-                                                13 c_strlen
-                                                ()
-                                                [((Var 13 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ) ExpressionLength DescriptorString)
+                                            ((Var 13 _tmp))]
+                                            (String 1 (Var 13 _tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )

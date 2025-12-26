@@ -1,0 +1,5 @@
+ASR verify pass error: Variable _tmp depends on x but isn't found in its dependency list.
+  --> tests/../integration_tests/template_03b.f90:23:25
+   |
+23 |             y = plus(y, times(a, x))
+   |                         ^^^^^^^^^^^ failed here
