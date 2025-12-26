@@ -458,21 +458,22 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     char formatted_value[256];
     double abs_val = fabs(val);
     if (is_g0_like) {
-        if (abs_val == 0.0 || (abs_val >= 1.0 && abs_val < 1000.0)) {
-            snprintf(formatted_value, sizeof(formatted_value), "%.9f", val);
-        } else {
-            // Engineering notation: scale exponent to multiple of 3
-            int exponent = (int)floor(log10(abs_val));
+        // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
+        int exponent = 0;
+        double scaled_val = val;
+        if (abs_val != 0.0) {
+            exponent = (int)floor(log10(abs_val));
             int remainder = exponent % 3;
             if (remainder < 0) remainder += 3;
             exponent -= remainder;
-            double scaled_val = val / pow(10, exponent);
-
-            char val_str[128];
-            snprintf(val_str, sizeof(val_str), "%.9f", scaled_val);
-            snprintf(formatted_value, sizeof(formatted_value),
-                    "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
+            scaled_val = val / pow(10, exponent);
         }
+        
+        // For EN0.0E0, format with 0 decimal digits but keep the decimal point
+        char val_str[128];
+        snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
+        snprintf(formatted_value, sizeof(formatted_value),
+                "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
     } else {
         int exponent = 0;
         double scaled_val = val;
