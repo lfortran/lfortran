@@ -389,6 +389,20 @@ public:
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+            // Check the module's symbol table
+            ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
+            if (current_sym == placeholder_sym) {
+                diag.add(diag::Diagnostic(
+                    "Interface '" + name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                    }));
+            }
+        }
+        pending_proc_placeholders.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
@@ -464,7 +478,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        in_program = false;
+        // in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -534,6 +548,18 @@ public:
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
+             if (current_sym == placeholder_sym) {
+                 diag.add(diag::Diagnostic(
+                    "Procedure '" + name + "' is declared but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                    }));
+             }
+        }
+        pending_proc_placeholders.clear();
+        in_program = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1769,17 +1795,21 @@ public:
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
-                    // TODO: Throw error when interface definition and implementation signatures are different
+                  // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
-                    if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
-                        ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
-                        diag.add(diag::Diagnostic(
-                            "Argument(s) or return type mismatch in interface and implementation",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {tmp->loc})}));
-                        throw SemanticAbort();
+                    bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
+
+                    if (!is_placeholder) {
+                       if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
+                                ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
+        
+                            diag.add(diag::Diagnostic(
+                                "Argument(s) or return type mismatch in interface and implementation",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {tmp->loc})}));
+                            throw SemanticAbort();
+                        }
                     }
-                    // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
                     diag.add(diag::Diagnostic(
