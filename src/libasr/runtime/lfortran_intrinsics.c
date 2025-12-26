@@ -942,10 +942,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             default :
                 if (
-                    (cformat[index] == '-' && isdigit(cformat[index + 1]) && tolower(cformat[index + 2]) == 'p')
+                    ((cformat[index] == '-' || cformat[index] == '+') && isdigit(cformat[index + 1]) && tolower(cformat[index + 2]) == 'p')
                     || ((isdigit(cformat[index])) && tolower(cformat[index + 1]) == 'p')) {
                     start = index;
-                    index = index + 1 + (cformat[index] == '-');
+                    index = index + 1 + (cformat[index] == '-' || cformat[index] == '+');
                     format_values_2[format_values_count++] = substring(cformat, start, index + 1);
                 } else if (isdigit(cformat[index])) {
                     start = index;
@@ -1789,7 +1789,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
                 // Scale Factor nP
                 scale = atoi(&value[0]);
-            } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
+            } else if ((value[0] == '-' || value[0] == '+') && isdigit(value[1]) && tolower(value[2]) == 'p') {
                 char temp[3] = {value[0],value[1],'\0'};
                 scale = atoi(temp);
             } else if ((value[0] == '\"' && value[strlen(value) - 1] == '\"') ||
