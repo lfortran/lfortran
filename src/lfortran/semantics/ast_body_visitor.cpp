@@ -4799,15 +4799,8 @@ public:
                         // polymorphic types (class), function types, and intrinsics
                         bool skip_check = compiler_options.implicit_argument_casting ||
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
                         // Check if types are equal
-                        if ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) !=
-                                                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type)) &&
-                                                    !compiler_options.implicit_argument_casting)) {
-                                                    skip_check = false; // force checking to catch the mismatch
-                                                }
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
                             std::string passed_type_str = ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
                             std::string param_type_str = ASRUtils::type_to_str_fortran_expr(param_type, nullptr);
