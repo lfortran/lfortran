@@ -598,6 +598,24 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
     }
 
+    // For ES format with 0 decimal places, we need to round properly
+    // and adjust the exponent if rounding causes overflow
+    if (is_s_format && digits == 0 && val != 0.0) {
+        // Calculate the mantissa for ES format (scale = 1)
+        double abs_val = fabs(val);
+        double mantissa = abs_val / pow(10, exponent_value);
+        // Round to nearest integer
+        double rounded_mantissa = round(mantissa);
+        // If rounding causes mantissa >= 10, adjust exponent
+        if (rounded_mantissa >= 10.0) {
+            exponent_value++;
+            rounded_mantissa = 1.0;
+        }
+        // Reconstruct val_str with the rounded mantissa (unsigned)
+        sprintf(val_str, "%d", (int)rounded_mantissa);
+        integer_length = strlen(val_str);
+    }
+
     int exp = 2;
     if (exp_digits > 0) {
         exp = exp_digits;
@@ -630,7 +648,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
 
     if (width == 0) {
-        if (digits == 0) {
+        // For ES0.0E0 or similar, keep digits = 0 to match gfortran behavior
+        if (digits == 0 && (width_digits != 0 || decimal_digits != 0)) {
             digits = 9;
         }
         width = sign_width + digits + FIXED_CHARS_LENGTH + exp_length;
@@ -709,14 +728,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    if (!(width_digits == 0 && decimal_digits == 0 && exponent_value == 0)) {
-        if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
-            strcat(formatted_value, c);
-        }
-        // formatted_value = "  1.12E"
-        strcat(formatted_value, exponent);
-        // formatted_value = "  1.12E+10"
+    // Always add exponent for E/ES/D formats
+    if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+        strcat(formatted_value, c);
     }
+    // formatted_value = "  1.12E"
+    strcat(formatted_value, exponent);
+    // formatted_value = "  1.12E+10"
+
     if (strlen(formatted_value) > width) {
         if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
             memmove(formatted_value, formatted_value + 1, strlen(formatted_value));
