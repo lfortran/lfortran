@@ -16,20 +16,20 @@ module continue_compilation_1_mod
 
     type(MyClass), PROTECTED :: protected_module_my_class_obj
 
-    type :: ctx_fail_t
-        procedure(f_fail), pointer, nopass :: fn => null()
-    end type
-    
-    abstract interface
-        subroutine f_fail(x)
-            real, intent(in) :: x
-        end subroutine
-    end interface
-
     ! Test for Missing Declaration:
     type :: ctx_missing_t
         procedure(f_missing), pointer, nopass :: fn => null()
     end type
+
+
+
+
+
+
+
+
+
+
 
 
 

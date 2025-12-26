@@ -398,7 +398,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "Interface '" + name + "' is referenced but not defined",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
                     }));
             }
         }
@@ -478,7 +478,6 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        // in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -552,9 +551,9 @@ public:
              ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
              if (current_sym == placeholder_sym) {
                  diag.add(diag::Diagnostic(
-                    "Procedure '" + name + "' is declared but not defined",
+                    "Interface '" + name + "' is referenced but not defined",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("Declared here", {placeholder_sym->base.loc})
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
                     }));
              }
         }
