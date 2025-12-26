@@ -197,20 +197,6 @@ program continue_compilation_1
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -457,4 +443,18 @@ program continue_compilation_1
 
     !passing non procedure to procedure parameter
     call proc_param(42)
-end program 
+end program
+
+module mismatch_function
+    implicit none
+    interface
+        module function f() result(i)
+            integer :: i
+        end function
+    end interface
+contains
+    module function f() result(r)
+        real :: r
+        r = 5.5
+    end function
+end module

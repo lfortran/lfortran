@@ -1,9 +1,0 @@
-semantic error: Argument(s) or return type mismatch in interface and implementation
-  --> tests/errors/interface_mismatch.f90:14:5 - 17:16
-   |
-14 |        module function f() result(r)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-17 |        end function
-   | ...^^^^^^^^^^^^^^^^ 
