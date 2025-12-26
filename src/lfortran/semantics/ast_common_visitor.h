@@ -1562,7 +1562,12 @@ public:
 
     using common_block_varsyms = std::map<std::string, std::vector<AST::var_sym_t>>;
     std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
+    // Maps COMMON block name to total byte size (for validation)
+    std::map<std::string, size_t> common_block_byte_sizes;
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
+    // Maps variable hash to byte offset within COMMON block storage
+    // (needed for union-based access when layouts differ across program units)
+    std::map<uint64_t, size_t> &common_variables_byte_offset;
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
@@ -1634,6 +1639,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -1645,6 +1651,7 @@ public:
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash},
+          common_variables_byte_offset{common_variables_byte_offset},
           external_procedures_mapping{external_procedures_mapping},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
@@ -2226,6 +2233,60 @@ public:
         tmp = nullptr;
     }
 
+    // Calculate byte size of an ASR type (for COMMON block storage calculations)
+    static size_t get_type_byte_size(ASR::ttype_t* type) {
+        type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(type));
+        size_t element_size = 0;
+        size_t array_size = 1;
+
+        // Handle arrays
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                int64_t dim_size = 1;
+                if (arr->m_dims[i].m_length) {
+                    if (!ASRUtils::extract_value(arr->m_dims[i].m_length, dim_size)) {
+                        // Dynamic size - use 1 as placeholder (shouldn't happen
+                        // in COMMON blocks which require fixed sizes)
+                        dim_size = 1;
+                    }
+                }
+                array_size *= static_cast<size_t>(dim_size);
+            }
+            type = arr->m_type;
+        }
+
+        // Get element size based on kind
+        if (ASR::is_a<ASR::String_t>(*type)) {
+            // String (CHARACTER) types: size = len value * kind
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            int64_t str_len = 1;
+            int kind = str_type->m_len_kind;
+            if (str_type->m_len &&
+                ASRUtils::extract_value(str_type->m_len, str_len)) {
+                element_size = static_cast<size_t>(str_len * kind);
+            } else {
+                // Assumed-length or dynamic - use kind as placeholder
+                element_size = static_cast<size_t>(kind);
+            }
+        } else {
+            int kind = ASRUtils::extract_kind_from_ttype_t(type);
+            if (kind > 0) {
+                element_size = static_cast<size_t>(kind);
+                // Complex types are 2x the kind (real + imaginary)
+                if (ASR::is_a<ASR::Complex_t>(*type)) {
+                    element_size *= 2;
+                }
+            } else {
+                // Default to pointer size for unknown types
+                element_size = 8;
+            }
+        }
+
+        return element_size * array_size;
+    }
+
     ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var) {
         uint64_t hash = get_hash((ASR::asr_t*) target_var);
         std::string target_var_name = target_var->m_name;
@@ -2254,17 +2315,58 @@ public:
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
-            std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
+            // Resolve the struct member that corresponds to this local variable.
+            // In COMMON blocks, different program units may use different names
+            // or even different types for the same storage location (storage
+            // association). First try direct name lookup, then fall back to
+            // byte offset range matching.
+            std::string actual_member_name = target_var_name;
+            ASR::symbol_t* struct_member_sym = struct_type->m_symtab->resolve_symbol(target_var_name);
+            if (!struct_member_sym) {
+                // Name lookup failed - match by byte offset instead. Find the
+                // struct member whose storage range [offset, offset+size) contains
+                // the target variable's byte offset. This handles:
+                // 1. Different names for same storage location
+                // 2. Reordered layouts (e.g., real,int,int vs int,int,real)
+                // 3. Type aliasing (e.g., real(8) array vs integer array)
+                auto offset_it = common_variables_byte_offset.find(hash);
+                if (offset_it != common_variables_byte_offset.end()) {
+                    size_t target_offset = offset_it->second;
+                    // Find the member whose byte range contains target_offset
+                    size_t current_offset = 0;
+                    for (size_t i = 0; i < struct_type->n_members; i++) {
+                        std::string member_name_str = struct_type->m_members[i];
+                        ASR::symbol_t* mem_sym = struct_type->m_symtab->resolve_symbol(member_name_str);
+                        if (mem_sym && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                            ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(mem_sym);
+                            size_t member_size = get_type_byte_size(mem_var->m_type);
+                            // Check if target_offset falls within this member's range
+                            if (target_offset >= current_offset &&
+                                target_offset < current_offset + member_size) {
+                                actual_member_name = member_name_str;
+                                struct_member_sym = mem_sym;
+                                break;
+                            }
+                            current_offset += member_size;
+                        }
+                    }
+                }
+            }
+            LCOMPILERS_ASSERT(struct_member_sym != nullptr);
+
+            std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+actual_member_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
             if (!member_sym) {
-
                 member_sym = ASR::down_cast<ASR::symbol_t>(make_ExternalSymbol_t(al, target_var->base.base.loc, scope, s2c(al, member_name),
-                                                        struct_type->m_symtab->resolve_symbol(target_var_name), s2c(al, ext_sym_name), nullptr, 0, s2c(al, target_var_name), ASR::accessType::Public));
+                                                        struct_member_sym, s2c(al, ext_sym_name), nullptr, 0, s2c(al, actual_member_name), ASR::accessType::Public));
                 scope->add_symbol(member_name, member_sym);
             }
 
+            // Use local variable's type for COMMON block access. This preserves
+            // the local view of the storage (e.g., integer array vs real array).
+            // Codegen will detect type mismatch and use byte-offset + bitcast.
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
+                member_sym, target_var->m_type, nullptr);
 
             return new_target;
         } else {
@@ -2937,7 +3039,8 @@ public:
 		std::vector<ASR::expr_t*> common_block_variables;
 		common_block_variables.reserve(num_cb_var);
 
-		// Add all the block variables
+		// Add all the block variables, tracking byte offsets
+		size_t byte_offset = 0;
 		for (auto const &s : blk.second) {
 		    AST::expr_t* expr = s.m_initializer;
             LCOMPILERS_ASSERT(expr != nullptr)
@@ -2948,7 +3051,11 @@ public:
 		    // add variable to struct
 		    add_sym_to_struct(var_, struct_type);
 		    common_variables_hash[hash] = common_block_struct_sym;
+		    common_variables_byte_offset[hash] = byte_offset;
+		    byte_offset += get_type_byte_size(var_->m_type);
 		}
+		// Store total byte size for this COMMON block
+		common_block_byte_sizes[common_block_name] = byte_offset;
 
 		common_block_dictionary[common_block_name].first = true;
 		common_block_dictionary[common_block_name].second.swap(common_block_variables);
@@ -2960,6 +3067,8 @@ public:
 		    std::vector<ASR::expr_t*> & common_block_variables = cbd_it->second.second;
 		    common_block_variables.reserve(common_block_variables.size() + blk.second.size());
 
+		    // Get current byte offset from existing entries
+		    size_t byte_offset = common_block_byte_sizes[common_block_name];
 		    for (auto const &s : blk.second) {
 			AST::expr_t* expr = s.m_initializer;
 			this->visit_expr(*expr);
@@ -2967,38 +3076,25 @@ public:
 			uint64_t hash = get_hash((ASR::asr_t*) var_);
 			common_block_variables.push_back(ASRUtils::EXPR(tmp));
 			common_variables_hash[hash] = common_block_struct_sym;
+			common_variables_byte_offset[hash] = byte_offset;
+			byte_offset += get_type_byte_size(var_->m_type);
 			// add variable to struct
             if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
                 add_sym_to_struct(var_, struct_type);
             }
 		    }
+		    // Update total byte size
+		    common_block_byte_sizes[common_block_name] = byte_offset;
 		} else {
-		    /* The block has already been declared, so we need to compare the structure of the block
-		       declarations and update the structs holding the variables. */
-		    std::vector<ASR::expr_t*> const & common_block_variables = cbd_it->second.second;
+		    /* The block has already been declared in a different program unit.
+		       COMMON blocks use storage association, so different layouts are
+		       allowed as long as the total byte size matches.
+		       We track byte offsets for each variable in this declaration. */
+		    size_t canonical_size = common_block_byte_sizes[common_block_name];
 
-		    if (common_block_variables.size() != num_cb_var) {
-			diag.add(Diagnostic(
-				     "The number of variables in common block must be same in all programs",
-				     Level::Error, Stage::Semantic, {
-					 Label("",{x.base.base.loc})
-				     }));
-			throw SemanticAbort();
-		    }
-
-		    for (size_t i = 0; i < num_cb_var; ++i) {
-			auto &expr = common_block_variables[i];
-			auto &s = blk.second[i];
-
-			ASR::Variable_t* var_ = nullptr;
-			if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
-			    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
-			    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
-			    var_ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-			} else {
-			    var_ = ASRUtils::EXPR2VAR(expr);
-			}
-
+		    // Calculate total byte size for this declaration
+		    size_t byte_offset = 0;
+		    for (auto const &s : blk.second) {
 			AST::expr_t* expr_ = s.m_initializer;
 			this->visit_expr(*expr_);
 			ASR::Variable_t* var__ = nullptr;
@@ -3009,35 +3105,23 @@ public:
 			} else {
 			    var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
 			}
-            if (!ASRUtils::check_equal_type(var_->m_type,
-                                            var__->m_type,
-                                            ASRUtils::get_expr_from_sym(al, &var_->base),
-                                            ASRUtils::get_expr_from_sym(al, &var__->base))) {
-                diag.add(Diagnostic(
-                    "The order of variables in common block must be same in all programs",
-                    Level::Error,
-                    Stage::Semantic,
-                    { Label("", { x.base.base.loc }) }));
-                throw SemanticAbort();
-            } else {
-                uint64_t hash = get_hash((ASR::asr_t*) var__);
-			    common_variables_hash[hash] = common_block_struct_sym;
-            }
-            if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
-			    /*
-			      Update type of original symbol
-			      case:
-			      program main
-			      double precision x
-			      common /a/ x(10)
-			      end program
-			    */
-			    ASR::symbol_t* var_sym = current_scope->get_symbol(s2c(al, var_->m_name));
-			    if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
-				ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
-				var->m_type = var_->m_type;
-			    }
-			}
+
+			uint64_t hash = get_hash((ASR::asr_t*) var__);
+			common_variables_hash[hash] = common_block_struct_sym;
+			common_variables_byte_offset[hash] = byte_offset;
+			byte_offset += get_type_byte_size(var__->m_type);
+		    }
+
+		    // Validate total byte size matches
+		    if (byte_offset != canonical_size) {
+			diag.add(Diagnostic(
+				     "COMMON block storage size mismatch: this declaration has " +
+				     std::to_string(byte_offset) + " bytes but previous declaration has " +
+				     std::to_string(canonical_size) + " bytes",
+				     Level::Error, Stage::Semantic, {
+					 Label("",{x.base.base.loc})
+				     }));
+			throw SemanticAbort();
 		    }
 		}
 	    }

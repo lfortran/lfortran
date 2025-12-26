@@ -808,8 +808,12 @@ void lex_format(unsigned char *&cur, Location &loc,
                 = 'T' whitespace? ('L' | 'R')? whitespace? int
                 | int whitespace? 'X'
                 ;
+            sign_edit_desc
+                = 'S' whitespace? ('P' | 'S')?
+                ;
             control_edit_desc
                 = position_edit_desc
+                | sign_edit_desc
                 | (int)? '/'
                 | ':'
                 ;
