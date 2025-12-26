@@ -1436,43 +1436,7 @@
                                     (Var 6 table)
                                     (Var 6 error)]
                                     [(ImplicitDeallocate
-                                        [(StructInstanceMember
-                                            (Var 6 self)
-                                            6 1_executable_config_t_dependency
-                                            (Allocatable
-                                                (Array
-                                                    (StructType
-                                                        [(Allocatable
-                                                            (StructType
-                                                                [(Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
-                                                                []
-                                                                .true.
-                                                                .false.
-                                                            )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    [(()
-                                                    ())]
-                                                    DescriptorArray
-                                                )
-                                            )
-                                            ()
-                                        )
-                                        (Var 6 error)]
+                                        [(Var 6 error)]
                                     )
                                     (SubroutineCall
                                         4 new_dependencies
