@@ -21,17 +21,13 @@ module continue_compilation_1_mod
         procedure(f_missing), pointer, nopass :: fn => null()
     end type
 
+    procedure(missing_global_interface), pointer :: p => null()
 
-
-
-
-
-
-
-
-
-
-
+    interface
+        module function f() result(i)
+            integer :: i
+        end function
+    end interface
 
 
 
@@ -101,7 +97,10 @@ contains
         procedure(ubound_assumed_size_2) :: p
     end subroutine proc_param
 
-
+    module function f() result(r)
+        real :: r
+        r = 5.5
+    end function
 
 
 
@@ -175,6 +174,21 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -445,16 +459,3 @@ program continue_compilation_1
     call proc_param(42)
 end program
 
-module mismatch_function
-    implicit none
-    interface
-        module function f() result(i)
-            integer :: i
-        end function
-    end interface
-contains
-    module function f() result(r)
-        real :: r
-        r = 5.5
-    end function
-end module
