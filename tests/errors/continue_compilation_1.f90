@@ -22,23 +22,12 @@ module continue_compilation_1_mod
     end type
 
     procedure(missing_global_interface), pointer :: p => null()
-
+    
     interface
         module function f() result(i)
             integer :: i
         end function
     end interface
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -185,6 +174,21 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
