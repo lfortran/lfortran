@@ -1922,7 +1922,7 @@ RUN(NAME nested_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-
+RUN(NAME nested_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
@@ -2329,6 +2329,7 @@ RUN(NAME array_slice_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 
 RUN(NAME declaration_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME declaration_02 LABELS gfortran llvm)
+RUN(NAME declaration_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME procedure_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2856,5 +2857,9 @@ RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 # test for polymorphic select type
 RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
 RUN(NAME defined_op_match_01 LABELS gfortran llvm)
+
+#test for forward declaration of derived type
+RUN(NAME issue_9063 LABELS gfortran llvm)
+
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_struct_with_components LABELS gfortran llvm)

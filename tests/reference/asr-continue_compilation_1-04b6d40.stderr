@@ -52,6 +52,12 @@ semantic error: Dummy argument 'a' not defined
 98 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Interface 'f_missing' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:31:9
+   |
+31 |         procedure(f_missing), pointer, nopass :: fn => null()
+   |         ^^^^^^^^^^^^^^^^^^^^ Declared here
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
     |

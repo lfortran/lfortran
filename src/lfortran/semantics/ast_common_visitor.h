@@ -1628,6 +1628,7 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -4392,9 +4393,16 @@ public:
 
                         visit_ArrayInitializer(*array_init);
                         init_expr = ASRUtils::EXPR(tmp);
+                    } else if ((storage_type != ASR::storage_typeType::Parameter) &&
+                            ((AST::is_a<AST::String_t>(*s.m_initializer) ||
+                             AST::is_a<AST::Num_t>(*s.m_initializer) ||
+                             AST::is_a<AST::Real_t>(*s.m_initializer) ||
+                             AST::is_a<AST::BOZ_t>(*s.m_initializer)))) {
+                        this->visit_expr(*s.m_initializer);
+                        init_expr = ASRUtils::EXPR(tmp);
                     } else {
                         diag.add(Diagnostic(
-                            "Only function call assignment is allowed for now",
+                            "Initialization with type(...) syntax only supports literal constants and constructor calls without parameter type",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }));
@@ -5550,13 +5558,36 @@ public:
             std::string func_name = to_lower(sym_type->m_name);
             ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
             if( !v ) {
-                diag.add(Diagnostic(
-                    "Procedure type '" + func_name
-                    + "' not declared",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{loc})
-                    }));
-                throw SemanticAbort();
+                Location &attr_loc = sym_type->base.base.loc;
+                ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, attr_loc,
+                    nullptr, 0, nullptr, ASR::abiType::Source,        
+                    ASR::deftypeType::Interface, nullptr,                     
+                    false, false, false, false, false, nullptr, 0, false
+                    )); 
+                SymbolTable *parent_scope = current_scope->parent; 
+                SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+                ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Function_t(
+                        al, attr_loc,
+                        fn_scope,       
+                        s2c(al, func_name),      
+                        func_type,         
+                        nullptr, 0,              
+                        nullptr, 0,              
+                        nullptr, 0,              
+                        nullptr,                 
+                        ASR::accessType::Public, 
+                        false,                   
+                        false,                   
+                        nullptr,                 
+                        nullptr, nullptr         
+                    )
+                );
+                
+                parent_scope->add_symbol(func_name, placeholder); 
+                v = placeholder;
+                pending_proc_placeholders.push_back({func_name, placeholder});
             }
             type_declaration = v;
             v = ASRUtils::symbol_get_past_external(v);
@@ -12256,8 +12287,42 @@ public:
                     m_dims_vec.from_pointer_n(m_dims, n_dims);
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
+                ASR::expr_t* value = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*ASRUtils::EXPR(tmp))) {
+                    ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(ASRUtils::EXPR(tmp));
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+
+                    if (var->m_storage == ASR::storage_typeType::Parameter) {
+                        ASR::symbol_t* mem_sym =
+                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+
+                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                            ASR::Variable_t* mem_var =
+                                ASR::down_cast<ASR::Variable_t>(mem_sym);
+
+                            if (mem_var->m_symbolic_value) {
+                                value = mem_var->m_symbolic_value; // ArrayConstant
+                            }
+                        }
+                    }
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
+                    ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
+                    if (v->m_value) {
+                        ASR::symbol_t* mem_sym =
+                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+
+                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                            ASR::Variable_t* mem_var =
+                                ASR::down_cast<ASR::Variable_t>(mem_sym);
+
+                            if (mem_var->m_symbolic_value) {
+                                value = mem_var->m_symbolic_value; // ArrayConstant
+                            }
+                        }
+                    }
+                }
                 tmp = ASR::make_StructInstanceMember_t(
-                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
                 make_ArrayItem_from_struct_m_args(
                     x_m_member[i].m_args, x_m_member[i].n_args, ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
@@ -12289,7 +12354,28 @@ public:
                 m_dims_vec.from_pointer_n(m_dims, n_dims);
                 tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
             }
-            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, nullptr);
+            ASR::expr_t* value = nullptr;
+
+            if (ASR::is_a<ASR::Var_t>(*ASRUtils::EXPR(tmp))) {
+                ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(ASRUtils::EXPR(tmp));
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+
+                if (var->m_storage == ASR::storage_typeType::Parameter) {
+                    ASR::symbol_t* mem_sym =
+                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+
+                    if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        ASR::Variable_t* mem_var =
+                            ASR::down_cast<ASR::Variable_t>(mem_sym);
+
+                        if (mem_var->m_symbolic_value) {
+                            value = mem_var->m_symbolic_value; // ArrayConstant
+                        }
+                    }
+                }
+            }
+
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
         }
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;
