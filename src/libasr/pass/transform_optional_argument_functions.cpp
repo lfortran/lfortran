@@ -206,9 +206,10 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             if( ASR::is_a<ASR::Variable_t>(*sym) ) {
                 ASR::Variable_t* sym_ = ASR::down_cast<ASR::Variable_t>(sym);
                 if (sym_->m_presence == ASR::presenceType::Optional) {
-                    if( set_presence_to_required ) {
-                        sym_->m_presence = ASR::presenceType::Required;
-                    }
+                    // Keep m_presence as Optional to preserve semantic information
+                    // for downstream passes (e.g., insert_deallocate).
+                    // The presence bit argument handles the runtime check.
+                    (void)set_presence_to_required;  // Intentionally unused
                     return true;
                 }
             }
