@@ -6905,10 +6905,12 @@ public:
                     continue;
                 }
                 ASR::expr_t* arg = args.p[i].m_value;
+                ASR::ttype_t* arg_type_full = ASRUtils::expr_type(arg);
+                ASR::ttype_t* orig_arg_type_full = func_type->m_arg_types[i];
                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
+                        ASRUtils::type_get_past_pointer(arg_type_full));
                 ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
+                        ASRUtils::type_get_past_pointer(orig_arg_type_full));
 
                 if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
 
@@ -6963,6 +6965,39 @@ public:
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
                             throw SemanticAbort();
                         }
+                    }
+                }
+
+                // Check deferred-length string compatibility: if parameter is deferred-length,
+                // the argument must also be deferred-length (but not vice versa)
+                // Check if both are character types (either scalar or array of strings)
+                // Use extract_type to get the underlying string type, handling arrays/allocatable/pointer
+                ASR::ttype_t* param_string_type = ASRUtils::extract_type(orig_arg_type_full);
+                ASR::ttype_t* arg_string_type = ASRUtils::extract_type(arg_type_full);
+                bool param_is_string = ASR::is_a<ASR::String_t>(*param_string_type);
+                bool arg_is_string = ASR::is_a<ASR::String_t>(*arg_string_type);
+                if (param_is_string && arg_is_string) {
+                    bool param_is_deferred = ASRUtils::is_deferredLength_string(orig_arg_type_full);
+                    bool arg_is_deferred = ASRUtils::is_deferredLength_string(arg_type_full);
+                    if (param_is_deferred && !arg_is_deferred) {
+                        // Check if parameter is allocatable or pointer (required for deferred length)
+                        bool param_is_allocatable_or_pointer = ASRUtils::is_allocatable(orig_arg_type_full) || 
+                                                                 ASRUtils::is_pointer(orig_arg_type_full);
+                        std::string param_name = "";
+                        if (ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(func->m_args[i]);
+                            if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                                param_name = std::string(ASR::down_cast<ASR::Variable_t>(var->m_v)->m_name);
+                            }
+                        }
+                        std::string error_msg = "Actual argument at (" + std::to_string(i+1) + ")";
+                        if (param_is_allocatable_or_pointer && !param_name.empty()) {
+                            error_msg += " to allocatable or pointer dummy argument '" + param_name + "'";
+                        }
+                        error_msg += " must have a deferred length type parameter if and only if the dummy has one";
+                        diag.add(Diagnostic(error_msg,
+                                            Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
+                        throw SemanticAbort();
                     }
                 }
 
