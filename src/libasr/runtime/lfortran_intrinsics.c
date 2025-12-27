@@ -5065,105 +5065,7 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...)
-{
-    int width = -1;
-    // Parse format string: supports (a) and (aw)
-    if (is_streql_NCS((char*)fmt, fmt_len, "(a)", 3)) {
-        width = -1;
-    } else if ((fmt_len > 2) && is_streql_NCS((char*)fmt, 2, "(a", 2)) {
-        int i = 2;
-        while ((i < fmt_len) && isdigit((unsigned char)fmt[i])) i++;
-        if (fmt[i] == ')' && i > 2) {
-            char width_str[16];
-            memcpy(width_str, fmt + 2, i - 2);
-            width_str[i - 2] = '\0';
-            width = atoi(width_str);
-            if (width <= 0) {
-                printf("Invalid format width in '%.*s'\n", (int)fmt_len, fmt);
-                exit(1);
-            }
-        } else {
-            printf("Only (a) and (aw) are supported.\n");
-            exit(1);
-        }
-    } else {
-        printf("Only (a) and (aw) are supported.\n");
-        exit(1);
-    }
-
-    // Get string pointer and length from varargs
-    va_list args;
-    va_start(args, no_of_args);
-    char *str_data = va_arg(args, char*);
-    int64_t str_len = va_arg(args, int64_t);
-    va_end(args);
-
-    if (width == -1) width = (int)str_len;
-
-    char *buffer = (char*)malloc((width + 2) * sizeof(char)); // +2 for safety
-    if (!buffer) {
-        printf("Memory allocation failed\n");
-        exit(1);
-    }
-
-    FILE *filep = NULL;
-    bool unit_file_bin;
-
-    if (unit_num != -1) {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
-        if (!filep) {
-            printf("No file found with given unit\n");
-            free(buffer);
-            exit(1);
-        }
-    }
-
-    // Read from stdin or file
-    if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {
-        *iostat = -1;
-        *chunk = 0;
-        free(buffer);
-        return;
-    }
-
-    // Handle newline trimming
-    buffer[strcspn(buffer, "\n")] = '\0';
-    size_t input_length = strlen(buffer);
-    *chunk = (int32_t)input_length;
-
-    // Determine iostat
-    if (streql(buffer, "\n") ||
-        (is_streql_NCS((char*)advance, advance_length, "no", 2) 
-        &&
-        strcspn(buffer, "\n") != (size_t) str_len)) {
-        *iostat = -2;
-    } else {
-        *iostat = 0;
-    }
-
-    // Fill output with spaces
-    pad_with_spaces(str_data, 0, str_len);
-
-    // Copy and pad appropriately
-    if (width > (int)str_len) {
-        // Copy rightmost str_len chars if width > str_len
-        if (input_length >= (size_t)width) {
-            memcpy(str_data, buffer + (width - str_len), str_len);
-        } else if (input_length >= (size_t)str_len) {
-            memcpy(str_data, buffer + (input_length - str_len), str_len);
-        } else {
-            memcpy(str_data, buffer, input_length);
-        }
-    } else {
-        // width <= str_len
-        memcpy(str_data, buffer, (input_length < (size_t)width) ? input_length : (size_t)width);
-    }
-
-    free(buffer);
-}
-
-// Type codes for _lfortran_formatted_read2:
+// Type codes for _lfortran_formatted_read:
 // 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
 // (pointer to the data pointer inside a string descriptor).
 // 1 = logical (followed by ptr)
@@ -5171,7 +5073,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
-LFORTRAN_API void _lfortran_formatted_read2(
+LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
     fchar* fmt, int64_t fmt_len,

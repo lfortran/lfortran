@@ -11628,7 +11628,7 @@ public:
                 }
             }
 
-            std::string runtime_func_name = "_lfortran_formatted_read2";
+            std::string runtime_func_name = "_lfortran_formatted_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
