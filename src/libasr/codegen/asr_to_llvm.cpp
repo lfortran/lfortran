@@ -3711,25 +3711,13 @@ public:
         // view the same COMMON block storage with different types (storage
         // association). When the local variable type (x.m_type) differs from
         // the struct member type (member->m_type), we must bitcast the pointer
-        // to match the local view. Example: real(8) array(4) in one unit vs
-        // integer array(8) in another - both occupy 32 bytes of shared storage.
-        //
-        // On LLVM 15+ with opaque pointers, all pointers are just `ptr` so
-        // bitcast is unnecessary - the type info is used by load/store instead.
-#if LLVM_VERSION_MAJOR < 15
-        ASR::ttype_t* expected_type = x.m_type;
-        ASR::ttype_t* actual_member_type = member->m_type;
-        llvm::Type* expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+        // to match the local view. Details handled by the helper function.
+        tmp = llvm_utils->apply_common_block_alias_cast(
+            tmp,
             const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            expected_type, module.get());
-        llvm::Type* actual_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            actual_member_type, module.get());
-        if (expected_llvm_type != actual_llvm_type) {
-            // Bitcast pointer to the local program unit's view of the storage
-            tmp = builder->CreateBitCast(tmp, expected_llvm_type->getPointerTo());
-        }
-#endif
+            x.m_type,
+            member->m_type
+        );
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
