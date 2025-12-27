@@ -3033,6 +3033,29 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
     }
 
+    llvm::Value* LLVMUtils::apply_common_block_alias_cast(
+        llvm::Value* ptr,
+        ASR::expr_t* expr,
+        ASR::ttype_t* expected_type,
+        ASR::ttype_t* actual_type)
+    {
+    #if LLVM_VERSION_MAJOR < 15
+        llvm::Type* expected_llvm_type = get_type_from_ttype_t_util(
+            expr, expected_type, module);
+        llvm::Type* actual_llvm_type = get_type_from_ttype_t_util(
+            expr, actual_type, module);
+        
+        if (expected_llvm_type != actual_llvm_type) {
+            return builder->CreateBitCast(ptr, expected_llvm_type->getPointerTo());
+        }
+    #else
+        (void)expr;
+        (void)expected_type;
+        (void)actual_type;
+    #endif
+        return ptr;
+    }
+
     LLVMList::LLVMList(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,
         llvm::IRBuilder<>* builder_):
