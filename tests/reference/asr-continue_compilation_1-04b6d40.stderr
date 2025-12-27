@@ -1,4 +1,196 @@
-LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr.h
-function down_cast(), line number 40 at 
-f != nullptr
-Aborted (core dumped)
+semantic error: Derived type `another_undefined_type` is not defined
+  --> tests/errors/continue_compilation_1.f90:50:9
+   |
+50 |         type(another_undefined_type) :: s3_in_subroutine
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: c_char should have a length of 1
+  --> tests/errors/continue_compilation_1.f90:74:9
+   |
+74 |         character(len=2, kind=c_char), intent(in) :: c
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'c' not defined
+  --> tests/errors/continue_compilation_1.f90:72:5 - 75:20
+   |
+72 |        subroutine s(c) bind(c)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+75 |        end subroutine s
+   | ...^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-size '*' is only permitted in the last dimension
+  --> tests/errors/continue_compilation_1.f90:93:31
+   |
+93 |         real, intent(in) :: a(*, 10)
+   |                               ^ 
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_1.f90:92:5 - 94:18
+   |
+92 |        subroutine assumed_size_star_pos_1(a)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+94 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assumed-size '*' is only permitted in the last dimension
+  --> tests/errors/continue_compilation_1.f90:97:19
+   |
+97 |         real :: a(*, 10)
+   |                   ^ 
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_1.f90:96:5 - 98:18
+   |
+96 |        subroutine assumed_size_star_pos_2(a)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+98 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument(s) or return type mismatch in interface and implementation
+   --> tests/errors/continue_compilation_1.f90:104:5 - 107:16
+    |
+104 |        module function f() result(r)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+107 |        end function
+    | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+   --> tests/errors/continue_compilation_1.f90:121:5 - 123:49
+    |
+121 |        implicit integer(a-f), real(e-z)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+123 |        ! Put declarations below without empty lines
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of `repeat` intrinsic must be scalar
+   --> tests/errors/continue_compilation_1.f90:144:38
+    |
+144 |     character(3), parameter :: ar1 = repeat(["abc", "#^1", "123"], [1, 2, 3])
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot convert LOGICAL to REAL
+   --> tests/errors/continue_compilation_1.f90:147:20
+    |
+147 |     real :: adwf = .true.
+    |                    ^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_1.f90:151:31
+    |
+151 |     integer , dimension(3) :: array
+    |                               ^^^^^ redeclaration
+    |
+150 |     double precision array
+    |                      ~~~~~ original declaration
+
+semantic error: Array members must me of the same type as the struct
+   --> tests/errors/continue_compilation_1.f90:155:53
+    |
+155 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    |                                                     ^ 
+
+semantic error: Initialization of `myclass_array2` must reduce to a compile time constant.
+   --> tests/errors/continue_compilation_1.f90:156:66
+    |
+156 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
+    |                                                                  ^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters
+   --> tests/errors/continue_compilation_1.f90:157:5
+    |
+157 |     character(width=10) :: str_c_1
+    |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+   --> tests/errors/continue_compilation_1.f90:158:5
+    |
+158 |     character(len=10, len=20) :: str_c_2
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+   --> tests/errors/continue_compilation_1.f90:159:5
+    |
+159 |     character(len=10, 1) :: str_c_3
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword argument after a positional type is invalid
+   --> tests/errors/continue_compilation_1.f90:160:5
+    |
+160 |     character(1, len=20) :: str_c_4
+    |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_1.f90:161:34
+    |
+161 |     character(:), allocatable :: x(2)
+    |                                  ^^^^ 
+
+semantic error: `parameter` attribute conflicts with `protected` attribute
+   --> tests/errors/continue_compilation_1.f90:165:5
+    |
+165 |     integer, parameter, protected :: protected_parameter_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable `n` cannot appear in the expression as it is not a constant
+   --> tests/errors/continue_compilation_1.f90:170:27
+    |
+170 |       integer :: elements(n)
+    |                           ^ 
+
+semantic error: Derived type `bspline_3d` is not defined
+   --> tests/errors/continue_compilation_1.f90:172:5
+    |
+172 |     type(bspline_3d) :: s3_in_program
+    |     ^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: BOZ literal constant cannot be used in binary operations
+   --> tests/errors/continue_compilation_1.f90:174:19
+    |
+174 |     integer::tt = b'01' * 3
+    |                   ^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:176:29
+    |
+176 |     integer, allocatable :: allocate_int = 1
+    |                             ^^^^^^^^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_1.f90:177:34
+    |
+177 |     character(:), allocatable :: allocate_char = "H"
+    |                                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'missing_global_interface' is referenced but not defined
+  --> tests/errors/continue_compilation_1.f90:24:5
+   |
+24 |     procedure(missing_global_interface), pointer :: p => null()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:79:18
+   |
+79 |         print *, ubound(a, 1)
+   |                  ^^^^^^^^^^^^ 
+
+semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
+  --> tests/errors/continue_compilation_1.f90:84:18
+   |
+84 |         print *, ubound(a)
+   |                  ^^^^^^^^^ 
+
+semantic error: The upper bound of an assumed-size array's last dimension is not defined
+  --> tests/errors/continue_compilation_1.f90:89:18
+   |
+89 |         print *, ubound(a, 2)
+   |                  ^^^^^^^^^^^^ 
