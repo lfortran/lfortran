@@ -2400,6 +2400,9 @@ public:
     void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            return;
+        }
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
