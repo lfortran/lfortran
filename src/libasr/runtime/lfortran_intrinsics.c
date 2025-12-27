@@ -970,7 +970,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
                 break;
-            case 'r':  // Rounding mode: RU, RD, RN, RZ, RC, RP
+            case 'r':  // Rounding mode: RU, RD, RN, RZ
                 start = index++;
                 if (tolower(cformat[index]) == 'u' || tolower(cformat[index]) == 'd' ||
                     tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z' ||
