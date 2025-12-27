@@ -798,7 +798,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | 'L' whitespace? int
                 | 'A' whitespace? (int)?
                 | 'D' whitespace? int whitespace? dot_int
-                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int
+                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int whitespace? E_int?
                 | 'P' whitespace? 'F' whitespace? int whitespace? dot_int
                 | 'P'
                 | 'X'
