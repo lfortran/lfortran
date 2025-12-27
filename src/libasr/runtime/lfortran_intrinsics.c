@@ -5065,39 +5065,9 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
-static bool read_fixed_width_field(FILE *filep, int read_width,
-        const bool advance_no, int32_t *iostat, int32_t *chunk,
-        bool *consumed_newline, char **buffer, int *field_len)
-{
-    *buffer = (char*)malloc((size_t)read_width + 2);
-    if (!*buffer) {
-        printf("Memory allocation failed\n");
-        exit(1);
-    }
-
-    if (fgets(*buffer, read_width + 1, filep) == NULL) {
-        *iostat = -1;
-        *chunk = 0;
-        free(*buffer);
-        *buffer = NULL;
-        *field_len = 0;
-        return false;
-    }
-
-    char* nl = strchr(*buffer, '\n');
-    *field_len = (nl != NULL) ? (int)(nl - *buffer) : (int)strlen(*buffer);
-    if (nl != NULL) {
-        *nl = '\0';
-        *consumed_newline = true;
-    }
-
-    *chunk = (int32_t)(*field_len);
-    if (advance_no && *consumed_newline && *field_len != read_width) {
-        *iostat = -2;
-    }
-
-    return true;
-}
+static bool read_field(FILE *filep, int read_width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        char **buffer, int *field_len);
 
 // Type codes for _lfortran_formatted_read:
 // 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
@@ -5153,7 +5123,8 @@ LFORTRAN_API void _lfortran_formatted_read(
             fmt_pos++;
         }
 
-        if (spec == 'A') {
+        switch (spec) {
+        case 'A': {
             int32_t type_code = va_arg(args, int32_t);
             (void)type_code;
             char** str_data_ptr = va_arg(args, char**);
@@ -5172,7 +5143,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
             char* buffer = NULL;
             int field_len = 0;
-            if (!read_fixed_width_field(filep, read_width, advance_no,
+            if (!read_field(filep, read_width, advance_no,
                     iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
@@ -5195,9 +5166,9 @@ LFORTRAN_API void _lfortran_formatted_read(
             }
 
             free(buffer);
-            if (*iostat == -2) break;
-
-        } else if (spec == 'L') {
+            break;
+        }
+        case 'L': {
             int32_t type_code = va_arg(args, int32_t);
             (void)type_code;
             int32_t* log_ptr = va_arg(args, int32_t*);
@@ -5208,7 +5179,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
             char* buffer = NULL;
             int field_len = 0;
-            if (!read_fixed_width_field(filep, read_width, advance_no,
+            if (!read_field(filep, read_width, advance_no,
                     iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
@@ -5226,9 +5197,9 @@ LFORTRAN_API void _lfortran_formatted_read(
                 }
             }
             free(buffer);
-            if (*iostat == -2) break;
-
-        } else if (spec == 'I') {
+            break;
+        }
+        case 'I': {
             int32_t type_code = va_arg(args, int32_t);
             void* int_ptr = va_arg(args, void*);
             arg_idx++;
@@ -5238,7 +5209,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
             char* buffer = NULL;
             int field_len = 0;
-            if (!read_fixed_width_field(filep, read_width, advance_no,
+            if (!read_field(filep, read_width, advance_no,
                     iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
@@ -5251,9 +5222,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             }
 
             free(buffer);
-            if (*iostat == -2) break;
-
-        } else if (spec == 'F' || spec == 'E' || spec == 'D' || spec == 'G') {
+            break;
+        }
+        case 'F':
+        case 'E':
+        case 'D':
+        case 'G': {
             int32_t type_code = va_arg(args, int32_t);
             void* real_ptr = va_arg(args, void*);
             arg_idx++;
@@ -5273,7 +5247,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
             char* buffer = NULL;
             int field_len = 0;
-            if (!read_fixed_width_field(filep, read_width, advance_no,
+            if (!read_field(filep, read_width, advance_no,
                     iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
@@ -5291,9 +5265,9 @@ LFORTRAN_API void _lfortran_formatted_read(
             }
 
             free(buffer);
-            if (*iostat == -2) break;
-
-        } else if (spec == 'X') {
+            break;
+        }
+        case 'X': {
             int skip = (width > 0) ? width : 1;
             for (int i = 0; i < skip; i++) {
                 int c = fgetc(filep);
@@ -5309,9 +5283,9 @@ LFORTRAN_API void _lfortran_formatted_read(
                     break;
                 }
             }
-            if (*iostat != 0) break;
-
-        } else if (spec == '/') {
+            break;
+        }
+        case '/': {
             int c = 0;
             do {
                 c = fgetc(filep);
@@ -5321,7 +5295,13 @@ LFORTRAN_API void _lfortran_formatted_read(
                 break;
             }
             consumed_newline = true;
+            break;
         }
+        default:
+            break;
+        }
+
+        if (*iostat != 0) break;
     }
 
     va_end(args);
@@ -5332,6 +5312,40 @@ LFORTRAN_API void _lfortran_formatted_read(
             c = fgetc(filep);
         } while (c != '\n' && c != EOF);
     }
+}
+
+static bool read_field(FILE *filep, int read_width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        char **buffer, int *field_len)
+{
+    *buffer = (char*)malloc((size_t)read_width + 2);
+    if (!*buffer) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    if (fgets(*buffer, read_width + 1, filep) == NULL) {
+        *iostat = -1;
+        *chunk = 0;
+        free(*buffer);
+        *buffer = NULL;
+        *field_len = 0;
+        return false;
+    }
+
+    char* nl = strchr(*buffer, '\n');
+    *field_len = (nl != NULL) ? (int)(nl - *buffer) : (int)strlen(*buffer);
+    if (nl != NULL) {
+        *nl = '\0';
+        *consumed_newline = true;
+    }
+
+    *chunk = (int32_t)(*field_len);
+    if (advance_no && *consumed_newline && *field_len != read_width) {
+        *iostat = -2;
+    }
+
+    return true;
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
