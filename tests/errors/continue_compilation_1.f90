@@ -42,6 +42,8 @@ module continue_compilation_1_mod
 
 
 
+
+
 contains
 
     subroutine my_undefined_type_test()
@@ -174,7 +176,6 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
-
 
 
 
@@ -458,3 +459,4 @@ program continue_compilation_1
     !passing non procedure to procedure parameter
     call proc_param(42)
 end program
+
