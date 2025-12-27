@@ -46,7 +46,6 @@ module continue_compilation_1_mod
 
 
 
-
 contains
 
     subroutine my_undefined_type_test()
