@@ -1,13 +1,13 @@
 ! MRE: Formatted READ with mixed types (string + logical)
 ! ICE in visit_FileRead: get_string_type() called on non-character type
 ! Reduced from LAPACK BLAS/TESTING/dblat2.f
-program read_11
+program read_07
     implicit none
     character(6) :: sname
     logical :: ltest
     integer :: u, stat
 
-    open(newunit=u, file="read_11_data.txt", status="old", iostat=stat)
+    open(newunit=u, file="read_07_data.txt", status="old", iostat=stat)
     if (stat /= 0) error stop
 
     read(u, fmt=100, iostat=stat) sname, ltest
@@ -19,4 +19,4 @@ program read_11
     if (.not. ltest) error stop
 
     print *, "PASS"
-end program
+end program read_07
