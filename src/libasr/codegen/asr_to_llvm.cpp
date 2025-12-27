@@ -11524,128 +11524,7 @@ public:
         }
 
         if (x.m_fmt) {
-            std::vector<llvm::Value*> args;
-            args.push_back(unit_val);
-            args.push_back(iostat);
-            args.push_back(read_size);
-            args.push_back(advance);
-            args.push_back(advance_length);
-
-            // Extract format string and values
-            // If m_fmt is an integer (FORMAT label), the actual format and
-            // values are in m_values[0] as StringFormat
-            ASR::expr_t* fmt_expr = x.m_fmt;
-            ASR::expr_t** values = x.m_values;
-            size_t n_values = x.n_values;
-
-            if (ASR::is_a<ASR::IntegerConstant_t>(*fmt_expr) &&
-                n_values == 1 &&
-                ASR::is_a<ASR::StringFormat_t>(*values[0])) {
-                // FORMAT label case: extract from StringFormat
-                ASR::StringFormat_t* sf =
-                    ASR::down_cast<ASR::StringFormat_t>(values[0]);
-                fmt_expr = sf->m_fmt;
-                values = sf->m_args;
-                n_values = sf->n_args;
-            }
-
-            // Get format string data and length
-            this->visit_expr_wrapper(fmt_expr, true);
-            args.push_back(llvm_utils->get_string_data(
-                ASRUtils::get_string_type(expr_type(fmt_expr)), tmp));
-            args.push_back(llvm_utils->get_string_length(
-                ASRUtils::get_string_type(expr_type(fmt_expr)), tmp));
-
-            // Count number of args (each value contributes type_code + ptr,
-            // plus str_len for characters)
-            args.push_back(llvm::ConstantInt::get(context,
-                llvm::APInt(32, n_values)));
-
-            // Type codes:
-            // 0 = character (followed by ptr, str_len)
-            // 1 = logical (followed by ptr)
-            // 2 = int32 (followed by ptr)
-            // 3 = int64 (followed by ptr)
-            // 4 = float (followed by ptr)
-            // 5 = double (followed by ptr)
-            for (size_t i = 0; i < n_values; i++) {
-                ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable_pointer(
-                        ASRUtils::expr_type(values[i])));
-
-                int ptr_loads_copy = ptr_loads;
-                ptr_loads = 0;
-                this->visit_expr(*values[i]);
-                llvm::Value* var_ptr = tmp;
-                ptr_loads = ptr_loads_copy;
-
-                if (ASR::is_a<ASR::String_t>(*val_type)) {
-                    // Character type: type_code=0, ptr, str_len
-                    args.push_back(llvm::ConstantInt::get(context,
-                        llvm::APInt(32, 0)));
-                    llvm::Value* str_data;
-                    llvm::Value* str_len;
-                    std::tie(str_data, str_len) =
-                        llvm_utils->get_string_length_data(
-                            ASRUtils::get_string_type(
-                                ASRUtils::expr_type(values[i])),
-                            var_ptr, true);
-                    args.push_back(str_data);
-                    args.push_back(str_len);
-                } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
-                    // Logical type: type_code=1, ptr
-                    args.push_back(llvm::ConstantInt::get(context,
-                        llvm::APInt(32, 1)));
-                    args.push_back(var_ptr);
-                } else if (ASR::is_a<ASR::Integer_t>(*val_type)) {
-                    ASR::Integer_t* int_type =
-                        ASR::down_cast<ASR::Integer_t>(val_type);
-                    if (int_type->m_kind <= 4) {
-                        // int32: type_code=2
-                        args.push_back(llvm::ConstantInt::get(context,
-                            llvm::APInt(32, 2)));
-                    } else {
-                        // int64: type_code=3
-                        args.push_back(llvm::ConstantInt::get(context,
-                            llvm::APInt(32, 3)));
-                    }
-                    args.push_back(var_ptr);
-                } else if (ASR::is_a<ASR::Real_t>(*val_type)) {
-                    ASR::Real_t* real_type =
-                        ASR::down_cast<ASR::Real_t>(val_type);
-                    if (real_type->m_kind == 4) {
-                        // float: type_code=4
-                        args.push_back(llvm::ConstantInt::get(context,
-                            llvm::APInt(32, 4)));
-                    } else {
-                        // double: type_code=5
-                        args.push_back(llvm::ConstantInt::get(context,
-                            llvm::APInt(32, 5)));
-                    }
-                    args.push_back(var_ptr);
-                } else {
-                    throw CodeGenError("Unsupported type in formatted read");
-                }
-            }
-
-            std::string runtime_func_name = "_lfortran_formatted_read";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),                 // Unit
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                            character_type,                                  // advance
-                            llvm::Type::getInt64Ty(context),                 // advance_length
-                            character_type,                                  // fmt
-                            llvm::Type::getInt64Ty(context),                 // fmt_len
-                            llvm::Type::getInt32Ty(context)                  // no_of_args
-                        }, true);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
-            }
-            builder->CreateCall(fn, args);
+            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
@@ -11810,6 +11689,114 @@ public:
             }
             builder->CreateCall(fn, {unit_val, iostat});
         }
+    }
+
+    void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
+            llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
+            llvm::Value *advance_length) {
+        ASR::expr_t* fmt_expr = x.m_fmt;
+        ASR::expr_t** values = x.m_values;
+        size_t n_values = x.n_values;
+
+        if (ASR::is_a<ASR::IntegerConstant_t>(*fmt_expr) &&
+                n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*values[0])) {
+            ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(values[0]);
+            fmt_expr = sf->m_fmt;
+            values = sf->m_args;
+            n_values = sf->n_args;
+        }
+
+        std::vector<llvm::Value*> args;
+        args.reserve(8 + 3 * n_values);
+        args.push_back(unit_val);
+        args.push_back(iostat);
+        args.push_back(read_size);
+        args.push_back(advance);
+        args.push_back(advance_length);
+
+        this->visit_expr_wrapper(fmt_expr, true);
+        llvm::Value* fmt_data = llvm_utils->get_string_data(
+            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        llvm::Value* fmt_len = llvm_utils->get_string_length(
+            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        args.push_back(fmt_data);
+        args.push_back(fmt_len);
+
+        args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, n_values)));
+
+        constexpr int32_t kChar = 0;
+        constexpr int32_t kLogical = 1;
+        constexpr int32_t kInt32 = 2;
+        constexpr int32_t kInt64 = 3;
+        constexpr int32_t kFloat = 4;
+        constexpr int32_t kDouble = 5;
+
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::expr_t* val_expr = values[i];
+            ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(val_expr)));
+
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*val_expr);
+            llvm::Value* var_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            if (ASR::is_a<ASR::String_t>(*val_type)) {
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
+                auto [str_data, str_len] = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(ASRUtils::expr_type(val_expr)),
+                    var_ptr, true);
+                args.push_back(str_data);
+                args.push_back(str_len);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Integer_t>(*val_type)) {
+                ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
+                int32_t type_code = (int_type->m_kind <= 4) ? kInt32 : kInt64;
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Real_t>(*val_type)) {
+                ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
+                int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            throw CodeGenError("Unsupported type in formatted read");
+        }
+
+        std::string runtime_func_name = "_lfortran_formatted_read";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),                 // Unit
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                        character_type,                                  // advance
+                        llvm::Type::getInt64Ty(context),                 // advance_length
+                        character_type,                                  // fmt
+                        llvm::Type::getInt64Ty(context),                 // fmt_len
+                        llvm::Type::getInt32Ty(context)                  // no_of_args
+                    }, true);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+        }
+
+        builder->CreateCall(fn, args);
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
