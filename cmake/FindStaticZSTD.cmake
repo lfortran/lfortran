@@ -11,6 +11,11 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CMAKE_FIND_LIBRARY_SUFFIXES})
 # Unset the temporary to not pollute the global namespace
 unset(_CMAKE_FIND_LIBRARY_SUFFIXES)
 
+if (NOT zstd_LIBRARY)
+    unset(zstd_LIBRARY CACHE)
+    find_library(zstd_LIBRARY zstd)
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(StaticZSTD DEFAULT_MSG zstd_LIBRARY
     zstd_INCLUDE_DIR)
@@ -22,8 +27,18 @@ find_package_handle_standard_args(StaticZSTD DEFAULT_MSG zstd_LIBRARY
 # on LLVM's CMake. If it changes, we also have to change the handling
 # here.
 
-add_library(zstd::libzstd_shared INTERFACE IMPORTED)
-set_property(TARGET zstd::libzstd_shared PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-    ${zstd_INCLUDE_DIR})
-set_property(TARGET zstd::libzstd_shared PROPERTY INTERFACE_LINK_LIBRARIES
-    ${zstd_LIBRARY})
+if (NOT TARGET zstd::libzstd_shared)
+    add_library(zstd::libzstd_shared INTERFACE IMPORTED)
+endif()
+set_property(TARGET zstd::libzstd_shared PROPERTY
+    INTERFACE_INCLUDE_DIRECTORIES ${zstd_INCLUDE_DIR})
+set_property(TARGET zstd::libzstd_shared PROPERTY
+    INTERFACE_LINK_LIBRARIES ${zstd_LIBRARY})
+
+if (NOT TARGET zstd::libzstd)
+    add_library(zstd::libzstd INTERFACE IMPORTED)
+endif()
+set_property(TARGET zstd::libzstd PROPERTY
+    INTERFACE_INCLUDE_DIRECTORIES ${zstd_INCLUDE_DIR})
+set_property(TARGET zstd::libzstd PROPERTY
+    INTERFACE_LINK_LIBRARIES zstd::libzstd_shared)
