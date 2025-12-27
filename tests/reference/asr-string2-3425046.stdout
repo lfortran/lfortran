@@ -387,6 +387,27 @@
                                     (SymbolTable
                                         6
                                         {
+                                            _tmp:
+                                                (Variable
+                                                    6
+                                                    _tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
@@ -524,27 +545,27 @@
                                     [f_string_cptr_n]
                                     [(Var 6 cptr)]
                                     [(Assignment
+                                        (Var 6 _tmp)
+                                        (FunctionCall
+                                            6 c_strlen
+                                            ()
+                                            [((Var 6 cptr))]
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
                                         (Var 6 s)
                                         (FunctionCall
                                             4 f_string_cptr_n
                                             ()
                                             [((Var 6 cptr))
-                                            ((FunctionCall
-                                                6 c_strlen
-                                                ()
-                                                [((Var 6 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ))]
-                                            (String 1 (FunctionCall
-                                                6 c_strlen
-                                                ()
-                                                [((Var 6 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ) ExpressionLength DescriptorString)
+                                            ((Var 6 _tmp))]
+                                            (String 1 (Var 6 _tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )

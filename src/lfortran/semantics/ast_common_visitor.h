@@ -6435,22 +6435,66 @@ public:
         }
     }
 
-    void fill_new_dims(ASR::Array_t* t, const std::vector<ASR::expr_t*>& func_calls,
-        Vec<ASR::dimension_t>& new_dims) {
-        new_dims.reserve(al, t->n_dims);
-        for( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
-            ASR::dimension_t new_dim;
-            if (func_calls[i] != nullptr) {
-                new_dim.loc = func_calls[i]->base.loc;
-                new_dim.m_start = func_calls[i];
-                new_dim.m_length = func_calls[i + 1];
-                new_dims.push_back(al, new_dim);
-            } else {
-                new_dims.push_back(al, t->m_dims[j]);
-            }
-        }
-    }
+void fill_new_dims(ASR::Array_t* t,
+    const std::vector<ASR::expr_t*>& func_calls,
+    Vec<ASR::dimension_t>& new_dims){
+    new_dims.reserve(al, t->n_dims);
 
+    for (size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++) {
+        if (func_calls[i] == nullptr) {
+            new_dims.push_back(al, t->m_dims[j]);
+            continue;
+        }
+
+        ASR::dimension_t new_dim;
+        new_dim.loc = func_calls[i]->base.loc;
+        new_dim.m_start = func_calls[i];
+
+        ASR::expr_t* length = func_calls[i + 1];
+
+        if (ASR::is_a<ASR::FunctionCall_t>(*length)) {
+            std::string tmp_name = current_scope->get_unique_name("_tmp");
+
+            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(
+                    al, length->base.loc,
+                    current_scope,
+                    s2c(al, tmp_name),
+                    nullptr, 0,
+                    ASR::intentType::Local,
+                    nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::expr_type(length),
+                    nullptr,
+                    ASR::abiType::Source,
+                    ASR::accessType::Private,
+                    ASR::presenceType::Required,
+                    false
+                )
+            );
+
+            current_scope->add_symbol(tmp_name, tmp_sym);
+
+            current_body->push_back(al,
+                ASRUtils::STMT(
+                    ASR::make_Assignment_t(
+                        al, length->base.loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, length->base.loc, tmp_sym)),
+                        length,
+                        nullptr, false, false
+                    )
+                )
+            );
+
+            new_dim.m_length =
+                ASRUtils::EXPR(ASR::make_Var_t(al, length->base.loc, tmp_sym));
+        } else {
+            new_dim.m_length = length;
+        }
+
+        new_dims.push_back(al, new_dim);
+    }
+}
     ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
                                      Vec<ASR::call_arg_t>& args,
                                      ASR::Function_t* f=nullptr) {
@@ -6706,6 +6750,7 @@ public:
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr, current_scope, current_function_dependencies);
     }
+
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
@@ -7327,18 +7372,109 @@ public:
         }
     }
 
-    ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
+    ASR::asr_t* create_FunctionCallWithASTNode(
+        const AST::FuncCallOrArray_t& x,
+        ASR::symbol_t *v,
+        Vec<ASR::call_arg_t>& args,
+        bool is_dt_present = false)
+    {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, args.size());
+
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::call_arg_t arg = args[i];
+
+            ASR::expr_t* val = arg.m_value;
+            if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
+
+                ASR::FunctionCall_t* fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(val);
+
+                ASR::symbol_t* fn_sym =
+                    ASRUtils::symbol_get_past_external(fc->m_name);
+
+                bool is_pure = false;
+                if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+                    ASR::Function_t* fn =
+                        ASR::down_cast<ASR::Function_t>(fn_sym);
+                    ASR::FunctionType_t* ftype =
+                        ASRUtils::get_FunctionType(fn);
+                    is_pure = ftype->m_pure;
+                }
+
+                if (!is_pure) {
+
+                    std::string tmp_name =
+                        current_scope->get_unique_name("_tmp");
+
+                    ASR::ttype_t* tmp_type =
+                        ASRUtils::expr_type(val);
+
+                    ASR::symbol_t* tmp_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(
+                                al,
+                                val->base.loc,
+                                current_scope,
+                                s2c(al, tmp_name),
+                                nullptr, 0,
+                                ASR::intentType::Local,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                tmp_type,
+                                nullptr,
+                                ASR::abiType::Source,
+                                ASR::accessType::Private,
+                                ASR::presenceType::Required,
+                                false
+                            )
+                        );
+
+                    current_scope->add_symbol(tmp_name, tmp_sym);
+
+                    ASR::stmt_t* assign =
+                        ASRUtils::STMT(
+                            ASR::make_Assignment_t(
+                                al,
+                                val->base.loc,
+                                ASRUtils::EXPR(
+                                    ASR::make_Var_t(al, val->base.loc, tmp_sym)
+                                ),
+                                val,
+                                nullptr,
+                                false,
+                                false
+                            )
+                        );
+
+                    current_body->push_back(al, assign);
+
+                    arg.m_value =
+                        ASRUtils::EXPR(
+                            ASR::make_Var_t(al, val->base.loc, tmp_sym)
+                        );
+                }
+            }
+
+            new_args.push_back(al, arg);
+        }
+
         if (ASR::is_a<ASR::Function_t>(*f2)) {
-            return create_Function(x.base.base.loc, args, v);
+            return create_Function(x.base.base.loc, new_args, v);
+
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v, is_dt_present);
+            return create_FunctionFromFunctionTypeVariable(
+                x.base.base.loc, new_args, v, is_dt_present
+            );
+
         } else {
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
-            return create_GenericProcedureWithASTNode(x, args, v);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
+            return create_GenericProcedureWithASTNode(x, new_args, v);
         }
     }
+
 
     void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
         if (struct_n_args == 0) {
