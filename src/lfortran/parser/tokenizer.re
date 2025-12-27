@@ -811,9 +811,15 @@ void lex_format(unsigned char *&cur, Location &loc,
             sign_edit_desc
                 = 'S' whitespace? ('P' | 'S')?
                 ;
+
+            rounding_mode_desc
+                = 'R' whitespace? ('U' | 'D' | 'N' | 'Z')
+                ;
+
             control_edit_desc
                 = position_edit_desc
                 | sign_edit_desc
+                | rounding_mode_desc
                 | (int)? '/'
                 | ':'
                 ;
