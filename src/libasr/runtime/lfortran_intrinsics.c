@@ -321,7 +321,7 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus) {
+void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     val = val * pow(10, scale); // scale the value
     if (strcmp(format,"f-64") == 0) { //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
@@ -352,7 +352,17 @@ void handle_float(char* format, double val, int scale, char** result, bool use_s
     }
 
     double rounding_factor = pow(10, -decimal_digits);
-    decimal_part = round(decimal_part / rounding_factor) * rounding_factor;
+
+    if (rounding_mode == 'u') {
+        decimal_part = ceil(decimal_part / rounding_factor) * rounding_factor;
+    } else if (rounding_mode == 'd') {
+        decimal_part = floor(decimal_part / rounding_factor) * rounding_factor;
+    } else if (rounding_mode == 'z') {
+        decimal_part = trunc(decimal_part / rounding_factor) * rounding_factor;
+    } else {
+        // Default: round to nearest
+        decimal_part = round(decimal_part / rounding_factor) * rounding_factor;
+    }
 
     if (decimal_part >= 1.0) {
         integer_part += 1;
@@ -959,6 +969,17 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                break;
+            case 'r':  // Rounding mode: RU, RD, RN, RZ, RC, RP
+                start = index++;
+                if (tolower(cformat[index]) == 'u' || tolower(cformat[index]) == 'd' ||
+                    tolower(cformat[index]) == 'n' || tolower(cformat[index]) == 'z' ||
+                    tolower(cformat[index]) == 'c' || tolower(cformat[index]) == 'p') {
+                    format_values_2[format_values_count++] = substring(cformat, start, index+1);
+                } else {
+                    fprintf(stderr, "Error: Invalid rounding mode after 'R'\n");
+                    exit(1);
+                }
                 break;
             default :
                 if (
@@ -1765,6 +1786,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     int item_start = 0;
     bool array = false;
     bool BreakWhileLoop= false;
+    char rounding_mode = 'n';  // 'n'=nearest, 'u'=up, 'd'=down, 'z'=zero
     while (1) {
         int scale = 0;
         bool is_array = false;
@@ -1823,6 +1845,20 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             } else if (tolower(value[0]) == 's') {
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
+            } else if (tolower(value[0]) == 'r') {
+                // Rounding mode descriptors (RU, RD, RN, RZ)
+                if (strlen(value) >= 2) {
+                    char mode = tolower(value[1]);
+                    if (mode == 'u') {
+                        rounding_mode = 'u';
+                    } else if (mode == 'd') {
+                        rounding_mode = 'd';
+                    } else if (mode == 'n') {
+                        rounding_mode = 'n';
+                    } else if (mode == 'z') {
+                        rounding_mode = 'z';
+                    }
+                }
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
                     // handle "TL" format specifier
@@ -2130,7 +2166,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         handle_decimal(value, double_val, scale, &result, "E", is_SP_specifier);
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    handle_float(value, double_val, scale, &result, is_SP_specifier);
+                    handle_float(value, double_val, scale, &result, is_SP_specifier, rounding_mode);
                 } else if (tolower(value[0]) == 'l') {
                     bool val = *(bool*)s_info.current_arg_info.current_arg;
                     handle_logical(value, val, &result);
