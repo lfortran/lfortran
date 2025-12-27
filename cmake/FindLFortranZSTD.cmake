@@ -1,8 +1,15 @@
+# FindLFortranZSTD.cmake
+# Finds the ZSTD compression library for LFortran
+#
+# Respects the USE_DYNAMIC_ZSTD variable:
+#   OFF (default): Search for static libraries only (.a, .lib)
+#   ON: Search for dynamic libraries first (.so, .dylib, .dll), then static
+
 # Backup the original value of the requested library suffixes
 set(_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 if (USE_DYNAMIC_ZSTD)
-    # Search dynamic library first, then static one.
+    # Search dynamic library first, then static one
     if(WIN32)
         set(CMAKE_FIND_LIBRARY_SUFFIXES .dll .lib .a)
     elseif(APPLE)
@@ -24,14 +31,13 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CMAKE_FIND_LIBRARY_SUFFIXES})
 unset(_CMAKE_FIND_LIBRARY_SUFFIXES)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(StaticZSTD DEFAULT_MSG zstd_LIBRARY
+find_package_handle_standard_args(LFortranZSTD DEFAULT_MSG zstd_LIBRARY
     zstd_INCLUDE_DIR)
 
-
-# We found the static ZSTD library and then we set this target which
+# We found the static or dynamic ZSTD library and then we set this target which
 # LLVM CMake uses to find the "shared" library. Then ZSTD gets linked
-# statically with LFortran and everything works. This is dependent
-# on LLVM's CMake. If it changes, we also have to change the handling
+# statically or dynamically with LFortran and everything works. This is
+# dependent on LLVM's CMake. If it changes, we also have to change the handling
 # here.
 
 add_library(zstd::libzstd_shared INTERFACE IMPORTED)
