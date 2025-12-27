@@ -3002,6 +3002,9 @@ public:
         starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            return;
+        }
         if( t->type == ASR::symbolType::GenericProcedure ) {
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }

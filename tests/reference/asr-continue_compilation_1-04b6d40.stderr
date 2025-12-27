@@ -1,1 +1,4 @@
-Segmentation fault (core dumped)
+LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr.h
+function down_cast(), line number 40 at 
+f != nullptr
+Aborted (core dumped)
