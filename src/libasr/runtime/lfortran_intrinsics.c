@@ -5065,6 +5065,40 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
+static bool read_fixed_width_field(FILE *filep, int read_width,
+        const bool advance_no, int32_t *iostat, int32_t *chunk,
+        bool *consumed_newline, char **buffer, int *field_len)
+{
+    *buffer = (char*)malloc((size_t)read_width + 2);
+    if (!*buffer) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    if (fgets(*buffer, read_width + 1, filep) == NULL) {
+        *iostat = -1;
+        *chunk = 0;
+        free(*buffer);
+        *buffer = NULL;
+        *field_len = 0;
+        return false;
+    }
+
+    char* nl = strchr(*buffer, '\n');
+    *field_len = (nl != NULL) ? (int)(nl - *buffer) : (int)strlen(*buffer);
+    if (nl != NULL) {
+        *nl = '\0';
+        *consumed_newline = true;
+    }
+
+    *chunk = (int32_t)(*field_len);
+    if (advance_no && *consumed_newline && *field_len != read_width) {
+        *iostat = -2;
+    }
+
+    return true;
+}
+
 // Type codes for _lfortran_formatted_read:
 // 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
 // (pointer to the data pointer inside a string descriptor).
@@ -5136,31 +5170,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             int read_width = (width > 0) ? width : (int)str_len;
             if (read_width < 0) read_width = 0;
 
-            char* buffer = (char*)malloc((size_t)read_width + 2);
-            if (!buffer) {
-                printf("Memory allocation failed\n");
-                va_end(args);
-                exit(1);
-            }
-
-            if (fgets(buffer, read_width + 1, filep) == NULL) {
-                *iostat = -1;
-                *chunk = 0;
-                free(buffer);
+            char* buffer = NULL;
+            int field_len = 0;
+            if (!read_fixed_width_field(filep, read_width, advance_no,
+                    iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
-            }
-
-            char* nl = strchr(buffer, '\n');
-            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
-            if (nl != NULL) {
-                *nl = '\0';
-                consumed_newline = true;
-            }
-
-            *chunk = (int32_t)field_len;
-            if (advance_no && consumed_newline && field_len != read_width) {
-                *iostat = -2;
             }
 
             pad_with_spaces(str_data, 0, str_len);
@@ -5191,30 +5206,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             int read_width = (width > 0) ? width : 1;
             if (read_width < 0) read_width = 0;
 
-            char* buffer = (char*)malloc((size_t)read_width + 2);
-            if (!buffer) {
-                printf("Memory allocation failed\n");
-                va_end(args);
-                exit(1);
-            }
-            if (fgets(buffer, read_width + 1, filep) == NULL) {
-                *iostat = -1;
-                *chunk = 0;
-                free(buffer);
+            char* buffer = NULL;
+            int field_len = 0;
+            if (!read_fixed_width_field(filep, read_width, advance_no,
+                    iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
-            }
-
-            char* nl = strchr(buffer, '\n');
-            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
-            if (nl != NULL) {
-                *nl = '\0';
-                consumed_newline = true;
-            }
-
-            *chunk = (int32_t)field_len;
-            if (advance_no && consumed_newline && field_len != read_width) {
-                *iostat = -2;
             }
 
             *log_ptr = 0;
@@ -5239,30 +5236,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             int read_width = (width > 0) ? width : 10;
             if (read_width < 0) read_width = 0;
 
-            char* buffer = (char*)malloc((size_t)read_width + 2);
-            if (!buffer) {
-                printf("Memory allocation failed\n");
-                va_end(args);
-                exit(1);
-            }
-            if (fgets(buffer, read_width + 1, filep) == NULL) {
-                *iostat = -1;
-                *chunk = 0;
-                free(buffer);
+            char* buffer = NULL;
+            int field_len = 0;
+            if (!read_fixed_width_field(filep, read_width, advance_no,
+                    iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
-            }
-
-            char* nl = strchr(buffer, '\n');
-            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
-            if (nl != NULL) {
-                *nl = '\0';
-                consumed_newline = true;
-            }
-
-            *chunk = (int32_t)field_len;
-            if (advance_no && consumed_newline && field_len != read_width) {
-                *iostat = -2;
             }
 
             if (type_code == 2) {
@@ -5292,30 +5271,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             int read_width = (width > 0) ? width : 15;
             if (read_width < 0) read_width = 0;
 
-            char* buffer = (char*)malloc((size_t)read_width + 2);
-            if (!buffer) {
-                printf("Memory allocation failed\n");
-                va_end(args);
-                exit(1);
-            }
-            if (fgets(buffer, read_width + 1, filep) == NULL) {
-                *iostat = -1;
-                *chunk = 0;
-                free(buffer);
+            char* buffer = NULL;
+            int field_len = 0;
+            if (!read_fixed_width_field(filep, read_width, advance_no,
+                    iostat, chunk, &consumed_newline, &buffer, &field_len)) {
                 va_end(args);
                 return;
-            }
-
-            char* nl = strchr(buffer, '\n');
-            int field_len = (nl != NULL) ? (int)(nl - buffer) : (int)strlen(buffer);
-            if (nl != NULL) {
-                *nl = '\0';
-                consumed_newline = true;
-            }
-
-            *chunk = (int32_t)field_len;
-            if (advance_no && consumed_newline && field_len != read_width) {
-                *iostat = -2;
             }
 
             for (int i = 0; i < field_len; i++) {
