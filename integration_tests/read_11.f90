@@ -5,10 +5,18 @@ program read_11
     implicit none
     character(6) :: sname
     logical :: ltest
+    integer :: u, stat
 
-    open(10, file='/dev/null')
-    read(10, fmt=100, end=200) sname, ltest
+    open(newunit=u, file="read_11_data.txt", status="old", iostat=stat)
+    if (stat /= 0) error stop
+
+    read(u, fmt=100, iostat=stat) sname, ltest
+    if (stat /= 0) error stop
 100 format(a6, l2)
-200 continue
+    close(u)
+
+    if (sname /= "ABCDEF") error stop
+    if (.not. ltest) error stop
+
     print *, "PASS"
 end program
