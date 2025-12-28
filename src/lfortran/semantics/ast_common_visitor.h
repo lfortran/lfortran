@@ -7104,10 +7104,17 @@ public:
                     ASR::call_arg_t arg = args[i];
                     ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(array_arg_idx[i]);
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
-                    ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(expected_arg_type));
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                        // Legacy sequence association passes the address of the first element.
+                        // Even if the dummy is currently represented as DescriptorArray (e.g.,
+                        // inferred from allocatable/pointer actuals), we must treat it as a
+                        // PointerArray for this call site.
+                        expected_phys = ASR::array_physical_typeType::PointerArray;
+                        expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
+                        ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(expected_arg_type));
+
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
@@ -7164,6 +7171,10 @@ public:
                                                         ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
                                                         array_t->m_dims, array_t->n_dims,
                                                         ASRUtils::extract_physical_type(expected_arg_type_past_ptr));
+                        ASR::ttype_t* expected_array_type = ASRUtils::TYPE(expected_array);
+                        ASRUtils::EXPR2VAR(f->m_args[i])->m_type = expected_array_type;
+                        ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                        f_type->m_arg_types[i] = expected_array_type;
 
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
