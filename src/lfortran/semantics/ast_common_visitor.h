@@ -7104,6 +7104,8 @@ public:
                     ASR::call_arg_t arg = args[i];
                     ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(array_arg_idx[i]);
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
+                    ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(expected_arg_type));
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
@@ -7119,10 +7121,11 @@ public:
                         dim.m_length = nullptr;
                         dim.m_start = nullptr;
                         dims.push_back(al, dim);
-                        ASR::asr_t* descriptor_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
+                        ASR::asr_t* descriptor_array = ASR::make_Array_t(al, loc,
+                                                        ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
                                                         dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
 
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
 
                         // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
                         SetChar temp_function_dependencies;
@@ -7152,11 +7155,15 @@ public:
                             expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
                                 al, array_arg_idx[i], expected_phys, true
                             );
-                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+                            expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(expected_arg_type));
+                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
                         }
 
-                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
+                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
+                                                        ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
+                                                        array_t->m_dims, array_t->n_dims,
+                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr));
 
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
