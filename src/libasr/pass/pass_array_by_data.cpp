@@ -685,6 +685,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         template <typename T>
         void visit_Call(const T& x) {
             T& xx = const_cast<T&>(x);
+            { edit_symbol_reference(name) }
+            { edit_symbol_reference(original_name) }
             ASR::symbol_t* subrout_sym = x.m_name;
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
