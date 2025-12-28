@@ -132,7 +132,8 @@ if (WITH_ZLIB)
 
     # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
     # might search for ZLIB again and find the shared libraries instead of the static ones
-    find_package(StaticZLIB REQUIRED)
+    set(USE_DYNAMIC_ZLIB no CACHE BOOL "Use dynamic ZLIB library (default: static)")
+    find_package(LFortranZLIB REQUIRED)
 endif()
 
 if (WITH_LCOMPILERS_FAST_ALLOC)
@@ -435,6 +436,7 @@ message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
 message("WITH_ZLIB: ${WITH_ZLIB}")
+message("USE_DYNAMIC_ZLIB: ${USE_DYNAMIC_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
