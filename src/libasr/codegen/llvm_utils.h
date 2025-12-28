@@ -624,6 +624,9 @@ class ASRToLLVMVisitor;
             // The `if_block` and `else_block` must generate one or more blocks. In
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
+
+            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
+
             template <typename IF, typename ELSE>
             void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, const char *name,
                                 std::vector<llvm::BasicBlock*> &loop_or_block_end,

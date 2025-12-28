@@ -2113,6 +2113,21 @@ public:
                     int rank = ASR::down_cast<ASR::IntegerConstant_t>(rank_expr_value)->m_n;
                     assumed_rank_arrays[array_var_name] = rank;
                     Vec<ASR::stmt_t*> rank_body; rank_body.reserve(al, rank_expr->n_body);
+                    if (x.m_assoc_name) {
+                        ASR::ttype_t* variable_type = ASRUtils::extract_type(selector_type);
+                        ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(al, rank, variable_type);
+                        ASR::ttype_t* target_type = ASRUtils::make_Pointer_t_util(al, m_selector->base.loc, desc_type);
+                        ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc, 
+                            current_scope, x.m_assoc_name, nullptr, 0, ASR::intentType::Local, 
+                            nullptr, nullptr, ASR::storage_typeType::Default, target_type, nullptr, 
+                            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                        current_scope->add_symbol(x.m_assoc_name, assoc_sym);
+                        ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
+                        ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
+                            ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                        ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
+                        rank_body.push_back(al, assoc_stmt);
+                    }
                     transform_stmts(rank_body, rank_expr->n_body, rank_expr->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al, 
@@ -2534,15 +2549,26 @@ public:
         Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
+            if (!subrout_call->m_args[i].m_value) continue;
+            // Bounds check: call may have more args than definition (optional args)
+            if (i >= subrout->n_args) continue;
+            if (!subrout->m_args[i] || subrout->m_args[i]->type != ASR::exprType::Var) continue;
+
+            const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
+            const ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(orig_arg_var->m_v);
+            if (orig_sym->type != ASR::symbolType::Variable) continue;
+            ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
+
+            if (orig_var->m_intent != ASR::intentType::Out) continue;
+            if (!ASRUtils::is_allocatable(orig_var->m_type) &&
+                !ASR::is_a<ASR::StructType_t>(*orig_var->m_type)) continue;
+
             if( subrout_call->m_args[i].m_value &&
                 subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
                 const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(subrout_call->m_args[i].m_value);
                 const ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(arg_var->m_v);
                 if( sym->type == ASR::symbolType::Variable ) {
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                    const ASR::Var_t* orig_arg_var = ASR::down_cast<ASR::Var_t>(subrout->m_args[i]);
-                    const ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(orig_arg_var->m_v);
-                    ASR::Variable_t* orig_var = ASR::down_cast<ASR::Variable_t>(orig_sym);
                     if( ASR::is_a<ASR::Allocatable_t>(*var->m_type) &&
                         ASR::is_a<ASR::Allocatable_t>(*orig_var->m_type) &&
                         orig_var->m_intent == ASR::intentType::Out ) {
@@ -2567,6 +2593,10 @@ public:
                     }
                 }
             }
+            // NOTE: StructInstanceMember actuals are NOT handled here because
+            // the pass_insert_deallocate pass adds deallocation at function entry
+            // for allocatable intent(out) dummies. Adding ImplicitDeallocate at
+            // the call site would cause double-free.
         }
         if( del_syms.size() == 0 ) {
             return nullptr;

@@ -1358,24 +1358,7 @@ public:
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
-                    // Skip double allocation check for INTENT(OUT) allocatables.
-                    //
-                    // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
-                    // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
-                    // this deallocation only in limited cases (see the `insert_deallocate` pass),
-                    // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
-                    // implemented, keeping the double-allocation runtime check enabled here would
-                    // report false positives in valid programs.
-                    bool is_intent_out = false;
-                    if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
-                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                            is_intent_out = (var->m_intent == ASR::intentType::Out);
-                        }
-                    }
-                    if (!realloc && compiler_options.po.bounds_checking && !is_intent_out) {
+                    if (!realloc && compiler_options.po.bounds_checking) {
                         llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         llvm::Value* is_allocated = builder->CreateICmpNE(
                             builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
@@ -1666,24 +1649,7 @@ public:
                 if (x_arr && x_arr->getType() == nullptr) {
                     ptr_val = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(i8_ptr_ty));
                 }
-                // Skip double allocation check for INTENT(OUT) allocatables.
-                //
-                // Fortran requires allocatable INTENT(OUT) dummy arguments to be automatically
-                // deallocated on procedure entry (F2018 15.5.2.13). LFortran currently inserts
-                // this deallocation only in limited cases (see the `insert_deallocate` pass),
-                // and it is not complete yet (#9097). Until INTENT(OUT) deallocation is fully
-                // implemented, keeping the double-allocation runtime check enabled here would
-                // report false positives in valid programs.
-                bool is_intent_out = false;
-                if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(tmp_expr)->m_v);
-                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                        is_intent_out = (var->m_intent == ASR::intentType::Out);
-                    }
-                }
-                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr && !is_intent_out) {
+                if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr) {
                     llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
                     std::string var_name = "";
@@ -3745,25 +3711,13 @@ public:
         // view the same COMMON block storage with different types (storage
         // association). When the local variable type (x.m_type) differs from
         // the struct member type (member->m_type), we must bitcast the pointer
-        // to match the local view. Example: real(8) array(4) in one unit vs
-        // integer array(8) in another - both occupy 32 bytes of shared storage.
-        //
-        // On LLVM 15+ with opaque pointers, all pointers are just `ptr` so
-        // bitcast is unnecessary - the type info is used by load/store instead.
-#if LLVM_VERSION_MAJOR < 15
-        ASR::ttype_t* expected_type = x.m_type;
-        ASR::ttype_t* actual_member_type = member->m_type;
-        llvm::Type* expected_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+        // to match the local view. Details handled by the helper function.
+        tmp = llvm_utils->apply_common_block_alias_cast(
+            tmp,
             const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            expected_type, module.get());
-        llvm::Type* actual_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            actual_member_type, module.get());
-        if (expected_llvm_type != actual_llvm_type) {
-            // Bitcast pointer to the local program unit's view of the storage
-            tmp = builder->CreateBitCast(tmp, expected_llvm_type->getPointerTo());
-        }
-#endif
+            x.m_type,
+            member->m_type
+        );
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
@@ -11524,44 +11478,7 @@ public:
         }
 
         if (x.m_fmt) {
-            std::vector<llvm::Value*> args;
-            args.push_back(unit_val);
-            args.push_back(iostat);
-            args.push_back(read_size);
-            args.push_back(advance);
-            args.push_back(advance_length);
-            this->visit_expr_wrapper(x.m_fmt, true);
-            args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
-            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(expr_type(x.m_fmt)), tmp));
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, x.n_values * 2 /*(str_data, str_len)*/)));
-            for (size_t i=0; i<x.n_values; i++) {
-                this->visit_expr_load_wrapper(x.m_values[i], 0);
-                llvm::Value* str_data, *str_len;
-                std::tie(str_data, str_len) =
-                    llvm_utils->get_string_length_data(
-                        ASRUtils::get_string_type(expr_type(x.m_values[i])),
-                        tmp);
-                args.push_back(str_data);
-                args.push_back(str_len);
-            }
-            std::string runtime_func_name = "_lfortran_formatted_read";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),                 // Unit
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                            character_type,                                  // advance
-                            llvm::Type::getInt64Ty(context),                 // advance_length
-                            character_type,                                  // fmt
-                            llvm::Type::getInt64Ty(context),                 // fmt_len
-                            llvm::Type::getInt32Ty(context)                  // no_of_args
-                        }, true);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
-            }
-            builder->CreateCall(fn, args);
+            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
@@ -11726,6 +11643,114 @@ public:
             }
             builder->CreateCall(fn, {unit_val, iostat});
         }
+    }
+
+    void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
+            llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
+            llvm::Value *advance_length) {
+        ASR::expr_t* fmt_expr = x.m_fmt;
+        ASR::expr_t** values = x.m_values;
+        size_t n_values = x.n_values;
+
+        if (ASR::is_a<ASR::IntegerConstant_t>(*fmt_expr) &&
+                n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*values[0])) {
+            ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(values[0]);
+            fmt_expr = sf->m_fmt;
+            values = sf->m_args;
+            n_values = sf->n_args;
+        }
+
+        std::vector<llvm::Value*> args;
+        args.reserve(8 + 3 * n_values);
+        args.push_back(unit_val);
+        args.push_back(iostat);
+        args.push_back(read_size);
+        args.push_back(advance);
+        args.push_back(advance_length);
+
+        this->visit_expr_wrapper(fmt_expr, true);
+        llvm::Value* fmt_data = llvm_utils->get_string_data(
+            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        llvm::Value* fmt_len = llvm_utils->get_string_length(
+            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        args.push_back(fmt_data);
+        args.push_back(fmt_len);
+
+        args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, n_values)));
+
+        constexpr int32_t kChar = 0;
+        constexpr int32_t kLogical = 1;
+        constexpr int32_t kInt32 = 2;
+        constexpr int32_t kInt64 = 3;
+        constexpr int32_t kFloat = 4;
+        constexpr int32_t kDouble = 5;
+
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::expr_t* val_expr = values[i];
+            ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(val_expr)));
+
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*val_expr);
+            llvm::Value* var_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+
+            if (ASR::is_a<ASR::String_t>(*val_type)) {
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
+                auto [str_data, str_len] = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(ASRUtils::expr_type(val_expr)),
+                    var_ptr, true);
+                args.push_back(str_data);
+                args.push_back(str_len);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Integer_t>(*val_type)) {
+                ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
+                int32_t type_code = (int_type->m_kind <= 4) ? kInt32 : kInt64;
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Real_t>(*val_type)) {
+                ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
+                int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            throw CodeGenError("Unsupported type in formatted read");
+        }
+
+        std::string runtime_func_name = "_lfortran_formatted_read";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),                 // Unit
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                        character_type,                                  // advance
+                        llvm::Type::getInt64Ty(context),                 // advance_length
+                        character_type,                                  // fmt
+                        llvm::Type::getInt64Ty(context),                 // fmt_len
+                        llvm::Type::getInt32Ty(context)                  // no_of_args
+                    }, true);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+        }
+
+        builder->CreateCall(fn, args);
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
