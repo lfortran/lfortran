@@ -8210,6 +8210,18 @@ public:
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
         } else if(
+            m_new == ASR::array_physical_typeType::FixedSizeArray &&
+            (m_old == ASR::array_physical_typeType::PointerArray ||
+             m_old == ASR::array_physical_typeType::UnboundedPointerArray)) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+            } else {
+                tmp = arg;
+            }
+            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                m_type, module.get())->getPointerTo();
+            tmp = builder->CreateBitCast(tmp, target_type);
+        } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             // TODO: For allocatables, first check if its allocated (generate code for it)
