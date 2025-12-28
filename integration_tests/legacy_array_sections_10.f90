@@ -1,4 +1,4 @@
-program legacy_array_sections_pointer_dummy_01
+program legacy_array_sections_10
     implicit none
 
     real, target :: a(4)
@@ -15,4 +15,4 @@ contains
         if (abs(sum(x) - 9.0) > 1e-6) error stop
     end subroutine sub
 
-end program legacy_array_sections_pointer_dummy_01
+end program legacy_array_sections_10
