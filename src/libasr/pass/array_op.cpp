@@ -1143,6 +1143,24 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
+        // Special-case: `transfer(string, mold=int8_array, size)` uses `BitCast` and is
+        // meant to be treated as raw bytes. Keep the assignment intact for the backend
+        // (no element-wise loop), otherwise we end up assigning the string data pointer
+        // into each int8 element.
+        if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
+            ASR::ttype_t* bc_source_type = ASRUtils::expr_type(bc->m_source);
+            bool bc_source_is_string = ASRUtils::is_string_only(bc_source_type) ||
+                                       ASRUtils::is_character(*bc_source_type);
+            if (bc_source_is_string) {
+                ASR::ttype_t* target_elem_type = ASRUtils::extract_type(ASRUtils::expr_type(xx.m_target));
+                if (ASRUtils::is_integer(*target_elem_type) &&
+                    ASRUtils::extract_kind_from_ttype_t(target_elem_type) == 1) {
+                    return;
+                }
+            }
+        }
+
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
             insert_realloc_for_target(xx.m_target, xx.m_value, vars);
         }
