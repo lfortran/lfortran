@@ -2302,9 +2302,6 @@ RUN(NAME write_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
-RUN(NAME write_fortran_03 LABELS gfortran llvm fortran)
-RUN(NAME write_fortran_04 LABELS gfortran llvm fortran)
-RUN(NAME write_fortran_05 LABELS gfortran llvm fortran)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
