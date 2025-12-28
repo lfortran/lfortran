@@ -12798,6 +12798,16 @@ public:
                 fixed_arr_ptr = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), target_addr);
             }
             target_data = builder->CreateBitCast(fixed_arr_ptr, i8->getPointerTo());
+        } else if (target_ptype == ASR::array_physical_typeType::PointerArray ||
+                   target_ptype == ASR::array_physical_typeType::UnboundedPointerArray) {
+            llvm::Value* data_ptr = target_addr;
+            if (target_addr->getType() == target_llvm_type->getPointerTo()) {
+                data_ptr = llvm_utils->CreateLoad2(target_llvm_type, target_addr);
+            }
+            target_data = builder->CreateBitCast(data_ptr, i8->getPointerTo());
+
+            llvm::Value* n_elems_i32 = get_array_size_from_asr_type(target_type_past);
+            n_bytes = builder->CreateSExtOrTrunc(n_elems_i32, i64);
         } else {
             llvm::Value* target_desc = target_addr;
             if (target_addr->getType() == target_llvm_type->getPointerTo()) {
