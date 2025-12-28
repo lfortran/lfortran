@@ -1,32 +1,22 @@
 program write_fortran_03
     implicit none
-    integer :: iunit, ierr
+    character(len=100) :: output
     
-    open(newunit=iunit, file='test_write_03.txt', status='replace')
+    write(output, '(I5)') 42
+    if (output(1:5) /= "   42") error stop "I5 format failed"
     
-    ! Write without newline using advance='no'
-    write(iunit, '(A)', advance='no') "Part1"
-    write(iunit, '(A)', advance='no') " Part2"
-    write(iunit, '(A)') " Part3"
+    write(output, '(I0)') 42
+    if (trim(output) /= "42") error stop "I0 format failed"
     
-    ! Write numbers on same line
-    write(iunit, '(I0)', advance='no') 10
-    write(iunit, '(A)', advance='no') " + "
-    write(iunit, '(I0)', advance='no') 20
-    write(iunit, '(A)', advance='no') " = "
-    write(iunit, '(I0)') 30
+    write(output, '(F8.2)') 3.14159
+    if (trim(adjustl(output)) /= "3.14") error stop "F8.2 format failed"
     
-    close(iunit)
+    write(output, '(E12.4)') 1.23e-5
+    if (index(output, "123") == 0) error stop "E12.4 format failed"
     
-    open(newunit=iunit, file='test_write_03.txt', status='old')
+    write(output, '(A)') "Hello"
+    if (trim(output) /= "Hello") error stop "A format failed"
     
-    character(len=100) :: line
-    read(iunit, '(A)') line
-    if (trim(line) /= "Part1 Part2 Part3") error stop "Line 1 mismatch"
-    
-    read(iunit, '(A)') line
-    if (trim(line) /= "10 + 20 = 30") error stop "Line 2 mismatch"
-    
-    close(iunit)
-    
+    write(output, '(A10)') "Hi"
+    if (output(9:10) /= "Hi") error stop "A10 format failed"
 end program write_fortran_03

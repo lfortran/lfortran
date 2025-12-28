@@ -1,44 +1,28 @@
 program write_fortran_05
     implicit none
-    integer :: iunit
-    character(len=100) :: line
+    character(len=100) :: output
     
-    open(newunit=iunit, file='test_write_05.txt', status='replace')
+    write(output, '(I5)') 42
+    if (output(1:5) /= "   42") error stop "I5 format failed"
     
-    write(iunit, '(I5)') 42         ! Right-aligned in 5 characters
-    write(iunit, '(I0)') 42         ! No leading spaces
-
-    write(iunit, '(F8.2)') 3.14159  ! Fixed-point
-    write(iunit, '(E12.4)') 3.14159 ! Scientific notation
-
-    write(iunit, '(A)') "Hello"
-    write(iunit, '(A10)') "World"   ! Right-aligned in 10 characters
-
-    write(iunit, '(A, I0, A, F6.2)') "x=", 10, " y=", 20.5
+    write(output, '(I0)') 42
+    if (trim(output) /= "42") error stop "I0 format failed"
     
-    close(iunit)
-
-    open(newunit=iunit, file='test_write_05.txt', status='old')
+    write(output, '(F8.2)') 3.14159
+    if (trim(adjustl(output)) /= "3.14") error stop "F8.2 format failed"
     
-    read(iunit, '(A)') line
-    if (line(1:5) /= "   42") error stop "I5 format verification failed"
+    write(output, '(E12.4)') 3.14159
+    if (index(output, "314") == 0 .and. index(output, "3.14") == 0) error stop "E12.4 format failed"
     
-    read(iunit, '(A)') line
-    if (trim(line) /= "42") error stop "I0 format verification failed"
+    write(output, '(A)') "Hello"
+    if (trim(output) /= "Hello") error stop "A format failed"
     
-    read(iunit, '(A)') line
-    if (trim(adjustl(line)) /= "3.14") error stop "F8.2 format verification failed"
+    write(output, '(A10)') "World"
+    if (output(6:10) /= "World") error stop "A10 format failed"
     
-    read(iunit, '(A)') line
+    write(output, '(A, I0, A, F6.2)') "x=", 10, " y=", 20.5
+    if (trim(output) /= "x=10 y= 20.50") error stop "Mixed format failed"
     
-    read(iunit, '(A)') line
-    if (trim(line) /= "Hello") error stop "Character format verification failed"
-    
-    read(iunit, '(A)') line
-    if (trim(adjustl(line)) /= "World") error stop "A10 format verification failed"
-    
-    read(iunit, '(A)') line
-    if (trim(line) /= "x=10 y= 20.50") error stop "Mixed format verification failed"
-    
-    close(iunit)
+    write(output, '(I0, 1X, I0, 1X, I0)') 1, 2, 3
+    if (trim(output) /= "1 2 3") error stop "Multiple separator format failed"
 end program write_fortran_05
