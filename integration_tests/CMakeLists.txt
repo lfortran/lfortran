@@ -867,6 +867,7 @@ RUN(NAME format_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_42 LABELS gfortran llvm)
+RUN(NAME format_43 LABELS gfortran llvm)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
