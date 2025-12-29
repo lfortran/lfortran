@@ -74,19 +74,14 @@ contains
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
 
-    subroutine ubound_assumed_size_1(a)
-        real :: a(*)
+    subroutine ubound_assumed_size(a, b, c)
+        real :: a(*)       
+        real :: b(*)   
+        real :: c(10, *)
+        
         print *, ubound(a, 1)
-    end subroutine
-
-    subroutine ubound_assumed_size_2(a)
-        real :: a(*)
-        print *, ubound(a)
-    end subroutine
-
-    subroutine ubound_assumed_size_3(a)
-        real :: a(10, *)
-        print *, ubound(a, 2)
+        print *, ubound(b)
+        print *, ubound(c, 2)
     end subroutine
 
     subroutine assumed_size_star_pos_1(a)
@@ -98,8 +93,13 @@ contains
     end subroutine
 
     subroutine proc_param(p)
-        procedure(ubound_assumed_size_2) :: p
+        procedure(ubound_assumed_size) :: p
     end subroutine proc_param
+
+
+
+
+
 
 
 
