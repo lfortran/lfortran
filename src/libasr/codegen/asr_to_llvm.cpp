@@ -11482,6 +11482,112 @@ public:
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
+                // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
+                // Transform to reading n elements into vals starting at start index
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(x.m_values[i]);
+                    // Handle simple case: single ArrayItem with loop var as index
+                    if (idl->n_values == 1 && ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0])) {
+                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(idl->m_values[0]);
+                        if (arr_item->n_args == 1 && arr_item->m_args[0].m_right &&
+                            ASR::is_a<ASR::Var_t>(*arr_item->m_args[0].m_right)) {
+                            ASR::Var_t* idx_var = ASR::down_cast<ASR::Var_t>(arr_item->m_args[0].m_right);
+                            ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
+                            if (idx_var->m_v == loop_var->m_v) {
+                                // Get array data pointer
+                                int ptr_loads_copy = ptr_loads;
+                                ptr_loads = 0;
+                                this->visit_expr(*arr_item->m_v);
+                                llvm::Value* arr_ptr = tmp;
+                                ptr_loads = ptr_loads_copy;
+
+                                ASR::ttype_t* arr_type = ASRUtils::expr_type(arr_item->m_v);
+                                ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                                    ASRUtils::type_get_past_allocatable_pointer(arr_type));
+                                llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                                    arr_item->m_v, elem_type, module.get());
+
+                                // Get data pointer - match existing array handling pattern
+                                llvm::Value* data_ptr = arr_ptr;
+                                ASR::ttype_t* past_alloc_type = ASRUtils::type_get_past_allocatable_pointer(arr_type);
+                                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(past_alloc_type);
+                                llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                                    arr_item->m_v, past_alloc_type, module.get());
+
+                                if (arr_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                                    // For FixedSizeArray, arr_ptr is [N x Type]*, just use element pointer
+                                    // GEP with indices [0, offset] to get element pointer
+                                    this->visit_expr_wrapper(idl->m_start, true);
+                                    llvm::Value* start_idx = tmp;
+                                    llvm::Value* offset = builder->CreateSub(start_idx,
+                                        llvm::ConstantInt::get(start_idx->getType(), 1));
+                                    llvm::Value* section_ptr = builder->CreateGEP(llvm_arr_type, arr_ptr,
+                                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), offset});
+
+                                    // Compute size: (end - start) / inc + 1
+                                    this->visit_expr_wrapper(idl->m_end, true);
+                                    llvm::Value* end_idx = tmp;
+                                    llvm::Value* size;
+                                    if (idl->m_increment) {
+                                        this->visit_expr_wrapper(idl->m_increment, true);
+                                        llvm::Value* inc = tmp;
+                                        llvm::Value* diff = builder->CreateSub(end_idx, start_idx);
+                                        llvm::Value* quot = builder->CreateSDiv(diff, inc);
+                                        size = builder->CreateAdd(quot,
+                                            llvm::ConstantInt::get(quot->getType(), 1));
+                                    } else {
+                                        llvm::Value* diff = builder->CreateSub(end_idx, start_idx);
+                                        size = builder->CreateAdd(diff,
+                                            llvm::ConstantInt::get(diff->getType(), 1));
+                                    }
+                                    size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
+
+                                    llvm::Function* fn = get_read_function(arr_type);
+                                    builder->CreateCall(fn, {section_ptr, size, unit_val});
+                                    continue;
+                                }
+
+                                if (arr_t->m_physical_type != ASR::array_physical_typeType::PointerArray) {
+                                    data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
+                                }
+
+                                // Compute pointer to start element (1-based indexing)
+                                this->visit_expr_wrapper(idl->m_start, true);
+                                llvm::Value* start_idx = tmp;
+                                llvm::Value* offset = builder->CreateSub(start_idx,
+                                    llvm::ConstantInt::get(start_idx->getType(), 1));
+                                llvm::Value* section_ptr = llvm_utils->create_gep2(
+                                    llvm_elem_type, data_ptr, offset);
+
+                                // Compute size: (end - start) / inc + 1
+                                this->visit_expr_wrapper(idl->m_end, true);
+                                llvm::Value* end_idx = tmp;
+                                llvm::Value* size;
+                                if (idl->m_increment) {
+                                    this->visit_expr_wrapper(idl->m_increment, true);
+                                    llvm::Value* inc = tmp;
+                                    llvm::Value* diff = builder->CreateSub(end_idx, start_idx);
+                                    llvm::Value* quot = builder->CreateSDiv(diff, inc);
+                                    size = builder->CreateAdd(quot,
+                                        llvm::ConstantInt::get(quot->getType(), 1));
+                                } else {
+                                    llvm::Value* diff = builder->CreateSub(end_idx, start_idx);
+                                    size = builder->CreateAdd(diff,
+                                        llvm::ConstantInt::get(diff->getType(), 1));
+                                }
+                                // Convert size to i32
+                                size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
+
+                                // Call array read function
+                                llvm::Function* fn = get_read_function(arr_type);
+                                builder->CreateCall(fn, {section_ptr, size, unit_val});
+                                continue;
+                            }
+                        }
+                    }
+                    // Unsupported ImpliedDoLoop pattern - fall through to default handling
+                }
+
                 int ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*x.m_values[i]);
