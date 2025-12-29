@@ -26,31 +26,11 @@ semantic error: Assumed-size '*' is only permitted in the last dimension
 88 |         real, intent(in) :: a(*, 10)
    |                               ^ 
 
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:87:5 - 89:18
-   |
-87 |        subroutine assumed_size_star_pos_1(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-89 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Assumed-size '*' is only permitted in the last dimension
   --> tests/errors/continue_compilation_1.f90:92:19
    |
 92 |         real :: a(*, 10)
    |                   ^ 
-
-semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:91:5 - 93:18
-   |
-91 |        subroutine assumed_size_star_pos_2(a)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-93 |        end subroutine
-   | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Interface 'f_missing' is referenced but not defined
   --> tests/errors/continue_compilation_1.f90:21:9

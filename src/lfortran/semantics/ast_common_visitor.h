@@ -2142,7 +2142,6 @@ public:
 	                "Assumed-size '*' is only permitted in the last dimension",
 	                diag::Level::Error, diag::Stage::Semantic, {
 	                    diag::Label("", {m_dim[i].loc})}));
-	            throw SemanticAbort();
 	        }
 	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
