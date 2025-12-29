@@ -6945,14 +6945,21 @@ public:
                     for( int arg_i: array_arg_index ) {
                         ASR::expr_t* arg_expr = x.m_args[arg_i].m_value;
                         ASR::ttype_t* dummy_type = ASRUtils::expr_type(f->m_args[arg_i]);
-                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(dummy_type);
-                        bool expected_unbounded = (expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
+                        ASR::ttype_t* dummy_array_type =
+                            ASRUtils::type_get_past_allocatable_pointer(dummy_type);
+                        ASR::array_physical_typeType expected_phys_type =
+                            ASRUtils::extract_physical_type(dummy_array_type);
+                        bool expected_unbounded =
+                            (expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                         // Only convert top-level ArrayItem to ArraySection.
                         // Do NOT recurse into nested ArrayItem expressions in indices.
                         if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
                             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                             ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
-                            ASR::array_physical_typeType actual_phys_type = ASRUtils::extract_physical_type(array_type);
+                            ASR::ttype_t* section_type =
+                                ASRUtils::type_get_past_allocatable_pointer(array_type);
+                            ASR::array_physical_typeType actual_phys_type =
+                                ASRUtils::extract_physical_type(section_type);
                             bool unbounded_tail = expected_unbounded ||
                                 (actual_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                             Vec<ASR::array_index_t> array_indices;
@@ -6979,7 +6986,7 @@ public:
                                 ASR::array_physical_typeType::UnboundedPointerArray :
                                 ASR::array_physical_typeType::DescriptorArray;
                             ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, array_type, section_phys_type, unbounded_tail);
+                                al, section_type, section_phys_type, unbounded_tail);
                             x.m_args[arg_i].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
                                 al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
@@ -7094,6 +7101,7 @@ public:
     }
 
     void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
+        bool callee_is_external_symbol = ASR::is_a<ASR::ExternalSymbol_t>(*v);
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
         if (compiler_options.legacy_array_sections) {
             // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
@@ -7113,23 +7121,22 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                        // Legacy sequence association passes the address of the first element.
+                        // For externals (implicit interface), force PointerArray to match the ABI.
+                        // For known/internal procedures (including recursive self-calls), do not
+                        // mutate the callee signature here; only rewrite the actual argument.
+                        if (callee_is_external_symbol) {
+                            expected_phys = ASR::array_physical_typeType::PointerArray;
+                            expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
+                        }
+                        ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(expected_arg_type));
+
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
-                        ASR::array_index_t first_arg = array_item->m_args[0];
-                        ASR::expr_t* idx = first_arg.m_right;
 
-                        Vec<ASR::dimension_t> dims;
-                        dims.reserve(al, 1);
-                        ASR::dimension_t dim;
-                        dim.loc = loc;
-                        dim.m_length = nullptr;
-                        dim.m_start = nullptr;
-                        dims.push_back(al, dim);
-                        ASR::asr_t* descriptor_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
-
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
 
                         // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
                         SetChar temp_function_dependencies;
@@ -7159,33 +7166,39 @@ public:
                             expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
                                 al, array_arg_idx[i], expected_phys, true
                             );
-                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+                            expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(expected_arg_type));
+                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
                         }
 
-                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
-                                                        array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
-
+                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
+                                                        ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
+                                                        array_t->m_dims, array_t->n_dims,
+                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr));
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
 
-                        for (size_t i = 0; i < array_item->n_args; i++) {
-                            array_indices.push_back(al, array_item->m_args[i]);
+                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
+                        ASRUtils::ASRBuilder builder(al, loc);
+                        ASR::expr_t* one = builder.i32(1);
+                        for (size_t dim_i = 0; dim_i < array_item->n_args; dim_i++) {
+                            ASR::array_index_t array_idx;
+                            array_idx.loc = array_item->m_args[dim_i].loc;
+                            array_idx.m_left = array_item->m_args[dim_i].m_right;
+                            array_idx.m_right = ASRUtils::get_bound<SemanticAbort>(array_expr, dim_i + 1, "ubound", al, diag);
+                            array_idx.m_step = one;
+                            array_indices.push_back(al, array_idx);
                         }
 
-                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
-                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::extract_type(ASRUtils::expr_type(idx))));
-                        ASR::array_index_t array_idx;
-                        array_idx.loc = array_item->base.base.loc;
-                        array_idx.m_left = idx;
-                        array_idx.m_right = ASRUtils::get_bound<SemanticAbort>(array_expr, 1, "ubound", al, diag);
-                        array_idx.m_step = one;
-                        array_indices.p[0] = array_idx;
+                        ASR::ttype_t* section_type = ASRUtils::duplicate_type_with_empty_dims(
+                            al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                        );
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
-                                                    ASRUtils::TYPE(descriptor_array), nullptr));
+                                                    section_type, nullptr));
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), expected_phys_type, ASRUtils::TYPE(expected_array), nullptr);
+                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, ASRUtils::TYPE(expected_array), nullptr);
                         arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);
@@ -10032,10 +10045,10 @@ public:
                 if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var_type))
-                    );
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
+                    ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var_type));
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type,
                         ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
                         array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
