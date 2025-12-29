@@ -285,95 +285,105 @@ public:
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        current_module_dependencies.reserve(al, 4);
-        generic_procedures.clear();
-        ASR::asr_t *tmp0 = nullptr;
-        if( x.class_type == AST::modType::Submodule ) {
-            ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
-                                                parent_name, x.base.base.loc, false, loaded_submodules,
-                                                compiler_options.po, true,
-                                                [&](const std::string &msg, const Location &loc) {
-                                                    diag.add(diag::Diagnostic(
-                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
-                                                            diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation
-                                                ));
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
-            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
-                                                /* a_symtab */ current_scope,
-                                                /* a_name */ s2c(al, to_lower(x.m_name)),
-                                                m->m_name,
-                                                nullptr,
-                                                0,
-                                                false, false, false);
-            std::string unsupported_sym_name = import_all(m, true);
-            if( !unsupported_sym_name.empty() ) {
-                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
-            }
-        } else {
-            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
-                                                /* a_symtab */ current_scope,
-                                                /* a_name */ s2c(al, to_lower(x.m_name)),
-                                                nullptr,
-                                                nullptr,
-                                                0,
-                                                false, false, false);
-        }
-        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
-        for (size_t i=0; i<x.n_use; i++) {
-            try {
-                visit_unit_decl1(*x.m_use[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            try {
-                if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
-                    std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-                    visit_unit_decl2(*x.m_decl[i]);
-                    implicit_dictionary = implicit_dictionary_copy;
-                } else {
-                    visit_unit_decl2(*x.m_decl[i]);
+        try {
+            current_module_dependencies.reserve(al, 4);
+            generic_procedures.clear();
+            ASR::asr_t *tmp0 = nullptr;
+            if( x.class_type == AST::modType::Submodule ) {
+                ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
+                                                    parent_name, x.base.base.loc, false, loaded_submodules,
+                                                    compiler_options.po, true,
+                                                    [&](const std::string &msg, const Location &loc) {
+                                                        diag.add(diag::Diagnostic(
+                                                            msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                                diag::Label("", {loc})}));
+                                                        throw SemanticAbort();}, lm, compiler_options.separate_compilation
+                                                    ));
+                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
+                tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                    /* a_symtab */ current_scope,
+                                                    /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                    m->m_name,
+                                                    nullptr,
+                                                    0,
+                                                    false, false, false);
+                std::string unsupported_sym_name = import_all(m, true);
+                if( !unsupported_sym_name.empty() ) {
+                    throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
                 }
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
+            } else {
+                tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                    /* a_symtab */ current_scope,
+                                                    /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                    nullptr,
+                                                    nullptr,
+                                                    0,
+                                                    false, false, false);
             }
+            current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
+            for (size_t i=0; i<x.n_use; i++) {
+                try {
+                    visit_unit_decl1(*x.m_use[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            for (size_t i=0; i<x.n_decl; i++) {
+                try {
+                    if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
+                        std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+                        visit_unit_decl2(*x.m_decl[i]);
+                        implicit_dictionary = implicit_dictionary_copy;
+                    } else {
+                        visit_unit_decl2(*x.m_decl[i]);
+                    }
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            for (size_t i=0; i<x.n_contains; i++) {
+                bool current_storage_save = default_storage_save;
+                default_storage_save = false;
+                visit_program_unit(*x.m_contains[i]);
+                default_storage_save = current_storage_save;
+            }
+            current_module_sym = nullptr;
+            add_generic_procedures();
+            evaluate_postponed_calls_to_genericProcedure();
+            add_overloaded_procedures();
+            add_class_procedures();
+            add_generic_class_procedures();
+            add_assignment_procedures();
+            tmp = tmp0;
+            // Add module dependencies
+            R *m = ASR::down_cast2<R>(tmp);
+            m->m_dependencies = current_module_dependencies.p;
+            m->n_dependencies = current_module_dependencies.size();
+            std::string sym_name = to_lower(x.m_name);
+            if (parent_scope->get_symbol(sym_name) != nullptr) {
+                diag.add(diag::Diagnostic(
+                    "Module already defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {tmp->loc})}));
+                throw SemanticAbort();
+            }
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+            current_scope = parent_scope;
+            initialize_has_submodules(m);
+            dflt_access = ASR::Public;
+
+        } catch (SemanticAbort &e) {
+            current_scope = parent_scope; 
+            current_module_sym = nullptr;
+            if (!compiler_options.continue_compilation) throw e;
+            return; 
         }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            visit_program_unit(*x.m_contains[i]);
-            default_storage_save = current_storage_save;
-        }
-        current_module_sym = nullptr;
-        add_generic_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
-        add_overloaded_procedures();
-        add_class_procedures();
-        add_generic_class_procedures();
-        add_assignment_procedures();
-        tmp = tmp0;
-        // Add module dependencies
-        R *m = ASR::down_cast2<R>(tmp);
-        m->m_dependencies = current_module_dependencies.p;
-        m->n_dependencies = current_module_dependencies.size();
-        std::string sym_name = to_lower(x.m_name);
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            diag.add(diag::Diagnostic(
-                "Module already defined",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {tmp->loc})}));
-            throw SemanticAbort();
-        }
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
-        initialize_has_submodules(m);
-        dflt_access = ASR::Public;
     }
 
     void visit_Module(const AST::Module_t &x) {
-        if (compiler_options.implicit_typing) {
+        try {
+            if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
@@ -388,6 +398,9 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw e;
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
@@ -991,7 +1004,8 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
-        // Handle templated subroutines
+        try {
+             // Handle templated subroutines
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1308,6 +1322,16 @@ public:
         is_template = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        } catch (const SemanticAbort &e) {
+            current_scope = grandparent_scope;
+            in_Subroutine = false; 
+            is_template = false;
+            current_procedure_args.clear();
+            current_function_dependencies = current_function_dependencies_copy;
+
+            if (!compiler_options.continue_compilation) throw;
+            return; 
+        }
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1422,8 +1446,10 @@ public:
 
         // Handle templated functions
         std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
+        bool is_global_save_enabled_copy = is_global_save_enabled;
 
-        if (x.n_temp_args > 0) {
+        try {
+            if (x.n_temp_args > 0) {
             is_template = true;
 
             SetChar temp_args;
@@ -1477,7 +1503,6 @@ public:
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
 
         // iterate over declarations and check if global save is present
-        bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             try {
@@ -1857,6 +1882,13 @@ public:
             std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
 
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, true, sym_name);
+        }
+        } catch (const SemanticAbort &e) {
+            current_scope = grandparent_scope; 
+            current_symbol = -1;
+            in_Subroutine = false;
+            if (!compiler_options.continue_compilation) throw;
+            return; 
         }
         if (x.n_temp_args > 0) {
             add_overloaded_procedures();
