@@ -1441,7 +1441,8 @@ public:
                         // mold= allocates with type but doesn't copy data
                         if (!curr_arg.m_type) {
                             llvm_utils->deepcopy(m_source, source_handle, target_struct,
-                                ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get());
+                                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)),
+                                curr_arg_m_a_type, module.get());
                         }
 
                         continue;
