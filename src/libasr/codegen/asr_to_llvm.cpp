@@ -13238,6 +13238,27 @@ public:
                 }
             }
 
+            if( orig_arg && ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                    orig_arg->m_type, module.get());
+                llvm::Value* descriptor = llvm_utils->CreateAlloca(*builder, descriptor_type);
+                llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
+                builder->CreateStore(tmp, data_ptr);
+                llvm::Value* offset_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 1);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_ptr);
+                llvm::Value* dim_des_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 2);
+                llvm::Type* dim_des_type = arr_descr->create_dimension_descriptor_array_type();
+                builder->CreateStore(
+                    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(dim_des_type)),
+                    dim_des_ptr);
+                llvm::Value* is_allocated_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 3);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_allocated_ptr);
+                arr_descr->set_rank(descriptor_type, descriptor, llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+                tmp = descriptor;
+            }
+
             // To avoid segmentation faults when original argument
             // is not a ASR::Variable_t like callbacks.
             if( orig_arg ) {
