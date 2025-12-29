@@ -5172,54 +5172,66 @@ namespace StringConcat {
 
     
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
+        // Fix for #9263: Pass explicit lengths instead of using descriptor lengths
+        // When CHARACTER*1 dummy receives longer actual (e.g., 'Upper'), the descriptor
+        // still carries the actual argument length (5), not the declared length (1).
+        // StringLen reads from descriptor, giving wrong result. Pass declared lengths explicitly.
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
-        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
-            ASRBuilder b(al, loc);
-            ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-            return f_call;
-        }
-        
         declare_basic_variables(intrinsic_fn_name)
 
-        /* Args */
+        ASR::String_t* s1_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[0]));
+        ASR::String_t* s2_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]));
+
+        // Use declared type length (m_len) if known, else fall back to runtime StringLen
+        // All lengths use int32 to match StringLen return type
+        ASR::expr_t* s1_len_arg = s1_type->m_len
+            ? b.i2i_t(s1_type->m_len, int32)
+            : b.StringLen(new_args[0].m_value);
+        ASR::expr_t* s2_len_arg = s2_type->m_len
+            ? b.i2i_t(s2_type->m_len, int32)
+            : b.StringLen(new_args[1].m_value);
+
+        // Build call_args with explicit lengths
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 4);
+        call_args.push_back(al, new_args[0]);
+        call_args.push_back(al, new_args[1]);
+        ASR::call_arg_t len1_arg; len1_arg.loc = loc; len1_arg.m_value = s1_len_arg;
+        ASR::call_arg_t len2_arg; len2_arg.loc = loc; len2_arg.m_value = s2_len_arg;
+        call_args.push_back(al, len1_arg);
+        call_args.push_back(al, len2_arg);
+
+        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){
+            return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        }
+
+        /* Function signature: (s1, s2, s1_len, s2_len) -> concat_result */
         fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
         fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
+        fill_func_arg("s1_len", int32)
+        fill_func_arg("s2_len", int32)
 
-        /* Return Variable */
         ASR::expr_t* ret_var = declare(
-                                "concat_result",
-                                b.String(b.Add(b.StringLen(args[0]) /* s1 */, b.StringLen(args[1]) /* s2 */), ASR::ExpressionLength),
-                                ReturnVar);
+            "concat_result",
+            b.String(b.Add(args[2], args[3]), ASR::ExpressionLength),
+            ReturnVar);
 
-        /* Body */
-        /*
-            function lcompilers_stringconcat(s1, s2) result(concat_result)
-                character(*) :: s1
-                character(*) :: s2
-                character(len(s1) + len(s2)) :: concat_result
-                concat_result(1 : len(s1)) = s1
-                concat_result(len(s1) + 1 : len(concat_result)) = s2
-            end function
-        */
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), b.StringLen(args[0]/*s1*/)), args[0]));
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(b.StringLen(args[0]/*s1*/), b.i32(1)), b.StringLen(ret_var)), args[1]));
+        /* Body: copy s1 then s2 into result using explicit lengths */
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.i32(1), args[2]),
+            args[0]));
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.Add(args[2], b.i32(1)), b.StringLen(ret_var)),
+            args[1]));
 
-        /* Create The function symbol */
-        ASR::symbol_t *f_sym = make_ASR_Function_t( 
-                                fn_name, fn_symtab,
-                                dep, args,
-                                body,
-                                ret_var,
-                                ASR::abiType::Source,
-                                ASR::deftypeType::Implementation,
-                                nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(
+            fn_name, fn_symtab, dep, args, body, ret_var,
+            ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_or_overwrite_symbol(fn_name, f_sym);
 
-        /* Create Call + Replace FuncParams */
-        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-        return f_call;
+        return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
     }
 
 }
