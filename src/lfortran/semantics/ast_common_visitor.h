@@ -11627,6 +11627,18 @@ public:
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
                 // TODO: Make create_StringRef for character (non-array) variables.
+                if (ASRUtils::is_character(*ASRUtils::symbol_type(v)) &&
+                    x.n_args == 2 &&
+                    x.n_subargs == 0) {
+
+                    diag.add(Diagnostic(
+                        "Invalid substring syntax: use lower:upper instead of lower,upper",
+                        Level::Error,
+                        Stage::Semantic,
+                        { Label("", { x.base.base.loc }) }
+                    ));
+                    throw SemanticAbort();
+                }
                 tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args,
                                       x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
