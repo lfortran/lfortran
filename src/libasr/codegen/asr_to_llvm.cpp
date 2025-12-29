@@ -7605,10 +7605,16 @@ public:
             }
         }
         if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value))) {
+            // For struct members (especially common blocks), treat as allocatable
+            // so _lfortran_strcpy allocates memory if the pointer is NULL.
+            // Common block structs are initialized with zeroinitializer, so
+            // their string descriptor pointers start as NULL.
+            bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type) ||
+                                       ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target);
             llvm_utils->lfortran_str_copy(target, value,
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
                 ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
-                ASRUtils::is_allocatable(asr_target_type));
+                is_dest_allocatable);
             tmp = nullptr;
             return;
         }
