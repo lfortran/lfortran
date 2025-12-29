@@ -940,31 +940,21 @@ namespace LCompilers {
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
-                ASR::ttype_t* arg_type_for_abi = arg->m_type;
-                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
-                    ASRUtils::is_array(arg_type_for_abi)) {
-                    arg_type_for_abi = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(arg_type_for_abi));
-                }
-                type_original = get_arg_type_from_ttype_t(x.m_args[i], arg_type_for_abi,
+                type_original = get_arg_type_from_ttype_t(x.m_args[i], arg->m_type,
                     arg->m_type_declaration,
                     ASRUtils::get_FunctionType(x)->m_abi,
                     arg->m_abi, arg->m_storage, arg->m_value_attr,
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
-                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
-                    // For bind(c) array dummies (including implicit interfaces), the ABI is
-                    // a raw pointer. `get_arg_type_from_ttype_t()` already returns the
-                    // correct pointer type, so do not add an extra level of indirection.
-                    type = type_original;
-                    is_array_type = false;
-                    if (ASRUtils::is_character(*arg->m_type)) {
-                        // For bind(c) character arrays, use raw i8* instead of any
-                        // string/descriptor representation.
-                        type = llvm::Type::getInt8Ty(context)->getPointerTo();
-                    }
-                } else if (is_array_type) {
+                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                    is_array_type &&
+                    ASRUtils::is_character(*arg->m_type)) {
+
+                    // For bind(c) character arrays, use raw i8* instead of array descriptor
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();  // i8*
+                    is_array_type = false;  // Prevent further array processing
+
+                } else if( is_array_type ) {
                     type = type_original->getPointerTo();
                 } else {
                     type = type_original;
