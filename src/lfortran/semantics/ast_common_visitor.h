@@ -4533,10 +4533,12 @@ public:
                         if (array_init->n_args > 0) {
                             bool is_correct_type_func = false;
                             bool is_correct_type_implieddoloop = false;
+                            bool is_correct_type_name = false;
                             AST::FuncCallOrArray_t* func_call = nullptr;
 
                             is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
                             is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
+                            is_correct_type_name = AST::is_a<AST::Name_t>(*array_init->m_args[0]);
                             
                             if (is_correct_type_func) {
                                 func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
@@ -4558,7 +4560,7 @@ public:
                                 } else {
                                     is_correct_type_implieddoloop = false;
                             }
-                            if ((!is_correct_type_func && !is_correct_type_implieddoloop) ||
+                            if ((!is_correct_type_func && !is_correct_type_implieddoloop && !is_correct_type_name) ||
                                 (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0)) {
                                 diag.add(Diagnostic(
                                     "Array members must me of the same type as the struct",

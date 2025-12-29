@@ -6340,6 +6340,14 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             data[len*n_args] = '\0';
             return (void*) data;
         }
+        case ASR::ttypeType::StructType: {
+            ASR::expr_t** data = new ASR::expr_t*[n_args];
+            for (size_t i = 0; i < n_args; i++) {
+                data[i] = ASRUtils::expr_value(a_args[i]);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructConstant_t>(*data[i]));
+            }
+            return (void*) data;
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
@@ -6404,6 +6412,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                                 ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::StructConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
     if( n_args > 0 ) {
@@ -6437,6 +6446,9 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
             int len;
             if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
             n_data = curr_idx * len;
+        } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
+            // For struct types, n_data represents the number of struct constant pointers
+            n_data = curr_idx * sizeof(ASR::expr_t*);
         }   
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
