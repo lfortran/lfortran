@@ -4155,6 +4155,9 @@ public:
                         } else if (AST::is_a<AST::AttrDimension_t>(*a)) {
                             AST::AttrDimension_t *ad =
                                 AST::down_cast<AST::AttrDimension_t>(a);
+                            if (ad->m_dim->m_end_star == AST::dimension_typeType::AssumedRank) {
+                                is_assumed_rank = true;
+                            }
                             if (dims.size() > 0) {
                                 diag.add(Diagnostic(
                                     "Dimensions specified twice",
@@ -5645,8 +5648,12 @@ public:
             // set the variable's type declaration to the derived type
             type_declaration = v;
             type = ASRUtils::make_StructType_t_util(al, loc, v, false);
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
