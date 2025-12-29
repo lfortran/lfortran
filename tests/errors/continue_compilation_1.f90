@@ -41,11 +41,6 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
 contains
 
     subroutine my_undefined_type_test()
@@ -103,6 +98,11 @@ contains
     subroutine proc_param(p)
         procedure(ubound_assumed_size_2) :: p
     end subroutine proc_param
+
+    module function f() result(r)
+        real :: r
+        r = 5.5
+    end function
 
 
 

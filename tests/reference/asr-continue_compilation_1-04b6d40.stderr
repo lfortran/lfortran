@@ -1,56 +1,66 @@
 semantic error: Derived type `another_undefined_type` is not defined
-  --> tests/errors/continue_compilation_1.f90:50:9
+  --> tests/errors/continue_compilation_1.f90:48:9
    |
-50 |         type(another_undefined_type) :: s3_in_subroutine
+48 |         type(another_undefined_type) :: s3_in_subroutine
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: c_char should have a length of 1
-  --> tests/errors/continue_compilation_1.f90:74:9
+  --> tests/errors/continue_compilation_1.f90:72:9
    |
-74 |         character(len=2, kind=c_char), intent(in) :: c
+72 |         character(len=2, kind=c_char), intent(in) :: c
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'c' not defined
-  --> tests/errors/continue_compilation_1.f90:72:5 - 75:20
+  --> tests/errors/continue_compilation_1.f90:70:5 - 73:20
    |
-72 |        subroutine s(c) bind(c)
+70 |        subroutine s(c) bind(c)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-75 |        end subroutine s
+73 |        end subroutine s
    | ...^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:93:31
+  --> tests/errors/continue_compilation_1.f90:91:31
    |
-93 |         real, intent(in) :: a(*, 10)
+91 |         real, intent(in) :: a(*, 10)
    |                               ^ 
 
 semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:92:5 - 94:18
+  --> tests/errors/continue_compilation_1.f90:90:5 - 92:18
    |
-92 |        subroutine assumed_size_star_pos_1(a)
+90 |        subroutine assumed_size_star_pos_1(a)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-94 |        end subroutine
+92 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-size '*' is only permitted in the last dimension
-  --> tests/errors/continue_compilation_1.f90:97:19
+  --> tests/errors/continue_compilation_1.f90:95:19
    |
-97 |         real :: a(*, 10)
+95 |         real :: a(*, 10)
    |                   ^ 
 
 semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_1.f90:96:5 - 98:18
+  --> tests/errors/continue_compilation_1.f90:94:5 - 96:18
    |
-96 |        subroutine assumed_size_star_pos_2(a)
+94 |        subroutine assumed_size_star_pos_2(a)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-98 |        end subroutine
+96 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument(s) or return type mismatch in interface and implementation
+   --> tests/errors/continue_compilation_1.f90:102:5 - 105:16
+    |
+102 |        module function f() result(r)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+105 |        end function
+    | ...^^^^^^^^^^^^^^^^ 
 
 semantic error: Interface 'f_missing' is referenced but not defined
   --> tests/errors/continue_compilation_1.f90:21:9
@@ -186,22 +196,28 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:79:18
+  --> tests/errors/continue_compilation_1.f90:77:18
    |
-79 |         print *, ubound(a, 1)
+77 |         print *, ubound(a, 1)
    |                  ^^^^^^^^^^^^ 
 
 semantic error: The DIM argument must be present when calling UBOUND on an assumed-size array
-  --> tests/errors/continue_compilation_1.f90:84:18
+  --> tests/errors/continue_compilation_1.f90:82:18
    |
-84 |         print *, ubound(a)
+82 |         print *, ubound(a)
    |                  ^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
-  --> tests/errors/continue_compilation_1.f90:89:18
+  --> tests/errors/continue_compilation_1.f90:87:18
    |
-89 |         print *, ubound(a, 2)
+87 |         print *, ubound(a, 2)
    |                  ^^^^^^^^^^^^ 
+
+semantic error: Variable 'r' is not declared
+   --> tests/errors/continue_compilation_1.f90:104:9
+    |
+104 |         r = 5.5
+    |         ^ 'r' is undeclared
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
