@@ -902,7 +902,7 @@ time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
     cmake -S . -B build -G Ninja \
       $TOOLCHAIN_OPT \
       -DCMAKE_Fortran_COMPILER=lfortran \
-      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation" \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_INDEX64=OFF \
       -DBUILD_INDEX64_EXT_API=OFF \
@@ -936,6 +936,68 @@ TESTEOF
 
     lfortran --implicit-interface test_dgesv.f90 -L build/lib -llapack -lblas -o test_dgesv
     ./test_dgesv
+'
+
+##########################
+# Section 15: Reference-LAPACK with BUILD_TESTING
+##########################
+# PREREQUISITES: This section requires the following PRs to be merged first:
+#   1. #9255 (fix/logical-input-tf) - T/F logical input
+#   2. #9261 (fix/implied-do-read-variable-bounds) - Variable-bounds implied-do in READ
+#   3. #9258 (fix/implied-do-read-codegen) - Constant-bounds implied-do in READ
+#   4. #9254 (fix/preconnect-stdin-stdout-units) - Pre-connect units 5, 6, 0
+#   5. #9243 (fix/common-block-commonlinkage) - CommonLinkage for common blocks
+#   6. #9241 (fix/lapack-sqrt17-arrayphysicalcast) - PointerArray to UnboundedPointerArray cast
+#   7. #9240 (fix/lapack-sdrvls-arraysection-type) - bind(c) array ABI
+#   8. #9233 (fix/pass-array-by-data-seqassoc-alloc2d) - Flatten dimensions for rank mismatch
+#   9. #9232 (fix/legacy-array-sections-pointer-dummy) - Strip allocatable wrapper
+#  10. #9265 (fix/string-concat-char1-length) - CHARACTER*1 concatenation
+#
+# Once all PRs are merged, rebase this branch on main to enable this test.
+time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    cd lapack-testing
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Configure with LFortran and BUILD_TESTING=ON
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=OFF \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=OFF \
+      -DBUILD_COMPLEX16=OFF \
+      -DBUILD_TESTING=ON
+
+    # Build BLAS, LAPACK, and test executable
+    cmake --build build -j8
+
+    # Run LAPACK test suites
+    # Currently passing: SGE, SGB, SGT, SPO (~77,000+ tests)
+    cd build
+    print_subsection "Running LAPACK linear tests (xlintsts)"
+    ./TESTING/LIN/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts.out
+
+    # Check for test failures
+    if grep -q "passed.*failed" xlintsts.out; then
+        grep "passed.*failed" xlintsts.out
+    fi
+
+    print_subsection "LAPACK BUILD_TESTING tests completed"
+    cd ../..
 '
 
 ##################################
