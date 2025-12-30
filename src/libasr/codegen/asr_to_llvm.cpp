@@ -8166,6 +8166,10 @@ public:
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
             // Both are pointer-to-data representations, just pass through
         } else if(
+            m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
+            m_old == ASR::array_physical_typeType::PointerArray) {
+            // Both are pointer-to-data representations, just pass through
+        } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
             if( ((ASRUtils::expr_value(m_arg) &&
