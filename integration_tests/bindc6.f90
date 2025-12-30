@@ -4,8 +4,6 @@ program bindc6
     real(c_double) :: arr(3)
     real(c_double) :: result
 
-    arr = [1.0d0, 2.0d0, 3.0d0]
-
     interface
         function sum_arr(a, n) bind(c)
             import :: c_double
@@ -15,6 +13,7 @@ program bindc6
         end function
     end interface
 
+    arr = [1.0d0, 2.0d0, 3.0d0]
     result = sum_arr(arr, 3)
     if (abs(result - 6.0d0) > 1.0d-10) error stop "sum should be 6.0"
     print *, "PASS"
