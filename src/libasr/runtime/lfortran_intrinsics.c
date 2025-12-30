@@ -467,7 +467,13 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
 
     char formatted_value[256];
     double abs_val = fabs(val);
-    if (is_g0_like) {
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "NaN");
+    } else if (isinf(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "%sInfinity", (val < 0) ? "-" : "");
+    } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
         double scaled_val = val;
@@ -478,7 +484,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             exponent -= remainder;
             scaled_val = val / pow(10, exponent);
         }
-        
+
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
@@ -552,6 +558,26 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int width_digits, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
     int width = width_digits;
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val) || isinf(val)) {
+        const char* special_str = isnan(val) ? "NaN" : ((val < 0) ? "-Infinity" : "Infinity");
+        int special_len = strlen(special_str);
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
+    }
+
     int digits = decimal_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
@@ -2095,15 +2121,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     int precision = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
-                    } 
-                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    }
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'g'
                     if (dot != NULL) {
                         precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
                     char formatted[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
+                        if (isnan(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "NaN");
+                        } else if (isinf(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                        } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
                             snprintf(formatted, sizeof(formatted), format_spec, double_val);
