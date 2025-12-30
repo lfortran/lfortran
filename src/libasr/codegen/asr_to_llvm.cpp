@@ -2651,17 +2651,12 @@ public:
             this->visit_expr_wrapper(m_args[i], true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
-#if LLVM_VERSION_MAJOR >= 12
-                result = builder->CreateBinaryIntrinsic(llvm::Intrinsic::maxnum,
-                                                        result, arg);
-#elif LLVM_VERSION_MAJOR >= 8
-                result = builder->CreateIntrinsic(llvm::Intrinsic::maxnum,
-                                                  {val_type}, {result, arg});
-#else
-                llvm::Function *fn = llvm::Intrinsic::getDeclaration(
-                    module.get(), llvm::Intrinsic::maxnum, {val_type});
-                result = builder->CreateCall(fn, {result, arg});
-#endif
+                // Use FCmpOGT (ordered greater than) for Fortran-compatible NaN propagation
+                // If either operand is NaN, comparison returns false, preserving result
+                // This matches the original Fortran if-then-else semantics where
+                // max(NaN, x) = x but max(x, NaN) = NaN (asymmetric, GFortran-compatible)
+                llvm::Value *cmp = builder->CreateFCmpOGT(arg, result);
+                result = builder->CreateSelect(cmp, arg, result);
             } else if (val_type->isIntegerTy()) {
                 // max(a, b) = a > b ? a : b (branchless with select)
                 llvm::Value *cmp = builder->CreateICmpSGT(result, arg);
@@ -2680,17 +2675,11 @@ public:
             this->visit_expr_wrapper(m_args[i], true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
-#if LLVM_VERSION_MAJOR >= 12
-                result = builder->CreateBinaryIntrinsic(llvm::Intrinsic::minnum,
-                                                        result, arg);
-#elif LLVM_VERSION_MAJOR >= 8
-                result = builder->CreateIntrinsic(llvm::Intrinsic::minnum,
-                                                  {val_type}, {result, arg});
-#else
-                llvm::Function *fn = llvm::Intrinsic::getDeclaration(
-                    module.get(), llvm::Intrinsic::minnum, {val_type});
-                result = builder->CreateCall(fn, {result, arg});
-#endif
+                // Use FCmpOLT (ordered less than) for Fortran-compatible NaN propagation
+                // If either operand is NaN, comparison returns false, preserving result
+                // This matches the original Fortran if-then-else semantics
+                llvm::Value *cmp = builder->CreateFCmpOLT(arg, result);
+                result = builder->CreateSelect(cmp, arg, result);
             } else if (val_type->isIntegerTy()) {
                 // min(a, b) = a < b ? a : b (branchless with select)
                 llvm::Value *cmp = builder->CreateICmpSLT(result, arg);
