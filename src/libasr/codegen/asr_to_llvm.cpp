@@ -3862,8 +3862,7 @@ public:
             llvm::GlobalVariable *gv = llvm::cast<llvm::GlobalVariable>(
                 ptr
             );
-            if ( x_abi != ASR::abiType::ExternalUndefined &&
-                x_abi != ASR::abiType::BindC ) {
+            if ( x_abi != ASR::abiType::ExternalUndefined ) {
                 gv->setLinkage(llvm::GlobalValue::CommonLinkage);
             }
         }
@@ -4101,6 +4100,9 @@ public:
                         if (init_value) {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     init_value);
+                            if (init_value->isNullValue()) {
+                                set_global_variable_linkage_as_common(ptr, x.m_abi);
+                            }
                         } else {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     llvm::Constant::getNullValue(type)
@@ -4120,6 +4122,9 @@ public:
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
+                        if (init_value->isNullValue()) {
+                            set_global_variable_linkage_as_common(ptr, x.m_abi);
+                        }
                     } else {
                         module->getNamedGlobal(llvm_var_name)
                             ->setInitializer(llvm::Constant::getNullValue(type));

@@ -2426,6 +2426,9 @@ RUN(NAME common_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_24 LABELS gfortran llvm llvm2
+    EXTRAFILES common_24a.f90 common_24b.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
