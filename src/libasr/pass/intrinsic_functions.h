@@ -247,12 +247,15 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     }
     new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
 
-    declare_basic_variables(new_name);
-    if (scope->get_symbol(new_name)) {
-        ASR::symbol_t *s = scope->get_symbol(new_name);
+    // Fast path: avoid duplication if function already exists
+    if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+        ASRBuilder b(al, loc);
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
         return b.Call(s, new_args, expr_type(f->m_return_var));
     }
+
+    // Slow path: create the function
+    declare_basic_variables(new_name);
     fill_func_arg("x", arg_type);
     auto result = declare(new_name, ASRUtils::extract_type(return_type), ReturnVar);
 
@@ -588,12 +591,15 @@ namespace MathIntrinsicFunction{
         }
         std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python_expr(arg_types[0], new_args[0].m_value);
 
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
+
+        // Slow path: create the function
+        declare_basic_variables(new_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
@@ -722,12 +728,15 @@ namespace Atan2 {
         }
         new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
 
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
+
+        // Slow path: create the function
+        declare_basic_variables(new_name);
         fill_func_arg("x", arg_type);
         fill_func_arg("y", arg_type);
         auto result = declare(new_name, return_type, ReturnVar);
@@ -835,12 +844,16 @@ namespace Abs {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string func_name = "_lcompilers_abs_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
-        declare_basic_variables(func_name);
-        if (scope->get_symbol(func_name)) {
-            ASR::symbol_t *s = scope->get_symbol(func_name);
+
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(func_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
+
+        // Slow path: create the function
+        declare_basic_variables(func_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(func_name, return_type, ReturnVar);
         /*
@@ -1244,12 +1257,15 @@ namespace CommandArgumentCount {
         c_func_name = "_lfortran_command_argument_count";
         std::string new_name = "_lcompilers_command_argument_count_";
 
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
+
+        // Slow path: create the function
+        declare_basic_variables(new_name);
         auto result = declare(new_name, return_type, ReturnVar);
         {
             ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 0, arg_types);
@@ -4028,12 +4044,15 @@ namespace BesselJN {
         }
         std::string new_name = "_lcompilers_bessel_jn_"+ type_to_str_python_expr(arg_types[1], new_args[1].m_value);
 
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
+
+        // Slow path: create the function
+        declare_basic_variables(new_name);
         fill_func_arg("n", arg_types[0]);
         fill_func_arg("x", arg_types[1]);
         auto result = declare(new_name, return_type, ReturnVar);
@@ -4070,12 +4089,15 @@ namespace BesselYN {
         }
         std::string new_name = "_lcompilers_bessel_yn_"+ type_to_str_python_expr(arg_types[1], new_args[1].m_value);
 
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
+
+        // Slow path: create the function
+        declare_basic_variables(new_name);
         fill_func_arg("n", arg_types[0]);
         fill_func_arg("x", arg_types[1]);
         auto result = declare(new_name, return_type, ReturnVar);
@@ -5599,11 +5621,15 @@ namespace Repeat {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         auto func_name = "_lcompilers_optimization_repeat_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
              + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
-        declare_basic_variables(func_name);
-        if (scope->get_symbol(func_name)) {
-            ASR::symbol_t *s = scope->get_symbol(func_name);
+
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(func_name)) {
+            ASRBuilder b(al, loc);
             return b.Call(s, new_args, return_type, nullptr);
         }
+
+        // Slow path: create the function
+        declare_basic_variables(func_name);
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, 
             ASR::string_length_kindType::AssumedLength,
             ASR::string_physical_typeType::DescriptorString)));
@@ -7089,12 +7115,16 @@ namespace Conjg {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string func_name = "_lcompilers_conjg_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
-        declare_basic_variables(func_name);
-        if (scope->get_symbol(func_name)) {
-            ASR::symbol_t *s = scope->get_symbol(func_name);
+
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *s = scope->get_symbol(func_name)) {
+            ASRBuilder b(al, loc);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
+
+        // Slow path: create the function
+        declare_basic_variables(func_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         // * r = real(x) - aimag(x)*(0,1)
