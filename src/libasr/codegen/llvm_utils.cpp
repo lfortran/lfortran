@@ -8963,16 +8963,34 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 }
             }
 
+            if ((std::string)struct_sym->m_name == "~unlimited_polymorphic_type") {
+                // For unlimited polymorphic structs, we need to copy from vtable copy function
+                llvm::Value* vptr = builder->CreateBitCast(src, llvm_utils->vptr_type->getPointerTo());
+                vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                llvm::Value* fn = llvm_utils->CreateLoad2(
+                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
+                fn = builder->CreateBitCast(fn, fnPtrTy);
+                llvm::Type* poly_llvm_type = llvm_utils->getClassType(struct_sym, false);
+                llvm::Value* src_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                llvm::Value* dest_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
+                return ;
+            }
+
             if (is_src_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                src =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                     llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), src, 1));
             }
             if (is_dest_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                      struct_sym->m_struct_signature, &struct_sym->base, module);
-                dest =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                     llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), dest, 1));
             }
 
