@@ -5174,22 +5174,17 @@ namespace StringConcat {
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
-        // Fix for #9263: Pass explicit lengths instead of using descriptor lengths
-        // When CHARACTER*1 dummy receives longer actual (e.g., 'Upper'), the descriptor
-        // still carries the actual argument length (5), not the declared length (1).
-        // StringLen reads from descriptor, giving wrong result. Pass declared lengths explicitly.
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
         declare_basic_variables(intrinsic_fn_name)
 
         ASR::String_t* s1_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[0]));
         ASR::String_t* s2_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]));
 
-        // Use declared type length (m_len) if known, else fall back to runtime StringLen
-        // All lengths use int32 to match StringLen return type
-        ASR::expr_t* s1_len_arg = s1_type->m_len
+        // Use declared type length only if it is a compile-time constant
+        ASR::expr_t* s1_len_arg = (s1_type->m_len && ASRUtils::is_value_constant(s1_type->m_len))
             ? b.i2i_t(s1_type->m_len, int32)
             : b.StringLen(new_args[0].m_value);
-        ASR::expr_t* s2_len_arg = s2_type->m_len
+        ASR::expr_t* s2_len_arg = (s2_type->m_len && ASRUtils::is_value_constant(s2_type->m_len))
             ? b.i2i_t(s2_type->m_len, int32)
             : b.StringLen(new_args[1].m_value);
 
