@@ -138,422 +138,14 @@
                     .false.
                     ()
                 ),
-            _lcompilers_optimization_fma_f321:
+            _lcompilers_optimization_fma_f64:
                 (Function
                     (SymbolTable
                         4
                         {
-                            _lcompilers_optimization_fma_f321:
-                                (Variable
-                                    4
-                                    _lcompilers_optimization_fma_f321
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            a:
-                                (Variable
-                                    4
-                                    a
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    4
-                                    b
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            c:
-                                (Variable
-                                    4
-                                    c
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                )
-                        })
-                    _lcompilers_optimization_fma_f321
-                    (FunctionType
-                        [(Real 4)
-                        (Real 4)
-                        (Real 4)]
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    [(Var 4 a)
-                    (Var 4 b)
-                    (Var 4 c)]
-                    [(Assignment
-                        (Var 4 _lcompilers_optimization_fma_f321)
-                        (RealBinOp
-                            (Var 4 a)
-                            Add
-                            (RealBinOp
-                                (Var 4 b)
-                                Mul
-                                (Var 4 c)
-                                (Real 4)
-                                ()
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )]
-                    (Var 4 _lcompilers_optimization_fma_f321)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            _lcompilers_optimization_fma_f322:
-                (Function
-                    (SymbolTable
-                        6
-                        {
-                            _lcompilers_optimization_fma_f322:
-                                (Variable
-                                    6
-                                    _lcompilers_optimization_fma_f322
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            a:
-                                (Variable
-                                    6
-                                    a
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    6
-                                    b
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            c:
-                                (Variable
-                                    6
-                                    c
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                )
-                        })
-                    _lcompilers_optimization_fma_f322
-                    (FunctionType
-                        [(Real 4)
-                        (Real 4)
-                        (Real 4)]
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    [(Var 6 a)
-                    (Var 6 b)
-                    (Var 6 c)]
-                    [(Assignment
-                        (Var 6 _lcompilers_optimization_fma_f322)
-                        (RealBinOp
-                            (Var 6 a)
-                            Add
-                            (RealBinOp
-                                (Var 6 b)
-                                Mul
-                                (Var 6 c)
-                                (Real 4)
-                                ()
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )]
-                    (Var 6 _lcompilers_optimization_fma_f322)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            _lcompilers_optimization_fma_f323:
-                (Function
-                    (SymbolTable
-                        7
-                        {
-                            _lcompilers_optimization_fma_f323:
-                                (Variable
-                                    7
-                                    _lcompilers_optimization_fma_f323
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            a:
-                                (Variable
-                                    7
-                                    a
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            b:
-                                (Variable
-                                    7
-                                    b
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            c:
-                                (Variable
-                                    7
-                                    c
-                                    []
-                                    In
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                )
-                        })
-                    _lcompilers_optimization_fma_f323
-                    (FunctionType
-                        [(Real 4)
-                        (Real 4)
-                        (Real 4)]
-                        (Real 4)
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .false.
-                    )
-                    []
-                    [(Var 7 a)
-                    (Var 7 b)
-                    (Var 7 c)]
-                    [(Assignment
-                        (Var 7 _lcompilers_optimization_fma_f323)
-                        (RealBinOp
-                            (Var 7 a)
-                            Add
-                            (RealBinOp
-                                (Var 7 b)
-                                Mul
-                                (Var 7 c)
-                                (Real 4)
-                                ()
-                            )
-                            (Real 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )]
-                    (Var 7 _lcompilers_optimization_fma_f323)
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            _lcompilers_optimization_fma_f64:
-                (Function
-                    (SymbolTable
-                        5
-                        {
                             _lcompilers_optimization_fma_f64:
                                 (Variable
-                                    5
+                                    4
                                     _lcompilers_optimization_fma_f64
                                     []
                                     ReturnVar
@@ -574,7 +166,7 @@
                                 ),
                             a:
                                 (Variable
-                                    5
+                                    4
                                     a
                                     []
                                     In
@@ -595,7 +187,7 @@
                                 ),
                             b:
                                 (Variable
-                                    5
+                                    4
                                     b
                                     []
                                     In
@@ -616,7 +208,7 @@
                                 ),
                             c:
                                 (Variable
-                                    5
+                                    4
                                     c
                                     []
                                     In
@@ -654,18 +246,18 @@
                         .false.
                     )
                     []
-                    [(Var 5 a)
-                    (Var 5 b)
-                    (Var 5 c)]
+                    [(Var 4 a)
+                    (Var 4 b)
+                    (Var 4 c)]
                     [(Assignment
-                        (Var 5 _lcompilers_optimization_fma_f64)
+                        (Var 4 _lcompilers_optimization_fma_f64)
                         (RealBinOp
-                            (Var 5 a)
+                            (Var 4 a)
                             Add
                             (RealBinOp
-                                (Var 5 b)
+                                (Var 4 b)
                                 Mul
-                                (Var 5 c)
+                                (Var 4 c)
                                 (Real 8)
                                 ()
                             )
@@ -676,7 +268,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 5 _lcompilers_optimization_fma_f64)
+                    (Var 4 _lcompilers_optimization_fma_f64)
                     Public
                     .false.
                     .false.
@@ -899,8 +491,8 @@
                     [(Assignment
                         (Var 2 x)
                         (FunctionCall
-                            1 _lcompilers_optimization_fma_f321
-                            1 _lcompilers_optimization_fma_f321
+                            1 _lcompilers_optimization_fma_f32
+                            1 _lcompilers_optimization_fma_f32
                             [((FunctionCall
                                 1 _lcompilers_optimization_fma_f32
                                 1 _lcompilers_optimization_fma_f32
@@ -1119,8 +711,8 @@
                                     (Real 4)
                                 )
                                 (FunctionCall
-                                    1 _lcompilers_optimization_fma_f322
-                                    1 _lcompilers_optimization_fma_f322
+                                    1 _lcompilers_optimization_fma_f32
+                                    1 _lcompilers_optimization_fma_f32
                                     [((Var 2 r))
                                     ((Var 2 r))
                                     ((Var 2 r))]
@@ -1193,8 +785,8 @@
                         )
                         (Cast
                             (FunctionCall
-                                1 _lcompilers_optimization_fma_f323
-                                1 _lcompilers_optimization_fma_f323
+                                1 _lcompilers_optimization_fma_f32
+                                1 _lcompilers_optimization_fma_f32
                                 [((Var 2 r))
                                 ((RealUnaryMinus
                                     (Var 2 r)

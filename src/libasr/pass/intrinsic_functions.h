@@ -678,6 +678,15 @@ namespace Aimag {
             const Location &loc, SymbolTable* scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_aimag_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_aimag_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -946,6 +955,15 @@ namespace Scale {
     static inline ASR::expr_t* instantiate_Scale(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_scale_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_scale_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("i", arg_types[1]);
@@ -978,6 +996,15 @@ namespace Dprod {
     static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_dprod_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_dprod_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -1110,8 +1137,17 @@ namespace OutOfRange
     static inline ASR::expr_t* instantiate_OutOfRange(Allocator& al, const Location& loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-
-        declare_basic_variables("_lcompilers_out_of_range_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes all argument types since OUT_OF_RANGE takes three potentially different-kinded args
+        std::string base_name = "_lcompilers_out_of_range_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(arg_types[2], new_args[2].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
 
         fill_func_arg("value", arg_types[0]);
         fill_func_arg("mold", arg_types[1]);
@@ -1301,6 +1337,15 @@ namespace Sign {
     static inline ASR::expr_t* instantiate_Sign(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_sign_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_sign_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[0]);
@@ -1368,7 +1413,16 @@ namespace Shiftr {
     static inline ASR::expr_t* instantiate_Shiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_shiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since SHIFTR takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_shiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1416,6 +1470,15 @@ namespace Rshift {
     static inline ASR::expr_t* instantiate_Rshift(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_rshift_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_rshift_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -1460,7 +1523,16 @@ namespace Shiftl {
     static inline ASR::expr_t* instantiate_Shiftl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_shiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since SHIFTL takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_shiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1508,7 +1580,17 @@ namespace Dshiftl {
     static inline ASR::expr_t* instantiate_Dshiftl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dshiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes all argument types since DSHIFTL takes three potentially different-kinded args
+        std::string base_name = "_lcompilers_dshiftl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(arg_types[2], new_args[2].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
@@ -1572,7 +1654,17 @@ namespace Dshiftr {
     static inline ASR::expr_t* instantiate_Dshiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dshiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes all argument types since DSHIFTR takes three potentially different-kinded args
+        std::string base_name = "_lcompilers_dshiftr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(arg_types[2], new_args[2].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
@@ -1625,6 +1717,15 @@ namespace Dreal {
     static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_dreal_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_dreal_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1667,7 +1768,17 @@ namespace Ishft {
     static inline ASR::expr_t* instantiate_Ishft(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ishft_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes all argument types and return type since ISHFT varies by signature
+        std::string base_name = "_lcompilers_ishft_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1728,7 +1839,14 @@ namespace Bgt {
     static inline ASR::expr_t* instantiate_Bgt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_bgt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_bgt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, logical, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1773,7 +1891,14 @@ namespace Blt {
     static inline ASR::expr_t* instantiate_Blt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_blt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_blt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, logical, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1818,7 +1943,14 @@ namespace Bge {
     static inline ASR::expr_t* instantiate_Bge(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_bge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_bge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, logical, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1918,7 +2050,14 @@ namespace Ble {
     static inline ASR::expr_t* instantiate_Ble(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type*/,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ble_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_ble_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, logical, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
@@ -1957,6 +2096,15 @@ namespace Lgt {
     static inline ASR::expr_t* instantiate_Lgt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_lgt_" + type_to_str_python_expr(type_get_past_allocatable(arg_types[0]), new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_lgt_" + type_to_str_python_expr(type_get_past_allocatable(arg_types[0]), new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -1987,6 +2135,15 @@ namespace Llt {
     static inline ASR::expr_t* instantiate_Llt(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_llt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_llt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -2017,6 +2174,15 @@ namespace Lge {
     static inline ASR::expr_t* instantiate_Lge(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_lge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_lge_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -2047,6 +2213,15 @@ namespace Lle {
     static inline ASR::expr_t* instantiate_Lle(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_lle_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_lle_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -2084,7 +2259,16 @@ namespace Int {
     static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_int_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since INT converts between types
+        std::string base_name = "_lcompilers_int_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         if (is_integer(*arg_types[0])) {
@@ -2117,6 +2301,15 @@ namespace Not {
     static inline ASR::expr_t* instantiate_Not(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_not_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_not_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2152,6 +2345,15 @@ namespace Iand {
     static inline ASR::expr_t* instantiate_Iand(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_iand_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_iand_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2196,6 +2398,15 @@ namespace And {
     static inline ASR::expr_t* instantiate_And(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_and_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_and_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2228,6 +2439,15 @@ namespace Ior {
     static inline ASR::expr_t* instantiate_Ior(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_ior_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_ior_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2272,6 +2492,15 @@ namespace Or {
     static inline ASR::expr_t* instantiate_Or(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_or_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_or_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2304,6 +2533,15 @@ namespace Ieor {
     static inline ASR::expr_t* instantiate_Ieor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_ieor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_ieor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2344,6 +2582,15 @@ namespace Xor {
     static inline ASR::expr_t* instantiate_Xor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_xor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_xor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -2383,7 +2630,17 @@ namespace Ibits {
     static inline ASR::expr_t* instantiate_Ibits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes all argument types since IBITS takes three potentially different-kinded args
+        std::string base_name = "_lcompilers_ibits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(arg_types[2], new_args[2].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
@@ -2414,7 +2671,16 @@ namespace Aint {
     static inline ASR::expr_t* instantiate_Aint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_aint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since AINT can convert between types
+        std::string base_name = "_lcompilers_aint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
@@ -2442,7 +2708,16 @@ namespace Anint {
     static inline ASR::expr_t* instantiate_Anint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_anint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since ANINT can convert between types
+        std::string base_name = "_lcompilers_anint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2497,7 +2772,16 @@ namespace Nint {
     static inline ASR::expr_t* instantiate_Nint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_nint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since NINT converts between types
+        std::string base_name = "_lcompilers_nint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2533,6 +2817,15 @@ namespace Idnint {
     static inline ASR::expr_t* instantiate_Idnint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_idnint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_idnint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2561,6 +2854,15 @@ namespace Logical {
     static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_logical_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_logical_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2588,7 +2890,16 @@ namespace Floor {
     static inline ASR::expr_t* instantiate_Floor(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_floor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since FLOOR can return different integer kinds
+        std::string base_name = "_lcompilers_floor_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2635,7 +2946,16 @@ namespace Ceiling {
     static inline ASR::expr_t* instantiate_Ceiling(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ceiling_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since CEILING can return different integer kinds
+        std::string base_name = "_lcompilers_ceiling_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2703,7 +3023,16 @@ namespace Dim {
     static inline ASR::expr_t* instantiate_Dim(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_dim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since DIM takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_dim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2811,6 +3140,15 @@ namespace Exponent {
     static inline ASR::expr_t* instantiate_Exponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompiler_optimization_exponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompiler_optimization_exponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2889,6 +3227,15 @@ namespace Fraction {
     static inline ASR::expr_t* instantiate_Fraction(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_fraction_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_fraction_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2951,7 +3298,16 @@ namespace SetExponent {
     static inline ASR::expr_t* instantiate_SetExponent(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_setexponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since SET_EXPONENT takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_setexponent_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -2980,6 +3336,15 @@ namespace Sngl {
     static inline ASR::expr_t* instantiate_Sngl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_sngl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_sngl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3005,6 +3370,15 @@ namespace Ifix {
     static inline ASR::expr_t* instantiate_Ifix(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_ifix_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_ifix_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
             LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4);
@@ -3032,6 +3406,15 @@ namespace Idint {
     static inline ASR::expr_t* instantiate_Idint(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_idint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_idint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3059,6 +3442,15 @@ namespace FMA {
     static inline ASR::expr_t* instantiate_FMA(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_fma_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_fma_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[0]);
@@ -3099,6 +3491,15 @@ namespace SignFromValue {
     static inline ASR::expr_t* instantiate_SignFromValue(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_signfromvalue_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_signfromvalue_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
@@ -3144,6 +3545,15 @@ namespace FlipSign {
     static inline ASR::expr_t* instantiate_FlipSign(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_flipsign_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_flipsign_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
         fill_func_arg("signal", arg_types[0]);
         fill_func_arg("variable", arg_types[1]);
@@ -3233,6 +3643,15 @@ namespace FloorDiv {
     static inline ASR::expr_t* instantiate_FloorDiv(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_floordiv_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_floordiv_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
@@ -3291,7 +3710,16 @@ namespace Mod {
     static inline ASR::expr_t* instantiate_Mod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_mod_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value));
+        // Function name includes both argument types since MOD takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_optimization_mod_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("p", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3352,7 +3780,16 @@ namespace Ibclr {
     static inline ASR::expr_t* instantiate_Ibclr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibclr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since IBCLR takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_ibclr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3402,7 +3839,16 @@ namespace Ibset {
     static inline ASR::expr_t* instantiate_Ibset(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibset_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since IBSET takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_ibset_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3453,7 +3899,16 @@ namespace Btest {
     static inline ASR::expr_t* instantiate_Btest(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_btest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since BTEST takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_btest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3522,6 +3977,15 @@ namespace Popcnt {
     static inline ASR::expr_t* instantiate_Popcnt(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            // Fast path: avoid duplication if function already exists
+            {
+                std::string _func_name = "_lcompilers_popcnt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+                if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                    ASRBuilder _b(al, loc);
+                    return _b.Call(_s, new_args, return_type, nullptr);
+                }
+            }
+            // Slow path: create the function
             declare_basic_variables("_lcompilers_popcnt_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -3604,7 +4068,16 @@ namespace Maskl {
     static inline ASR::expr_t* instantiate_Maskl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since MASKL can return different integer kinds
+        std::string base_name = "_lcompilers_maskl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3674,7 +4147,16 @@ namespace Maskr {
     static inline ASR::expr_t* instantiate_Maskr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since MASKR can return different integer kinds
+        std::string base_name = "_lcompilers_maskr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3725,6 +4207,15 @@ namespace Merge {
 
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
         std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]));
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = new_name;
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables(new_name);
         
         mask_type = ASRUtils::duplicate_type(al,
@@ -3788,6 +4279,15 @@ namespace Trailz {
     static inline ASR::expr_t* instantiate_Trailz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_trailz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_trailz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("n", arg_types[0]);
         ASR::expr_t* n_val = declare("n_val", arg_types[0], Local);
@@ -3864,6 +4364,15 @@ namespace Nearest {
     static inline ASR::expr_t* instantiate_Nearest(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_nearest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_nearest_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("s", arg_types[1]);
@@ -3957,6 +4466,15 @@ namespace Spacing {
     static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_spacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_spacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
@@ -4002,7 +4520,16 @@ namespace Modulo {
     static inline ASR::expr_t* instantiate_Modulo(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_modulo_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both argument types since MODULO takes two potentially different-kinded args
+        std::string base_name = "_lcompilers_optimization_modulo_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("p", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4128,6 +4655,15 @@ namespace Poppar {
     static inline ASR::expr_t* instantiate_Poppar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            // Fast path: avoid duplication if function already exists
+            {
+                std::string _func_name = "_lcompilers_poppar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+                if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                    ASRBuilder _b(al, loc);
+                    return _b.Call(_s, new_args, return_type, nullptr);
+                }
+            }
+            // Slow path: create the function
             declare_basic_variables("_lcompilers_poppar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("i", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4172,7 +4708,16 @@ namespace Real {
     static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_real_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes both source and return types since REAL converts between types
+        std::string base_name = "_lcompilers_real_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -4294,7 +4839,17 @@ namespace Cmplx {
     static inline ASR::expr_t* instantiate_Cmplx(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_cmplx_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes source types and return type since CMPLX converts between types
+        std::string base_name = "_lcompilers_cmplx_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(arg_types[1], new_args[1].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("kind", int32);
@@ -4366,6 +4921,15 @@ namespace Mergebits {
     static inline ASR::expr_t* instantiate_Mergebits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_mergebits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_mergebits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         fill_func_arg("b", arg_types[1]);
@@ -4413,6 +4977,15 @@ namespace Leadz {
     static inline ASR::expr_t* instantiate_Leadz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_leadz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_leadz_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("n", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
@@ -4545,6 +5118,15 @@ namespace Ishftc {
         }
 
         // Slow path: create the function
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = new_name;
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables(new_name);
         // Normalize arg types to int64 for function creation
         if (new_args.p[1].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 8) {
@@ -4591,6 +5173,15 @@ namespace Hypot {
     static inline ASR::expr_t* instantiate_Hypot(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_hypot_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_hypot_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -4628,6 +5219,15 @@ namespace ToLowerCase {
     static inline ASR::expr_t* instantiate_ToLowerCase(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lfortran_tolowercase";
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lfortran_tolowercase");
         fill_func_arg("str", b.String(nullptr, ASR::AssumedLength));
         ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
@@ -4710,6 +5310,15 @@ namespace SelectedIntKind {
     static inline ASR::expr_t* instantiate_SelectedIntKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_selected_int_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_selected_int_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, int32, ReturnVar);
@@ -4762,6 +5371,15 @@ namespace SelectedRealKind {
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_selected_real_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_selected_real_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
@@ -4817,6 +5435,15 @@ namespace SelectedCharKind {
     static inline ASR::expr_t* instantiate_SelectedCharKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_selected_char_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_selected_char_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4868,6 +5495,15 @@ namespace SelectedLogicalKind {
     static inline ASR::expr_t* instantiate_SelectedLogicalKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_selected_logical_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_selected_logical_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("bits", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -4953,11 +5589,22 @@ namespace Adjustl {
     }
 
     static inline ASR::expr_t* instantiate_Adjustl(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type_unused*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_adjustl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_adjustl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            ASR::ttype_t *call_return_type = TYPE(ASR::make_String_t(al, loc, 1,
+                EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            return _b.Call(_s, new_args, call_return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+        ASR::ttype_t *return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
         auto result = declare("result", return_type, ReturnVar);
@@ -5041,13 +5688,24 @@ namespace Adjustr {
     }
 
     static inline ASR::expr_t* instantiate_Adjustr(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type_unused*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_adjustr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_adjustr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            ASR::ttype_t *call_return_type = TYPE(ASR::make_String_t(al, loc, 1,
+                EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            return _b.Call(_s, new_args, call_return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
             nullptr, ASR::string_length_kindType::AssumedLength,
              ASR::string_physical_typeType::DescriptorString)));
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, 
+        ASR::ttype_t *return_type = TYPE(ASR::make_String_t(al, loc, 1,
             EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
@@ -5207,12 +5865,12 @@ namespace StringConcat {
         SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
-        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)) {
             ASRBuilder b(al, loc);
-            ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-            return f_call;
+            return b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
         }
-        
+        // Slow path: create the function
         declare_basic_variables(intrinsic_fn_name)
 
         /* Args */
@@ -5273,6 +5931,15 @@ namespace StringLenTrim {
     static inline ASR::expr_t* instantiate_StringLenTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_len_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
@@ -5333,12 +6000,19 @@ namespace StringTrim {
     }
 
     static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t */*return_type_unused*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string base_name = "_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, ASRUtils::get_FunctionType(_s)->m_return_var_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
+        ASR::ttype_t *return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
         auto result = declare("result", return_type, ReturnVar);
@@ -5377,7 +6051,16 @@ namespace Ichar {
     static inline ASR::expr_t* instantiate_Ichar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ichar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes return type since ICHAR can return different integer kinds
+        std::string base_name = "_lcompilers_ichar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + type_to_str_python_expr(return_type, nullptr);
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
@@ -5415,6 +6098,15 @@ namespace Char {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_char_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
 
         /* Declare Arguments + Return Variable */
@@ -5455,6 +6147,15 @@ namespace Achar {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
 
         /* Declare Arguments + Return Variable */
@@ -5517,6 +6218,15 @@ namespace Digits {
     static inline ASR::expr_t* instantiate_Digits(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_digits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_digits_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, int32, ReturnVar);
@@ -5588,6 +6298,15 @@ namespace Rrspacing {
     static inline ASR::expr_t* instantiate_Rrspacing(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_optimization_rrspacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_optimization_rrspacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -5768,6 +6487,15 @@ namespace StringContainsSet {
     static inline ASR::expr_t* instantiate_StringContainsSet(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_verify_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_verify_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -5899,6 +6627,15 @@ namespace StringFindSet {
     static inline ASR::expr_t* instantiate_StringFindSet(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_scan_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_scan_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -6024,6 +6761,15 @@ namespace SubstrIndex {
     static inline ASR::expr_t* instantiate_SubstrIndex(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_index_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_index_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("str",   ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,  ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
@@ -6213,6 +6959,15 @@ namespace ErfcScaled {
     static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lcompilers_erfc_scaled_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -6707,7 +7462,16 @@ namespace Max {
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes type and argument count since MAX has variable args
+        std::string base_name = "_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + std::to_string(new_args.size());
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
         ASR::ttype_t* function_return_type = return_type; // Function-variable-return type.
         if (ASRUtils::is_string_only(arg_types[0])) {
@@ -6878,7 +7642,16 @@ namespace Min {
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        // Function name includes type and argument count since MIN has variable args
+        std::string base_name = "_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value)
+            + "_" + std::to_string(new_args.size());
+        // Fast path: avoid duplication if function already exists
+        if (ASR::symbol_t *_s = scope->get_symbol(base_name)) {
+            ASRBuilder _b(al, loc);
+            return _b.Call(_s, new_args, return_type, nullptr);
+        }
+        // Slow path: create the function
+        declare_basic_variables(base_name);
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
 
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
@@ -7013,6 +7786,15 @@ namespace Partition {
             Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         // TODO: show runtime error for empty separator or pattern
+        // Fast path: avoid duplication if function already exists
+        {
+            std::string _func_name = "_lpython_str_partition";
+            if (ASR::symbol_t *_s = scope->get_symbol(_func_name)) {
+                ASRBuilder _b(al, loc);
+                return _b.Call(_s, new_args, return_type, nullptr);
+            }
+        }
+        // Slow path: create the function
         declare_basic_variables("_lpython_str_partition");
         fill_func_arg("target_string", character(-2));
         fill_func_arg("pattern", character(-2));
