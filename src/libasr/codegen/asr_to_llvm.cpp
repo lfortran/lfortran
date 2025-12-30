@@ -2642,6 +2642,64 @@ public:
         }
     }
 
+    void generate_Max(ASR::expr_t** m_args, size_t n_args) {
+        LCOMPILERS_ASSERT(n_args >= 2);
+        this->visit_expr_wrapper(m_args[0], true);
+        llvm::Value *result = tmp;
+        llvm::Type *val_type = result->getType();
+        for (size_t i = 1; i < n_args; i++) {
+            this->visit_expr_wrapper(m_args[i], true);
+            llvm::Value *arg = tmp;
+            if (val_type->isFloatingPointTy()) {
+#if LLVM_VERSION_MAJOR >= 12
+                result = builder->CreateBinaryIntrinsic(llvm::Intrinsic::maxnum,
+                                                        result, arg);
+#elif LLVM_VERSION_MAJOR >= 8
+                result = builder->CreateIntrinsic(llvm::Intrinsic::maxnum,
+                                                  {val_type}, {result, arg});
+#else
+                llvm::Function *fn = llvm::Intrinsic::getDeclaration(
+                    module.get(), llvm::Intrinsic::maxnum, {val_type});
+                result = builder->CreateCall(fn, {result, arg});
+#endif
+            } else if (val_type->isIntegerTy()) {
+                // max(a, b) = a > b ? a : b (branchless with select)
+                llvm::Value *cmp = builder->CreateICmpSGT(result, arg);
+                result = builder->CreateSelect(cmp, result, arg);
+            }
+        }
+        tmp = result;
+    }
+
+    void generate_Min(ASR::expr_t** m_args, size_t n_args) {
+        LCOMPILERS_ASSERT(n_args >= 2);
+        this->visit_expr_wrapper(m_args[0], true);
+        llvm::Value *result = tmp;
+        llvm::Type *val_type = result->getType();
+        for (size_t i = 1; i < n_args; i++) {
+            this->visit_expr_wrapper(m_args[i], true);
+            llvm::Value *arg = tmp;
+            if (val_type->isFloatingPointTy()) {
+#if LLVM_VERSION_MAJOR >= 12
+                result = builder->CreateBinaryIntrinsic(llvm::Intrinsic::minnum,
+                                                        result, arg);
+#elif LLVM_VERSION_MAJOR >= 8
+                result = builder->CreateIntrinsic(llvm::Intrinsic::minnum,
+                                                  {val_type}, {result, arg});
+#else
+                llvm::Function *fn = llvm::Intrinsic::getDeclaration(
+                    module.get(), llvm::Intrinsic::minnum, {val_type});
+                result = builder->CreateCall(fn, {result, arg});
+#endif
+            } else if (val_type->isIntegerTy()) {
+                // min(a, b) = a < b ? a : b (branchless with select)
+                llvm::Value *cmp = builder->CreateICmpSLT(result, arg);
+                result = builder->CreateSelect(cmp, result, arg);
+            }
+        }
+        tmp = result;
+    }
+
     void generate_ListReverse(ASR::expr_t* m_arg) {
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(m_arg));
         int64_t ptr_loads_copy = ptr_loads;
@@ -2921,6 +2979,14 @@ public:
             }
             case ASRUtils::IntrinsicElementalFunctions::Abs: {
                 generate_Abs(x.m_args[0]);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Max: {
+                generate_Max(x.m_args, x.n_args);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Min: {
+                generate_Min(x.m_args, x.n_args);
                 break;
             }
             default: {

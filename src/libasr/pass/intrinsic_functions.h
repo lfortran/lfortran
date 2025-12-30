@@ -6683,53 +6683,34 @@ namespace Max {
 
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For real and integer types, use IntrinsicElementalFunction which gets
+        // lowered to efficient LLVM intrinsics (llvm.maxnum for reals, select for integers)
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            Vec<ASR::expr_t *> args; args.reserve(al, new_args.size());
+            for (size_t i = 0; i < new_args.size(); i++) {
+                args.push_back(al, new_args[i].m_value);
+            }
+            return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+                args.p, args.size(), overload_id, return_type, nullptr));
+        }
+        // String type: generate function with branching (fallback)
         declare_basic_variables("_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-        ASR::ttype_t* function_return_type = return_type; // Function-variable-return type.
-        if (ASRUtils::is_string_only(arg_types[0])) {
-            for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
-            }
-            function_return_type = b.String(
-                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-                ASR::ExpressionLength);
-        } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
-            for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_types[0])) {
-            for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
-            }
-        } else {
-            LCOMPILERS_ASSERT(false);
+        ASR::ttype_t* function_return_type = b.String(
+            EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+            ASR::ExpressionLength);
+        for (size_t i = 0; i < new_args.size(); i++) {
+            fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, function_return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else {
-            LCOMPILERS_ASSERT(false);
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Gt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
         }
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -6854,58 +6835,38 @@ namespace Min {
 
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-
-        if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For real and integer types, use IntrinsicElementalFunction which gets
+        // lowered to efficient LLVM intrinsics (llvm.minnum for reals, select for integers)
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            Vec<ASR::expr_t *> args; args.reserve(al, new_args.size());
             for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+                args.push_back(al, new_args[i].m_value);
             }
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
-                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-        } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
-            for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_types[0])) {
-            for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
-            }
-        } else {
-            LCOMPILERS_ASSERT(false);
+            return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Min),
+                args.p, args.size(), overload_id, return_type, nullptr));
         }
-        return_type = ASRUtils::extract_type(return_type);
+        // String type: generate function with branching (fallback)
+        declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        for (size_t i = 0; i < new_args.size(); i++) {
+            fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+        }
+        return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
-                EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-        } else {
-            LCOMPILERS_ASSERT(false);
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Lt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
         }
-
+        return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
