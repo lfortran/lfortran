@@ -3724,18 +3724,64 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
+// Pre-connect standard Fortran units at program startup.
+// The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
+// pre-connected, but their values are processor-dependent. Units 5/6/0 are
+// a widely-used convention (gfortran, ifort, etc.) for legacy compatibility.
+static bool _lfortran_standard_units_initialized = false;
+
+static void _lfortran_init_standard_units(void) {
+    if (_lfortran_standard_units_initialized) return;
+    _lfortran_standard_units_initialized = true;
+    // Unit 5: stdin (read-only, formatted, sequential)
+    unit_to_file[0].unit = 5;
+    unit_to_file[0].filename = NULL;
+    unit_to_file[0].filep = stdin;
+    unit_to_file[0].unit_file_bin = false;
+    unit_to_file[0].access_id = 0;  // sequential
+    unit_to_file[0].read_access = true;
+    unit_to_file[0].write_access = false;
+    unit_to_file[0].delim = 0;
+
+    // Unit 6: stdout (write-only, formatted, sequential)
+    unit_to_file[1].unit = 6;
+    unit_to_file[1].filename = NULL;
+    unit_to_file[1].filep = stdout;
+    unit_to_file[1].unit_file_bin = false;
+    unit_to_file[1].access_id = 0;  // sequential
+    unit_to_file[1].read_access = false;
+    unit_to_file[1].write_access = true;
+    unit_to_file[1].delim = 0;
+
+    // Unit 0: stderr (write-only, formatted, sequential)
+    unit_to_file[2].unit = 0;
+    unit_to_file[2].filename = NULL;
+    unit_to_file[2].filep = stderr;
+    unit_to_file[2].unit_file_bin = false;
+    unit_to_file[2].access_id = 0;  // sequential
+    unit_to_file[2].read_access = false;
+    unit_to_file[2].write_access = true;
+    unit_to_file[2].delim = 0;
+
+    last_index_used = 2;
+}
+
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim) {
+    _lfortran_init_standard_units();
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            unit_to_file[i].unit = unit_num;
+            // Update existing entry
+            unit_to_file[i].filename = filename;
             unit_to_file[i].filep = filep;
             unit_to_file[i].unit_file_bin = unit_file_bin;
             unit_to_file[i].access_id = access_id;
             unit_to_file[i].read_access = read_access;
             unit_to_file[i].write_access = write_access;
             unit_to_file[i].delim = delim;
+            return;  // Don't add duplicate entry
         }
     }
+    // Add new entry
     last_index_used += 1;
     if( last_index_used >= MAXUNITS ) {
         printf("Only %d units can be opened for now\n.", MAXUNITS);
@@ -3752,6 +3798,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim) {
+    _lfortran_init_standard_units();
     if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
@@ -3767,6 +3814,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
 }
 
 char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    _lfortran_init_standard_units();
     *unit_file_bin = false;
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].unit == unit_num) {
@@ -5808,7 +5856,8 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     const char *scratch_file = "_lfortran_generated_file";
     const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
 
-    bool is_temp_file =
+    // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
+    bool is_temp_file = (file_name != NULL) &&
         (strncmp(file_name, scratch_file, scratch_file_len) == 0);
 
     bool delete_requested = false;
