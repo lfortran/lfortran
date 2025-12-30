@@ -11625,9 +11625,13 @@ public:
             }
         } else {
             switch (f2->type) {
-            case(ASR::symbolType::Variable): {
-                // TODO: Make create_StringRef for character (non-array) variables.
-                if (ASRUtils::is_character(*ASRUtils::symbol_type(v)) &&
+                case(ASR::symbolType::Variable): {
+
+                ASR::ttype_t* t = ASRUtils::symbol_type(v);
+                bool is_char = ASRUtils::is_character(*t);
+                bool is_array = ASRUtils::is_array(t);
+
+                if (is_char && !is_array &&
                     x.n_args == 2 &&
                     x.n_subargs == 0) {
 
@@ -11639,10 +11643,12 @@ public:
                     ));
                     throw SemanticAbort();
                 }
+
                 tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args,
-                                      x.m_subargs, x.n_subargs, v_expr, v, f2);
+                                    x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
             }
+
             case(ASR::symbolType::Struct): {
                 tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
                                                     x.m_keywords, x.n_keywords, v);
