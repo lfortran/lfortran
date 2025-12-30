@@ -11,6 +11,7 @@
 #include <libasr/codegen/wasm_assembler.h>
 
 #include <libasr/pass/pass_manager.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #define INCLUDE_RUNTIME_FUNC(fn)                 \
     if (m_rt_func_used_idx[fn] == -1) {          \
@@ -82,12 +83,14 @@ enum RT_FUNCS {
 enum GLOBAL_VAR {
     cur_mem_loc = 0,
     tmp_reg_i32 = 1,
-    tmp_reg_i64 = 2,
-    tmp_reg_f32 = 3,
-    tmp_reg2_f32 = 4,
-    tmp_reg_f64 = 5,
-    tmp_reg2_f64 = 6,
-    GLOBAL_VARS_CNT = 7
+    tmp_reg2_i32 = 2,
+    tmp_reg_i64 = 3,
+    tmp_reg2_i64 = 4,
+    tmp_reg_f32 = 5,
+    tmp_reg2_f32 = 6,
+    tmp_reg_f64 = 7,
+    tmp_reg2_f64 = 8,
+    GLOBAL_VARS_CNT = 9
 };
 
 enum IMPORT_FUNC {
@@ -749,7 +752,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         m_compiler_globals[cur_mem_loc] = m_wa.declare_global_var(wasm::var_type::i32, 0);
         m_compiler_globals[tmp_reg_i32] = m_wa.declare_global_var(wasm::var_type::i32, 0);
+        m_compiler_globals[tmp_reg2_i32] = m_wa.declare_global_var(wasm::var_type::i32, 0);
         m_compiler_globals[tmp_reg_i64] = m_wa.declare_global_var(wasm::var_type::i64, 0);
+        m_compiler_globals[tmp_reg2_i64] = m_wa.declare_global_var(wasm::var_type::i64, 0);
         m_compiler_globals[tmp_reg_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
         m_compiler_globals[tmp_reg2_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
         m_compiler_globals[tmp_reg_f64] = m_wa.declare_global_var(wasm::var_type::f64, 0);
@@ -2616,6 +2621,156 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         // leave array location in memory on the stack
         m_wa.emit_i32_const(cur_mem_loc);
+    }
+
+    void visit_IntrinsicElementalFunction(
+            const ASR::IntrinsicElementalFunction_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        switch (x.m_intrinsic_id) {
+            case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
+                LCOMPILERS_ASSERT(x.n_args == 1);
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[0]);
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                this->visit_expr(*x.m_args[0]);
+                if (ASRUtils::is_real(*arg_type)) {
+                    if (kind == 4) {
+                        m_wa.emit_f32_abs();
+                    } else if (kind == 8) {
+                        m_wa.emit_f64_abs();
+                    } else {
+                        throw CodeGenError("Abs: Unsupported real kind");
+                    }
+                } else if (ASRUtils::is_integer(*arg_type)) {
+                    // abs(x) = x >= 0 ? x : -x (branchless with select)
+                    // Stack order for select: [if_false, if_true, condition]
+                    if (kind == 4) {
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);
+                        m_wa.emit_i32_const(0);
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
+                        m_wa.emit_i32_sub();  // -x (if_false)
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // x (if_true)
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
+                        m_wa.emit_i32_const(0);
+                        m_wa.emit_i32_ge_s();  // x >= 0 (condition)
+                        m_wa.emit_select();
+                    } else if (kind == 8) {
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);
+                        m_wa.emit_i64_const(0);
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
+                        m_wa.emit_i64_sub();  // -x (if_false)
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // x (if_true)
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
+                        m_wa.emit_i64_const(0);
+                        m_wa.emit_i64_ge_s();  // x >= 0 (condition)
+                        m_wa.emit_select();
+                    } else {
+                        throw CodeGenError("Abs: Unsupported integer kind");
+                    }
+                } else {
+                    throw CodeGenError("Abs: Unsupported type");
+                }
+                break;
+            }
+            case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Max): {
+                LCOMPILERS_ASSERT(x.n_args >= 2);
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[0]);
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                this->visit_expr(*x.m_args[0]);
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i]);
+                    if (ASRUtils::is_real(*arg_type)) {
+                        if (kind == 4) {
+                            m_wa.emit_f32_max();
+                        } else if (kind == 8) {
+                            m_wa.emit_f64_max();
+                        } else {
+                            throw CodeGenError("Max: Unsupported real kind");
+                        }
+                    } else if (ASRUtils::is_integer(*arg_type)) {
+                        // max(a, b) = a > b ? a : b
+                        // Stack: [a, b] -> need [if_false=b, if_true=a, cond=a>b]
+                        if (kind == 4) {
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);  // b
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i32]); // a
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (if_false)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]);
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
+                            m_wa.emit_i32_gt_s();  // a > b (condition)
+                            m_wa.emit_select();
+                        } else if (kind == 8) {
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);  // b
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i64]); // a
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (if_false)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]);
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
+                            m_wa.emit_i64_gt_s();  // a > b (condition)
+                            m_wa.emit_select();
+                        } else {
+                            throw CodeGenError("Max: Unsupported integer kind");
+                        }
+                    } else {
+                        throw CodeGenError("Max: Unsupported type");
+                    }
+                }
+                break;
+            }
+            case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Min): {
+                LCOMPILERS_ASSERT(x.n_args >= 2);
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[0]);
+                int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                this->visit_expr(*x.m_args[0]);
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i]);
+                    if (ASRUtils::is_real(*arg_type)) {
+                        if (kind == 4) {
+                            m_wa.emit_f32_min();
+                        } else if (kind == 8) {
+                            m_wa.emit_f64_min();
+                        } else {
+                            throw CodeGenError("Min: Unsupported real kind");
+                        }
+                    } else if (ASRUtils::is_integer(*arg_type)) {
+                        // min(a, b) = a < b ? a : b
+                        // Stack: [a, b] -> need [if_false=b, if_true=a, cond=a<b]
+                        if (kind == 4) {
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);  // b
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i32]); // a
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (if_false)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]);
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
+                            m_wa.emit_i32_lt_s();  // a < b (condition)
+                            m_wa.emit_select();
+                        } else if (kind == 8) {
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);  // b
+                            m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i64]); // a
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (if_false)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]);
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
+                            m_wa.emit_i64_lt_s();  // a < b (condition)
+                            m_wa.emit_select();
+                        } else {
+                            throw CodeGenError("Min: Unsupported integer kind");
+                        }
+                    } else {
+                        throw CodeGenError("Min: Unsupported type");
+                    }
+                }
+                break;
+            }
+            default: {
+                throw CodeGenError("IntrinsicElementalFunction: " +
+                    ASRUtils::IntrinsicElementalFunctionRegistry::
+                        get_intrinsic_function_name(x.m_intrinsic_id) +
+                    " not implemented for WASM backend");
+            }
+        }
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {

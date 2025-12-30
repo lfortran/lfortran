@@ -339,6 +339,13 @@ public:
         visit_Call(x);
     }
 
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+        // For now, throw an error for unhandled intrinsics
+        // TODO: Implement MLIR codegen for abs/max/min intrinsics
+        throw CodeGenError("IntrinsicElementalFunction not yet implemented in MLIR backend: " +
+            ASRUtils::get_intrinsic_name(x.m_intrinsic_id), x.base.base.loc);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         this->visit_expr(*x.m_target);
         mlir::Value target = tmp;
