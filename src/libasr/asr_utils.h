@@ -986,14 +986,17 @@ static inline std::string intrinsic_type_to_str_with_kind(const ASR::ttype_t* t,
 
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::expr_t* expr)
 {
-    ASR::symbol_t* struct_sym = nullptr;
+    ASR::ttype_t* t_inner = ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t));
 
-    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
-        LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
-        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    if (ASR::is_a<ASR::StructType_t>(*t_inner)) {
+        if (expr != nullptr) {
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+            return type_to_str_fortran_symbol(t, struct_sym);
+        } else {
+            return "type(derived)";
+        }
     }
-
-    return type_to_str_fortran_symbol(t, struct_sym);
+    return type_to_str_fortran_symbol(t, nullptr);
 }
 
 static inline std::string type_to_str_with_substitution(ASR::expr_t* expr, const ASR::ttype_t *t,
