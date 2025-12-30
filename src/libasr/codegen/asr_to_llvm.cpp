@@ -2618,6 +2618,30 @@ public:
         tmp = builder->CreateFSub(exp, one);
     }
 
+    void generate_Abs(ASR::expr_t* m_arg) {
+        this->visit_expr_wrapper(m_arg, true);
+        llvm::Value *item = tmp;
+        llvm::Type *item_type = item->getType();
+        if (item_type->isFloatingPointTy()) {
+#if LLVM_VERSION_MAJOR >= 12
+            tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::fabs, item);
+#elif LLVM_VERSION_MAJOR >= 8
+            tmp = builder->CreateIntrinsic(llvm::Intrinsic::fabs, {item_type}, {item});
+#else
+            llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(),
+                llvm::Intrinsic::fabs, {item_type});
+            tmp = builder->CreateCall(fn, {item});
+#endif
+        } else if (item_type->isIntegerTy()) {
+            // For integers: abs(x) = x >= 0 ? x : -x
+            // Using select is branchless and efficient
+            llvm::Value *zero = llvm::ConstantInt::get(item_type, 0);
+            llvm::Value *neg = builder->CreateNeg(item);
+            llvm::Value *cmp = builder->CreateICmpSGE(item, zero);
+            tmp = builder->CreateSelect(cmp, item, neg);
+        }
+    }
+
     void generate_ListReverse(ASR::expr_t* m_arg) {
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(m_arg));
         int64_t ptr_loads_copy = ptr_loads;
@@ -2893,6 +2917,10 @@ public:
                 arg1_.loc = x.m_args[1]->base.loc, arg1_.m_value = x.m_args[1];
                 args.push_back(al, arg1_);
                 generate_sign_from_value(args.p);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Abs: {
+                generate_Abs(x.m_args[0]);
                 break;
             }
             default: {

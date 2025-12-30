@@ -833,7 +833,17 @@ namespace Abs {
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For real and integer types, use IntrinsicElementalFunction which gets
+        // lowered to efficient LLVM intrinsics (llvm.fabs for reals, select for integers)
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            Vec<ASR::expr_t *> args; args.reserve(al, 1);
+            args.push_back(al, new_args[0].m_value);
+            return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Abs),
+                args.p, 1, overload_id, return_type, nullptr));
+        }
+        // Complex type: `r = (real(x)**2 + aimag(x)**2)**0.5`
         std::string func_name = "_lcompilers_abs_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
@@ -843,37 +853,13 @@ namespace Abs {
         }
         fill_func_arg("x", arg_types[0]);
         auto result = declare(func_name, return_type, ReturnVar);
-        /*
-            * if (x >= 0) then
-            *     r = x
-            * else
-            *     r = -x
-            * end if
-        */
-        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
-            if (is_integer(*arg_types[0])) {
-                body.push_back(al, b.If(b.GtE(args[0], b.i_t(0, arg_types[0])), {
-                    b.Assignment(result, args[0])
-                }, {
-                    b.Assignment(result, b.i_neg(args[0], arg_types[0]))
-                }));
-            } else {
-                body.push_back(al, b.If(b.GtE(args[0], b.f_t(0, arg_types[0])), {
-                    b.Assignment(result, args[0])
-                }, {
-                    b.Assignment(result, b.f_neg(args[0], arg_types[0]))
-                }));
-            }
-        } else {
-            // * Complex type: `r = (real(x)**2 + aimag(x)**2)**0.5`
-            ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
-                                        ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
-            ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
-            body.push_back(al, b.Assignment(result,
-                b.Pow(b.Add(b.Pow(EXPR(ASR::make_ComplexRe_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type)), b.Pow(EXPR(ASR::make_ComplexIm_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type))), b.f_t(0.5, real_type))));
-        }
+        ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
+                                    ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
+        ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
+        body.push_back(al, b.Assignment(result,
+            b.Pow(b.Add(b.Pow(EXPR(ASR::make_ComplexRe_t(al, loc,
+            args[0], real_type, nullptr)), b.f_t(2.0, real_type)), b.Pow(EXPR(ASR::make_ComplexIm_t(al, loc,
+            args[0], real_type, nullptr)), b.f_t(2.0, real_type))), b.f_t(0.5, real_type))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(func_name, f_sym);
