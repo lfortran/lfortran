@@ -97,9 +97,9 @@ contains
         real :: a(*, 10)
     end subroutine
 
-
-
-
+    subroutine proc_param(p)
+        procedure(ubound_assumed_size_2) :: p
+    end subroutine proc_param
 
 
 
@@ -440,11 +440,6 @@ program continue_compilation_1
         print *, q1
     end do q1
 
-    ! Test assigned format WRITE 
-    ASSIGN 0012 TO fmt_i1
-    0012 FORMAT (" **** ASSIGN FORMAT NUMBER TO INTEGER VARIABLE ****" )
-    WRITE (6, fmt_i1)
-
     ! Test assigned format PRINT 
     assign 100 to fmt_i2
     100 format (A)
@@ -454,4 +449,7 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
+
+    !passing non procedure to procedure parameter
+    call proc_param(42)
 end program 
