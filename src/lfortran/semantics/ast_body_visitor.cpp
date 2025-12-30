@@ -803,6 +803,73 @@ public:
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
     }
 
+    // Expand ImpliedDoLoop for READ statements into individual elements or array section.
+    // For constant bounds: (vals(i), i=1,3) -> vals(1), vals(2), vals(3)
+    // For variable bounds: (vals(i), i=1,n) -> vals(1:n)
+    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out) {
+        int64_t start_val, end_val, inc_val = 1;
+        bool constant_bounds = true;
+
+        // Check if bounds are constant
+        if (!ASRUtils::is_value_constant(idl->m_start) ||
+            !ASRUtils::is_value_constant(idl->m_end)) {
+            constant_bounds = false;
+        } else if (!ASRUtils::extract_value(idl->m_start, start_val) ||
+                   !ASRUtils::extract_value(idl->m_end, end_val)) {
+            constant_bounds = false;
+        }
+        if (idl->m_increment) {
+            if (!ASRUtils::is_value_constant(idl->m_increment) ||
+                !ASRUtils::extract_value(idl->m_increment, inc_val)) {
+                constant_bounds = false;
+            }
+        }
+
+        if (constant_bounds && inc_val != 0) {
+            // Expand to individual elements
+            ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
+            for (int64_t idx = start_val;
+                 (inc_val > 0) ? (idx <= end_val) : (idx >= end_val);
+                 idx += inc_val) {
+                for (size_t j = 0; j < idl->n_values; j++) {
+                    ASR::expr_t* value = idl->m_values[j];
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                        expand_implied_do_for_read(
+                            ASR::down_cast<ASR::ImpliedDoLoop_t>(value), out);
+                    } else if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+                        // Replace loop variable with constant index
+                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
+                        Vec<ASR::array_index_t> new_args;
+                        new_args.reserve(al, arr_item->n_args);
+                        for (size_t k = 0; k < arr_item->n_args; k++) {
+                            ASR::array_index_t arg = arr_item->m_args[k];
+                            if (arg.m_right && ASR::is_a<ASR::Var_t>(*arg.m_right)) {
+                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg.m_right);
+                                if (var->m_v == loop_var->m_v) {
+                                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                                        ASR::make_Integer_t(al, arg.m_right->base.loc, 4));
+                                    arg.m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                        al, arg.m_right->base.loc, idx, int_type));
+                                }
+                            }
+                            new_args.push_back(al, arg);
+                        }
+                        ASR::expr_t* new_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                            al, arr_item->base.base.loc, arr_item->m_v,
+                            new_args.p, new_args.size(), arr_item->m_type,
+                            arr_item->m_storage_format, arr_item->m_value));
+                        out.push_back(al, new_item);
+                    } else {
+                        out.push_back(al, value);
+                    }
+                }
+            }
+        } else {
+            // Variable bounds: pass through unchanged (codegen will handle or fail)
+            out.push_back(al, ASRUtils::EXPR((ASR::asr_t*)idl));
+        }
+    }
+
     void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
         int64_t m_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
@@ -1140,7 +1207,13 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
-            a_values_vec.push_back(al, expr);
+            // For READ: expand implied-do loops to individual elements or array section
+            if (_type == AST::stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                expand_implied_do_for_read(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec);
+            } else {
+                a_values_vec.push_back(al, expr);
+            }
         }
 
         read_write = (_type == AST::stmtType::Write) ? "~write" : "~read";
