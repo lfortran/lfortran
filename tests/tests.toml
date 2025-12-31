@@ -750,6 +750,10 @@ filename = "../integration_tests/error_stop_04.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/write_12.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/submodule_01.f90"
 ast = true
 
