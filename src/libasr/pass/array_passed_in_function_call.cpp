@@ -858,6 +858,13 @@ public:
                             create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank)
                         }, {}));
                     }
+                    // Nullify the pointer after the call if it was associated (contiguous case).
+                    // This prevents double-free on the next loop iteration: without nullification,
+                    // the ExplicitDeallocate at the start of the loop would try to free memory
+                    // that belongs to the source array (was aliased via Associate).
+                    body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
+                        ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                    }, {}));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                 }
