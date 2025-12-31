@@ -9,6 +9,8 @@
 
 #include <libasr/codegen/asr_to_mlir.h>
 #include <libasr/containers.h>
+#include <libasr/pass/intrinsic_functions.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
@@ -340,10 +342,77 @@ public:
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
-        // For now, throw an error for unhandled intrinsics
-        // TODO: Implement MLIR codegen for abs/max/min intrinsics
-        throw CodeGenError("IntrinsicElementalFunction not yet implemented in MLIR backend: " +
-            ASRUtils::get_intrinsic_name(x.m_intrinsic_id), x.base.base.loc);
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+
+        switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicElementalFunctions::Abs: {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr2(*x.m_args[0]);
+                if (ASRUtils::is_real(*t)) {
+                    tmp = builder->create<mlir::LLVM::FAbsOp>(loc, tmp);
+                } else if (ASRUtils::is_integer(*t)) {
+                    mlir::Type type = tmp.getType();
+                    mlir::Value zero;
+                    if (type == builder->getI32Type()) {
+                        zero = builder->create<mlir::LLVM::ConstantOp>(loc, type,
+                            builder->getI32IntegerAttr(0));
+                    } else {
+                        zero = builder->create<mlir::LLVM::ConstantOp>(loc, type,
+                            builder->getI64IntegerAttr(0));
+                    }
+                    mlir::Value neg = builder->create<mlir::LLVM::SubOp>(loc, zero, tmp);
+                    mlir::Value cmp = builder->create<mlir::LLVM::ICmpOp>(loc,
+                        mlir::LLVM::ICmpPredicate::slt, tmp, zero);
+                    tmp = builder->create<mlir::LLVM::SelectOp>(loc, cmp, neg, tmp);
+                } else {
+                    throw CodeGenError("Abs: unsupported type", x.base.base.loc);
+                }
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Max: {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr2(*x.m_args[0]);
+                mlir::Value result = tmp;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr2(*x.m_args[i]);
+                    if (ASRUtils::is_real(*t)) {
+                        result = builder->create<mlir::LLVM::MaxNumOp>(loc, result, tmp);
+                    } else if (ASRUtils::is_integer(*t)) {
+                        result = builder->create<mlir::LLVM::SMaxOp>(loc, result, tmp);
+                    } else {
+                        throw CodeGenError("Max: unsupported type", x.base.base.loc);
+                    }
+                }
+                tmp = result;
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Min: {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr2(*x.m_args[0]);
+                mlir::Value result = tmp;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr2(*x.m_args[i]);
+                    if (ASRUtils::is_real(*t)) {
+                        result = builder->create<mlir::LLVM::MinNumOp>(loc, result, tmp);
+                    } else if (ASRUtils::is_integer(*t)) {
+                        result = builder->create<mlir::LLVM::SMinOp>(loc, result, tmp);
+                    } else {
+                        throw CodeGenError("Min: unsupported type", x.base.base.loc);
+                    }
+                }
+                tmp = result;
+                break;
+            }
+            default: {
+                throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
+                        get_intrinsic_function_name(x.m_intrinsic_id) +
+                        "' intrinsic is not implemented by MLIR backend or "
+                        "the compile-time value is not available", x.base.base.loc);
+            }
+        }
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
