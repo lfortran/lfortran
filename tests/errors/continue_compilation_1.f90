@@ -22,14 +22,12 @@ module continue_compilation_1_mod
     end type
 
     procedure(missing_global_interface), pointer :: p => null()
-
-
-
-
-
-
-
-
+    
+    interface
+        module function f() result(i)
+            integer :: i
+        end function
+    end interface
 
 
 
@@ -96,8 +94,10 @@ contains
         procedure(ubound_assumed_size) :: p
     end subroutine proc_param
 
-
-
+    module function f() result(r)
+        real :: r
+        r = 5.5
+    end function
 
 
 
