@@ -5171,55 +5171,82 @@ namespace StringConcat {
     }
 
     
+    // Compute string length expression without embedding nested StringConcats.
+    // For StringConcat expressions, recursively compute len(arg1) + len(arg2).
+    // For other expressions, use StringLen directly.
+    inline ASR::expr_t* get_safe_string_len(Allocator &al, const Location &loc,
+            ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
+        if (str_type->m_len) {
+            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+        }
+        // For deferred-length strings, check if expr is a StringConcat.
+        // If so, recursively compute the length to avoid embedding the
+        // StringConcat expression in a StringLen node (which causes infinite
+        // recursion when the visitor processes the call arguments).
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+            ASR::IntrinsicElementalFunction_t* ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            if (ief->m_intrinsic_id == static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat)) {
+                ASR::expr_t* len1 = get_safe_string_len(al, loc, ief->m_args[0],
+                    ASRUtils::expr_type(ief->m_args[0]), b);
+                ASR::expr_t* len2 = get_safe_string_len(al, loc, ief->m_args[1],
+                    ASRUtils::expr_type(ief->m_args[1]), b);
+                return b.Add(len1, len2);
+            }
+        }
+        return b.StringLen(expr);
+    }
+
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
-        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
-            ASRBuilder b(al, loc);
-            ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-            return f_call;
-        }
-        
         declare_basic_variables(intrinsic_fn_name)
 
-        /* Args */
+        // Compute argument lengths safely, avoiding circular references for
+        // nested StringConcat expressions.
+        ASR::expr_t* s1_len_arg = get_safe_string_len(al, loc, new_args[0].m_value, arg_types[0], b);
+        ASR::expr_t* s2_len_arg = get_safe_string_len(al, loc, new_args[1].m_value, arg_types[1], b);
+
+        // Build call_args with explicit lengths
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 4);
+        call_args.push_back(al, new_args[0]);
+        call_args.push_back(al, new_args[1]);
+        ASR::call_arg_t len1_arg; len1_arg.loc = loc; len1_arg.m_value = s1_len_arg;
+        ASR::call_arg_t len2_arg; len2_arg.loc = loc; len2_arg.m_value = s2_len_arg;
+        call_args.push_back(al, len1_arg);
+        call_args.push_back(al, len2_arg);
+
+        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){
+            return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        }
+
+        /* Function signature: (s1, s2, s1_len, s2_len) -> concat_result */
         fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
         fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
+        fill_func_arg("s1_len", int32)
+        fill_func_arg("s2_len", int32)
 
-        /* Return Variable */
         ASR::expr_t* ret_var = declare(
-                                "concat_result",
-                                b.String(b.Add(b.StringLen(args[0]) /* s1 */, b.StringLen(args[1]) /* s2 */), ASR::ExpressionLength),
-                                ReturnVar);
+            "concat_result",
+            b.String(b.Add(args[2], args[3]), ASR::ExpressionLength),
+            ReturnVar);
 
-        /* Body */
-        /*
-            function lcompilers_stringconcat(s1, s2) result(concat_result)
-                character(*) :: s1
-                character(*) :: s2
-                character(len(s1) + len(s2)) :: concat_result
-                concat_result(1 : len(s1)) = s1
-                concat_result(len(s1) + 1 : len(concat_result)) = s2
-            end function
-        */
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), b.StringLen(args[0]/*s1*/)), args[0]));
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(b.StringLen(args[0]/*s1*/), b.i32(1)), b.StringLen(ret_var)), args[1]));
+        /* Body: copy s1 then s2 into result using explicit lengths */
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.i32(1), args[2]),
+            args[0]));
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.Add(args[2], b.i32(1)), b.StringLen(ret_var)),
+            args[1]));
 
-        /* Create The function symbol */
-        ASR::symbol_t *f_sym = make_ASR_Function_t( 
-                                fn_name, fn_symtab,
-                                dep, args,
-                                body,
-                                ret_var,
-                                ASR::abiType::Source,
-                                ASR::deftypeType::Implementation,
-                                nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(
+            fn_name, fn_symtab, dep, args, body, ret_var,
+            ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_or_overwrite_symbol(fn_name, f_sym);
 
-        /* Create Call + Replace FuncParams */
-        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-        return f_call;
+        return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
     }
 
 }

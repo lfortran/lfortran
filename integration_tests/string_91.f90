@@ -7,7 +7,7 @@ program old_charlen
   string5 = "hello"
   string5const = "world"
   string5expr = "12345"
-  
+
   print *, string5
   print *, string5const
   print *, string5expr
