@@ -513,6 +513,11 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // Mark COMMON blocks as declared before processing contained procedures.
+        // This ensures that internal procedures referencing the same COMMON block
+        // will map their variables to the existing struct members by byte offset,
+        // rather than creating new struct members.
+        mark_common_blocks_as_declared();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
