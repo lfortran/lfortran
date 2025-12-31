@@ -243,6 +243,16 @@
                                     iostat_eor
                                     Public
                                 ),
+                            logical8:
+                                (ExternalSymbol
+                                    2
+                                    logical8
+                                    4 logical8
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical8
+                                    Public
+                                ),
                             logical_kinds:
                                 (ExternalSymbol
                                     2
@@ -1197,6 +1207,16 @@
                                     ()
                                     .false.
                                     .false.
+                                ),
+                            logical8:
+                                (ExternalSymbol
+                                    12
+                                    logical8
+                                    4 logical8
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical8
+                                    Public
                                 ),
                             logical_kinds:
                                 (ExternalSymbol
