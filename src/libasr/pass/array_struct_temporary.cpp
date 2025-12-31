@@ -2446,18 +2446,32 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.is_simd_expression = ASRUtils::is_simd_array(x.m_value);
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
         replacer.lhs_var = lhs_array_var;
+
+        // For self-referencing allocatable struct array assignments (e.g., arr = arr(2:3)),
+        // we must create a temporary even when target is allocatable, because struct_deepcopy
+        // in codegen does realloc which frees the source memory before copying.
+        // For simple arrays, realloc_lhs handles this correctly, but struct arrays need special care.
+        // IMPORTANT: Check BEFORE call_replacer() transforms x.m_value.
+        bool is_self_ref_struct_array = lhs_array_var &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            !ASRUtils::is_simd_array(x.m_value) &&
+            ASRUtils::is_allocatable(x.m_target) &&
+            ASRUtils::is_struct(*ASRUtils::expr_type(x.m_value)) &&
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value);
+
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_elemental_expr(x.m_value);
-        if(  is_assignment_target_array_section_item || 
-            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && 
+        if(  is_assignment_target_array_section_item ||
+            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
             (lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             !ASRUtils::is_simd_array(x.m_value) &&
             !ASRUtils::is_allocatable(x.m_target) &&
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ) {
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
+            is_self_ref_struct_array ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
         }
