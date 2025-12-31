@@ -221,6 +221,41 @@ typedef void (*verify_function)(
 
 typedef ASR::expr_t* (*get_initial_value_func)(Allocator&, ASR::ttype_t*);
 
+// Check if expression contains FunctionCall - used to determine if we need
+// FunctionCall wrapper (for proper pass handling) vs direct IntrinsicElementalFunction
+static inline bool contains_function_call(ASR::expr_t* expr) {
+    if (!expr) return false;
+    switch (expr->type) {
+        case ASR::exprType::FunctionCall:
+            return true;
+        case ASR::exprType::IntrinsicElementalFunction: {
+            auto* x = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (contains_function_call(x->m_args[i])) return true;
+            }
+            return false;
+        }
+        case ASR::exprType::StringLen:
+            return contains_function_call(ASR::down_cast<ASR::StringLen_t>(expr)->m_arg);
+        case ASR::exprType::Cast:
+            return contains_function_call(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        case ASR::exprType::IntegerBinOp: {
+            auto* x = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            return contains_function_call(x->m_left) || contains_function_call(x->m_right);
+        }
+        case ASR::exprType::RealBinOp: {
+            auto* x = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            return contains_function_call(x->m_left) || contains_function_call(x->m_right);
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+            return contains_function_call(ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+        case ASR::exprType::RealUnaryMinus:
+            return contains_function_call(ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_arg);
+        default:
+            return false;
+    }
+}
+
 namespace UnaryIntrinsicFunction {
 
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
@@ -833,7 +868,18 @@ namespace Abs {
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM fabs/select intrinsics
+        if ((is_integer(*arg_types[0]) || is_real(*arg_types[0])) &&
+            !contains_function_call(new_args[0].m_value)) {
+            Vec<ASR::expr_t*> args; args.reserve(al, 1);
+            args.push_back(al, new_args[0].m_value);
+            return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Abs),
+                args.p, 1, overload_id, return_type, nullptr));
+        }
+        // Complex or args contain FunctionCall: create wrapper function
         std::string func_name = "_lcompilers_abs_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
@@ -843,13 +889,6 @@ namespace Abs {
         }
         fill_func_arg("x", arg_types[0]);
         auto result = declare(func_name, return_type, ReturnVar);
-        /*
-            * if (x >= 0) then
-            *     r = x
-            * else
-            *     r = -x
-            * end if
-        */
         if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
             if (is_integer(*arg_types[0])) {
                 body.push_back(al, b.If(b.GtE(args[0], b.i_t(0, arg_types[0])), {
@@ -865,7 +904,7 @@ namespace Abs {
                 }));
             }
         } else {
-            // * Complex type: `r = (real(x)**2 + aimag(x)**2)**0.5`
+            // Complex type: r = sqrt(real(x)**2 + aimag(x)**2)
             ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
                                         ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
             ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
@@ -6697,10 +6736,31 @@ namespace Max {
 
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM FCmp+select
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            bool has_func_call = false;
+            for (size_t i = 0; i < new_args.size(); i++) {
+                if (contains_function_call(new_args[i].m_value)) {
+                    has_func_call = true;
+                    break;
+                }
+            }
+            if (!has_func_call) {
+                Vec<ASR::expr_t*> args; args.reserve(al, new_args.size());
+                for (size_t i = 0; i < new_args.size(); i++) {
+                    args.push_back(al, new_args[i].m_value);
+                }
+                return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+                    args.p, args.size(), overload_id, return_type, nullptr));
+            }
+        }
+        // String or args contain FunctionCall: create wrapper function
         declare_basic_variables("_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-        ASR::ttype_t* function_return_type = return_type; // Function-variable-return type.
+        ASR::ttype_t* function_return_type = return_type;
         if (ASRUtils::is_string_only(arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
@@ -6716,34 +6776,15 @@ namespace Max {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, function_return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else {
-            LCOMPILERS_ASSERT(false);
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Gt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
         }
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -6868,10 +6909,30 @@ namespace Min {
 
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM FCmp+select
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            bool has_func_call = false;
+            for (size_t i = 0; i < new_args.size(); i++) {
+                if (contains_function_call(new_args[i].m_value)) {
+                    has_func_call = true;
+                    break;
+                }
+            }
+            if (!has_func_call) {
+                Vec<ASR::expr_t*> args; args.reserve(al, new_args.size());
+                for (size_t i = 0; i < new_args.size(); i++) {
+                    args.push_back(al, new_args[i].m_value);
+                }
+                return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(IntrinsicElementalFunctions::Min),
+                    args.p, args.size(), overload_id, return_type, nullptr));
+            }
+        }
+        // String or args contain FunctionCall: create wrapper function
         declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
@@ -6888,38 +6949,21 @@ namespace Min {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Lt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
+        }
+        if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
