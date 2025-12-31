@@ -11605,6 +11605,82 @@ public:
                             }
                         }
                     }
+                    // General case: generate a loop to read elements one by one
+                    // This handles multi-dimensional arrays like (a(i,j), j=1,n)
+                    if (idl->n_values == 1 && ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0])) {
+                        ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
+                            ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+
+                        // Get loop bounds
+                        this->visit_expr_wrapper(idl->m_start, true);
+                        llvm::Value* start_val = tmp;
+                        this->visit_expr_wrapper(idl->m_end, true);
+                        llvm::Value* end_val = tmp;
+                        llvm::Value* inc_val;
+                        if (idl->m_increment) {
+                            this->visit_expr_wrapper(idl->m_increment, true);
+                            inc_val = tmp;
+                        } else {
+                            inc_val = llvm::ConstantInt::get(start_val->getType(), 1);
+                        }
+
+                        // Create loop variable alloca if not already in symtab
+                        uint32_t loop_var_hash = get_hash((ASR::asr_t*)loop_var_sym);
+                        llvm::Value* loop_var_ptr;
+                        if (llvm_symtab.find(loop_var_hash) == llvm_symtab.end()) {
+                            loop_var_ptr = builder->CreateAlloca(start_val->getType(), nullptr,
+                                loop_var_sym->m_name);
+                            llvm_symtab[loop_var_hash] = loop_var_ptr;
+                        } else {
+                            loop_var_ptr = llvm_symtab[loop_var_hash];
+                        }
+
+                        // Initialize loop variable
+                        builder->CreateStore(start_val, loop_var_ptr);
+
+                        // Create loop blocks
+                        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "idl.cond", fn);
+                        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "idl.body", fn);
+                        llvm::BasicBlock* loop_inc = llvm::BasicBlock::Create(context, "idl.inc", fn);
+                        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(context, "idl.end", fn);
+
+                        builder->CreateBr(loop_cond);
+
+                        // Loop condition
+                        builder->SetInsertPoint(loop_cond);
+                        llvm::Value* curr_val = builder->CreateLoad(start_val->getType(), loop_var_ptr);
+                        llvm::Value* cond = builder->CreateICmpSLE(curr_val, end_val);
+                        builder->CreateCondBr(cond, loop_body, loop_end);
+
+                        // Loop body - read one element
+                        builder->SetInsertPoint(loop_body);
+
+                        // Get pointer to array element
+                        int ptr_loads_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr(*idl->m_values[0]);
+                        llvm::Value* elem_ptr = tmp;
+                        ptr_loads = ptr_loads_copy;
+
+                        // Read into this element (scalar read takes 2 args: ptr, unit)
+                        ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
+                        llvm::Function* read_fn = get_read_function(elem_type);
+                        builder->CreateCall(read_fn, {elem_ptr, unit_val});
+
+                        builder->CreateBr(loop_inc);
+
+                        // Loop increment
+                        builder->SetInsertPoint(loop_inc);
+                        llvm::Value* next_val = builder->CreateAdd(
+                            builder->CreateLoad(start_val->getType(), loop_var_ptr), inc_val);
+                        builder->CreateStore(next_val, loop_var_ptr);
+                        builder->CreateBr(loop_cond);
+
+                        // Continue after loop
+                        builder->SetInsertPoint(loop_end);
+                        continue;
+                    }
                     // Unsupported ImpliedDoLoop pattern - fall through to default handling
                 }
 
