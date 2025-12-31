@@ -2385,6 +2385,7 @@ RUN(NAME procedure_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES p
 RUN(NAME procedure_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME procedure_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
