@@ -5180,6 +5180,72 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
+// Shared buffer parsing functions for formatted reads
+// These functions parse already-read data from a buffer, allowing code reuse
+// between file-based and string-based formatted reads.
+
+static void parse_integer_from_buffer(char* buffer, int field_len, 
+        void* int_ptr, int32_t type_code)
+{
+    if (type_code == 2) {
+        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
+    } else {
+        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
+    }
+}
+
+static void parse_real_from_buffer(char* buffer, int field_len,
+        void* real_ptr, int32_t type_code)
+{
+    // Replace D/d with E for parsing
+    for (int i = 0; i < field_len; i++) {
+        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
+    }
+
+    double v = strtod(buffer, NULL);
+    if (type_code == 4) {
+        *((float*)real_ptr) = (float)v;
+    } else {
+        *((double*)real_ptr) = v;
+    }
+}
+
+static void parse_logical_from_buffer(char* buffer, int field_len,
+        int32_t* log_ptr)
+{
+    *log_ptr = 0;
+    for (int i = 0; i < field_len; i++) {
+        char c = toupper(buffer[i]);
+        if (c == 'T') {
+            *log_ptr = 1;
+            break;
+        } else if (c == 'F') {
+            *log_ptr = 0;
+            break;
+        }
+    }
+}
+
+static void parse_character_from_buffer(char* buffer, int field_len,
+        char* str_data, int64_t str_len, int width)
+{
+    pad_with_spaces(str_data, 0, str_len);
+    if (width > (int)str_len) {
+        if (field_len >= width) {
+            memcpy(str_data, buffer + (width - (int)str_len), (size_t)str_len);
+        } else if (field_len >= (int)str_len) {
+            memcpy(str_data, buffer + (field_len - (int)str_len), (size_t)str_len);
+        } else if (field_len > 0) {
+            memcpy(str_data, buffer, (size_t)field_len);
+        }
+    } else {
+        int copy_len = field_len;
+        if (copy_len > width) copy_len = width;
+        if (copy_len > (int)str_len) copy_len = (int)str_len;
+        if (copy_len > 0) memcpy(str_data, buffer, (size_t)copy_len);
+    }
+}
+
 static bool read_field(FILE *filep, int read_width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         char **buffer, int *field_len)
@@ -5240,21 +5306,7 @@ static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    pad_with_spaces(str_data, 0, str_len);
-    if (read_width > (int)str_len) {
-        if (field_len >= read_width) {
-            memcpy(str_data, buffer + (read_width - (int)str_len), (size_t)str_len);
-        } else if (field_len >= (int)str_len) {
-            memcpy(str_data, buffer + (field_len - (int)str_len), (size_t)str_len);
-        } else if (field_len > 0) {
-            memcpy(str_data, buffer, (size_t)field_len);
-        }
-    } else {
-        int copy_len = field_len;
-        if (copy_len > read_width) copy_len = read_width;
-        if (copy_len > (int)str_len) copy_len = (int)str_len;
-        if (copy_len > 0) memcpy(str_data, buffer, (size_t)copy_len);
-    }
+    parse_character_from_buffer(buffer, field_len, str_data, str_len, read_width);
 
     free(buffer);
     return true;
@@ -5278,17 +5330,7 @@ static bool handle_read_L(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    *log_ptr = 0;
-    for (int i = 0; i < field_len; i++) {
-        char c = toupper(buffer[i]);
-        if (c == 'T') {
-            *log_ptr = 1;
-            break;
-        } else if (c == 'F') {
-            *log_ptr = 0;
-            break;
-        }
-    }
+    parse_logical_from_buffer(buffer, field_len, log_ptr);
 
     free(buffer);
     return true;
@@ -5311,11 +5353,7 @@ static bool handle_read_I(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
-    } else {
-        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
-    }
+    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code);
 
     free(buffer);
     return true;
@@ -5351,16 +5389,7 @@ static bool handle_read_real(FILE *filep, va_list *args, int width, bool advance
         return false;
     }
 
-    for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
-    }
-
-    double v = strtod(buffer, NULL);
-    if (type_code == 4) {
-        *((float*)real_ptr) = (float)v;
-    } else {
-        *((double*)real_ptr) = v;
-    }
+    parse_real_from_buffer(buffer, field_len, real_ptr, type_code);
 
     free(buffer);
     return true;
