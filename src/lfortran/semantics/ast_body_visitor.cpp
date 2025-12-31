@@ -5564,6 +5564,78 @@ public:
         all_loops_blocks_nesting -= 1;
     }
 
+    void visit_ForAll(const AST::ForAll_t &x) {
+        all_loops_blocks_nesting += 1;
+        if (x.n_control != 1) {
+            diag.add(Diagnostic(
+                "Forall block: one control statement is supported for now",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (x.n_body != 1) {
+            diag.add(Diagnostic(
+                "Forall block: one body statement is supported for now",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        
+        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
+        if (!h.m_var) {
+            diag.add(Diagnostic(
+                "Forall block: loop variable is required",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (!h.m_start) {
+            diag.add(Diagnostic(
+                "Forall block: start condition is required",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (!h.m_end) {
+            diag.add(Diagnostic(
+                "Forall block: end condition is required",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        
+        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+        visit_expr(*h.m_start);
+        ASR::expr_t *start = ASRUtils::EXPR(tmp);
+        visit_expr(*h.m_end);
+        ASR::expr_t *end = ASRUtils::EXPR(tmp);
+        ASR::expr_t *increment;
+        if (h.m_increment) {
+            visit_expr(*h.m_increment);
+            increment = ASRUtils::EXPR(tmp);
+        } else {
+            increment = nullptr;
+        }
+        
+        ASR::do_loop_head_t head;
+        head.m_v = var;
+        head.m_start = start;
+        head.m_end = end;
+        head.m_increment = increment;
+        head.loc = head.m_v->base.loc;
+        
+        this->visit_stmt(*x.m_body[0]);
+        ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+        
+        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+        all_loops_blocks_nesting -= 1;
+    }
+
     void visit_Exit(const AST::Exit_t &x) {
         if (all_loops_blocks_nesting == 0) {
             diag.add(Diagnostic("`exit` statements cannot be outside of loops or blocks",
