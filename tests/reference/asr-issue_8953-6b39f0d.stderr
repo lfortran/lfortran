@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument `x`: expected `type(derived)` but got `integer`
+  --> tests/errors/issue_8953.f90:23:10
+   |
+23 |   call s(r)
+   |          ^ 

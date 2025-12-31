@@ -4924,3 +4924,8 @@ llvm = true
 [[test]]
 filename = "../integration_tests/transfer_09.f90"
 asr = true
+
+[[test]]
+filename = "errors/issue_8953.f90"
+asr = true
+options = "--cpp"
