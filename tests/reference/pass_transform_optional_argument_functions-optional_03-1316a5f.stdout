@@ -70,52 +70,6 @@
                                     .false.
                                     .false.
                                 ),
-                            __libasr_created_dummy_variable_functioncall_:
-                                (Variable
-                                    5
-                                    __libasr_created_dummy_variable_functioncall_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Integer 4)
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            __libasr_created_dummy_variable_functioncall_1:
-                                (Variable
-                                    5
-                                    __libasr_created_dummy_variable_functioncall_1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Integer 4)
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
                             __libasr_created_variable_pointer_:
                                 (Variable
                                     5
@@ -218,6 +172,52 @@
                                     .false.
                                     .false.
                                 ),
+                            lfortran_tmp:
+                                (Variable
+                                    5
+                                    lfortran_tmp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            lfortran_tmp1:
+                                (Variable
+                                    5
+                                    lfortran_tmp1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             my_sub:
                                 (ExternalSymbol
                                     5
@@ -248,20 +248,20 @@
                             ()
                         )
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_2)
+                            (Var 5 __libasr_created_variable_pointer_)
                             (Var 5 i)
                         )]
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_2)
-                            (Var 5 __libasr_created_dummy_variable_2)
+                            (Var 5 __libasr_created_variable_pointer_)
+                            (Var 5 __libasr_created_dummy_variable_)
                         )]
                     )
                     (Assignment
-                        (Var 5 __libasr_created_dummy_variable_functioncall_1)
+                        (Var 5 lfortran_tmp)
                         (FunctionCall
                             5 f1
                             ()
-                            [((Var 5 __libasr_created_variable_pointer_2))
+                            [((Var 5 __libasr_created_variable_pointer_))
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
@@ -292,14 +292,14 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 5 __libasr_created_dummy_variable_functioncall_1)]
+                            [(Var 5 lfortran_tmp)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
-                            (Var 5 __libasr_created_dummy_variable_functioncall_1)
+                            (Var 5 lfortran_tmp)
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
@@ -307,7 +307,7 @@
                         )]
                     )
                     (Assignment
-                        (Var 5 __libasr_created_dummy_variable_functioncall_)
+                        (Var 5 lfortran_tmp1)
                         (FunctionCall
                             5 f1
                             ()
@@ -315,7 +315,7 @@
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
-                                    [(Var 5 __libasr_created_dummy_variable_functioncall_1)]
+                                    [(Var 5 lfortran_tmp)]
                                     0
                                     (Logical 4)
                                     ()
@@ -342,18 +342,18 @@
                         ()
                         (IntrinsicImpureFunction
                             Allocated
-                            [(Var 5 __libasr_created_dummy_variable_functioncall_)]
+                            [(Var 5 lfortran_tmp1)]
                             0
                             (Logical 4)
                             ()
                         )
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_)
-                            (Var 5 __libasr_created_dummy_variable_functioncall_)
+                            (Var 5 __libasr_created_variable_pointer_2)
+                            (Var 5 lfortran_tmp1)
                         )]
                         [(Associate
-                            (Var 5 __libasr_created_variable_pointer_)
-                            (Var 5 __libasr_created_dummy_variable_)
+                            (Var 5 __libasr_created_variable_pointer_2)
+                            (Var 5 __libasr_created_dummy_variable_2)
                         )]
                     )
                     (SubroutineCall
@@ -362,11 +362,11 @@
                         [((FunctionCall
                             5 f1
                             ()
-                            [((Var 5 __libasr_created_variable_pointer_))
+                            [((Var 5 __libasr_created_variable_pointer_2))
                             ((LogicalBinOp
                                 (IntrinsicImpureFunction
                                     Allocated
-                                    [(Var 5 __libasr_created_dummy_variable_functioncall_)]
+                                    [(Var 5 lfortran_tmp1)]
                                     0
                                     (Logical 4)
                                     ()
