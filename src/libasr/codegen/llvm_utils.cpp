@@ -8987,9 +8987,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     }
                 }
             }
-
-            if ((std::string)struct_sym->m_name == "~unlimited_polymorphic_type") {
-                // For unlimited polymorphic structs, we need to copy from vtable copy function
+            
+            bool is_unlimited_polymorphic = (std::string)struct_sym->m_name == "~unlimited_polymorphic_type";
+            if (is_unlimited_polymorphic || (is_src_class && is_dest_class)) {
+                // For unlimited polymorphic structs or class-to-class copy,
+                // we need to copy from vtable copy function to handle derived types
                 llvm::Value* vptr = builder->CreateBitCast(src, llvm_utils->vptr_type->getPointerTo());
                 vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
                 llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
@@ -8998,10 +9000,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
                 fn = builder->CreateBitCast(fn, fnPtrTy);
                 llvm::Type* poly_llvm_type = llvm_utils->getClassType(struct_sym, false);
-                llvm::Value* src_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(poly_llvm_type, src, 1));
-                llvm::Value* dest_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                llvm::Value* src_ptr;
+                llvm::Value* dest_ptr;
+                if (is_unlimited_polymorphic) {
+                    src_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                    dest_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                } else {
+                    llvm::Type* struct_llvm_type = llvm_utils->getStructType(struct_sym, module);
+                    src_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
+                        llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                    dest_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
+                        llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                    src_ptr = builder->CreateBitCast(src_ptr, llvm_utils->i8_ptr);
+                    dest_ptr = builder->CreateBitCast(dest_ptr, llvm_utils->i8_ptr);
+                }
+
                 builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
                 return ;
             }
