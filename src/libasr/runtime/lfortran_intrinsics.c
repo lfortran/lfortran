@@ -467,7 +467,13 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
 
     char formatted_value[256];
     double abs_val = fabs(val);
-    if (is_g0_like) {
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "NaN");
+    } else if (isinf(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "%sInfinity", (val < 0) ? "-" : "");
+    } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
         double scaled_val = val;
@@ -478,7 +484,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             exponent -= remainder;
             scaled_val = val / pow(10, exponent);
         }
-        
+
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
@@ -552,6 +558,26 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int width_digits, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
     int width = width_digits;
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val) || isinf(val)) {
+        const char* special_str = isnan(val) ? "NaN" : ((val < 0) ? "-Infinity" : "Infinity");
+        int special_len = strlen(special_str);
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
+    }
+
     int digits = decimal_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
@@ -2095,15 +2121,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     int precision = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
-                    } 
-                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    }
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'g'
                     if (dot != NULL) {
                         precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
                     char formatted[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
+                        if (isnan(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "NaN");
+                        } else if (isinf(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                        } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
                             snprintf(formatted, sizeof(formatted), format_spec, double_val);
@@ -3724,18 +3754,64 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
+// Pre-connect standard Fortran units at program startup.
+// The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
+// pre-connected, but their values are processor-dependent. Units 5/6/0 are
+// a widely-used convention (gfortran, ifort, etc.) for legacy compatibility.
+static bool _lfortran_standard_units_initialized = false;
+
+static void _lfortran_init_standard_units(void) {
+    if (_lfortran_standard_units_initialized) return;
+    _lfortran_standard_units_initialized = true;
+    // Unit 5: stdin (read-only, formatted, sequential)
+    unit_to_file[0].unit = 5;
+    unit_to_file[0].filename = NULL;
+    unit_to_file[0].filep = stdin;
+    unit_to_file[0].unit_file_bin = false;
+    unit_to_file[0].access_id = 0;  // sequential
+    unit_to_file[0].read_access = true;
+    unit_to_file[0].write_access = false;
+    unit_to_file[0].delim = 0;
+
+    // Unit 6: stdout (write-only, formatted, sequential)
+    unit_to_file[1].unit = 6;
+    unit_to_file[1].filename = NULL;
+    unit_to_file[1].filep = stdout;
+    unit_to_file[1].unit_file_bin = false;
+    unit_to_file[1].access_id = 0;  // sequential
+    unit_to_file[1].read_access = false;
+    unit_to_file[1].write_access = true;
+    unit_to_file[1].delim = 0;
+
+    // Unit 0: stderr (write-only, formatted, sequential)
+    unit_to_file[2].unit = 0;
+    unit_to_file[2].filename = NULL;
+    unit_to_file[2].filep = stderr;
+    unit_to_file[2].unit_file_bin = false;
+    unit_to_file[2].access_id = 0;  // sequential
+    unit_to_file[2].read_access = false;
+    unit_to_file[2].write_access = true;
+    unit_to_file[2].delim = 0;
+
+    last_index_used = 2;
+}
+
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim) {
+    _lfortran_init_standard_units();
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            unit_to_file[i].unit = unit_num;
+            // Update existing entry
+            unit_to_file[i].filename = filename;
             unit_to_file[i].filep = filep;
             unit_to_file[i].unit_file_bin = unit_file_bin;
             unit_to_file[i].access_id = access_id;
             unit_to_file[i].read_access = read_access;
             unit_to_file[i].write_access = write_access;
             unit_to_file[i].delim = delim;
+            return;  // Don't add duplicate entry
         }
     }
+    // Add new entry
     last_index_used += 1;
     if( last_index_used >= MAXUNITS ) {
         printf("Only %d units can be opened for now\n.", MAXUNITS);
@@ -3752,6 +3828,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim) {
+    _lfortran_init_standard_units();
     if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
@@ -3767,6 +3844,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
 }
 
 char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    _lfortran_init_standard_units();
     *unit_file_bin = false;
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].unit == unit_num) {
@@ -4527,11 +4605,11 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
         // converting token to lowecase
         for (int i = 0; token[i]; ++i) token[i] = tolower((unsigned char) token[i]);
 
-        // Check for logical values
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
-        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        // Check for logical values (Fortran accepts T/F, .true./.false., true/false)
+        if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
         else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
             exit(1);
         }
         return;
@@ -4572,11 +4650,11 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num)
             token[i] = tolower((unsigned char) token[i]);
         }
 
-        // comparing once
-        if (strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
-        else if (strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
+        // Check for logical values (Fortran accepts T/F, .true./.false., true/false)
+        if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 || strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) *p = true;
+        else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 || strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) *p = false;
         else {
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use .true., .false., true, false\n", token);
+            fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
             exit(1);
         }
     }
@@ -5808,7 +5886,8 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     const char *scratch_file = "_lfortran_generated_file";
     const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
 
-    bool is_temp_file =
+    // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
+    bool is_temp_file = (file_name != NULL) &&
         (strncmp(file_name, scratch_file, scratch_file_len) == 0);
 
     bool delete_requested = false;

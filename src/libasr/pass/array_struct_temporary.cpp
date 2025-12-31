@@ -1522,8 +1522,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FileRead(const ASR::FileRead_t& x) {
-        ASR::FileRead_t& xx = const_cast<ASR::FileRead_t&>(x);
-        visit_IO(xx.m_values, xx.n_values, "file_read");
+        // For FileRead, skip ImpliedDoLoop (handled directly in codegen)
+        // Process only non-ImpliedDoLoop values through visit_IO
+        Vec<ASR::expr_t*> non_idl_values;
+        non_idl_values.reserve(al, x.n_values);
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
+                non_idl_values.push_back(al, x.m_values[i]);
+            }
+        }
+        if (non_idl_values.size() > 0) {
+            ASR::expr_t** vals = non_idl_values.p;
+            size_t n = non_idl_values.size();
+            visit_IO(vals, n, "file_read");
+        }
         CallReplacerOnExpressionsVisitor::visit_FileRead(x);
     }
 
