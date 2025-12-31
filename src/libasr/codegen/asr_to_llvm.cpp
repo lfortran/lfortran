@@ -12266,7 +12266,15 @@ public:
         } else {
             throw CodeGenError("Unsupported type for `unit` in write(..)");
         }
-        this->visit_expr_wrapper(x.m_unit);
+        // Don't use constant value optimization for assignments to string-sections
+        if (is_string && ASR::is_a<ASR::StringSection_t>(*x.m_unit)) {
+            bool is_assignment_target_temp = is_assignment_target;
+            is_assignment_target = true;
+            this->visit_expr_wrapper(x.m_unit);
+            is_assignment_target = is_assignment_target_temp;
+        } else {
+            this->visit_expr_wrapper(x.m_unit);
+        }
         ptr_loads = ptr_loads_copy;
 
         llvm::Value* string_len;
