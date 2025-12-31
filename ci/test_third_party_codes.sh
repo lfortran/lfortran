@@ -902,7 +902,7 @@ time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
     cmake -S . -B build -G Ninja \
       $TOOLCHAIN_OPT \
       -DCMAKE_Fortran_COMPILER=lfortran \
-      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_INDEX64=OFF \
       -DBUILD_INDEX64_EXT_API=OFF \
@@ -936,6 +936,57 @@ TESTEOF
 
     lfortran --implicit-interface test_dgesv.f90 -L build/lib -llapack -lblas -o test_dgesv
     ./test_dgesv
+'
+
+##########################
+# Section 15: Reference-LAPACK with BUILD_TESTING
+##########################
+time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    cd lapack-testing
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Configure with LFortran and BUILD_TESTING=ON
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=OFF \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=OFF \
+      -DBUILD_COMPLEX16=OFF \
+      -DBUILD_TESTING=ON
+
+    # Build BLAS, LAPACK, and test executables
+    cmake --build build -j8
+
+    # Run LAPACK linear tests (xlintsts). Failures are currently non-fatal.
+    cd build
+    print_subsection "Running LAPACK linear tests (xlintsts)"
+    set +e
+    ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts.out
+    xlintsts_status=${PIPESTATUS[0]}
+    set -e
+    echo "xlintsts exit code: ${xlintsts_status}"
+
+    if grep -q "passed.*failed" xlintsts.out; then
+        grep "passed.*failed" xlintsts.out
+    fi
+
+    print_subsection "LAPACK BUILD_TESTING tests completed"
+    cd ../..
 '
 
 ##################################
