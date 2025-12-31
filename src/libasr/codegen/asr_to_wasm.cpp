@@ -2645,23 +2645,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 } else if (ASRUtils::is_integer(*arg_type)) {
                     // abs(x) = x >= 0 ? x : -x (branchless with select)
-                    // Stack order for select: [if_false, if_true, condition]
+                    // Stack order for select: [val1, val2, cond]
+                    // Returns val1 if cond != 0, else val2
                     if (kind == 4) {
                         m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // x (val1)
                         m_wa.emit_i32_const(0);
                         m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
-                        m_wa.emit_i32_sub();  // -x (if_false)
-                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // x (if_true)
+                        m_wa.emit_i32_sub();  // -x (val2)
                         m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
                         m_wa.emit_i32_const(0);
                         m_wa.emit_i32_ge_s();  // x >= 0 (condition)
                         m_wa.emit_select();
                     } else if (kind == 8) {
                         m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // x (val1)
                         m_wa.emit_i64_const(0);
                         m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
-                        m_wa.emit_i64_sub();  // -x (if_false)
-                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // x (if_true)
+                        m_wa.emit_i64_sub();  // -x (val2)
                         m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
                         m_wa.emit_i64_const(0);
                         m_wa.emit_i64_ge_s();  // x >= 0 (condition)
@@ -2691,12 +2692,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         }
                     } else if (ASRUtils::is_integer(*arg_type)) {
                         // max(a, b) = a > b ? a : b
-                        // Stack: [a, b] -> need [if_false=b, if_true=a, cond=a>b]
+                        // Stack: [a, b] -> need [val1=a, val2=b, cond=a>b]
+                        // Returns val1=a if a > b, else val2=b
                         if (kind == 4) {
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);  // b
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i32]); // a
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (if_false)
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (val1)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (val2)
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]);
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
                             m_wa.emit_i32_gt_s();  // a > b (condition)
@@ -2704,8 +2706,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         } else if (kind == 8) {
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);  // b
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i64]); // a
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (if_false)
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (val1)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (val2)
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]);
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
                             m_wa.emit_i64_gt_s();  // a > b (condition)
@@ -2736,12 +2738,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         }
                     } else if (ASRUtils::is_integer(*arg_type)) {
                         // min(a, b) = a < b ? a : b
-                        // Stack: [a, b] -> need [if_false=b, if_true=a, cond=a<b]
+                        // Stack: [a, b] -> need [val1=a, val2=b, cond=a<b]
+                        // Returns val1=a if a < b, else val2=b
                         if (kind == 4) {
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]);  // b
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i32]); // a
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (if_false)
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]); // a (val1)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);  // b (val2)
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i32]);
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]);
                             m_wa.emit_i32_lt_s();  // a < b (condition)
@@ -2749,8 +2752,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         } else if (kind == 8) {
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg_i64]);  // b
                             m_wa.emit_global_set(m_compiler_globals[tmp_reg2_i64]); // a
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (if_false)
-                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (if_true)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]); // a (val1)
+                            m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);  // b (val2)
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg2_i64]);
                             m_wa.emit_global_get(m_compiler_globals[tmp_reg_i64]);
                             m_wa.emit_i64_lt_s();  // a < b (condition)
