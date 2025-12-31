@@ -550,7 +550,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::ListLen:
         case ASR::exprType::ListConstant:
-        case ASR::exprType::ListConcat: {
+        case ASR::exprType::ListConcat:
+        case ASR::exprType::PointerAssociated: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {

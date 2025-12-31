@@ -467,7 +467,13 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
 
     char formatted_value[256];
     double abs_val = fabs(val);
-    if (is_g0_like) {
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "NaN");
+    } else if (isinf(val)) {
+        snprintf(formatted_value, sizeof(formatted_value), "%sInfinity", (val < 0) ? "-" : "");
+    } else if (is_g0_like) {
         // For EN0.0E0, always use engineering notation: scale exponent to multiple of 3
         int exponent = 0;
         double scaled_val = val;
@@ -478,7 +484,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             exponent -= remainder;
             scaled_val = val / pow(10, exponent);
         }
-        
+
         // For EN0.0E0, format with 0 decimal digits but keep the decimal point
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%#.0f", scaled_val);
@@ -552,6 +558,26 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int width_digits, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
     int width = width_digits;
+
+    // Handle special values (Infinity, NaN) before any log10 calculations
+    if (isnan(val) || isinf(val)) {
+        const char* special_str = isnan(val) ? "NaN" : ((val < 0) ? "-Infinity" : "Infinity");
+        int special_len = strlen(special_str);
+        if (width == 0 || special_len <= width) {
+            if (width > special_len) {
+                for (int i = 0; i < width - special_len; i++) {
+                    *result = append_to_string(*result, " ");
+                }
+            }
+            *result = append_to_string(*result, special_str);
+        } else {
+            for (int i = 0; i < width; i++) {
+                *result = append_to_string(*result, "*");
+            }
+        }
+        return;
+    }
+
     int digits = decimal_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
@@ -1777,6 +1803,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
+    free(cleaned_format);
     format_values = parse_fortran_format((const fchar*)modified_input_string, strlen(modified_input_string), &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
@@ -2095,15 +2122,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     int precision = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
-                    } 
-                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    }
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'g'
                     if (dot != NULL) {
                         precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
                     char formatted[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
+                        if (isnan(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "NaN");
+                        } else if (isinf(double_val)) {
+                            snprintf(formatted, sizeof(formatted), "%sInfinity", (double_val < 0) ? "-" : "");
+                        } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
                             snprintf(formatted, sizeof(formatted), format_spec, double_val);
@@ -3724,18 +3755,64 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
+// Pre-connect standard Fortran units at program startup.
+// The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
+// pre-connected, but their values are processor-dependent. Units 5/6/0 are
+// a widely-used convention (gfortran, ifort, etc.) for legacy compatibility.
+static bool _lfortran_standard_units_initialized = false;
+
+static void _lfortran_init_standard_units(void) {
+    if (_lfortran_standard_units_initialized) return;
+    _lfortran_standard_units_initialized = true;
+    // Unit 5: stdin (read-only, formatted, sequential)
+    unit_to_file[0].unit = 5;
+    unit_to_file[0].filename = NULL;
+    unit_to_file[0].filep = stdin;
+    unit_to_file[0].unit_file_bin = false;
+    unit_to_file[0].access_id = 0;  // sequential
+    unit_to_file[0].read_access = true;
+    unit_to_file[0].write_access = false;
+    unit_to_file[0].delim = 0;
+
+    // Unit 6: stdout (write-only, formatted, sequential)
+    unit_to_file[1].unit = 6;
+    unit_to_file[1].filename = NULL;
+    unit_to_file[1].filep = stdout;
+    unit_to_file[1].unit_file_bin = false;
+    unit_to_file[1].access_id = 0;  // sequential
+    unit_to_file[1].read_access = false;
+    unit_to_file[1].write_access = true;
+    unit_to_file[1].delim = 0;
+
+    // Unit 0: stderr (write-only, formatted, sequential)
+    unit_to_file[2].unit = 0;
+    unit_to_file[2].filename = NULL;
+    unit_to_file[2].filep = stderr;
+    unit_to_file[2].unit_file_bin = false;
+    unit_to_file[2].access_id = 0;  // sequential
+    unit_to_file[2].read_access = false;
+    unit_to_file[2].write_access = true;
+    unit_to_file[2].delim = 0;
+
+    last_index_used = 2;
+}
+
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim) {
+    _lfortran_init_standard_units();
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
-            unit_to_file[i].unit = unit_num;
+            // Update existing entry
+            unit_to_file[i].filename = filename;
             unit_to_file[i].filep = filep;
             unit_to_file[i].unit_file_bin = unit_file_bin;
             unit_to_file[i].access_id = access_id;
             unit_to_file[i].read_access = read_access;
             unit_to_file[i].write_access = write_access;
             unit_to_file[i].delim = delim;
+            return;  // Don't add duplicate entry
         }
     }
+    // Add new entry
     last_index_used += 1;
     if( last_index_used >= MAXUNITS ) {
         printf("Only %d units can be opened for now\n.", MAXUNITS);
@@ -3752,6 +3829,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 }
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim) {
+    _lfortran_init_standard_units();
     if (unit_file_bin) *unit_file_bin = false;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
@@ -3767,6 +3845,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
 }
 
 char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
+    _lfortran_init_standard_units();
     *unit_file_bin = false;
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].unit == unit_num) {
@@ -5101,6 +5180,72 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
+// Shared buffer parsing functions for formatted reads
+// These functions parse already-read data from a buffer, allowing code reuse
+// between file-based and string-based formatted reads.
+
+static void parse_integer_from_buffer(char* buffer, int field_len, 
+        void* int_ptr, int32_t type_code)
+{
+    if (type_code == 2) {
+        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
+    } else {
+        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
+    }
+}
+
+static void parse_real_from_buffer(char* buffer, int field_len,
+        void* real_ptr, int32_t type_code)
+{
+    // Replace D/d with E for parsing
+    for (int i = 0; i < field_len; i++) {
+        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
+    }
+
+    double v = strtod(buffer, NULL);
+    if (type_code == 4) {
+        *((float*)real_ptr) = (float)v;
+    } else {
+        *((double*)real_ptr) = v;
+    }
+}
+
+static void parse_logical_from_buffer(char* buffer, int field_len,
+        int32_t* log_ptr)
+{
+    *log_ptr = 0;
+    for (int i = 0; i < field_len; i++) {
+        char c = toupper(buffer[i]);
+        if (c == 'T') {
+            *log_ptr = 1;
+            break;
+        } else if (c == 'F') {
+            *log_ptr = 0;
+            break;
+        }
+    }
+}
+
+static void parse_character_from_buffer(char* buffer, int field_len,
+        char* str_data, int64_t str_len, int width)
+{
+    pad_with_spaces(str_data, 0, str_len);
+    if (width > (int)str_len) {
+        if (field_len >= width) {
+            memcpy(str_data, buffer + (width - (int)str_len), (size_t)str_len);
+        } else if (field_len >= (int)str_len) {
+            memcpy(str_data, buffer + (field_len - (int)str_len), (size_t)str_len);
+        } else if (field_len > 0) {
+            memcpy(str_data, buffer, (size_t)field_len);
+        }
+    } else {
+        int copy_len = field_len;
+        if (copy_len > width) copy_len = width;
+        if (copy_len > (int)str_len) copy_len = (int)str_len;
+        if (copy_len > 0) memcpy(str_data, buffer, (size_t)copy_len);
+    }
+}
+
 static bool read_field(FILE *filep, int read_width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         char **buffer, int *field_len)
@@ -5161,21 +5306,7 @@ static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    pad_with_spaces(str_data, 0, str_len);
-    if (read_width > (int)str_len) {
-        if (field_len >= read_width) {
-            memcpy(str_data, buffer + (read_width - (int)str_len), (size_t)str_len);
-        } else if (field_len >= (int)str_len) {
-            memcpy(str_data, buffer + (field_len - (int)str_len), (size_t)str_len);
-        } else if (field_len > 0) {
-            memcpy(str_data, buffer, (size_t)field_len);
-        }
-    } else {
-        int copy_len = field_len;
-        if (copy_len > read_width) copy_len = read_width;
-        if (copy_len > (int)str_len) copy_len = (int)str_len;
-        if (copy_len > 0) memcpy(str_data, buffer, (size_t)copy_len);
-    }
+    parse_character_from_buffer(buffer, field_len, str_data, str_len, read_width);
 
     free(buffer);
     return true;
@@ -5199,17 +5330,7 @@ static bool handle_read_L(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    *log_ptr = 0;
-    for (int i = 0; i < field_len; i++) {
-        char c = toupper(buffer[i]);
-        if (c == 'T') {
-            *log_ptr = 1;
-            break;
-        } else if (c == 'F') {
-            *log_ptr = 0;
-            break;
-        }
-    }
+    parse_logical_from_buffer(buffer, field_len, log_ptr);
 
     free(buffer);
     return true;
@@ -5232,11 +5353,7 @@ static bool handle_read_I(FILE *filep, va_list *args, int width, bool advance_no
         return false;
     }
 
-    if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
-    } else {
-        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
-    }
+    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code);
 
     free(buffer);
     return true;
@@ -5272,16 +5389,7 @@ static bool handle_read_real(FILE *filep, va_list *args, int width, bool advance
         return false;
     }
 
-    for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
-    }
-
-    double v = strtod(buffer, NULL);
-    if (type_code == 4) {
-        *((float*)real_ptr) = (float)v;
-    } else {
-        *((double*)real_ptr) = v;
-    }
+    parse_real_from_buffer(buffer, field_len, real_ptr, type_code);
 
     free(buffer);
     return true;
@@ -5808,7 +5916,8 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     const char *scratch_file = "_lfortran_generated_file";
     const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
 
-    bool is_temp_file =
+    // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
+    bool is_temp_file = (file_name != NULL) &&
         (strncmp(file_name, scratch_file, scratch_file_len) == 0);
 
     bool delete_requested = false;

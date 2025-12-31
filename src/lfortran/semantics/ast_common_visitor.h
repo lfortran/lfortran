@@ -3571,10 +3571,38 @@ public:
                                                 v->m_storage = ASR::storage_typeType::Parameter;
                                                 if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
                                                     ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
-                                                    init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
+                                                    if (ASRUtils::is_complex(*v->m_type)) {
+                                                        ASR::expr_t* complex_value = ASRUtils::EXPR(
+                                                            ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                                                                rc->m_r, 0.0, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                            ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                                rc->m_r, rc->m_type)),
+                                                            ASR::cast_kindType::RealToComplex, v->m_type, complex_value));
+                                                    } else {
+                                                        init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
+                                                    }
                                                 } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val)) {
                                                     ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(init_val);
-                                                    init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
+                                                    if (ASRUtils::is_complex(*v->m_type)) {
+                                                        ASR::expr_t* complex_value = ASRUtils::EXPR(
+                                                            ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                                                                (double)ic->m_n, 0.0, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                ic->m_n, ic->m_type)),
+                                                            ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value));
+                                                    } else if (ASRUtils::is_real(*v->m_type)) {
+                                                        ASR::expr_t* real_value = ASRUtils::EXPR(
+                                                            ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                                (double)ic->m_n, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                ic->m_n, ic->m_type)),
+                                                            ASR::cast_kindType::IntegerToReal, v->m_type, real_value));
+                                                    } else {
+                                                        init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
+                                                    }
                                                 }
                                                 v->m_symbolic_value = init_val;
                                                 v->m_value = ASRUtils::expr_value(init_val);
@@ -10161,10 +10189,27 @@ public:
 
         ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
         if (a_sym == nullptr) {
-            diag.add(Diagnostic("The implied do loop variable '" +
-                to_lower(x.m_var) + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            if (compiler_options.implicit_typing) {
+                std::string var_name = to_lower(x.m_var);
+                std::string first_letter = std::string(1, var_name[0]);
+                if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
+                    ASR::ttype_t *t = implicit_dictionary[first_letter];
+                    if (t == nullptr) {
+                        diag.semantic_error_label("The implied do loop variable '" + var_name
+                            + "' is not declared", {x.base.base.loc},
+                            "'" + var_name + "' is undeclared");
+                        throw SemanticAbort();
+                    }
+                    a_sym = declare_implicit_variable2(x.base.base.loc, var_name, ASRUtils::intent_local, t);
+                } else {
+                    a_sym = declare_implicit_variable(x.base.base.loc, var_name, ASRUtils::intent_local);
+                }
+            } else {
+                diag.add(Diagnostic("The implied do loop variable '" +
+                    to_lower(x.m_var) + "' is not declared",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
@@ -10341,6 +10386,16 @@ public:
     }
 
     void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
+        if (compiler_options.implicit_typing) {
+            if (!in_Subroutine) {
+                if (implicit_mapping.size() != 0) {
+                    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                    if (implicit_dictionary.size() == 0 && is_implicit_interface) {
+                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
+                    }
+                }
+            }
+        }
         idl_nesting_level++;
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -10379,10 +10434,27 @@ public:
 
         ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
         if (a_sym == nullptr) {
-            diag.add(Diagnostic("The implied do loop variable '" +
-                to_lower(x.m_var) + "' is not declared",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            if (compiler_options.implicit_typing) {
+                std::string var_name = to_lower(x.m_var);
+                std::string first_letter = std::string(1, var_name[0]);
+                if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
+                    ASR::ttype_t *t = implicit_dictionary[first_letter];
+                    if (t == nullptr) {
+                        diag.semantic_error_label("The implied do loop variable '" + var_name
+                            + "' is not declared", {x.base.base.loc},
+                            "'" + var_name + "' is undeclared");
+                        throw SemanticAbort();
+                    }
+                    a_sym = declare_implicit_variable2(x.base.base.loc, var_name, ASRUtils::intent_local, t);
+                } else {
+                    a_sym = declare_implicit_variable(x.base.base.loc, var_name, ASRUtils::intent_local);
+                }
+            } else {
+                diag.add(Diagnostic("The implied do loop variable '" +
+                    to_lower(x.m_var) + "' is not declared",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
