@@ -2447,15 +2447,19 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
         replacer.lhs_var = lhs_array_var;
 
-        // For self-referencing allocatable array assignments (e.g., arr = arr(2:3)),
+        // For self-referencing allocatable array section assignments (e.g., arr = arr(2:3)),
         // we must create a temporary even when target is allocatable, because realloc
-        // frees/moves the source memory before copying. This applies to ALL array types
-        // (simple arrays, struct arrays, etc.) - not just struct arrays.
-        // IMPORTANT: Check BEFORE call_replacer() transforms x.m_value.
+        // frees/moves the source memory before copying.
+        // IMPORTANT: Only apply to ArraySection/ArrayItem on RHS, NOT to function calls
+        // like reshape() which create independent arrays. The check must happen BEFORE
+        // call_replacer() transforms x.m_value.
         bool is_self_ref_allocatable_array = lhs_array_var &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             !ASRUtils::is_simd_array(x.m_value) &&
             ASRUtils::is_allocatable(x.m_target) &&
+            (ASR::is_a<ASR::ArraySection_t>(*x.m_value) ||
+             ASR::is_a<ASR::ArrayItem_t>(*x.m_value) ||
+             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value);
 
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
