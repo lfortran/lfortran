@@ -3577,7 +3577,8 @@ public:
                                                     init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
                                                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*init_val) ||
                                                            ASR::is_a<ASR::ComplexConstructor_t>(*init_val)) {
-                                                    // Complex literal assigned to Real/Integer variable
+                                                    // Complex to Real/Integer conversion via Cast
+                                                    ASR::expr_t* value = nullptr;
                                                     double re_val = 0.0;
                                                     if (ASR::is_a<ASR::ComplexConstant_t>(*init_val)) {
                                                         re_val = ASR::down_cast<ASR::ComplexConstant_t>(init_val)->m_re;
@@ -3588,9 +3589,13 @@ public:
                                                         }
                                                     }
                                                     if (ASRUtils::is_real(*v->m_type)) {
-                                                        init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
+                                                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::ComplexToReal, v->m_type, value));
                                                     } else if (ASRUtils::is_integer(*v->m_type)) {
-                                                        init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, (int64_t)re_val, v->m_type));
+                                                        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, (int64_t)re_val, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::ComplexToInteger, v->m_type, value));
                                                     }
                                                 }
                                                 v->m_symbolic_value = init_val;
