@@ -5171,22 +5171,42 @@ namespace StringConcat {
     }
 
     
+    // Compute string length expression without embedding nested StringConcats.
+    // For StringConcat expressions, recursively compute len(arg1) + len(arg2).
+    // For other expressions, use StringLen directly.
+    inline ASR::expr_t* get_safe_string_len(Allocator &al, const Location &loc,
+            ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
+        if (str_type->m_len) {
+            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+        }
+        // For deferred-length strings, check if expr is a StringConcat.
+        // If so, recursively compute the length to avoid embedding the
+        // StringConcat expression in a StringLen node (which causes infinite
+        // recursion when the visitor processes the call arguments).
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+            ASR::IntrinsicElementalFunction_t* ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            if (ief->m_intrinsic_id == static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat)) {
+                ASR::expr_t* len1 = get_safe_string_len(al, loc, ief->m_args[0],
+                    ASRUtils::expr_type(ief->m_args[0]), b);
+                ASR::expr_t* len2 = get_safe_string_len(al, loc, ief->m_args[1],
+                    ASRUtils::expr_type(ief->m_args[1]), b);
+                return b.Add(len1, len2);
+            }
+        }
+        return b.StringLen(expr);
+    }
+
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
         declare_basic_variables(intrinsic_fn_name)
 
-        ASR::String_t* s1_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[0]));
-        ASR::String_t* s2_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]));
-
-        // Use declared type length only if it is a compile-time constant
-        ASR::expr_t* s1_len_arg = (s1_type->m_len && ASRUtils::is_value_constant(s1_type->m_len))
-            ? b.i2i_t(s1_type->m_len, int32)
-            : b.StringLen(new_args[0].m_value);
-        ASR::expr_t* s2_len_arg = (s2_type->m_len && ASRUtils::is_value_constant(s2_type->m_len))
-            ? b.i2i_t(s2_type->m_len, int32)
-            : b.StringLen(new_args[1].m_value);
+        // Compute argument lengths safely, avoiding circular references for
+        // nested StringConcat expressions.
+        ASR::expr_t* s1_len_arg = get_safe_string_len(al, loc, new_args[0].m_value, arg_types[0], b);
+        ASR::expr_t* s2_len_arg = get_safe_string_len(al, loc, new_args[1].m_value, arg_types[1], b);
 
         // Build call_args with explicit lengths
         Vec<ASR::call_arg_t> call_args;
