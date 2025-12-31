@@ -15,6 +15,7 @@ Note: The prescanner removes CR from regular code, but not from string literals.
 #include <lfortran/parser/parser.tab.hh>
 #include <lfortran/parser/tokenizer.h>
 #include <libasr/bigint.h>
+#include <libasr/string_utils.h>
 
 #include <lfortran/pickle.h>
 
@@ -750,7 +751,12 @@ struct FixedFormRecursiveDescent {
             } else if (token == yytokentype::TK_STRING) {
                 std::string tk{tostr(t.tok+1, t.tok + len-1)};
                 tk.erase(std::remove(tk.begin(), tk.end(), '\r'), tk.end());
-                y2.string.from_str(m_a, tk);
+                Str s;
+                s.from_str(m_a, tk);
+                char quote_char = t.tok[0];
+                char* unescaped = str_unescape_fortran(m_a, s, quote_char);
+                y2.string.p = unescaped;
+                y2.string.n = strlen(unescaped);
             } else {
                 std::string tk{tostr(t.tok, t.tok + len)};
                 y2.string.from_str(m_a, tk);
