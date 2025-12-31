@@ -2221,6 +2221,21 @@ namespace LCompilers {
         std::tie(lhs_data, lhs_len) = get_string_length_data(dest_str_type, dest, true, true);
         std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src);
 
+        // For struct members (like common blocks) with fixed-length CHARACTER,
+        // the descriptor may be initialized with zeroinitializer (length=0).
+        // If we know the declared length at compile time, store it in the
+        // descriptor before calling strcpy so the runtime allocates the right size.
+        if (is_dest_allocatable && dest_str_type->m_len &&
+            ASRUtils::is_value_constant(dest_str_type->m_len)) {
+            int64_t declared_len = 0;
+            ASRUtils::extract_value(dest_str_type->m_len, declared_len);
+            if (declared_len > 0) {
+                llvm::Value* len_const = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), declared_len);
+                builder->CreateStore(len_const, lhs_len);
+            }
+        }
+
         return lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len,
                                            dest_str_type->m_len_kind == ASR::string_length_kindType::DeferredLength,
                                            is_dest_allocatable);
