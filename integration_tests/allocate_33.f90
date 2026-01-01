@@ -39,4 +39,4 @@ program allocate_33
 
   print *, "All tests passed."
   
-end program allocate_33_mod
+end program allocate_33
