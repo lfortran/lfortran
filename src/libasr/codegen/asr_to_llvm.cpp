@@ -2618,8 +2618,8 @@ public:
         tmp = builder->CreateFSub(exp, one);
     }
 
-    void generate_Abs(ASR::expr_t* m_arg) {
-        this->visit_expr_wrapper(m_arg, true);
+    void generate_abs(ASR::call_arg_t* m_args) {
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value *item = tmp;
         llvm::Type *item_type = item->getType();
         if (item_type->isFloatingPointTy()) {
@@ -2642,13 +2642,20 @@ public:
         }
     }
 
-    void generate_Max(ASR::expr_t** m_args, size_t n_args) {
+    void generate_Abs(ASR::expr_t* m_arg) {
+        ASR::call_arg_t args[1];
+        args[0].loc = m_arg->base.loc;
+        args[0].m_value = m_arg;
+        generate_abs(args);
+    }
+
+    void generate_max(ASR::call_arg_t* m_args, size_t n_args) {
         LCOMPILERS_ASSERT(n_args >= 2);
-        this->visit_expr_wrapper(m_args[0], true);
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value *result = tmp;
         llvm::Type *val_type = result->getType();
         for (size_t i = 1; i < n_args; i++) {
-            this->visit_expr_wrapper(m_args[i], true);
+            this->visit_expr_wrapper(m_args[i].m_value, true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
                 // Use FCmpOGT (ordered greater than) for Fortran-compatible NaN propagation
@@ -2666,13 +2673,25 @@ public:
         tmp = result;
     }
 
-    void generate_Min(ASR::expr_t** m_args, size_t n_args) {
+    void generate_Max(ASR::expr_t** m_args, size_t n_args) {
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, n_args);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = m_args[i]->base.loc;
+            arg.m_value = m_args[i];
+            args.push_back(al, arg);
+        }
+        generate_max(args.p, args.n);
+    }
+
+    void generate_min(ASR::call_arg_t* m_args, size_t n_args) {
         LCOMPILERS_ASSERT(n_args >= 2);
-        this->visit_expr_wrapper(m_args[0], true);
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value *result = tmp;
         llvm::Type *val_type = result->getType();
         for (size_t i = 1; i < n_args; i++) {
-            this->visit_expr_wrapper(m_args[i], true);
+            this->visit_expr_wrapper(m_args[i].m_value, true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
                 // Use FCmpOLT (ordered less than) for Fortran-compatible NaN propagation
@@ -2687,6 +2706,18 @@ public:
             }
         }
         tmp = result;
+    }
+
+    void generate_Min(ASR::expr_t** m_args, size_t n_args) {
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, n_args);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = m_args[i]->base.loc;
+            arg.m_value = m_args[i];
+            args.push_back(al, arg);
+        }
+        generate_min(args.p, args.n);
     }
 
     void generate_ListReverse(ASR::expr_t* m_arg) {
@@ -2966,18 +2997,37 @@ public:
                 generate_sign_from_value(args.p);
                 break;
             }
-            case ASRUtils::IntrinsicElementalFunctions::Abs: {
-                generate_Abs(x.m_args[0]);
-                break;
-            }
-            case ASRUtils::IntrinsicElementalFunctions::Max: {
-                generate_Max(x.m_args, x.n_args);
-                break;
-            }
-            case ASRUtils::IntrinsicElementalFunctions::Min: {
-                generate_Min(x.m_args, x.n_args);
-                break;
-            }
+	            case ASRUtils::IntrinsicElementalFunctions::Abs: {
+	                ASR::call_arg_t args[1];
+	                args[0].loc = x.m_args[0]->base.loc;
+	                args[0].m_value = x.m_args[0];
+	                generate_abs(args);
+	                break;
+	            }
+	            case ASRUtils::IntrinsicElementalFunctions::Max: {
+	                Vec<ASR::call_arg_t> args;
+	                args.reserve(al, x.n_args);
+	                for (size_t i = 0; i < x.n_args; i++) {
+	                    ASR::call_arg_t arg;
+	                    arg.loc = x.m_args[i]->base.loc;
+	                    arg.m_value = x.m_args[i];
+	                    args.push_back(al, arg);
+	                }
+	                generate_max(args.p, args.n);
+	                break;
+	            }
+	            case ASRUtils::IntrinsicElementalFunctions::Min: {
+	                Vec<ASR::call_arg_t> args;
+	                args.reserve(al, x.n_args);
+	                for (size_t i = 0; i < x.n_args; i++) {
+	                    ASR::call_arg_t arg;
+	                    arg.loc = x.m_args[i]->base.loc;
+	                    arg.m_value = x.m_args[i];
+	                    args.push_back(al, arg);
+	                }
+	                generate_min(args.p, args.n);
+	                break;
+	            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
