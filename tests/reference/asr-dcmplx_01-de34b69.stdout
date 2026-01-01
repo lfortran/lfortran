@@ -1,0 +1,363 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            dcmplx_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            cs:
+                                (Variable
+                                    2
+                                    cs
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            dp:
+                                (ExternalSymbol
+                                    2
+                                    dp
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            foo:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            foo_arg_0:
+                                                (Variable
+                                                    8
+                                                    foo_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            foo_arg_1:
+                                                (Variable
+                                                    8
+                                                    foo_arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            foo_arg_2:
+                                                (Variable
+                                                    8
+                                                    foo_arg_2
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            foo_arg_3:
+                                                (Variable
+                                                    8
+                                                    foo_arg_3
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            foo_arg_4:
+                                                (Variable
+                                                    8
+                                                    foo_arg_4
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    foo
+                                    (FunctionType
+                                        [(Complex 8)
+                                        (Complex 8)
+                                        (Real 8)
+                                        (Complex 8)
+                                        (Complex 8)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 foo_arg_0)
+                                    (Var 8 foo_arg_1)
+                                    (Var 8 foo_arg_2)
+                                    (Var 8 foo_arg_3)
+                                    (Var 8 foo_arg_4)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            sn:
+                                (Variable
+                                    2
+                                    sn
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    dcmplx_01
+                    [iso_fortran_env]
+                    [(Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.000000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (ComplexConstructor
+                            (RealConstant
+                                1.000000
+                                (Real 8)
+                            )
+                            (RealConstant
+                                2.000000
+                                (Real 8)
+                            )
+                            (Complex 8)
+                            (ComplexConstant
+                                1.000000
+                                2.000000
+                                (Complex 8)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 foo
+                        ()
+                        [((IntrinsicElementalFunction
+                            Cmplx
+                            [(Var 2 x)
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (IntegerConstant 8 (Integer 4) Decimal)]
+                            0
+                            (Complex 8)
+                            ()
+                        ))
+                        ((IntrinsicElementalFunction
+                            Conjg
+                            [(Var 2 z)]
+                            0
+                            (Complex 8)
+                            ()
+                        ))
+                        ((Var 2 cs))
+                        ((Var 2 sn))
+                        ((Var 2 r))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 foo
+                        ()
+                        [((ComplexUnaryMinus
+                            (IntrinsicElementalFunction
+                                Conjg
+                                [(Var 2 z)]
+                                0
+                                (Complex 8)
+                                ()
+                            )
+                            (Complex 8)
+                            ()
+                        ))
+                        ((IntrinsicElementalFunction
+                            Conjg
+                            [(Var 2 z)]
+                            0
+                            (Complex 8)
+                            ()
+                        ))
+                        ((Var 2 cs))
+                        ((Var 2 sn))
+                        ((Var 2 r))]
+                        ()
+                        .false.
+                    )]
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
+        })
+    []
+)

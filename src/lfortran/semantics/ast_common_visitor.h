@@ -9865,6 +9865,14 @@ public:
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
+                    if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
+                        ASR::ttype_t *int4_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        args.p[2] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int4_type));
+                        if (args[1] == nullptr && !is_complex(*ASRUtils::expr_type(args[0]))) {
+                            ASR::ttype_t *real8_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                            args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, 0.0, real8_type));
+                        }
+                    }
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);

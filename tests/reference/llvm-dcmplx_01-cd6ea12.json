@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-dcmplx_01-cd6ea12",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/dcmplx_01.f90",
+    "infile_hash": "75887a20050081bcdb5258df6f6736f5a48773bda0036e440564a9c2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-dcmplx_01-cd6ea12.stdout",
+    "stdout_hash": "a34a17bd297d8adf9caf6ce599f5a2de547b147023a4bfc41dc99fa3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
