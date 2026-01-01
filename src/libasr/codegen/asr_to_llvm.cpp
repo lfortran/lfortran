@@ -5276,8 +5276,24 @@ public:
         if (!target_ptr->getType()->isPointerTy()) {
             return value;
         }
+#if LLVM_VERSION_MAJOR < 15
         llvm::Type* target_type = target_ptr->getType()->getPointerElementType();
         return coerce_complex_value_to_type(value, target_type);
+#else
+        llvm::Value* base_ptr = target_ptr->stripPointerCasts();
+        llvm::Type* target_type = nullptr;
+        if (llvm::AllocaInst* alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(base_ptr)) {
+            target_type = alloca_inst->getAllocatedType();
+        } else if (llvm::GlobalVariable* global_var = llvm::dyn_cast<llvm::GlobalVariable>(base_ptr)) {
+            target_type = global_var->getValueType();
+        } else if (llvm::GEPOperator* gep_op = llvm::dyn_cast<llvm::GEPOperator>(base_ptr)) {
+            target_type = gep_op->getResultElementType();
+        }
+        if (target_type == nullptr) {
+            return value;
+        }
+        return coerce_complex_value_to_type(value, target_type);
+#endif
     }
 
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
