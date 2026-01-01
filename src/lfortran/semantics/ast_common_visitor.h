@@ -5631,7 +5631,14 @@ public:
                 type_declaration = v;
                 type = ASRUtils::get_union_type(al, loc, v);
             } else {
-                if (!v) {
+                // Check if symbol exists but is NOT a type (e.g., implicit Variable)
+                // In type(...) context, we need Struct or Union, not Variable
+                bool v_is_not_a_type = v && ASRUtils::symbol_get_past_external(v)
+                    && !ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))
+                    && !ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v));
+
+                if (!v || v_is_not_a_type) {
+                    // Treat non-type symbols as if they don't exist in type context
                     if (is_template) { 
                         diag.add(Diagnostic(
                             "Type parameter '" + derived_type_name + "' is not specified "
