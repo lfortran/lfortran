@@ -1,0 +1,13 @@
+{
+    "basename": "asr-read_13-4aca926",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/read_13.f90",
+    "infile_hash": "e838b4a799a939d00362e7aab1fc7ce9902f1ee5dac0998e7001a973",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-read_13-4aca926.stdout",
+    "stdout_hash": "8cb50e2b9e20d7f12620346bda025c8bdfacbaae33072442264ed419",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -11650,8 +11650,11 @@ public:
                                     continue;
                                 }
 
-                                if (arr_t->m_physical_type != ASR::array_physical_typeType::PointerArray) {
-                                    data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
+                                if (arr_t->m_physical_type != ASR::array_physical_typeType::PointerArray &&
+                                    arr_t->m_physical_type != ASR::array_physical_typeType::UnboundedPointerArray) {
+                                    data_ptr = llvm_utils->CreateLoad2(
+                                        llvm_elem_type->getPointerTo(),
+                                        arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr));
                                 }
 
                                 // Compute pointer to start element (1-based indexing)
@@ -11659,7 +11662,7 @@ public:
                                 llvm::Value* start_idx = tmp;
                                 llvm::Value* offset = builder->CreateSub(start_idx,
                                     llvm::ConstantInt::get(start_idx->getType(), 1));
-                                llvm::Value* section_ptr = llvm_utils->create_gep2(
+                                llvm::Value* section_ptr = llvm_utils->create_ptr_gep2(
                                     llvm_elem_type, data_ptr, offset);
 
                                 // Compute size: (end - start) / inc + 1

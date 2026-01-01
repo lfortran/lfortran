@@ -1,0 +1,222 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            read_13:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            read_into_assumed_size:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        UnboundedPointerArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    3
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    read_into_assumed_size
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            UnboundedPointerArray
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 n)
+                                    (Var 3 a)]
+                                    [(FileRead
+                                        0
+                                        (IntegerConstant 10 (Integer 4) Decimal)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        [(ImpliedDoLoop
+                                            [(ArrayItem
+                                                (Var 3 a)
+                                                [(()
+                                                (Var 3 i)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            (Var 3 i)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Var 3 n)
+                                            ()
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        ()
+                                        .true.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    read_13
+                    []
+                    [(Assignment
+                        (Var 2 n)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 read_into_assumed_size
+                        ()
+                        [((Var 2 n))
+                        ((ArrayPhysicalCast
+                            (Var 2 x)
+                            FixedSizeArray
+                            UnboundedPointerArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                UnboundedPointerArray
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )]
+                )
+        })
+    []
+)
