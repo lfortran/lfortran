@@ -972,23 +972,32 @@ time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
     # Build BLAS, LAPACK, and test executables
     cmake --build build -j8
 
-    # Run LAPACK linear tests (xlintsts). Failures are currently non-fatal.
+    # Run LAPACK linear tests (xlintsts) and require success.
     cd build
     print_subsection "Running LAPACK linear tests (xlintsts)"
     set +e
     ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts.out
     xlintsts_status=${PIPESTATUS[0]}
-	    set -e
-	    echo "xlintsts exit code: ${xlintsts_status}"
-	    # NOTE: xlintsts can exit 0 even when some sections fail threshold or
-	    # record error-exit mismatches, so we always print a summary from stdout.
-	    print_subsection "xlintsts failure summary (non-fatal)"
-	    grep -E "failed to pass the threshold" xlintsts.out || true
-	    grep -E "error messages recorded" xlintsts.out || true
-	
-	    if grep -q "passed.*failed" xlintsts.out; then
-	        grep "passed.*failed" xlintsts.out
-	    fi
+    set -e
+
+    echo "xlintsts exit code: ${xlintsts_status}"
+    if [ "${xlintsts_status}" -ne 0 ]; then
+        echo "ERROR: xlintsts exited with non-zero status"
+        exit "${xlintsts_status}"
+    fi
+
+    if grep -E "failed to pass the threshold" xlintsts.out; then
+        echo "ERROR: xlintsts threshold failures detected"
+        exit 1
+    fi
+
+    error_messages=$(awk "/error messages recorded/{sum+=\\$1} END{print sum+0}" xlintsts.out)
+    echo "xlintsts error messages recorded: ${error_messages}"
+    if [ "${error_messages}" -ne 0 ]; then
+        echo "ERROR: xlintsts recorded error messages"
+        grep -E "error messages recorded" xlintsts.out || true
+        exit 1
+    fi
 
     print_subsection "LAPACK BUILD_TESTING tests completed"
     cd ../..
