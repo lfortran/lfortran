@@ -2406,16 +2406,58 @@ public:
     }
 
     bool check_equal_value(AST::expr_t** values, size_t n_values) {
+        if (n_values == 0) {
+            return false;
+        }
+
         this->visit_expr(*values[0]);
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+        if (!expression_value) {
+            return false;
+        }
 
-        for (size_t i=1; i<n_values; i++) {
+        for (size_t i = 1; i < n_values; i++) {
             this->visit_expr(*values[i]);
             ASR::expr_t* value_ = ASRUtils::EXPR(tmp);
             ASR::expr_t* expression_value_ = ASRUtils::expr_value(value_);
-            if (!ASRUtils::expr_equal(expression_value, expression_value_)) {
+            if (!expression_value_) {
                 return false;
+            }
+            if (expression_value->type != expression_value_->type) {
+                return false;
+            }
+            switch (expression_value->type) {
+                case ASR::exprType::IntegerConstant: {
+                    ASR::IntegerConstant_t* lhs = ASR::down_cast<ASR::IntegerConstant_t>(
+                        expression_value);
+                    ASR::IntegerConstant_t* rhs = ASR::down_cast<ASR::IntegerConstant_t>(
+                        expression_value_);
+                    if (lhs->m_n != rhs->m_n) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::exprType::RealConstant: {
+                    ASR::RealConstant_t* lhs = ASR::down_cast<ASR::RealConstant_t>(expression_value);
+                    ASR::RealConstant_t* rhs = ASR::down_cast<ASR::RealConstant_t>(expression_value_);
+                    if (lhs->m_r != rhs->m_r) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::exprType::StringConstant: {
+                    ASR::StringConstant_t* lhs = ASR::down_cast<ASR::StringConstant_t>(
+                        expression_value);
+                    ASR::StringConstant_t* rhs = ASR::down_cast<ASR::StringConstant_t>(
+                        expression_value_);
+                    if (std::string(lhs->m_s) != std::string(rhs->m_s)) {
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                    return false;
             }
         }
 
