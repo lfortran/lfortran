@@ -11,7 +11,7 @@ program intrinsics_312
 	integer(4), parameter :: i10(1) = minloc([3, 2, 1, 3], back = .true.)
 	integer(4), parameter :: i11(1) = minloc([3.0, 2.0, 1.0, 3.0], back = .true., dim=1)
 	integer(4), parameter :: i12(1) = minloc(["aa", "db", "ca"], mask = [.false., .false., .false.], kind = 4)
-
+	integer :: arr(2)
 	print *, i1
 	if (i1(1) /= 1) error stop
 	print *, i2
@@ -39,4 +39,8 @@ program intrinsics_312
 
 	print *, kind(minloc(["aa", "db", "ca"], 1, mask = [.false., .false., .false.], kind = 8))
 	if (kind(minloc(["aa", "db", "ca"], 1, mask = [.false., .false., .false.], kind = 8)) /= 8) error stop
+
+	arr = [3,2]
+	print *, minloc(arr, .true.)
+	if(any(minloc(arr, .true.) /= 2)) error stop
 end program
