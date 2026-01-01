@@ -5611,6 +5611,11 @@ public:
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
+            if (v && ASR::is_a<ASR::Variable_t>(*v) && (ASR::is_a<ASR::Integer_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type) || 
+                ASR::is_a<ASR::Real_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                // v is implicitly-declared variable which is of no use when referring Struct
+                v = nullptr;
+            }
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
                     ASRUtils::type_get_past_array(
@@ -5679,8 +5684,6 @@ public:
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
-                } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
-                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
