@@ -1,0 +1,13 @@
+{
+    "basename": "run-complex_27-4f2a3b3",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/complex_27.f",
+    "infile_hash": "f03eeaafe43085f12374399c90ba94793c5b368a951b9bc371fe1a3c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-complex_27-4f2a3b3.stderr",
+    "stderr_hash": "35cbac11e16762993b4c2bc2e6be727746091c74a9c3caa91e15b632",
+    "returncode": 1
+}
