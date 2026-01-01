@@ -5679,8 +5679,6 @@ public:
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
-                } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
-                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
