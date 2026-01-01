@@ -976,12 +976,17 @@ time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
     set +e
     ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts.out
     xlintsts_status=${PIPESTATUS[0]}
-    set -e
-    echo "xlintsts exit code: ${xlintsts_status}"
-
-    if grep -q "passed.*failed" xlintsts.out; then
-        grep "passed.*failed" xlintsts.out
-    fi
+	    set -e
+	    echo "xlintsts exit code: ${xlintsts_status}"
+	    # NOTE: xlintsts can exit 0 even when some sections fail threshold or
+	    # record error-exit mismatches, so we always print a summary from stdout.
+	    print_subsection "xlintsts failure summary (non-fatal)"
+	    grep -E "failed to pass the threshold" xlintsts.out || true
+	    grep -E "error messages recorded" xlintsts.out || true
+	
+	    if grep -q "passed.*failed" xlintsts.out; then
+	        grep "passed.*failed" xlintsts.out
+	    fi
 
     print_subsection "LAPACK BUILD_TESTING tests completed"
     cd ../..
