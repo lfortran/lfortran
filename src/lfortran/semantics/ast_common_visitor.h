@@ -4764,7 +4764,7 @@ public:
                     if (storage_type == ASR::storage_typeType::Parameter) {
                         if (init_expr && ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr)) {
                             ASR::IntrinsicArrayFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(init_expr);
-                            std::string intrinsic_name = ASRUtils::get_intrinsic_name(intrinsic_func->m_arr_intrinsic_id);
+                            std::string intrinsic_name = ASRUtils::get_array_intrinsic_name(intrinsic_func->m_arr_intrinsic_id);
                             diag.add(Diagnostic(
                                 "Transformational intrinsic '" + intrinsic_name +
                                 "' is not permitted in a constant expression",
