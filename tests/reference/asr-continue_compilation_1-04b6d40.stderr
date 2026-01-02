@@ -52,6 +52,16 @@ semantic error: Dummy argument 'a' not defined
 93 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Argument(s) or return type mismatch in interface and implementation
+   --> tests/errors/continue_compilation_1.f90:99:5 - 102:16
+    |
+ 99 |        module function f() result(r)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+102 |        end function
+    | ...^^^^^^^^^^^^^^^^ 
+
 semantic error: Interface 'f_missing' is referenced but not defined
   --> tests/errors/continue_compilation_1.f90:21:9
    |
@@ -202,6 +212,12 @@ semantic error: The upper bound of an assumed-size array's last dimension is not
    |
 84 |         print *, ubound(c, 2)
    |                  ^^^^^^^^^^^^ 
+
+semantic error: Variable 'r' is not declared
+   --> tests/errors/continue_compilation_1.f90:101:9
+    |
+101 |         r = 5.5
+    |         ^ 'r' is undeclared
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
