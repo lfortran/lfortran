@@ -9,6 +9,4 @@
       t(1, 1) = zero
 
       if (t(1, 1) .ne. zero) stop 1
-
-      print *, 'PASS'
       end

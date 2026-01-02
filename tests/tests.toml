@@ -2041,10 +2041,6 @@ filename = "../integration_tests/complex_09.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/complex_28.f"
-run = true
-
-[[test]]
 filename = "errors/complex_01.f90"
 asr = true
 

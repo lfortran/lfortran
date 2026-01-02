@@ -5225,77 +5225,6 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
-
-    llvm::Value* coerce_complex_value_to_type(llvm::Value* value, llvm::Type* target_type) {
-        if (value->getType() == target_type) {
-            return value;
-        }
-        if (!value->getType()->isStructTy() || !target_type->isStructTy()) {
-            return value;
-        }
-
-        llvm::StructType* source_struct = llvm::cast<llvm::StructType>(value->getType());
-        llvm::StructType* target_struct = llvm::cast<llvm::StructType>(target_type);
-        if (source_struct->getNumElements() != 2 || target_struct->getNumElements() != 2) {
-            return value;
-        }
-        if (!source_struct->getElementType(0)->isFloatingPointTy()
-            || !source_struct->getElementType(1)->isFloatingPointTy()
-            || !target_struct->getElementType(0)->isFloatingPointTy()
-            || !target_struct->getElementType(1)->isFloatingPointTy()) {
-            return value;
-        }
-
-        llvm::Value* real_part = builder->CreateExtractValue(value, {0});
-        llvm::Value* imag_part = builder->CreateExtractValue(value, {1});
-
-        llvm::Type* target_real_type = target_struct->getElementType(0);
-        llvm::Type* target_imag_type = target_struct->getElementType(1);
-        if (real_part->getType() != target_real_type) {
-            if (real_part->getType()->getPrimitiveSizeInBits() < target_real_type->getPrimitiveSizeInBits()) {
-                real_part = builder->CreateFPExt(real_part, target_real_type);
-            } else {
-                real_part = builder->CreateFPTrunc(real_part, target_real_type);
-            }
-        }
-        if (imag_part->getType() != target_imag_type) {
-            if (imag_part->getType()->getPrimitiveSizeInBits() < target_imag_type->getPrimitiveSizeInBits()) {
-                imag_part = builder->CreateFPExt(imag_part, target_imag_type);
-            } else {
-                imag_part = builder->CreateFPTrunc(imag_part, target_imag_type);
-            }
-        }
-
-        llvm::Value* coerced = llvm::UndefValue::get(target_type);
-        coerced = builder->CreateInsertValue(coerced, real_part, {0});
-        coerced = builder->CreateInsertValue(coerced, imag_part, {1});
-        return coerced;
-    }
-
-    llvm::Value* coerce_value_for_store(llvm::Value* value, llvm::Value* target_ptr) {
-        if (!target_ptr->getType()->isPointerTy()) {
-            return value;
-        }
-#if LLVM_VERSION_MAJOR < 15
-        llvm::Type* target_type = target_ptr->getType()->getPointerElementType();
-        return coerce_complex_value_to_type(value, target_type);
-#else
-        llvm::Value* base_ptr = target_ptr->stripPointerCasts();
-        llvm::Type* target_type = nullptr;
-        if (llvm::AllocaInst* alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(base_ptr)) {
-            target_type = alloca_inst->getAllocatedType();
-        } else if (llvm::GlobalVariable* global_var = llvm::dyn_cast<llvm::GlobalVariable>(base_ptr)) {
-            target_type = global_var->getValueType();
-        } else if (llvm::GEPOperator* gep_op = llvm::dyn_cast<llvm::GEPOperator>(base_ptr)) {
-            target_type = gep_op->getResultElementType();
-        }
-        if (target_type == nullptr) {
-            return value;
-        }
-        return coerce_complex_value_to_type(value, target_type);
-#endif
-    }
-
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         if (v->m_value != nullptr) {
             this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
@@ -5312,7 +5241,7 @@ public:
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), v->m_type, module.get());
                 target_var = arr_descr->get_pointer_to_data(target_type, target_var);
-                builder->CreateStore(coerce_value_for_store(init_value, target_var), target_var, v->m_is_volatile);
+                builder->CreateStore(init_value, target_var, v->m_is_volatile);
             } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
                 llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                 llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
@@ -5375,7 +5304,7 @@ public:
                     false);
                 llvm::Value* data_ptr = llvm_utils->create_gep2(
                     array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
-                builder->CreateStore(coerce_value_for_store(init_value, data_ptr), data_ptr, v->m_is_volatile);
+                builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
                 && v->m_value
@@ -5385,7 +5314,7 @@ public:
                 // Do nothing, the value is already initialized
                 // in the global variable
             } else {
-                builder->CreateStore(coerce_value_for_store(init_value, target_var), target_var, v->m_is_volatile);
+                builder->CreateStore(init_value, target_var, v->m_is_volatile);
             }
         }
     }
@@ -7934,7 +7863,7 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                     builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
                 } else {
-                    builder->CreateStore(coerce_value_for_store(value, target), target);
+                    builder->CreateStore(value, target);
                 }
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
@@ -7987,9 +7916,9 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
-            builder->CreateStore(coerce_value_for_store(value, target), target);
+            builder->CreateStore(value, target);
         } else {
-            builder->CreateStore(coerce_value_for_store(value, target), target);
+            builder->CreateStore(value, target);
         }
     }
 
@@ -10530,11 +10459,6 @@ public:
         // Only do for constant variables
         if (x->m_value && x->m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x->m_value, true);
-            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(
-                al, x->base.base.loc, (ASR::symbol_t*) x));
-            llvm::Type* var_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                var_expr, ASRUtils::extract_type(x->m_type), module.get());
-            tmp = coerce_complex_value_to_type(tmp, var_llvm_type);
             return;
         }
         ASR::ttype_t *t2_ = ASRUtils::type_get_past_array(x->m_type);
