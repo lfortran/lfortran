@@ -14124,6 +14124,39 @@ public:
         }
     }
 
+    llvm::Value* expr_is_unallocated(ASR::expr_t* arg_expr) {
+        ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(arg_expr);
+        LCOMPILERS_ASSERT(ASRUtils::is_allocatable(arg_expr_type))
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1 - !LLVM::is_llvm_pointer(*arg_expr_type);
+        this->visit_expr_wrapper(arg_expr, true);
+        ptr_loads = ptr_loads_copy;
+
+        llvm::Value* cond = nullptr;
+        llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_expr_type, module.get());
+        const bool is_descriptor_array = ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type))
+                                                && ASRUtils::extract_physical_type(arg_expr_type) == ASR::DescriptorArray;
+        if (is_descriptor_array) {
+            llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(tmp, arg_expr);
+            cond = builder->CreateNot(is_allocated);
+        } else if (ASRUtils::is_string_only(arg_expr_type)) {
+            tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
+            cond = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(tmp,
+                    llvm::Type::getInt64Ty(context)),
+                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
+                    llvm::Type::getInt64Ty(context)));
+        } else {
+            cond = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(tmp,
+                    llvm::Type::getInt64Ty(context)),
+                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
+                    llvm::Type::getInt64Ty(context)));
+        }
+
+        return cond;
+    }
+
     template<typename T>
     void bounds_check_call(T& x, bool subroutinecall_was_functioncall = false) {
         ASR::Function_t* function = nullptr;
@@ -14294,34 +14327,7 @@ public:
                 LCOMPILERS_ASSERT(func_arg_variable != nullptr);
                 if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
                     ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
-                    int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 1 - !LLVM::is_llvm_pointer(*arg_expr_type);
-                    this->visit_expr_wrapper(arg_expr, true);
-                    ptr_loads = ptr_loads_copy;
-
-                    llvm::Value* cond = nullptr;
-                    llvm::Type* arg_expr_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_expr_type, module.get());
-                    const bool is_descriptor_array = ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type))
-                                                            && ASRUtils::extract_physical_type(arg_expr_type) == ASR::DescriptorArray;
-                    if (is_descriptor_array) {
-                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(tmp, arg_expr);
-                        cond = builder->CreateNot(is_allocated);
-                    } else if (ASRUtils::is_string_only(arg_expr_type)) {
-                        tmp = llvm_utils->get_string_data(ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable_pointer(arg_expr_type)), tmp);
-                        cond = builder->CreateICmpEQ(
-                            builder->CreatePtrToInt(tmp,
-                                llvm::Type::getInt64Ty(context)),
-                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
-                                llvm::Type::getInt64Ty(context)));
-                    } else {
-                        cond = builder->CreateICmpEQ(
-                            builder->CreatePtrToInt(tmp,
-                                llvm::Type::getInt64Ty(context)),
-                            builder->CreatePtrToInt(llvm::ConstantPointerNull::get(arg_expr_llvm_type->getPointerTo()),
-                                llvm::Type::getInt64Ty(context)));
-                    }
-
-                    llvm_utils->generate_runtime_error(cond,
+                    llvm_utils->generate_runtime_error(expr_is_unallocated(arg_expr),
                             "Runtime error: Argument %d of subroutine %s is unallocated.\n",
                             infile,
                             arg_expr->base.loc,
@@ -15767,6 +15773,21 @@ public:
             // Create and Push a pointer to int64 to store the result size in
             llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
+
+            // Check unallocated arguments
+            if (compiler_options.po.bounds_checking) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
+                    if (ASRUtils::is_allocatable(arg_expr_type)) {
+                        llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
+                                "Runtime error: Argument %d is unallocated.\n",
+                                infile,
+                                x.m_args[i]->base.loc,
+                                location_manager,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)));
+                    }
+                }
+            }
 
             //Push serialization of sizes and n_size
             size_t ArraySizesCnt = 0;
