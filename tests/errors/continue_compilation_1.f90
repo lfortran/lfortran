@@ -175,9 +175,8 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
-
-
-
+    integer :: arrays(3) = [5, 10, 15]
+    integer, parameter :: result = minloc(arrays, 1, [.false., .false., .false.])
 
 
 
@@ -423,7 +422,8 @@ program continue_compilation_1
     allocate(arr5, mold = arr4)
 
     print *, ["aa", "aaa"]
-
+    print *, result
+    if (result /= 0) error stop
     print *, pack(arr2, mask1)
 
     ! assigning to a *PROTECTED* struct instance member, not allowed
