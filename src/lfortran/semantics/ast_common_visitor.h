@@ -12476,7 +12476,7 @@ public:
                 // Replace symbols in StructConstant to external symbols
                 if (default_init && ASR::is_a<ASR::StructConstant_t>(*default_init)) {
                     ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
-                    ASR::symbol_t *ext_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
+                    ASR::symbol_t *ext_sym = ASRUtils::symbol_parent_symtab(fn)->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
                         ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym, true);
                         default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
