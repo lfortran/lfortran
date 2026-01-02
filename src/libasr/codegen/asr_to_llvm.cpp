@@ -198,6 +198,7 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
+    Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -261,6 +262,7 @@ public:
         llvm_utils->set_api_sc = set_api_sc.get();
         llvm_utils->dim_descr_type_ = arr_descr->get_dimension_descriptor_type();
         strings_to_be_deallocated.reserve(al, 1);
+        heap_fixed_size_arrays.reserve(al, 1);
     }
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
@@ -4603,6 +4605,7 @@ public:
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
         strings_to_be_deallocated.reserve(al, 1);
+        heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -4714,6 +4717,7 @@ public:
             builder->CreateCall(fn, {});
         }
         start_new_block(proc_return);
+        free_heap_fixed_size_arrays();
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
@@ -5497,28 +5501,30 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-                    // Large fixed-size arrays use static storage to prevent stack overflow.
-                    // Threshold: 65536 bytes (64 KB). Arrays above this size are placed in
-                    // the data segment as internal globals instead of stack allocas.
-                    bool use_static_storage = false;
+                    // Large fixed-size arrays (>64 KB) use heap allocation to prevent stack overflow.
+                    // This is recursion-safe unlike static storage, as each call gets its own copy.
+                    // Memory is freed at function exit.
+                    bool use_heap_allocation = false;
+                    uint64_t type_size = 0;
                     if (ASRUtils::is_array(v->m_type) &&
                         ASRUtils::extract_physical_type(v->m_type) ==
                             ASR::array_physical_typeType::FixedSizeArray) {
                         llvm::DataLayout data_layout(module->getDataLayout());
-                        uint64_t type_size = data_layout.getTypeAllocSize(type);
+                        type_size = data_layout.getTypeAllocSize(type);
                         if (type_size > 65536) {
-                            use_static_storage = true;
+                            use_heap_allocation = true;
                         }
                     }
 
-                    if (use_static_storage) {
-                        // Place in static storage (internal global) to avoid stack overflow
-                        std::string parent_function_name = std::string(x.m_name);
-                        std::string global_name = parent_function_name + "." + v->m_name;
-                        ptr = module->getOrInsertGlobal(global_name, type);
-                        llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
-                        gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
-                        gptr->setInitializer(llvm::Constant::getNullValue(type));
+                    if (use_heap_allocation) {
+                        // Allocate on heap to avoid stack overflow (recursion-safe)
+                        llvm::Value* malloc_size = llvm::ConstantInt::get(
+                            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                        llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, malloc_size);
+                        ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
+                        // Track for cleanup at function exit
+                        heap_fixed_size_arrays.push_back(al, ptr_i8);
                     } else {
 #if LLVM_VERSION_MAJOR >= 15
                         bool is_llvm_ptr = false;
@@ -5795,6 +5801,7 @@ public:
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
         strings_to_be_deallocated.reserve(al, 1);
+        heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
@@ -5835,6 +5842,7 @@ public:
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
         strings_to_be_deallocated.reserve(al, 1);
+        heap_fixed_size_arrays.reserve(al, 1);
     }
 
     void instantiate_function(const ASR::Function_t &x){
@@ -6076,10 +6084,18 @@ public:
         declare_local_vars(x);
     }
 
+    inline void free_heap_fixed_size_arrays() {
+        // Free all heap-allocated large fixed-size arrays
+        for (size_t i = 0; i < heap_fixed_size_arrays.n; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        heap_fixed_size_arrays.n = 0;
+    }
 
     inline void define_function_exit(const ASR::Function_t& x) {
         if (x.m_return_var) {
             start_new_block(proc_return);
+            free_heap_fixed_size_arrays();
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
@@ -6137,6 +6153,7 @@ public:
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
+            free_heap_fixed_size_arrays();
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             builder->CreateRetVoid();
         }
