@@ -2997,37 +2997,18 @@ public:
                 generate_sign_from_value(args.p);
                 break;
             }
-	            case ASRUtils::IntrinsicElementalFunctions::Abs: {
-	                ASR::call_arg_t args[1];
-	                args[0].loc = x.m_args[0]->base.loc;
-	                args[0].m_value = x.m_args[0];
-	                generate_abs(args);
-	                break;
-	            }
-	            case ASRUtils::IntrinsicElementalFunctions::Max: {
-	                Vec<ASR::call_arg_t> args;
-	                args.reserve(al, x.n_args);
-	                for (size_t i = 0; i < x.n_args; i++) {
-	                    ASR::call_arg_t arg;
-	                    arg.loc = x.m_args[i]->base.loc;
-	                    arg.m_value = x.m_args[i];
-	                    args.push_back(al, arg);
-	                }
-	                generate_max(args.p, args.n);
-	                break;
-	            }
-	            case ASRUtils::IntrinsicElementalFunctions::Min: {
-	                Vec<ASR::call_arg_t> args;
-	                args.reserve(al, x.n_args);
-	                for (size_t i = 0; i < x.n_args; i++) {
-	                    ASR::call_arg_t arg;
-	                    arg.loc = x.m_args[i]->base.loc;
-	                    arg.m_value = x.m_args[i];
-	                    args.push_back(al, arg);
-	                }
-	                generate_min(args.p, args.n);
-	                break;
-	            }
+            case ASRUtils::IntrinsicElementalFunctions::Abs: {
+                generate_Abs(x.m_args[0]);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Max: {
+                generate_Max(x.m_args, x.n_args);
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::Min: {
+                generate_Min(x.m_args, x.n_args);
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -4748,6 +4729,10 @@ public:
         }
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        // Free heap-allocated fixed-size local arrays
+        for (llvm::Value* arr_ptr : heap_fixed_size_arrays_to_free) {
+            llvm_utils->lfortran_free(arr_ptr);
+        }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -6089,6 +6074,10 @@ public:
         if (x.m_return_var) {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            // Free heap-allocated fixed-size local arrays
+            for (llvm::Value* arr_ptr : heap_fixed_size_arrays_to_free) {
+                llvm_utils->lfortran_free(arr_ptr);
+            }
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
