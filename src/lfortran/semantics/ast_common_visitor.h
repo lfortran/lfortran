@@ -4761,6 +4761,28 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+                    if (storage_type == ASR::storage_typeType::Parameter) {
+                        if (init_expr && ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr)) {
+                            ASR::IntrinsicArrayFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(init_expr);
+                            std::string intrinsic_name = ASRUtils::get_intrinsic_name(intrinsic_func->m_arr_intrinsic_id);
+                            diag.add(Diagnostic(
+                                "Transformational intrinsic '" + intrinsic_name +
+                                "' is not permitted in a constant expression",
+                                Level::Error, Stage::Semantic, {
+                                    Label("is a transformational intrinsic", {s.m_initializer->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        if (!value || !ASRUtils::is_value_constant(value)) {
+                             diag.add(Diagnostic(
+                                "Initializer of parameter '" + std::string(s.m_name) +
+                                "' is not a constant expression",
+                                Level::Error, Stage::Semantic, {
+                                    Label("not a constant expression", {s.m_initializer->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
