@@ -2,16 +2,27 @@ program dcmplx_01
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 
-    real(dp) :: x
+    real(dp) :: x, y
     complex(dp) :: z
-    real(dp) :: cs
-    complex(dp) :: sn, r
 
-    external :: foo
+    x = 1.5d0
+    y = 2.5d0
 
-    x = 1.0_dp
-    z = (1.0_dp, 2.0_dp)
+    ! Test dcmplx with single real argument
+    z = dcmplx(x)
+    if (abs(real(z, dp) - 1.5d0) > 1d-15) error stop "dcmplx(x) real part failed"
+    if (abs(aimag(z)) > 1d-15) error stop "dcmplx(x) imag part failed"
 
-    call foo(dcmplx(x), dconjg(z), cs, sn, r)
-    call foo(-dconjg(z), dconjg(z), cs, sn, r)
+    ! Test dcmplx with two real arguments
+    z = dcmplx(x, y)
+    if (abs(real(z, dp) - 1.5d0) > 1d-15) error stop "dcmplx(x,y) real part failed"
+    if (abs(aimag(z) - 2.5d0) > 1d-15) error stop "dcmplx(x,y) imag part failed"
+
+    ! Test dconjg
+    z = (1.5d0, 2.5d0)
+    z = dconjg(z)
+    if (abs(real(z, dp) - 1.5d0) > 1d-15) error stop "dconjg real part failed"
+    if (abs(aimag(z) + 2.5d0) > 1d-15) error stop "dconjg imag part failed"
+
+    print *, "All tests passed"
 end program dcmplx_01
