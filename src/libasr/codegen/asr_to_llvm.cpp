@@ -5497,8 +5497,9 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-                    // Check if this is a large fixed-size array that should use static storage
-                    // gfortran uses 65536 bytes as the default threshold (fmax-stack-var-size)
+                    // Large fixed-size arrays use static storage to prevent stack overflow.
+                    // Threshold: 65536 bytes (64 KB). Arrays above this size are placed in
+                    // the data segment as internal globals instead of stack allocas.
                     bool use_static_storage = false;
                     if (ASRUtils::is_array(v->m_type) &&
                         ASRUtils::extract_physical_type(v->m_type) ==
@@ -5511,7 +5512,7 @@ public:
                     }
 
                     if (use_static_storage) {
-                        // Use static storage for large fixed-size arrays (like gfortran)
+                        // Place in static storage (internal global) to avoid stack overflow
                         std::string parent_function_name = std::string(x.m_name);
                         std::string global_name = parent_function_name + "." + v->m_name;
                         ptr = module->getOrInsertGlobal(global_name, type);
