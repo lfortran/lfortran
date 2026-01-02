@@ -1,15 +1,18 @@
 program read_14
-    use iso_fortran_env, only: int64
     implicit none
+    real :: arr(5)
+    integer :: i, j
 
-    integer(int64) :: x
-    integer :: unit, ios
+    open(10, file="read_14_data.txt", status="replace")
+    write(10, *) 1.0, 2.0, 3.0, 4.0, 5.0
+    close(10)
 
-    open(newunit=unit, status="scratch", action="readwrite")
-    write(unit, "(A)") "abc"
-    rewind(unit)
-    read(unit, *, iostat=ios) x
-    close(unit)
+    open(10, file="read_14_data.txt", status="old")
+    read(10, *) (arr(j), j=1,5)
+    close(10, status="delete")
 
-    if (ios <= 0) error stop
-end program read_14
+    do i = 1, 5
+        if (abs(arr(i) - real(i)) > 1e-6) error stop
+    end do
+    print *, "PASS"
+end program
