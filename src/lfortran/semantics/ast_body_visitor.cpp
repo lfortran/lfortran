@@ -3305,11 +3305,11 @@ public:
         args.reserve(al, v->n_args);
 
         for (size_t i=0; i<v->n_args; i++) {
-            visit_expr(*(v->m_args[i]).m_end);
-            ASR::expr_t *end = ASRUtils::EXPR(tmp);
-            ASR::Var_t* tmp_var;
-            if (ASR::is_a<ASR::Var_t>(*end)) {
-                tmp_var = ASR::down_cast<ASR::Var_t>(end);
+            // Extract argument name directly from AST
+            AST::expr_t* arg_ast = (v->m_args[i]).m_end;
+            std::string arg_name;
+            if (AST::is_a<AST::Name_t>(*arg_ast)) {
+                arg_name = to_lower(std::string(AST::down_cast<AST::Name_t>(arg_ast)->m_id));
             } else {
                 diag.add(Diagnostic(
                     "Statement function can only contain variables as arguments.",
@@ -3318,18 +3318,43 @@ public:
                     }));
                 throw SemanticAbort();
             }
-
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
-            std::string arg_name = variable->m_name;
-            arg_name = to_lower(arg_name);
+            // Apply implicit typing for statement function arguments
+            ASR::ttype_t* arg_type = nullptr;
+            ASR::symbol_t* parent_sym = parent_scope->resolve_symbol(arg_name);
+            if (parent_sym && ASR::is_a<ASR::Variable_t>(*parent_sym)) {
+                arg_type = ASR::down_cast<ASR::Variable_t>(parent_sym)->m_type;
+            } else if (compiler_options.implicit_typing) {
+                // If not found in parent scope, use implicit typing
+                implicit_dictionary = implicit_mapping[get_hash(parent_scope->asr_owner)];
+                char first_char = arg_name[0];
+                if (implicit_dictionary.find(std::string(1, first_char)) != implicit_dictionary.end()) {
+                    arg_type = implicit_dictionary[std::string(1, first_char)];
+                } else {
+                    diag.add(Diagnostic(
+                        "No implicit type found for variable '" + arg_name + "'",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else {
+                diag.add(Diagnostic(
+                    "Variable '" + arg_name + "' not declared",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, ASRUtils::expr_type(end), nullptr, nullptr, arg_name);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, 
+                arg_type, nullptr, nullptr, arg_name);
             ASR::asr_t *arg_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                 current_scope, s2c(al, arg_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
                 ASRUtils::intent_in, nullptr, nullptr,
-                ASR::storage_typeType::Default, ASRUtils::expr_type(end), ASRUtils::get_struct_sym_from_struct_expr(end),
+                ASR::storage_typeType::Default, arg_type,
+                nullptr,
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
             if (compiler_options.implicit_typing) {
