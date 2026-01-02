@@ -1303,6 +1303,7 @@ RUN(NAME intrinsics_397 LABELS llvm llvm_wasm llvm_wasm_emcc) # selected_logical
 RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc 
 RUN(NAME intrinsics_399 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # intrinsic impure subroutine
 RUN(NAME intrinsics_400 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # compiler_options 
+RUN(NAME intrinsics_401 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
