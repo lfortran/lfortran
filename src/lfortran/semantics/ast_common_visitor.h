@@ -7942,7 +7942,10 @@ public:
             if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
 
                 ASR::ttype_t* ret_type = ASRUtils::expr_type(val);
-                if (ASRUtils::is_array(ret_type)) {
+
+                ASR::ttype_t* base_type = ASRUtils::type_get_past_array(ret_type);
+                if (ASRUtils::is_array(ret_type) ||
+                    ASR::is_a<ASR::StructType_t>(*base_type)) {
                     new_args.push_back(al, arg);
                     continue;
                 }
@@ -8024,6 +8027,8 @@ public:
             return create_GenericProcedureWithASTNode(x, new_args, v);
         }
     }
+
+
 
     void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
         if (struct_n_args == 0) {
