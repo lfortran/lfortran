@@ -6671,8 +6671,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     LLVMTuple::LLVMTuple(llvm::LLVMContext& context_,
                          LLVMUtils* llvm_utils_,
-                         llvm::IRBuilder<>* /*builder_*/) :
-    context(context_), llvm_utils(llvm_utils_) {}
+                         llvm::IRBuilder<>* builder_) :
+    context(context_), llvm_utils(llvm_utils_), builder(builder_) {}
 
     llvm::Type* LLVMTuple::get_tuple_type(std::string& type_code,
                                           std::vector<llvm::Type*>& el_types) {
@@ -6713,6 +6713,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         for( size_t i = 0; i < values.size(); i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, tuple_type->m_type[i], module);
             llvm::Value* item_ptr = read_item_using_pos(el_type, llvm_tuple, tuple_type, i, true);
+            if (ASRUtils::is_descriptorString(tuple_type->m_type[i]) && ASRUtils::is_deferredLength_string(tuple_type->m_type[i])) {
+                builder->CreateStore(llvm::Constant::getNullValue(llvm_utils->string_descriptor), item_ptr);
+                ASR::String_t *t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(tuple_type->m_type[i]));
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, item_ptr, llvm_utils->get_string_length(t, item_ptr));
+            }
+
             llvm_utils->deepcopy(nullptr, values[i], item_ptr,
                                  tuple_type->m_type[i],
                                  tuple_type->m_type[i],

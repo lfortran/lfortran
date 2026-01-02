@@ -5353,6 +5353,7 @@ public:
         bool is_malloc_array_type = false;
         bool is_list = false;
         bool is_dict = ASR::is_a<ASR::Dict_t>(*v->m_type);
+        bool is_tuple = ASR::is_a<ASR::Tuple_t>(*v->m_type);
         if (v->m_intent == intent_local ||
             v->m_intent == intent_return_var ||
             !v->m_intent) {
@@ -5636,7 +5637,7 @@ public:
                     }
                 }
             }
-            if( init_expr != nullptr && !is_list && !is_dict) {
+            if( init_expr != nullptr && !is_list && !is_dict && !is_tuple) {
                 target_var = ptr;
                 if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
@@ -5669,6 +5670,17 @@ public:
                         dict_api_sc->dict_init(asr_dict, ptr, module.get(), 0);
                     else
                         dict_api_lp->dict_init(asr_dict, ptr, module.get(), 0);
+                } else if (is_tuple) {
+                    auto tuple_type_ = ASR::down_cast<ASR::Tuple_t>(v->m_type);
+                    for (size_t i=0; i<tuple_type_->n_type; i++) {
+                        if (ASRUtils::is_descriptorString(tuple_type_->m_type[i]) && ASRUtils::is_deferredLength_string(tuple_type_->m_type[i])) {
+                            auto item_ptr = llvm_utils->create_gep2(type, ptr, i);
+
+                            builder->CreateStore(llvm::Constant::getNullValue(llvm_utils->string_descriptor), item_ptr);
+                            ASR::String_t *t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(tuple_type_->m_type[i]));
+                            llvm_utils->set_string_memory_on_heap(t->m_physical_type, item_ptr, llvm_utils->get_string_length(t, item_ptr));
+                        }
+                    }
                 }
             }
         }
