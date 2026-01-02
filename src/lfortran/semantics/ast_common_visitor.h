@@ -5627,9 +5627,14 @@ public:
                 Vec<ASR::ttype_t *> type_vec;
                 type_vec.reserve(al, sym_type->n_attr);
 
-                for (size_t i=0;i<sym_type->n_attr;i++)
-                    type_vec.push_back(al, determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
-                                                       is_allocatable, dims, var_sym, type_declaration, abi));
+                for (size_t i=0;i<sym_type->n_attr;i++) {
+                    auto type = determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                                is_allocatable, dims, var_sym, type_declaration, abi);
+                    if (ASRUtils::is_deferredLength_string(type) && ASRUtils::is_descriptorString(type))
+                        type = determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                            true, dims, var_sym, type_declaration, abi);
+                    type_vec.push_back(al, type);
+                }
 
                 return ASRUtils::TYPE(ASR::make_Tuple_t(al, sym_type->base.base.loc, type_vec.p, type_vec.n));
             }
@@ -9441,6 +9446,12 @@ public:
             args.push_back(al, arg);
 
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
+                arg_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                            ASR::make_String_t(al, x.base.base.loc, 1, nullptr,
+                                                    ASR::string_length_kindType::DeferredLength,
+                                                    ASR::string_physical_typeType::DescriptorString))));
+            }
             type_vec.push_back(al, arg_type);
         }
 

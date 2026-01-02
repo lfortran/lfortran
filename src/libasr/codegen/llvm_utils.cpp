@@ -6725,8 +6725,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, tuple_type->m_type[i], module);
-            llvm::Value* src_item = read_item_using_pos(el_type, src, tuple_type, i, LLVM::is_llvm_struct(
-                                              tuple_type->m_type[i]));
+            llvm::Value* src_item = read_item_using_pos(el_type, src, tuple_type, i, 
+                                            LLVM::is_llvm_struct(tuple_type->m_type[i]) ||
+                                            ASRUtils::is_allocatable(tuple_type->m_type[i]));
             llvm::Value* dest_item_ptr = read_item_using_pos(el_type, dest, tuple_type, i, true);
             llvm_utils->deepcopy(nullptr, src_item, dest_item_ptr,
                                  tuple_type->m_type[i],
