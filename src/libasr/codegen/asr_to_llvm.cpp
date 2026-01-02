@@ -11449,6 +11449,32 @@ public:
                 }
                 break;
             }
+            case (ASR::ttypeType::Complex): {
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (a_kind == 4) {
+                    runtime_func_name = "_lfortran_read_complex_float";
+                    type_arg = complex_type_4;
+                } else if (a_kind == 8) {
+                    runtime_func_name = "_lfortran_read_complex_double";
+                    type_arg = complex_type_8;
+                } else {
+                    throw CodeGenError("Read Complex function not implemented "
+                        "for complex kind: " + std::to_string(a_kind));
+                }
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                type_arg->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                }
+                break;
+            }
             case (ASR::ttypeType::Array): {
                 type = ASRUtils::type_get_past_array(type);
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
