@@ -5497,19 +5497,42 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-#if LLVM_VERSION_MAJOR >= 15
-                    bool is_llvm_ptr = false;
-                    if ( LLVM::is_llvm_pointer(*v->m_type) &&
-                            !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(v->m_type))) &&
-                            !ASRUtils::is_descriptorString(v->m_type) ) {
-                        is_llvm_ptr = true;
+                    // Check if this is a large fixed-size array that should use static storage
+                    // gfortran uses 65536 bytes as the default threshold (fmax-stack-var-size)
+                    bool use_static_storage = false;
+                    if (ASRUtils::is_array(v->m_type) &&
+                        ASRUtils::extract_physical_type(v->m_type) ==
+                            ASR::array_physical_typeType::FixedSizeArray) {
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        uint64_t type_size = data_layout.getTypeAllocSize(type);
+                        if (type_size > 65536) {
+                            use_static_storage = true;
+                        }
                     }
-                    ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
-                        v->m_name, is_llvm_ptr);
+
+                    if (use_static_storage) {
+                        // Use static storage for large fixed-size arrays (like gfortran)
+                        std::string parent_function_name = std::string(x.m_name);
+                        std::string global_name = parent_function_name + "." + v->m_name;
+                        ptr = module->getOrInsertGlobal(global_name, type);
+                        llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
+                        gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
+                        gptr->setInitializer(llvm::Constant::getNullValue(type));
+                    } else {
+#if LLVM_VERSION_MAJOR >= 15
+                        bool is_llvm_ptr = false;
+                        if ( LLVM::is_llvm_pointer(*v->m_type) &&
+                                !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(v->m_type))) &&
+                                !ASRUtils::is_descriptorString(v->m_type) ) {
+                            is_llvm_ptr = true;
+                        }
+                        ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                            v->m_name, is_llvm_ptr);
 #else
-                    ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                        ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
 #endif
+                    }
                 }
             }
             if (compiler_options.new_classes && !LLVM::is_llvm_pointer(*v->m_type) &&
