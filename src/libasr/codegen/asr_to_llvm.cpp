@@ -11652,7 +11652,12 @@ public:
                                     continue;
                                 }
 
-                                if (arr_t->m_physical_type != ASR::array_physical_typeType::PointerArray) {
+                                bool is_pointer_array = (arr_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
+                                    arr_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray);
+                                if (is_pointer_array) {
+                                    // For pointer arrays, arr_ptr is Type**, load to get Type*
+                                    data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), arr_ptr);
+                                } else {
                                     data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
                                 }
 
@@ -11661,8 +11666,9 @@ public:
                                 llvm::Value* start_idx = tmp;
                                 llvm::Value* offset = builder->CreateSub(start_idx,
                                     llvm::ConstantInt::get(start_idx->getType(), 1));
-                                llvm::Value* section_ptr = llvm_utils->create_gep2(
-                                    llvm_elem_type, data_ptr, offset);
+                                llvm::Value* section_ptr = is_pointer_array ?
+                                    llvm_utils->create_ptr_gep2(llvm_elem_type, data_ptr, offset) :
+                                    llvm_utils->create_gep2(llvm_elem_type, data_ptr, offset);
 
                                 // Compute size: (end - start) / inc + 1
                                 this->visit_expr_wrapper(idl->m_end, true);
