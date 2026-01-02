@@ -11581,7 +11581,7 @@ public:
         }
 
         if (x.m_fmt) {
-            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length);
+            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
@@ -11932,7 +11932,7 @@ public:
 
     void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
             llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
-            llvm::Value *advance_length) {
+            llvm::Value *advance_length, bool is_string = false) {
         ASR::expr_t* fmt_expr = x.m_fmt;
         ASR::expr_t** values = x.m_values;
         size_t n_values = x.n_values;
@@ -11947,7 +11947,17 @@ public:
 
         std::vector<llvm::Value*> args;
         args.reserve(8 + 3 * n_values);
-        args.push_back(unit_val);
+        
+        // For internal string reads, we need to pass string data and length instead of unit
+        if (is_string) {
+            llvm::Value *src_data, *src_len;
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
+            args.push_back(src_data);
+            args.push_back(src_len);
+        } else {
+            args.push_back(unit_val);
+        }
         args.push_back(iostat);
         args.push_back(read_size);
         args.push_back(advance);
@@ -12017,22 +12027,48 @@ public:
             throw CodeGenError("Unsupported type in formatted read");
         }
 
-        std::string runtime_func_name = "_lfortran_formatted_read";
-        llvm::Function *fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context),                 // Unit
-                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                        character_type,                                  // advance
-                        llvm::Type::getInt64Ty(context),                 // advance_length
-                        character_type,                                  // fmt
-                        llvm::Type::getInt64Ty(context),                 // fmt_len
-                        llvm::Type::getInt32Ty(context)                  // no_of_args
-                    }, true);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+        std::string runtime_func_name;
+        llvm::Function *fn;
+        
+        if (is_string) {
+            // Internal string read
+            runtime_func_name = "_lfortran_string_formatted_read";
+            fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            character_type,                                  // src_data
+                            llvm::Type::getInt64Ty(context),                 // src_len
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                            character_type,                                  // advance
+                            llvm::Type::getInt64Ty(context),                 // advance_length
+                            character_type,                                  // fmt
+                            llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt32Ty(context)                  // no_of_args
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
+        } else {
+            // File read
+            runtime_func_name = "_lfortran_formatted_read";
+            fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context),                 // Unit
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                            character_type,                                  // advance
+                            llvm::Type::getInt64Ty(context),                 // advance_length
+                            character_type,                                  // fmt
+                            llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt32Ty(context)                  // no_of_args
+                        }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
         }
 
         builder->CreateCall(fn, args);
