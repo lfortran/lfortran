@@ -96,6 +96,20 @@ contains
         procedure(ubound_assumed_size) :: p
     end subroutine proc_param
 
+    subroutine substring_error()
+        implicit none
+        character(len=*), parameter :: string = 'A character string'
+        integer, parameter :: n = len(string)
+        integer :: i
+        character(len=1) :: charray(n)
+
+        do i = 1, n
+            charray(i) = string(i,i)  ! invalid substring, should error
+        end do
+
+        print "(*(A))", charray
+    end subroutine substring_error
+
 
 
 
@@ -457,4 +471,5 @@ program continue_compilation_1
 
     !passing non procedure to procedure parameter
     call proc_param(42)
+
 end program
