@@ -882,12 +882,11 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
 
-        llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(*builder, complex_type);
-
+        llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(complex_type);
         builder->CreateStore(left_arg, pleft_arg);
-        llvm::AllocaInst *pright_arg = llvm_utils->CreateAlloca(*builder, complex_type);
+        llvm::AllocaInst *pright_arg = llvm_utils->CreateAlloca(complex_type);
         builder->CreateStore(right_arg, pright_arg);
-        llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, complex_type);
+        llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
         builder->CreateCall(fn, args);
         return llvm_utils->CreateLoad2(complex_type, presult);
