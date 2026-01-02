@@ -6818,11 +6818,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         std::vector<llvm::Value*> values;
         for( size_t i = 0; i < tuple_type_1->n_type; i++ ) {
             values.push_back(llvm_utils->tuple_api->read_item(t1, tuple_type_1, i,
-                LLVM::is_llvm_struct(tuple_type_1->m_type[i])));
+                LLVM::is_llvm_struct(tuple_type_1->m_type[i]) || ASRUtils::is_allocatable_descriptor_string(tuple_type_1->m_type[i])));
         }
         for( size_t i = 0; i < tuple_type_2->n_type; i++ ) {
             values.push_back(llvm_utils->tuple_api->read_item(t2, tuple_type_2, i,
-                LLVM::is_llvm_struct(tuple_type_2->m_type[i])));
+                LLVM::is_llvm_struct(tuple_type_2->m_type[i]) || ASRUtils::is_allocatable_descriptor_string(tuple_type_2->m_type[i])));
         }
         tuple_init(tuple_1_expr, concat_tuple, values, concat_tuple_type,
                    module);
