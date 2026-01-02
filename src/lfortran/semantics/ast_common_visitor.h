@@ -4773,15 +4773,6 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
-                        if (!value || !ASRUtils::is_value_constant(value)) {
-                             diag.add(Diagnostic(
-                                "Initializer of parameter '" + std::string(s.m_name) +
-                                "' is not a constant expression",
-                                Level::Error, Stage::Semantic, {
-                                    Label("not a constant expression", {s.m_initializer->base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
                     }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
