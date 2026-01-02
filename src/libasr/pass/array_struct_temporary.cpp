@@ -918,6 +918,14 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::OverloadedCompare: {
+            ASR::OverloadedCompare_t* overloaded_compare =
+                ASR::down_cast<ASR::OverloadedCompare_t>(value);
+            set_allocation_size(al, overloaded_compare->m_overloaded, temporary_var,
+                                allocate_dims, target_n_dims,
+                                add_allocated_check, len_allocte_expr);
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
