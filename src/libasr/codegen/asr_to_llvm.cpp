@@ -12583,6 +12583,10 @@ public:
             unit = tmp;
             if (unit->getType()->isPointerTy()) {
                 unit = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit);
+            } else if (unit->getType()->isIntegerTy() &&
+                       unit->getType()->getIntegerBitWidth() > 32) {
+                // Truncate i64 to i32 for runtime function (ILP64 mode)
+                unit = builder->CreateTrunc(unit, llvm::Type::getInt32Ty(context));
             }
         } else { // String Write
             std::tie(unit, string_len) = llvm_utils->get_string_length_data(
@@ -13700,6 +13704,37 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
+            }
+
+            // Handle integer kind mismatch for implicit argument casting
+            // When passing integer(8) where integer(4) is expected (or vice versa),
+            // create a temporary with the correct kind and copy/convert the value
+            if (orig_arg && compiler_options.implicit_argument_casting) {
+                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value)));
+                ASR::ttype_t* orig_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(orig_arg->m_type));
+                if (ASR::is_a<ASR::Integer_t>(*arg_type) && ASR::is_a<ASR::Integer_t>(*orig_type) &&
+                    !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(orig_type)) {
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    int orig_kind = ASRUtils::extract_kind_from_ttype_t(orig_type);
+                    if (arg_kind != orig_kind) {
+                        // Create temporary with expected type
+                        llvm::Type* orig_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            orig_arg->m_type, module.get());
+                        llvm::Value* temp_var = llvm_utils->CreateAlloca(*builder, orig_llvm_type);
+                        // Load source value
+                        llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_args[i].m_value, arg_type, module.get());
+                        llvm::Value* loaded = llvm_utils->CreateLoad2(arg_llvm_type, tmp);
+                        // Convert (truncate or extend) to target type
+                        llvm::Value* converted = builder->CreateSExtOrTrunc(loaded, orig_llvm_type);
+                        // Store in temporary
+                        builder->CreateStore(converted, temp_var);
+                        tmp = temp_var;
+                    }
+                }
             }
 
             args.push_back(tmp);
@@ -15448,6 +15483,35 @@ public:
             args.insert(args.end(), args2.begin(), args2.end());
             if (pass_arg) {
                 args.push_back(pass_arg);
+            }
+            // Handle integer kind mismatch for implicit argument casting
+            // When passing integer(8)* where integer(4)* is expected (or vice versa),
+            // create a temporary with the correct kind and copy/convert the value
+            if (compiler_options.implicit_argument_casting) {
+                llvm::FunctionType* fntype = fn->getFunctionType();
+                for (size_t i = 0; i < args.size() && i < fntype->getNumParams(); i++) {
+                    llvm::Type* expected_type = fntype->getParamType(i);
+                    llvm::Type* actual_type = args[i]->getType();
+                    if (expected_type != actual_type &&
+                        expected_type->isPointerTy() && actual_type->isPointerTy()) {
+                        // Get element types
+                        llvm::Type* expected_elem = expected_type->getPointerElementType();
+                        llvm::Type* actual_elem = actual_type->getPointerElementType();
+                        // Check if both are integers with different sizes
+                        if (expected_elem->isIntegerTy() && actual_elem->isIntegerTy() &&
+                            expected_elem != actual_elem) {
+                            // Create temporary with expected type
+                            llvm::Value* temp_var = llvm_utils->CreateAlloca(*builder, expected_elem);
+                            // Load source value
+                            llvm::Value* loaded = llvm_utils->CreateLoad2(actual_elem, args[i]);
+                            // Convert (truncate or extend) to target type
+                            llvm::Value* converted = builder->CreateSExtOrTrunc(loaded, expected_elem);
+                            // Store in temporary
+                            builder->CreateStore(converted, temp_var);
+                            args[i] = temp_var;
+                        }
+                    }
+                }
             }
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {

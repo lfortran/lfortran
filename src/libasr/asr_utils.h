@@ -6842,9 +6842,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
+    bool implicit_argument_casting = false) {
 
-    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, 
+    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
