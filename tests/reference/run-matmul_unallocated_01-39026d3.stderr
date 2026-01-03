@@ -1,4 +1,4 @@
 At 10:5 of file tests/errors/matmul_unallocated_01.f90
 Runtime error: Array 'result' index out of bounds.
 
-Tried to access index 1 of dimension 2, but valid range is 1622 to 1621.
+Tried to access index 1 of dimension 2, but valid range is 1818 to 1817.
