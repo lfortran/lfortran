@@ -863,6 +863,22 @@ public:
     * _lfortran_complex_div
     * _lfortran_complex_mul
     */
+    // Convert a complex value from vector type (e.g. <2 x float>) to struct type
+    // (e.g. {float, float}) if needed. BindC functions return complex as vectors
+    // on non-macOS ARM platforms, but we use struct types internally.
+    llvm::Value* convert_complex_vector_to_struct(llvm::Value* val, llvm::Type* complex_type) {
+        llvm::Type* val_type = val->getType();
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            // val is a vector type like <2 x float> or <2 x double>
+            // Convert to struct type like {float, float} or {double, double}
+            llvm::AllocaInst *p_vec = llvm_utils->CreateAlloca(*builder, val_type);
+            builder->CreateStore(val, p_vec);
+            llvm::Value* p_struct = builder->CreateBitCast(p_vec, complex_type->getPointerTo());
+            return llvm_utils->CreateLoad2(complex_type, p_struct);
+        }
+        return val;
+    }
+
     llvm::Value* lfortran_complex_bin_op(llvm::Value* left_arg, llvm::Value* right_arg,
                                          std::string runtime_func_name,
                                          llvm::Type* complex_type=nullptr)
@@ -881,6 +897,10 @@ public:
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
+
+        // Convert vector types to struct types if needed (BindC ABI compatibility)
+        left_arg = convert_complex_vector_to_struct(left_arg, complex_type);
+        right_arg = convert_complex_vector_to_struct(right_arg, complex_type);
 
         llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(complex_type);
         builder->CreateStore(left_arg, pleft_arg);
@@ -15365,17 +15385,20 @@ public:
                     } else if (compiler_options.platform == Platform::macOS_ARM) {
                         // pass
                     } else {
-                        // tmp is <2 x float>, have to convert to {float, float}
-
-                        // <2 x float>
-                        llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                        // Convert <2 x float> to <2 x float>*
-                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(*builder, type_fx2);
-                        builder->CreateStore(tmp, p_fx2);
-                        // Convert <2 x float>* to {float,float}* using bitcast
-                        tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
-                        // Convert {float,float}* to {float,float}
-                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
+                        // tmp should be <2 x float>, have to convert to {float, float}
+                        // But only if tmp is actually a vector type - if the function was
+                        // defined internally (not truly external), it may return struct directly
+                        if (llvm::isa<FIXED_VECTOR_TYPE>(tmp->getType())) {
+                            // <2 x float>
+                            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                            // Convert <2 x float> to <2 x float>*
+                            llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(*builder, type_fx2);
+                            builder->CreateStore(tmp, p_fx2);
+                            // Convert <2 x float>* to {float,float}* using bitcast
+                            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+                            // Convert {float,float}* to {float,float}
+                            tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
+                        }
                     }
                 }
             }
