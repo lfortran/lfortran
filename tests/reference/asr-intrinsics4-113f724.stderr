@@ -1,0 +1,5 @@
+semantic error: Kind of all the arguments of Dshiftl must be the same
+ --> tests/errors/intrinsics4.f90:2:14
+  |
+2 |     print *, dshiftl(1, 1_8, 1)
+  |              ^^^^^^^^^^^^^^^^^^ 

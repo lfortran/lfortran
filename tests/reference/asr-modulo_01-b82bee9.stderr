@@ -1,0 +1,5 @@
+semantic error: Second argument of modulo cannot be 0
+ --> tests/errors/modulo_01.f90:2:14
+  |
+2 |     print *, modulo(1, 0)
+  |              ^^^^^^^^^^^^ 

@@ -1,0 +1,5035 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022 LFortran contributors
+# This file is distributed under the same license as the LFortran package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: LFortran\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-08-18 00:30+0200\n"
+"PO-Revision-Date: 2022-09-12 14:18+0000\n"
+"Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/es/>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.14.1-dev\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: ../../doc/src/ast_and_asr.ipynb:9
+msgid "Difference between an AST and ASR"
+msgstr "Diferencias entre un AST y una ASR"
+
+#: ../../doc/src/ast_and_asr.ipynb:11
+msgid "Let us take a simple Fortran code:"
+msgstr "Tomemos un código Fortran simple:"
+
+#: ../../doc/src/ast_and_asr.ipynb:22
+msgid "and look at how the AST and ASR looks like."
+msgstr "y verifiquemos en que se parecen AST y ASR."
+
+#: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
+msgid "AST"
+msgstr "AST"
+
+#: ../../doc/src/ast_and_asr.ipynb:76
+msgid ""
+"The AST does not have any semantic information, but has nodes to "
+"represent declarations such as ``integer, intent(in) :: a``. Variables "
+"such as ``a`` are represented by a ``Name`` node, and are not connected "
+"to their declarations yet."
+msgstr ""
+"El AST no tiene información semántica, pero tiene nodos para representar "
+"declaraciones tales como ``integer, intent(in) :: a``. Variables tales como "
+"``a`` son representadas por un nodo ``Name`` , y aún no están conectadas a "
+"sus declaraciones."
+
+#: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
+msgid "ASR"
+msgstr "ASR"
+
+#: ../../doc/src/ast_and_asr.ipynb:139
+msgid ""
+"The ASR has all the semantic information (types, etc.), nodes like "
+"``Function`` have a symbol table and do not have any declaration nodes. "
+"Variables are simply pointers to the symbol table."
+msgstr ""
+"La ASR tiene toda la información semántica (tipos, etc.), nodos como "
+"``Function`` tienen una tabla de símbolos y no tienen ningún nodo de "
+"declaración. Variables son únicamente punteros para la tabla de símbolos."
+
+#: ../../doc/src/ast_and_asr.ipynb:142
+msgid "Discussion"
+msgstr "Discusión"
+
+#: ../../doc/src/ast_and_asr.ipynb:144
+msgid ""
+"The above was a simple example. Things get more apparent for more "
+"complicated examples, such as:"
+msgstr ""
+"El anterior fué un ejemplo simple. Las cosas se vuelven mas evidentes para "
+"ejemplos más complicados, tales como:"
+
+#: ../../doc/src/ast_and_asr.ipynb:160
+msgid ""
+"AST must represent all the ``use`` statements and the ``interface`` "
+"block, and keep things semantically consistent."
+msgstr ""
+"AST puede representar todos las declaraciones ``use`` y el bloque "
+"``interface``, y mantiene las cosas semánticamente consistentes."
+
+#: ../../doc/src/ast_and_asr.ipynb:162
+msgid ""
+"ASR, on the other hand, keeps track of the ``c_desc1_int32``, "
+"``c_desc1_t`` and ``f2b_c_wrapper`` in the symbol table and it knows they"
+" are defined in the ``gfort_interop`` module, and so ASR does not have "
+"any of these declaration nodes."
+msgstr ""
+"ASR, por otro lado, realiza un seguimiento de ``c_desc1_int32``, "
+"``c_desc1_t`` y ``f2b_c_wrapper`` en la tabla de símbolos y sabe que están "
+"definidos en el módulo ``gfort_interop``, y así ASR no tiene ninguno de "
+"estos nodos de declaración."
+
+#: ../../doc/src/ast_and_asr.ipynb:164
+msgid ""
+"When converting from ASR to AST, LFortran will create all the appropriate"
+" AST declaration nodes automatically and correctly."
+msgstr ""
+"Al convertir de ASR a AST, LFortran creará automática y correctamente todos "
+"los nodos de declaración AST apropiados."
+
+#: ../../doc/src/contributing.md:1
+msgid "Contributing"
+msgstr "Contribuyendo"
+
+#: ../../doc/src/contributing.md:3
+msgid ""
+"We welcome contributions from anyone, even if you are new to open source."
+" It might sound daunting to contribute to a compiler at first, but please"
+" do, it is not complicated. We will help you with any technical issues "
+"and help improve your contribution so that it can be merged."
+msgstr ""
+"Damos la bienvenida a todas las contribuciones, aún si usted es nuevo en "
+"código abierto. Al principio, puede parecer abrumador contribuir a un "
+"compilador, pero hágalo, no es complicado. Ayudaremos con cualquier problema "
+"técnico, así como a mejorar su contribución para que esta pueda integrarse."
+
+#: ../../doc/src/contributing.md:8
+msgid "Basic Setup"
+msgstr "Configuración básica"
+
+#: ../../doc/src/contributing.md:10
+msgid "To contribute, make sure your set up:"
+msgstr "Para contribuir, asegúrese de configurar:"
+
+#: ../../doc/src/contributing.md:12
+msgid "Your username + email"
+msgstr "Su nombre de usuario + correo electrónico"
+
+#: ../../doc/src/contributing.md:13
+msgid "Your `~/.gitconfig`"
+msgstr "Su `~/.gitconfig`"
+
+#: ../../doc/src/contributing.md:14
+msgid "Your shell prompt to display the current branch name"
+msgstr "Su indicador de interfaz para mostrar el nombre de la rama actual"
+
+#: ../../doc/src/contributing.md:16
+msgid "Fork LFortran"
+msgstr "Bifurcar LFortran"
+
+#: ../../doc/src/contributing.md:18
+msgid ""
+"Step 1. Create a fork of the [project "
+"repository](https://github.com/lfortran/lfortran)"
+msgstr ""
+"Paso 1. Crear una bifurcación del [repositorio del proyecto](https://github."
+"com/lfortran/lfortran)"
+
+#: ../../doc/src/contributing.md:20
+msgid ""
+"Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
+"/connecting-to-github-with-ssh) with GitHub"
+msgstr ""
+"Paso 2. Configure su [clave SSH](https://docs.github.com/en/authentication/"
+"connecting-to-github-with-ssh) con GitHub"
+
+#: ../../doc/src/contributing.md:22
+msgid ""
+"Step 3. Clone the project repository from GitHub and set up your remote "
+"repository"
+msgstr ""
+"Paso 3. Clone el repositório del proyecto desde Github y configure su "
+"repositório remoto"
+
+#: ../../doc/src/contributing.md:29
+msgid ""
+":fontawesome-solid-edit: `REMOTE_NAME` is the name of your remote "
+"repository and could be any name you like, for example your first name."
+msgstr ""
+":fontawesome-solid-edit: `REMOTE_NAME` es el nombre de su repositório remoto "
+"y puede ser cualquier nombre de su elección, por ejemplo su primer nombre."
+
+#: ../../doc/src/contributing.md:31
+msgid ""
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
+"should be part of your account path."
+msgstr ""
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` es su identificador de usuario en "
+"Github y debe ser parte de la ruta de su cuenta."
+
+#: ../../doc/src/contributing.md:33
+msgid ""
+"You can use `git remote -v` to check if the new remote is set up "
+"correctly."
+msgstr ""
+"Usted puede usar `git remote -v` para verificar si el nuevo enlace remoto "
+"está correctamente configurado."
+
+#: ../../doc/src/contributing.md:35
+msgid "Send a New Merge Request"
+msgstr "Enviar una nueva solicitud de fusión"
+
+#: ../../doc/src/contributing.md:37
+msgid "Step 1. Create a new branch"
+msgstr "Paso 1. Crear una nueva rama"
+
+#: ../../doc/src/contributing.md:42
+msgid "Step 2. Make changes in relevant file(s)"
+msgstr "Paso 2. Realizar cambios en archivos relevantes"
+
+#: ../../doc/src/contributing.md:44
+msgid "Step 3. Commit the changes:"
+msgstr "Paso 3. Confirmar los cambios:"
+
+#: ../../doc/src/contributing.md:51
+msgid ""
+"[Here](https://chris.beams.io/posts/git-commit/) are some great tips on "
+"writing good commit messages."
+msgstr ""
+"[Aquí](https://chris.beams.io/posts/git-commit/) algunos consejos sobre como "
+"escribir buenos mensajes de confirmación."
+
+#: ../../doc/src/contributing.md:53
+msgid "Step 4. Check to ensure that your changes look good"
+msgstr "Paso 4. Verifique que sus cambios se vean bien"
+
+#: ../../doc/src/contributing.md:58
+msgid "Step 5. Send the merge request"
+msgstr "Paso 5. Enviar la solicitud de fusión"
+
+#: ../../doc/src/contributing.md:64
+msgid ""
+"The command will push the new branch `fix1` into your remote repository "
+"`REMOTE_NAME` that you created earlier. Additionally, it will also "
+"display a link that you can click on to open the new merge request. After"
+" clicking on the link, write a title and a concise description then click"
+" the \"Create\" button. Yay you are now all set."
+msgstr ""
+"El comando insertará la nueva rama `fix1` en su repositorio remoto "
+"`REMOTE_NAME` que creó anteriormente. Además, también mostrará un enlace en "
+"el que puede hacer clic para abrir la nueva solicitud de fusión. Después de "
+"hacer clic en el enlace, escriba un título y una descripción concisa y luego "
+"haga clic en el botón \"Create\". Sí, ya está todo listo."
+
+#: ../../doc/src/contributing.md:66
+msgid "Add New Features"
+msgstr "Adicionar nuevas características"
+
+#: ../../doc/src/contributing.md:68
+msgid ""
+"The example below shows the steps it would take to create a caret binary "
+"operator **^** which computes the average value of the two operands."
+msgstr ""
+"El siguiente ejemplo muestra los pasos necesarios para crear un operador "
+"binario de intercalación **^** que calcula el valor promedio de los dos "
+"operandos."
+
+#: ../../doc/src/contributing.md:70
+msgid "Create New Token(s)"
+msgstr "Crear un nuevo identificador"
+
+#: ../../doc/src/contributing.md:72
+msgid ""
+"We extend the *tokenizer.re* as well as *parser.yy* to add the new token "
+"**^**. We also tell LFortran how to print the new token in *parser.cpp*."
+msgstr ""
+"Extendemos el *tokenizer.re* así como el *parser.yy* para adcionar el nuevo "
+"indentificador **^**. También le decimos a LFortran como imprimir el nuevo "
+"identificador en *parser.cpp*."
+
+#: ../../doc/src/contributing.md:75
+msgid ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
+
+#: ../../doc/src/contributing.md:80
+msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
+
+#: ../../doc/src/contributing.md:85
+msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
+
+#: ../../doc/src/contributing.md:94
+msgid "The added code is tested with `lfortran --show-tokens examples2/expr2.f90`"
+msgstr ""
+"El código adicionado es evaluado con `lfortran --show-tokens examples2/expr2."
+"f90`"
+
+#: ../../doc/src/contributing.md:96
+msgid "Parse the New Token"
+msgstr "Analizar el nuevo identificador"
+
+#: ../../doc/src/contributing.md:98
+msgid ""
+"Now we have to parse the new operator. We add it to the AST by extending "
+"the BinOp with a caret operator and modifying the *AST.asdl* file. Then "
+"we add it in *parse.yy* to properly parse and generate the new AST in "
+"*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
+" print itself."
+msgstr ""
+"Ahora tenemos que analizar el nuevo operador. Lo agregamos al AST "
+"extendiendo BinOp con un operador de intercalación y modificando el archivo "
+"*AST.asdl*. Luego lo agregamos en *parse.yy* para analizar correctamente y "
+"generar el nuevo AST en *semantics.h*. Finalmente, extendemos *pickle.cpp* "
+"para que el nuevo operador pueda imprimirse solo."
+
+#: ../../doc/src/contributing.md:102
+msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
+msgstr ":fontawesome-solid-code:*grammar/AST.asdl*"
+
+#: ../../doc/src/contributing.md:107
+msgid ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
+
+#: ../../doc/src/contributing.md:116
+msgid ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
+
+#: ../../doc/src/contributing.md:121
+msgid ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
+msgstr ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
+
+#: ../../doc/src/contributing.md:132
+msgid "The section is tested with `lfortran --show-ast examples/expr2.f90`"
+msgstr "La sección es evaluada con `lfortran --show-ast examples/expr2.f90`"
+
+#: ../../doc/src/contributing.md:134
+msgid "Implement the Semantics of the New Token"
+msgstr "Implementar todas las semánticas del nuevo identificador"
+
+#: ../../doc/src/contributing.md:136
+msgid ""
+"We first extend the ASR in *ASR.asdl* and add ^ as a BinOp operator "
+"option."
+msgstr ""
+"Primero extendemos el ASR en *ASR.asdl* y adicionamos ^ como una opción del "
+"operador BinOp."
+
+#: ../../doc/src/contributing.md:138
+msgid ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
+msgstr ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
+
+#: ../../doc/src/contributing.md:142
+msgid ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
+msgstr ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
+
+#: ../../doc/src/contributing.md:179
+msgid ""
+"Then we transform it from AST to ASR by extending "
+"*src/lfortran/semantics/ast_common_visitor.h*."
+msgstr ""
+"Después lo transformamos desde AST para ASR extendiendo *src/lfortran/"
+"semantics/ast_common_visitor.h*."
+
+#: ../../doc/src/contributing.md:181
+msgid ""
+"We also add it into compile time evaluation triggered by expressions such"
+" as `e = (2+3)^5` which is evaluated at compile time. An expression such "
+"as `e = x^5` is evaluated at run time only."
+msgstr ""
+"También lo agregamos a la evaluación en tiempo de compilación desencadenada "
+"por expresiones como `e = (2+3)^5`, que se evalúa en tiempo de compilación. "
+"Una expresión como `e = x^5` se evalúa solo en tiempo de ejecución."
+
+#: ../../doc/src/contributing.md:183
+msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
+msgstr "La sección es evaluada con `lfortran --show-asr examples/expr2.f90`"
+
+#: ../../doc/src/contributing.md:184
+msgid "Implement the New Token in LLVM"
+msgstr "Implementando el nuevo identificador en LLVM"
+
+#: ../../doc/src/contributing.md:186
+msgid ""
+"To implement in LLVM, we extend the BinOp translation by handling the new"
+" operator. We first add the two numbers then divide by two. :fontawesome-"
+"solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
+msgstr ""
+"Para implementar en LLVM, extendemos la traducción de BinOp manejando el "
+"nuevo operador. Primero sumamos los dos números y luego dividimos por dos. "
+":fontawesome-solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
+
+#: ../../doc/src/contributing.md:217
+msgid "The section is tested with `lfortran --show-llvm examples/expr2.f90`"
+msgstr "La sección es evaluada con `lfortran --show-llvm examples/expr2.f90`"
+
+#: ../../doc/src/contributing.md:219
+msgid "Now when LLVM works, we can test the final executable by:"
+msgstr "Ahora, cuando LLVM funciona, podemos probar el ejecutable final:"
+
+#: ../../doc/src/contributing.md:224
+msgid "And it should print 6."
+msgstr "Y debería imprimir 6."
+
+#: ../../doc/src/contributing.md:226
+msgid "It also works interactively:"
+msgstr "También funciona de forma interactiva:"
+
+#: ../../doc/src/contributing.md:242
+msgid "Reach Out"
+msgstr "Alcanzar"
+
+#: ../../doc/src/contributing.md:244
+msgid ""
+"If you have any questions or need help, please ask as at our "
+"[mailinglist](https://groups.io/g/lfortran) or a "
+"[chat](https://lfortran.zulipchat.com/)."
+msgstr ""
+"Si tiene alguna pregunta o necesita ayuda, pregunte en nuestra [lista de "
+"correo](https://groups.io/g/lfortran) o un [chat](https://lfortran.zulipchat."
+"com/)."
+
+#: ../../doc/src/contributing.md:248
+msgid ""
+"Please note that all participants of this project are expected to follow "
+"our Code of Conduct. By participating in this project you agree to abide "
+"by its terms. See "
+"[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
+msgstr ""
+"Tenga en cuenta que se espera que todos los participantes de este proyecto "
+"sigan nuestro Código de conducta. Al participar en este proyecto, usted "
+"acepta cumplir con sus términos. Ver [CODE_OF_CONDUCT.md](https://github.com/"
+"lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
+
+#: ../../doc/src/contributing.md:252
+msgid ""
+"By submitting a PR you agree to license your contribution under the "
+"LFortran's BSD "
+"[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
+"explicitly noted otherwise."
+msgstr ""
+"Al enviar un PR, acepta licenciar su contribución bajo la "
+"[licencia](https://github.com/lfortran/lfortran/blob/main/LICENSE) BSD de "
+"LFortran, a menos que se indique explícitamente lo contrario."
+
+#: ../../doc/src/design.md:1
+msgid "LFortran Design"
+msgstr "Diseño de LFortran"
+
+#: ../../doc/src/design.md:3
+msgid "High Level Overview"
+msgstr "Descripción general de alto nivel"
+
+#: ../../doc/src/design.md:5 ../../doc/src/developer_tutorial.ipynb:16
+msgid ""
+"LFortran is structured around two independent modules, AST and ASR, both "
+"of which are standalone (completely independent of the rest of LFortran) "
+"and users are encouraged to use them independently for other applications"
+" and build tools on top:"
+msgstr ""
+"LFortran está estructurado en torno a dos módulos independientes, AST y ASR, "
+"los cuales son independientes (completamente independientes del resto de "
+"LFortran) y se anima a los usuarios a usarlos de forma independiente para "
+"otras aplicaciones y crear herramientas en la parte superior:"
+
+#: ../../doc/src/design.md:10
+msgid ""
+"Abstract Syntax Tree (AST), module `lfortran.ast`: Represents any Fortran"
+" source code, strictly based on syntax, no semantic is included. The AST "
+"module can convert itself to Fortran source code."
+msgstr ""
+"Árbol de sintaxis abstracta (AST), módulo `lfortran.ast`: representa "
+"cualquier código fuente de Fortran, basado estrictamente en la sintaxis, no "
+"se incluye semántica. El módulo AST puede convertirse en código fuente de "
+"Fortran."
+
+#: ../../doc/src/design.md:14
+msgid ""
+"Abstract Semantic Representation (ASR), module `lfortran.asr`: Represents"
+" a valid Fortran source code, all semantic is included. Invalid Fortran "
+"code is not allowed (an error will be given). The ASR module can convert "
+"itself to an AST."
+msgstr ""
+"Representación semántica abstracta (ASR), módulo `lfortran.asr`: Representa "
+"un código fuente de Fortran válido, se incluye toda la semántica. No se "
+"permite el código Fortran no válido (se dará un error). El módulo ASR puede "
+"convertirse en un AST."
+
+#: ../../doc/src/design.md:19
+msgid ""
+"The LFortran compiler is then composed of the following independent "
+"stages:"
+msgstr ""
+"El compilador LFortran está compuesto por las siguientes etapas "
+"independientes:"
+
+#: ../../doc/src/design.md:21
+msgid "Parsing: converts Fortran source code to an AST"
+msgstr "Análisis: convierte el código fuente de Fortran en un AST"
+
+#: ../../doc/src/design.md:22
+msgid "Semantic: converts an AST to an ASR"
+msgstr "Semántica: Convertir un AST para un ASR"
+
+#: ../../doc/src/design.md:23
+msgid ""
+"High level optimizations: optimize ASR to a possibly faster/simpler ASR "
+"(things like inlining functions, eliminating redundant expressions or "
+"statements, etc.)"
+msgstr ""
+"Optimización de alto nivel: optimizar ASR para un ASR posiblemente mas "
+"simple y mas rápido (cosas como alinear funciones, eliminar expresiones o "
+"declaraciones redundantes, etc.)"
+
+#: ../../doc/src/design.md:26
+msgid ""
+"LLVM IR code generation and lower level optimizations: converts an ASR to"
+" an LLVM IR. This stage also does all other optimizations that do not "
+"produce an ASR, but still make sense to do before passing to LLVM IR."
+msgstr ""
+"Generación de código LLVM IR y optimizaciones de nivel inferior: convierte "
+"un ASR en un LLVM IR. Esta etapa también realiza todas las demás "
+"optimizaciones que no producen un ASR, pero que aún tiene sentido antes de "
+"pasar a LLVM IR."
+
+#: ../../doc/src/design.md:29
+msgid ""
+"Machine code generation: LLVM then does all its optimizations and "
+"generates machine code (such as a binary executable, a library, an object"
+" file, or it is loaded and executed using JIT as part of the interactive "
+"LFortran session or in a Jupyter kernel)."
+msgstr ""
+"Generación de código de máquina: LLVM luego realiza todas sus optimizaciones "
+"y genera código de máquina (como un ejecutable binario, una biblioteca, un "
+"archivo de objeto, o se carga y ejecuta usando JIT como parte de la sesión "
+"interactiva de LFortran o en un núcleo de Jupyter)."
+
+#: ../../doc/src/design.md:34
+msgid ""
+"LFortran is structured as a library, and so one can for example use the "
+"parser to obtain an AST and do something with it, or one can then use the"
+" semantic analyzer to obtain ASR and do something with it. One can "
+"generate the ASR directly (e.g., from SymPy) and then either convert to "
+"AST and to a Fortran source code, or use LFortran to compile it to "
+"machine code directly. In other words, one can use LFortran to easily "
+"convert between the three equivalent representations:"
+msgstr ""
+"LFortran está estructurado como una biblioteca, por lo que, por ejemplo, se "
+"puede usar el analizador para obtener un AST y hacer algo con él, o se puede "
+"usar el analizador semántico para obtener ASR y hacer algo con él. Uno puede "
+"generar la ASR directamente (por ejemplo, desde SymPy) y luego convertirlo a "
+"AST y a un código fuente de Fortran, o usar LFortran para compilarlo en "
+"código de máquina directamente. En otras palabras, uno puede usar LFortran "
+"para convertir fácilmente entre las tres representaciones equivalentes:"
+
+#: ../../doc/src/design.md:42
+msgid "Fortran source code"
+msgstr "Código fuente de Fortran"
+
+#: ../../doc/src/design.md:43 ../../doc/src/developer_tutorial.ipynb:23
+msgid "Abstract Syntax Tree (AST)"
+msgstr "Árbol de sintaxis abstracta (AST)"
+
+#: ../../doc/src/design.md:44 ../../doc/src/developer_tutorial.ipynb:159
+msgid "Abstract Semantic Representation (ASR)"
+msgstr "Representación semántica abstracta (ASR)"
+
+#: ../../doc/src/design.md:46
+msgid "They are all equivalent in the following sense:"
+msgstr "Estos son todos equivalentes en el siguiente sentido:"
+
+#: ../../doc/src/design.md:48
+msgid "Any ASR can always be converted to an equivalent AST"
+msgstr "Cualquier ASR puede siempre ser convertido a un AST equivalente"
+
+#: ../../doc/src/design.md:49
+msgid "Any AST can always be converted to an equivalent Fortran source code"
+msgstr ""
+"Cualquier AST puede ser siempre convertido a un código fuente Fortran "
+"equivalente"
+
+#: ../../doc/src/design.md:50
+msgid ""
+"Any Fortran source code can always be either converted to an equivalent "
+"AST or one gets a syntax error"
+msgstr ""
+"Cualquier código fuente de Fortran siempre se puede convertir a un AST "
+"equivalente o se obtiene un error de sintaxis"
+
+#: ../../doc/src/design.md:52
+msgid ""
+"Any AST can always be either converted to an equivalent ASR or one gets a"
+" semantic error"
+msgstr ""
+"Cualquier AST siempre se puede convertir a un ASR equivalente o se obtiene "
+"un error semántico"
+
+#: ../../doc/src/design.md:55
+msgid ""
+"So when a conversion can be done, they are equivalent, and the conversion"
+" can always be done unless the code is invalid."
+msgstr ""
+"Así, cuando se puede realizar una conversión estos son equivalentes, y la "
+"conversión siempre se puede realizar a menos que el código no sea válido."
+
+#: ../../doc/src/design.md:58
+msgid "ASR Design Details"
+msgstr "Detalles de diseño de una ASR"
+
+#: ../../doc/src/design.md:60
+msgid "The ASR is designed to have the following features:"
+msgstr "Una ASR está diseñada para tener las características siguientes:"
+
+#: ../../doc/src/design.md:62
+msgid ""
+"ASR is still semantically equivalent to the original Fortran code (it did"
+" not lose any semantic information). ASR can be converted to AST, and AST"
+" to Fortran source code which is functionally equivalent to the original."
+msgstr ""
+"Una ASR sigue siendo semánticamente equivalente al código Fortran original ("
+"esta no pierde información semántica). Una ASR puede ser convertida a un "
+"AST, y un AST a un código fuente Fortran que es funcionalmente equivalente "
+"al original."
+
+#: ../../doc/src/design.md:66
+msgid ""
+"ASR is as simple as possible: it does not contain any information that "
+"could not be inferred from ASR."
+msgstr ""
+"Una ASR es lo más simple posible: no contiene ninguna información que no "
+"pueda deducirse de una ASR."
+
+#: ../../doc/src/design.md:69
+msgid ""
+"The ASR C++ classes (down the road) are designed similarly to SymEngine: "
+"they are constructed once and after that they are immutable. The "
+"constructor checks in Debug more that all the requirements are met (e.g.,"
+" that all Variables in a Function have a dummy argument set, that "
+"explicit-shape arrays are not allocatable and all other Fortran "
+"requirements to make it a valid code), but in Release mode it quickly "
+"constructs the class without checks. Then there are builder classes that "
+"construct the ASR C++ classes to meet requirements (checked in Debug "
+"mode) and the builder gives an error message if a code is not a valid "
+"Fortran code, and if it doesn't give an error message, then the ASR C++ "
+"classes are constructed correctly. Thus by construction, the ASR classes "
+"always contain valid Fortran code and the rest of LFortran can depend on "
+"it."
+msgstr ""
+"Las clases ASR C++ (en el futuro) están diseñadas de manera similar a "
+"SymEngine: se construyen una vez y luego son inmutables. El constructor "
+"verifica en modo depuración que se cumplan todos los requisitos (por "
+"ejemplo, que todas las variables en una función tengan un conjunto de "
+"argumentos ficticios, que las matrices de forma explícita no se puedan "
+"asignar y todos los demás requisitos de Fortran para que sea un código "
+"válido), pero en modo de lanzamiento, construye rápidamente la clase sin "
+"controles. Luego, hay clases de constructores que construyen las clases ASR "
+"C++ para cumplir con los requisitos (verificados en el modo de depuración) y "
+"el constructor da un mensaje de error si un código no es un código Fortran "
+"válido, y si no da un mensaje de error, entonces las clases ASR C++ están "
+"construidas correctamente. Así, por construcción, las clases ASR siempre "
+"contienen código Fortran válido y el resto de LFortran puede depender de él."
+
+#: ../../doc/src/design.md:82
+msgid "Notes:"
+msgstr "Notas:"
+
+#: ../../doc/src/design.md:84
+msgid ""
+"Information that is lost when parsing source to AST: whitespace, "
+"multiline/single line if statement distinction, case sensitivity of "
+"keywords."
+msgstr ""
+"Información que se pierde al analizar la fuente en un AST: espacios en "
+"blanco, distinción de declaración if de varias líneas/una sola línea, "
+"distinción entre mayúsculas y minúsculas de palabras clave."
+
+#: ../../doc/src/design.md:87
+msgid ""
+"Information that is lost when going from AST to ASR: detailed syntax how "
+"variables were defined and the order of type attributes (whether array "
+"dimension is using the `dimension` attribute, or parentheses at the "
+"variable; or how many variables there are per declaration line or their "
+"order), as ASR only represents the aggregated type information in the "
+"symbol table."
+msgstr ""
+"Información que se pierde al pasar de un AST a una ASR: sintaxis detallada, "
+"cómo se definieron las variables y el orden de los atributos de tipo (si la "
+"dimensión de matriz usa el atributo `dimensión` o paréntesis en la variable, "
+"o cuántas variables hay por línea de declaración o su orden), ya que una ASR "
+"solo representa la información de tipo agregada en la tabla de símbolos."
+
+#: ../../doc/src/design.md:90
+msgid ""
+"ASR is the simplest way to generate Fortran code, as one does not have to"
+" worry about the detailed syntax (as in AST) about how and where things "
+"are declared. One specifies the symbol table for a module, then for each "
+"symbol (functions, global variables, types, ...) one specifies the local "
+"variables and if this is an interface then one needs to specify where one"
+" can find an implementation, otherwise a body is supplied with "
+"statements, those nodes are almost the same as in AST, except that each "
+"variable is just a reference to a symbol in the symbol table (so by "
+"construction one cannot have undefined variables). The symbol table for "
+"each node such as Function or Module also references its parent (for "
+"example a function references a module, a module references the global "
+"scope)."
+msgstr ""
+"Una ASR es la forma más sencilla de generar código Fortran, ya que uno no "
+"tiene que preocuparse por la sintaxis detallada (como en un AST) sobre cómo "
+"y dónde se declaran las cosas. Uno especifica la tabla de símbolos para un "
+"módulo, luego para cada símbolo (funciones, variables globales, tipos, ...) "
+"uno especifica las variables locales y si se trata de una interfaz, entonces "
+"uno necesita especificar dónde puede encontrar una implementación, de lo "
+"contrario un cuerpo se suministra con declaraciones, esos nodos son casi los "
+"mismos que en un AST, excepto que cada variable es solo una referencia a un "
+"símbolo en la tabla de símbolos (por lo que, por construcción, uno no puede "
+"tener variables indefinidas). La tabla de símbolos para cada nodo, como "
+"Función o Módulo, también hace referencia a su padre (por ejemplo, una "
+"función hace referencia a un módulo, un módulo hace referencia al ámbito "
+"global)."
+
+#: ../../doc/src/design.md:102
+msgid ""
+"The ASR can be directly converted to an AST without gathering any other "
+"information. And the AST directly to Fortran source code."
+msgstr ""
+"Una ASR se puede convertir directamente en un AST sin recopilar ninguna otra "
+"información. Y un AST directamente al código fuente de Fortran."
+
+#: ../../doc/src/design.md:105
+msgid ""
+"The ASR is always representing a semantically valid Fortran code.  This "
+"is enforced by checks in the ASR C++ constructors (in Debug build). When "
+"an ASR is used, one can assume it is valid."
+msgstr ""
+"Una ASR siempre representa un código Fortran semánticamente válido. Esto se "
+"aplica mediante comprobaciones en los constructores de una ASR C++ (en la "
+"compilación de depuración). Cuando se utiliza una ASR, se puede suponer que "
+"es válido."
+
+#: ../../doc/src/design.md:109
+msgid "Fortran 2008"
+msgstr "Fortran 2008"
+
+#: ../../doc/src/design.md:111
+msgid ""
+"Fortran 2008 [standard](https://j3-fortran.org/doc/year/10/10-007.pdf) "
+"chapter 2 \"Fortran concepts\" specifies that Fortran code is a "
+"collection of _program units_ (either all in one file, or in separate "
+"files), where each _program unit_ is one of:"
+msgstr ""
+"Fortran 2008 [estándar](https://j3-fortran.org/doc/year/10/10-007.pdf) "
+"capítulo 2 \"Conceptos de Fortran\" especifica que el código Fortran es una "
+"colección de _unidades de programa_ (ya sea todo en un archivo , o en "
+"archivos separados), donde cada _unidad de programa_ es una de:"
+
+#: ../../doc/src/design.md:116 ../../doc/src/design.md:131
+msgid "main program"
+msgstr "programa principal"
+
+#: ../../doc/src/design.md:117 ../../doc/src/design.md:132
+msgid "module or submodule"
+msgstr "módulo o submódulo"
+
+#: ../../doc/src/design.md:118 ../../doc/src/design.md:133
+msgid "function or subroutine"
+msgstr "función o subrutina"
+
+#: ../../doc/src/design.md:120
+msgid ""
+"Note: It can also be a _block data_ program unit, that is used to provide"
+" initial values for data objects in named _common blocks_, but we do not "
+"recommend the use of _common blocks_ (use modules instead)."
+msgstr ""
+"Nota: También puede ser una unidad de programa de _bloques de datos_, que se "
+"utiliza para proporcionar valores iniciales para objetos de datos en "
+"_bloques comunes_ con nombre, pero no recomendamos el uso de _bloques "
+"comunes_ (utilice módulos en su lugar)."
+
+#: ../../doc/src/design.md:124
+msgid "LFortran Extension"
+msgstr "Extensión LFortran"
+
+#: ../../doc/src/design.md:126
+msgid ""
+"We extend the Fortran language by introducing a _global scope_, which is "
+"not only the list of _program units_ (as in F2008) but can also include "
+"statements, declarations, use statements and expressions. We define "
+"_global scope_ as a collection of the following items:"
+msgstr ""
+"Extendemos el lenguaje Fortran introduciendo un _alcance global_, que no es "
+"sola la lista de _unidades de programa_ (como en F2800) sino que puede "
+"también incluir declaraciones, expresiones y declaraciones de uso. Definimos "
+"_alcance global_ como una colección de los elementos siguientes:"
+
+#: ../../doc/src/design.md:134
+msgid "use statement"
+msgstr "declaración de uso"
+
+#: ../../doc/src/design.md:135
+msgid "declaration"
+msgstr "declaración"
+
+#: ../../doc/src/design.md:136
+msgid "statement"
+msgstr "declaración"
+
+#: ../../doc/src/design.md:137
+msgid "expression"
+msgstr "expresión"
+
+#: ../../doc/src/design.md:139
+msgid ""
+"In addition, if a variable is not defined in an assignment statement "
+"(such as `x = 5+3`) then the type of the variable is inferred from the "
+"right hand side (e.g., `x` in `x = 5+3` would be of type `integer`, and "
+"`y` in `y = 5._dp` would be of type `real(dp)`). This rule only applies "
+"at the top level of _global scope_. Types must be fully specified inside "
+"main programs, modules, functions and subroutines, just like in F2008."
+msgstr ""
+"Además, si una variable no está definida en una instrucción de asignación ("
+"como `x = 5+3`), el tipo de variable se deduce del lado derecho (por "
+"ejemplo, `x` en `x = 5+3`). ` sería de tipo `integer`, y `y` en `y = 5._dp` "
+"sería de tipo `real(dp)`). Esta regla solo se aplica en el nivel superior de "
+"_alcance global_. Los tipos deben especificarse completamente dentro de los "
+"programas, módulos, funciones y subrutinas principales, al igual que en "
+"F2008."
+
+#: ../../doc/src/design.md:146
+msgid ""
+"The _global scope_ has its own symbol table. The main program and "
+"module/submodule do not see any symbols from this symbol table. But "
+"functions, subroutines, statements and expressions at the top level of "
+"_global scope_ use and operate on this symbol table."
+msgstr ""
+"El _alcance global_ tiene su propia tabla de símbolos. El programa principal "
+"y el módulo/submódulo no ven ningún símbolo de esta tabla de símbolos. Pero "
+"las funciones, subrutinas, declaraciones y expresiones en el nivel superior "
+"del _alcance global_ usan y operan en esta tabla de símbolos."
+
+#: ../../doc/src/design.md:151
+msgid ""
+"The _global scope_ has the following symbols predefined in the symbol "
+"table:"
+msgstr ""
+"El _alcance global_ tiene los siguientes símbolos predefinidos en la tabla "
+"de símbolos:"
+
+#: ../../doc/src/design.md:153
+msgid ""
+"the usual standard set of Fortran functions (such as `size`, `sin`, "
+"`cos`, ...)"
+msgstr ""
+"el conjunto estándar habitual de funciones de Fortran (como `size`, `sin`, "
+"`cos`, ...)"
+
+#: ../../doc/src/design.md:155
+msgid ""
+"the `dp` double precision symbol, so that one can use `5._dp` for double "
+"precision."
+msgstr ""
+"el símbolo de doble precisión `dp`, por lo que se puede usar `5._dp` para "
+"doble precisión."
+
+#: ../../doc/src/design.md:158
+msgid ""
+"Each item in the _global scope_ is interpreted as follows: main program "
+"is compiled into an executable with the same name and executed; modules, "
+"functions and subroutines are compiled and loaded; use statement and "
+"declaration adds those symbols with the proper type into the _global "
+"scope_ symbol table, but do not generate any code; statement is wrapped "
+"into an anonymous subroutine with no arguments, compiled, loaded and "
+"executed; expression is wrapped into an anonymous function with no "
+"arguments returning the expression, compiled, loaded, executed and the "
+"return value is returned to the user."
+msgstr ""
+"Cada elemento del _alcance global_ se interpreta de la siguiente manera: el "
+"programa principal se compila en un ejecutable con el mismo nombre y se "
+"ejecuta; se compilan y cargan módulos, funciones y subrutinas; use sentencia "
+"y declaración agrega esos símbolos con el tipo adecuado en la tabla de "
+"símbolos _alcance global_, pero no genera ningún código; la declaración se "
+"envuelve en una subrutina anónima sin argumentos, se compila, se carga y se "
+"ejecuta; expresión se envuelve en una función anónima sin argumentos que "
+"devuelven la expresión, compilada, cargada, ejecutada y el valor de retorno "
+"se devuelve al usuario."
+
+#: ../../doc/src/design.md:168
+msgid ""
+"The _global scope_ is always interpreted, item by item, per the previous "
+"paragraph. It is meant to allow interactive usage, experimentations and "
+"writing simple scripts. Code in _global scope_ must be interpreted using "
+"`lfortran`. For more complex (production) code it is recommended to turn "
+"it into modules and programs (by wrapping loose statements into "
+"subroutines or functions and by adding type declarations) and compile it "
+"with `lfortran` or any other Fortran compiler."
+msgstr ""
+"El _alcance global_ siempre se interpreta, elemento por elemento, según el "
+"párrafo anterior. Está destinado a permitir el uso interactivo, la "
+"experimentación y la escritura de scripts simples. El código en _alcance "
+"global_ debe interpretarse usando `lfortran`. Para código más complejo (de "
+"producción), se recomienda convertirlo en módulos y programas (envolviendo "
+"sentencias sueltas en subrutinas o funciones y agregando declaraciones de "
+"tipo) y compilarlo con `lfortran` o cualquier otro compilador de Fortran."
+
+#: ../../doc/src/design.md:176
+msgid "Here are some examples of valid code in _global scope_:"
+msgstr "Aquí algunos ejemplos de código válidos en _alcance global_:"
+
+#: ../../doc/src/design.md:178
+msgid "Example 1"
+msgstr "Ejemplo 1"
+
+#: ../../doc/src/design.md:185
+msgid "Example 2"
+msgstr "Ejemplo 2"
+
+#: ../../doc/src/design.md:197
+msgid "Example 3"
+msgstr "Ejemplo 3"
+
+#: ../../doc/src/design.md:209
+msgid "Example 4"
+msgstr "Ejemplo 4"
+
+#: ../../doc/src/design.md:217
+msgid "Design Considerations"
+msgstr "Consideraciones de diseño"
+
+#: ../../doc/src/design.md:219
+msgid ""
+"The LFortran extension of Fortran was chosen in a way so as to minimize "
+"the number of changes. In particular, only the top level of the _global "
+"scope_ has relaxed some of the Fortran rules (such as making specifying "
+"types optional) so as to allow simple and quick interactive usage, but "
+"inside functions, subroutines, modules or programs this relaxation does "
+"not apply."
+msgstr ""
+"La extensión LFortran de Fortran se eligió de manera que se minimice el "
+"número de cambios. En particular, solo el nivel superior del _alcance "
+"global_ ha relajado algunas de las reglas de Fortran (como hacer que la "
+"especificación de tipos sea opcional) para permitir un uso interactivo "
+"simple y rápido, pero dentro de las funciones, subrutinas, módulos o "
+"programas, esta relajación no se aplica."
+
+#: ../../doc/src/design.md:225
+msgid ""
+"The number of changes were kept to minimum in order to make it "
+"straightforward to turn code at _global scope_ into standard compliant "
+"Fortran code using programs and modules, so that it can be compiled by "
+"any Fortran compiler."
+msgstr ""
+"El número de cambios se mantuvo al mínimo para que sea sencillo convertir el "
+"código en _alcance global_ en código Fortran compatible con el estándar "
+"utilizando programas y módulos, de modo que pueda ser compilado por "
+"cualquier compilador de Fortran."
+
+#: ../../doc/src/developer_tutorial.ipynb:9
+msgid "Developer Tutorial"
+msgstr "Tutorial para desarrolladores"
+
+#: ../../doc/src/developer_tutorial.ipynb:11
+msgid ""
+"This is a tutorial for anybody who wants to either develop LFortran or "
+"build tools on top."
+msgstr ""
+"Este es un tutorial para cualquiera que quiera desarrollar LFortran o "
+"construir herramientas sobre este."
+
+#: ../../doc/src/developer_tutorial.ipynb:14
+msgid "Introduction"
+msgstr "Introducción"
+
+#: ../../doc/src/developer_tutorial.ipynb:18
+msgid ""
+"Abstract Syntax Tree (AST): Represents any Fortran source code, strictly "
+"based on syntax, no semantic is included. The AST module can convert "
+"itself to Fortran source code."
+msgstr ""
+"Árbol de sintaxis abstracta (AST): Representa cualquier código fuente "
+"Fortran, basado estrictamente en la sintaxis, la semántica no está incluida. "
+"El módulo AST puede convertirse en código fuente de Fortran."
+
+#: ../../doc/src/developer_tutorial.ipynb:20
+msgid ""
+"Abstract Semantic Representation (ASR): Represents a valid Fortran source"
+" code, all semantic is included. Invalid Fortran code is not allowed (an "
+"error will be given). The ASR module can convert itself to an AST."
+msgstr ""
+"Representación de semántica abstracta (ASR): Representa un código fuente "
+"Fortran válido, toda la semántica está incluida. Código Fortran inválido no "
+"es permitido (un error será emitido). El módulo ASR puede convertirse en un "
+"AST."
+
+#: ../../doc/src/developer_tutorial.ipynb:25
+msgid ""
+"Fortran source code can be parsed into an AST using the ``src_to_ast()`` "
+"function:"
+msgstr ""
+"Código fuente Fortran puede ser analizado en un AST usando la función "
+"``src_to_ast()``:"
+
+#: ../../doc/src/developer_tutorial.ipynb:49
+#, python-format
+msgid "We can pretty print it using the ``%%showast`` magic:"
+msgstr "Podemos imprimir usando el truco ``%%showast``:"
+
+#: ../../doc/src/developer_tutorial.ipynb:98
+#, python-format
+msgid "We can convert AST to Fortran source code using ``%%showfmt``:"
+msgstr "Podemos convertir un AST a código fuente Fortran usando ``%%showfmt``:"
+
+#: ../../doc/src/developer_tutorial.ipynb:156
+msgid ""
+"All AST nodes and their arguments are described in `AST.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/grammar/AST.asdl>`__."
+msgstr ""
+"Todos los nodos AST y sus argumentos están descritos en `AST.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/grammar/AST.asdl>`__."
+
+#: ../../doc/src/developer_tutorial.ipynb:170
+#, python-format
+msgid "We can pretty print using the ``%%showasr`` magic:"
+msgstr "Podemos imprimir usando el truco ``%%showasr``:"
+
+#: ../../doc/src/developer_tutorial.ipynb:219
+msgid ""
+"All ASR nodes and their arguments are described in `ASR.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/src/libasr/ASR.asdl>`__."
+msgstr ""
+"Todos los nodos ASR y sus argumentos están descritos en `ASR.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/src/libasr/ASR.asdl>`__."
+
+#: ../../doc/src/index.md:134
+msgid "Getting started"
+msgstr "Primeros pasos"
+
+#: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
+msgid "LFortran Development Status"
+msgstr "Estado del desarrollo de LFortran"
+
+#: ../../doc/src/index.md:147
+msgid "Developer's Guide"
+msgstr "Guía del desarrollador"
+
+#: ../../doc/src/index.md:156
+msgid "LFortran Intrinsics"
+msgstr "Intrínsecos de LFortran"
+
+#: ../../doc/src/index.md:1
+msgid "LFortran Documentation"
+msgstr "Documentación de LFortran"
+
+#: ../../doc/src/index.md:3
+msgid ""
+"LFortran is a modern open-source (BSD licensed) interactive Fortran "
+"compiler built on top of LLVM. It can execute user's code interactively "
+"to allow exploratory work (much like Python, MATLAB or Julia) as well as "
+"compile to binaries with the goal to run user's code on modern "
+"architectures such as multi-core CPUs and GPUs."
+msgstr ""
+"LFortran es un moderno compilador interactivo de Fortran de código abierto ("
+"bajo la licencia BSD) construido sobre LLVM. Este puede ejecutar código de "
+"usuario interactivamente para permitir trabajo exploratório (similar a "
+"Python, MATLAB o Julia) , así como compilar para generar archivos binarios "
+"con el objetivo de ejecutar el código de usuario en arquitecturas modernas, "
+"como CPU y GPU de varios núcleos."
+
+#: ../../doc/src/index.md:9
+#, python-format
+msgid ""
+"Website: [https://lfortran.org/](https://lfortran.org/)   Main "
+"repository: "
+"[https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)"
+"   Try online using Binder: "
+"[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb"
+"%2Flfortran-binder/master?filepath=Demo.ipynb)"
+msgstr ""
+"Página web: [https://lfortran.org/](https://lfortran.org/)   Main repository:"
+" [https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)"
+"   Try online using Binder: [![Binder](https://mybinder.org/badge_logo."
+"svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
+"master?filepath=Demo.ipynb)"
+
+#: ../../doc/src/index.md:9
+msgid "Binder"
+msgstr ""
+
+#: ../../doc/src/index.md:16
+msgid "Feature Highlights"
+msgstr "Características destacadas"
+
+#: ../../doc/src/index.md:18
+msgid ""
+"LFortran is in development, there are features that work today, and there"
+" are features that are being implemented. You can also check out the "
+"[Development Status](progress.md) section for more information on "
+"features being supported and being worked on."
+msgstr ""
+"LFortran está en desarrollo, hay características que funcionan actualmente y "
+"hay características que se están implementando. También puede consultar la "
+"sección [Estado de desarrollo](progress.md) para obtener más información "
+"sobre las funciones compatibles y en las que se está trabajando."
+
+#: ../../doc/src/index.md:21
+msgid "Works today"
+msgstr "Trabajando actualmente"
+
+#: ../../doc/src/index.md:23
+#, python-format
+msgid ""
+"**Interactive, Jupyter support**   LFortran can be used from Jupyter as a"
+" Fortran kernel, allowing a   Python/Julia style rapid prototyping and "
+"exploratory workflow   (see the "
+"[static](https://nbviewer.jupyter.org/gist/certik/f1d28a486510810d824869ab0c491b1c)"
+"   or   [interactive](https://mybinder.org/v2/gl/lfortran%2Fweb"
+"%2Flfortran-binder/master?filepath=Demo.ipynb)   example notebook).   Or "
+"it can be used from the command-line in an interactive prompt (REPL)."
+msgstr ""
+"**Interactivo, compatible con Jupyter** LFortran se puede usar desde Jupyter "
+"como un kernel de Fortran, lo que permite un flujo de trabajo exploratorio y "
+"de creación rápida de prototipos al estilo de Python/Julia (ver "
+"[static](https://nbviewer.jupyter.org/gist/certik "
+"/f1d28a486510810d824869ab0c491b1c) o [interactivo](https://mybinder.org/v2/"
+"gl/lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb) cuaderno de "
+"ejemplo). O se puede usar desde la línea de comandos en un indicador "
+"interactivo (REPL)."
+
+#: ../../doc/src/index.md:32
+msgid ""
+"**Clean, modular design, usable as a library**   LFortran is structured "
+"around two independent modules, AST and ASR, both of   which are "
+"standalone (completely independent of the rest of LFortran) and   users "
+"are encouraged to use them independently for other applications and   "
+"build tools on top. See the [Design](design.md)   and [Developer "
+"Tutorial](developer_tutorial.md) documents for more details."
+msgstr ""
+"**Diseño limpio y modular, utilizable como biblioteca** LFortran está "
+"estructurado en torno a dos módulos independientes, AST y ASR, ambos "
+"independientes (completamente independientes del resto de LFortran) y se "
+"recomienda a los usuarios que los utilicen de forma independiente para otras "
+"aplicaciones y construir herramientas en la parte superior. Consulte los "
+"documentos [Diseño](design.md) y [Tutorial para "
+"desarrolladores](developer_tutorial.md) para obtener más detalles."
+
+#: ../../doc/src/index.md:39
+msgid ""
+"**Interoperation with GFortran**   LFortran can parse GFortran module "
+"files into an ASR and generate a Fortran   wrapper that can be compiled "
+"with any Fortran compiler and linked with the   original GFortran "
+"compiled module."
+msgstr ""
+"**Interoperación con GFortran** LFortran puede analizar los archivos del "
+"módulo GFortran en una ASR y generar un contenedor Fortran que se puede "
+"compilar con cualquier compilador Fortran y vincular con el módulo compilado "
+"GFortran original."
+
+#: ../../doc/src/index.md:44
+msgid ""
+"**Create executables**   It can create executables just like other "
+"Fortran compilers."
+msgstr ""
+"**Crear ejecutables** Puede crear ejecutables como otros compiladores de "
+"Fortran."
+
+#: ../../doc/src/index.md:47
+msgid ""
+"**Runs on Linux, Mac and Windows**   All three platforms are regularly "
+"tested by our CI."
+msgstr ""
+"**Se ejecuta en Linux, Mac y Windows** Las tres plataformas son probadas "
+"regularmente por nuestro CI."
+
+#: ../../doc/src/index.md:51
+msgid "Planned"
+msgstr "Planificación"
+
+#: ../../doc/src/index.md:53
+msgid ""
+"These features are under development, there is a link to the "
+"corresponding issue so that you can track the progress by following it."
+msgstr ""
+"Estas características están en desarrollo, hay un enlace al problema "
+"correspondiente para que pueda seguir el avance."
+
+#: ../../doc/src/index.md:56
+msgid ""
+"**Native interoperation with other languages (and other Fortran "
+"compilers)**   It can automatically call code written in other languages "
+"(such as C or   Python) just by using the `use` statement, see   "
+"[#44](https://gitlab.com/lfortran/lfortran/issues/44). It understands   "
+"other Fortran compilers module files (one can just \"use\" them) and "
+"their   ABI to link correctly (GFortran is supported, other compilers are"
+" planned,   see [#56](https://gitlab.com/lfortran/lfortran/issues/56)), "
+"which allows to   use LFortran with production codes today."
+msgstr ""
+"**Interoperación nativa con otros lenguajes (y otros compiladores de "
+"Fortran)** Esta puede puede llamar automáticamente código escrito en otros "
+"lenguajes (tales como C o Python) simplemente usando la instrucción `use`, "
+"ver [#44](https://gitlab.com/lfortran/lfortran/issues/44). Comprende otros "
+"archivos de módulos de compiladores de Fortran (uno puede simplemente "
+"\"usarlos\") y su ABI para enlazar correctamente (se admite GFortran, se "
+"planean otros compiladores, consulte [# 56](https://gitlab.com/lfortran/"
+"lfortran/ issues/56)), que permite utilizar LFortran con códigos de "
+"producción en la actualidad."
+
+#: ../../doc/src/index.md:65
+msgid ""
+"**Modern hardware support**   Thanks to LLVM, the goal of LFortran is to "
+"run on modern hardware and take   advantage of native Fortran language "
+"constructs (such as `do concurrent`)   to run on multi-core CPUs and "
+"GPUs, see   [#57](https://gitlab.com/lfortran/lfortran/issues/57)."
+msgstr ""
+"**Compatibilidad con hardware moderno** Gracias a LLVM, el objetivo de "
+"LFortran es ejecutarse en hardware moderno y aprovechar las construcciones "
+"nativas del lenguaje Fortran (como `do concurrent`) para ejecutarse en CPU y "
+"GPU multinúcleo, consulte [# 57](https://gitlab.com/lfortran/lfortran/issues/"
+"57)."
+
+#: ../../doc/src/index.md:71
+msgid ""
+"**Full Fortran 2018 support**   Currently only a subset of Fortran is "
+"implemented, but the goal is to have   a full implementation of the "
+"latest Fortran 2018 standard, see   "
+"[#58](https://gitlab.com/lfortran/lfortran/issues/58)."
+msgstr ""
+"**Compatibilidad completa con Fortran 2018** Actualmente solo se implementa "
+"un subconjunto de Fortran, pero el objetivo es tener una implementación "
+"completa del último estándar de Fortran 2018, consulte [#58](https://gitlab."
+"com/lfortran/lfortran /temas/58)."
+
+#: ../../doc/src/index.md:77
+msgid ""
+"Please vote on issues in our [issue "
+"tracker](https://gitlab.com/lfortran/lfortran/issues) that you want us to"
+" prioritize (feel free to create new ones if we are missing anything)."
+msgstr ""
+"Vote sobre los problemas en nuestro [seguidor de problemas](https://gitlab."
+"com/lfortran/lfortran/issues) que desea que prioricemos (no dude en crear "
+"nuevos si nos falta algo)."
+
+#: ../../doc/src/index.md:81
+msgid "Roadmap"
+msgstr "Guía"
+
+#: ../../doc/src/index.md:83
+msgid "Here is our roadmap how to get all the planned features above implemented:"
+msgstr ""
+"Aquí está nuestra guía sobre cómo implementar todas las funciones "
+"planificadas anteriormente:"
+
+#: ../../doc/src/index.md:85
+msgid ""
+"Port code generation to use ASR and pass all the current tests "
+"([#74](https://gitlab.com/lfortran/lfortran/issues/74)). Remove the old "
+"code generation and old semantics, that used to annotate the AST tree, "
+"which was messy."
+msgstr ""
+"Generación de código de puerto para usar una ASR y pasar todas las pruebas "
+"actuales ([#74](https://gitlab.com/lfortran/lfortran/issues/74)). Elimine la "
+"generación de código anterior y la semántica anterior, que solía anotar el "
+"árbol AST, que estaba desordenado."
+
+#: ../../doc/src/index.md:89
+msgid ""
+"Get GFortran module files working with `use` module, both assumed-size "
+"and assumed-shape arrays "
+"([#52](https://gitlab.com/lfortran/lfortran/issues/52)). This will allow "
+"right away to use production codes with LFortran."
+msgstr ""
+"Obtenga los archivos del módulo GFortran que funcionan con el módulo `use`, "
+"tanto matrices de tamaño supuesto como de forma supuesta "
+"([#52](https://gitlab.com/lfortran/lfortran/issues/52)). Esto permitirá de "
+"inmediato utilizar códigos de producción con LFortran."
+
+#: ../../doc/src/index.md:93
+msgid "Do these at the same time:"
+msgstr "Hacer esto al mismo tiempo:"
+
+#: ../../doc/src/index.md:95
+msgid ""
+"a) Implement more Fortran features, until eventually full Fortran 2018 is"
+"  supported ([#58](https://gitlab.com/lfortran/lfortran/issues/58))."
+msgstr ""
+"a) Implementar más funciones de Fortran, hasta que finalmente se admita "
+"Fortran 2018 completo ([#58](https://gitlab.com/lfortran/lfortran/issues/"
+"58))."
+
+#: ../../doc/src/index.md:98
+msgid ""
+"b) Gradually move to C++ for robustness and speed  "
+"([#70](https://gitlab.com/lfortran/lfortran/issues/70)).  The Python API "
+"will not change (or only minimally), so the user experience  from Python "
+"will not change."
+msgstr ""
+"b) Muévase gradualmente a C++ para obtener robustez y velocidad "
+"([#70](https://gitlab.com/lfortran/lfortran/issues/70)). La API de Python no "
+"cambiará (o solo mínimamente), por lo que la experiencia del usuario de "
+"Python no cambiará."
+
+#: ../../doc/src/index.md:103
+msgid ""
+"c) Implement all the other cool features: `use` module for C and Python  "
+"and automatic wrappers  "
+"([#44](https://gitlab.com/lfortran/lfortran/issues/44)),  modern hardware"
+" support  ([#57](https://gitlab.com/lfortran/lfortran/issues/57)),  "
+"generating an older standard of Fortran  "
+"([#72](https://gitlab.com/lfortran/lfortran/issues/72)),  Fortran doctest"
+" feature  ([#73](https://gitlab.com/lfortran/lfortran/issues/73)),  SymPy"
+" integration  ([#71](https://gitlab.com/lfortran/lfortran/issues/71)),  "
+"language service for IDEs  "
+"([#12](https://gitlab.com/lfortran/lfortran/issues/12)),  and other ideas"
+" ([#29](https://gitlab.com/lfortran/lfortran/issues/29))."
+msgstr ""
+"c) Implemente todas las demás funciones interesantes: módulo `use` para C y "
+"Python y envoltorios automáticos ([#44](https://gitlab.com/lfortran/lfortran/"
+"issues/44)), soporte de hardware moderno ([# 57](https://gitlab.com/lfortran/"
+"lfortran/issues/57)), generando un estándar anterior de Fortran "
+"([#72](https://gitlab.com/lfortran/lfortran/issues/72)) , función de prueba "
+"de documentos de Fortran ([#73](https://gitlab.com/lfortran/lfortran/issues/"
+"73)), integración de SymPy ([#71](https://gitlab.com/lfortran/lfortran/"
+"issues/ 71)), servicio de lenguaje para IDE ([#12](https://gitlab.com/"
+"lfortran/lfortran/issues/12)), y otras ideas ([#29](https://gitlab.com/"
+"lfortran /lfortran/issues/29))."
+
+#: ../../doc/src/index.md:118
+msgid "The step 1. is an internal refactoring that will not take long."
+msgstr "El paso 1. es una restauración interna que no llevará mucho tiempo."
+
+#: ../../doc/src/index.md:120
+msgid ""
+"The step 2. will allow LFortran to be used interactively with production "
+"codes right away (the production code will get compiled with GFortran, "
+"then one \"uses\" any module in LFortran and functions/subroutines can be"
+" interactively called, the module itself can use any GFortran supported "
+"feature, but the API must fit into the subset that LFortran understands "
+"--- for large number of applications simple functions/subroutines with "
+"array arguments are enough). This will make LFortran usable for first "
+"users and one can always use GFortran temporarily until LFortran supports"
+" the given feature. We expect to be finished with the step 2. by the end "
+"of summer 2019, hopefully sooner."
+msgstr ""
+"El paso 2 permitirá que LFortran se use de forma interactiva con los códigos "
+"de producción de inmediato (el código de producción se compilará con "
+"GFortran, luego uno \"usa\" cualquier módulo en LFortran y las funciones/"
+"subrutinas se pueden llamar de forma interactiva, el módulo en sí puede usar "
+"cualquier Función compatible con GFortran, pero la API debe encajar en el "
+"subconjunto que comprende LFortran --- para una gran cantidad de "
+"aplicaciones, las funciones/subrutinas simples con argumentos de matriz son "
+"suficientes). Esto hará que LFortran sea utilizable para los primeros "
+"usuarios y siempre se puede usar GFortran temporalmente hasta que LFortran "
+"admita la función dada. Esperamos terminar con el paso 2 a fines del verano "
+"de 2019, con suerte antes."
+
+#: ../../doc/src/index.md:130
+msgid ""
+"Finally the step 3. will improve LFortran overall, allowing the first "
+"users to contribute back, growing the community and making LFortran "
+"gradually useful for more and more people."
+msgstr ""
+"Finalmente, el paso 3 mejorará LFortran en general, permitiendo que los "
+"primeros usuarios contribuyan, haciendo crecer la comunidad y haciendo que "
+"LFortran sea gradualmente útil para más y más personas."
+
+#: ../../doc/src/installation.md:1
+msgid "Installation"
+msgstr "Instalación"
+
+#: ../../doc/src/installation.md:3
+msgid "All the instructions below work on Linux, macOS and Windows."
+msgstr ""
+"Todas las instruciones a continuación funcionan en Linux, macOS y Windows."
+
+#: ../../doc/src/installation.md:5
+msgid "Binaries"
+msgstr "Binarios"
+
+#: ../../doc/src/installation.md:7
+msgid ""
+"The recommended way to install LFortran is using Conda. Install Conda for"
+" example by installing the "
+"[Miniconda](https://conda.io/en/latest/miniconda.html) installation by "
+"following instructions there for your platform. Then create a new "
+"environment (you can choose any name, here we chose `lf`) and activate "
+"it:"
+msgstr ""
+"La forma recomendada de instalar LFortran es usando Conda. Instale Conda, "
+"por ejemplo, instalando la instalación de [Miniconda](https://conda.io/en/"
+"latest/miniconda.html) siguiendo las instrucciones allí para su plataforma. "
+"Luego cree un nuevo entorno (puede elegir cualquier nombre, aquí elegimos "
+"`lf`) y actívelo:"
+
+#: ../../doc/src/installation.md:16
+msgid "Then install LFortran by:"
+msgstr "Luego instale LFortran haciendo:"
+
+#: ../../doc/src/installation.md:20
+msgid ""
+"Now the `lf` environment has the `lfortran` compiler available, you can "
+"start the interactive prompt by executing `lfortran`, or see the command "
+"line options using `lfortran -h`."
+msgstr ""
+"Ahora que el entorno `lf` tiene disponible el compilador `lfortran`, puede "
+"iniciar el aviso interactivo ejecutando `lfortran`, o ver las opciones de la "
+"línea de comando usando `lfortran -h`."
+
+#: ../../doc/src/installation.md:24
+msgid ""
+"The Jupyter kernel is automatically installed by the above command, so "
+"after installing Jupyter itself:"
+msgstr ""
+"El núcleo Jupyter es automáticamente instalado con el comando anterior, por "
+"lo que después de instalar Jupyter:"
+
+#: ../../doc/src/installation.md:28
+msgid "You can create a Fortran based Jupyter notebook by executing:"
+msgstr "Puede crear un cuaderno Jupyter basado en Fortran ejecutando:"
+
+#: ../../doc/src/installation.md:32
+msgid "and selecting `New->Fortran`."
+msgstr "y seleccionando `New->Fortran`."
+
+#: ../../doc/src/installation.md:35
+msgid "Build From a Source Tarball"
+msgstr "Construir desde una fuente de archivo tar"
+
+#: ../../doc/src/installation.md:37
+msgid ""
+"This method is the recommended method if you just want to install "
+"LFortran, either yourself or in a package manager (Spack, Conda, Debian, "
+"etc.). The source tarball has all the generated files included and has "
+"minimal dependencies."
+msgstr ""
+"Este método es el método recomendado si solo desea instalar LFortran, ya sea "
+"usted mismo o en un administrador de paquetes (Spack, Conda, Debian, etc.). "
+"La fuente de archivo tar tiene todos los archivos generados incluidos y "
+"tiene dependencias mínimas."
+
+#: ../../doc/src/installation.md:39
+msgid "First we have to install dependencies, for example using Conda:"
+msgstr "Primero tenemos que instalar dependencias, por ejemplo usando Conda:"
+
+#: ../../doc/src/installation.md:44
+msgid ""
+"Then download a tarball from "
+"[https://lfortran.org/download/](https://lfortran.org/download/), e.g.:"
+msgstr ""
+"Luego descargue un archivo tar de [https://lfortran.org/download/"
+"](https://lfortran.org/download/), por ejemplo:"
+
+#: ../../doc/src/installation.md:52
+msgid "And build:"
+msgstr "Y construir:"
+
+#: ../../doc/src/installation.md:58
+msgid "This will install the `lfortran` into the `inst/bin`."
+msgstr "Esto instalará `lfortran` en `inst/bin`."
+
+#: ../../doc/src/installation.md:60
+msgid "Build From Git"
+msgstr "Construir desde Git"
+
+#: ../../doc/src/installation.md:62
+msgid ""
+"We assume you have C++ compilers installed, as well as `git` and `wget`. "
+"In Ubuntu, you can also install `binutils-dev` for stacktraces."
+msgstr ""
+"Suponemos que tiene instalados compiladores de C++, así como `git` y `wget`. "
+"En Ubuntu, también puede instalar `binutils-dev` para stacktraces."
+
+#: ../../doc/src/installation.md:65
+msgid ""
+"If you do not have Conda installed, you can do so on Linux (and similarly"
+" on other platforms):"
+msgstr ""
+"Si no tiene Conda instalado, puede hacerlo en Linux (y de manera similar en "
+"otras plataformas):"
+
+#: ../../doc/src/installation.md:72
+msgid "Then prepare the environment:"
+msgstr "Luego prepara el ambiente:"
+
+#: ../../doc/src/installation.md:77
+msgid "Clone the LFortran git repository:"
+msgstr "Clone el repositorio git de LFortran:"
+
+#: ../../doc/src/installation.md:82
+msgid ""
+"Generate files that are needed for the build (this step depends on "
+"`re2c`, `bison` and `python`):"
+msgstr ""
+"Genere los archivos necesarios para la compilación (este paso depende de "
+"`re2c`, `bison` y `python`):"
+
+#: ../../doc/src/installation.md:86
+msgid ""
+"Now the process is the same as installing from the source tarball. For "
+"example to build in Debug mode:"
+msgstr ""
+"Ahora el proceso es el mismo que el de la instalación desde el tarball de "
+"origen. Por ejemplo, para compilar en modo de depuración:"
+
+#: ../../doc/src/installation.md:92
+msgid "Run tests:"
+msgstr "Ejecutar pruebas:"
+
+#: ../../doc/src/installation.md:97
+msgid "Run an interactive prompt:"
+msgstr "Ejecute un aviso interactivo:"
+
+#: ../../doc/src/installation.md:102
+msgid "Build from Git on Windows with Visual Studio"
+msgstr "Cree desde Git en Windows con Visual Studio"
+
+#: ../../doc/src/installation.md:104
+msgid ""
+"Install Visual Studio (MSVC), for example the version 2022, you can "
+"download the Community version for free from: "
+"https://visualstudio.microsoft.com/downloads/."
+msgstr ""
+"Instale Visual Studio (MSVC), por ejemplo la versión 2022, puede descargar "
+"la versión Community de forma gratuita desde: https://visualstudio.microsoft."
+"com/downloads/."
+
+#: ../../doc/src/installation.md:107
+msgid ""
+"Install miniforge using the Windows installer from https://github.com"
+"/conda-forge/miniforge."
+msgstr ""
+"Instale miniforge usando el instalador de Windows desde https://github.com/"
+"conda-forge/miniforge."
+
+#: ../../doc/src/installation.md:109
+msgid "Launch the Miniforge Prompt from the Desktop."
+msgstr "Inicie el indicador de Miniforge desde el escritorio."
+
+#: ../../doc/src/installation.md:111
+msgid "In the shell, initialize the MSVC compiler using:"
+msgstr "En la interfaz, inicialice el compilador MSVC usando:"
+
+#: ../../doc/src/installation.md:117
+msgid "You can optionally test that MSVC works by:"
+msgstr "Opcionalmente, puede probar que MSVC funciona:"
+
+#: ../../doc/src/installation.md:122
+msgid "Both commands must print help (several pages)."
+msgstr "Ambos comandos deben imprimir ayuda (varias páginas)."
+
+#: ../../doc/src/installation.md:124
+msgid "Now you can download and build LFortran:"
+msgstr "Ahora puede descargar y compilar LFortran:"
+
+#: ../../doc/src/installation.md:134
+msgid "If everything compiled, then you can use LFortran as follows:"
+msgstr "Si todo está compilado, puede usar LFortran de la siguiente manera:"
+
+#: ../../doc/src/installation.md:140
+msgid "And so on."
+msgstr "Y así."
+
+#: ../../doc/src/installation.md:142
+msgid ""
+"Note: LFortran currently uses the MSVC's linker program (`link`), which "
+"is only available when the MSVC bat script above is ran. If you forget to"
+" activate it, LFortran's linking will fail."
+msgstr ""
+"Nota: LFortran actualmente usa el programa enlazador de MSVC (`link`), que "
+"solo está disponible cuando se ejecuta el script bat de MSVC anterior. Si "
+"olvida activarlo, la vinculación de LFortran fallará."
+
+#: ../../doc/src/installation.md:146
+msgid ""
+"Note: the miniforge shell seems to be running some version of `git-bash` "
+"(although it is `cmd.exe`), which has some unix-like filesystem mounted "
+"in `/usr` and several commands available such as `ls`, `which`, `git`, "
+"`vim`.  For this reason the Conda build `environment_win.yml` contains "
+"everything needed, including `git`."
+msgstr ""
+"Nota: la terminal de miniforge parece estar ejecutando alguna versión de "
+"`git-bash` (aunque es `cmd.exe`), que tiene un sistema de archivos tipo Unix "
+"montado en `/usr` y varios comandos disponibles como `ls` , `cuál`, `git`, "
+"`vim`. Por esta razón, la compilación de Conda `environment_win.yml` "
+"contiene todo lo necesario, incluido `git`."
+
+#: ../../doc/src/installation.md:152
+msgid "Build from Git on Windows with WSL"
+msgstr "Construya desde Git en Windows con WSL"
+
+#: ../../doc/src/installation.md:153
+msgid "In windows search \"turn windows features on or off\"."
+msgstr ""
+
+#: ../../doc/src/installation.md:154
+msgid "Tick Windows subsystem for Linux."
+msgstr "Marque el subsistema de Windows para Linux."
+
+#: ../../doc/src/installation.md:155
+msgid "Press OK and restart computer."
+msgstr "Presione Aceptar y reinicie la computadora."
+
+#: ../../doc/src/installation.md:156
+msgid "Go to Microsoft store and download Ubuntu 20.04, and launch it."
+msgstr "Vaya a la tienda de Microsoft, descargue Ubuntu 20.04 y ejecútelo."
+
+#: ../../doc/src/installation.md:157
+msgid "Run the following commands."
+msgstr "Ejecute los siguientes comandos."
+
+#: ../../doc/src/installation.md:164
+msgid "Now do the following to configure the path"
+msgstr "Ahora haga lo siguiente para configurar la ruta"
+
+#: ../../doc/src/installation.md:168
+msgid "Then go to the bottom of the file and paste the following"
+msgstr "Luego ve al final del archivo y pega lo siguiente"
+
+#: ../../doc/src/installation.md:172
+msgid "Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)"
+msgstr "Luego presione ctrl + O (guardar), Enter (confirmar), ctrl + X (salir)"
+
+#: ../../doc/src/installation.md:173
+msgid "After that restart Ubuntu"
+msgstr "Después de eso, reinicie Ubuntu"
+
+#: ../../doc/src/installation.md:174
+msgid "Run the following"
+msgstr "Ejecute lo siguiente"
+
+#: ../../doc/src/installation.md:179
+msgid "Restart Ubuntu again"
+msgstr "Reinicie Ubuntu de nuevo"
+
+#: ../../doc/src/installation.md:187
+msgid ""
+"You can change the directory to a Windows location using `cd /mnt/[drive "
+"letter]/[windows location]`."
+msgstr ""
+"Puede cambiar el directorio a una ubicación de Windows usando `cd /mnt/["
+"letra de unidad]/[ubicación de Windows]`."
+
+#: ../../doc/src/installation.md:188
+msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
+msgstr "p.ej. `cd mnt/c/Users/name/source/repos/`"
+
+#: ../../doc/src/installation.md:190
+msgid "Now clone the LFortran git repository"
+msgstr "Ahora clone el repositorio LFortran git"
+
+#: ../../doc/src/installation.md:196
+msgid "Run the following commands"
+msgstr "Ejecute los siguientes comandos"
+
+#: ../../doc/src/installation.md:204
+msgid "If everything compiles, you can use LFortran as follows"
+msgstr "Si todo se compila, puede usar LFortran de la siguiente manera"
+
+#: ../../doc/src/installation.md:210
+msgid "Run an interactive prompt"
+msgstr "Ejecutar un aviso interactivo"
+
+#: ../../doc/src/installation.md:215
+msgid "Run tests"
+msgstr "Ejecutar pruebas"
+
+#: ../../doc/src/installation.md:221
+msgid "Enabling the Jupyter Kernel"
+msgstr "Habilitación del núcleo de Jupyter"
+
+#: ../../doc/src/installation.md:223
+msgid "To install the Jupyter kernel, install the following Conda packages also:"
+msgstr ""
+"Para instalar el kernel de Jupyter, instale también los siguientes paquetes "
+"de Conda:"
+
+#: ../../doc/src/installation.md:227
+msgid ""
+"and enable the kernel by `-DWITH_XEUS=yes` and install into "
+"`$CONDA_PREFIX`. For example:"
+msgstr ""
+"y habilite el núcleo con `-DWITH_XEUS=yes` e instálelo en `$CONDA_PREFIX`. "
+"Por ejemplo:"
+
+#: ../../doc/src/installation.md:239
+msgid ""
+"To use it, install Jupyter (`conda install jupyter`) and test that the "
+"LFortran kernel was found:"
+msgstr ""
+"Para usarlo, instale Jupyter (`conda install jupyter`) y pruebe que se "
+"encontró el núcleo de LFortran:"
+
+#: ../../doc/src/installation.md:244
+msgid "Then launch a Jupyter notebook as follows:"
+msgstr "Luego inicie un cuaderno Jupyter de la siguiente manera:"
+
+#: ../../doc/src/installation.md:248
+msgid "Click `New->Fortran`. To launch a terminal jupyter LFortran console:"
+msgstr ""
+"Haga clic en `New->Fortran`. Para iniciar una consola terminal jupyter "
+"LFortran:"
+
+#: ../../doc/src/installation.md:254
+msgid "Build From Git with Nix"
+msgstr "Construir desde Git con Nix"
+
+#: ../../doc/src/installation.md:256
+msgid ""
+"One of the ways to ensure exact environment and dependencies is with "
+"`nix`. This will ensure that system dependencies do not interfere with "
+"the development environment. If you want, you can report bugs in a `nix-"
+"shell` environment to make it easier for others to reproduce."
+msgstr ""
+"Una de las formas de garantizar el entorno y las dependencias exactos es con "
+"`nix`. Esto garantizará que las dependencias del sistema no interfieran con "
+"el entorno de desarrollo. Si lo desea, puede informar de errores en un "
+"entorno `nix-shell` para que sea más fácil para otros reproducirlos."
+
+#: ../../doc/src/installation.md:258
+msgid "With Root"
+msgstr ""
+
+#: ../../doc/src/installation.md:260
+msgid ""
+"We start by getting `nix`. The following multi-user installation will "
+"work on any machine with a Linux distribution, MacOS or Windows (via "
+"WSL):"
+msgstr ""
+"Empezamos por obtener `nix`. La siguiente instalación multiusuario "
+"funcionará en cualquier máquina con una distribución de Linux, MacOS o "
+"Windows (a través de WSL):"
+
+#: ../../doc/src/installation.md:264
+msgid "Without Root"
+msgstr ""
+
+#: ../../doc/src/installation.md:266
+msgid ""
+"If you would like to not provide `nix` with root access to your machine, "
+"on Linux distributions we can use [nix-"
+"portable](https://github.com/DavHau/nix-portable)."
+msgstr ""
+"Si no desea proporcionar a `nix` acceso raíz a su máquina, en las "
+"distribuciones de Linux podemos usar [nix-portable](https://github.com/"
+"DavHau/nix-portable)."
+
+#: ../../doc/src/installation.md:270
+msgid ""
+"Now just prepend all `nix-shell` commands with `NP_RUNTIME=bwrap ./nix-"
+"portable `. So:"
+msgstr ""
+"Ahora solo anteponga todos los comandos `nix-shell` con `NP_RUNTIME=bwrap "
+"./nix-portable`. Asi que:"
+
+#: ../../doc/src/installation.md:278
+msgid "Development"
+msgstr "Desarrollo"
+
+#: ../../doc/src/installation.md:280
+msgid "Now we can enter the development environment:"
+msgstr "Ahora podemos entrar en el entorno de desarrollo:"
+
+#: ../../doc/src/installation.md:284
+msgid ""
+"The `--pure` flag ensures no system dependencies are used in the "
+"environment."
+msgstr ""
+"El indicador `--pure` garantiza que no se utilicen dependencias del sistema "
+"en el entorno."
+
+#: ../../doc/src/installation.md:286
+msgid "The build steps are the same as with the `ci`:"
+msgstr "Los pasos de compilación son los mismos que con el `ci`:"
+
+#: ../../doc/src/installation.md:292
+msgid ""
+"To change the compilation environment from `gcc` (default) to `clang` we "
+"can use `--argstr`:"
+msgstr ""
+"Para cambiar el entorno de compilación de `gcc` (predeterminado) a `clang` "
+"podemos usar `--argstr`:"
+
+#: ../../doc/src/installation.md:297
+msgid "Note About Dependencies"
+msgstr "Nota sobre las dependencias"
+
+#: ../../doc/src/installation.md:299
+msgid ""
+"End users (and distributions) are encouraged to use the tarball from "
+"[https://lfortran.org/download/](https://lfortran.org/download/), which "
+"only depends on LLVM, CMake and a C++ compiler."
+msgstr ""
+"Se alienta a los usuarios finales (y las distribuciones) a usar el archivo "
+"tar de [https://lfortran.org/download/](https://lfortran.org/download/), que "
+"solo depende de LLVM, CMake y un compilador de C++."
+
+#: ../../doc/src/installation.md:303
+msgid ""
+"The tarball is generated automatically by our CI (continuous integration)"
+" and contains some autogenerated files: the parser, the AST and ASR "
+"nodes, which is generated by an ASDL translator (requires Python)."
+msgstr ""
+"El archivo tar es generado automáticamente por nuestro CI (integración "
+"continua) y contiene algunos archivos generados automáticamente: el "
+"analizador, los nodos AST y ASR, que es generado por un traductor ASDL ("
+"requiere Python)."
+
+#: ../../doc/src/installation.md:307
+msgid "The instructions from git are to be used when developing LFortran itself."
+msgstr "Las instrucciones de git deben usarse al desarrollar LFortran en sí."
+
+#: ../../doc/src/installation.md:309
+msgid "Note for users who do not use Conda"
+msgstr "Nota para usuarios que no utilizan Conda"
+
+#: ../../doc/src/installation.md:311
+msgid ""
+"Following are the dependencies necessary for installing this repository "
+"in development mode,"
+msgstr ""
+"Las siguientes son las dependencias necesarias para instalar este "
+"repositorio en modo de desarrollo,"
+
+#: ../../doc/src/installation.md:314
+msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
+msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
+
+#: ../../doc/src/installation.md:315
+msgid ""
+"[LLVM - 11.0.1](https://github.com/llvm/llvm-"
+"project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
+msgstr ""
+"[LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/"
+"llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
+
+#: ../../doc/src/installation.md:316
+msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
+msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
+
+#: ../../doc/src/installation.md:317
+msgid ""
+"[binutils - "
+"2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2.31.90.tar.xz)"
+" - Make sure that you should enable the required options related to this "
+"dependency to build the dynamic libraries (the ones ending with `.so`)."
+msgstr ""
+"[binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2."
+"31.90.tar.xz): asegúrese de habilitar las opciones necesarias relacionadas "
+"con esta dependencia para crear la dinámica bibliotecas (las que terminan en "
+"`.so`)."
+
+#: ../../doc/src/installation.md:319
+msgid "Stacktraces"
+msgstr ""
+
+#: ../../doc/src/installation.md:321
+msgid ""
+"LFortran can print stacktraces when there is an unhandled exception, as "
+"well as on any compiler error with the `--show-stacktrace` option. This "
+"is very helpful for developing the compiler itself to see where in "
+"LFortran the problem is. The stacktrace support is turned off by default,"
+" to enable it, compile LFortran with the `-DWITH_STACKTRACE=yes` cmake "
+"option after installing the prerequisites on each platform per the "
+"instructions below."
+msgstr ""
+"LFortran puede imprimir stacktraces cuando hay una excepción no controlada, "
+"así como en cualquier error del compilador con la opción `--show-stacktrace`"
+". Esto es muy útil para desarrollar el propio compilador para ver dónde está "
+"el problema en LFortran. La compatibilidad con stacktrace está desactivada "
+"de manera predeterminada; para habilitarla, compile LFortran con la opción "
+"cmake `-DWITH_STACKTRACE=yes` después de instalar los requisitos previos en "
+"cada plataforma según las instrucciones a continuación."
+
+#: ../../doc/src/installation.md:328
+msgid "Ubuntu"
+msgstr "Ubuntu"
+
+#: ../../doc/src/installation.md:330
+msgid "In Ubuntu, `apt install binutils-dev`."
+msgstr "En Ubuntu, `apt install binutils-dev`."
+
+#: ../../doc/src/installation.md:332
+msgid "macOS"
+msgstr "macOS"
+
+#: ../../doc/src/installation.md:334
+msgid ""
+"If you use the default Clang compiler on macOS, then the stacktraces "
+"should just work on both Intel and M1 based macOS (the CMake build system"
+" automatically invokes the `dsymtuil` tool and our Python scripts to "
+"store the debug information, see `src/bin/CMakeLists.txt` for more "
+"details). If it does not work, please report a bug."
+msgstr ""
+"Si usa el compilador Clang predeterminado en macOS, entonces los "
+"seguimientos de pila deberían funcionar tanto en macOS basados en Intel como "
+"en M1 (el sistema de compilación CMake invoca automáticamente la herramienta "
+"`dsymtuil` y nuestras secuencias de comandos de Python para almacenar la "
+"información de depuración, consulte `src/bin /CMakeLists.txt` para más "
+"detalles). Si no funciona, informe un error."
+
+#: ../../doc/src/installation.md:340
+msgid ""
+"If you do not like the default way, an alternative is to use bintutils. "
+"For that, first install [Spack](https://spack.io/), then:"
+msgstr ""
+"Si no le gusta la forma predeterminada, una alternativa es usar bintutils. "
+"Para eso, primero instale [Spack](https://spack.io/), luego:"
+
+#: ../../doc/src/installation.md:347
+msgid ""
+"The last command will show a full path to the installed `binutils` "
+"package. Add this path to your shell config file, e.g.:"
+msgstr ""
+"El último comando mostrará una ruta completa al paquete `binutils` "
+"instalado. Agregue esta ruta a su archivo de configuración de la interfaz, "
+"por ejemplo:"
+
+#: ../../doc/src/installation.md:352
+msgid ""
+"and compile LFortran with the "
+"`-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` cmake"
+" option. The `$CONDA_PREFIX` is there if you install some other "
+"dependencies (such as `llvm`) using Conda, otherwise you can remove it."
+msgstr ""
+"y compile LFortran con la opción cmake `-DCMAKE_PREFIX_PATH=\""
+"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"`. El `$CONDA_PREFIX` está ahí si "
+"instala algunas otras dependencias (como `llvm`) usando Conda, de lo "
+"contrario, puede eliminarlo."
+
+#: ../../doc/src/intrinsics/array.md:1
+msgid "Array Intrinsic Functions"
+msgstr "Funciones intrínsecas de matriz"
+
+#: ../../doc/src/intrinsics/array/allocated.md:1
+msgid "allocated(x): Status Check"
+msgstr "allocated(x): verificación de estado"
+
+#: ../../doc/src/intrinsics/array/allocated.md:3
+msgid "Logical status of an allocatable integer."
+msgstr "Estado lógico de un entero asignable."
+
+#: ../../doc/src/intrinsics/array/allocated.md:5
+#: ../../doc/src/intrinsics/array/cshift.md:5
+#: ../../doc/src/intrinsics/array/size.md:5
+#: ../../doc/src/intrinsics/bit/bge.md:5 ../../doc/src/intrinsics/bit/bgt.md:5
+#: ../../doc/src/intrinsics/bit/bit_size.md:5
+#: ../../doc/src/intrinsics/bit/ble.md:5 ../../doc/src/intrinsics/bit/blt.md:5
+#: ../../doc/src/intrinsics/bit/btest.md:5
+#: ../../doc/src/intrinsics/bit/shiftl.md:5
+#: ../../doc/src/intrinsics/bit/shiftr.md:5
+#: ../../doc/src/intrinsics/character/achar.md:5
+#: ../../doc/src/intrinsics/character/adjustl.md:5
+#: ../../doc/src/intrinsics/character/adjustr.md:5
+#: ../../doc/src/intrinsics/character/char.md:5
+#: ../../doc/src/intrinsics/character/len_trim.md:5
+#: ../../doc/src/intrinsics/character/lge.md:5
+#: ../../doc/src/intrinsics/kind-type/kind.md:5
+#: ../../doc/src/intrinsics/mathematical/acos.md:5
+#: ../../doc/src/intrinsics/mathematical/acosh.md:5
+#: ../../doc/src/intrinsics/mathematical/asin.md:5
+#: ../../doc/src/intrinsics/mathematical/asinh.md:5
+#: ../../doc/src/intrinsics/mathematical/atan.md:5
+#: ../../doc/src/intrinsics/mathematical/atan2.md:5
+#: ../../doc/src/intrinsics/mathematical/atanh.md:5
+#: ../../doc/src/intrinsics/mathematical/fraction.md:5
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:5
+#: ../../doc/src/intrinsics/misc/cpu_time.md:5
+#: ../../doc/src/intrinsics/misc/date_and_time.md:5
+#: ../../doc/src/intrinsics/misc/new_line.md:5
+#: ../../doc/src/intrinsics/numeric/abs.md:5
+#: ../../doc/src/intrinsics/numeric/aimag.md:5
+#: ../../doc/src/intrinsics/numeric/aint.md:5
+#: ../../doc/src/intrinsics/numeric/anint.md:5
+#: ../../doc/src/intrinsics/numeric/ceiling.md:5
+#: ../../doc/src/intrinsics/numeric/cmplx.md:5
+#: ../../doc/src/intrinsics/numeric/conjg.md:5
+#: ../../doc/src/intrinsics/numeric/digits.md:5
+#: ../../doc/src/intrinsics/numeric/dim.md:5
+#: ../../doc/src/intrinsics/numeric/epsilon.md:5
+#: ../../doc/src/intrinsics/numeric/erf.md:5
+#: ../../doc/src/intrinsics/numeric/erfc.md:5
+#: ../../doc/src/intrinsics/numeric/exp.md:5
+#: ../../doc/src/intrinsics/numeric/floor.md:5
+#: ../../doc/src/intrinsics/numeric/gamma.md:5
+#: ../../doc/src/intrinsics/numeric/mod.md:5
+msgid "Declaration"
+msgstr "Declaración"
+
+#: ../../doc/src/intrinsics/array/allocated.md:7
+#: ../../doc/src/intrinsics/array/cshift.md:7
+#: ../../doc/src/intrinsics/array/size.md:7
+#: ../../doc/src/intrinsics/bit/bge.md:7 ../../doc/src/intrinsics/bit/bgt.md:7
+#: ../../doc/src/intrinsics/bit/bit_size.md:7
+#: ../../doc/src/intrinsics/bit/ble.md:7 ../../doc/src/intrinsics/bit/blt.md:7
+#: ../../doc/src/intrinsics/bit/btest.md:7
+#: ../../doc/src/intrinsics/bit/shiftl.md:7
+#: ../../doc/src/intrinsics/bit/shiftr.md:7
+#: ../../doc/src/intrinsics/character/achar.md:7
+#: ../../doc/src/intrinsics/character/adjustl.md:7
+#: ../../doc/src/intrinsics/character/adjustr.md:7
+#: ../../doc/src/intrinsics/character/char.md:7
+#: ../../doc/src/intrinsics/character/len_trim.md:7
+#: ../../doc/src/intrinsics/character/lge.md:8
+#: ../../doc/src/intrinsics/kind-type/kind.md:7
+#: ../../doc/src/intrinsics/mathematical/acos.md:7
+#: ../../doc/src/intrinsics/mathematical/acosh.md:7
+#: ../../doc/src/intrinsics/mathematical/asin.md:7
+#: ../../doc/src/intrinsics/mathematical/asinh.md:7
+#: ../../doc/src/intrinsics/mathematical/atan.md:7
+#: ../../doc/src/intrinsics/mathematical/atan2.md:7
+#: ../../doc/src/intrinsics/mathematical/atanh.md:7
+#: ../../doc/src/intrinsics/mathematical/fraction.md:7
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:7
+#: ../../doc/src/intrinsics/misc/cpu_time.md:7
+#: ../../doc/src/intrinsics/misc/date_and_time.md:7
+#: ../../doc/src/intrinsics/misc/new_line.md:7
+#: ../../doc/src/intrinsics/numeric/abs.md:7
+#: ../../doc/src/intrinsics/numeric/aimag.md:7
+#: ../../doc/src/intrinsics/numeric/aint.md:7
+#: ../../doc/src/intrinsics/numeric/anint.md:7
+#: ../../doc/src/intrinsics/numeric/ceiling.md:7
+#: ../../doc/src/intrinsics/numeric/cmplx.md:7
+#: ../../doc/src/intrinsics/numeric/conjg.md:7
+#: ../../doc/src/intrinsics/numeric/digits.md:7
+#: ../../doc/src/intrinsics/numeric/dim.md:7
+#: ../../doc/src/intrinsics/numeric/epsilon.md:7
+#: ../../doc/src/intrinsics/numeric/erf.md:7
+#: ../../doc/src/intrinsics/numeric/erfc.md:7
+#: ../../doc/src/intrinsics/numeric/exp.md:7
+#: ../../doc/src/intrinsics/numeric/floor.md:7
+#: ../../doc/src/intrinsics/numeric/gamma.md:7
+#: ../../doc/src/intrinsics/numeric/mod.md:7
+msgid "Syntax"
+msgstr "Sintaxis"
+
+#: ../../doc/src/intrinsics/array/allocated.md:14
+#: ../../doc/src/intrinsics/array/cshift.md:14
+#: ../../doc/src/intrinsics/array/size.md:14
+#: ../../doc/src/intrinsics/bit/bge.md:14
+#: ../../doc/src/intrinsics/bit/bgt.md:14
+#: ../../doc/src/intrinsics/bit/bit_size.md:14
+#: ../../doc/src/intrinsics/bit/ble.md:14
+#: ../../doc/src/intrinsics/bit/blt.md:14
+#: ../../doc/src/intrinsics/bit/btest.md:14
+#: ../../doc/src/intrinsics/bit/shiftl.md:14
+#: ../../doc/src/intrinsics/bit/shiftr.md:14
+#: ../../doc/src/intrinsics/character/achar.md:14
+#: ../../doc/src/intrinsics/character/adjustl.md:14
+#: ../../doc/src/intrinsics/character/adjustr.md:14
+#: ../../doc/src/intrinsics/character/char.md:14
+#: ../../doc/src/intrinsics/character/len_trim.md:14
+#: ../../doc/src/intrinsics/character/lge.md:15
+#: ../../doc/src/intrinsics/kind-type/kind.md:14
+#: ../../doc/src/intrinsics/mathematical/acos.md:14
+#: ../../doc/src/intrinsics/mathematical/acosh.md:14
+#: ../../doc/src/intrinsics/mathematical/asin.md:14
+#: ../../doc/src/intrinsics/mathematical/asinh.md:14
+#: ../../doc/src/intrinsics/mathematical/atan.md:14
+#: ../../doc/src/intrinsics/mathematical/atan2.md:13
+#: ../../doc/src/intrinsics/mathematical/atanh.md:14
+#: ../../doc/src/intrinsics/mathematical/fraction.md:13
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:14
+#: ../../doc/src/intrinsics/misc/cpu_time.md:14
+#: ../../doc/src/intrinsics/misc/date_and_time.md:14
+#: ../../doc/src/intrinsics/misc/new_line.md:14
+#: ../../doc/src/intrinsics/numeric/abs.md:15
+#: ../../doc/src/intrinsics/numeric/aimag.md:15
+#: ../../doc/src/intrinsics/numeric/aint.md:14
+#: ../../doc/src/intrinsics/numeric/anint.md:14
+#: ../../doc/src/intrinsics/numeric/ceiling.md:14
+#: ../../doc/src/intrinsics/numeric/cmplx.md:16
+#: ../../doc/src/intrinsics/numeric/conjg.md:15
+#: ../../doc/src/intrinsics/numeric/digits.md:13
+#: ../../doc/src/intrinsics/numeric/dim.md:13
+#: ../../doc/src/intrinsics/numeric/epsilon.md:14
+#: ../../doc/src/intrinsics/numeric/erf.md:14
+#: ../../doc/src/intrinsics/numeric/erfc.md:14
+#: ../../doc/src/intrinsics/numeric/exp.md:14
+#: ../../doc/src/intrinsics/numeric/floor.md:14
+#: ../../doc/src/intrinsics/numeric/gamma.md:14
+#: ../../doc/src/intrinsics/numeric/mod.md:15
+msgid "Arguments"
+msgstr "Argumentos"
+
+#: ../../doc/src/intrinsics/array/allocated.md:16
+msgid "`x` is an integer input parameter."
+msgstr "`x` es un parámetro de entrada entero."
+
+#: ../../doc/src/intrinsics/array/allocated.md:18
+#: ../../doc/src/intrinsics/array/cshift.md:22
+#: ../../doc/src/intrinsics/array/size.md:22
+#: ../../doc/src/intrinsics/bit/bge.md:18
+#: ../../doc/src/intrinsics/bit/bgt.md:18
+#: ../../doc/src/intrinsics/bit/bit_size.md:18
+#: ../../doc/src/intrinsics/bit/ble.md:18
+#: ../../doc/src/intrinsics/bit/blt.md:18
+#: ../../doc/src/intrinsics/bit/btest.md:19
+#: ../../doc/src/intrinsics/bit/shiftl.md:21
+#: ../../doc/src/intrinsics/bit/shiftr.md:21
+#: ../../doc/src/intrinsics/character/lge.md:23
+#: ../../doc/src/intrinsics/kind-type/kind.md:19
+#: ../../doc/src/intrinsics/mathematical/acos.md:18
+#: ../../doc/src/intrinsics/mathematical/acosh.md:19
+#: ../../doc/src/intrinsics/mathematical/asin.md:18
+#: ../../doc/src/intrinsics/mathematical/asinh.md:19
+#: ../../doc/src/intrinsics/mathematical/atan.md:18
+#: ../../doc/src/intrinsics/mathematical/atan2.md:21
+#: ../../doc/src/intrinsics/mathematical/atanh.md:19
+#: ../../doc/src/intrinsics/mathematical/fraction.md:17
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:18
+#: ../../doc/src/intrinsics/misc/cpu_time.md:18
+#: ../../doc/src/intrinsics/misc/date_and_time.md:39
+#: ../../doc/src/intrinsics/misc/new_line.md:19
+#: ../../doc/src/intrinsics/numeric/abs.md:19
+#: ../../doc/src/intrinsics/numeric/aimag.md:19
+#: ../../doc/src/intrinsics/numeric/aint.md:20
+#: ../../doc/src/intrinsics/numeric/anint.md:20
+#: ../../doc/src/intrinsics/numeric/ceiling.md:18
+#: ../../doc/src/intrinsics/numeric/cmplx.md:24
+#: ../../doc/src/intrinsics/numeric/conjg.md:19
+#: ../../doc/src/intrinsics/numeric/digits.md:17
+#: ../../doc/src/intrinsics/numeric/dim.md:18
+#: ../../doc/src/intrinsics/numeric/epsilon.md:18
+#: ../../doc/src/intrinsics/numeric/erf.md:18
+#: ../../doc/src/intrinsics/numeric/erfc.md:18
+#: ../../doc/src/intrinsics/numeric/exp.md:18
+#: ../../doc/src/intrinsics/numeric/floor.md:20
+#: ../../doc/src/intrinsics/numeric/gamma.md:19
+#: ../../doc/src/intrinsics/numeric/mod.md:22
+msgid "Return values"
+msgstr "Valores devueltos"
+
+#: ../../doc/src/intrinsics/array/allocated.md:20
+msgid ""
+"The return value is a logical scalar with the default logical kind type "
+"parameter."
+msgstr ""
+"El valor devuelto es un escalar lógico con el parámetro de tipo de tipo "
+"lógico predeterminado."
+
+#: ../../doc/src/intrinsics/array/allocated.md:23
+#: ../../doc/src/intrinsics/array/cshift.md:26
+#: ../../doc/src/intrinsics/array/size.md:26
+#: ../../doc/src/intrinsics/bit/bge.md:22
+#: ../../doc/src/intrinsics/bit/bgt.md:22
+#: ../../doc/src/intrinsics/bit/bit_size.md:22
+#: ../../doc/src/intrinsics/bit/ble.md:22
+#: ../../doc/src/intrinsics/bit/blt.md:22
+#: ../../doc/src/intrinsics/bit/btest.md:23
+#: ../../doc/src/intrinsics/bit/shiftl.md:25
+#: ../../doc/src/intrinsics/bit/shiftr.md:25
+#: ../../doc/src/intrinsics/character/achar.md:27
+#: ../../doc/src/intrinsics/character/adjustl.md:23
+#: ../../doc/src/intrinsics/character/adjustr.md:24
+#: ../../doc/src/intrinsics/character/char.md:28
+#: ../../doc/src/intrinsics/character/len_trim.md:22
+#: ../../doc/src/intrinsics/character/lge.md:31
+#: ../../doc/src/intrinsics/kind-type/kind.md:23
+#: ../../doc/src/intrinsics/mathematical/acos.md:23
+#: ../../doc/src/intrinsics/mathematical/acosh.md:24
+#: ../../doc/src/intrinsics/mathematical/asin.md:23
+#: ../../doc/src/intrinsics/mathematical/asinh.md:24
+#: ../../doc/src/intrinsics/mathematical/atan.md:23
+#: ../../doc/src/intrinsics/mathematical/atan2.md:27
+#: ../../doc/src/intrinsics/mathematical/atanh.md:24
+#: ../../doc/src/intrinsics/mathematical/fraction.md:22
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:22
+#: ../../doc/src/intrinsics/misc/cpu_time.md:22
+#: ../../doc/src/intrinsics/misc/date_and_time.md:43
+#: ../../doc/src/intrinsics/misc/new_line.md:24
+#: ../../doc/src/intrinsics/numeric/abs.md:24
+#: ../../doc/src/intrinsics/numeric/aimag.md:23
+#: ../../doc/src/intrinsics/numeric/aint.md:28
+#: ../../doc/src/intrinsics/numeric/anint.md:27
+#: ../../doc/src/intrinsics/numeric/ceiling.md:22
+#: ../../doc/src/intrinsics/numeric/cmplx.md:30
+#: ../../doc/src/intrinsics/numeric/conjg.md:23
+#: ../../doc/src/intrinsics/numeric/digits.md:21
+#: ../../doc/src/intrinsics/numeric/dim.md:22
+#: ../../doc/src/intrinsics/numeric/epsilon.md:22
+#: ../../doc/src/intrinsics/numeric/erf.md:23
+#: ../../doc/src/intrinsics/numeric/erfc.md:23
+#: ../../doc/src/intrinsics/numeric/exp.md:22
+#: ../../doc/src/intrinsics/numeric/floor.md:28
+#: ../../doc/src/intrinsics/numeric/gamma.md:23
+#: ../../doc/src/intrinsics/numeric/mod.md:31 ../../doc/src/progress.md
+msgid "Description"
+msgstr "Descripción"
+
+#: ../../doc/src/intrinsics/array/allocated.md:25
+msgid ""
+"`allocated(x)` checks the allocation status of a integer input parameter."
+" It returns a logical value as `TRUE` if the input argument `x` is "
+"allocated, `FALSE` otherwise."
+msgstr ""
+"`allocated(x)` comprueba el estado de asignación de un parámetro de entrada "
+"entero. Devuelve un valor lógico como `VERDADERO` si se asigna el argumento "
+"de entrada `x`, `FALSO` en caso contrario."
+
+#: ../../doc/src/intrinsics/array/allocated.md:29
+#: ../../doc/src/intrinsics/array/cshift.md:39
+#: ../../doc/src/intrinsics/array/size.md:33
+#: ../../doc/src/intrinsics/bit/bge.md:27
+#: ../../doc/src/intrinsics/bit/bgt.md:27
+#: ../../doc/src/intrinsics/bit/bit_size.md:27
+#: ../../doc/src/intrinsics/bit/ble.md:27
+#: ../../doc/src/intrinsics/bit/blt.md:27
+#: ../../doc/src/intrinsics/bit/btest.md:32
+#: ../../doc/src/intrinsics/bit/shiftl.md:32
+#: ../../doc/src/intrinsics/bit/shiftr.md:32
+#: ../../doc/src/intrinsics/character/achar.md:37
+#: ../../doc/src/intrinsics/character/adjustl.md:28
+#: ../../doc/src/intrinsics/character/adjustr.md:29
+#: ../../doc/src/intrinsics/character/char.md:38
+#: ../../doc/src/intrinsics/character/len_trim.md:27
+#: ../../doc/src/intrinsics/character/lge.md:37
+#: ../../doc/src/intrinsics/kind-type/kind.md:27
+#: ../../doc/src/intrinsics/mathematical/acos.md:31
+#: ../../doc/src/intrinsics/mathematical/acosh.md:43
+#: ../../doc/src/intrinsics/mathematical/asin.md:31
+#: ../../doc/src/intrinsics/mathematical/asinh.md:35
+#: ../../doc/src/intrinsics/mathematical/atan.md:31
+#: ../../doc/src/intrinsics/mathematical/atan2.md:53
+#: ../../doc/src/intrinsics/mathematical/atanh.md:39
+#: ../../doc/src/intrinsics/mathematical/fraction.md:30
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:27
+#: ../../doc/src/intrinsics/misc/cpu_time.md:33
+#: ../../doc/src/intrinsics/misc/date_and_time.md:53
+#: ../../doc/src/intrinsics/misc/new_line.md:29
+#: ../../doc/src/intrinsics/numeric/abs.md:35
+#: ../../doc/src/intrinsics/numeric/aimag.md:33
+#: ../../doc/src/intrinsics/numeric/aint.md:35
+#: ../../doc/src/intrinsics/numeric/anint.md:38
+#: ../../doc/src/intrinsics/numeric/ceiling.md:26
+#: ../../doc/src/intrinsics/numeric/cmplx.md:47
+#: ../../doc/src/intrinsics/numeric/conjg.md:33
+#: ../../doc/src/intrinsics/numeric/digits.md:26
+#: ../../doc/src/intrinsics/numeric/dim.md:27
+#: ../../doc/src/intrinsics/numeric/epsilon.md:29
+#: ../../doc/src/intrinsics/numeric/erf.md:33
+#: ../../doc/src/intrinsics/numeric/erfc.md:36
+#: ../../doc/src/intrinsics/numeric/exp.md:29
+#: ../../doc/src/intrinsics/numeric/floor.md:33
+#: ../../doc/src/intrinsics/numeric/gamma.md:38
+#: ../../doc/src/intrinsics/numeric/mod.md:43
+msgid "Types"
+msgstr "Tipos"
+
+#: ../../doc/src/intrinsics/array/allocated.md:31
+#: ../../doc/src/intrinsics/array/size.md:35
+#: ../../doc/src/intrinsics/character/achar.md:39
+#: ../../doc/src/intrinsics/character/char.md:40
+msgid "Supported argument type is integer."
+msgstr "El tipo de argumento admitido es entero."
+
+#: ../../doc/src/intrinsics/array/allocated.md:46
+#: ../../doc/src/intrinsics/array/cshift.md:43
+#: ../../doc/src/intrinsics/array/size.md:37
+#: ../../doc/src/intrinsics/bit/bge.md:49
+#: ../../doc/src/intrinsics/bit/bgt.md:49
+#: ../../doc/src/intrinsics/bit/bit_size.md:44
+#: ../../doc/src/intrinsics/bit/ble.md:49
+#: ../../doc/src/intrinsics/bit/blt.md:49
+#: ../../doc/src/intrinsics/bit/btest.md:56
+#: ../../doc/src/intrinsics/bit/shiftl.md:62
+#: ../../doc/src/intrinsics/bit/shiftr.md:62
+#: ../../doc/src/intrinsics/character/achar.md:53
+#: ../../doc/src/intrinsics/character/adjustl.md:45
+#: ../../doc/src/intrinsics/character/adjustr.md:46
+#: ../../doc/src/intrinsics/character/char.md:53
+#: ../../doc/src/intrinsics/character/len_trim.md:44
+#: ../../doc/src/intrinsics/character/lge.md:59
+#: ../../doc/src/intrinsics/kind-type/kind.md:59
+#: ../../doc/src/intrinsics/mathematical/acos.md:60
+#: ../../doc/src/intrinsics/mathematical/acosh.md:72
+#: ../../doc/src/intrinsics/mathematical/asin.md:60
+#: ../../doc/src/intrinsics/mathematical/asinh.md:64
+#: ../../doc/src/intrinsics/mathematical/atan.md:60
+#: ../../doc/src/intrinsics/mathematical/atan2.md:75
+#: ../../doc/src/intrinsics/mathematical/atanh.md:68
+#: ../../doc/src/intrinsics/mathematical/fraction.md:34
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:31
+#: ../../doc/src/intrinsics/misc/cpu_time.md:44
+#: ../../doc/src/intrinsics/misc/date_and_time.md:64
+#: ../../doc/src/intrinsics/misc/new_line.md:40
+#: ../../doc/src/intrinsics/numeric/abs.md:79
+#: ../../doc/src/intrinsics/numeric/aimag.md:53
+#: ../../doc/src/intrinsics/numeric/aint.md:39
+#: ../../doc/src/intrinsics/numeric/anint.md:42
+#: ../../doc/src/intrinsics/numeric/ceiling.md:46
+#: ../../doc/src/intrinsics/numeric/cmplx.md:59
+#: ../../doc/src/intrinsics/numeric/conjg.md:53
+#: ../../doc/src/intrinsics/numeric/digits.md:30
+#: ../../doc/src/intrinsics/numeric/dim.md:31
+#: ../../doc/src/intrinsics/numeric/epsilon.md:49
+#: ../../doc/src/intrinsics/numeric/erf.md:53
+#: ../../doc/src/intrinsics/numeric/erfc.md:56
+#: ../../doc/src/intrinsics/numeric/exp.md:57
+#: ../../doc/src/intrinsics/numeric/floor.md:65
+#: ../../doc/src/intrinsics/numeric/gamma.md:58
+#: ../../doc/src/intrinsics/numeric/mod.md:80
+msgid "Examples"
+msgstr "Ejemplos"
+
+#: ../../doc/src/intrinsics/array/allocated.md:59
+#: ../../doc/src/intrinsics/array/cshift.md:55
+#: ../../doc/src/intrinsics/array/size.md:48
+#: ../../doc/src/intrinsics/mathematical/acos.md:76
+#: ../../doc/src/intrinsics/mathematical/acosh.md:81
+#: ../../doc/src/intrinsics/mathematical/asin.md:76
+#: ../../doc/src/intrinsics/mathematical/asinh.md:73
+#: ../../doc/src/intrinsics/mathematical/atan.md:76
+#: ../../doc/src/intrinsics/mathematical/atan2.md:84
+#: ../../doc/src/intrinsics/mathematical/atanh.md:77
+#: ../../doc/src/intrinsics/mathematical/fraction.md:44
+msgid "**Result**:"
+msgstr "**Result**:"
+
+#: ../../doc/src/intrinsics/array/allocated.md:65
+#: ../../doc/src/intrinsics/array/cshift.md:62
+#: ../../doc/src/intrinsics/array/size.md:55
+#: ../../doc/src/intrinsics/bit/bge.md:68
+#: ../../doc/src/intrinsics/bit/bgt.md:66
+#: ../../doc/src/intrinsics/bit/bit_size.md:61
+#: ../../doc/src/intrinsics/bit/ble.md:68
+#: ../../doc/src/intrinsics/bit/blt.md:66
+#: ../../doc/src/intrinsics/bit/btest.md:71
+#: ../../doc/src/intrinsics/bit/shiftl.md:80
+#: ../../doc/src/intrinsics/bit/shiftr.md:80
+#: ../../doc/src/intrinsics/character/achar.md:69
+#: ../../doc/src/intrinsics/character/adjustl.md:62
+#: ../../doc/src/intrinsics/character/adjustr.md:63
+#: ../../doc/src/intrinsics/character/char.md:69
+#: ../../doc/src/intrinsics/character/len_trim.md:63
+#: ../../doc/src/intrinsics/character/lge.md:79
+#: ../../doc/src/intrinsics/kind-type/kind.md:79
+#: ../../doc/src/intrinsics/mathematical/acos.md:82
+#: ../../doc/src/intrinsics/mathematical/acosh.md:86
+#: ../../doc/src/intrinsics/mathematical/asin.md:82
+#: ../../doc/src/intrinsics/mathematical/asinh.md:78
+#: ../../doc/src/intrinsics/mathematical/atan.md:82
+#: ../../doc/src/intrinsics/mathematical/atan2.md:90
+#: ../../doc/src/intrinsics/mathematical/atanh.md:82
+#: ../../doc/src/intrinsics/mathematical/fraction.md:50
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:47
+#: ../../doc/src/intrinsics/misc/cpu_time.md:64
+#: ../../doc/src/intrinsics/misc/date_and_time.md:90
+#: ../../doc/src/intrinsics/misc/new_line.md:56
+#: ../../doc/src/intrinsics/numeric/abs.md:96
+#: ../../doc/src/intrinsics/numeric/aimag.md:68
+#: ../../doc/src/intrinsics/numeric/aint.md:55
+#: ../../doc/src/intrinsics/numeric/anint.md:58
+#: ../../doc/src/intrinsics/numeric/ceiling.md:64
+#: ../../doc/src/intrinsics/numeric/cmplx.md:74
+#: ../../doc/src/intrinsics/numeric/conjg.md:68
+#: ../../doc/src/intrinsics/numeric/digits.md:44
+#: ../../doc/src/intrinsics/numeric/dim.md:47
+#: ../../doc/src/intrinsics/numeric/epsilon.md:63
+#: ../../doc/src/intrinsics/numeric/erf.md:67
+#: ../../doc/src/intrinsics/numeric/erfc.md:70
+#: ../../doc/src/intrinsics/numeric/exp.md:71
+#: ../../doc/src/intrinsics/numeric/floor.md:83
+#: ../../doc/src/intrinsics/numeric/gamma.md:74
+#: ../../doc/src/intrinsics/numeric/mod.md:95
+msgid "See Also"
+msgstr "Ver también"
+
+#: ../../doc/src/intrinsics/array/cshift.md:1
+msgid "cshift(A, shift [, dim]): Circular Shift"
+msgstr "cshift(A, shift [, dim]): Desplazamiento circular"
+
+#: ../../doc/src/intrinsics/array/cshift.md:3
+msgid "Circular shift elements of an array."
+msgstr "Elementos de desplazamiento circular de una matriz."
+
+#: ../../doc/src/intrinsics/array/cshift.md:16
+#: ../../doc/src/intrinsics/array/size.md:16
+msgid "`A` the input array of any type or rank."
+msgstr "`A` la matriz de entrada de cualquier tipo o rango."
+
+#: ../../doc/src/intrinsics/array/cshift.md:18
+msgid "`shift` the input value of integer type."
+msgstr "`shift` el valor de entrada de tipo entero."
+
+#: ../../doc/src/intrinsics/array/cshift.md:20
+msgid ""
+"`dim` optional dimension, if present, `cshift` returns the result of this"
+" dimension."
+msgstr ""
+"Dimensión opcional `dim`, si está presente, `cshift` devuelve el resultado "
+"de esta dimensión."
+
+#: ../../doc/src/intrinsics/array/cshift.md:24
+msgid ""
+"The return value is of input array type and rank as the `A` array input "
+"argument."
+msgstr ""
+"El valor devuelto es del tipo de matriz de entrada y se clasifica como el "
+"argumento de entrada de la matriz `A`."
+
+#: ../../doc/src/intrinsics/array/cshift.md:28
+msgid ""
+"**cshift(A, shift [, dim])** performs a circular shift on elements of `A`"
+" array along the dimension of `dim`. Default value of `dim` is 1, used "
+"when `dim` is not passed."
+msgstr ""
+"**cshift(A, shift [, dim])** realiza un desplazamiento circular en los "
+"elementos de la matriz `A` a lo largo de la dimensión de `dim`. El valor "
+"predeterminado de `dim` es 1, se usa cuando no se pasa `dim`."
+
+#: ../../doc/src/intrinsics/array/cshift.md:32
+msgid ""
+"If the rank of array is 1, then all elements of array are shifted by "
+"`shift` places. If rank is greater than one, then all complexte rank one "
+"sections of array along the given dimension are shifted."
+msgstr ""
+"Si el rango de la matriz es 1, entonces todos los elementos de la matriz se "
+"desplazan en lugares de `shift`. Si el rango es mayor que uno, todas las "
+"secciones complejas de rango uno de la matriz a lo largo de la dimensión "
+"dada se desplazan."
+
+#: ../../doc/src/intrinsics/array/cshift.md:36
+msgid ""
+"Elements shifted out one end of each rank one section are shifted back in"
+" the other end."
+msgstr ""
+"Los elementos desplazados en un extremo de cada rango de una sección se "
+"desplazan hacia atrás en el otro extremo."
+
+#: ../../doc/src/intrinsics/array/cshift.md:41
+msgid ""
+"Supported argument type is array for `A` and integer for `shift` and "
+"`dim`."
+msgstr ""
+"El tipo de argumento admitido es una matriz para `A` y un número entero para "
+"`shift` y `dim`."
+
+#: ../../doc/src/intrinsics/array/size.md:1
+msgid "size(x): Size of Array"
+msgstr "size(x): tamaño de la matriz"
+
+#: ../../doc/src/intrinsics/array/size.md:3
+msgid "Returns the size of an array `x`."
+msgstr "Devuelve el tamaño de una matriz `x`."
+
+#: ../../doc/src/intrinsics/array/size.md:18
+msgid ""
+"`dim` optional dimension, if present, `size` returns the size of this "
+"dimension."
+msgstr ""
+"Dimensión opcional `dim`, si está presente, `size` devuelve el tamaño de "
+"esta dimensión."
+
+#: ../../doc/src/intrinsics/array/size.md:20
+msgid "`kind` optional the kind of the return value."
+msgstr "`kind` opcional el tipo del valor de retorno."
+
+#: ../../doc/src/intrinsics/array/size.md:24
+msgid "`n` the size of an array (integer)."
+msgstr "`n` el tamaño de una matriz (entero)."
+
+#: ../../doc/src/intrinsics/array/size.md:28
+msgid ""
+"The `size` intrinsic function returns the size of an array. It returns "
+"the product of all dimensions, unless the `dim` argument is specified, in"
+" which case it only returns the size of this particular dimension. The "
+"`kind` argument can be used to specify the integer kind of the result."
+msgstr ""
+"La función intrínseca `size` devuelve el tamaño de una matriz. Devuelve el "
+"producto de todas las dimensiones, a menos que se especifique el argumento "
+"`dim`, en cuyo caso solo devuelve el tamaño de esta dimensión en particular. "
+"El argumento `kind` se puede utilizar para especificar el tipo entero del "
+"resultado."
+
+#: ../../doc/src/intrinsics/array/size.md:57
+msgid "[shape](), [reshape]()."
+msgstr "[shape](), [reshape]()."
+
+#: ../../doc/src/intrinsics/bit.md:1
+msgid "Bit Intrinsic Functions"
+msgstr "Funciones intrínsecas de bits"
+
+#: ../../doc/src/intrinsics/bit/bge.md:1
+msgid "bge(x, y): Bitwise Greater or Equal"
+msgstr "bge(x, y): bit a bit mayor o igual"
+
+#: ../../doc/src/intrinsics/bit/bge.md:3
+msgid "Bitwise greater than or equal to."
+msgstr "Bit a bit mayor o igual que."
+
+#: ../../doc/src/intrinsics/bit/bge.md:16
+#: ../../doc/src/intrinsics/bit/bgt.md:16
+#: ../../doc/src/intrinsics/bit/ble.md:16
+#: ../../doc/src/intrinsics/bit/blt.md:16
+msgid "`x` and `y` are integer input values. Both input values are of same kind."
+msgstr ""
+"`x` e `y` son valores de entrada enteros. Ambos valores de entrada son del "
+"mismo tipo."
+
+#: ../../doc/src/intrinsics/bit/bge.md:20
+#: ../../doc/src/intrinsics/bit/bgt.md:20
+#: ../../doc/src/intrinsics/bit/ble.md:20
+#: ../../doc/src/intrinsics/bit/blt.md:20
+msgid "The return value is of type logical and of the default kind."
+msgstr "El valor devuelto es de tipo lógico y del tipo predeterminado."
+
+#: ../../doc/src/intrinsics/bit/bge.md:24
+msgid ""
+"`bge(x, y)` calculates if two integer input values is bitwise greater "
+"than or equal to another."
+msgstr ""
+"`bge(x, y)` calcula si dos valores de entrada enteros son bit a bit mayores "
+"o iguales que otro."
+
+#: ../../doc/src/intrinsics/bit/bge.md:29
+#: ../../doc/src/intrinsics/bit/bgt.md:29
+#: ../../doc/src/intrinsics/bit/ble.md:29
+#: ../../doc/src/intrinsics/bit/blt.md:29
+#: ../../doc/src/intrinsics/bit/btest.md:34
+msgid "Supported input types is integer of 32 bit and 64 bit size."
+msgstr ""
+"Los tipos de entrada admitidos son números enteros de 32 bits y 64 bits."
+
+#: ../../doc/src/intrinsics/bit/bge.md:60
+#: ../../doc/src/intrinsics/bit/bgt.md:59
+#: ../../doc/src/intrinsics/bit/bit_size.md:54
+#: ../../doc/src/intrinsics/bit/ble.md:60
+#: ../../doc/src/intrinsics/bit/blt.md:59
+#: ../../doc/src/intrinsics/bit/btest.md:65
+#: ../../doc/src/intrinsics/bit/shiftl.md:74
+#: ../../doc/src/intrinsics/bit/shiftr.md:74
+#: ../../doc/src/intrinsics/character/achar.md:63
+#: ../../doc/src/intrinsics/character/adjustl.md:56
+#: ../../doc/src/intrinsics/character/adjustr.md:57
+#: ../../doc/src/intrinsics/character/char.md:63
+#: ../../doc/src/intrinsics/character/len_trim.md:57
+#: ../../doc/src/intrinsics/character/lge.md:72
+#: ../../doc/src/intrinsics/kind-type/kind.md:72
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:40
+#: ../../doc/src/intrinsics/misc/cpu_time.md:57
+#: ../../doc/src/intrinsics/misc/date_and_time.md:83
+#: ../../doc/src/intrinsics/misc/new_line.md:49
+#: ../../doc/src/intrinsics/numeric/abs.md:89
+#: ../../doc/src/intrinsics/numeric/aimag.md:62
+#: ../../doc/src/intrinsics/numeric/aint.md:48
+#: ../../doc/src/intrinsics/numeric/anint.md:51
+#: ../../doc/src/intrinsics/numeric/ceiling.md:57
+#: ../../doc/src/intrinsics/numeric/cmplx.md:68
+#: ../../doc/src/intrinsics/numeric/conjg.md:62
+#: ../../doc/src/intrinsics/numeric/digits.md:38
+#: ../../doc/src/intrinsics/numeric/dim.md:40
+#: ../../doc/src/intrinsics/numeric/epsilon.md:57
+#: ../../doc/src/intrinsics/numeric/erf.md:61
+#: ../../doc/src/intrinsics/numeric/erfc.md:64
+#: ../../doc/src/intrinsics/numeric/exp.md:65
+#: ../../doc/src/intrinsics/numeric/floor.md:76
+#: ../../doc/src/intrinsics/numeric/gamma.md:67
+#: ../../doc/src/intrinsics/numeric/mod.md:89
+msgid "**Result:**"
+msgstr "**Result:**"
+
+#: ../../doc/src/intrinsics/bit/bge.md:70
+msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
+msgstr "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
+
+#: ../../doc/src/intrinsics/bit/bgt.md:1
+msgid "bgt(x, y): Bitwise Greater Than"
+msgstr "bgt(x, y): bit a bit mayor que"
+
+#: ../../doc/src/intrinsics/bit/bgt.md:3
+msgid "Bitwise greater than."
+msgstr "Bit a bit mayor que."
+
+#: ../../doc/src/intrinsics/bit/bgt.md:24
+msgid ""
+"`bgt(x, y)` calculates if one integer input values is bitwise greater "
+"than the other."
+msgstr ""
+"`bgt(x, y)` calcula si un valor de entrada entero es bit a bit mayor que el "
+"otro."
+
+#: ../../doc/src/intrinsics/bit/bgt.md:68
+msgid "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
+msgstr "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:1
+msgid "bit_size(x): Bit Size"
+msgstr "bit_size(x): tamaño de bit"
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:3
+msgid "Bit size."
+msgstr "Tamaño de bits."
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:16
+msgid "`x` is integer input value."
+msgstr "`x` es un valor de entrada entero."
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:20
+#: ../../doc/src/intrinsics/numeric/digits.md:19
+msgid "The return value is of type integer."
+msgstr "El valor devuelto es de tipo entero."
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:24
+msgid ""
+"`bit_size(x)` calculates the number of bits including sign bit of binary "
+"representation of `x`."
+msgstr ""
+"`bit_size(x)` calcula el número de bits, incluido el bit de signo de la "
+"representación binaria de `x`."
+
+#: ../../doc/src/intrinsics/bit/bit_size.md:29
+msgid "Supported input types is integer."
+msgstr "Los tipos de entrada admitidos son enteros."
+
+#: ../../doc/src/intrinsics/bit/ble.md:1
+msgid "bge(x, y): Bitwise Less or Equal"
+msgstr "bge(x, y): bit a bit menor o igual"
+
+#: ../../doc/src/intrinsics/bit/ble.md:3
+msgid "Bitwise less than or equal to."
+msgstr "Bit a bit menor o igual que."
+
+#: ../../doc/src/intrinsics/bit/ble.md:24
+msgid ""
+"`ble(x, y)` calculates if one integer input values is bitwise less than "
+"or equal to other."
+msgstr ""
+"`ble(x, y)` calcula si un valor de entrada entero es bit a bit menor o igual "
+"que otro."
+
+#: ../../doc/src/intrinsics/bit/ble.md:70
+msgid "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
+msgstr "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
+
+#: ../../doc/src/intrinsics/bit/blt.md:1
+msgid "blt(x, y): Bitwise Less Than"
+msgstr "blt(x, y): bit a bit menor que"
+
+#: ../../doc/src/intrinsics/bit/blt.md:3
+msgid "Bitwise less than."
+msgstr "Bit a bit menor que."
+
+#: ../../doc/src/intrinsics/bit/blt.md:24
+msgid ""
+"`blt(x, y)` calculates if one integer input values is bitwise less than "
+"the other."
+msgstr ""
+"`blt(x, y)` calcula si un valor de entrada entero es bit a bit menor que el "
+"otro."
+
+#: ../../doc/src/intrinsics/bit/blt.md:68
+msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
+msgstr "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
+
+#: ../../doc/src/intrinsics/bit/btest.md:1
+msgid "btest(x, pos): Bit Test at Position"
+msgstr "btest(x, pos): Prueba de bits en la posición"
+
+#: ../../doc/src/intrinsics/bit/btest.md:3
+msgid "Bit test."
+msgstr "Prueba de bits."
+
+#: ../../doc/src/intrinsics/bit/btest.md:16
+msgid ""
+"`x` and `pos` are integer input values. Both input values are of same "
+"kind. `pos` represents position in `x`."
+msgstr ""
+"`x` y `pos` son valores de entrada enteros. Ambos valores de entrada son del "
+"mismo tipo. `pos` representa la posición en `x`."
+
+#: ../../doc/src/intrinsics/bit/btest.md:21
+msgid "The return value is of type logical."
+msgstr "El valor de retorno es de tipo lógico."
+
+#: ../../doc/src/intrinsics/bit/btest.md:25
+msgid ""
+"`btest(x, pos)` calculates if `pos` bit in input integer value `x` is "
+"set. The counting of the bits starts at 0, at least significant bit (LSB)"
+" i.e., the rightmost bit in `x`."
+msgstr ""
+"`btest(x, pos)` calcula si el bit `pos` en el valor entero de entrada `x` "
+"está establecido. El conteo de bits comienza en 0, al menos el bit "
+"significativo (LSB), es decir, el bit más a la derecha en `x`."
+
+#: ../../doc/src/intrinsics/bit/btest.md:29
+msgid ""
+"If `pos` less than 0 or greater than `bit_size()`, `btest(x, pos)` errors"
+" with not allowed message."
+msgstr ""
+"Si `pos` es menor que 0 o mayor que `bit_size()`, `btest(x, pos)` tiene un "
+"mensaje de error no permitido."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:1
+msgid "shiftl(x, shift): Shift Left"
+msgstr "shiftl(x, shift): Desplazamiento a la izquierda"
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:3
+msgid "Logical shift left function."
+msgstr "Función de desplazamiento lógico a la izquierda."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:16
+#: ../../doc/src/intrinsics/bit/shiftr.md:16
+msgid "`x` is an integer input value."
+msgstr "`x` es un valor de entrada entero."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:18
+#: ../../doc/src/intrinsics/bit/shiftr.md:18
+msgid ""
+"`shift` an unsigned integer value less than or equal to the bit size of "
+"`x`. The possible values are 7, 31, and 63."
+msgstr ""
+"`shift` un valor entero sin signo menor o igual que el tamaño de bit de `x`. "
+"Los valores posibles son 7, 31 y 63."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:23
+#: ../../doc/src/intrinsics/bit/shiftr.md:23
+msgid "The return value is of type integer and of the same kind as `x`."
+msgstr "El valor devuelto es de tipo entero y del mismo tipo que `x`."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:27
+msgid ""
+"**shiftl(x, shift)** logically left shifts `x` by `shift` number of bits."
+" `shiftl` shifts from LSB(**L**east **S**ignificant **B**it) to "
+"MSB(**M**ost **S**ignificant **B**it). Bits shifted from the left end "
+"i.e., MSB bits are lost. Zeroes are appended to the opposite right end."
+msgstr ""
+"**shiftl(x, shift)** desplaza lógicamente a la izquierda `x` por el número "
+"de bits de `shift`. `shiftl` cambia de LSB(**L**este **S**significativo "
+"**B**it) a MSB(**M**más **S**significativo **B**it). Bits desplazados desde "
+"el extremo izquierdo, es decir, se pierden bits MSB. Los ceros se agregan al "
+"extremo derecho opuesto."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:34
+#: ../../doc/src/intrinsics/bit/shiftr.md:34
+msgid ""
+"Supported types in unsigned integer value `x` and unsigned integer value "
+"`shift` from (7, 31, 63) less than or equal to bit size of `x`."
+msgstr ""
+"Tipos admitidos en valor entero sin signo `x` y valor entero sin signo "
+"`shift` de (7, 31, 63) menor o igual que el tamaño de bit de `x`."
+
+#: ../../doc/src/intrinsics/bit/shiftl.md:82
+msgid "[shiftr](shiftr.md)."
+msgstr "[shiftr](shiftr.md)."
+
+#: ../../doc/src/intrinsics/bit/shiftr.md:1
+msgid "shiftr(x, shift): Shift Right"
+msgstr "shiftr(x, shift): Desplazamiento a la derecha"
+
+#: ../../doc/src/intrinsics/bit/shiftr.md:3
+msgid "Logical shift right function."
+msgstr "Función de desplazamiento lógico a la derecha."
+
+#: ../../doc/src/intrinsics/bit/shiftr.md:27
+msgid ""
+"**shiftr(x, shift)** logically right shifts `x` by `shift` number of "
+"bits. `shiftr` shifts from MSB(**M**ost **S**ignificant **B**it) to "
+"LSB(**L**east **S**ignificant **B**it). Bits shifted from the right end "
+"i.e., LSB bits are lost. Zeroes are appended to the opposite left end."
+msgstr ""
+"**shiftr(x, shift)** lógicamente desplaza a la derecha `x` por el número de "
+"bits de `shift`. `shiftr` cambia de MSB(**M**más **S**significativo **B**it) "
+"a LSB(**L**este **S**significativo **B**it). Bits desplazados desde el "
+"extremo derecho, es decir, los bits LSB se pierden. Los ceros se añaden al "
+"extremo izquierdo opuesto."
+
+#: ../../doc/src/intrinsics/bit/shiftr.md:82
+msgid "[shiftl](shiftl.md)."
+msgstr "[shiftl](shiftl.md)."
+
+#: ../../doc/src/intrinsics/character.md:1
+msgid "Character Intrinsic Functions"
+msgstr "Funciones intrínsecas de carácter"
+
+#: ../../doc/src/intrinsics/character/achar.md:1
+msgid "achar(x, kind): To Character in ASCII set."
+msgstr "achar(x, kind): Para Carácter en conjunto ASCII."
+
+#: ../../doc/src/intrinsics/character/achar.md:3
+msgid "Character represented by in the ASCII character set."
+msgstr "Carácter representado por en el juego de caracteres ASCII."
+
+#: ../../doc/src/intrinsics/character/achar.md:16
+msgid ""
+"`x`: the input value of integer type. `kind`: an optional input value of "
+"type integer constant expression for initialization."
+msgstr ""
+"`x`: el valor de entrada de tipo entero. `kind`: un valor de entrada "
+"opcional de expresión constante de tipo entero para la inicialización."
+
+#: ../../doc/src/intrinsics/character/achar.md:20
+#: ../../doc/src/intrinsics/character/adjustl.md:18
+#: ../../doc/src/intrinsics/character/adjustr.md:18
+#: ../../doc/src/intrinsics/character/char.md:21
+#: ../../doc/src/intrinsics/character/len_trim.md:18
+msgid "Return value"
+msgstr "Valor devuelto"
+
+#: ../../doc/src/intrinsics/character/achar.md:22
+#: ../../doc/src/intrinsics/character/char.md:23
+msgid "The return value is of type character of length 1."
+msgstr "El valor de retorno es de tipo carácter de longitud 1."
+
+#: ../../doc/src/intrinsics/character/achar.md:24
+#: ../../doc/src/intrinsics/character/char.md:25
+msgid ""
+"The return value is of kind `kind` if optional input value is passed, "
+"otherwise the kind is default kind."
+msgstr ""
+"El valor devuelto es del tipo `kind` si se pasa un valor de entrada opcional;"
+" de lo contrario, el tipo es el tipo predeterminado."
+
+#: ../../doc/src/intrinsics/character/achar.md:29
+msgid ""
+"**achar(x, kind)** returns the character represented by the ASCII "
+"character set at `x` position."
+msgstr ""
+"**achar(x, kind)** devuelve el carácter representado por el juego de "
+"caracteres ASCII en la posición `x`."
+
+#: ../../doc/src/intrinsics/character/achar.md:32
+#: ../../doc/src/intrinsics/character/char.md:33
+msgid ""
+"If `x` is outside the ASCII character set integer value, i.e., if `x` is "
+"not represented in the ASCII character set, the return value is "
+"undefined."
+msgstr ""
+"Si `x` está fuera del valor entero del juego de caracteres ASCII, es decir, "
+"si `x` no está representado en el juego de caracteres ASCII, el valor "
+"devuelto no está definido."
+
+#: ../../doc/src/intrinsics/character/achar.md:35
+#: ../../doc/src/intrinsics/character/char.md:36
+msgid "It is a runtime builtin function."
+msgstr "Es una función incorporada en tiempo de ejecución."
+
+#: ../../doc/src/intrinsics/character/achar.md:71
+#: ../../doc/src/intrinsics/character/adjustl.md:64
+#: ../../doc/src/intrinsics/character/len_trim.md:65
+msgid "[lge](lge.md)."
+msgstr "[lge](lge.md)."
+
+#: ../../doc/src/intrinsics/character/adjustl.md:1
+msgid "adjustl(string): Left Adjust String"
+msgstr "adjustl(string): ajuste de cadena a izquierda"
+
+#: ../../doc/src/intrinsics/character/adjustl.md:3
+msgid "Left adjust a string."
+msgstr "Ajusta a izquierda una cadena."
+
+#: ../../doc/src/intrinsics/character/adjustl.md:16
+#: ../../doc/src/intrinsics/character/adjustr.md:16
+msgid "`string`: the input value must be of character type."
+msgstr "`string`: el valor de entrada debe ser de tipo carácter."
+
+#: ../../doc/src/intrinsics/character/adjustl.md:20
+msgid ""
+"The return value is of type character and of the same kind as of input "
+"value `string`, with leading spaces removed and same number of spaces "
+"appended."
+msgstr ""
+"El valor devuelto es de tipo carácter y del mismo tipo que el valor de "
+"entrada `string`, con los espacios iniciales eliminados y el mismo número de "
+"espacios añadidos."
+
+#: ../../doc/src/intrinsics/character/adjustl.md:25
+msgid ""
+"**adjustl(string)** adjusts input string by removing any leading spaces "
+"and appending same number of spaces."
+msgstr ""
+"**adjustl(cadena)** ajusta la cadena de entrada eliminando cualquier espacio "
+"inicial y agregando la misma cantidad de espacios."
+
+#: ../../doc/src/intrinsics/character/adjustl.md:30
+#: ../../doc/src/intrinsics/character/adjustr.md:31
+msgid "Supported argument type is character."
+msgstr "El tipo de argumento admitido es el carácter."
+
+#: ../../doc/src/intrinsics/character/adjustr.md:1
+msgid "adjustr(string): Right Adjust String"
+msgstr "adjustr(cadena): Cadena ajustada a la derecha"
+
+#: ../../doc/src/intrinsics/character/adjustr.md:3
+msgid "Right adjust a string."
+msgstr "Ajuste a la derecha una cadena."
+
+#: ../../doc/src/intrinsics/character/adjustr.md:20
+msgid ""
+"The return value is of type character and of the same kind as of input "
+"value `string`, with trailing spaces removed and same number of spaces "
+"added at the start."
+msgstr ""
+"El valor devuelto es de tipo carácter y del mismo tipo que el valor de "
+"entrada `string`, con los espacios finales eliminados y el mismo número de "
+"espacios agregados al principio."
+
+#: ../../doc/src/intrinsics/character/adjustr.md:26
+msgid ""
+"**adjustr(string)** adjusts input string by removing any trailing spaces "
+"and adding same number of spaces at the start of the input string."
+msgstr ""
+"**adjustr(cadena)** ajusta la cadena de entrada eliminando los espacios "
+"finales y agregando la misma cantidad de espacios al comienzo de la cadena "
+"de entrada."
+
+#: ../../doc/src/intrinsics/character/adjustr.md:65
+msgid "[adjustl](adjustl.md)."
+msgstr "[adjustl](adjustl.md)."
+
+#: ../../doc/src/intrinsics/character/char.md:1
+msgid "char(x, [, kind]): Integer to Character"
+msgstr "char(x, [, kind]): Transforma entero en carácter"
+
+#: ../../doc/src/intrinsics/character/char.md:3
+msgid "Integer to character conversion."
+msgstr "Conversión de entero a carácter."
+
+#: ../../doc/src/intrinsics/character/char.md:16
+msgid "`x`: the input value of integer type."
+msgstr "`x`: el valor de entrada de tipo entero."
+
+#: ../../doc/src/intrinsics/character/char.md:18
+msgid ""
+"`kind`: an optional input value of type integer constant expression for "
+"initialization. This indicates the kind parameter of the result."
+msgstr ""
+"`kind`: un valor de entrada opcional de expresión constante de tipo entero "
+"para la inicialización. Esto indica el tipo de parámetro del resultado."
+
+#: ../../doc/src/intrinsics/character/char.md:30
+msgid ""
+"**char(x)** returns the character represented by the ASCII character set "
+"at `x` position."
+msgstr ""
+"**char(x)** devuelve el carácter representado por el conjunto de caracteres "
+"ASCII en la posición `x`."
+
+#: ../../doc/src/intrinsics/character/char.md:71
+msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
+msgstr "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
+
+#: ../../doc/src/intrinsics/character/len_trim.md:1
+msgid "len_trim(string): Length Ignoring Trailing Blanks"
+msgstr "len_trim(cadena): Longitud ignorando los espacios en blanco finales"
+
+#: ../../doc/src/intrinsics/character/len_trim.md:3
+msgid "Length of a character string ignoring trailing blank character(s)."
+msgstr ""
+"Longitud de una cadena de caracteres que ignora los caracteres en blanco "
+"finales."
+
+#: ../../doc/src/intrinsics/character/len_trim.md:16
+msgid "`string` the input value of character type."
+msgstr "`string` el valor de entrada del tipo de carácter."
+
+#: ../../doc/src/intrinsics/character/len_trim.md:20
+msgid "The return value is of type unsigned integer."
+msgstr "El valor de retorno es de tipo entero sin signo."
+
+#: ../../doc/src/intrinsics/character/len_trim.md:24
+msgid ""
+"**len_trim(string)** returns the length of the character argument without"
+" including trailing blank character(s)."
+msgstr ""
+"**len_trim(cadena)** devuelve la longitud del argumento de carácter sin "
+"incluir los caracteres en blanco finales."
+
+#: ../../doc/src/intrinsics/character/len_trim.md:29
+msgid "Supported argument type is character scalar."
+msgstr "El tipo de argumento admitido es un carácter."
+
+#: ../../doc/src/intrinsics/character/lge.md:1
+msgid "lge(x, y): Lexically Greater or Equal"
+msgstr "lge(x, y): léxicamente mayor o igual"
+
+#: ../../doc/src/intrinsics/character/lge.md:3
+msgid "Lexically greater than or equal."
+msgstr "Léxicamente mayor que o igual."
+
+#: ../../doc/src/intrinsics/character/lge.md:17
+msgid "`x` input value of type character."
+msgstr "`x` valor de entrada de tipo carácter."
+
+#: ../../doc/src/intrinsics/character/lge.md:19
+msgid "`y` input value of type character."
+msgstr "`y` valor de entrada de tipo carácter."
+
+#: ../../doc/src/intrinsics/character/lge.md:21
+msgid "`x` and `y` can be seen as string A and string B."
+msgstr "`x`e `y` pueden ser vistos como la cadena A y la cadena B."
+
+#: ../../doc/src/intrinsics/character/lge.md:25
+msgid "The return value is of logical `true` or `false` type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/character/lge.md:27
+msgid "`True` if `x` string is lexically greater than or equal to `y`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/character/lge.md:29
+msgid "`False` if they are not."
+msgstr ""
+
+#: ../../doc/src/intrinsics/character/lge.md:33
+msgid ""
+"**lge(x, y)** determines if input string `x` is lexically greater than or"
+" equal to input string `y`. The two strings in comparison are interpreted"
+" as containing ASCII character codes."
+msgstr ""
+
+#: ../../doc/src/intrinsics/character/lge.md:39
+msgid "Argument types should be of type character literal."
+msgstr ""
+
+#: ../../doc/src/intrinsics/character/lge.md:81
+msgid "[len_trim](len_trim.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type.md:1
+msgid "Kind Type Intrinsic Functions"
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:1
+msgid "kind(x): Kind of an Entity"
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:3
+msgid "Kind of an entity."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:16
+msgid ""
+"`x` the input value, can be logical, integer, real, complex, or "
+"character. It may be a scalar or array valued i.e., any intrinsic type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:21
+msgid "The return value is of integer type and of default integer kind."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:25
+msgid "**kind(x)** returns the kind parameter of the input argument `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:29
+msgid ""
+"Supported argument types are logical, integer, real, complex, or "
+"character."
+msgstr ""
+
+#: ../../doc/src/intrinsics/kind-type/kind.md:81
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:16
+#: ../../doc/src/intrinsics/misc/cpu_time.md:20
+#: ../../doc/src/intrinsics/misc/date_and_time.md:41
+#: ../../doc/src/intrinsics/misc/new_line.md:58
+msgid "None."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical.md:1
+msgid "Mathematical Intrinsic Functions"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:1
+msgid "acos(x): Trigonometric Arc Cosine"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:3
+msgid "Trigonometric arc cosine (inverse cosine) function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:16
+#: ../../doc/src/intrinsics/mathematical/asin.md:16
+#: ../../doc/src/intrinsics/mathematical/atan.md:16
+msgid "`x` the input value, can be real or complex; less than or equal to 1."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:20
+#: ../../doc/src/intrinsics/mathematical/acosh.md:21
+#: ../../doc/src/intrinsics/mathematical/asin.md:20
+#: ../../doc/src/intrinsics/mathematical/asinh.md:21
+#: ../../doc/src/intrinsics/mathematical/atan.md:20
+#: ../../doc/src/intrinsics/mathematical/atanh.md:21
+msgid ""
+"The returned value has the kind of the input value and TYPE may be real "
+"or complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:25
+msgid "**acos(x)** computes the arcsine of the argument **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:27
+msgid ""
+"The arc cosine is the inverse function of the cosine function. It is "
+"commonly used in trigonometry to find the angle when the lengths of the "
+"hypotenuse and the base side  of a right triangle are known."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:33
+#: ../../doc/src/intrinsics/mathematical/acosh.md:45
+#: ../../doc/src/intrinsics/mathematical/asin.md:33
+#: ../../doc/src/intrinsics/mathematical/asinh.md:37
+#: ../../doc/src/intrinsics/mathematical/atan.md:33
+#: ../../doc/src/intrinsics/mathematical/atanh.md:41
+msgid "Supported argument types float, double, complex float, complex double."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acos.md:84
+msgid "[asin](asin.md), [atan](atan.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:1
+msgid "acosh(x): Inverse Hyperbolic Cosine"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:3
+msgid "Inverse hyperbolic cosine function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:16
+#: ../../doc/src/intrinsics/mathematical/asinh.md:16
+#: ../../doc/src/intrinsics/mathematical/atanh.md:16
+msgid ""
+"`x` the input value, can be real with value greater than or equal to 1 or"
+" of type complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:26
+msgid "**acosh(x)** computes the inverse hyperbolic cosine function of **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:28
+#: ../../doc/src/intrinsics/mathematical/asinh.md:28
+#: ../../doc/src/intrinsics/mathematical/atanh.md:28
+msgid "The result type and kind are the same as input value `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:30
+msgid ""
+"If the result is complex, the real part is non-negative, and the "
+"imaginary part is expressed in radians and lients in the range"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:33
+msgid "$-\\pi <= img (acosh(x)) <= \\pi$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:35
+msgid ""
+"For real values $x$ in the domain $x > 1$, the inverse hyperbolic cosine "
+"satisifies:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:38
+msgid "$cosh^{-1}(x) = \\log(x + \\sqrt{(x^2 - 1)})$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:40
+msgid ""
+"For complex numbers $x = x + iy$, as well as real values in the domain "
+"$-\\infty < z <= 1$, the call $acosh(z)$ returns complex results."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/acosh.md:88
+msgid "[asinh](asinh.md), [atanh](atanh.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asin.md:1
+msgid "asin(x): Trigonometric Arcsine"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asin.md:3
+msgid "Trigonometric arcsine function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asin.md:25
+msgid "**asin(x)** computes the arcsine of the argument **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asin.md:27
+msgid ""
+"The arcsine is the inverse function of the sine function. It is commonly "
+"used in trigonometry to find the angle when the lengths of the hypotenuse"
+" and the opposite side of a right triangle are known."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asin.md:84
+msgid "[acos](acos.md), [atan](atan.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:1
+msgid "asinh(x): Inverse Hyperbolic Arcsine"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:3
+msgid "Inverse hyperbolic arcsine function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:26
+msgid "**asinh(x)** computes the inverse hyperbolic arcsine function of **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:30
+msgid ""
+"If the result is complex, the real part is non-negative, and the "
+"imaginary part is expressed in radians and lies in the range"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:33
+msgid "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/asinh.md:80
+msgid "[acosh](acosh.md), [atanh](atanh.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan.md:1
+msgid "atan(x): Trigonometric ArcTangent"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan.md:3
+msgid "Trigonometric arctangent (inverse arctangent) function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan.md:25
+msgid "**atan(x)** computes the arctangent of the argument **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan.md:27
+msgid ""
+"The arc tangent is the inverse function of the arctangent function. It is"
+" commonly used in trigonometry to find the angle when the lengths of the "
+"opposite side of a right triangle and base are known, i.e., perpendicular"
+" and base length."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan.md:84
+msgid "[asin](asin.md), [acos](acos.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:1
+msgid "atan2(y, x): ArcTangent"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:3
+msgid "Arctangent function or inverse tangent function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:15
+msgid "`y` the input value is the imaginary part of the complex expression"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:17
+#: ../../doc/src/intrinsics/numeric/aimag.md:29
+#: ../../doc/src/intrinsics/numeric/cmplx.md:43
+msgid "$x + iy$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:19
+msgid "`x` the input value, must be real part of the complex expression."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:23
+msgid ""
+"The returned value has the kind and TYPE as of the input value `y`. The "
+"principal value of the argument function of the complex expression $x + "
+"iy$ is returned."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:29
+msgid ""
+"**atan2(y, x)** computes the principal value of the argument function of "
+"the complex expression $x + iy$. This is used to transform from cartesian"
+" into polar coordinates and allows to determine the angle in the correct "
+"quadrant."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:33
+msgid "It is also represented as:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:35
+msgid "$tan^{-1}(\\frac{y}{x})$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:37
+msgid "If `x` is nonzero, the result lies in the range:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:39
+msgid "$-\\pi <= atan(x) <= \\pi$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:41
+msgid "The sign is positive if `y` is positive."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:43
+msgid "If `y` is zero and `x` is strictly positive, then the result is 0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:45
+msgid "If `x` is negative and `y` is positive zero, then the result is $\\pi$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:47
+msgid "If `x` is negative and `y` is negative zero, then the result is $-\\pi$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:49
+msgid "If `x` is zero, then the magnitude of the result is $\\frac{\\pi}{2}$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:51
+msgid "If `y` is negative real zero, the result is $\\frac{-\\pi}{2}$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atan2.md:55
+#: ../../doc/src/intrinsics/mathematical/fraction.md:32
+msgid "Supported argument type is real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:1
+msgid "atanh(x): Inverse Hyperbolic Tangent"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:3
+msgid "Inverse hyperbolic tangent function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:26
+msgid "**atanh(x)** computes the inverse hyperbolic tangent function of **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:30
+msgid ""
+"If the result is complex, the imaginary part is expressed in radians and "
+"lies in the range"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:33
+msgid "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:35
+msgid "If the result is real, it lies in the range"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:37
+msgid "$-1.0 < atanh(x) < 1.0$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/atanh.md:84
+msgid "[asinh](asinh.md), [acosh](acosh.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:1
+msgid "fraction(x): Fractional Part in Model Representation"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:3
+msgid "Fractional part of the model representation."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:15
+msgid "`x` the input value, must be real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:19
+msgid ""
+"The returned value has the kind of the input value. The fractional part "
+"of the model representation of the input value is returned."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:24
+msgid ""
+"**fraction(x)** computes the fractional part of the model representation "
+"of **x**."
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:26
+#: ../../doc/src/intrinsics/numeric/erf.md:29
+#: ../../doc/src/intrinsics/numeric/erfc.md:29
+msgid "It is calculated using:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/mathematical/fraction.md:28
+msgid "$x * {radix(x)}^{(-exponent(x))}$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc.md:1
+msgid "Miscellaneous Intrinsic Functions"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:1
+msgid "command_argument_count(): Number of Command Line Arguments"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:3
+msgid "Get number of command line arguments."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:20
+msgid "The return value is of integer type and of default kind."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:24
+msgid ""
+"**command_argument_count()** returns the number of arguments passed on "
+"the command line when the named program was invoked."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/command_argument_count.md:29
+msgid "Any."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:1
+msgid "cpu_time(x): CPU Elapsed Time"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:3
+msgid "CPU elapsed time in seconds."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:16
+msgid "`x` the input value should be of type real with `intent(out)`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:24
+msgid ""
+"**cpu_time(time)** returns a real value representing the elapsed CPU time"
+" in seconds. If tine source is available, time will be reported with "
+"microsecond resolution. If no time source is available, TIME is set to "
+"-1.0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:28
+msgid "This is useful for testing segments of code to determine computation time."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:30
+msgid ""
+"For `cpu_time(time)` the absolute value is meaningless, only differences "
+"between subsequent calls to this subroutine, as shown in the example "
+"below, should be used."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/cpu_time.md:35
+#: ../../doc/src/intrinsics/misc/date_and_time.md:55
+msgid "Supported input parameter types is real with `intent(out)`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:1
+msgid "date_and_time([date, time, zone, values]): Date and Time"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:3
+msgid "Date and time subroutine."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:16
+msgid ""
+"`date` the input value of character type, which has length 8 or larger. "
+"It is of default kind. It is `intent(out)` and has form `ccyymmdd`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:19
+msgid ""
+"`time` the input value of character type, which has length 10 or larger. "
+"It is of default kind. It is `intent(out)` and has form `hhmmss.sss`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:22
+msgid ""
+"`zone` the input value of character type, which has length 5 or larger. "
+"It is of default kind. It is `intent(out)` and has from `(+-)hhmm`, "
+"representing the difference with respect to Coordinates Universal Time "
+"(UTC). Unavailable time and date parameters return blanks."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:27
+msgid ""
+"`values` the input value of integer type, 8 bits. It is `intent(out)`. It"
+" provides the following:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:30
+msgid "`value(1)`: The year."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:31
+msgid "`value(2)`: The month."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:32
+msgid "`value(3)`: The day of the month."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:33
+msgid "`value(4)`: Time difference with UTC in minutes."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:34
+msgid "`value(5)`: The hour of the day."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:35
+msgid "`value(6)`: The minutes of the hour."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:36
+msgid "`value(7)`: The seconds of the minutes."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:37
+msgid "`value(8)`: The milliseconds of the second."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:45
+msgid ""
+"**date_and_time([date, time, zone, values])** reports the corresponding "
+"date and time information from the real time system clock."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:48
+msgid ""
+"`date`, `time`, `zone`, `values` represents date, time, zone, and values"
+"  as decribed in arguments above."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:51
+msgid "Unavailable or errorneous date and time parameters return blanks."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/date_and_time.md:92
+msgid "[cpu_time](cpu_time.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:1
+msgid "new_line(x): New Line Character"
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:3
+msgid "New line character."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:16
+msgid ""
+"The input parameter `x` must be of type character. It can be a scalar or "
+"an array."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:21
+msgid ""
+"The return value is a character of length one with the new line character"
+" appended of the same kind as of `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:26
+msgid ""
+"**new_line(x)** returns the new line character. The return value is the "
+"ASCII newline character."
+msgstr ""
+
+#: ../../doc/src/intrinsics/misc/new_line.md:31
+msgid "Supported input parameter types is character."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric.md:1
+msgid "Numeric Intrinsic Functions"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:1
+msgid "abs(x): Absolute Value"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:3
+msgid "Absolute value."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:17
+msgid "`x` the input value, can be integer, real, or complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:21
+msgid ""
+"The return value is of type and kind same as of `x`. For complex input "
+"value, return value is real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:26
+msgid ""
+"**abs(x)** calculates and returns absolute value of `x`. Result is "
+"calculated using mathematical formula:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:29
+msgid "$|x|$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:31
+msgid "If `x` is complex, the result is calculated using mathematical formula:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:33
+msgid "$\\sqrt{(x^2 + y^2)}$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:37
+#: ../../doc/src/intrinsics/numeric/digits.md:28
+#: ../../doc/src/intrinsics/numeric/dim.md:29
+#: ../../doc/src/intrinsics/numeric/mod.md:45
+msgid "Supported argument types are real and integer."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/abs.md:98
+#: ../../doc/src/intrinsics/numeric/aimag.md:70
+#: ../../doc/src/intrinsics/numeric/mod.md:97
+msgid "[ceiling](ceiling.md), [floor](floor.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:1
+msgid "aimag(x): Imaginary Part"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:3
+msgid "Imaginary part of complex number."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:17
+msgid "`x` the input value must be of complex type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:21
+msgid "The return value is imaginary part of type real and kind same as of `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:25
+msgid "**aimag(x)** returns the imaginary part of the input complex argument `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:27
+#: ../../doc/src/intrinsics/numeric/cmplx.md:41
+#: ../../doc/src/intrinsics/numeric/conjg.md:27
+msgid ""
+"For `x` complex input value, the result is calculated using mathematical "
+"formula:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:31
+#: ../../doc/src/intrinsics/numeric/cmplx.md:45
+#: ../../doc/src/intrinsics/numeric/conjg.md:31
+msgid "$i$ the imaginary part is the result."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aimag.md:35
+msgid "Supported argument types are complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:1
+msgid "aint(x, [kind]): Truncate to a Whole Number"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:3
+msgid "Truncate to a whole number."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:16
+#: ../../doc/src/intrinsics/numeric/anint.md:16
+#: ../../doc/src/intrinsics/numeric/epsilon.md:16
+#: ../../doc/src/intrinsics/numeric/erf.md:16
+#: ../../doc/src/intrinsics/numeric/erfc.md:16
+#: ../../doc/src/intrinsics/numeric/floor.md:16
+msgid "`x` the input value must be of type real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:18
+#: ../../doc/src/intrinsics/numeric/anint.md:18
+msgid "`kind` the optional input parameter initialises the kind of the result."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:22
+#: ../../doc/src/intrinsics/numeric/anint.md:22
+msgid ""
+"The return value is of type integer(kind) if kind is passed as input "
+"parameter. If not, default kind real is returned."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:25
+msgid ""
+"The return value is equal to or nearest largest whole number greater than"
+" or equal to `x` not exceeding its magnitude."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:30
+msgid ""
+"**aint(x)** returns the nearest largest whole number greater than or "
+"equal to `x` not exceeding input value's magnitude."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:33
+#: ../../doc/src/intrinsics/numeric/anint.md:36
+msgid "The optional parameter `kind` specifies the kind of the result."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:37
+#: ../../doc/src/intrinsics/numeric/anint.md:40
+#: ../../doc/src/intrinsics/numeric/epsilon.md:31
+#: ../../doc/src/intrinsics/numeric/erf.md:35
+#: ../../doc/src/intrinsics/numeric/erfc.md:38
+#: ../../doc/src/intrinsics/numeric/floor.md:35
+#: ../../doc/src/intrinsics/numeric/gamma.md:40
+msgid "Supported argument types is real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/aint.md:57
+#: ../../doc/src/intrinsics/numeric/floor.md:85
+msgid "[ceiling](ceiling.md), [mod](mod.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:1
+msgid "anint(x, [kind]): Round to Nearest Whole Number"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:3
+msgid "Round to nearest whole number."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:25
+msgid "The return value is equal to rounded whole number."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:29
+msgid "**anint(x)** calculates rounded value of input parameter `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:31
+msgid ""
+"If `x` is less than or equal to 0 i.e., if `x` is negative or 0, "
+"`anint(x)` returns `aint(x - 0.5)`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:34
+msgid "If `x` is greater than 0, `anint(x)` returns `aint(x + 0.5)`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/anint.md:60
+msgid "[aint](aint.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:1
+msgid "ceiling(x): Integer Ceiling"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:3
+msgid "Integer ceiling function"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:16
+msgid "The input value `x` may be of type real or integer."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:20
+msgid "The return value is of type integer and nearest greater integer."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:24
+msgid "**ceiling(x)** returns the least integer greater than or equal to `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:28
+msgid "Supported input parameter types are integer and real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/ceiling.md:66
+msgid "[floor](floor.md), [mod](mod.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:1
+msgid "cmplx(x [, [, kind]]): Convert to Complex"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:3
+msgid "Conversion to complex type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:14
+msgid "`cmplx(x, y)` is one of the intrinsic present in ASR."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:18
+msgid ""
+"`x` the input value must be of integer, real, or complex. `y` the "
+"optional input value must be of type integer or real. It should be only "
+"present in case `x` is not complex. `kind` the optional input value of "
+"integer expression type for initialisation indicating the kind parameter "
+"of the result."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:26
+msgid ""
+"The return value is of complex type, with a kind defined by input `kind` "
+"type specified. If the `kind` is not specified, the return value is of "
+"default `kind` `complex` type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:32
+msgid ""
+"**cmplx(x, [, y [, kind]])** converts the input value to complex "
+"representation:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:34
+msgid ""
+"`x` to real component of complex number. if `y` is present, it is "
+"converted to the imaginary component."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:37
+msgid "If `y` is not present, the imaginary component is set to 0.0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:39
+msgid "If `x` is complex then `y` must not be present."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/cmplx.md:49
+msgid "Supported argument types are integer, real, or complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:1
+msgid "conjg(x): Complex Conjugate"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:3
+msgid "Complex conjugate function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:17
+msgid "`x` the input value must be of type complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:21
+msgid "The return value is of complex type."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:25
+msgid "**conjg(x)** converts the input value `x`  to its conjugate."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:29
+msgid "$x + iy$ converted to $x - iy$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/conjg.md:35
+msgid "Supported argument types is complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/digits.md:1
+msgid "digits(x): Significant Binary Digits"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/digits.md:3
+msgid "Significant binary digits."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/digits.md:15
+msgid "`x` the input value must be of type real or integer."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/digits.md:23
+msgid ""
+"**digits(x)** returns the number of significant binary digits of the "
+"internal mopdel representation of `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/dim.md:1
+msgid "dim(x, y): Positive Difference or 0"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/dim.md:3
+msgid "Positive difference or 0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/dim.md:15
+msgid ""
+"`x` the input value must be of type real or integer. `y` the input value "
+"must of of the same type and kind as of `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/dim.md:20
+msgid "The return value is of type integer or real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/dim.md:24
+msgid ""
+"**dim(x)** computes the difference $x - y$, if the result is positive, "
+"otherwise returns 0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/epsilon.md:1
+msgid "epsilon(x): Epsilon"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/epsilon.md:3
+msgid "Epsilon function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/epsilon.md:20
+msgid "The return value is of same type as of the input argument."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/epsilon.md:24
+msgid ""
+"**epsilon(x)** computes the smallest number $\\epsilon$ of the same kind "
+"as `x` following:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/epsilon.md:27
+msgid "$1 + \\epsilon > 1$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:1
+msgid "erf(x): Error"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:3
+msgid "Error function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:20
+msgid ""
+"The return value is of type real and of the same kind as of the input "
+"parameter `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:25
+#: ../../doc/src/intrinsics/numeric/erfc.md:25
+msgid ""
+"**erf(x)** computes the error function of `x`. The result lies in the "
+"range:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:27
+msgid "$-1 \\leq erf (x) \\leq 1$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:31
+msgid "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erf.md:69
+msgid "[erfc](erfc.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:1
+msgid "erfc(x): Complementary Error"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:3
+msgid "Complementary error function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:20
+msgid ""
+"The return value is of type real and of the same kind as of the input "
+"parameter `x`. `erfc(x)` returns $1 - erf(x)$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:27
+msgid "$0 \\leq erf (x) \\leq 2$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:31
+msgid "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:33
+msgid ""
+"It is used in instances when the large loss of relative accuracy occurs "
+"if `erf(x)` is called for large `x` and the result is subtracted from 1."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/erfc.md:72
+msgid "[erf](erf.md)."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:1
+msgid "exp(x): Exponential"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:3
+msgid "Exponential function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:16
+msgid "`x` the input value must be of type real or complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:20
+msgid "The return value is of same type as of the input argument, `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:24
+msgid "**exp(x)** computes the base $e$ exponential of `x`, i.e., $e^x$."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:26
+msgid ""
+"If `x` is of type complex, its imaginary part is considered as a value in"
+" radians."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/exp.md:31
+msgid "Supported argument types is real and complex."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:1
+msgid "floor(x, kind): Integer Floor"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:3
+msgid "Integer floor function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:18
+msgid ""
+"`kind` the optional input parameter must be a scalar integer constant "
+"expression."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:22
+msgid ""
+"The return value is of type integer(kind) if kind is passed as input "
+"parameter. If not, default kind integer is returned."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:25
+msgid ""
+"The return value is equal to or nearest greatest integer less than or "
+"equal to `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/floor.md:30
+msgid ""
+"**floor(x)** returns the greatest integer less than or equal to x. It "
+"returns an integer value unless spefically specified using second "
+"optional paramter."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:1
+msgid "gamma(x): Gamma"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:3
+msgid "Gamma function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:16
+msgid ""
+"`x` the input value must be of type real. It should not be zero or a "
+"negative integer."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:21
+msgid "The return value is of same type and kind as of `x`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:25
+msgid ""
+"**gamma(x)** computes $\\gamma(x)$. For positive, integer value of `x`, "
+"the Gamma function simplifies to factorial function:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:28
+msgid "$\\gamma(x) = (x-1)!$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:30
+msgid "In general, if $x > 0$:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:32
+msgid "$\\gamma(x) = \\int_{0}^{\\infty} e^{-t} dt$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:34
+msgid "and if $-n-1 < x < -n$ where n is an integer >= 0:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:36
+msgid ""
+"$\\gamma(x) = \\int_{0}^{\\infty}(e ^{-t} - \\sum\\limits_{k=0}^n "
+"\\frac{(-t)^k}{k!} dt)$"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/gamma.md:76
+msgid "[epsilon](epsilon.md)"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:1
+msgid "mod(x, y): Modulus"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:3
+msgid "Modulus or remainder function."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:17
+msgid "`x` the input value, can be integer or real."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:19
+msgid ""
+"`y` second input parameter should be same type and kind as `x` and not "
+"equal to 0."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:24
+msgid ""
+"The return value is of type and kind same as of `x`. The result is "
+"calculated using mathematical modulo or remainder as:"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:27
+msgid "`x - INT (x / y) * y`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:29
+msgid "If `y` is 0, the result is undefined like `any integer value / 0`."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:33
+msgid ""
+"**mod(x, y)** calculates and returns modulo or remainder when `x` is "
+"divided by `y`. The result is calculated using"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:36
+msgid "`x - INT(x / y) * y`"
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:38
+msgid ""
+"i.e., result is remainder when first argument is mathematically divided "
+"by second argument."
+msgstr ""
+
+#: ../../doc/src/intrinsics/numeric/mod.md:41
+msgid "The return value should be less than `y`."
+msgstr ""
+
+#: ../../doc/src/language.md:1
+msgid "Fortran Language"
+msgstr ""
+
+#: ../../doc/src/language.md:3
+msgid "Background and Motivation"
+msgstr ""
+
+#: ../../doc/src/language.md:5
+msgid ""
+"Fortran was designed from the ground up to naturally and simply translate"
+" mathematics to code that compiles and runs at maximum speed. And being "
+"specifically targeted for such fundamentally computational tasks, it "
+"contains a broad range of key functionality within the language itself, "
+"standard across all platforms, with no need for external libraries that "
+"may or may not be well optimized or maintained, at present or down the "
+"road."
+msgstr ""
+
+#: ../../doc/src/language.md:12
+msgid "Some highlights:"
+msgstr ""
+
+#: ../../doc/src/language.md:14
+msgid ""
+"Multidimensional arrays which can be allocated and indexed as the "
+"math/science dictates (not restricted to start at 0 or 1) and can be "
+"sliced as desired (as, e.g., in MATLAB);"
+msgstr ""
+
+#: ../../doc/src/language.md:17
+msgid ""
+"Operators which operate naturally upon the aforementioned "
+"arrays/matrices, as they do scalars;"
+msgstr ""
+
+#: ../../doc/src/language.md:19
+msgid "Complex numbers;"
+msgstr ""
+
+#: ../../doc/src/language.md:20
+msgid "Special functions;"
+msgstr ""
+
+#: ../../doc/src/language.md:21
+msgid "Structures and pointers for more general data representation."
+msgstr ""
+
+#: ../../doc/src/language.md:23
+msgid ""
+"Because the essentials are contained in the language itself, it is simple"
+" to read and write, without need of choosing from among or deciphering a "
+"proliferation of external classes to do the same thing. And because the "
+"essentials are self-contained, compilers can provide detailed compile-"
+"time (e.g., argument mismatch) and run-time (e.g., memory access) checks,"
+" as well as highly optimized executables, directly from natural, readable"
+" code without need of extensive optimization heroics by the developer."
+msgstr ""
+
+#: ../../doc/src/language.md:31
+msgid "See our blog posts for more information:"
+msgstr ""
+
+#: ../../doc/src/language.md:33
+msgid ""
+"[Why We Created LFortran](https://lfortran.org/blog/2019/04/why-we-"
+"created-lfortran/)"
+msgstr ""
+
+#: ../../doc/src/language.md:34
+msgid ""
+"[Why to Use Fortran For New Projects](https://lfortran.org/blog/2019/05"
+"/why-to-use-fortran-for-new-projects/)"
+msgstr ""
+
+#: ../../doc/src/language.md:36
+msgid "How to Learn Fortran"
+msgstr ""
+
+#: ../../doc/src/language.md:38
+msgid ""
+"Fortran is relatively quick to learn because it is so much simpler and "
+"smaller than C/C++ (in practice, that is, with all needed libraries "
+"included). If you are interested in learning more, please see our webpage"
+" at [fortran90.org] with recommended practices for writing code, side by "
+"side comparison with Python/NumPy, links to other online Fortran "
+"resources and books, and an FAQ."
+msgstr ""
+
+#: ../../doc/src/progress.md:3
+msgid ""
+"This page documents what Fortran features are supported by LFortran. For "
+"each feature we list a short description, the filename with the test and "
+"current status for each parts of the compiler:"
+msgstr ""
+
+#: ../../doc/src/progress.md:7
+msgid "AST: The code can be parsed to AST (`lfortran --show-ast test.f90`)"
+msgstr ""
+
+#: ../../doc/src/progress.md:8
+msgid "ASR: The code can be transformed to ASR (`lfortran --show-asr test.f90`)"
+msgstr ""
+
+#: ../../doc/src/progress.md:9
+msgid "LLVM: LFortran can generate LLVM IR (`lfortran --show-llvm test.f90`)"
+msgstr ""
+
+#: ../../doc/src/progress.md:10
+msgid "BIN: The LLVM IR can compile to a binary"
+msgstr ""
+
+#: ../../doc/src/progress.md:11
+msgid "RUN: The binary runs without errors"
+msgstr ""
+
+#: ../../doc/src/progress.md:13
+msgid ""
+"If all are green it means the feature fully works and you can use it in "
+"your codes. Otherwise you can see what the status is of each feature."
+msgstr ""
+
+#: ../../doc/src/progress.md:16
+msgid ""
+"This page is generated automatically using the [Compiler "
+"Tester](https://gitlab.com/lfortran/compiler_tester) repository which "
+"contains all the Fortran tests and scripts to run LFortran to produce the"
+" tables below. We are looking for contributors to contribute more tests. "
+"Our goal is to have a comprehensive Fortran testsuite that can be used to"
+" test any Fortran compiler."
+msgstr ""
+
+#: ../../doc/src/progress.md:23
+msgid "Testing the LFortran compiler version:"
+msgstr ""
+
+#: ../../doc/src/progress.md:32
+msgid "Topics"
+msgstr ""
+
+#: ../../doc/src/progress.md:34
+msgid "Full programs that compute something interesting"
+msgstr ""
+
+#: ../../doc/src/progress.md:36
+msgid "Basic Numerics"
+msgstr ""
+
+#: ../../doc/src/progress.md:38
+msgid "Directory: `tests/programs/numerics`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "LLVM"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "BIN"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "RUN"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "Filename"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Pure Fortran sin(x) implementation`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "✅"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:45
+msgid "Modules"
+msgstr ""
+
+#: ../../doc/src/progress.md:47
+msgid "Basic Usage"
+msgstr ""
+
+#: ../../doc/src/progress.md:49
+msgid "Directory: `tests/modules/basic`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Basic modules`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/basic/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:56
+msgid "Module Functions and Subroutines"
+msgstr ""
+
+#: ../../doc/src/progress.md:58
+msgid "Directory: `tests/modules/procedures`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Module functions`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Module subroutines`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t02.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Nested subroutines`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t03.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:67
+msgid "Expressions"
+msgstr ""
+
+#: ../../doc/src/progress.md:69
+msgid "Arithmetic Operations"
+msgstr ""
+
+#: ../../doc/src/progress.md:71
+msgid "Directory: `tests/expressions/arit`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`+,-,*,/,**`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/arit/basic_operations.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:78
+msgid "Integers"
+msgstr ""
+
+#: ../../doc/src/progress.md:80
+msgid "Directory: `tests/expressions/integers`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`integers`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/integer_kind.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`relational operations`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t01_rel_operations.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`logical operations`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t02_logical_operations.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:89
+msgid "Real Numbers"
+msgstr ""
+
+#: ../../doc/src/progress.md:91
+msgid "Directory: `tests/expressions/reals`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`single/double reals`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/real_kind.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`defined operator`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "❌"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/t01_def_op.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:99
+msgid "Complex Numbers"
+msgstr ""
+
+#: ../../doc/src/progress.md:101
+msgid "Directory: `tests/expressions/complex`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`single/double complex`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/complex/complex_kind.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:108
+msgid "Strings"
+msgstr ""
+
+#: ../../doc/src/progress.md:110
+msgid "Directory: `tests/expressions/character`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`character`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t01_character.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`string concatenation`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t02_concat_operation.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:118
+msgid "Derived Types"
+msgstr ""
+
+#: ../../doc/src/progress.md:120
+msgid "Directory: `tests/expressions/derived_type`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`basic derived types`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/derived_type/t01_derived_type.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:127
+msgid "Statements"
+msgstr ""
+
+#: ../../doc/src/progress.md:129
+msgid "Allocate Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:131
+msgid "Directory: `tests/statements/allocate`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`allocate statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/allocate/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:138
+msgid "Block Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:140
+msgid "Directory: `tests/statements/block`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`block statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/block/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:147
+msgid "Goto Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:149
+msgid "Directory: `tests/statements/goto`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`computed go-to statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`go-to statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t02.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:157
+msgid "If Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:159
+msgid "Directory: `tests/statements/if`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Test .false.`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`single line if statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_02.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`multi line if statement`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_03.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`nested if statements`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_04.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:169
+msgid "While Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:171
+msgid "Directory: `tests/statements/while`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Simple while loops`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`exit / cycle in while loops`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_02.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:179
+msgid "Print Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:181
+msgid "Directory: `tests/statements/print`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`Basic print`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/print/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:188
+msgid "Open, Read, Write, Close Statement"
+msgstr ""
+
+#: ../../doc/src/progress.md:190
+msgid "Directory: `tests/statements/file_io`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`open/read/write/close`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/file_io/t01.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:197
+msgid "Intrinsic Functions"
+msgstr ""
+
+#: ../../doc/src/progress.md:199
+msgid "abs"
+msgstr ""
+
+#: ../../doc/src/progress.md:201
+msgid "Directory: `tests/intrinsic/abs`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`scalar single/double real`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`scalar single/double complex`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "`array 1D single/double real`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:210
+msgid "exp"
+msgstr ""
+
+#: ../../doc/src/progress.md:212
+msgid "Directory: `tests/intrinsic/exp`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:221
+msgid "log"
+msgstr ""
+
+#: ../../doc/src/progress.md:223
+msgid "Directory: `tests/intrinsic/log`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:232
+msgid "sqrt"
+msgstr ""
+
+#: ../../doc/src/progress.md:234
+msgid "Directory: `tests/intrinsic/sqrt`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:243
+msgid "sin"
+msgstr ""
+
+#: ../../doc/src/progress.md:245
+msgid "Directory: `tests/intrinsic/sin`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:254
+msgid "cos"
+msgstr ""
+
+#: ../../doc/src/progress.md:256
+msgid "Directory: `tests/intrinsic/cos`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:265
+msgid "tan"
+msgstr ""
+
+#: ../../doc/src/progress.md:267
+msgid "Directory: `tests/intrinsic/tan`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:276
+msgid "sinh"
+msgstr ""
+
+#: ../../doc/src/progress.md:278
+msgid "Directory: `tests/intrinsic/sinh`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:287
+msgid "cosh"
+msgstr ""
+
+#: ../../doc/src/progress.md:289
+msgid "Directory: `tests/intrinsic/cosh`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:298
+msgid "tanh"
+msgstr ""
+
+#: ../../doc/src/progress.md:300
+msgid "Directory: `tests/intrinsic/tanh`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:309
+msgid "asin"
+msgstr ""
+
+#: ../../doc/src/progress.md:311
+msgid "Directory: `tests/intrinsic/asin`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:320
+msgid "acos"
+msgstr ""
+
+#: ../../doc/src/progress.md:322
+msgid "Directory: `tests/intrinsic/acos`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:331
+msgid "atan"
+msgstr ""
+
+#: ../../doc/src/progress.md:333
+msgid "Directory: `tests/intrinsic/atan`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t02_scalar_complex.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:342
+msgid "modulo"
+msgstr ""
+
+#: ../../doc/src/progress.md:344
+msgid "Directory: `tests/intrinsic/modulo`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:352
+msgid "mod"
+msgstr ""
+
+#: ../../doc/src/progress.md:354
+msgid "Directory: `tests/intrinsic/mod`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t03_array1d_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:362
+msgid "min"
+msgstr ""
+
+#: ../../doc/src/progress.md:364
+msgid "Directory: `tests/intrinsic/min`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/min/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:371
+msgid "max"
+msgstr ""
+
+#: ../../doc/src/progress.md:373
+msgid "Directory: `tests/intrinsic/max`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/max/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:380
+msgid "int"
+msgstr ""
+
+#: ../../doc/src/progress.md:382
+msgid "Directory: `tests/intrinsic/int`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/int/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:389
+msgid "real"
+msgstr ""
+
+#: ../../doc/src/progress.md:391
+msgid "Directory: `tests/intrinsic/real`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/real/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:398
+msgid "floor"
+msgstr ""
+
+#: ../../doc/src/progress.md:400
+msgid "Directory: `tests/intrinsic/floor`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/floor/t01_scalar_real.f90)"
+msgstr ""
+
+#: ../../doc/src/progress.md:407
+msgid "nint"
+msgstr ""
+
+#: ../../doc/src/progress.md:409
+msgid "Directory: `tests/intrinsic/nint`"
+msgstr ""
+
+#: ../../doc/src/progress.md
+msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
+msgstr ""

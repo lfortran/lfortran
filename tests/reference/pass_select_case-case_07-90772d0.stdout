@@ -1,0 +1,409 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            case_07:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            test_case:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            c:
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    3
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    test_case
+                                    (FunctionType
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 c)]
+                                    [(If
+                                        ()
+                                        (LogicalBinOp
+                                            (StringCompare
+                                                (StringConstant
+                                                    "a"
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                LtE
+                                                (Var 3 c)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            And
+                                            (StringCompare
+                                                (Var 3 c)
+                                                LtE
+                                                (StringConstant
+                                                    "j"
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 3 res)
+                                            (StringConstant
+                                                "a:j"
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (Print
+                                            (StringConstant
+                                                "one of the first ten letters"
+                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )]
+                                        [(If
+                                            ()
+                                            (LogicalBinOp
+                                                (StringCompare
+                                                    (StringConstant
+                                                        "l"
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    LtE
+                                                    (Var 3 c)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (StringCompare
+                                                    (Var 3 c)
+                                                    LtE
+                                                    (StringConstant
+                                                        "p"
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(Assignment
+                                                (Var 3 res)
+                                                (StringConstant
+                                                    "l:p"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                ()
+                                                .false.
+                                                .false.
+                                            )
+                                            (Print
+                                                (StringConstant
+                                                    "one of l, m, n, o, p"
+                                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                            )]
+                                            [(If
+                                                ()
+                                                (StringCompare
+                                                    (Var 3 c)
+                                                    Eq
+                                                    (StringConstant
+                                                        "z"
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(Assignment
+                                                    (Var 3 res)
+                                                    (StringConstant
+                                                        "z"
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                                (Print
+                                                    (StringConstant
+                                                        "one of z"
+                                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                )]
+                                                [(Assignment
+                                                    (Var 3 res)
+                                                    (StringConstant
+                                                        "not found"
+                                                        (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                                (Print
+                                                    (StringConstant
+                                                        "other characters, which may not be letters"
+                                                        (String 1 (IntegerConstant 42 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                )]
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 3 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    case_07
+                    []
+                    [(If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "a"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "a:j"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "d"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "a:j"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "l"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "l:p"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "p"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "l:p"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "z"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "z"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "k"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "not found"
+                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (FunctionCall
+                                2 test_case
+                                ()
+                                [((StringConstant
+                                    "r"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ))]
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "not found"
+                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

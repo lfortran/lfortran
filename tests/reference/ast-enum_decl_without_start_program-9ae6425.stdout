@@ -1,0 +1,33 @@
+(TranslationUnit
+    [(Program
+        __xx_main
+        ()
+        []
+        []
+        [(Enum
+            [(AttrBind
+                (Bind
+                    [c]
+                    []
+                )
+            )]
+            ()
+            [(Declaration
+                ()
+                [(SimpleAttribute
+                    AttrEnumerator
+                )]
+                [(yellow
+                []
+                []
+                ()
+                ()
+                None
+                ())]
+                ()
+            )]
+        )]
+        []
+        []
+    )]
+)

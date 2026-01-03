@@ -1,0 +1,354 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array12:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
+                            c_char:
+                                (ExternalSymbol
+                                    2
+                                    c_char
+                                    4 c_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_char
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    2
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            get_current_directory:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            buffersize:
+                                                (Variable
+                                                    12
+                                                    buffersize
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 1000 (Integer 4) Decimal)
+                                                    (IntegerConstant 1000 (Integer 4) Decimal)
+                                                    Parameter
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            cpath:
+                                                (Variable
+                                                    12
+                                                    cpath
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    12
+                                                    path
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            tmp:
+                                                (Variable
+                                                    12
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    get_current_directory
+                                    (FunctionType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [getcwd]
+                                    [(Var 12 path)]
+                                    [(Allocate
+                                        [((Var 12 cpath)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1000 (Integer 4) Decimal))]
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (Var 12 tmp)
+                                        (FunctionCall
+                                            2 getcwd
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 12 cpath)
+                                                DescriptorArray
+                                                StringArraySinglePointer
+                                                (Array
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    [(()
+                                                    ())]
+                                                    StringArraySinglePointer
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 12 buffersize))]
+                                            (CPtr)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (PointerAssociated
+                                            (Var 12 tmp)
+                                            ()
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Print
+                                            (StringFormat
+                                                ()
+                                                [(StringConstant
+                                                    "PWD: "
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Var 12 tmp)]
+                                                FormatFortran
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            getcwd:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            buf:
+                                                (Variable
+                                                    11
+                                                    buf
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)
+                                                        [(()
+                                                        ())]
+                                                        StringArraySinglePointer
+                                                    )
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            bufsize:
+                                                (Variable
+                                                    11
+                                                    bufsize
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    11
+                                                    path
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    getcwd
+                                    (FunctionType
+                                        [(Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)
+                                            [(()
+                                            ())]
+                                            StringArraySinglePointer
+                                        )
+                                        (Integer 4)]
+                                        (CPtr)
+                                        BindC
+                                        Interface
+                                        "getcwd"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 buf)
+                                    (Var 11 bufsize)]
+                                    []
+                                    (Var 11 path)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    array12
+                    ()
+                    [iso_c_binding
+                    array12]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
+        })
+    []
+)

@@ -1,0 +1,13 @@
+{
+    "basename": "asr_enable_style_suggestion-style1-a2fdd22",
+    "cmd": "lfortran --std=f23 --style-suggestions --no-color {infile}",
+    "infile": "tests/style1.f90",
+    "infile_hash": "b37bbb3e24a2bceae58e25b574ccb9dea7fbe05441c08c9e4fa5add6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_enable_style_suggestion-style1-a2fdd22.stdout",
+    "stdout_hash": "b9b26c3fdb75ebc34cfc47d12c11351182a0284088440bead4ae1daf",
+    "stderr": "asr_enable_style_suggestion-style1-a2fdd22.stderr",
+    "stderr_hash": "0a91582db826ba18d127e9a1beca1da3483df9469fed545f6c902f35",
+    "returncode": 0
+}

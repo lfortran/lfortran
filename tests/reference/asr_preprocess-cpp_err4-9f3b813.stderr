@@ -1,0 +1,5 @@
+C preprocessor error: Include file 'does_not_exist.inc' not found. If an include path is available, please use the `-I` option to specify it.
+ --> tests/errors/cpp_err4.f90:2:11
+  |
+2 | #include "does_not_exist.inc"
+  |           ^^^^^^^^^^^^^^^^^^ 

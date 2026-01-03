@@ -1,0 +1,5 @@
+C preprocessor error: Unterminated #ifdef
+ --> tests/errors/unterminated_ifdef_01.f90:1:1
+  |
+1 | #ifdef a
+  | ^ 

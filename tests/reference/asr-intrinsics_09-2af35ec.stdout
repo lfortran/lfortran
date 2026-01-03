@@ -1,0 +1,77 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_09:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    intrinsics_09
+                    []
+                    [(If
+                        ()
+                        (RealCompare
+                            (Var 2 z)
+                            Lt
+                            (TypeInquiry
+                                Tiny
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(Print
+                            (StringFormat
+                                ()
+                                [(Var 2 z)]
+                                FormatFortran
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

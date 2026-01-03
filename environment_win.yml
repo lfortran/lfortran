@@ -1,0 +1,20 @@
+name: lf
+channels:
+  - conda-forge
+dependencies:
+  - llvmdev=11.1.0
+  - toml
+  - pytest
+  - jupyter
+  - xeus=5.1.0
+  - xeus-zmq=3.0.0
+  - nlohmann_json=3.11.3
+  - jupyter_kernel_test
+  - xonsh=0.16.0
+  - re2c
+  - numpy
+  - ninja
+  - m2-bison=3.0.4
+  - git
+  - cmake
+  - zlib

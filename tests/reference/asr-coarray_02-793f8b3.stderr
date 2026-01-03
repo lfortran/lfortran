@@ -1,0 +1,5 @@
+semantic error: Coarrays are not supported yet
+ --> tests/errors/coarray_02.f90:2:5
+  |
+2 |     call event_query(1, 1, 1)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 

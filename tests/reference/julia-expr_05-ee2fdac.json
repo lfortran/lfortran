@@ -1,0 +1,13 @@
+{
+    "basename": "julia-expr_05-ee2fdac",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/expr_05.f90",
+    "infile_hash": "ab6fcfdb7d7b127b347b822368c1a3d22c7241a82453de78dd535c05",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-expr_05-ee2fdac.stdout",
+    "stdout_hash": "7deee894fa5887f2a3c037b0ccee9c3981a7b3bc3ddc57440f6a9bca",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

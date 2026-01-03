@@ -1,0 +1,13 @@
+{
+    "basename": "asr-open_notimplemented_kwarg1-24818cb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/open_notimplemented_kwarg1.f90",
+    "infile_hash": "7571e57fc2000c98f3c9509df26eb64375f1393ab142090b7a86e7a2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-open_notimplemented_kwarg1-24818cb.stdout",
+    "stdout_hash": "14f2c09a3290e123df4fc81462af07c4e21e8919efc08b078e9f82f1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

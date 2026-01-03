@@ -1,0 +1,14 @@
+function main()
+    local a::Array{Float32, 1}
+    local b::Array{Float32, 1}
+    local c::Array{Int32, 1}
+    local d::Array{Bool, 1}
+    local e::Array{Float32, 2}
+    local f::Array{Int32, 2}
+    local g::Array{Bool, 2}
+    local h::Array{Float32, 3}
+    local i::Array{Int32, 3}
+    local j::Array{Bool, 3}
+end
+
+main()

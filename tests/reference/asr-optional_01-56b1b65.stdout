@@ -1,0 +1,99 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            optmod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            optional_argument:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            name:
+                                                (Variable
+                                                    3
+                                                    name
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    optional_argument
+                                    (FunctionType
+                                        [(String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 name)]
+                                    [(If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 name)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Print
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(StringConstant
+                                                    "Hello "
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Var 3 name)]
+                                                0
+                                                (String 1 (IntegerConstant 16 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                                ()
+                                            )
+                                        )]
+                                        [(Print
+                                            (StringConstant
+                                                "Hello world!"
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    optmod
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

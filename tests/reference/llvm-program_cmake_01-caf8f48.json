@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-program_cmake_01-caf8f48",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/program_cmake_01.f90",
+    "infile_hash": "0e854d9b2ed613d6193d78290dc20a45ec66f60ab17e1c0229c3febe",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-program_cmake_01-caf8f48.stdout",
+    "stdout_hash": "284a0c8feb908444c048bb667989c6c3f580a7a907f1d3953cb06df0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

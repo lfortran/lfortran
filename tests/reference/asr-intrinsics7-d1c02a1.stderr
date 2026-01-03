@@ -1,0 +1,5 @@
+semantic error: Kind of all the arguments of Hypot must be the same
+ --> tests/errors/intrinsics7.f90:2:14
+  |
+2 |     print *, hypot(1.0, 2.7_8)
+  |              ^^^^^^^^^^^^^^^^^ 

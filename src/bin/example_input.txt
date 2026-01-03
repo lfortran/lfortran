@@ -1,0 +1,3 @@
+integer a
+a = 500
+print *, a

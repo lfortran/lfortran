@@ -1,0 +1,2124 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            tomlf_datetime:
+                (Module
+                    (SymbolTable
+                        7
+                        {
+                            date_to_string:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            1_toml_date_day:
+                                                (ExternalSymbol
+                                                    11
+                                                    1_toml_date_day
+                                                    8 day
+                                                    toml_date
+                                                    []
+                                                    day
+                                                    Public
+                                                ),
+                                            1_toml_date_month:
+                                                (ExternalSymbol
+                                                    11
+                                                    1_toml_date_month
+                                                    8 month
+                                                    toml_date
+                                                    []
+                                                    month
+                                                    Public
+                                                ),
+                                            1_toml_date_year:
+                                                (ExternalSymbol
+                                                    11
+                                                    1_toml_date_year
+                                                    8 year
+                                                    toml_date
+                                                    []
+                                                    year
+                                                    Public
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    11
+                                                    lhs
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    11
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    7 toml_date
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    date_to_string
+                                    (FunctionType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (StructType
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 lhs)
+                                    (Var 11 rhs)]
+                                    [(Allocate
+                                        [((Var 11 lhs)
+                                        []
+                                        (IntegerConstant 10 (Integer 4) Decimal)
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileWrite
+                                        0
+                                        (Var 11 lhs)
+                                        ()
+                                        ()
+                                        ()
+                                        [(StringFormat
+                                            (StringConstant
+                                                "(i4.4,\"-\",i2.2,\"-\",i2.2)"
+                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                            [(StructInstanceMember
+                                                (Var 11 rhs)
+                                                11 1_toml_date_year
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 11 rhs)
+                                                11 1_toml_date_month
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 11 rhs)
+                                                11 1_toml_date_day
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                        ()
+                                        .true.
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            datetime_to_string:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            1_toml_date_date_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_date_date_to_string
+                                                    8 to_string
+                                                    toml_date
+                                                    []
+                                                    to_string
+                                                    Public
+                                                ),
+                                            1_toml_datetime_date:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_datetime_date
+                                                    9 date
+                                                    toml_datetime
+                                                    []
+                                                    date
+                                                    Public
+                                                ),
+                                            1_toml_datetime_time:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_datetime_time
+                                                    9 time
+                                                    toml_datetime
+                                                    []
+                                                    time
+                                                    Public
+                                                ),
+                                            1_toml_time_time_to_string:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_time_time_to_string
+                                                    10 to_string
+                                                    toml_time
+                                                    []
+                                                    to_string
+                                                    Public
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    12
+                                                    lhs
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    12
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    7 toml_datetime
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            temporary:
+                                                (Variable
+                                                    12
+                                                    temporary
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    datetime_to_string
+                                    (FunctionType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (StructType
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    (Integer 4)
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [time_to_string]
+                                    [(Var 12 lhs)
+                                    (Var 12 rhs)]
+                                    [(If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 12 rhs)
+                                                12 1_toml_datetime_date
+                                                (Allocatable
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            12 1_toml_date_date_to_string
+                                            ()
+                                            [((Var 12 lhs))]
+                                            (StructInstanceMember
+                                                (Var 12 rhs)
+                                                12 1_toml_datetime_date
+                                                (Allocatable
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            .false.
+                                        )
+                                        (If
+                                            ()
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
+                                                    (Var 12 rhs)
+                                                    12 1_toml_datetime_time
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(SubroutineCall
+                                                12 1_toml_time_time_to_string
+                                                ()
+                                                [((Var 12 temporary))]
+                                                (StructInstanceMember
+                                                    (Var 12 rhs)
+                                                    12 1_toml_datetime_time
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )
+                                                .false.
+                                            )
+                                            (Assignment
+                                                (Var 12 lhs)
+                                                (IntrinsicElementalFunction
+                                                    StringConcat
+                                                    [(Var 12 lhs)
+                                                    (Var 12 temporary)]
+                                                    0
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                    ()
+                                                )
+                                                ()
+                                                .false.
+                                                .false.
+                                            )]
+                                            []
+                                        )]
+                                        [(If
+                                            ()
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
+                                                    (Var 12 rhs)
+                                                    12 1_toml_datetime_time
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(Assignment
+                                                (Var 12 lhs)
+                                                (StructInstanceMember
+                                                    (Var 12 rhs)
+                                                    12 1_toml_datetime_time
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )
+                                                (SubroutineCall
+                                                    7 time_to_string
+                                                    7 time_to_string
+                                                    [((Var 12 lhs))
+                                                    ((StructInstanceMember
+                                                        (Var 12 rhs)
+                                                        12 1_toml_datetime_time
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        ()
+                                                    ))]
+                                                    ()
+                                                    .false.
+                                                )
+                                                .false.
+                                                .false.
+                                            )]
+                                            []
+                                        )]
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            new_toml_time:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            1_toml_time_hour:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_time_hour
+                                                    10 hour
+                                                    toml_time
+                                                    []
+                                                    hour
+                                                    Public
+                                                ),
+                                            1_toml_time_millisec:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_time_millisec
+                                                    10 millisec
+                                                    toml_time
+                                                    []
+                                                    millisec
+                                                    Public
+                                                ),
+                                            1_toml_time_minute:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_time_minute
+                                                    10 minute
+                                                    toml_time
+                                                    []
+                                                    minute
+                                                    Public
+                                                ),
+                                            1_toml_time_second:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_time_second
+                                                    10 second
+                                                    toml_time
+                                                    []
+                                                    second
+                                                    Public
+                                                ),
+                                            1_toml_time_zone:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_time_zone
+                                                    10 zone
+                                                    toml_time
+                                                    []
+                                                    zone
+                                                    Public
+                                                ),
+                                            hour:
+                                                (Variable
+                                                    13
+                                                    hour
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            millisec:
+                                                (Variable
+                                                    13
+                                                    millisec
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            minute:
+                                                (Variable
+                                                    13
+                                                    minute
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            second:
+                                                (Variable
+                                                    13
+                                                    second
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    13
+                                                    self
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    7 toml_time
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            zone:
+                                                (Variable
+                                                    13
+                                                    zone
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    new_toml_time
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (String 1 () AssumedLength DescriptorString)]
+                                        (StructType
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 hour)
+                                    (Var 13 minute)
+                                    (Var 13 second)
+                                    (Var 13 millisec)
+                                    (Var 13 zone)]
+                                    [(If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 13 hour)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_toml_time_hour
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Var 13 hour)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 13 minute)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_toml_time_minute
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Var 13 minute)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 13 second)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_toml_time_second
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Var 13 second)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 13 millisec)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_toml_time_millisec
+                                                (Allocatable
+                                                    (Integer 4)
+                                                )
+                                                ()
+                                            )
+                                            (Var 13 millisec)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 13 zone)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_toml_time_zone
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                            (Var 13 zone)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    (Var 13 self)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            time_to_string:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            1_toml_time_hour:
+                                                (ExternalSymbol
+                                                    14
+                                                    1_toml_time_hour
+                                                    10 hour
+                                                    toml_time
+                                                    []
+                                                    hour
+                                                    Public
+                                                ),
+                                            1_toml_time_millisec:
+                                                (ExternalSymbol
+                                                    14
+                                                    1_toml_time_millisec
+                                                    10 millisec
+                                                    toml_time
+                                                    []
+                                                    millisec
+                                                    Public
+                                                ),
+                                            1_toml_time_minute:
+                                                (ExternalSymbol
+                                                    14
+                                                    1_toml_time_minute
+                                                    10 minute
+                                                    toml_time
+                                                    []
+                                                    minute
+                                                    Public
+                                                ),
+                                            1_toml_time_second:
+                                                (ExternalSymbol
+                                                    14
+                                                    1_toml_time_second
+                                                    10 second
+                                                    toml_time
+                                                    []
+                                                    second
+                                                    Public
+                                                ),
+                                            1_toml_time_zone:
+                                                (ExternalSymbol
+                                                    14
+                                                    1_toml_time_zone
+                                                    10 zone
+                                                    toml_time
+                                                    []
+                                                    zone
+                                                    Public
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    14
+                                                    lhs
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    14
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    7 toml_time
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    time_to_string
+                                    (FunctionType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (StructType
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 14 lhs)
+                                    (Var 14 rhs)]
+                                    [(If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 14 rhs)
+                                                14 1_toml_time_millisec
+                                                (Allocatable
+                                                    (Integer 4)
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Allocate
+                                            [((Var 14 lhs)
+                                            []
+                                            (IntegerConstant 12 (Integer 4) Decimal)
+                                            ()
+                                            ())]
+                                            ()
+                                            ()
+                                            ()
+                                        )
+                                        (FileWrite
+                                            0
+                                            (Var 14 lhs)
+                                            ()
+                                            ()
+                                            ()
+                                            [(StringFormat
+                                                (StringConstant
+                                                    "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
+                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                [(StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_hour
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_minute
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_second
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_millisec
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            ()
+                                            ()
+                                            ()
+                                            .true.
+                                        )]
+                                        [(Allocate
+                                            [((Var 14 lhs)
+                                            []
+                                            (IntegerConstant 8 (Integer 4) Decimal)
+                                            ()
+                                            ())]
+                                            ()
+                                            ()
+                                            ()
+                                        )
+                                        (FileWrite
+                                            0
+                                            (Var 14 lhs)
+                                            ()
+                                            ()
+                                            ()
+                                            [(StringFormat
+                                                (StringConstant
+                                                    "(i2.2,\":\",i2.2,\":\",i2.2)"
+                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                [(StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_hour
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_minute
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_second
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            ()
+                                            ()
+                                            ()
+                                            .true.
+                                        )]
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicImpureFunction
+                                            Allocated
+                                            [(StructInstanceMember
+                                                (Var 14 rhs)
+                                                14 1_toml_time_zone
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 14 lhs)
+                                            (IntrinsicElementalFunction
+                                                StringConcat
+                                                [(Var 14 lhs)
+                                                (IntrinsicElementalFunction
+                                                    StringTrim
+                                                    [(StructInstanceMember
+                                                        (Var 14 rhs)
+                                                        14 1_toml_time_zone
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (String 1 () DeferredLength DescriptorString)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_date:
+                                (Struct
+                                    (SymbolTable
+                                        8
+                                        {
+                                            day:
+                                                (Variable
+                                                    8
+                                                    day
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            month:
+                                                (Variable
+                                                    8
+                                                    month
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            to_string:
+                                                (StructMethodDeclaration
+                                                    8
+                                                    to_string
+                                                    rhs
+                                                    date_to_string
+                                                    7 date_to_string
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            year:
+                                                (Variable
+                                                    8
+                                                    year
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ~assign:
+                                                (CustomOperator
+                                                    8
+                                                    ~assign
+                                                    [8 to_string]
+                                                    Public
+                                                )
+                                        })
+                                    toml_date
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [year
+                                    month
+                                    day]
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            toml_datetime:
+                                (Struct
+                                    (SymbolTable
+                                        9
+                                        {
+                                            date:
+                                                (Variable
+                                                    9
+                                                    date
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    7 toml_date
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            time:
+                                                (Variable
+                                                    9
+                                                    time
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    7 toml_time
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            to_string:
+                                                (StructMethodDeclaration
+                                                    9
+                                                    to_string
+                                                    rhs
+                                                    datetime_to_string
+                                                    7 datetime_to_string
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ~assign:
+                                                (CustomOperator
+                                                    9
+                                                    ~assign
+                                                    [9 to_string]
+                                                    Public
+                                                )
+                                        })
+                                    toml_datetime
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Allocatable
+                                                    (Integer 4)
+                                                )
+                                                (Integer 4)
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [date
+                                    time]
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            toml_time:
+                                (Struct
+                                    (SymbolTable
+                                        10
+                                        {
+                                            hour:
+                                                (Variable
+                                                    10
+                                                    hour
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            millisec:
+                                                (Variable
+                                                    10
+                                                    millisec
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            minute:
+                                                (Variable
+                                                    10
+                                                    minute
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            second:
+                                                (Variable
+                                                    10
+                                                    second
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            to_string:
+                                                (StructMethodDeclaration
+                                                    10
+                                                    to_string
+                                                    rhs
+                                                    time_to_string
+                                                    7 time_to_string
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            zone:
+                                                (Variable
+                                                    10
+                                                    zone
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            ~assign:
+                                                (CustomOperator
+                                                    10
+                                                    ~assign
+                                                    [10 to_string]
+                                                    Public
+                                                )
+                                        })
+                                    toml_time
+                                    (StructType
+                                        [(Integer 4)
+                                        (Allocatable
+                                            (Integer 4)
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [hour
+                                    minute
+                                    second
+                                    millisec
+                                    zone]
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            ~toml_time:
+                                (GenericProcedure
+                                    7
+                                    ~toml_time
+                                    [7 new_toml_time]
+                                    Public
+                                )
+                        })
+                    tomlf_datetime
+                    ()
+                    [tomlf_datetime]
+                    .true.
+                    .false.
+                    .false.
+                ),
+            tomlf_utils:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            convert_raw:
+                                (ExternalSymbol
+                                    2
+                                    convert_raw
+                                    4 convert_raw
+                                    tomlf_utils_convert
+                                    []
+                                    convert_raw
+                                    Public
+                                ),
+                            new_toml_time@~toml_time:
+                                (ExternalSymbol
+                                    2
+                                    new_toml_time@~toml_time
+                                    7 new_toml_time
+                                    tomlf_datetime
+                                    []
+                                    new_toml_time
+                                    Public
+                                ),
+                            toml_date:
+                                (ExternalSymbol
+                                    2
+                                    toml_date
+                                    7 toml_date
+                                    tomlf_datetime
+                                    []
+                                    toml_date
+                                    Public
+                                ),
+                            toml_datetime:
+                                (ExternalSymbol
+                                    2
+                                    toml_datetime
+                                    7 toml_datetime
+                                    tomlf_datetime
+                                    []
+                                    toml_datetime
+                                    Public
+                                ),
+                            toml_raw_to_timestamp:
+                                (ExternalSymbol
+                                    2
+                                    toml_raw_to_timestamp
+                                    4 toml_raw_to_timestamp
+                                    tomlf_utils_convert
+                                    []
+                                    toml_raw_to_timestamp
+                                    Public
+                                ),
+                            toml_time:
+                                (ExternalSymbol
+                                    2
+                                    toml_time
+                                    7 toml_time
+                                    tomlf_datetime
+                                    []
+                                    toml_time
+                                    Public
+                                ),
+                            ~toml_time:
+                                (ExternalSymbol
+                                    2
+                                    ~toml_time
+                                    7 ~toml_time
+                                    tomlf_datetime
+                                    []
+                                    ~toml_time
+                                    Public
+                                )
+                        })
+                    tomlf_utils
+                    ()
+                    [tomlf_utils_convert]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            tomlf_utils_convert:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            convert_raw:
+                                (GenericProcedure
+                                    4
+                                    convert_raw
+                                    [4 toml_raw_to_timestamp]
+                                    Public
+                                ),
+                            new_toml_time@~toml_time:
+                                (ExternalSymbol
+                                    4
+                                    new_toml_time@~toml_time
+                                    7 new_toml_time
+                                    tomlf_datetime
+                                    []
+                                    new_toml_time
+                                    Public
+                                ),
+                            toml_date:
+                                (ExternalSymbol
+                                    4
+                                    toml_date
+                                    7 toml_date
+                                    tomlf_datetime
+                                    []
+                                    toml_date
+                                    Public
+                                ),
+                            toml_datetime:
+                                (ExternalSymbol
+                                    4
+                                    toml_datetime
+                                    7 toml_datetime
+                                    tomlf_datetime
+                                    []
+                                    toml_datetime
+                                    Public
+                                ),
+                            toml_raw_to_timestamp:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_toml_datetime_date:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_toml_datetime_date
+                                                    9 date
+                                                    toml_datetime
+                                                    []
+                                                    date
+                                                    Public
+                                                ),
+                                            dot_pos:
+                                                (Variable
+                                                    5
+                                                    dot_pos
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            err:
+                                                (Variable
+                                                    5
+                                                    err
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            first:
+                                                (Variable
+                                                    5
+                                                    first
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            raw:
+                                                (Variable
+                                                    5
+                                                    raw
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    5
+                                                    stat
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            timestamp:
+                                                (Variable
+                                                    5
+                                                    timestamp
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 toml_datetime
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    toml_raw_to_timestamp
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (StructType
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    (Integer 4)
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 raw)
+                                    (Var 5 timestamp)]
+                                    [(Assignment
+                                        (Var 5 first)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (Var 5 timestamp)
+                                            5 1_toml_datetime_date
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            ()
+                                        )
+                                        (StructConstructor
+                                            4 toml_date
+                                            [((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))
+                                            ((IntegerConstant 0 (Integer 4) Decimal))]
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 stat)
+                                        (IntegerCompare
+                                            (Var 5 err)
+                                            Eq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 5 stat)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            toml_time:
+                                (ExternalSymbol
+                                    4
+                                    toml_time
+                                    7 toml_time
+                                    tomlf_datetime
+                                    []
+                                    toml_time
+                                    Public
+                                ),
+                            ~toml_time:
+                                (ExternalSymbol
+                                    4
+                                    ~toml_time
+                                    7 ~toml_time
+                                    tomlf_datetime
+                                    []
+                                    ~toml_time
+                                    Public
+                                )
+                        })
+                    tomlf_utils_convert
+                    ()
+                    [tomlf_datetime]
+                    .true.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

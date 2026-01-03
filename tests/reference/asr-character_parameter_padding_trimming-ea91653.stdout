@@ -1,0 +1,369 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            character_parameter_padding_trimming:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            p_pad:
+                                (Variable
+                                    2
+                                    p_pad
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        12
+                                        ["2   ", "2   ", "2   "]
+                                        (Array
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        ["2   ", "2   ", "2   "]
+                                        (Array
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            p_trim:
+                                (Variable
+                                    2
+                                    p_trim
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        3
+                                        ["2", "2", "2"]
+                                        (Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        3
+                                        ["2", "2", "2"]
+                                        (Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x_pad:
+                                (Variable
+                                    2
+                                    x_pad
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "apple"
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "apple   "
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            x_trim:
+                                (Variable
+                                    2
+                                    x_trim
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "apple"
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "ap"
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y_pad:
+                                (Variable
+                                    2
+                                    y_pad
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "Ball"
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "Ball      "
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y_trim:
+                                (Variable
+                                    2
+                                    y_trim
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "Ball"
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "Bal"
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z_pad:
+                                (Variable
+                                    2
+                                    z_pad
+                                    [x_pad
+                                    y_pad]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(IntrinsicElementalFunction
+                                            StringConcat
+                                            [(Var 2 x_pad)
+                                            (Var 2 y_pad)]
+                                            0
+                                            (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                            (StringConstant
+                                                "apple   Ball      "
+                                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )
+                                        (Var 2 x_pad)]
+                                        0
+                                        (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "apple   Ball      apple   "
+                                            (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "apple   Ball      apple       "
+                                        (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            z_trim:
+                                (Variable
+                                    2
+                                    z_trim
+                                    [x_trim
+                                    y_trim]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        StringConcat
+                                        [(IntrinsicElementalFunction
+                                            StringConcat
+                                            [(Var 2 x_trim)
+                                            (Var 2 y_trim)]
+                                            0
+                                            (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                            (StringConstant
+                                                "apBal"
+                                                (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                        )
+                                        (Var 2 x_trim)]
+                                        0
+                                        (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                        (StringConstant
+                                            "apBalap"
+                                            (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                    )
+                                    (StringConstant
+                                        "apBal"
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Parameter
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    character_parameter_padding_trimming
+                    []
+                    [(Print
+                        (IntrinsicElementalFunction
+                            StringConcat
+                            [(IntrinsicElementalFunction
+                                StringConcat
+                                [(StringConstant
+                                    "|"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Var 2 x_pad)]
+                                0
+                                (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                (StringConstant
+                                    "|apple   "
+                                    (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )
+                            (StringConstant
+                                "|"
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            0
+                            (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                            (StringConstant
+                                "|apple   |"
+                                (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength DescriptorString)
+                            )
+                        )
+                    )
+                    (Print
+                        (Var 2 y_pad)
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 p_pad)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (Var 2 x_trim)
+                    )
+                    (Print
+                        (Var 2 y_trim)
+                    )
+                    (Print
+                        (Var 2 z_trim)
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 p_trim)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

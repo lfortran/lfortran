@@ -1,0 +1,10 @@
+{
+    "display_name": "Fortran",
+    "argv": [
+        "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/lfortran",
+        "kernel",
+        "-f",
+        "{connection_file}"
+    ],
+    "language": "fortran"
+}

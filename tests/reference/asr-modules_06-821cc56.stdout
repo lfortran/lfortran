@@ -1,0 +1,170 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_06_a:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            a:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable
+                                                    5
+                                                    a
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    a
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 5 a)
+                                        (IntegerBinOp
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            Add
+                                            (FunctionCall
+                                                4 b
+                                                ()
+                                                []
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 5 a)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            b:
+                                (ExternalSymbol
+                                    4
+                                    b
+                                    2 b
+                                    modules_06_b
+                                    []
+                                    b
+                                    Public
+                                )
+                        })
+                    modules_06_a
+                    ()
+                    [modules_06_b]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            modules_06_b:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            b:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    b
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (Var 3 b)
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 3 b)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    modules_06_b
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

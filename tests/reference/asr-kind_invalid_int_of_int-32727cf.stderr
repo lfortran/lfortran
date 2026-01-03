@@ -1,0 +1,5 @@
+semantic error: Kind 3 is not supported for Integer
+ --> tests/errors/kind_invalid_int_of_int.f90:3:13
+  |
+3 |     integer(3) :: x
+  |             ^ 

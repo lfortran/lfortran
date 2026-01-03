@@ -1,0 +1,5 @@
+semantic error: Invalid argument `end` supplied
+ --> tests/errors/close_invalid_kwarg1.f90:4:5
+  |
+4 |     CLOSE(end=200)
+  |     ^^^^^^^^^^^^^^ 

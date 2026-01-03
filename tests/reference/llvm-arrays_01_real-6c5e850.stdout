@@ -1,0 +1,779 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@1 = private unnamed_addr constant [181 x i8] c"At 6:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@3 = private unnamed_addr constant [181 x i8] c"At 8:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@7 = private unnamed_addr constant [181 x i8] c"At 9:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@11 = private unnamed_addr constant [182 x i8] c"At 10:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@15 = private unnamed_addr constant [182 x i8] c"At 13:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@17 = private unnamed_addr constant [182 x i8] c"At 15:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@21 = private unnamed_addr constant [182 x i8] c"At 16:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@25 = private unnamed_addr constant [182 x i8] c"At 17:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@28 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@29 = private unnamed_addr constant [182 x i8] c"At 18:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@30 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@33 = private unnamed_addr constant [182 x i8] c"At 21:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@34 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@35 = private unnamed_addr constant [183 x i8] c"At 21:12 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@36 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@37 = private unnamed_addr constant [182 x i8] c"At 23:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@38 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@40 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@41 = private unnamed_addr constant [182 x i8] c"At 24:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@42 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@43 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@44 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@45 = private unnamed_addr constant [182 x i8] c"At 25:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@46 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@47 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@48 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@49 = private unnamed_addr constant [182 x i8] c"At 27:1 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@50 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@51 = private unnamed_addr constant [182 x i8] c"At 27:8 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@52 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@53 = private unnamed_addr constant [183 x i8] c"At 27:13 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@54 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@55 = private unnamed_addr constant [183 x i8] c"At 27:18 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@56 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@57 = private unnamed_addr constant [183 x i8] c"At 27:23 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@58 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@59 = private unnamed_addr constant [182 x i8] c"At 28:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@60 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@61 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@62 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@63 = private unnamed_addr constant [182 x i8] c"At 30:1 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@64 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@65 = private unnamed_addr constant [182 x i8] c"At 30:8 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@66 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@67 = private unnamed_addr constant [182 x i8] c"At 31:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@68 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@69 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@70 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@71 = private unnamed_addr constant [182 x i8] c"At 35:9 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@72 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@73 = private unnamed_addr constant [182 x i8] c"At 35:9 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@74 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@75 = private unnamed_addr constant [182 x i8] c"At 38:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@76 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@77 = private unnamed_addr constant [182 x i8] c"At 38:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@78 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@79 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@80 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@81 = private unnamed_addr constant [182 x i8] c"At 39:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@82 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@83 = private unnamed_addr constant [182 x i8] c"At 39:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@84 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@85 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@86 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@87 = private unnamed_addr constant [182 x i8] c"At 40:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@88 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@89 = private unnamed_addr constant [182 x i8] c"At 40:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@90 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@91 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@92 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@93 = private unnamed_addr constant [182 x i8] c"At 41:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@94 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@95 = private unnamed_addr constant [182 x i8] c"At 41:5 of file tests/../integration_tests/arrays_01_real.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@96 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@97 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %i = alloca i32, align 4
+  %j = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %a = alloca [3 x double], align 8
+  %b = alloca [4 x double], align 8
+  %c = alloca [4 x double], align 8
+  %i1 = alloca i32, align 4
+  %j2 = alloca i32, align 4
+  store i32 0, i32* %i1, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %ifcont, %.entry
+  %2 = load i32, i32* %i1, align 4
+  %3 = add i32 %2, 1
+  %4 = icmp sle i32 %3, 3
+  br i1 %4, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %5 = load i32, i32* %i1, align 4
+  %6 = add i32 %5, 1
+  store i32 %6, i32* %i1, align 4
+  %7 = load i32, i32* %i1, align 4
+  %8 = sub i32 %7, 1
+  %9 = mul i32 1, %8
+  %10 = add i32 0, %9
+  %11 = icmp slt i32 %7, 1
+  %12 = icmp sgt i32 %7, 3
+  %13 = or i1 %11, %12
+  br i1 %13, label %then, label %ifcont
+
+then:                                             ; preds = %loop.body
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([181 x i8], [181 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %7, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %loop.body
+  %14 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 %10
+  %15 = load i32, i32* %i1, align 4
+  %16 = add i32 %15, 10
+  %17 = sitofp i32 %16 to double
+  store double %17, double* %14, align 8
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  br i1 false, label %then3, label %ifcont4
+
+then3:                                            ; preds = %loop.end
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([181 x i8], [181 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont4:                                          ; preds = %loop.end
+  %18 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 0
+  %19 = load double, double* %18, align 8
+  %20 = fcmp une double %19, 1.100000e+01
+  br i1 %20, label %then5, label %else
+
+then5:                                            ; preds = %ifcont4
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont6
+
+else:                                             ; preds = %ifcont4
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else, %then5
+  br i1 false, label %then7, label %ifcont8
+
+then7:                                            ; preds = %ifcont6
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([181 x i8], [181 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 2, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont8:                                          ; preds = %ifcont6
+  %21 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 1
+  %22 = load double, double* %21, align 8
+  %23 = fcmp une double %22, 1.200000e+01
+  br i1 %23, label %then9, label %else10
+
+then9:                                            ; preds = %ifcont8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont11
+
+else10:                                           ; preds = %ifcont8
+  br label %ifcont11
+
+ifcont11:                                         ; preds = %else10, %then9
+  br i1 false, label %then12, label %ifcont13
+
+then12:                                           ; preds = %ifcont11
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 3, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont13:                                         ; preds = %ifcont11
+  %24 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 2
+  %25 = load double, double* %24, align 8
+  %26 = fcmp une double %25, 1.300000e+01
+  br i1 %26, label %then14, label %else15
+
+then14:                                           ; preds = %ifcont13
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont16
+
+else15:                                           ; preds = %ifcont13
+  br label %ifcont16
+
+ifcont16:                                         ; preds = %else15, %then14
+  store i32 10, i32* %i1, align 4
+  br label %loop.head17
+
+loop.head17:                                      ; preds = %ifcont20, %ifcont16
+  %27 = load i32, i32* %i1, align 4
+  %28 = add i32 %27, 1
+  %29 = icmp sle i32 %28, 14
+  br i1 %29, label %loop.body18, label %loop.end21
+
+loop.body18:                                      ; preds = %loop.head17
+  %30 = load i32, i32* %i1, align 4
+  %31 = add i32 %30, 1
+  store i32 %31, i32* %i1, align 4
+  %32 = load i32, i32* %i1, align 4
+  %33 = sub i32 %32, 10
+  %34 = sub i32 %33, 1
+  %35 = mul i32 1, %34
+  %36 = add i32 0, %35
+  %37 = icmp slt i32 %33, 1
+  %38 = icmp sgt i32 %33, 4
+  %39 = or i1 %37, %38
+  br i1 %39, label %then19, label %ifcont20
+
+then19:                                           ; preds = %loop.body18
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 %33, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont20:                                         ; preds = %loop.body18
+  %40 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 %36
+  %41 = load i32, i32* %i1, align 4
+  %42 = sitofp i32 %41 to double
+  store double %42, double* %40, align 8
+  br label %loop.head17
+
+loop.end21:                                       ; preds = %loop.head17
+  br i1 false, label %then22, label %ifcont23
+
+then22:                                           ; preds = %loop.end21
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont23:                                         ; preds = %loop.end21
+  %43 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
+  %44 = load double, double* %43, align 8
+  %45 = fcmp une double %44, 1.100000e+01
+  br i1 %45, label %then24, label %else25
+
+then24:                                           ; preds = %ifcont23
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont26
+
+else25:                                           ; preds = %ifcont23
+  br label %ifcont26
+
+ifcont26:                                         ; preds = %else25, %then24
+  br i1 false, label %then27, label %ifcont28
+
+then27:                                           ; preds = %ifcont26
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont28:                                         ; preds = %ifcont26
+  %46 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 1
+  %47 = load double, double* %46, align 8
+  %48 = fcmp une double %47, 1.200000e+01
+  br i1 %48, label %then29, label %else30
+
+then29:                                           ; preds = %ifcont28
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont31
+
+else30:                                           ; preds = %ifcont28
+  br label %ifcont31
+
+ifcont31:                                         ; preds = %else30, %then29
+  br i1 false, label %then32, label %ifcont33
+
+then32:                                           ; preds = %ifcont31
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont33:                                         ; preds = %ifcont31
+  %49 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 2
+  %50 = load double, double* %49, align 8
+  %51 = fcmp une double %50, 1.300000e+01
+  br i1 %51, label %then34, label %else35
+
+then34:                                           ; preds = %ifcont33
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont36
+
+else35:                                           ; preds = %ifcont33
+  br label %ifcont36
+
+ifcont36:                                         ; preds = %else35, %then34
+  br i1 false, label %then37, label %ifcont38
+
+then37:                                           ; preds = %ifcont36
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont38:                                         ; preds = %ifcont36
+  %52 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
+  %53 = load double, double* %52, align 8
+  %54 = fcmp une double %53, 1.400000e+01
+  br i1 %54, label %then39, label %else40
+
+then39:                                           ; preds = %ifcont38
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont41
+
+else40:                                           ; preds = %ifcont38
+  br label %ifcont41
+
+ifcont41:                                         ; preds = %else40, %then39
+  store i32 0, i32* %i1, align 4
+  br label %loop.head42
+
+loop.head42:                                      ; preds = %ifcont47, %ifcont41
+  %55 = load i32, i32* %i1, align 4
+  %56 = add i32 %55, 1
+  %57 = icmp sle i32 %56, 3
+  br i1 %57, label %loop.body43, label %loop.end48
+
+loop.body43:                                      ; preds = %loop.head42
+  %58 = load i32, i32* %i1, align 4
+  %59 = add i32 %58, 1
+  store i32 %59, i32* %i1, align 4
+  %60 = load i32, i32* %i1, align 4
+  %61 = sub i32 %60, 1
+  %62 = mul i32 1, %61
+  %63 = add i32 0, %62
+  %64 = icmp slt i32 %60, 1
+  %65 = icmp sgt i32 %60, 4
+  %66 = or i1 %64, %65
+  br i1 %66, label %then44, label %ifcont45
+
+then44:                                           ; preds = %loop.body43
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %60, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont45:                                         ; preds = %loop.body43
+  %67 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 %63
+  %68 = load i32, i32* %i1, align 4
+  %69 = sub i32 %68, 1
+  %70 = mul i32 1, %69
+  %71 = add i32 0, %70
+  %72 = icmp slt i32 %68, 1
+  %73 = icmp sgt i32 %68, 3
+  %74 = or i1 %72, %73
+  br i1 %74, label %then46, label %ifcont47
+
+then46:                                           ; preds = %ifcont45
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([183 x i8], [183 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 %68, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont47:                                         ; preds = %ifcont45
+  %75 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 %71
+  %76 = load double, double* %75, align 8
+  %77 = fsub double %76, 1.000000e+01
+  store double %77, double* %67, align 8
+  br label %loop.head42
+
+loop.end48:                                       ; preds = %loop.head42
+  br i1 false, label %then49, label %ifcont50
+
+then49:                                           ; preds = %loop.end48
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @37, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont50:                                         ; preds = %loop.end48
+  %78 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
+  %79 = load double, double* %78, align 8
+  %80 = fcmp une double %79, 1.000000e+00
+  br i1 %80, label %then51, label %else52
+
+then51:                                           ; preds = %ifcont50
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont53
+
+else52:                                           ; preds = %ifcont50
+  br label %ifcont53
+
+ifcont53:                                         ; preds = %else52, %then51
+  br i1 false, label %then54, label %ifcont55
+
+then54:                                           ; preds = %ifcont53
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @41, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont55:                                         ; preds = %ifcont53
+  %81 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 1
+  %82 = load double, double* %81, align 8
+  %83 = fcmp une double %82, 2.000000e+00
+  br i1 %83, label %then56, label %else57
+
+then56:                                           ; preds = %ifcont55
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont58
+
+else57:                                           ; preds = %ifcont55
+  br label %ifcont58
+
+ifcont58:                                         ; preds = %else57, %then56
+  br i1 false, label %then59, label %ifcont60
+
+then59:                                           ; preds = %ifcont58
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @45, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont60:                                         ; preds = %ifcont58
+  %84 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 2
+  %85 = load double, double* %84, align 8
+  %86 = fcmp une double %85, 3.000000e+00
+  br i1 %86, label %then61, label %else62
+
+then61:                                           ; preds = %ifcont60
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont63
+
+else62:                                           ; preds = %ifcont60
+  br label %ifcont63
+
+ifcont63:                                         ; preds = %else62, %then61
+  br i1 false, label %then64, label %ifcont65
+
+then64:                                           ; preds = %ifcont63
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont65:                                         ; preds = %ifcont63
+  %87 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
+  br i1 false, label %then66, label %ifcont67
+
+then66:                                           ; preds = %ifcont65
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont67:                                         ; preds = %ifcont65
+  %88 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
+  %89 = load double, double* %88, align 8
+  br i1 false, label %then68, label %ifcont69
+
+then68:                                           ; preds = %ifcont67
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([183 x i8], [183 x i8]* @53, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont69:                                         ; preds = %ifcont67
+  %90 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 1
+  %91 = load double, double* %90, align 8
+  %92 = fadd double %89, %91
+  br i1 false, label %then70, label %ifcont71
+
+then70:                                           ; preds = %ifcont69
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([183 x i8], [183 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @54, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont71:                                         ; preds = %ifcont69
+  %93 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 2
+  %94 = load double, double* %93, align 8
+  %95 = fadd double %92, %94
+  br i1 false, label %then72, label %ifcont73
+
+then72:                                           ; preds = %ifcont71
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([183 x i8], [183 x i8]* @57, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @56, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont73:                                         ; preds = %ifcont71
+  %96 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 0
+  %97 = load double, double* %96, align 8
+  %98 = fadd double %95, %97
+  store double %98, double* %87, align 8
+  br i1 false, label %then74, label %ifcont75
+
+then74:                                           ; preds = %ifcont73
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @59, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @58, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont75:                                         ; preds = %ifcont73
+  %99 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
+  %100 = load double, double* %99, align 8
+  %101 = fcmp une double %100, 1.700000e+01
+  br i1 %101, label %then76, label %else77
+
+then76:                                           ; preds = %ifcont75
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @61, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @60, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont78
+
+else77:                                           ; preds = %ifcont75
+  br label %ifcont78
+
+ifcont78:                                         ; preds = %else77, %then76
+  br i1 false, label %then79, label %ifcont80
+
+then79:                                           ; preds = %ifcont78
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @63, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @62, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont80:                                         ; preds = %ifcont78
+  %102 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
+  br i1 false, label %then81, label %ifcont82
+
+then81:                                           ; preds = %ifcont80
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @65, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @64, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont82:                                         ; preds = %ifcont80
+  %103 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 0
+  %104 = load double, double* %103, align 8
+  store double %104, double* %102, align 8
+  br i1 false, label %then83, label %ifcont84
+
+then83:                                           ; preds = %ifcont82
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @67, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @66, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont84:                                         ; preds = %ifcont82
+  %105 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
+  %106 = load double, double* %105, align 8
+  %107 = fcmp une double %106, 1.100000e+01
+  br i1 %107, label %then85, label %else86
+
+then85:                                           ; preds = %ifcont84
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont87
+
+else86:                                           ; preds = %ifcont84
+  br label %ifcont87
+
+ifcont87:                                         ; preds = %else86, %then85
+  store i32 0, i32* %i1, align 4
+  br label %loop.head88
+
+loop.head88:                                      ; preds = %loop.end96, %ifcont87
+  %108 = load i32, i32* %i1, align 4
+  %109 = add i32 %108, 1
+  %110 = icmp sle i32 %109, 2
+  br i1 %110, label %loop.body89, label %loop.end97
+
+loop.body89:                                      ; preds = %loop.head88
+  %111 = load i32, i32* %i1, align 4
+  %112 = add i32 %111, 1
+  store i32 %112, i32* %i1, align 4
+  store i32 0, i32* %j2, align 4
+  br label %loop.head90
+
+loop.head90:                                      ; preds = %ifcont95, %loop.body89
+  %113 = load i32, i32* %j2, align 4
+  %114 = add i32 %113, 1
+  %115 = icmp sle i32 %114, 2
+  br i1 %115, label %loop.body91, label %loop.end96
+
+loop.body91:                                      ; preds = %loop.head90
+  %116 = load i32, i32* %j2, align 4
+  %117 = add i32 %116, 1
+  store i32 %117, i32* %j2, align 4
+  %118 = load i32, i32* %i1, align 4
+  %119 = load i32, i32* %j2, align 4
+  %120 = sub i32 %118, 1
+  %121 = mul i32 1, %120
+  %122 = add i32 0, %121
+  %123 = icmp slt i32 %118, 1
+  %124 = icmp sgt i32 %118, 2
+  %125 = or i1 %123, %124
+  br i1 %125, label %then92, label %ifcont93
+
+then92:                                           ; preds = %loop.body91
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 %118, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont93:                                         ; preds = %loop.body91
+  %126 = sub i32 %119, 1
+  %127 = mul i32 2, %126
+  %128 = add i32 %122, %127
+  %129 = icmp slt i32 %119, 1
+  %130 = icmp sgt i32 %119, 2
+  %131 = or i1 %129, %130
+  br i1 %131, label %then94, label %ifcont95
+
+then94:                                           ; preds = %ifcont93
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 %119, i32 2, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont95:                                         ; preds = %ifcont93
+  %132 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 %128
+  %133 = load i32, i32* %i1, align 4
+  %134 = load i32, i32* %j2, align 4
+  %135 = add i32 %133, %134
+  %136 = add i32 %135, 10
+  %137 = sitofp i32 %136 to double
+  store double %137, double* %132, align 8
+  br label %loop.head90
+
+loop.end96:                                       ; preds = %loop.head90
+  br label %loop.head88
+
+loop.end97:                                       ; preds = %loop.head88
+  br i1 false, label %then98, label %ifcont99
+
+then98:                                           ; preds = %loop.end97
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @75, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @74, i32 0, i32 0), i32 1, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont99:                                         ; preds = %loop.end97
+  br i1 false, label %then100, label %ifcont101
+
+then100:                                          ; preds = %ifcont99
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @77, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @76, i32 0, i32 0), i32 1, i32 2, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont101:                                        ; preds = %ifcont99
+  %138 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 0
+  %139 = load double, double* %138, align 8
+  %140 = fcmp une double %139, 1.200000e+01
+  br i1 %140, label %then102, label %else103
+
+then102:                                          ; preds = %ifcont101
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont104
+
+else103:                                          ; preds = %ifcont101
+  br label %ifcont104
+
+ifcont104:                                        ; preds = %else103, %then102
+  br i1 false, label %then105, label %ifcont106
+
+then105:                                          ; preds = %ifcont104
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @81, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @80, i32 0, i32 0), i32 1, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont106:                                        ; preds = %ifcont104
+  br i1 false, label %then107, label %ifcont108
+
+then107:                                          ; preds = %ifcont106
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @83, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @82, i32 0, i32 0), i32 2, i32 2, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont108:                                        ; preds = %ifcont106
+  %141 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 2
+  %142 = load double, double* %141, align 8
+  %143 = fcmp une double %142, 1.300000e+01
+  br i1 %143, label %then109, label %else110
+
+then109:                                          ; preds = %ifcont108
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @85, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @84, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont111
+
+else110:                                          ; preds = %ifcont108
+  br label %ifcont111
+
+ifcont111:                                        ; preds = %else110, %then109
+  br i1 false, label %then112, label %ifcont113
+
+then112:                                          ; preds = %ifcont111
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @87, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @86, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont113:                                        ; preds = %ifcont111
+  br i1 false, label %then114, label %ifcont115
+
+then114:                                          ; preds = %ifcont113
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @89, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @88, i32 0, i32 0), i32 1, i32 2, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont115:                                        ; preds = %ifcont113
+  %144 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 1
+  %145 = load double, double* %144, align 8
+  %146 = fcmp une double %145, 1.300000e+01
+  br i1 %146, label %then116, label %else117
+
+then116:                                          ; preds = %ifcont115
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont118
+
+else117:                                          ; preds = %ifcont115
+  br label %ifcont118
+
+ifcont118:                                        ; preds = %else117, %then116
+  br i1 false, label %then119, label %ifcont120
+
+then119:                                          ; preds = %ifcont118
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @93, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @92, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont120:                                        ; preds = %ifcont118
+  br i1 false, label %then121, label %ifcont122
+
+then121:                                          ; preds = %ifcont120
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([182 x i8], [182 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0), i32 2, i32 2, i32 1, i32 2)
+  call void @exit(i32 1)
+  unreachable
+
+ifcont122:                                        ; preds = %ifcont120
+  %147 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 3
+  %148 = load double, double* %147, align 8
+  %149 = fcmp une double %148, 1.400000e+01
+  br i1 %149, label %then123, label %else124
+
+then123:                                          ; preds = %ifcont122
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont125
+
+else124:                                          ; preds = %ifcont122
+  br label %ifcont125
+
+ifcont125:                                        ; preds = %else124, %then123
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %ifcont125
+  br label %FINALIZE_SYMTABLE_arrays_01_real
+
+FINALIZE_SYMTABLE_arrays_01_real:                 ; preds = %return
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @exit(i32)
+
+declare void @_lpython_free_argv()

@@ -1,0 +1,13 @@
+{
+    "basename": "ast-end_submodule_name-68b3188",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/end_submodule_name.f90",
+    "infile_hash": "f9039511b99302723f1272b756b90765abc5599941fddb1657b7fbd8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-end_submodule_name-68b3188.stderr",
+    "stderr_hash": "a26340a4230e3b77a5d168d545fad2a8ad5ba9290ab1bf904c470390",
+    "returncode": 2
+}

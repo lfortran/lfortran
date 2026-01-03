@@ -1,0 +1,5 @@
+semantic error: Parameter attribute cannot be used with Target attribute
+ --> tests/errors/type_conflict1.f90:3:5
+  |
+3 |     integer, parameter, target :: foo=4
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

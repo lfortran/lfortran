@@ -1,0 +1,12 @@
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/save4.f90:4:11
+  |
+4 |     if (y .eq. 1) then
+  |           ^^^^ help: write this as '=='
+
+style suggestion: Use '==' instead of '.eq.'
+  --> tests/save4.f90:10:15
+   |
+10 |         if (x .eq. 1) then
+   |               ^^^^ help: write this as '=='
+

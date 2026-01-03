@@ -1,0 +1,253 @@
+# LFortran
+
+src/bin/lfortran
+src/bin/parse
+src/bin/parse2
+src/bin/parse3
+src/lfortran/parser/parser.output
+tests/output
+src/lfortran/tests/test_asm
+src/lfortran/tests/test_ast
+src/lfortran/tests/test_asr
+src/lfortran/tests/test_llvm
+src/lfortran/tests/test_parse
+src/lfortran/tests/test_pickle
+src/lfortran/tests/test_stacktrace*
+src/lfortran/tests/test_serialization*
+src/lfortran/tests/test_cwrapper
+src/lfortran/tests/test_serialization
+src/lfortran/tests/test_lfortran
+src/lfortran/tests/write32
+src/lfortran/tests/write32.asm
+src/lfortran/tests/subroutines32
+src/lfortran/tests/subroutines_args32
+src/lfortran/tests/print32
+src/lfortran/tests/print_integer
+src/lfortran/tests/cmp32
+src/lfortran/tests/x
+src/lfortran/tests/ref_pickle.txt.new
+src/server/lsp_language_server.cpp
+src/server/lsp_language_server.h
+src/server/lsp_specification.cpp
+src/server/lsp_specification.h
+src/server/lsp_transformer.cpp
+src/server/lsp_transformer.h
+**/*.log
+
+.#*
+*.sw?
+
+expr2
+lfortran-*-dirty/
+
+# fortran_parser
+
+build-gfortran
+build-lfort
+
+## CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+CTestTestfile.cmake
+cmake_install.cmake
+install_manifest.txt
+Testing/Temporary
+CPackConfig.cmake
+CPackSourceConfig.cmake
+_CPack_Packages
+/CMakeSettings.json
+.cmake
+
+## Pixi
+.pixi/
+
+## libraries
+*.a
+*.a.*
+*.so
+*.so.*
+*.s
+*.ll
+*.dylib
+*.dSYM
+
+## Generated files
+version
+lfortran/ast/ast.py
+lfortran/asr/asr.py
+lfortran/parser/fortran.tokens
+lfortran/parser/fortran.interp
+lfortran/parser/fortranLexer.py
+lfortran/parser/fortranLexer.tokens
+lfortran/parser/fortranLexer.interp
+lfortran/parser/fortranParser.py
+lfortran/parser/fortranVisitor.py
+src/lfortran/parser/parser.tab.cc
+src/lfortran/parser/parser.tab.hh
+src/lfortran/parser/tokenizer.cpp
+src/lfortran/parser/preprocessor.cpp
+src/lfortran/ast.h
+src/lfortran/asr.h
+src/libasr/asr.h
+src/libasr/ast.h
+src/libasr/asr_base_visitor.h
+src/libasr/asr_deserialization_visitor.h
+src/libasr/asr_expr_base_replacer_visitor.h
+src/libasr/asr_expr_call_replacer_visitor.h
+src/libasr/asr_expr_stmt_duplicator_visitor.h
+src/libasr/asr_expr_type_visitor.h
+src/libasr/asr_expr_value_visitor.h
+src/libasr/asr_json_visitor.h
+src/libasr/asr_lookup_name_visitor.h
+src/libasr/asr_pass_walk_visitor.h
+src/libasr/asr_pickle_visitor.h
+src/libasr/asr_serialization_visitor.h
+src/libasr/asr_stmt_base_replacer_visitor.h
+src/libasr/asr_tree_visitor.h
+src/libasr/asr_walk_visitor.h
+src/libasr/wasm_visitor.h
+src/libasr/pass/intrinsic_function_registry_util.h
+src/lfortran/config.h
+src/libasr/config.h
+share/jupyter/kernels/fortran/kernel.json
+share/jupyter/kernels/fortran/logo-svg.svg
+src/runtime/*.o.empty.c
+src/runtime/tests/test_abs
+src/runtime/tests/test_bit
+src/runtime/tests/test_cos
+src/runtime/tests/test_hyperbolics
+src/runtime/tests/test_iso_c_binding
+src/runtime/tests/test_iso_fortran_env
+src/runtime/tests/test_kind
+src/runtime/tests/test_sin
+src/runtime/tests/test_sin2
+src/runtime/tests/test_strings
+src/runtime/tests/test_tan
+integration_tests/test-*
+input.txt
+input
+inst/
+src/libasr/libasr.a.*
+*.html
+*.o.tmp.c
+*.o.tmp.cpp
+*.tmp.f90
+*.clj
+pass_*.f90
+pass_json_*.json
+pass_tree_*.txt
+*_lines.txt
+*_ldd.txt
+*_lines.dat.txt
+
+### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/Global/macOS.gitignore
+
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Python
+
+## Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+## C extensions
+*.so
+
+## Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.dat
+*.mod
+MANIFEST
+
+## PyTest
+.pytest_cache/
+
+## Jupyter
+*-checkpoint.ipynb
+
+## Editor Files
+.vscode/
+.vs/
+*~
+
+## Build Files
+*/bin/lfortran
+output
+*.o
+*.out
+*.mod
+*.smod
+*.js
+*.wasm
+*.data
+/.ccls-cache/
+.cache/
+ext/
+extsrc/
+tmp/
+tmpdebug/
+gentests/
+*.tlog
+*.filters
+*.obj
+*.exe
+*.exp
+*.lib
+*.vcxproj
+*.recipe
+*.sln
+*.dll
+
+## Ninja
+build.ninja
+.ninja_deps
+.ninja_log
+/compile_commands.json
+
+## Docs
+doc/man/lfortran.1
+!doc/src/javascripts/*.js
+!pass_array_by_data_*.f90

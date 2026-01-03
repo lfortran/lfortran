@@ -1,0 +1,395 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%complex_4 = type <{ float, float }>
+
+@0 = private unnamed_addr constant [2 x i8] c"i\00", align 1
+@1 = private unnamed_addr constant [141 x i8] c"At 9:5 of file tests/../integration_tests/automatic_allocation_02.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"r\00", align 1
+@3 = private unnamed_addr constant [142 x i8] c"At 10:5 of file tests/../integration_tests/automatic_allocation_02.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@5 = private unnamed_addr constant [142 x i8] c"At 11:5 of file tests/../integration_tests/automatic_allocation_02.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"l\00", align 1
+@7 = private unnamed_addr constant [142 x i8] c"At 12:5 of file tests/../integration_tests/automatic_allocation_02.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"i\00", align 1
+@9 = private unnamed_addr constant [48 x i8] c"Runtime Error: Variable '%s' is not allocated.\0A\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"r\00", align 1
+@13 = private unnamed_addr constant [48 x i8] c"Runtime Error: Variable '%s' is not allocated.\0A\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"c\00", align 1
+@17 = private unnamed_addr constant [48 x i8] c"Runtime Error: Variable '%s' is not allocated.\0A\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c"l\00", align 1
+@21 = private unnamed_addr constant [48 x i8] c"Runtime Error: Variable '%s' is not allocated.\0A\00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %c = alloca %complex_4*, align 8
+  store %complex_4* null, %complex_4** %c, align 8
+  %i = alloca i32*, align 8
+  store i32* null, i32** %i, align 8
+  %l = alloca i1*, align 8
+  store i1* null, i1** %l, align 8
+  %r = alloca float*, align 8
+  store float* null, float** %r, align 8
+  %2 = load i32*, i32** %i, align 8
+  %3 = icmp eq i32* %2, null
+  br i1 %3, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %4 = load i32*, i32** %i, align 8
+  %5 = ptrtoint i32* %4 to i64
+  %6 = icmp ne i64 %5, 0
+  br i1 %6, label %then1, label %ifcont
+
+then1:                                            ; preds = %then
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([141 x i8], [141 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont:                                           ; preds = %then
+  %7 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %7, i8 0, i32 4, i1 false)
+  %8 = bitcast i8* %7 to i32*
+  store i32* %8, i32** %i, align 8
+  br label %ifcont2
+
+else:                                             ; preds = %.entry
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %ifcont
+  %9 = load i32*, i32** %i, align 8
+  store i32 10, i32* %9, align 4
+  %10 = load float*, float** %r, align 8
+  %11 = icmp eq float* %10, null
+  br i1 %11, label %then3, label %else6
+
+then3:                                            ; preds = %ifcont2
+  %12 = load float*, float** %r, align 8
+  %13 = ptrtoint float* %12 to i64
+  %14 = icmp ne i64 %13, 0
+  br i1 %14, label %then4, label %ifcont5
+
+then4:                                            ; preds = %then3
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([142 x i8], [142 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont5:                                          ; preds = %then3
+  %15 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %15, i8 0, i32 4, i1 false)
+  %16 = bitcast i8* %15 to float*
+  store float* %16, float** %r, align 8
+  br label %ifcont7
+
+else6:                                            ; preds = %ifcont2
+  br label %ifcont7
+
+ifcont7:                                          ; preds = %else6, %ifcont5
+  %17 = load float*, float** %r, align 8
+  store float 0x40119999A0000000, float* %17, align 4
+  %18 = load %complex_4*, %complex_4** %c, align 8
+  %19 = icmp eq %complex_4* %18, null
+  br i1 %19, label %then8, label %else11
+
+then8:                                            ; preds = %ifcont7
+  %20 = load %complex_4*, %complex_4** %c, align 8
+  %21 = ptrtoint %complex_4* %20 to i64
+  %22 = icmp ne i64 %21, 0
+  br i1 %22, label %then9, label %ifcont10
+
+then9:                                            ; preds = %then8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([142 x i8], [142 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont10:                                         ; preds = %then8
+  %23 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %23, i8 0, i32 8, i1 false)
+  %24 = bitcast i8* %23 to %complex_4*
+  store %complex_4* %24, %complex_4** %c, align 8
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont7
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %ifcont10
+  %25 = load %complex_4*, %complex_4** %c, align 8
+  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, %complex_4* %25, align 1
+  %26 = load i1*, i1** %l, align 8
+  %27 = icmp eq i1* %26, null
+  br i1 %27, label %then13, label %else16
+
+then13:                                           ; preds = %ifcont12
+  %28 = load i1*, i1** %l, align 8
+  %29 = ptrtoint i1* %28 to i64
+  %30 = icmp ne i64 %29, 0
+  br i1 %30, label %then14, label %ifcont15
+
+then14:                                           ; preds = %then13
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([142 x i8], [142 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont15:                                         ; preds = %then13
+  %31 = call i8* @_lfortran_malloc(i64 1)
+  call void @llvm.memset.p0i8.i32(i8* %31, i8 0, i32 1, i1 false)
+  %32 = bitcast i8* %31 to i1*
+  store i1* %32, i1** %l, align 8
+  br label %ifcont17
+
+else16:                                           ; preds = %ifcont12
+  br label %ifcont17
+
+ifcont17:                                         ; preds = %else16, %ifcont15
+  %33 = load i1*, i1** %l, align 8
+  store i1 true, i1* %33, align 1
+  %34 = load i32*, i32** %i, align 8
+  %35 = ptrtoint i32* %34 to i64
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %then18, label %ifcont19
+
+then18:                                           ; preds = %ifcont17
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([48 x i8], [48 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont19:                                         ; preds = %ifcont17
+  %37 = load i32*, i32** %i, align 8
+  %38 = load i32, i32* %37, align 4
+  %39 = icmp ne i32 %38, 10
+  br i1 %39, label %then20, label %else21
+
+then20:                                           ; preds = %ifcont19
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont22
+
+else21:                                           ; preds = %ifcont19
+  br label %ifcont22
+
+ifcont22:                                         ; preds = %else21, %then20
+  %40 = load float*, float** %r, align 8
+  %41 = ptrtoint float* %40 to i64
+  %42 = icmp eq i64 %41, 0
+  br i1 %42, label %then23, label %ifcont24
+
+then23:                                           ; preds = %ifcont22
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([48 x i8], [48 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont24:                                         ; preds = %ifcont22
+  %43 = load float*, float** %r, align 8
+  %44 = load float, float* %43, align 4
+  %45 = fcmp une float %44, 0x40119999A0000000
+  br i1 %45, label %then25, label %else26
+
+then25:                                           ; preds = %ifcont24
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont27
+
+else26:                                           ; preds = %ifcont24
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %else26, %then25
+  %46 = load %complex_4*, %complex_4** %c, align 8
+  %47 = ptrtoint %complex_4* %46 to i64
+  %48 = icmp eq i64 %47, 0
+  br i1 %48, label %then28, label %ifcont29
+
+then28:                                           ; preds = %ifcont27
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([48 x i8], [48 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont29:                                         ; preds = %ifcont27
+  %49 = load %complex_4*, %complex_4** %c, align 8
+  %50 = load %complex_4, %complex_4* %49, align 1
+  %51 = alloca %complex_4, align 8
+  store %complex_4 %50, %complex_4* %51, align 1
+  %52 = getelementptr %complex_4, %complex_4* %51, i32 0, i32 0
+  %53 = load float, float* %52, align 4
+  %54 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, %complex_4* %54, align 1
+  %55 = getelementptr %complex_4, %complex_4* %54, i32 0, i32 0
+  %56 = load float, float* %55, align 4
+  %57 = alloca %complex_4, align 8
+  store %complex_4 %50, %complex_4* %57, align 1
+  %58 = getelementptr %complex_4, %complex_4* %57, i32 0, i32 1
+  %59 = load float, float* %58, align 4
+  %60 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, %complex_4* %60, align 1
+  %61 = getelementptr %complex_4, %complex_4* %60, i32 0, i32 1
+  %62 = load float, float* %61, align 4
+  %63 = fcmp one float %53, %56
+  %64 = fcmp one float %59, %62
+  %65 = or i1 %63, %64
+  br i1 %65, label %then30, label %else31
+
+then30:                                           ; preds = %ifcont29
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont32
+
+else31:                                           ; preds = %ifcont29
+  br label %ifcont32
+
+ifcont32:                                         ; preds = %else31, %then30
+  %66 = load i1*, i1** %l, align 8
+  %67 = ptrtoint i1* %66 to i64
+  %68 = icmp eq i64 %67, 0
+  br i1 %68, label %then33, label %ifcont34
+
+then33:                                           ; preds = %ifcont32
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([48 x i8], [48 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+ifcont34:                                         ; preds = %ifcont32
+  %69 = load i1*, i1** %l, align 8
+  %70 = load i1, i1* %69, align 1
+  %71 = icmp eq i1 %70, false
+  %72 = xor i1 %70, true
+  br i1 %72, label %then35, label %else36
+
+then35:                                           ; preds = %ifcont34
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont37
+
+else36:                                           ; preds = %ifcont34
+  br label %ifcont37
+
+ifcont37:                                         ; preds = %else36, %then35
+  %73 = load i32*, i32** %i, align 8
+  %74 = ptrtoint i32* %73 to i64
+  %75 = icmp ne i64 %74, 0
+  br i1 %75, label %then38, label %else39
+
+then38:                                           ; preds = %ifcont37
+  %76 = alloca i8*, align 8
+  %77 = bitcast i32* %73 to i8*
+  store i8* %77, i8** %76, align 8
+  %78 = load i8*, i8** %76, align 8
+  call void @_lfortran_free(i8* %78)
+  store i32* null, i32** %i, align 8
+  br label %ifcont40
+
+else39:                                           ; preds = %ifcont37
+  br label %ifcont40
+
+ifcont40:                                         ; preds = %else39, %then38
+  %79 = load float*, float** %r, align 8
+  %80 = ptrtoint float* %79 to i64
+  %81 = icmp ne i64 %80, 0
+  br i1 %81, label %then41, label %else42
+
+then41:                                           ; preds = %ifcont40
+  %82 = alloca i8*, align 8
+  %83 = bitcast float* %79 to i8*
+  store i8* %83, i8** %82, align 8
+  %84 = load i8*, i8** %82, align 8
+  call void @_lfortran_free(i8* %84)
+  store float* null, float** %r, align 8
+  br label %ifcont43
+
+else42:                                           ; preds = %ifcont40
+  br label %ifcont43
+
+ifcont43:                                         ; preds = %else42, %then41
+  %85 = load %complex_4*, %complex_4** %c, align 8
+  %86 = ptrtoint %complex_4* %85 to i64
+  %87 = icmp ne i64 %86, 0
+  br i1 %87, label %then44, label %else45
+
+then44:                                           ; preds = %ifcont43
+  %88 = alloca i8*, align 8
+  %89 = bitcast %complex_4* %85 to i8*
+  store i8* %89, i8** %88, align 8
+  %90 = load i8*, i8** %88, align 8
+  call void @_lfortran_free(i8* %90)
+  store %complex_4* null, %complex_4** %c, align 8
+  br label %ifcont46
+
+else45:                                           ; preds = %ifcont43
+  br label %ifcont46
+
+ifcont46:                                         ; preds = %else45, %then44
+  %91 = load i1*, i1** %l, align 8
+  %92 = ptrtoint i1* %91 to i64
+  %93 = icmp ne i64 %92, 0
+  br i1 %93, label %then47, label %else48
+
+then47:                                           ; preds = %ifcont46
+  %94 = alloca i8*, align 8
+  %95 = bitcast i1* %91 to i8*
+  store i8* %95, i8** %94, align 8
+  %96 = load i8*, i8** %94, align 8
+  call void @_lfortran_free(i8* %96)
+  store i1* null, i1** %l, align 8
+  br label %ifcont49
+
+else48:                                           ; preds = %ifcont46
+  br label %ifcont49
+
+ifcont49:                                         ; preds = %else48, %then47
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %ifcont49
+  br label %FINALIZE_SYMTABLE_automatic_allocation_02
+
+FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
+  br label %Finalize_Variable_c
+
+Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
+  %97 = load %complex_4*, %complex_4** %c, align 8
+  %98 = bitcast %complex_4* %97 to i8*
+  call void @_lfortran_free(i8* %98)
+  br label %Finalize_Variable_i
+
+Finalize_Variable_i:                              ; preds = %Finalize_Variable_c
+  %99 = load i32*, i32** %i, align 8
+  %100 = bitcast i32* %99 to i8*
+  call void @_lfortran_free(i8* %100)
+  br label %Finalize_Variable_l
+
+Finalize_Variable_l:                              ; preds = %Finalize_Variable_i
+  %101 = load i1*, i1** %l, align 8
+  %102 = bitcast i1* %101 to i8*
+  call void @_lfortran_free(i8* %102)
+  br label %Finalize_Variable_r
+
+Finalize_Variable_r:                              ; preds = %Finalize_Variable_l
+  %103 = load float*, float** %r, align 8
+  %104 = bitcast float* %103 to i8*
+  call void @_lfortran_free(i8* %104)
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @exit(i32)
+
+declare i8* @_lfortran_malloc(i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+declare void @_lfortran_free(i8*)
+
+declare void @_lpython_free_argv()
+
+attributes #0 = { argmemonly nounwind willreturn writeonly }

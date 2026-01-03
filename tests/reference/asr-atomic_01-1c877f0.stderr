@@ -1,0 +1,5 @@
+semantic error: Atomic operations are not supported yet
+ --> tests/errors/atomic_01.f90:4:5
+  |
+4 |     call atomic_add (atom[1], this_image())
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

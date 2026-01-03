@@ -1,0 +1,5 @@
+syntax error: Token ')' is unexpected here
+ --> tests/errors/fixed_form_4.f:4:19
+  |
+4 | 500   print *, sin), y
+  |                   ^ 

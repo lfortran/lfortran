@@ -1,0 +1,8 @@
+PROGRAM test_present
+  print *, f(42.9)
+CONTAINS
+  LOGICAL FUNCTION f(x)
+    INTEGER, INTENT(IN), OPTIONAL :: x
+    f = PRESENT(x)
+  END FUNCTION
+END PROGRAM

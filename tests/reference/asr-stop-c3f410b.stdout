@@ -1,0 +1,70 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            stop:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    stop
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                Add
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                            )
+                            Mul
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant 25 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 x)
+                            Eq
+                            (IntegerConstant 25 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Stop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

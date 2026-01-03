@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-binop_03-d0adef1",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/binop_03.f90",
+    "infile_hash": "40773874fce64382337a961de0452b96aa45b51534cabb1e1f791341",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-binop_03-d0adef1.stdout",
+    "stdout_hash": "104408dd0aa8e06308b5c92713d8a7db1d815f8f5453fa632c08934b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,5 @@
+semantic error: first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=4)
+ --> tests/errors/maskr_incorrect_bit_size.f90:2:12
+  |
+2 |    print*, maskr(63)
+  |            ^^^^^^^^^ 

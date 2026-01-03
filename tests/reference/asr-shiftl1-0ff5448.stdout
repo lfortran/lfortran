@@ -1,0 +1,94 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            shiftl1:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    shiftl1
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Shiftl
+                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Shiftl
+                                [(Var 2 x)
+                                (Var 2 y)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

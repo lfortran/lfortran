@@ -1,0 +1,5 @@
+integer function CH12N(N,Z)
+IMPLICIT DOUBLE PRECISION (A,B,D-H,O-Y)
+IMPLICIT COMPLEX*16 (C,Z)
+CI=(0.0D0,1.0D0)
+end function

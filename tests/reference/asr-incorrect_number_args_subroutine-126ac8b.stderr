@@ -1,0 +1,5 @@
+semantic error: More actual than formal arguments in procedure call
+ --> tests/errors/incorrect_number_args_subroutine.f90:3:18
+  |
+3 |     call my_func(1)
+  |                  ^ 

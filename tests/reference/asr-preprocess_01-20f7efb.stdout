@@ -1,0 +1,94 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocess_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    preprocess_01
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                Add
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                            )
+                            Mul
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant 25 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntegerConstant 18 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringConstant
+                            "Else condition"
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntegerConstant 30 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntegerConstant 10000 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )]
+                )
+        })
+    []
+)

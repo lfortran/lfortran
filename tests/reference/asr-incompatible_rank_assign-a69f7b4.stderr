@@ -1,0 +1,5 @@
+semantic error: Incompatible ranks `0` and `1` in assignment
+ --> tests/errors/incompatible_rank_assign.f90:2:1
+  |
+2 | integer :: x = [1,2,3]
+  | ^^^^^^^^^^^^^^^^^^^^^^ 

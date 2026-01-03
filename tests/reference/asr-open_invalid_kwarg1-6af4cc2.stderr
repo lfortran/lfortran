@@ -1,0 +1,5 @@
+semantic error: Invalid argument `hello` supplied
+ --> tests/errors/open_invalid_kwarg1.f90:4:5
+  |
+4 |     OPEN(file="numbers", hello="world")
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

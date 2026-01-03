@@ -1,0 +1,16 @@
+(TranslationUnit
+    [(Program
+        __xx_main
+        ()
+        []
+        []
+        []
+        [(Stop
+            0
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)

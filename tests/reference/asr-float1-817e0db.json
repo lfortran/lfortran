@@ -1,0 +1,13 @@
+{
+    "basename": "asr-float1-817e0db",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/float1.f90",
+    "infile_hash": "55dfda74a97e804376ef0789c76876426844dc611542c0c6947ef9e0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-float1-817e0db.stderr",
+    "stderr_hash": "1f0f7eed328eb29e5c62b7944807320a02636a5cda8da98f08f2d582",
+    "returncode": 2
+}

@@ -1,0 +1,91 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array_02_transfer:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            m:
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    array_02_transfer
+                    []
+                    [(Assignment
+                        (Var 2 m)
+                        (ArrayConstant
+                            28
+                            [1, 0, 0, ...., 5, 0, 0]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 7 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(BitCast
+                                (Var 2 m)
+                                (ArrayConstant
+                                    4
+                                    [1.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                ()
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 7 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

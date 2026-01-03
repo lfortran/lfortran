@@ -1,0 +1,13 @@
+{
+    "basename": "run-format_28-d8cdd42",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/format_28.f90",
+    "infile_hash": "e12053da38efd01671849c2d7e7ff4188ea37725fd373fee0322018e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-format_28-d8cdd42.stdout",
+    "stdout_hash": "5a623fd42274dea41223ab2fcd021cbd0ecbf208b1c2aa96782ade02",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

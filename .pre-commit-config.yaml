@@ -1,0 +1,25 @@
+exclude: ^tests/.*
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    -   id: trailing-whitespace
+        exclude: ".md"
+    -   id: end-of-file-fixer
+    -   id: fix-encoding-pragma
+        args: [--remove]
+    -   id: check-yaml
+        exclude: ^(tests/|doc/)
+    -   id: check-toml
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: pretty-format-json
+        args: [--autofix]
+    -   id: debug-statements
+        language_version: python3
+-   repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v13.0.1
+    hooks:
+    -   id: clang-format
+        args: [--style=file, -i]
+        exclude: ".json"

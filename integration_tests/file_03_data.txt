@@ -1,0 +1,11 @@
+10
+101 Adam Johnson 15 55.4
+102 Lisa Martinez 16 48.6
+103 Ethan Thompson 14 50.0
+104 Emma Davis 15 45.3
+105 Benjamin Wilson 16 60.8
+106 Sophia Taylor 14 50.7
+107 Oliver Harris 15 56.2
+108 Ava Jackson 16 47.6
+109 Lucas Hall 14 58.1
+110 Mia Young 15 46.9

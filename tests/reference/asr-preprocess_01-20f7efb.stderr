@@ -1,0 +1,35 @@
+warning: #ifdef ignored
+ --> tests/warnings/preprocess_01.f90:6:1
+  |
+6 | #ifdef pqr
+  | ^^^^^^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+warning: #elif ignored
+ --> tests/warnings/preprocess_01.f90:8:1
+  |
+8 | #elif mno == 18
+  | ^^^^^^^^^^^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+warning: #else ignored
+  --> tests/warnings/preprocess_01.f90:10:1
+   |
+10 | #else
+   | ^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+warning: #endif ignored
+  --> tests/warnings/preprocess_01.f90:13:1
+   |
+13 | #endif
+   | ^^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+warning: #define ignored
+  --> tests/warnings/preprocess_01.f90:16:1
+   |
+16 | #define abc(m, n) m + n
+   | ^^^^^^^^^^^^^^^^^^^^^^^^ help: use the '--cpp' command line option to preprocess it
+
+warning: Unsupported macro
+  --> tests/warnings/preprocess_01.f90:18:1
+   |
+18 | #abcd
+   | ^^^^^^ Ignored

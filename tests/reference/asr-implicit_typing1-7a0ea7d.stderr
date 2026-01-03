@@ -1,0 +1,5 @@
+semantic error: Variable 'l' is not declared
+ --> tests/implicit_typing1.f90:2:1
+  |
+2 | L = 3
+  | ^ 'l' is undeclared

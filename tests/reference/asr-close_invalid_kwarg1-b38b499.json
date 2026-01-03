@@ -1,0 +1,13 @@
+{
+    "basename": "asr-close_invalid_kwarg1-b38b499",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/close_invalid_kwarg1.f90",
+    "infile_hash": "296192ece06382b8ad7da3a6e8a9b36ec6a2d6b04dfd8d6a6e48fdf8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-close_invalid_kwarg1-b38b499.stderr",
+    "stderr_hash": "c25da8e5009596338b320d2df46e459e72d9d78b60d4d488724c3953",
+    "returncode": 2
+}
