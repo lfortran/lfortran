@@ -1,18 +1,17 @@
 program integerStringInput_int64
-    use iso_fortran_env, only: int64     ! Import int64 kind (as this was left)
     implicit none
-    integer(int64) :: x                   ! Declare x as int64 explicitly
-    integer :: ios
+
+    integer, parameter :: int64 = selected_int_kind(18)
+    integer(int64) :: x
 
     open(unit=10, file="tests/invalidInput_integer.txt", status="unknown")
 
     do
-        read(10, *, iostat=ios) x
-        if (ios /= 0) then
-            cycle
-        end if
+        read(10, *, end=100) x
         print *, "Read int64 integer:", x
     end do
 
+100 continue
     close(10)
+    stop
 end program integerStringInput_int64
