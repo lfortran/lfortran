@@ -4688,7 +4688,7 @@ public:
         }
     }
 
-    void visit_SubroutineCall(const AST::SubroutineCall_t &x) {//jainam
+    void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
         if( intrinsic_subroutine ) {
@@ -4806,84 +4806,74 @@ public:
 
         // checking for intent mismatch   
         if (f) { 
-                const int offset = (v_expr == nullptr || nopass) ? 0 : 1;
+            const int offset = (v_expr == nullptr || nopass) ? 0 : 1;
+            Vec<ASR::call_arg_t> new_args;
+            new_args.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::call_arg_t carg = args[i];
+                if (carg.m_value && (i + offset) < f->n_args) {
+                    ASR::Var_t *dummy_arg =
+                        ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
+                    ASR::Variable_t *dummy_var =
+                        ASR::down_cast<ASR::Variable_t>(dummy_arg->m_v);
 
-    Vec<ASR::call_arg_t> new_args;
-    new_args.reserve(al, args.size());
+                    ASR::ttype_t *dummy_type = dummy_var->m_type;
+                    ASR::ttype_t *actual_type = ASRUtils::expr_type(carg.m_value);
 
-    for (size_t i = 0; i < args.size(); i++) {
-        ASR::call_arg_t carg = args[i];
-
-        if (carg.m_value && (i + offset) < f->n_args) {
-            ASR::Var_t *dummy_arg =
-                ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
-            ASR::Variable_t *dummy_var =
-                ASR::down_cast<ASR::Variable_t>(dummy_arg->m_v);
-
-            ASR::ttype_t *dummy_type = dummy_var->m_type;
-            ASR::ttype_t *actual_type = ASRUtils::expr_type(carg.m_value);
-
-            if (ASRUtils::is_character(*dummy_type) &&
-                ASRUtils::is_character(*actual_type)) {
-
-                ASR::String_t *dummy_str =
-                    ASR::down_cast<ASR::String_t>(dummy_type);
-
-                // Only CHARACTER(len=1)
-                if (dummy_str->m_len &&
-                    ASR::is_a<ASR::IntegerConstant_t>(*dummy_str->m_len) &&
-                    ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n == 1) {
-
-                    std::string tmp_name =
-                        current_scope->get_unique_name("__lfortran_char_tmp");
-
-                    ASR::asr_t *tmp_var_asr = ASR::make_Variable_t(
-                        al, x.base.base.loc,
-                        current_scope,
-                        s2c(al, tmp_name),
-                        nullptr, 0,
-                        ASR::intentType::Local,
-                        nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        dummy_type,
-                        nullptr,
-                        ASR::abiType::Source,
-                        ASR::accessType::Private,
-                        ASR::presenceType::Required,
-                        false, false, false,
-                        nullptr, false, false
-                    );
-
-                    ASR::symbol_t *tmp_sym =
-                        ASR::down_cast<ASR::symbol_t>(tmp_var_asr);
-                    current_scope->add_symbol(tmp_name, tmp_sym);
-
-                    // tmp = actual
-                    ASR::stmt_t *assign_stmt =
-                        ASR::down_cast<ASR::stmt_t>(
-                            ASR::make_Assignment_t(
+                    if (ASR::is_a<ASR::String_t>(*dummy_type) &&
+                        ASRUtils::is_character(*actual_type)) {
+                        ASR::String_t *dummy_str =
+                            ASR::down_cast<ASR::String_t>(dummy_type);
+                        if (dummy_str->m_len &&
+                            ASR::is_a<ASR::IntegerConstant_t>(*dummy_str->m_len) &&
+                            ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n == 1 &&
+                            !ASRUtils::is_allocatable(dummy_var->m_type) &&
+                            !ASRUtils::is_allocatable(carg.m_value) &&
+                            !ASRUtils::is_allocatable(ASRUtils::expr_type(carg.m_value))) {
+                            std::string tmp_name =
+                                current_scope->get_unique_name("__lfortran_char_tmp");
+                            ASR::asr_t *tmp_var_asr = ASR::make_Variable_t(
                                 al, x.base.base.loc,
+                                current_scope,
+                                s2c(al, tmp_name),
+                                nullptr, 0,
+                                ASR::intentType::Local,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                dummy_type,
+                                nullptr,
+                                ASR::abiType::Source,
+                                ASR::accessType::Private,
+                                ASR::presenceType::Required,
+                                false, false, false,
+                                nullptr, false, false
+                            );
+                            ASR::symbol_t *tmp_sym =
+                                ASR::down_cast<ASR::symbol_t>(tmp_var_asr);
+                            current_scope->add_symbol(tmp_name, tmp_sym);
+                            // tmp = actual
+                            ASR::stmt_t *assign_stmt =
+                                ASR::down_cast<ASR::stmt_t>(
+                                    ASR::make_Assignment_t(
+                                        al, x.base.base.loc,
+                                        ASRUtils::EXPR(
+                                            ASR::make_Var_t(al, x.base.base.loc, tmp_sym)
+                                        ),
+                                        carg.m_value,
+                                        nullptr,
+                                        false,
+                                        false
+                                    )
+                                );
+
+                            current_body->push_back(al, assign_stmt);
+                            carg.m_value =
                                 ASRUtils::EXPR(
                                     ASR::make_Var_t(al, x.base.base.loc, tmp_sym)
-                                ),
-                                carg.m_value,
-                                nullptr,
-                                false,
-                                false
-                            )
-                        );
-
-                    current_body->push_back(al, assign_stmt);
-
-                    // replace argument
-                    carg.m_value =
-                        ASRUtils::EXPR(
-                            ASR::make_Var_t(al, x.base.base.loc, tmp_sym)
-                        );
+                                );
+                        }
+                    }
                 }
-            }
-        }
-
         new_args.push_back(al, carg);
     }
 
