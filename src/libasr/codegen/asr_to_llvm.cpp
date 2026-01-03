@@ -3153,7 +3153,7 @@ public:
             llvm::Value* data_ptr_addr = builder->CreateStructGEP(llvm_arr_type, array, 0);
             
             // 3. Load the data pointer (Explicit pointer type for LLVM 18)
-            llvm::Value* data_ptr = builder->CreateLoad(builder->getPtrTy(), data_ptr_addr);
+            llvm::Value* data_ptr = builder->CreateLoad(llvm::PointerType::get(context, 0), data_ptr_addr);
             
             // 4. Create the Null Check
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
