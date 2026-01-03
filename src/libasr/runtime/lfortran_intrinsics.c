@@ -3873,10 +3873,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
         return ;
     }
     for( int i = index; i < last_index_used; i++ ) {
-        unit_to_file[i].unit = unit_to_file[i + 1].unit;
-        unit_to_file[i].filename = unit_to_file[i + 1].filename;
-        unit_to_file[i].filep = unit_to_file[i + 1].filep;
-        unit_to_file[i].unit_file_bin = unit_to_file[i + 1].unit_file_bin;
+        unit_to_file[i] = unit_to_file[i + 1];
     }
     last_index_used -= 1;
 }
