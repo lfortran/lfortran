@@ -4824,12 +4824,10 @@ public:
                         ASRUtils::is_character(*actual_type)) {
                         ASR::String_t *dummy_str =
                             ASR::down_cast<ASR::String_t>(dummy_type);
+                        
                         if (dummy_str->m_len &&
                             ASR::is_a<ASR::IntegerConstant_t>(*dummy_str->m_len) &&
-                            ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n == 1 &&
-                            !ASRUtils::is_allocatable(dummy_var->m_type) &&
-                            !ASRUtils::is_allocatable(carg.m_value) &&
-                            !ASRUtils::is_allocatable(ASRUtils::expr_type(carg.m_value))) {
+                            ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n == 1) {
                             std::string tmp_name =
                                 current_scope->get_unique_name("__lfortran_char_tmp");
                             ASR::asr_t *tmp_var_asr = ASR::make_Variable_t(
