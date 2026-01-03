@@ -5000,6 +5000,42 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 }
 
 
+// Helper to convert Fortran D exponent notation to E for C parsing
+// Modifies buffer in-place, replacing D/d with E
+static void convert_fortran_d_exponent(char* buffer) {
+    for (int i = 0; buffer[i] != '\0'; i++) {
+        if (buffer[i] == 'D' || buffer[i] == 'd') {
+            buffer[i] = 'E';
+        }
+    }
+}
+
+// Helper to parse float with D exponent support and error checking
+// Returns 1 on success, 0 on failure
+static int parse_fortran_float(const char* buffer, float* result) {
+    char temp[100];
+    strncpy(temp, buffer, 99);
+    temp[99] = '\0';
+    convert_fortran_d_exponent(temp);
+    char* endptr;
+    *result = strtof(temp, &endptr);
+    // Check if conversion consumed any characters and reached end or whitespace
+    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+}
+
+// Helper to parse double with D exponent support and error checking
+// Returns 1 on success, 0 on failure
+static int parse_fortran_double(const char* buffer, double* result) {
+    char temp[100];
+    strncpy(temp, buffer, 99);
+    temp[99] = '\0';
+    convert_fortran_d_exponent(temp);
+    char* endptr;
+    *result = strtod(temp, &endptr);
+    // Check if conversion consumed any characters and reached end or whitespace
+    return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
+}
+
 // Improved input validation for float reading
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat)
 {
@@ -5013,6 +5049,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
             exit(1);
         }
 
+        convert_fortran_d_exponent(buffer);
         char *token = strtok(buffer, " \t\n");
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
@@ -5046,9 +5083,16 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
             exit(1);
         }
     } else {
-        if (fscanf(filep, "%f", p) != 1) {
+        // Read as string first to handle Fortran D exponent notation
+        char buffer[100];
+        if (fscanf(filep, "%99s", buffer) != 1) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Invalid input for float from file.\n");
+            exit(1);
+        }
+        if (!parse_fortran_float(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from file.\n");
             exit(1);
         }
     }
@@ -5059,11 +5103,16 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
-        if (scanf("%f %f", &p->re, &p->im) != 2) {
+        char buf_re[100], buf_im[100];
+        if (scanf("%99s %99s", buf_re, buf_im) != 2) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read complex float from stdin.\n");
             exit(1);
         }
+        convert_fortran_d_exponent(buf_re);
+        convert_fortran_d_exponent(buf_im);
+        p->re = strtof(buf_re, NULL);
+        p->im = strtof(buf_im, NULL);
         return;
     }
 
@@ -5083,11 +5132,12 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
         }
     } else {
         char buffer[100];
-        if (fscanf(filep, "%s", buffer) != 1) {
+        if (fscanf(filep, "%99s", buffer) != 1) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Invalid input for complex float from file.\n");
             exit(1);
         }
+        convert_fortran_d_exponent(buffer);
         char *start = strchr(buffer, '(');
         char *end = strchr(buffer, ')');
         if (start && end && end > start) {
@@ -5110,21 +5160,25 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
             if (comma) *comma = '\0';
             p->re = strtof(start, NULL);
             char buffer2[100];
-            if (fscanf(filep, "%s", buffer2) != 1) {
+            if (fscanf(filep, "%99s", buffer2) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buffer2);
             end = strchr(buffer2, ')');
             if (end) *end = '\0';
             p->im = strtof(buffer2, NULL);
         } else {
             p->re = strtof(buffer, NULL);
-            if (fscanf(filep, "%f", &p->im) != 1) {
+            char buf_im[100];
+            if (fscanf(filep, "%99s", buf_im) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buf_im);
+            p->im = strtof(buf_im, NULL);
         }
     }
 }
@@ -5134,11 +5188,16 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
-        if (scanf("%lf %lf", &p->re, &p->im) != 2) {
+        char buf_re[100], buf_im[100];
+        if (scanf("%99s %99s", buf_re, buf_im) != 2) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
             exit(1);
         }
+        convert_fortran_d_exponent(buf_re);
+        convert_fortran_d_exponent(buf_im);
+        p->re = strtod(buf_re, NULL);
+        p->im = strtod(buf_im, NULL);
         return;
     }
 
@@ -5158,11 +5217,12 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
         }
     } else {
         char buffer[100];
-        if (fscanf(filep, "%s", buffer) != 1) {
+        if (fscanf(filep, "%99s", buffer) != 1) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Invalid input for complex double from file.\n");
             exit(1);
         }
+        convert_fortran_d_exponent(buffer);
         char *start = strchr(buffer, '(');
         char *end = strchr(buffer, ')');
         if (start && end && end > start) {
@@ -5185,21 +5245,25 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
             if (comma) *comma = '\0';
             p->re = strtod(start, NULL);
             char buffer2[100];
-            if (fscanf(filep, "%s", buffer2) != 1) {
+            if (fscanf(filep, "%99s", buffer2) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buffer2);
             end = strchr(buffer2, ')');
             if (end) *end = '\0';
             p->im = strtod(buffer2, NULL);
         } else {
             p->re = strtod(buffer, NULL);
-            if (fscanf(filep, "%lf", &p->im) != 1) {
+            char buf_im[100];
+            if (fscanf(filep, "%99s", buf_im) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buf_im);
+            p->im = strtod(buf_im, NULL);
         }
     }
 }
@@ -5208,13 +5272,19 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
 {
     if (iostat) *iostat = 0;
 
+    char buf_re[100], buf_im[100];
+
     if (unit_num == -1) {
         for (int i = 0; i < array_size; i++) {
-            if (scanf("%f %f", &p[i].re, &p[i].im) != 2) {
+            if (scanf("%99s %99s", buf_re, buf_im) != 2) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex float from stdin.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buf_re);
+            convert_fortran_d_exponent(buf_im);
+            p[i].re = strtof(buf_re, NULL);
+            p[i].im = strtof(buf_im, NULL);
         }
         return;
     }
@@ -5236,11 +5306,12 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
     } else {
         for (int i = 0; i < array_size; i++) {
             char buffer[100];
-            if (fscanf(filep, "%s", buffer) != 1) {
+            if (fscanf(filep, "%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Invalid input for complex float from file.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buffer);
             char *start = strchr(buffer, '(');
             char *end = strchr(buffer, ')');
             if (start && end && end > start) {
@@ -5259,11 +5330,15 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
                     exit(1);
                 }
             } else {
-                if (fscanf(filep, "%f %f", &p[i].re, &p[i].im) != 2) {
+                if (fscanf(filep, "%99s %99s", buf_re, buf_im) != 2) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex float from file.\n");
                     exit(1);
                 }
+                convert_fortran_d_exponent(buf_re);
+                convert_fortran_d_exponent(buf_im);
+                p[i].re = strtof(buf_re, NULL);
+                p[i].im = strtof(buf_im, NULL);
             }
         }
     }
@@ -5273,13 +5348,19 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
 {
     if (iostat) *iostat = 0;
 
+    char buf_re[100], buf_im[100];
+
     if (unit_num == -1) {
         for (int i = 0; i < array_size; i++) {
-            if (scanf("%lf %lf", &p[i].re, &p[i].im) != 2) {
+            if (scanf("%99s %99s", buf_re, buf_im) != 2) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buf_re);
+            convert_fortran_d_exponent(buf_im);
+            p[i].re = strtod(buf_re, NULL);
+            p[i].im = strtod(buf_im, NULL);
         }
         return;
     }
@@ -5301,11 +5382,12 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
     } else {
         for (int i = 0; i < array_size; i++) {
             char buffer[100];
-            if (fscanf(filep, "%s", buffer) != 1) {
+            if (fscanf(filep, "%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Invalid input for complex double from file.\n");
                 exit(1);
             }
+            convert_fortran_d_exponent(buffer);
             char *start = strchr(buffer, '(');
             char *end = strchr(buffer, ')');
             if (start && end && end > start) {
@@ -5324,11 +5406,15 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
                     exit(1);
                 }
             } else {
-                if (fscanf(filep, "%lf %lf", &p[i].re, &p[i].im) != 2) {
+                if (fscanf(filep, "%99s %99s", buf_re, buf_im) != 2) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex double from file.\n");
                     exit(1);
                 }
+                convert_fortran_d_exponent(buf_re);
+                convert_fortran_d_exponent(buf_im);
+                p[i].re = strtod(buf_re, NULL);
+                p[i].im = strtod(buf_im, NULL);
             }
         }
     }
@@ -5338,11 +5424,18 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
 {
     if (iostat) *iostat = 0;
 
+    char buffer[100];
+
     if (unit_num == -1) {
         for (int i = 0; i < array_size; i++) {
-            if (scanf("%f", &p[i]) != 1) {
+            if (scanf("%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read float from stdin.\n");
+                exit(1);
+            }
+            if (!parse_fortran_float(buffer, &p[i])) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from stdin.\n");
                 exit(1);
             }
         }
@@ -5365,9 +5458,14 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t u
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            if (fscanf(filep, "%f", &p[i]) != 1) {
+            if (fscanf(filep, "%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read float from file.\n");
+                exit(1);
+            }
+            if (!parse_fortran_float(buffer, &p[i])) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from file.\n");
                 exit(1);
             }
         }
@@ -5378,11 +5476,18 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
 {
     if (iostat) *iostat = 0;
 
+    char buffer[100];
+
     if (unit_num == -1) {
         for (int i = 0; i < array_size; i++) {
-            if (scanf("%lf", &p[i]) != 1) {
+            if (scanf("%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from stdin.\n");
+                exit(1);
+            }
+            if (!parse_fortran_double(buffer, &p[i])) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from stdin.\n");
                 exit(1);
             }
         }
@@ -5405,9 +5510,14 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            if (fscanf(filep, "%lf", &p[i]) != 1) {
+            if (fscanf(filep, "%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from file.\n");
+                exit(1);
+            }
+            if (!parse_fortran_double(buffer, &p[i])) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from file.\n");
                 exit(1);
             }
         }
@@ -5468,9 +5578,16 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
-        if (scanf("%lf", p) != 1) {
+        // Read as string to handle Fortran D exponent notation
+        char buffer[100];
+        if (scanf("%99s", buffer) != 1) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
+            exit(1);
+        }
+        if (!parse_fortran_double(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from stdin.\n");
             exit(1);
         }
         return;
@@ -5491,15 +5608,22 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
             exit(1);
         }
     } else {
-        if (fscanf(filep, "%lf", p) != 1) {
+        // Read as string to handle Fortran D exponent notation
+        char buffer[100];
+        if (fscanf(filep, "%99s", buffer) != 1) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read double from file.\n");
+            exit(1);
+        }
+        if (!parse_fortran_double(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from file.\n");
             exit(1);
         }
     }
 }
 
-/*    
+/*
     -- Check equality of strings --
 - Not case sensitive.
 - Not null dependent.
