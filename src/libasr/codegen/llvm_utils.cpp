@@ -91,6 +91,53 @@ namespace LCompilers {
             };
             return builder.CreateCall(fn, args);
         }
+
+        // Arena allocator functions for fixed-size local arrays
+        llvm::Value* lfortran_arena_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* size) {
+            std::string func_name = "_lfortran_arena_alloc";
+            size = builder.CreateSExt(size, llvm::Type::getInt64Ty(context));
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                            llvm::Type::getInt64Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            std::vector<llvm::Value*> args = {size};
+            return builder.CreateCall(fn, args);
+        }
+
+        llvm::Value* lfortran_arena_save(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder) {
+            std::string func_name = "_lfortran_arena_save";
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {}, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            return builder.CreateCall(fn, {});
+        }
+
+        void lfortran_arena_restore(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* saved_ptr) {
+            std::string func_name = "_lfortran_arena_restore";
+            llvm::Function *fn = module.getFunction(func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, func_name, &module);
+            }
+            builder.CreateCall(fn, {saved_ptr});
+        }
+
         bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
             /*
                 True : When Pointer or Allocatable, if and only if it's not a standalond string type.

@@ -102,6 +102,7 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %ione = alloca i32, align 4
   %izero = alloca i32, align 4
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca %complextype, align 8
   %2 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
@@ -250,6 +251,8 @@ return:                                           ; preds = %ifcont12
 FINALIZE_SYMTABLE_generic_name_01:                ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

@@ -97,6 +97,7 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca i1, align 1
   %b = alloca i1, align 1
@@ -288,6 +289,8 @@ return:                                           ; preds = %ifcont24
 FINALIZE_SYMTABLE_logical3:                       ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

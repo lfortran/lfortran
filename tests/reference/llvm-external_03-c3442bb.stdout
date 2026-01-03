@@ -62,6 +62,7 @@ declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   call void @b()
   call void @_lpython_free_argv()
@@ -73,6 +74,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_external_03:                    ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

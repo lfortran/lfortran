@@ -56,6 +56,7 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value1 = alloca i1, align 1
   %call_arg_value = alloca i1, align 1
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i1 true, i1* %call_arg_value, align 1
   call void @_lcompilers_execute_command_line_(%string_descriptor* @string_const, i1* %call_arg_value)
@@ -70,6 +71,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_execute_command_line:           ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
