@@ -15,7 +15,20 @@ endif()
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_Fortran_MODULE_DIRECTORY})
 
+set(LFORTRAN_COMPILER_STAMP "${CMAKE_BINARY_DIR}/lfortran_compiler.stamp")
+add_custom_command(
+  OUTPUT "${LFORTRAN_COMPILER_STAMP}"
+  COMMAND "${CMAKE_COMMAND}" -E touch "${LFORTRAN_COMPILER_STAMP}"
+  DEPENDS "${CMAKE_Fortran_COMPILER}"
+  VERBATIM
+  )
+
 macro(lfortran_compile_runtime name dir)
+  set_source_files_properties(
+    ${dir}/${name}.f90
+    PROPERTIES
+    OBJECT_DEPENDS "${LFORTRAN_COMPILER_STAMP}"
+    )
   add_library(${name} OBJECT ${dir}/${name}.f90)
   target_compile_options(${name} PUBLIC "--backend=cpp")
   set_target_properties(${name} PROPERTIES
@@ -53,4 +66,3 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-

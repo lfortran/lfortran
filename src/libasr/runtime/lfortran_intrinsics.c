@@ -4932,6 +4932,126 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        (void)!scanf("%f %f", &p->re, &p->im);
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_32), 1, filep);
+    } else {
+        char buffer[100];
+        if (fscanf(filep, "%s", buffer) != 1) {
+            fprintf(stderr, "Error: Invalid input for complex float from file.\n");
+            exit(1);
+        }
+        char *start = strchr(buffer, '(');
+        char *end = strchr(buffer, ')');
+        if (start && end && end > start) {
+            *end = '\0';
+            start++;
+            char *comma = strchr(start, ',');
+            if (comma) {
+                *comma = '\0';
+                while (isspace((unsigned char)*start)) start++;
+                p->re = strtof(start, NULL);
+                p->im = strtof(comma + 1, NULL);
+            } else {
+                fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
+                exit(1);
+            }
+        } else if (start) {
+            start++;
+            char *comma = strchr(start, ',');
+            if (comma) *comma = '\0';
+            p->re = strtof(start, NULL);
+            char buffer2[100];
+            if (fscanf(filep, "%s", buffer2) != 1) {
+                fprintf(stderr, "Error: Failed to read imaginary part.\n");
+                exit(1);
+            }
+            end = strchr(buffer2, ')');
+            if (end) *end = '\0';
+            p->im = strtof(buffer2, NULL);
+        } else {
+            p->re = strtof(buffer, NULL);
+            if (fscanf(filep, "%f", &p->im) != 1) {
+                fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
+                exit(1);
+            }
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        (void)!scanf("%lf %lf", &p->re, &p->im);
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_64), 1, filep);
+    } else {
+        char buffer[100];
+        if (fscanf(filep, "%s", buffer) != 1) {
+            fprintf(stderr, "Error: Invalid input for complex double from file.\n");
+            exit(1);
+        }
+        char *start = strchr(buffer, '(');
+        char *end = strchr(buffer, ')');
+        if (start && end && end > start) {
+            *end = '\0';
+            start++;
+            char *comma = strchr(start, ',');
+            if (comma) {
+                *comma = '\0';
+                while (isspace((unsigned char)*start)) start++;
+                p->re = strtod(start, NULL);
+                p->im = strtod(comma + 1, NULL);
+            } else {
+                fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
+                exit(1);
+            }
+        } else if (start) {
+            start++;
+            char *comma = strchr(start, ',');
+            if (comma) *comma = '\0';
+            p->re = strtod(start, NULL);
+            char buffer2[100];
+            if (fscanf(filep, "%s", buffer2) != 1) {
+                fprintf(stderr, "Error: Failed to read imaginary part.\n");
+                exit(1);
+            }
+            end = strchr(buffer2, ')');
+            if (end) *end = '\0';
+            p->im = strtod(buffer2, NULL);
+        } else {
+            p->re = strtod(buffer, NULL);
+            if (fscanf(filep, "%lf", &p->im) != 1) {
+                fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
+                exit(1);
+            }
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {

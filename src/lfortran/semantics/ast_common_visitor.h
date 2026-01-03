@@ -2618,6 +2618,32 @@ public:
         }
     }
 
+    void substitute_var_in_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
+                                           ASR::symbol_t* var_sym,
+                                           int64_t value,
+                                           ASR::ttype_t* int_type) {
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* val = idl->m_values[i];
+            if (ASR::is_a<ASR::ArrayItem_t>(*val)) {
+                ASR::ArrayItem_t* arr = ASR::down_cast<ASR::ArrayItem_t>(val);
+                for (size_t j = 0; j < arr->n_args; j++) {
+                    ASR::expr_t* idx = arr->m_args[j].m_right;
+                    if (idx && ASR::is_a<ASR::Var_t>(*idx)) {
+                        ASR::symbol_t* idx_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(idx)->m_v);
+                        if (idx_sym == var_sym) {
+                            arr->m_args[j].m_right = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, val->base.loc, value, int_type));
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
+                substitute_var_in_implied_do_loop(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(val), var_sym, value, int_type);
+            }
+        }
+    }
+
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
@@ -2668,43 +2694,60 @@ public:
         int64_t loop_end = ASR::down_cast<ASR::IntegerConstant_t>(end_expr_value)->m_n;
         int64_t loop_increment = ASR::down_cast<ASR::IntegerConstant_t>(increment_expr_value)->m_n;
 
+        ASR::symbol_t* loop_var_sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(implied_do_loop->m_var)->m_v);
+
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
             for (size_t value_index_in_loop = 0; value_index_in_loop < implied_do_loop->n_values; value_index_in_loop++) {
                 ASR::expr_t* duplicatedExpr = exprDuplicator.duplicate_expr(
                                                 implied_do_loop->m_values[value_index_in_loop]);
-                ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
-                for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
-                    ASR::array_index_t array_index = array_item_expr->m_args[arg_index];
-                    ASR::expr_t* index_expr = array_index.m_right;
-                    if (ASR::is_a<ASR::Var_t>(*index_expr)) {
-                        array_item_expr->m_args[arg_index].m_right = ASRUtils::EXPR(
-                                                                    ASR::make_IntegerConstant_t(al,
-                                                                        implied_do_loop->base.base.loc,
-                                                                        loop_var, integer_type)
-                                                                    );
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*duplicatedExpr)) {
+                    // Substitute the current loop variable in nested loop before recursing
+                    ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
+                    substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index);
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
+                    ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
+                    for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
+                        ASR::array_index_t array_index = array_item_expr->m_args[arg_index];
+                        ASR::expr_t* index_expr = array_index.m_right;
+                        if (ASR::is_a<ASR::Var_t>(*index_expr)) {
+                            ASR::symbol_t* index_sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(index_expr)->m_v);
+                            if (index_sym == loop_var_sym) {
+                                array_item_expr->m_args[arg_index].m_right = ASRUtils::EXPR(
+                                                                            ASR::make_IntegerConstant_t(al,
+                                                                                implied_do_loop->base.base.loc,
+                                                                                loop_var, integer_type)
+                                                                            );
+                            }
+                        }
                     }
+                    ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                    ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+                    if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type))
+                        && (value_index<(data_stmt_set->n_value)) &&
+                        (AST::is_a<AST::BOZ_t>(*data_stmt_set->m_value[value_index]))) {
+                        current_variable_type_ = array_item_expr->m_type;
+                    }
+                    this->visit_expr(*data_stmt_set->m_value[value_index++]);
+                    ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                    current_variable_type_ = temp_current_variable_type_;
+                    ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+                    ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                                        target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
+                                                                 );
+                    LCOMPILERS_ASSERT(current_body != nullptr)
+                    current_body->push_back(al, assignStatement);
+                } else {
+                    diag.add(Diagnostic(
+                        "Unsupported expression type in DATA implied do loop",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {duplicatedExpr->base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
-                ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
-                ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
-                // Get the Type of Object
-                // If object is Real, set current_variable_type to Real
-                // This type flag is passed to Visit_BOZ, 
-                // so that Real Values are correctly decoded from BOZ String
-                if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) 
-                    && (value_index<(data_stmt_set->n_value)) &&
-                    (AST::is_a<AST::BOZ_t>(*data_stmt_set->m_value[value_index]))) {
-                    current_variable_type_ = array_item_expr->m_type;
-                }
-                this->visit_expr(*data_stmt_set->m_value[value_index++]);
-                ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                current_variable_type_ = temp_current_variable_type_;
-                ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                    target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
-                                                             );
-                LCOMPILERS_ASSERT(current_body != nullptr)
-                current_body->push_back(al, assignStatement);
             }
         }
     }
@@ -2803,6 +2846,57 @@ public:
     }
 
 
+    // Helper function to recursively count elements in an implied do loop
+    int64_t count_implied_do_loop_elements(ASR::ImpliedDoLoop_t* implied_do_loop, bool& can_validate) {
+        ASR::expr_t* start_expr_value = ASRUtils::expr_value(implied_do_loop->m_start);
+        ASR::expr_t* end_expr_value = ASRUtils::expr_value(implied_do_loop->m_end);
+        ASR::expr_t* increment_expr = implied_do_loop->m_increment;
+
+        if (!start_expr_value || !end_expr_value) {
+            can_validate = false;
+            return 0;
+        }
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*start_expr_value) ||
+            !ASR::is_a<ASR::IntegerConstant_t>(*end_expr_value)) {
+            can_validate = false;
+            return 0;
+        }
+        int64_t increment = 1;
+        if (increment_expr) {
+            ASR::expr_t* increment_value = ASRUtils::expr_value(increment_expr);
+            if (!increment_value || !ASR::is_a<ASR::IntegerConstant_t>(*increment_value)) {
+                can_validate = false;
+                return 0;
+            }
+            increment = ASR::down_cast<ASR::IntegerConstant_t>(increment_value)->m_n;
+        }
+
+        int64_t start = ASR::down_cast<ASR::IntegerConstant_t>(start_expr_value)->m_n;
+        int64_t end = ASR::down_cast<ASR::IntegerConstant_t>(end_expr_value)->m_n;
+        int64_t iterations = 0;
+        if (increment > 0) {
+            iterations = (end - start) / increment + 1;
+            if (iterations < 0) iterations = 0;
+        } else {
+            can_validate = false;
+            return 0;
+        }
+
+        // Count elements per iteration (may contain nested implied do loops)
+        int64_t elements_per_iteration = 0;
+        for (size_t i = 0; i < implied_do_loop->n_values; i++) {
+            ASR::expr_t* value = implied_do_loop->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                elements_per_iteration += count_implied_do_loop_elements(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(value), can_validate);
+                if (!can_validate) return 0;
+            } else {
+                elements_per_iteration += 1;
+            }
+        }
+        return iterations * elements_per_iteration;
+    }
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
@@ -2839,41 +2933,11 @@ public:
                         break;
                     }
                 } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
-                    // Calculate implied do loop iterations
+                    // Recursively count implied do loop elements (handles nested loops)
                     ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
-                    ASR::expr_t* start_expr_value = ASRUtils::expr_value(implied_do_loop->m_start);
-                    ASR::expr_t* end_expr_value = ASRUtils::expr_value(implied_do_loop->m_end);
-                    ASR::expr_t* increment_expr = implied_do_loop->m_increment;
-                    
-                    if (!start_expr_value || !end_expr_value) {
-                        // Cannot evaluate at compile time
-                        can_validate = false;
-                        break;
-                    }
-                    // Default increment is 1 if not specified
-                    int64_t increment = 1;
-                    if (increment_expr) {
-                        ASR::expr_t* increment_value = ASRUtils::expr_value(increment_expr);
-                        if (!increment_value) {
-                            can_validate = false;
-                            break;
-                        }
-                        increment = ASR::down_cast<ASR::IntegerConstant_t>(increment_value)->m_n;
-                    }
-                    
-                    int64_t start = ASR::down_cast<ASR::IntegerConstant_t>(start_expr_value)->m_n;
-                    int64_t end = ASR::down_cast<ASR::IntegerConstant_t>(end_expr_value)->m_n;
-                    // Calculate number of iterations
-                    int64_t iterations = 0;
-                    if (increment > 0) {
-                        iterations = (end - start) / increment + 1;
-                        if (iterations < 0) iterations = 0;
-                    } else {
-                        can_validate = false;
-                        break;
-                    }
-                    // Each iteration contributes n_values elements
-                    total_lhs_elements += iterations * implied_do_loop->n_values;
+                    int64_t count = count_implied_do_loop_elements(implied_do_loop, can_validate);
+                    if (!can_validate) break;
+                    total_lhs_elements += count;
                 } else {
                     // Scalar variable adds 1 element
                     total_lhs_elements += 1;
@@ -3666,6 +3730,23 @@ public:
                                                         value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, (int64_t)re_val, v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
                                                             ASR::cast_kindType::ComplexToInteger, v->m_type, value));
+                                                    } else if (ASRUtils::is_complex(*v->m_type)) {
+                                                        int init_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(init_val));
+                                                        int var_kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
+                                                        if (init_kind != var_kind) {
+                                                            double im_val = 0.0;
+                                                            if (ASR::is_a<ASR::ComplexConstant_t>(*init_val)) {
+                                                                im_val = ASR::down_cast<ASR::ComplexConstant_t>(init_val)->m_im;
+                                                            } else {
+                                                                ASR::ComplexConstructor_t* ctor = ASR::down_cast<ASR::ComplexConstructor_t>(init_val);
+                                                                if (ctor->m_value && ASR::is_a<ASR::ComplexConstant_t>(*ctor->m_value)) {
+                                                                    im_val = ASR::down_cast<ASR::ComplexConstant_t>(ctor->m_value)->m_im;
+                                                                }
+                                                            }
+                                                            value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc, re_val, im_val, v->m_type));
+                                                            init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
+                                                                ASR::cast_kindType::ComplexToComplex, v->m_type, value));
+                                                        }
                                                     }
                                                 }
                                                 v->m_symbolic_value = init_val;
@@ -9907,6 +9988,14 @@ public:
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
+                    if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
+                        ASR::ttype_t *int4_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        args.p[2] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int4_type));
+                        if (args[1] == nullptr && !is_complex(*ASRUtils::expr_type(args[0]))) {
+                            ASR::ttype_t *real8_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                            args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, 0.0, real8_type));
+                        }
+                    }
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
@@ -12515,7 +12604,7 @@ public:
                 // Replace symbols in StructConstant to external symbols
                 if (default_init && ASR::is_a<ASR::StructConstant_t>(*default_init)) {
                     ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
-                    ASR::symbol_t *ext_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
+                    ASR::symbol_t *ext_sym = ASRUtils::symbol_parent_symtab(fn)->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
                         ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym, true);
                         default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
