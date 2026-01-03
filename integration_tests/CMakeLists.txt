@@ -2020,6 +2020,7 @@ RUN(NAME file_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME file_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
