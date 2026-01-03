@@ -804,7 +804,66 @@
                                     )
                                     []
                                     [(Var 13 self)]
-                                    [(Assignment
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(StructInstanceMember
+                                                    (Var 13 self)
+                                                    13 1_dependency_config_t_git
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Allocate
+                                            [((StructInstanceMember
+                                                (Var 13 self)
+                                                13 1_dependency_config_t_git
+                                                (Allocatable
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            []
+                                            ()
+                                            ()
+                                            ())]
+                                            ()
+                                            ()
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_dependency_config_t_git

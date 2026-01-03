@@ -30,9 +30,9 @@ contains
         print *, x
         print *, reshape(x, [size(x)])
         print *, x(1)
+	    x = [1, 2]
+        print *, (x /= [1, 2])
     end subroutine assumed_rank
-
-
 
 
 

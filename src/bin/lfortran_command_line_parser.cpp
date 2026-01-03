@@ -67,8 +67,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
-        app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-            "Convert the linear location info into line + column in the debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
@@ -361,7 +359,7 @@ namespace LCompilers::CommandLineInterface {
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
+        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 

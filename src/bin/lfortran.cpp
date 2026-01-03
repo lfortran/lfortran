@@ -141,21 +141,17 @@ void print_one_component(std::string component) {
         is_pass = true;
     }
 
-    // Apply colors for key entries
+    // Apply colors for key entries (minimal color scheme)
     if (component_name == "Total time") {
         std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
         std::cout << GREEN;
-    } else if (component_name == "Allocator usage of last chunk (MB)") {
-        std::cout << YELLOW;
-    } else if (component_name == "Allocator chunks") {
-        std::cout << CYAN;
-    } else if (component_name == "File reading" || component_name == "Src -> ASR") {
-        std::cout << MAGENTA;
-    } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
-        std::cout << RED;
-    } else if (!is_pass) {
-        std::cout << BLUE;  // Default blue for non-[PASS] entries
+    } else if (component_name == "File reading" || component_name == "Src -> ASR" ||
+               component_name == "ASR passes (total)" || component_name == "LLVM IR creation" ||
+               component_name == "ASR -> mod" || component_name == "LLVM opt" ||
+               component_name == "LLVM -> BIN" || component_name == "Linking time") {
+        std::cout << CYAN;  // Phase headers in cyan
     }
+    // All other entries (allocator info, [PASS] entries) use default white/reset color
 
     // Print in formatted table
     int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
@@ -169,21 +165,64 @@ void print_one_component(std::string component) {
         int time_width = 10;
 
         std::cout << std::string(indent_width, ' ')  // Print indentation
-                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::left << std::setw(name_width) << component_name
                   << std::right << std::setw(time_width)
                   << std::fixed << std::setprecision(3) << time_float
-                  << '\n';
+                  << RESET << '\n';
     }
 }
 
 
 // Note: this function is case sensitive to the input string
 void print_time_report(const std::vector<std::string>& vector_of_time_report) {
+    // Categorize entries
+    std::vector<std::string> allocator_entries;
+    std::vector<std::string> pass_entries;
+    std::string file_reading, src_to_asr, asr_to_mod, llvm_ir_creation,
+                llvm_opt, llvm_to_bin, linking_time, total_time;
+
     for (const auto& entry : vector_of_time_report) {
-        // check if `Allocator usage of last chunk (MB)` or `Allocator chunks` is present
         if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
             entry.find("Allocator chunks") != std::string::npos) {
-            print_one_component(entry);
+            allocator_entries.push_back(entry);
+        } else if (entry.find("[PASS]") != std::string::npos) {
+            pass_entries.push_back(entry);
+        } else if (entry.find("File reading") != std::string::npos) {
+            file_reading = entry;
+        } else if (entry.find("Src -> ASR") != std::string::npos) {
+            src_to_asr = entry;
+        } else if (entry.find("ASR -> mod") != std::string::npos) {
+            asr_to_mod = entry;
+        } else if (entry.find("LLVM IR creation") != std::string::npos) {
+            llvm_ir_creation = entry;
+        } else if (entry.find("LLVM opt") != std::string::npos) {
+            llvm_opt = entry;
+        } else if (entry.find("LLVM -> BIN") != std::string::npos) {
+            llvm_to_bin = entry;
+        } else if (entry.find("Linking time") != std::string::npos) {
+            linking_time = entry;
+        } else if (entry.find("Total time") != std::string::npos) {
+            total_time = entry;
+        }
+        // Skip "ASR -> ASR passes" (old entry, replaced by calculated summary)
+    }
+
+    // Print allocator info first
+    for (const auto& entry : allocator_entries) {
+        print_one_component(entry);
+    }
+
+    // Calculate total time for ASR passes
+    double asr_passes_total = 0.0;
+    for (const auto& entry : pass_entries) {
+        std::istringstream ss(entry);
+        std::string name, time_str;
+        std::getline(ss, name, ':');
+        ss >> time_str;
+        try {
+            asr_passes_total += std::stof(time_str);
+        } catch (...) {
+            // Skip if parsing fails
         }
     }
 
@@ -193,13 +232,29 @@ void print_time_report(const std::vector<std::string>& vector_of_time_report) {
               << std::right << std::setw(10) << "Time (ms)" << '\n';
     std::cout << std::string(60, '-') << '\n';
 
-    for (const auto& entry : vector_of_time_report) {
-        if (entry.find("Allocator usage of last chunk (MB)") == std::string::npos &&
-            entry.find("Allocator chunks") == std::string::npos) {
+    // Print in sequential order
+    if (!file_reading.empty()) print_one_component(file_reading);
+    if (!src_to_asr.empty()) print_one_component(src_to_asr);
+
+    // ASR passes section
+    if (!pass_entries.empty()) {
+        std::string summary = "ASR passes (total): " +
+            std::to_string(static_cast<int>(asr_passes_total)) + "." +
+            std::to_string(static_cast<int>((asr_passes_total - static_cast<int>(asr_passes_total)) * 1000)) + " ms";
+        print_one_component(summary);
+        for (const auto& entry : pass_entries) {
             print_one_component(entry);
         }
     }
 
+    if (!asr_to_mod.empty()) print_one_component(asr_to_mod);
+    if (!llvm_ir_creation.empty()) print_one_component(llvm_ir_creation);
+    if (!llvm_opt.empty()) print_one_component(llvm_opt);
+    if (!llvm_to_bin.empty()) print_one_component(llvm_to_bin);
+    if (!linking_time.empty()) print_one_component(linking_time);
+
+    // Total time adds its own separator line before it (in print_one_component)
+    if (!total_time.empty()) print_one_component(total_time);
     std::cout << std::string(60, '-') << '\n';
 }
 
@@ -1135,6 +1190,7 @@ int compile_src_to_object_file(const std::string &infile,
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    t2 = std::chrono::high_resolution_clock::now();
     lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -1246,11 +1302,6 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-        message = "Time taken by pass: ";
-        compiler_options.po.vector_of_time_report.push_back(message);
-        for (auto it: fe.compiler_options.po.vector_of_time_report) {
-            compiler_options.po.vector_of_time_report.push_back(it);
-        }
         message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
         message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
@@ -2003,10 +2054,10 @@ int link_executable(const std::vector<std::string> &infiles,
             // TODO: Replace the following hardcoded part
             std::string cmd = "";
 #ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + file_name + ".out && llvm-dwarfdump --debug-line "
-                + file_name + ".out.dSYM > ";
+            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
+                + outfile + ".dSYM > ";
 #else
-            cmd += "llvm-dwarfdump --debug-line " + file_name + ".out > ";
+            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
 #endif
             std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
             cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
@@ -2596,7 +2647,15 @@ int main_app(int argc, char *argv[]) {
     if (opts.arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
+            int result = compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
+            if (compiler_options.time_report) {
+                auto end_time = std::chrono::high_resolution_clock::now();
+                int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+                std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+                compiler_options.po.vector_of_time_report.push_back(message);
+                print_time_report(compiler_options.po.vector_of_time_report);
+            }
+            return result;
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2609,29 +2668,30 @@ int main_app(int argc, char *argv[]) {
         }
     }
     if (opts.arg_c) {
+        int result;
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
+            result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
                 compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
-            return compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
+            result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
                     rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
         } else if (backend == Backend::cpp) {
-            return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
+            result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
         } else if (backend == Backend::x86) {
-            return compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
+            result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
-            return compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
+            result = compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
-            return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
+            result = compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
-            return handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
+            result = handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
 #else
             std::cerr << "The -c option with `--backend=mlir` requires the "
                 "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
@@ -2641,6 +2701,14 @@ int main_app(int argc, char *argv[]) {
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
+        if (compiler_options.time_report) {
+            auto end_time = std::chrono::high_resolution_clock::now();
+            int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+            print_time_report(compiler_options.po.vector_of_time_report);
+        }
+        return result;
     }
 
     int err_ = 0;

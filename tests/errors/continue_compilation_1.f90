@@ -4,8 +4,6 @@
 module continue_compilation_1_mod
     type :: MyClass
         integer :: value
-
-
     contains
         procedure :: display
     end type MyClass
@@ -14,12 +12,31 @@ module continue_compilation_1_mod
     contains
         private
         procedure, public, pass(self) :: add_log_file
-
-
-    
     end type logger_type
 
     type(MyClass), PROTECTED :: protected_module_my_class_obj
+
+    ! Test for Missing Declaration:
+    type :: ctx_missing_t
+        procedure(f_missing), pointer, nopass :: fn => null()
+    end type
+
+    procedure(missing_global_interface), pointer :: p => null()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -56,6 +73,44 @@ contains
         use iso_c_binding
         character(len=2, kind=c_char), intent(in) :: c
     end subroutine s
+
+    subroutine ubound_assumed_size(a, b, c)
+        real :: a(*)       
+        real :: b(*)   
+        real :: c(10, *)
+        
+        print *, ubound(a, 1)
+        print *, ubound(b)
+        print *, ubound(c, 2)
+    end subroutine
+
+    subroutine assumed_size_star_pos_1(a)
+        real, intent(in) :: a(*, 10)
+    end subroutine
+
+    subroutine assumed_size_star_pos_2(a)
+        real :: a(*, 10)
+    end subroutine
+
+    subroutine proc_param(p)
+        procedure(ubound_assumed_size) :: p
+    end subroutine proc_param
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 end module
 
@@ -118,6 +173,41 @@ program continue_compilation_1
     integer :: j2, i2, k2(2), x2(2), y2(3)    
     integer::tt = b'01' * 3
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
+    integer, allocatable :: allocate_int = 1
+    character(:), allocatable :: allocate_char = "H"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -364,9 +454,7 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
-end program 
-! Test for multiple PROGRAM units in same file
-program second_program_test
-    implicit none
-    print *, "This is a second program - should cause error"
-end program second_program_test
+
+    !passing non procedure to procedure parameter
+    call proc_param(42)
+end program

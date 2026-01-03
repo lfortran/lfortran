@@ -157,7 +157,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         // ⁠Function should have only Variable symbols in its symtab.
-        // The type of those Variable symbols shouldn’t be FunctionType.
+        // The type of those Variable symbols shouldn't be FunctionType.
         for( auto sym: function->m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ||
                 ASR::is_a<ASR::StructType_t>(
@@ -175,6 +175,16 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                     ASRUtils::type_get_past_allocatable_pointer(
                         ASR::down_cast<ASR::Variable_t>(sym.second)->m_type))) ) {
                 return false;
+            }
+
+            // Don't inline functions with assumed-size array parameters
+            ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(sym.second)->m_type;
+            if( ASRUtils::is_array(var_type) ) {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(var_type));
+                if( arr->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
+                    return false;
+                }
             }
 
         }

@@ -1,0 +1,13 @@
+{
+    "basename": "run-mre_parameter-15f810f",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/mre_parameter.f90",
+    "infile_hash": "98f39f3110f80da2ce3dcae7c3d1a1bf53190249d4cb0d1f39f95e4e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-mre_parameter-15f810f.stderr",
+    "stderr_hash": "01c4dff897b57fbb9191fb41026044183854c84d51c90c5b2231e15e",
+    "returncode": 1
+}

@@ -550,7 +550,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::ListLen:
         case ASR::exprType::ListConstant:
-        case ASR::exprType::ListConcat: {
+        case ASR::exprType::ListConcat:
+        case ASR::exprType::PointerAssociated: {
             return nullptr;
         }
         case ASR::exprType::UnionInstanceMember: {
@@ -2999,7 +3000,8 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
             const_elements += 1;
         }
     }
-    if( const_elements > 1 ) {
+    // Include scalar elements in the implied-do body so mixed forms compute correctly per iteration.
+    if( const_elements > 0 ) {
         if( implied_doloop_size_ == nullptr ) {
             implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
                 make_Integer_t, const_elements, kind, loc);
@@ -3097,10 +3099,27 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
             if( array_size == nullptr ) {
                 array_size = array_section_size;
             } else {
-                builder.Add(array_section_size, array_size);
+                array_size = builder.Add(array_section_size, array_size);
             }
         } else {
-            constant_size += 1;
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(element)));
+            if( ASRUtils::is_array(element_type) ) {
+                if( ASRUtils::is_fixed_size_array(element_type) ) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
+                    constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+                } else {
+                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                    if( array_size == nullptr ) {
+                        array_size = element_array_size;
+                    } else {
+                        array_size = builder.Add(array_size, element_array_size);
+                    }
+                }
+            } else {
+                constant_size += 1;
+            }
         }
     }
     ASR::expr_t* constant_size_asr = nullptr;

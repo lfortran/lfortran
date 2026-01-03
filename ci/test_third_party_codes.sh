@@ -266,9 +266,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-11
+  git checkout lf-15
   micromamba install -c conda-forge fpm
-  git checkout 15dbdeeda22c3b19cc106e7844c056af758ccd88
+  git checkout e709edb424807d8d0b565169fea494c1f8f02471
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
@@ -878,6 +878,65 @@ time_section "🧪 Testing LAPACK" '
     micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
 '
 
+
+##########################
+# Section 14: Vanilla Reference-LAPACK
+##########################
+time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-vanilla
+    cd lapack-vanilla
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Configure with LFortran
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --legacy-array-sections --separate-compilation" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=OFF \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=OFF \
+      -DBUILD_COMPLEX16=OFF \
+      -DBUILD_TESTING=OFF
+
+    # Build BLAS and LAPACK libraries
+    cmake --build build --target blas lapack -j8
+
+    # Test DGESV: solve 3x3 linear system
+    cat > test_dgesv.f90 << "TESTEOF"
+program test_dgesv
+    implicit none
+    integer, parameter :: n = 3
+    double precision :: A(n,n), b(n), x_expected(n)
+    integer :: ipiv(n), info, i
+    A(1,:) = [2.0d0, 1.0d0, 1.0d0]
+    A(2,:) = [4.0d0, 3.0d0, 3.0d0]
+    A(3,:) = [8.0d0, 7.0d0, 9.0d0]
+    b = [4.0d0, 10.0d0, 24.0d0]
+    x_expected = [1.0d0, 1.0d0, 1.0d0]
+    call dgesv(n, 1, A, n, ipiv, b, n, info)
+    if (info /= 0) error stop "DGESV failed"
+    do i = 1, n
+        if (abs(b(i) - x_expected(i)) > 1.0d-10) error stop "Wrong solution"
+    end do
+    print *, "DGESV test passed!"
+end program
+TESTEOF
+
+    lfortran --implicit-interface test_dgesv.f90 -L build/lib -llapack -lblas -o test_dgesv
+    ./test_dgesv
+'
 
 ##################################
 # Final Summary and Cleanup

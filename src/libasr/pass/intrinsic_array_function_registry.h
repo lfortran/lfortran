@@ -313,6 +313,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
+    if (args.size() < 1) return nullptr;
     ASR::expr_t* array = args[0];
     if (!array) return nullptr;
     ASR::expr_t* value = nullptr, *args_value0 = nullptr;
@@ -329,7 +330,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     }
     ASR::ArrayConstant_t *mask = nullptr;
     ASR::expr_t* dim = b.i32(1);
-    if (args[1] && is_logical(*ASRUtils::expr_type(args[1]))) {
+    if (args.size() > 1 && args[1] && is_logical(*ASRUtils::expr_type(args[1]))) {
         if (ASR::is_a<ASR::ArrayConstant_t>(*args[1])) {
             mask = ASR::down_cast<ASR::ArrayConstant_t>(args[1]);
         } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[1])) {
@@ -339,7 +340,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         } else {
             return nullptr;
         }
-    } else if(args[2]) {
+    } else if (args.size() > 2 && args[2]) {
         if (ASR::is_a<ASR::ArrayConstant_t>(*args[2])) {
             mask = ASR::down_cast<ASR::ArrayConstant_t>(args[2]);
         } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[2])) {
@@ -1082,6 +1083,13 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 break;
             }
         }
+        if (flag == 0) {
+            if (!is_array(type)) {
+                return b.i_t(0, type);
+            } else {
+                return b.ArrayConstant({b.i32(0)}, extract_type(type), false);
+            }
+        }
         if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
             if (is_character(*expr_type(args[0]))) {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
@@ -1171,8 +1179,8 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 }
             }
         }
-        if (flag == 0) return b.i_t(0, type);
-        else if (!is_array(type)) {
+        // At this point, flag == 1, so we have a valid index
+        if (!is_array(type)) {
             return b.i_t(index + 1, type);
         } else {
             return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
@@ -1339,15 +1347,24 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         b.generate_reduction_intrinsic_stmts_for_scalar_output(
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                ASR::expr_t *i = declare("i", type, Local);
-                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
-                    b.If(b.Eq(maskval, b.bool_t(1, logical)), {
-                        b.Assignment(result, i),
-                        b.Exit()
-                    }, {})
-                }, nullptr));
+                body.push_back(al, b.Assignment(result, b.i_t(0, type)));
+                if (ASRUtils::is_array(arg_types[2])) {
+                    ASR::expr_t *i = declare("i", type, Local);
+                    ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
+                    body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                        b.If(b.Eq(maskval, b.bool_t(1, logical)), {
+                            b.Assignment(result, i),
+                            b.Exit()
+                        }, {})
+                    }, nullptr));
+                } else {
+                    body.push_back(al, b.If(b.Eq(args[2], b.bool_t(1, logical)), {
+                        b.Assignment(result, LBound(args[0], 1))
+                    }, {}));
+                }
             }, [=, &al, &b, &idx_vars, &doloop_body] () {
+                ASR::expr_t* result_check = !ASRUtils::is_array(return_type) ? 
+                    result : b.ArrayItem_01(result, {b.i32(1)});
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                 Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
                 for (int i = 0; i < n_dims; i++) {
@@ -1361,17 +1378,20 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }
                 }
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
+                ASR::expr_t *mask_val = ASRUtils::is_array(arg_types[2]) ? 
+                    ArrayItem_02(args[2], idx_vars) : args[2];
+                Vec<ASR::stmt_t*> comparison_body;
+                comparison_body.reserve(al, 1);
                 ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
-                ASR::expr_t *mask_val = ArrayItem_02(args[2], idx_vars);
                 if (overload_id == 1) {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.And(b.GtE(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), if_body, {})}
                         , {
                             b.If(b.And(b.Gt(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), if_body, {})
                         }));
                     } else {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.And(b.LtE(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), if_body, {})}
                         , {
                             b.If(b.And(b.Lt(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), if_body, {})
@@ -1379,19 +1399,21 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }
                 } else {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.GtE(array_ref_01, array_ref_02), if_body, {})
                         }, {
                             b.If(b.Gt(array_ref_01, array_ref_02), if_body, {})
                         }));
                     } else {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.LtE(array_ref_01, array_ref_02), if_body, {})
                         }, {
                             b.If(b.Lt(array_ref_01, array_ref_02), if_body, {})
                         }));
                     }
                 }
+                std::vector<ASR::stmt_t*> guard_stmts(comparison_body.p, comparison_body.p + comparison_body.size());
+                doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts, {}));
             });
     } else {
         int dim = 0;
@@ -1400,14 +1422,21 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-               ASR::expr_t *i = declare("i", type, Local);
-                ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
-                    b.If(b.Eq(maskval, b.bool_t(1, logical)), {
-                        b.Assignment(result, i),
-                        b.Exit()
-                    }, {})
-                }, nullptr));
+                body.push_back(al, b.Assignment(result, b.i_t(0, type)));
+                if (ASRUtils::is_array(arg_types[2])) {
+                    ASR::expr_t *i = declare("i", type, Local);
+                    ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
+                    body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                        b.If(b.Eq(maskval, b.bool_t(1, logical)), {
+                            b.Assignment(result, i),
+                            b.Exit()
+                        }, {})
+                    }, nullptr));
+                } else {
+                    body.push_back(al, b.If(b.Eq(args[2], b.bool_t(1, logical)), {
+                        b.Assignment(result, LBound(args[0], dim))
+                    }, {}));
+                }
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
                 bool condition = is_array(return_type);
@@ -1423,21 +1452,27 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     result_ref = result;
                     array_ref_02 = b.ArrayItem_01(args[0], {result});
                 }
+                ASR::expr_t* result_check = result_ref;
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *res_idx = idx_vars.p[dim - 1];
                 if (extract_kind_from_ttype_t(type) != 4) {
                     res_idx = b.i2i_t(res_idx, type);
                 }
-                ASR::expr_t *mask_val = ArrayItem_02(args[2], idx_vars);
+                ASR::expr_t *mask_val = ASRUtils::is_array(arg_types[2]) 
+                    ? ArrayItem_02(args[2], idx_vars)
+                    : args[2];
+                Vec<ASR::stmt_t*> comparison_body_dim;
+                comparison_body_dim.reserve(al, 1);
+                
                 if (overload_id == 3) {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body_dim.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.And(b.GtE(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), {b.Assignment(result_ref, res_idx)}, {})}
                         , {
                             b.If(b.And(b.Gt(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), {b.Assignment(result_ref, res_idx)}, {})
                         }));
                     } else {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body_dim.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.And(b.LtE(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), {b.Assignment(result_ref, res_idx)}, {})}
                         , {
                             b.If(b.And(b.Lt(array_ref_01, array_ref_02), b.Eq(mask_val, b.bool_t(1, logical))), {b.Assignment(result_ref, res_idx)}, {})
@@ -1445,19 +1480,21 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }
                 } else {
                     if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body_dim.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.GtE(array_ref_01, array_ref_02), {b.Assignment(result_ref, res_idx)}, {})
                         }, {
                             b.If(b.Gt(array_ref_01, array_ref_02), {b.Assignment(result_ref, res_idx)}, {})
                         }));
                     } else {
-                        doloop_body.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
+                        comparison_body_dim.push_back(al, b.If(b.Eq(args[4], b.bool_t(1, logical)), {
                             b.If(b.LtE(array_ref_01, array_ref_02), {b.Assignment(result_ref, res_idx)}, {})
                         }, {
                             b.If(b.Lt(array_ref_01, array_ref_02), {b.Assignment(result_ref, res_idx)}, {})
                         }));
                     }
                 }
+                std::vector<ASR::stmt_t*> guard_stmts_dim(comparison_body_dim.p, comparison_body_dim.p + comparison_body_dim.size());
+                doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
             });
     }
     body.push_back(al, b.Return());
@@ -4027,9 +4064,8 @@ namespace MatMul {
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
-        if (is_allocatable(result)) {
-            body.push_back(al, b.Allocate(result, alloc_dims));
-        }
+        // Note: allocation/reallocation for allocatable results is handled by
+        // the assignment pass based on the --realloc-lhs-arrays flag, not here.
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));

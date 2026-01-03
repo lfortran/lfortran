@@ -624,6 +624,9 @@ class ASRToLLVMVisitor;
             // The `if_block` and `else_block` must generate one or more blocks. In
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
+
+            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
+
             template <typename IF, typename ELSE>
             void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, const char *name,
                                 std::vector<llvm::BasicBlock*> &loop_or_block_end,
@@ -1340,6 +1343,42 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
     public:
 
 /*>>>>>>>>>>>>>>>>>>>>> Entry <<<<<<<<<<<<<<<<<<<<<<< */
+
+        /**
+         * Finalize nested allocatable components before explicit deallocate.
+         * This ensures nested allocatables are freed before the outer structure.
+         */
+        void finalize_before_deallocate(llvm::Value* const ptr, ASR::ttype_t* const t,
+                ASR::Struct_t* const struct_sym, bool in_struct) {
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
+            switch(t_past->type) {
+                case ASR::Array: {
+                    ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                    if (arr_t->m_type->type != ASR::StructType) { return; }
+                    if (!is_finalizable_type(arr_t->m_type, struct_sym)) { return; }
+                    // Finalize array elements but don't free the array data itself
+                    auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                    auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                    auto const array_size_lazy = [&]() {
+                        return llvm_utils_->get_array_size(ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
+                    };
+                    auto const data = builder_->CreateLoad(arrayType_llvm_t->getPointerTo(),
+                        llvm_utils_->create_gep2(arr_llvm_t, ptr, 0));
+                    check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym, [&](){
+                        free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                    });
+                    return;
+                }
+                case ASR::StructType: {
+                    if (!is_finalizable_type(t_past, struct_sym)) { return; }
+                    finalize_struct(ptr, t_past, struct_sym);
+                    return;
+                }
+                default:
+                    return;
+            }
+            (void)in_struct;  // May be used in future for dimension descriptor handling
+        }
 
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
