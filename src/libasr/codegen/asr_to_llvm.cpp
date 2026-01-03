@@ -8902,6 +8902,18 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
+        // Ensure type consistency for ILP64: operands may have different
+        // integer widths when -fdefault-integer-8 is used
+        if (left->getType() != right->getType()) {
+            // Use the larger type to avoid precision loss
+            unsigned left_bits = left->getType()->getIntegerBitWidth();
+            unsigned right_bits = right->getType()->getIntegerBitWidth();
+            if (left_bits > right_bits) {
+                right = builder->CreateSExt(right, left->getType());
+            } else {
+                left = builder->CreateSExt(left, right->getType());
+            }
+        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -8945,6 +8957,18 @@ public:
         llvm::Value *right = tmp;
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
+        // Ensure type consistency for ILP64: operands may have different
+        // integer widths when -fdefault-integer-8 is used
+        if (left->getType() != right->getType()) {
+            // Use the larger type to avoid precision loss
+            unsigned left_bits = left->getType()->getIntegerBitWidth();
+            unsigned right_bits = right->getType()->getIntegerBitWidth();
+            if (left_bits > right_bits) {
+                right = builder->CreateZExt(right, left->getType());
+            } else {
+                left = builder->CreateZExt(left, right->getType());
+            }
+        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -9714,6 +9738,18 @@ public:
         llvm::Value *right_val = tmp;
         load_unlimited_polymorpic_value(x.m_left, left_val);
         load_unlimited_polymorpic_value(x.m_right, right_val);
+        // Ensure type consistency for ILP64: operands may have different
+        // integer widths when -fdefault-integer-8 is used
+        if (left_val->getType() != right_val->getType()) {
+            llvm::Type* target_type = llvm_utils->getIntType(
+                ASRUtils::extract_kind_from_ttype_t(x.m_type));
+            if (left_val->getType() != target_type) {
+                left_val = builder->CreateSExtOrTrunc(left_val, target_type);
+            }
+            if (right_val->getType() != target_type) {
+                right_val = builder->CreateSExtOrTrunc(right_val, target_type);
+            }
+        }
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
@@ -14193,7 +14229,11 @@ public:
                             llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
                             llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
                             load_array_size_deep_copy(m_dims[j].m_length);
-                            llvm::Value* pointer_length = tmp;
+                            // Ensure type consistency for ILP64: descriptor_length is
+                            // always i32 (from dimension descriptor), but pointer_length
+                            // may be i64 when -fdefault-integer-8 is used
+                            llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                tmp, llvm::Type::getInt32Ty(context));
                             llvm::Value* cond = nullptr;
                             if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                 cond = builder->CreateICmpNE(descriptor_length, pointer_length);
@@ -14216,7 +14256,11 @@ public:
                     builder->CreateBr(mergeBB);
                     start_new_block(elseBB);
                     llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
-                    llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                    // Ensure type consistency for ILP64: desc_size is always i32
+                    // (from dimension descriptor), but pointer_size may be i64
+                    llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                        get_array_size_from_asr_type(arr_cast->m_type),
+                        llvm::Type::getInt32Ty(context));
                     llvm::Value* cond = nullptr;
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         cond = builder->CreateICmpNE(desc_size, pointer_size);
@@ -14249,7 +14293,10 @@ public:
                                 llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
                                 llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length)));
                                 load_array_size_deep_copy(m_dims_pointer[j].m_length);
-                                llvm::Value* pointer_length = tmp;
+                                // Ensure type consistency for ILP64: fixed_length is
+                                // always i32, but pointer_length may be i64
+                                llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                    tmp, llvm::Type::getInt32Ty(context));
                                 llvm::Value* cond = nullptr;
                                 if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                     cond = builder->CreateICmpNE(fixed_length, pointer_length);
@@ -14271,7 +14318,11 @@ public:
                         }
                     } else {
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
-                        llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                        // Ensure type consistency for ILP64: fixed_size is always i32,
+                        // but pointer_size may be i64
+                        llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                            get_array_size_from_asr_type(arr_cast->m_type),
+                            llvm::Type::getInt32Ty(context));
                         llvm::Value* cond = nullptr;
                         if (compiler_options.po.strict_bounds_checking || is_return_value) {
                             cond = builder->CreateICmpNE(fixed_size, pointer_size);
