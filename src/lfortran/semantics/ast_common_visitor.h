@@ -11625,7 +11625,7 @@ public:
             }
         } else {
             switch (f2->type) {
-                case(ASR::symbolType::Variable): {
+            case(ASR::symbolType::Variable): {
 
                 ASR::ttype_t* t = ASRUtils::symbol_type(v);
                 bool is_char = ASRUtils::is_character(*t);
@@ -11645,7 +11645,7 @@ public:
                 }
 
                 tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args,
-                                    x.m_subargs, x.n_subargs, v_expr, v, f2);
+                                      x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
             }
 
