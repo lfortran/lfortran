@@ -522,6 +522,10 @@ filename = "warnings/character_02.f90"
 asr = true
 
 [[test]]
+filename = "warnings/character_03.f90"
+asr = true
+
+[[test]]
 filename = "warnings/preprocess_01.f90"
 asr = true
 
@@ -743,6 +747,10 @@ run = true
 
 [[test]]
 filename = "../integration_tests/error_stop_04.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/write_12.f90"
 run = true
 
 [[test]]
@@ -1964,6 +1972,14 @@ run = true
 
 [[test]]
 filename = "../integration_tests/format_37.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_39.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_40.f90"
 run = true
 
 [[test]]

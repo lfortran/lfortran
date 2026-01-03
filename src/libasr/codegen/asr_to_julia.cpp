@@ -1891,6 +1891,30 @@ public:
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
+        switch (x.m_intrinsic_id) {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Max)) : {
+                visit_expr(*x.m_args[0]);
+                std::string result = src;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    visit_expr(*x.m_args[i]);
+                    result = "max(" + result + ", " + src + ")";
+                }
+                src = result;
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Min)) : {
+                visit_expr(*x.m_args[0]);
+                std::string result = src;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    visit_expr(*x.m_args[i]);
+                    result = "min(" + result + ", " + src + ")";
+                }
+                src = result;
+                return;
+            }
+            default:
+                break;
+        }
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);
         switch (x.m_intrinsic_id) {
