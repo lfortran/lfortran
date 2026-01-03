@@ -1,5 +1,5 @@
 ! Test: complex*16 parameter with complex(4) literal - kind cast
-program complex_27
+program complex_29
     implicit none
 
     complex*16 zero, one, z
