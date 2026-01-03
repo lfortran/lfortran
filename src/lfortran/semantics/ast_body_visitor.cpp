@@ -3344,7 +3344,7 @@ public:
                         Label("",{x.base.base.loc})
                     }));
                 throw SemanticAbort();
-            }
+            }  
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, 
