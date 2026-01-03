@@ -2632,8 +2632,7 @@ public:
             tmp = builder->CreateCall(fn, {item});
 #endif
         } else if (item_type->isIntegerTy()) {
-            // For integers: abs(x) = x >= 0 ? x : -x
-            // Using select is branchless and efficient
+            // abs(x) = x >= 0 ? x : -x (branchless with select)
             llvm::Value *zero = llvm::ConstantInt::get(item_type, 0);
             llvm::Value *neg = builder->CreateNeg(item);
             llvm::Value *cmp = builder->CreateICmpSGE(item, zero);
@@ -2641,7 +2640,7 @@ public:
         }
     }
 
-    void generate_Max(ASR::expr_t** m_args, size_t n_args) {
+    void generate_MinMax(ASR::expr_t** m_args, size_t n_args, bool is_max) {
         LCOMPILERS_ASSERT(n_args >= 2);
         this->visit_expr_wrapper(m_args[0], true);
         llvm::Value *result = tmp;
@@ -2650,38 +2649,16 @@ public:
             this->visit_expr_wrapper(m_args[i], true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
-                // Use FCmpOGT (ordered greater than) for Fortran-compatible NaN propagation
+                // Use ordered comparison for Fortran-compatible NaN propagation
                 // If either operand is NaN, comparison returns false, preserving result
-                // This matches the original Fortran if-then-else semantics where
-                // max(NaN, x) = x but max(x, NaN) = NaN (asymmetric, GFortran-compatible)
-                llvm::Value *cmp = builder->CreateFCmpOGT(arg, result);
+                llvm::Value *cmp = is_max
+                    ? builder->CreateFCmpOGT(arg, result)
+                    : builder->CreateFCmpOLT(arg, result);
                 result = builder->CreateSelect(cmp, arg, result);
             } else if (val_type->isIntegerTy()) {
-                // max(a, b) = a > b ? a : b (branchless with select)
-                llvm::Value *cmp = builder->CreateICmpSGT(result, arg);
-                result = builder->CreateSelect(cmp, result, arg);
-            }
-        }
-        tmp = result;
-    }
-
-    void generate_Min(ASR::expr_t** m_args, size_t n_args) {
-        LCOMPILERS_ASSERT(n_args >= 2);
-        this->visit_expr_wrapper(m_args[0], true);
-        llvm::Value *result = tmp;
-        llvm::Type *val_type = result->getType();
-        for (size_t i = 1; i < n_args; i++) {
-            this->visit_expr_wrapper(m_args[i], true);
-            llvm::Value *arg = tmp;
-            if (val_type->isFloatingPointTy()) {
-                // Use FCmpOLT (ordered less than) for Fortran-compatible NaN propagation
-                // If either operand is NaN, comparison returns false, preserving result
-                // This matches the original Fortran if-then-else semantics
-                llvm::Value *cmp = builder->CreateFCmpOLT(arg, result);
-                result = builder->CreateSelect(cmp, arg, result);
-            } else if (val_type->isIntegerTy()) {
-                // min(a, b) = a < b ? a : b (branchless with select)
-                llvm::Value *cmp = builder->CreateICmpSLT(result, arg);
+                llvm::Value *cmp = is_max
+                    ? builder->CreateICmpSGT(result, arg)
+                    : builder->CreateICmpSLT(result, arg);
                 result = builder->CreateSelect(cmp, result, arg);
             }
         }
@@ -2970,11 +2947,11 @@ public:
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::Max: {
-                generate_Max(x.m_args, x.n_args);
+                generate_MinMax(x.m_args, x.n_args, true);
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::Min: {
-                generate_Min(x.m_args, x.n_args);
+                generate_MinMax(x.m_args, x.n_args, false);
                 break;
             }
             default: {
