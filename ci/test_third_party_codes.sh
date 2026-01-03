@@ -970,34 +970,133 @@ time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
     # Build BLAS, LAPACK, and test executables
     cmake --build build -j8
 
-    # Run LAPACK linear tests (xlintsts) and require success.
+    # Helper function to run a LAPACK test and verify results
+    run_lapack_test() {
+        local test_exe=$1
+        local test_input=$2
+        local test_name=$3
+
+        print_subsection "Running LAPACK ${test_name} (${test_exe})"
+        set +e
+        timeout 120 ./bin/${test_exe} < ../TESTING/${test_input} 2>&1 | tee ${test_exe}_${test_input%.in}.out
+        local test_status=${PIPESTATUS[0]}
+        set -e
+
+        echo "${test_exe} ${test_input} exit code: ${test_status}"
+        if [ "${test_status}" -ne 0 ]; then
+            echo "ERROR: ${test_exe} ${test_input} exited with non-zero status"
+            return 1
+        fi
+
+        if grep -qE "failed to pass the threshold" ${test_exe}_${test_input%.in}.out; then
+            echo "ERROR: ${test_exe} ${test_input} threshold failures detected"
+            return 1
+        fi
+
+        local error_messages=$(awk "/error messages recorded/{sum+=\\$1} END{print sum+0}" ${test_exe}_${test_input%.in}.out)
+        echo "${test_exe} ${test_input} error messages recorded: ${error_messages}"
+        if [ "${error_messages}" -ne 0 ]; then
+            echo "ERROR: ${test_exe} ${test_input} recorded error messages"
+            grep -E "error messages recorded" ${test_exe}_${test_input%.in}.out || true
+            return 1
+        fi
+        print_success "${test_name} passed"
+        return 0
+    }
+
+    # Helper for expected failures (XFAIL)
+    run_lapack_xfail() {
+        local test_exe=$1
+        local test_input=$2
+        local test_name=$3
+
+        print_subsection "Running LAPACK ${test_name} (${test_exe}) [XFAIL]"
+        set +e
+        timeout 120 ./bin/${test_exe} < ../TESTING/${test_input} > ${test_exe}_${test_input%.in}.out 2>&1
+        local test_status=$?
+        set -e
+
+        if [ "${test_status}" -eq 0 ]; then
+            echo -e "${GREEN}XPASS: ${test_name} unexpectedly passed!${NC}"
+        else
+            echo -e "${YELLOW}XFAIL: ${test_name} failed as expected (exit ${test_status})${NC}"
+        fi
+    }
+
     cd build
-    print_subsection "Running LAPACK linear tests (xlintsts)"
-    set +e
-    ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts.out
-    xlintsts_status=${PIPESTATUS[0]}
-    set -e
 
-    echo "xlintsts exit code: ${xlintsts_status}"
-    if [ "${xlintsts_status}" -ne 0 ]; then
-        echo "ERROR: xlintsts exited with non-zero status"
-        exit "${xlintsts_status}"
-    fi
+    # Track test results
+    PASSED=0
+    FAILED=0
+    XFAILED=0
+    SKIPPED=0
 
-    if grep -E "failed to pass the threshold" xlintsts.out; then
-        echo "ERROR: xlintsts threshold failures detected"
-        exit 1
-    fi
+    # Linear equation tests - all 4 real precision variants (all should pass)
+    for test_pair in "xlintsts:stest.in:Single Real Linear Equations" \
+                     "xlintstd:dtest.in:Double Real Linear Equations" \
+                     "xlintstrfs:stest_rfp.in:Single Real RFP Linear Equations" \
+                     "xlintstrfd:dtest_rfp.in:Double Real RFP Linear Equations"; do
+        IFS=: read -r exe input name <<< "$test_pair"
+        if run_lapack_test "$exe" "$input" "$name"; then
+            ((PASSED++))
+        else
+            ((FAILED++))
+            echo "FATAL: Linear equation test failed"
+            exit 1
+        fi
+    done
 
-    error_messages=$(awk "/error messages recorded/{sum+=\\$1} END{print sum+0}" xlintsts.out)
-    echo "xlintsts error messages recorded: ${error_messages}"
-    if [ "${error_messages}" -ne 0 ]; then
-        echo "ERROR: xlintsts recorded error messages"
-        grep -E "error messages recorded" xlintsts.out || true
-        exit 1
-    fi
+    # Eigenvalue tests - passing tests
+    for test_pair in "xeigtsts:sep.in:Single SEP" \
+                     "xeigtsts:svd.in:Single SVD" \
+                     "xeigtsts:sec.in:Single SEC" \
+                     "xeigtsts:sgg.in:Single SGG" \
+                     "xeigtsts:ssb.in:Single SSB" \
+                     "xeigtsts:ssg.in:Single SSG" \
+                     "xeigtsts:sbal.in:Single SBAL" \
+                     "xeigtsts:sbak.in:Single SBAK" \
+                     "xeigtsts:sgbal.in:Single SGBAL" \
+                     "xeigtsts:sgbak.in:Single SGBAK" \
+                     "xeigtsts:sbb.in:Single SBB" \
+                     "xeigtstd:sep.in:Double SEP" \
+                     "xeigtstd:svd.in:Double SVD" \
+                     "xeigtstd:dec.in:Double DEC" \
+                     "xeigtstd:dgg.in:Double DGG" \
+                     "xeigtstd:dsb.in:Double DSB" \
+                     "xeigtstd:dsg.in:Double DSG" \
+                     "xeigtstd:dbal.in:Double DBAL" \
+                     "xeigtstd:dbak.in:Double DBAK" \
+                     "xeigtstd:dgbal.in:Double DGBAL" \
+                     "xeigtstd:dgbak.in:Double DGBAK" \
+                     "xeigtstd:dbb.in:Double DBB"; do
+        IFS=: read -r exe input name <<< "$test_pair"
+        if run_lapack_test "$exe" "$input" "$name"; then
+            ((PASSED++))
+        else
+            ((FAILED++))
+            echo "ERROR: Eigenvalue test $name failed unexpectedly"
+            exit 1
+        fi
+    done
 
-    print_subsection "LAPACK BUILD_TESTING tests completed"
+    # Eigenvalue tests - expected failures (XFAIL) - runtime issues
+    for test_pair in "xeigtsts:nep.in:Single NEP" \
+                     "xeigtsts:sed.in:Single SED" \
+                     "xeigtsts:sgd.in:Single SGD" \
+                     "xeigtstd:nep.in:Double NEP" \
+                     "xeigtstd:ded.in:Double DED" \
+                     "xeigtstd:dgd.in:Double DGD"; do
+        IFS=: read -r exe input name <<< "$test_pair"
+        run_lapack_xfail "$exe" "$input" "$name"
+        ((XFAILED++))
+    done
+
+    # Skipped complex tests (BUILD_COMPLEX=OFF - not built yet)
+    echo -e "${YELLOW}SKIP: Complex tests (BUILD_COMPLEX=OFF)${NC}"
+    ((SKIPPED+=5))
+
+    echo ""
+    print_subsection "LAPACK test summary: ${PASSED} passed, ${FAILED} failed, ${XFAILED} xfail, ${SKIPPED} skipped"
     cd ../..
 '
 
