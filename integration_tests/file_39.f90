@@ -2,7 +2,7 @@ program file_39
     ! Test position='append' in OPEN statement
     implicit none
     integer :: u, a(3), b(3)
-    character(*), parameter :: filename = "/tmp/file_39.dat"
+    character(*), parameter :: filename = "file_39_test.txt"
     
     ! Write first line
     open(newunit=u, file=filename, action='write', status='replace', &
