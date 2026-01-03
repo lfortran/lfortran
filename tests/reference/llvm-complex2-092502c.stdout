@@ -16,72 +16,72 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, ptr %1) {
 .entry:
+  %2 = alloca %complex_4, align 8
+  %3 = alloca %complex_4, align 8
+  %4 = alloca %complex_4, align 8
+  %5 = alloca %complex_4, align 8
+  %6 = alloca %complex_4, align 8
+  %7 = alloca %complex_4, align 8
+  %8 = alloca %complex_4, align 8
+  %9 = alloca %complex_4, align 8
+  %10 = alloca %complex_4, align 8
+  %11 = alloca %complex_4, align 8
+  %12 = alloca %complex_4, align 8
+  %13 = alloca %complex_4, align 8
   call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %x = alloca %complex_4, align 8
   store %complex_4 <{ float 3.000000e+00, float 4.000000e+00 }>, ptr %x, align 1
-  %2 = load %complex_4, ptr %x, align 1
-  %3 = alloca %complex_4, align 8
-  store %complex_4 %2, ptr %3, align 1
-  %4 = alloca %complex_4, align 8
-  store %complex_4 <{ float 4.000000e+00, float 0.000000e+00 }>, ptr %4, align 1
-  %5 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(ptr %3, ptr %4, ptr %5)
-  %6 = load %complex_4, ptr %5, align 1
-  store %complex_4 %6, ptr %x, align 1
-  %7 = alloca i64, align 8
-  %8 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %7, i32 0, i32 0, ptr %x)
-  %9 = load i64, ptr %7, align 4
+  %14 = load %complex_4, ptr %x, align 1
+  store %complex_4 %14, ptr %13, align 1
+  store %complex_4 <{ float 4.000000e+00, float 0.000000e+00 }>, ptr %12, align 1
+  call void @_lfortran_complex_add_32(ptr %13, ptr %12, ptr %11)
+  %15 = load %complex_4, ptr %11, align 1
+  store %complex_4 %15, ptr %x, align 1
+  %16 = alloca i64, align 8
+  %17 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info, ptr %16, i32 0, i32 0, ptr %x)
+  %18 = load i64, ptr %16, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %10 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
-  store ptr %8, ptr %10, align 8
-  %11 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
-  store i64 %9, ptr %11, align 4
-  %12 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
-  %13 = load ptr, ptr %12, align 8
-  %14 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
-  %15 = load i64, ptr %14, align 4
-  %16 = trunc i64 %15 to i32
-  call void @_lfortran_printf(ptr @1, ptr %13, i32 %16, ptr @0, i32 1)
-  call void @_lfortran_free(ptr %8)
-  %17 = load %complex_4, ptr %x, align 1
-  %18 = alloca %complex_4, align 8
-  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, ptr %18, align 1
-  %19 = alloca %complex_4, align 8
-  store %complex_4 %17, ptr %19, align 1
-  %20 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(ptr %18, ptr %19, ptr %20)
-  %21 = load %complex_4, ptr %20, align 1
-  store %complex_4 %21, ptr %x, align 1
-  %22 = alloca i64, align 8
-  %23 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.1, ptr %22, i32 0, i32 0, ptr %x)
-  %24 = load i64, ptr %22, align 4
+  %19 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %17, ptr %19, align 8
+  %20 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %18, ptr %20, align 4
+  %21 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %22 = load ptr, ptr %21, align 8
+  %23 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %24 = load i64, ptr %23, align 4
+  %25 = trunc i64 %24 to i32
+  call void @_lfortran_printf(ptr @1, ptr %22, i32 %25, ptr @0, i32 1)
+  call void @_lfortran_free(ptr %17)
+  %26 = load %complex_4, ptr %x, align 1
+  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, ptr %10, align 1
+  store %complex_4 %26, ptr %9, align 1
+  call void @_lfortran_complex_add_32(ptr %10, ptr %9, ptr %8)
+  %27 = load %complex_4, ptr %8, align 1
+  store %complex_4 %27, ptr %x, align 1
+  %28 = alloca i64, align 8
+  %29 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.1, ptr %28, i32 0, i32 0, ptr %x)
+  %30 = load i64, ptr %28, align 4
   %stringFormat_desc1 = alloca %string_descriptor, align 8
-  %25 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
-  store ptr %23, ptr %25, align 8
-  %26 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
-  store i64 %24, ptr %26, align 4
-  %27 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
-  %28 = load ptr, ptr %27, align 8
-  %29 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
-  %30 = load i64, ptr %29, align 4
-  %31 = trunc i64 %30 to i32
-  call void @_lfortran_printf(ptr @3, ptr %28, i32 %31, ptr @2, i32 1)
-  call void @_lfortran_free(ptr %23)
-  %32 = load %complex_4, ptr %x, align 1
-  %33 = alloca %complex_4, align 8
-  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, ptr %33, align 1
-  %34 = alloca %complex_4, align 8
-  store %complex_4 %32, ptr %34, align 1
-  %35 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(ptr %33, ptr %34, ptr %35)
-  %36 = load %complex_4, ptr %35, align 1
-  %37 = alloca %complex_4, align 8
-  store %complex_4 %36, ptr %37, align 1
-  %38 = alloca %complex_4, align 8
-  store %complex_4 <{ float 0.000000e+00, float 3.000000e+00 }>, ptr %38, align 1
-  %39 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(ptr %37, ptr %38, ptr %39)
-  %40 = load %complex_4, ptr %39, align 1
+  %31 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
+  store ptr %29, ptr %31, align 8
+  %32 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
+  store i64 %30, ptr %32, align 4
+  %33 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 0
+  %34 = load ptr, ptr %33, align 8
+  %35 = getelementptr %string_descriptor, ptr %stringFormat_desc1, i32 0, i32 1
+  %36 = load i64, ptr %35, align 4
+  %37 = trunc i64 %36 to i32
+  call void @_lfortran_printf(ptr @3, ptr %34, i32 %37, ptr @2, i32 1)
+  call void @_lfortran_free(ptr %29)
+  %38 = load %complex_4, ptr %x, align 1
+  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, ptr %7, align 1
+  store %complex_4 %38, ptr %6, align 1
+  call void @_lfortran_complex_add_32(ptr %7, ptr %6, ptr %5)
+  %39 = load %complex_4, ptr %5, align 1
+  store %complex_4 %39, ptr %4, align 1
+  store %complex_4 <{ float 0.000000e+00, float 3.000000e+00 }>, ptr %3, align 1
+  call void @_lfortran_complex_add_32(ptr %4, ptr %3, ptr %2)
+  %40 = load %complex_4, ptr %2, align 1
   store %complex_4 %40, ptr %x, align 1
   %41 = alloca i64, align 8
   %42 = call ptr (ptr, i64, ptr, ptr, i32, i32, ...) @_lcompilers_string_format_fortran(ptr null, i64 0, ptr @serialization_info.2, ptr %41, i32 0, i32 0, ptr %x)

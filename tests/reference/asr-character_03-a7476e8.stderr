@@ -1,5 +1,0 @@
-style suggestion: Use character(<len>) instead of character*(<len>)
- --> tests/warnings/character_03.f90:3:5
-  |
-3 |     character*(2+3) str
-  |     ^^^^^^^^^^^^^^^ help: write this as 'character(<len>)'

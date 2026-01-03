@@ -15,38 +15,8 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define double @_lcompilers_abs_f64(ptr %x) {
-.entry:
-  %_lcompilers_abs_f64 = alloca double, align 8
-  %0 = load double, ptr %x, align 8
-  %1 = fcmp oge double %0, 0.000000e+00
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load double, ptr %x, align 8
-  store double %2, ptr %_lcompilers_abs_f64, align 8
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  %3 = load double, ptr %x, align 8
-  %4 = fneg double %3
-  store double %4, ptr %_lcompilers_abs_f64, align 8
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  br label %return
-
-return:                                           ; preds = %ifcont
-  br label %FINALIZE_SYMTABLE__lcompilers_abs_f64
-
-FINALIZE_SYMTABLE__lcompilers_abs_f64:            ; preds = %return
-  %5 = load double, ptr %_lcompilers_abs_f64, align 8
-  ret double %5
-}
-
 define i32 @main(i32 %0, ptr %1) {
 .entry:
-  %call_arg_value = alloca double, align 8
   %x = alloca i64, align 8
   call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %x1 = alloca i64, align 8
@@ -104,8 +74,7 @@ ifcont:                                           ; preds = %else, %then
   call void @_lfortran_free(ptr %17)
   %26 = load double, ptr %y, align 8
   %27 = fsub double %26, 0x439898EEC2459972
-  store double %27, ptr %call_arg_value, align 8
-  %28 = call double @_lcompilers_abs_f64(ptr %call_arg_value)
+  %28 = call double @llvm.fabs.f64(double %27)
   %29 = fcmp ogt double %28, 0x3BFD83C940000000
   br i1 %29, label %then4, label %else5
 
@@ -140,4 +109,9 @@ declare void @_lcompilers_print_error(ptr, ...)
 
 declare void @exit(i32)
 
+; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare double @llvm.fabs.f64(double) #0
+
 declare void @_lpython_free_argv()
+
+attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
