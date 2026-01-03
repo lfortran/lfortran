@@ -15487,6 +15487,8 @@ public:
             // Handle integer kind mismatch for implicit argument casting
             // When passing integer(8)* where integer(4)* is expected (or vice versa),
             // create a temporary with the correct kind and copy/convert the value
+            // Note: getPointerElementType() is not available in LLVM 15+ (opaque pointers)
+#if LLVM_VERSION_MAJOR < 15
             if (compiler_options.implicit_argument_casting) {
                 llvm::FunctionType* fntype = fn->getFunctionType();
                 for (size_t i = 0; i < args.size() && i < fntype->getNumParams(); i++) {
@@ -15513,6 +15515,7 @@ public:
                     }
                 }
             }
+#endif
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
