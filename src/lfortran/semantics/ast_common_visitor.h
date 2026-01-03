@@ -4760,46 +4760,19 @@ public:
                         type = ASRUtils::duplicate_type(al, type, &temp_dims);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
-                    value = ASRUtils::expr_value(init_expr);
-                    auto is_gfortran_foldable_intrinsic = [](ASRUtils::IntrinsicArrayFunctions id) {
-                        switch (id) {
-                            case ASRUtils::IntrinsicArrayFunctions::Sum:
-                            case ASRUtils::IntrinsicArrayFunctions::Product:
-                            case ASRUtils::IntrinsicArrayFunctions::MaxVal:
-                            case ASRUtils::IntrinsicArrayFunctions::MinVal:
-                            case ASRUtils::IntrinsicArrayFunctions::Count:
-                            case ASRUtils::IntrinsicArrayFunctions::DotProduct:
-                                return true;
-                            default:
-                                return false;
-                        }
-                    };
-
-                    if (storage_type == ASR::storage_typeType::Parameter) {
-                    if (init_expr && ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr)) {
-                        auto *intrinsic_func =
-                            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(init_expr);
-
-                        if (!is_gfortran_foldable_intrinsic(static_cast<ASRUtils::IntrinsicArrayFunctions>(intrinsic_func->m_arr_intrinsic_id))) {
-                            std::string intrinsic_name =
-                                ASRUtils::get_array_intrinsic_name(
-                                    intrinsic_func->m_arr_intrinsic_id);
-
+                    
+                    if (storage_type == ASR::storage_typeType::Parameter && init_expr) {
+                        if (!ASRUtils::is_value_constant(init_expr)) {
                             diag.add(Diagnostic(
-                                "Transformational intrinsic '" + intrinsic_name +
-                                "' is not permitted in an initialization expression",
+                                "Initialization expression for PARAMETER must be a constant expression",
                                 Level::Error, Stage::Semantic, {
-                                    Label("is a transformational intrinsic",
+                                    Label("not a constant expression",
                                         {init_expr->base.loc})
                                 }));
                             throw SemanticAbort();
                         }
-
-                        // else: allow it to proceed → folding or later failure
                     }
-                }
-
-
+                    value = ASRUtils::expr_value(init_expr);
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
