@@ -1759,6 +1759,129 @@ public:
             }
         }
         if (!v) {
+            if (check_is_explicit_intrinsic(var_name)) {
+                std::string intrinsic_name = var_name;
+                std::vector<std::string> arg_types;
+                if (intrinsic_mapping.count(var_name) > 0) {
+                    intrinsic_name = intrinsic_mapping[var_name].first;
+                    arg_types = intrinsic_mapping[var_name].second;
+                }
+                if (intrinsic_procedures.is_intrinsic(intrinsic_name)) {
+                    v = resolve_intrinsic_function(loc, intrinsic_name);
+                }
+                if (!v) {
+                    if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(intrinsic_name) ||
+                        ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
+                        SymbolTable *parent_scope = current_scope;
+                        current_scope = al.make_new<SymbolTable>(parent_scope);
+                        
+                        ASR::ttype_t *arg_type = nullptr;
+                        ASR::ttype_t *return_type = nullptr;
+                        if (!arg_types.empty()) {
+                            std::string type_str = arg_types[0];
+                            if (type_str == "int4" || type_str == "int") {
+                                arg_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                                return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                            } else if (type_str == "real4" || type_str == "real") {
+                                arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                                return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                            } else if (type_str == "real8") {
+                                arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                                return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                            } else if (type_str == "complex4" || type_str == "complex") {
+                                arg_type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
+                                return_type = arg_type;
+                            } else if (type_str == "complex8") {
+                                arg_type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8));
+                                return_type = arg_type;
+                            }
+                        }
+                        if (!arg_type) {
+                            arg_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                            return_type = arg_type;
+                        }
+                        
+                        std::string arg_name = "x";
+                        SetChar arg_dependencies_vec;
+                        arg_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, arg_dependencies_vec, arg_type);
+                        ASR::asr_t *arg_var = ASRUtils::make_Variable_t_util(al, loc,
+                            current_scope, s2c(al, arg_name), arg_dependencies_vec.p,
+                            arg_dependencies_vec.size(), ASRUtils::intent_in,
+                            nullptr, nullptr, ASR::storage_typeType::Default, arg_type, nullptr,
+                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                            false);
+                        current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+                        
+                        std::string return_var_name = var_name + "_return_var_name";
+                        SetChar return_dependencies_vec;
+                        return_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, return_dependencies_vec, return_type);
+                        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, loc,
+                            current_scope, s2c(al, return_var_name), return_dependencies_vec.p,
+                            return_dependencies_vec.size(), ASRUtils::intent_return_var,
+                            nullptr, nullptr, ASR::storage_typeType::Default, return_type, nullptr,
+                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                            false);
+                        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                        ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            ASR::down_cast<ASR::symbol_t>(return_var)));
+                        
+                        Vec<ASR::expr_t*> func_args;
+                        func_args.reserve(al, 1);
+                        func_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            ASR::down_cast<ASR::symbol_t>(arg_var))));
+                        
+                        Vec<ASR::expr_t*> intrinsic_call_args;
+                        intrinsic_call_args.reserve(al, 1);
+                        intrinsic_call_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            ASR::down_cast<ASR::symbol_t>(arg_var))));
+                        
+                        ASR::expr_t* intrinsic_call = nullptr;
+                        if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
+                            ASRUtils::create_intrinsic_function create_func =
+                                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
+                            intrinsic_call = ASRUtils::EXPR(create_func(al, loc, intrinsic_call_args, diag));
+                        } else if (ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
+                            ASRUtils::create_intrinsic_function create_func =
+                                ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(intrinsic_name);
+                            intrinsic_call = ASRUtils::EXPR(create_func(al, loc, intrinsic_call_args, diag));
+                        }
+                        
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        if (intrinsic_call) {
+                            body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                                to_return, intrinsic_call, nullptr, false, false)));
+                        }
+                        
+                        tmp = ASRUtils::make_Function_t_util(
+                            al, loc,
+                            current_scope,
+                            s2c(al, var_name),
+                            nullptr, 0,
+                            func_args.p, func_args.size(),
+                            body.p, body.size(),
+                            to_return,
+                            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
+                            nullptr, false, false, false, false, false, nullptr, 0,
+                            false, false, false);
+                        parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+                        current_scope = parent_scope;
+                        v = ASR::down_cast<ASR::symbol_t>(tmp);
+                    } else {
+                        diag.semantic_error_label(
+                            "Intrinsic '" + var_name + "' is not recognized",
+                            {loc},
+                            "'" + var_name + "' is not a known intrinsic function"
+                        );
+                        throw SemanticAbort();
+                    }
+                }
+                if (v) {
+                    return ASR::make_Var_t(al, loc, v);
+                }
+            }
             if (compiler_options.implicit_typing) {
                 std::string first_letter = std::string(1,var_name[0]);
                 if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
@@ -3338,14 +3461,23 @@ public:
     }
 
     bool check_is_explicit_intrinsic(std::string sym, SymbolTable* scope=nullptr) {
-        if (scope) {
+        if (scope && scope->asr_owner) {
             explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(scope->asr_owner)];
-        } else if (current_scope->asr_owner) {
+        } else if (current_scope && current_scope->asr_owner) {
             explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
-        return (
-            std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end()
-        );
+        bool found = std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end();
+        if (!found) {
+            for (const auto& entry : explicit_intrinsic_procedures_mapping) {
+                const std::vector<std::string>& procs = entry.second;
+                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        return found;
     }
 
     void erase_from_external_mapping(std::string sym) {
@@ -7428,8 +7560,38 @@ public:
             return ASRUtils::CompilerOptions::create_CompilerOptions(al, loc, expr_args, diag);
         }
         
-        ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
+        
+        if (ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::Intrinsic) {
+            std::string func_name = std::string(func->m_name);
+            
+            std::string intrinsic_name = func_name;
+            if (intrinsic_mapping.count(func_name) > 0) {
+                intrinsic_name = intrinsic_mapping[func_name].first;
+            }
+            
+            if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
+                Vec<ASR::expr_t*> expr_args;
+                expr_args.reserve(al, args.size());
+                for (size_t i = 0; i < args.size(); i++) {
+                    expr_args.push_back(al, args[i].m_value);
+                }
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
+                return create_func(al, loc, expr_args, diag);
+            } else if (ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(intrinsic_name)) {
+                Vec<ASR::expr_t*> expr_args;
+                expr_args.reserve(al, args.size());
+                for (size_t i = 0; i < args.size(); i++) {
+                    expr_args.push_back(al, args[i].m_value);
+                }
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(intrinsic_name);
+                return create_func(al, loc, expr_args, diag);
+            }
+        }
+        
+        ASR::ttype_t *return_type = nullptr;
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
