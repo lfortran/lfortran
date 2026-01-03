@@ -210,6 +210,7 @@ program continue_compilation_1
 
 
 
+
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -422,6 +423,7 @@ program continue_compilation_1
     allocate(arr5, mold = arr4)
 
     print *, ["aa", "aaa"]
+    
     print *, pack(arr2, mask1)
 
     ! assigning to a *PROTECTED* struct instance member, not allowed
