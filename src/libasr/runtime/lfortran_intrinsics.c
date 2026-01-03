@@ -4884,6 +4884,50 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num)
 }
 
 
+// Convert Fortran D/d exponent notation to E for strtod/strtof parsing.
+static void convert_d_to_e(char *str) {
+    for (size_t i = 0; str[i]; i++) {
+        if (str[i] == 'D' || str[i] == 'd') str[i] = 'E';
+    }
+}
+
+// Read a complete complex number expression from file, handling whitespace
+// within parentheses. Fortran list-directed format allows arbitrary whitespace
+// inside (real, imag) format, e.g., "( 0.1000E+01, 0.2000E+01)".
+// Returns 1 on success, 0 on failure (EOF or error).
+static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
+    int ch;
+    size_t i = 0;
+
+    // Skip leading whitespace
+    while ((ch = fgetc(filep)) != EOF && isspace(ch));
+
+    if (ch == EOF) return 0;
+
+    if (ch == '(') {
+        // Read the entire parenthesized expression
+        buffer[i++] = (char)ch;
+        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF) {
+            buffer[i++] = (char)ch;
+            if (ch == ')') break;
+        }
+        buffer[i] = '\0';
+        return (ch == ')') ? 1 : 0;
+    } else {
+        // Not a parenthesized expression, read as whitespace-delimited token
+        buffer[i++] = (char)ch;
+        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF && !isspace(ch)) {
+            buffer[i++] = (char)ch;
+        }
+        buffer[i] = '\0';
+        // Push back the whitespace character if we read one
+        if (ch != EOF && isspace(ch)) {
+            ungetc(ch, filep);
+        }
+        return 1;
+    }
+}
+
 // Improved input validation for float reading
 // - Prevents auto-casting of invalid inputs to float/real
 // NOTE:- More changes need to be implemented for advanced error detection and check
@@ -4949,11 +4993,12 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
     if (unit_file_bin) {
         (void)!fread(p, sizeof(struct _lfortran_complex_32), 1, filep);
     } else {
-        char buffer[100];
-        if (fscanf(filep, "%s", buffer) != 1) {
+        char buffer[200];
+        if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
             fprintf(stderr, "Error: Invalid input for complex float from file.\n");
             exit(1);
         }
+        convert_d_to_e(buffer);
         char *start = strchr(buffer, '(');
         char *end = strchr(buffer, ')');
         if (start && end && end > start) {
@@ -4963,27 +5008,35 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
             if (comma) {
                 *comma = '\0';
                 while (isspace((unsigned char)*start)) start++;
-                p->re = strtof(start, NULL);
-                p->im = strtof(comma + 1, NULL);
+                char *endptr_re;
+                p->re = strtof(start, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                if (*endptr_re != '\0') {
+                    fprintf(stderr, "Error: Invalid real part in complex float.\n");
+                    exit(1);
+                }
+                char *im_start = comma + 1;
+                while (isspace((unsigned char)*im_start)) im_start++;
+                char *endptr_im;
+                p->im = strtof(im_start, &endptr_im);
+                while (isspace((unsigned char)*endptr_im)) endptr_im++;
+                if (*endptr_im != '\0') {
+                    fprintf(stderr, "Error: Invalid imaginary part in complex float.\n");
+                    exit(1);
+                }
             } else {
                 fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
                 exit(1);
             }
-        } else if (start) {
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) *comma = '\0';
-            p->re = strtof(start, NULL);
-            char buffer2[100];
-            if (fscanf(filep, "%s", buffer2) != 1) {
-                fprintf(stderr, "Error: Failed to read imaginary part.\n");
+        } else {
+            // No parentheses: treat as two whitespace-separated numbers
+            char *endptr_re;
+            p->re = strtof(buffer, &endptr_re);
+            while (isspace((unsigned char)*endptr_re)) endptr_re++;
+            if (*endptr_re != '\0') {
+                fprintf(stderr, "Error: Invalid real part in complex float.\n");
                 exit(1);
             }
-            end = strchr(buffer2, ')');
-            if (end) *end = '\0';
-            p->im = strtof(buffer2, NULL);
-        } else {
-            p->re = strtof(buffer, NULL);
             if (fscanf(filep, "%f", &p->im) != 1) {
                 fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
                 exit(1);
@@ -5009,11 +5062,12 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
     if (unit_file_bin) {
         (void)!fread(p, sizeof(struct _lfortran_complex_64), 1, filep);
     } else {
-        char buffer[100];
-        if (fscanf(filep, "%s", buffer) != 1) {
+        char buffer[200];
+        if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
             fprintf(stderr, "Error: Invalid input for complex double from file.\n");
             exit(1);
         }
+        convert_d_to_e(buffer);
         char *start = strchr(buffer, '(');
         char *end = strchr(buffer, ')');
         if (start && end && end > start) {
@@ -5023,27 +5077,35 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
             if (comma) {
                 *comma = '\0';
                 while (isspace((unsigned char)*start)) start++;
-                p->re = strtod(start, NULL);
-                p->im = strtod(comma + 1, NULL);
+                char *endptr_re;
+                p->re = strtod(start, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                if (*endptr_re != '\0') {
+                    fprintf(stderr, "Error: Invalid real part in complex double.\n");
+                    exit(1);
+                }
+                char *im_start = comma + 1;
+                while (isspace((unsigned char)*im_start)) im_start++;
+                char *endptr_im;
+                p->im = strtod(im_start, &endptr_im);
+                while (isspace((unsigned char)*endptr_im)) endptr_im++;
+                if (*endptr_im != '\0') {
+                    fprintf(stderr, "Error: Invalid imaginary part in complex double.\n");
+                    exit(1);
+                }
             } else {
                 fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
                 exit(1);
             }
-        } else if (start) {
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) *comma = '\0';
-            p->re = strtod(start, NULL);
-            char buffer2[100];
-            if (fscanf(filep, "%s", buffer2) != 1) {
-                fprintf(stderr, "Error: Failed to read imaginary part.\n");
+        } else {
+            // No parentheses: treat as two whitespace-separated numbers
+            char *endptr_re;
+            p->re = strtod(buffer, &endptr_re);
+            while (isspace((unsigned char)*endptr_re)) endptr_re++;
+            if (*endptr_re != '\0') {
+                fprintf(stderr, "Error: Invalid real part in complex double.\n");
                 exit(1);
             }
-            end = strchr(buffer2, ')');
-            if (end) *end = '\0';
-            p->im = strtod(buffer2, NULL);
-        } else {
-            p->re = strtod(buffer, NULL);
             if (fscanf(filep, "%lf", &p->im) != 1) {
                 fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
                 exit(1);
@@ -5073,36 +5135,51 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
         (void)!fread(p, sizeof(struct _lfortran_complex_32), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            // check if `(` is present, if yes, then we strip spaces for each line
-            // and then read (1.0, 2.0) (3.0, 4.0) etc.
-            char buffer[100];   // Long enough buffer to fit any complex float
-            if (fscanf(filep, "%s", buffer) != 1) {
+            char buffer[200];
+            if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
                 fprintf(stderr, "Error: Invalid input for complex float from file.\n");
                 exit(1);
             }
-            // Remove parentheses and split by comma
+            convert_d_to_e(buffer);
             char *start = strchr(buffer, '(');
             char *end = strchr(buffer, ')');
             if (start && end && end > start) {
-                *end = '\0';  // Replace ')' with null terminator
-                start++;      // Move past '('
+                *end = '\0';
+                start++;
                 char *comma = strchr(start, ',');
                 if (comma) {
-                    *comma = '\0';  // Replace ',' with null terminator
-                    // strip spaces from start and end
+                    *comma = '\0';
                     while (isspace((unsigned char)*start)) start++;
-                    while (isspace((unsigned char)*(end - 1))) end--;
-                    p[i].re = strtof(start, NULL);
-                    p[i].im = strtof(comma + 1, NULL);
+                    char *endptr_re;
+                    p[i].re = strtof(start, &endptr_re);
+                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                    if (*endptr_re != '\0') {
+                        fprintf(stderr, "Error: Invalid real part in complex float.\n");
+                        exit(1);
+                    }
+                    char *im_start = comma + 1;
+                    while (isspace((unsigned char)*im_start)) im_start++;
+                    char *endptr_im;
+                    p[i].im = strtof(im_start, &endptr_im);
+                    while (isspace((unsigned char)*endptr_im)) endptr_im++;
+                    if (*endptr_im != '\0') {
+                        fprintf(stderr, "Error: Invalid imaginary part in complex float.\n");
+                        exit(1);
+                    }
                 } else {
                     fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
                     exit(1);
                 }
             } else {
-                // If no parentheses, read as two separate floats
-                (void)!fscanf(filep, "%f %f", &p[i].re, &p[i].im);
-                // Check if the read was successful
-                if (ferror(filep)) {
+                // No parentheses: treat as two whitespace-separated numbers
+                char *endptr_re;
+                p[i].re = strtof(buffer, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                if (*endptr_re != '\0') {
+                    fprintf(stderr, "Error: Invalid real part in complex float.\n");
+                    exit(1);
+                }
+                if (fscanf(filep, "%f", &p[i].im) != 1) {
                     fprintf(stderr, "Error: Failed to read complex float from file.\n");
                     exit(1);
                 }
@@ -5132,36 +5209,51 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
         (void)!fread(p, sizeof(struct _lfortran_complex_64), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
-            // check if `(` is present, if yes, then we strip spaces for each line
-            // and then read (1.0, 2.0) (3.0, 4.0) etc.
-            char buffer[100];   // Long enough buffer to fit any complex double
-            if (fscanf(filep, "%s", buffer) != 1) {
+            char buffer[200];
+            if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
                 fprintf(stderr, "Error: Invalid input for complex double from file.\n");
                 exit(1);
             }
-            // Remove parentheses and split by comma
+            convert_d_to_e(buffer);
             char *start = strchr(buffer, '(');
             char *end = strchr(buffer, ')');
             if (start && end && end > start) {
-                *end = '\0';  // Replace ')' with null terminator
-                start++;      // Move past '('
+                *end = '\0';
+                start++;
                 char *comma = strchr(start, ',');
                 if (comma) {
-                    *comma = '\0';  // Replace ',' with null terminator
-                    // strip spaces from start and end
+                    *comma = '\0';
                     while (isspace((unsigned char)*start)) start++;
-                    while (isspace((unsigned char)*(end - 1))) end--;
-                    p[i].re = strtod(start, NULL);
-                    p[i].im = strtod(comma + 1, NULL);
+                    char *endptr_re;
+                    p[i].re = strtod(start, &endptr_re);
+                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                    if (*endptr_re != '\0') {
+                        fprintf(stderr, "Error: Invalid real part in complex double.\n");
+                        exit(1);
+                    }
+                    char *im_start = comma + 1;
+                    while (isspace((unsigned char)*im_start)) im_start++;
+                    char *endptr_im;
+                    p[i].im = strtod(im_start, &endptr_im);
+                    while (isspace((unsigned char)*endptr_im)) endptr_im++;
+                    if (*endptr_im != '\0') {
+                        fprintf(stderr, "Error: Invalid imaginary part in complex double.\n");
+                        exit(1);
+                    }
                 } else {
                     fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
                     exit(1);
                 }
             } else {
-                // If no parentheses, read as two separate doubles
-                (void)!fscanf(filep, "%lf %lf", &p[i].re, &p[i].im);
-                // Check if the read was successful
-                if (ferror(filep)) {
+                // No parentheses: treat as two whitespace-separated numbers
+                char *endptr_re;
+                p[i].re = strtod(buffer, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                if (*endptr_re != '\0') {
+                    fprintf(stderr, "Error: Invalid real part in complex double.\n");
+                    exit(1);
+                }
+                if (fscanf(filep, "%lf", &p[i].im) != 1) {
                     fprintf(stderr, "Error: Failed to read complex double from file.\n");
                     exit(1);
                 }
@@ -5304,25 +5396,44 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
 // These functions parse already-read data from a buffer, allowing code reuse
 // between file-based and string-based formatted reads.
 
-static void parse_integer_from_buffer(char* buffer, int field_len, 
+static void parse_integer_from_buffer(char* buffer, int field_len,
         void* int_ptr, int32_t type_code)
 {
+    char *endptr;
+
     if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
+        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, &endptr, 10);
     } else {
-        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
+        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, &endptr, 10);
+    }
+
+    // Skip trailing whitespace after the parsed number
+    while (isspace((unsigned char)*endptr)) endptr++;
+
+    // Validate that something was parsed and no trailing garbage remains
+    if (endptr == buffer || *endptr != '\0') {
+        fprintf(stderr, "Error: Invalid integer number in formatted read.\n");
+        exit(1);
     }
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code)
 {
-    // Replace D/d with E for parsing
-    for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
+    convert_d_to_e(buffer);
+
+    char *endptr;
+    double v = strtod(buffer, &endptr);
+
+    // Skip trailing whitespace after the parsed number
+    while (isspace((unsigned char)*endptr)) endptr++;
+
+    // Validate that something was parsed and no trailing garbage remains
+    if (endptr == buffer || *endptr != '\0') {
+        fprintf(stderr, "Error: Invalid real number in formatted read.\n");
+        exit(1);
     }
 
-    double v = strtod(buffer, NULL);
     if (type_code == 4) {
         *((float*)real_ptr) = (float)v;
     } else {
