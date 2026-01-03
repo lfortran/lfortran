@@ -8904,7 +8904,8 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right);
         // Ensure type consistency for ILP64: operands may have different
         // integer widths when -fdefault-integer-8 is used
-        if (left->getType() != right->getType()) {
+        if (left->getType() != right->getType() &&
+            left->getType()->isIntegerTy() && right->getType()->isIntegerTy()) {
             // Use the larger type to avoid precision loss
             unsigned left_bits = left->getType()->getIntegerBitWidth();
             unsigned right_bits = right->getType()->getIntegerBitWidth();
@@ -8959,7 +8960,8 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right);
         // Ensure type consistency for ILP64: operands may have different
         // integer widths when -fdefault-integer-8 is used
-        if (left->getType() != right->getType()) {
+        if (left->getType() != right->getType() &&
+            left->getType()->isIntegerTy() && right->getType()->isIntegerTy()) {
             // Use the larger type to avoid precision loss
             unsigned left_bits = left->getType()->getIntegerBitWidth();
             unsigned right_bits = right->getType()->getIntegerBitWidth();
@@ -9740,7 +9742,8 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right_val);
         // Ensure type consistency for ILP64: operands may have different
         // integer widths when -fdefault-integer-8 is used
-        if (left_val->getType() != right_val->getType()) {
+        if (left_val->getType() != right_val->getType() &&
+            left_val->getType()->isIntegerTy() && right_val->getType()->isIntegerTy()) {
             llvm::Type* target_type = llvm_utils->getIntType(
                 ASRUtils::extract_kind_from_ttype_t(x.m_type));
             if (left_val->getType() != target_type) {
