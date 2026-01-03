@@ -1,9 +1,9 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-define void @cobyla(void (double*)* %calcfc) {
+define void @cobyla(ptr %calcfc) {
 .entry:
-  call void @cobylb(void (double*)* %calcfc)
+  call void @cobylb(ptr %calcfc)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
@@ -16,12 +16,12 @@ FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
   ret void
 }
 
-declare void @calcfc(double*)
+declare void @calcfc(ptr)
 
-define void @cobylb(void (double*)* %calcfc) {
+define void @cobylb(ptr %calcfc) {
 .entry:
   %con = alloca double, align 8
-  call void %calcfc(double* %con)
+  call void %calcfc(ptr %con)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
@@ -34,4 +34,4 @@ FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
   ret void
 }
 
-declare void @calcfc.1(double*)
+declare void @calcfc.1(ptr)

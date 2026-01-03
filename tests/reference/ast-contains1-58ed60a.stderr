@@ -1,0 +1,5 @@
+syntax error: Internal Compiler Error: syntax is ambiguous in the parser
+  --> tests/fixed_form/contains1.f:26:7
+   |
+26 |       character*(*),intent(out)::b  ! length selector ! assumed length
+   |       ^^^^^^^^^^^^^ 
