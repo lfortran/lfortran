@@ -3327,9 +3327,8 @@ public:
                 // If not found in parent scope, use implicit typing
                 implicit_dictionary = implicit_mapping[get_hash(parent_scope->asr_owner)];
                 char first_char = arg_name[0];
-                if (implicit_dictionary.find(std::string(1, first_char)) != implicit_dictionary.end()) {
-                    arg_type = implicit_dictionary[std::string(1, first_char)];
-                } else {
+                arg_type = implicit_dictionary[std::string(1, first_char)];
+                if (arg_type == nullptr) {
                     diag.add(Diagnostic(
                         "No implicit type found for variable '" + arg_name + "'",
                         Level::Error, Stage::Semantic, {
@@ -3337,14 +3336,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-            } else {
-                diag.add(Diagnostic(
-                    "Variable '" + arg_name + "' not declared",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{x.base.base.loc})
-                    }));
-                throw SemanticAbort();
-            }
+            }  
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, 

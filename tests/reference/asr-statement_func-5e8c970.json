@@ -1,0 +1,13 @@
+{
+    "basename": "asr-statement_func-5e8c970",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/statement_func.f90",
+    "infile_hash": "646553c62339ec1040b0aef408c2ed98f7eb90c2bea518e2c9b31fcc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-statement_func-5e8c970.stderr",
+    "stderr_hash": "354d26dcaba9d16fae41fa5bf8c212b849e29100f5b50bc99c91a1b7",
+    "returncode": 2
+}
