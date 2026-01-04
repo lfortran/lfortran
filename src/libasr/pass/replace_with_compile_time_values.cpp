@@ -145,7 +145,7 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         current_expr = current_expr_copy;
     }
 
-        void visit_FileWrite(const ASR::FileWrite_t& x) {
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
         // Don't replace string write targets as compile-time constants
         ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
         ASR::expr_t** current_expr_copy = current_expr;
