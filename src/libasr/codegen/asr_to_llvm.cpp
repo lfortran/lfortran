@@ -581,20 +581,30 @@ public:
         switch (str->m_physical_type)
         {
             case ASR::DescriptorString:{
-                //Set data
-                data_and_length.first = builder->CreateLoad(
-                    character_type,
-                    llvm_utils->create_gep2(string_descriptor, tmp, 0));
+                if (tmp->getType()->isPointerTy()) {
+                    // CASE A: tmp is a pointer (address). Use GEP and Load.
+                    data_and_length.first = builder->CreateLoad(
+                        character_type,
+                        builder->CreateStructGEP(string_descriptor, tmp, 0));
 
-                // Set length (Length could be explicit OR implicit)
-                if(str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){ // Explicit-Constant Length
-                    ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(str->m_len);
-                    llvm::Value* len_value = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
-                    data_and_length.second = len_value;
-                } else { // Implicit Length
-                    data_and_length.second = builder->CreateLoad(
-                        llvm::Type::getInt64Ty(context),
-                        llvm_utils->create_gep2(string_descriptor, tmp, 1));
+                    if (str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)) {
+                        ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(str->m_len);
+                        data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
+                    } else {
+                        data_and_length.second = builder->CreateLoad(
+                            llvm::Type::getInt64Ty(context),
+                            builder->CreateStructGEP(string_descriptor, tmp, 1));
+                    }
+                } else {
+                    // CASE B: tmp is a value (register). Use ExtractValue.
+                    data_and_length.first = builder->CreateExtractValue(tmp, {0});
+
+                    if (str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)) {
+                        ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(str->m_len);
+                        data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
+                    } else {
+                        data_and_length.second = builder->CreateExtractValue(tmp, {1});
+                    }
                 }
                 break;
             }
@@ -618,8 +628,8 @@ public:
     /*
         * Returns length of the string in an array of strings.
     */
-    llvm::Value* get_string_length_in_array(ASR::expr_t* expr, llvm::Value* str){
-        LCOMPILERS_ASSERT(llvm_utils->is_proper_array_of_strings_llvm_var(expr_type(expr), str))
+    llvm::Value* get_string_length_in_array(ASR::expr_t* expr, llvm::Value* str) {
+        LCOMPILERS_ASSERT(llvm_utils->is_proper_array_of_strings_llvm_var(expr_type(expr), str));
         ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(expr));
         switch(ASRUtils::extract_physical_type(expr_type(expr))){
             case ASR::DescriptorArray : {
@@ -627,11 +637,11 @@ public:
                     case ASR::DescriptorString : {
                         llvm::Value* temp{};
                         temp = arr_descr->get_pointer_to_data(expr, ASRUtils::expr_type(expr), str, module.get());
-                        temp = builder->CreateLoad(
+                        /*temp = builder->CreateLoad(
                             llvm_utils->get_el_type(expr, ASRUtils::extract_type(expr_type(expr)), module.get())->getPointerTo(),
-                            temp);
-                        return builder->CreateLoad(llvm::Type::getInt64Ty(context),
-                                llvm_utils->create_gep2(string_descriptor, temp, 1));
+                            temp);*/
+                        LCOMPILERS_ASSERT(!temp->getType()->isPointerTy());
+                        return builder->CreateExtractValue(temp, {1});
                     }
                     default:
                         throw LCompilersException("Unhandled string physicalType");
@@ -640,23 +650,21 @@ public:
             case ASR::PointerArray:{
                 switch(str_type->m_physical_type){
                     case ASR::DescriptorString : {
-                        return builder->CreateLoad(llvm::Type::getInt64Ty(context),
-                                llvm_utils->create_gep2(string_descriptor, str, 1));
+                        LCOMPILERS_ASSERT(!str->getType()->isPointerTy());
+                        return builder->CreateExtractValue(str, {1});
                     }
                     default:
                         throw LCompilersException("Unhandled string physicalType");
-
                 }
-            default:
-                throw LCompilersException("Unhandled Array Physical type");
             }
-
+        default:
+           throw LCompilersException("Unhandled Array Physical type");
         }
     }
 
-
-    /*
-     * Returns length of the string (int64).
+     
+        
+     /** Returns length of the string (int64).
      * Handles FixedLenString, PointerString, and DescriptorString (scalars and arrays).
      */
     llvm::Value* get_string_length(ASR::expr_t* str_expr) {
@@ -893,8 +901,8 @@ public:
         if(!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt32Ty(context), {
-                        character_type, llvm::Type::getInt64Ty(context),
-                        character_type, llvm::Type::getInt64Ty(context)
+                        builder->getPtrTy(), llvm::Type::getInt64Ty(context),
+                        builder->getPtrTy(), llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -9001,10 +9009,15 @@ public:
                 }
                 else if (ASRUtils::is_character(*left_ttype)) {
                     this->visit_expr_wrapper(x.m_left, true);
-                    std::tie(left, left_len) =
-                        llvm_utils->get_string_length_data(
-                            ASRUtils::get_string_type(left_ttype),
-                            tmp, true, true);
+                    llvm::Value *str_desc = tmp;
+                    if (str_desc->getType()->isPointerTy()) {
+                        if (str_desc->getType()->isPointerTy() &&
+                            str_desc->getType()->getPointerElementType() == llvm_utils->string_descriptor) {
+                            str_desc = builder->CreateLoad(llvm_utils->string_descriptor, str_desc);
+                    }
+                    LCOMPILERS_ASSERT(!str_desc->getType()->isPointerTy());
+                    left = builder->CreateExtractValue(str_desc, {0});
+                    left_len = builder->CreateExtractValue(str_desc, {1});
                 }
                 else {
                     throw CodeGenError("Unsupported left operand type in StringCompare");
@@ -9025,10 +9038,14 @@ public:
                 }
                 else if (ASRUtils::is_character(*right_ttype)) {
                     this->visit_expr_wrapper(x.m_right, true);
-                    std::tie(right, right_len) =
-                        llvm_utils->get_string_length_data(
-                            ASRUtils::get_string_type(right_ttype),
-                            tmp, true, true);
+                    llvm::Value *str_desc = tmp;
+                    if (str_desc->getType()->isPointerTy() &&
+                        str_desc->getType()->getPointerElementType() == llvm_utils->string_descriptor) {
+                        str_desc = builder->CreateLoad(llvm_utils->string_descriptor, str_desc);
+                    }
+                    LCOMPILERS_ASSERT(!str_desc->getType()->isPointerTy());
+                    right = builder->CreateExtractValue(str_desc, {0});
+                    right_len = builder->CreateExtractValue(str_desc, {1});
                 }
                 else {
                     throw CodeGenError("Unsupported right operand type in StringCompare");
@@ -9048,15 +9065,21 @@ public:
             }
         }
         if( is_single_char ) {
-            left = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), left);
-            right = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), right);
+            // Check if 'left' is already the i8 value or a pointer to it
+            if (left->getType()->isPointerTy()) {
+                left = builder->CreateLoad(llvm::Type::getInt8Ty(context), left);
+            }
+            if (right->getType()->isPointerTy()) {
+                right = builder->CreateLoad(llvm::Type::getInt8Ty(context), right);
+            }
         } else {
             tmp = lfortran_str_cmp(left, left_len, right, right_len);
         }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 if( is_single_char ) {
-                    tmp = builder->CreateICmpEQ(left, right);
+                    llvm::Value* cmp = builder->CreateICmpEQ(left, right);
+                    tmp = builder->CreateZExt(cmp, llvm::Type::getInt1Ty(context));
                 } else {
                     tmp = builder->CreateICmpEQ(tmp, llvm::ConstantInt::get(context, llvm::APInt(32,0)));
                 }
@@ -11489,37 +11512,50 @@ public:
             read_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         }
         std::vector<llvm::Value*> args;
+        if (is_string) {
+            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1));
+        } else {
+            args.push_back(unit_val);
+        }
+        args.push_back(iostat);
+        args.push_back(read_size); 
+        args.push_back(advance);
+        args.push_back(advance_length);
 
         if (x.m_fmt) {
-                ASR::ttype_t* fmt_ttype =
-                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_fmt));
+            ASR::ttype_t* fmt_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_fmt));
+            if (ASRUtils::is_character(*fmt_ttype)) {
+                this->visit_expr_wrapper(x.m_fmt, true);
+                args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(fmt_ttype), tmp));
+                args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(fmt_ttype), tmp));
+            } else {
+                args.push_back(llvm::ConstantPointerNull::get(character_type));
+                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            }
+        } else {
+            args.push_back(llvm::ConstantPointerNull::get(character_type));
+            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+        }
 
-                if (ASRUtils::is_character(*fmt_ttype)) {
-                    this->visit_expr_wrapper(x.m_fmt, true);
-                    args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(fmt_ttype), tmp));
-                    args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(fmt_ttype), tmp));
-                } else if (ASRUtils::is_integer(*fmt_ttype)) {
-                    this->visit_expr_load_wrapper(x.m_fmt, 0);
-                    args.push_back(tmp); // Integer label
-                    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-                }
-                tmp = nullptr; // Reset memory safety guard
+    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
 
-                for (size_t i=0; i<x.n_values; i++) {
-                    this->visit_expr_load_wrapper(x.m_values[i], 0);
-                    ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
-                    if (ASRUtils::is_character(*val_ttype)) {
-                        llvm::Value *str_data, *str_len;
-                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
-                            ASRUtils::get_string_type(val_ttype), tmp, true, true);
-                        args.push_back(str_data);
-                        args.push_back(str_len);
-                    } else {
-                        args.push_back(tmp); // Numeric target
-                        args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-                    }
-                    tmp = nullptr;
-                }
+    // Formatted Read Branch
+    if (x.m_fmt) {
+        for (size_t i = 0; i < x.n_values; i++) {
+            this->visit_expr_load_wrapper(x.m_values[i], 0);
+            ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
+            if (ASRUtils::is_character(*val_ttype)) {
+                llvm::Value *str_data, *str_len;
+                std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(val_ttype), tmp, true, true);
+                args.push_back(str_data);
+                args.push_back(str_len);
+            } else {
+                args.push_back(tmp);
+                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            }
+            tmp = nullptr;
+        }
             std::string runtime_func_name = "_lfortran_formatted_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
@@ -11537,7 +11573,11 @@ public:
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name, module.get());
             }
-            builder->CreateCall(fn, args);
+            if (args.size() >= 8) {
+                builder->CreateCall(fn, args);
+            } else {
+                throw CodeGenError("Formatted read arguments mismatch");
+            }
             llvm_utils->stringFormat_return.free();
         }
         else {
