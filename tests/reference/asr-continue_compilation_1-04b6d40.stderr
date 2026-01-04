@@ -203,6 +203,12 @@ semantic error: The upper bound of an assumed-size array's last dimension is not
 84 |         print *, ubound(c, 2)
    |                  ^^^^^^^^^^^^ 
 
+semantic error: Intrinsic 'not_real' is not recognized
+   --> tests/errors/continue_compilation_1.f90:179:14
+    |
+179 |     call sub(not_real)
+    |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
     |
