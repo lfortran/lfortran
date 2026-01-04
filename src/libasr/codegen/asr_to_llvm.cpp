@@ -300,12 +300,31 @@ public:
             // to our new block
             builder->CreateBr(bb);
         }
+        if (bb->getParent() == nullptr) {
 #if LLVM_VERSION_MAJOR >= 16
-        fn->insert(fn->end(), bb);
+            fn->insert(fn->end(), bb);
 #else
-        fn->getBasicBlockList().push_back(bb);
+            fn->getBasicBlockList().push_back(bb);
 #endif
+        } else {
+            LCOMPILERS_ASSERT(bb->getParent() == fn);
+        }
         builder->SetInsertPoint(bb);
+    }
+
+    void predeclare_goto_targets(llvm::Function *fn, ASR::stmt_t **body, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            if (body[i]->type != ASR::stmtType::GoToTarget) continue;
+            ASR::GoToTarget_t *gt = ASR::down_cast<ASR::GoToTarget_t>(body[i]);
+            if (llvm_goto_targets.find(gt->m_id) != llvm_goto_targets.end()) continue;
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "goto_target");
+#if LLVM_VERSION_MAJOR >= 16
+            fn->insert(fn->end(), bb);
+#else
+            fn->getBasicBlockList().push_back(bb);
+#endif
+            llvm_goto_targets[gt->m_id] = bb;
+        }
     }
 
     template <typename Cond, typename Body>
@@ -4639,6 +4658,7 @@ public:
             }
         }
         visit_procedures(x);
+        llvm_goto_targets.clear();
 
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) {
@@ -4679,6 +4699,7 @@ public:
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
+        predeclare_goto_targets(F, x.m_body, x.n_body);
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -5931,6 +5952,7 @@ public:
         uint32_t h = get_hash((ASR::asr_t*)&x);
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
+        llvm_goto_targets.clear();
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
             debug_emit_function(x, SP);
@@ -6114,6 +6136,7 @@ public:
 
             if (!prototype_only) {
                 define_function_entry(x);
+                predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
@@ -11347,6 +11370,9 @@ public:
         }
     }
 
+    // All read functions now have a unified signature with iostat as the last parameter.
+    // Pass NULL for iostat when not needed (will exit on error), or a valid pointer
+    // (will set iostat and return on error).
     llvm::Function* get_read_function(ASR::ttype_t *type) {
         type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(type));
@@ -11371,11 +11397,13 @@ public:
                 }
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
+                    std::vector<llvm::Type*> args{
+                        type_arg->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
-                            }, false);
+                            llvm::Type::getVoidTy(context), args, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
@@ -11385,19 +11413,20 @@ public:
                 std::string runtime_func_name = "_lfortran_read_char";
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
+                    std::vector<llvm::Type*> args{
+                        character_type->getPointerTo(), // Str_data
+                        llvm::Type::getInt64Ty(context), // Str_len
+                        llvm::Type::getInt32Ty(context), // Unit_num
+                        llvm::Type::getInt32Ty(context)->getPointerTo() // iostat
+                    };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                character_type->getPointerTo(), // Str_data
-                                llvm::Type::getInt64Ty(context), // Str_len
-                                llvm::Type::getInt32Ty(context) // Unit_num
-                            }, false);
+                            llvm::Type::getVoidTy(context), args, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
                 break;
             }
 
-            // adding case of boolean type input (TO DO:- boolean array)
             case (ASR::ttypeType::Logical):{
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
@@ -11405,18 +11434,20 @@ public:
 
                 if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_logical";
-                    type_arg = llvm::Type::getInt1Ty(context); // LLVM boolean type (1 bit)
+                    type_arg = llvm::Type::getInt1Ty(context);
                 } else {
                     throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
                 }
 
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
+                    std::vector<llvm::Type*> args{
+                        type_arg->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
-                            }, false);
+                            llvm::Type::getVoidTy(context), args, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
@@ -11435,11 +11466,13 @@ public:
                 }
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
+                    std::vector<llvm::Type*> args{
+                        type_arg->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
-                            }, false);
+                            llvm::Type::getVoidTy(context), args, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
@@ -11461,11 +11494,13 @@ public:
                 }
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
+                    std::vector<llvm::Type*> args{
+                        type_arg->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    };
                     llvm::FunctionType *function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context), {
-                                type_arg->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)
-                            }, false);
+                            llvm::Type::getVoidTy(context), args, false);
                     fn = llvm::Function::Create(function_type,
                             llvm::Function::ExternalLinkage, runtime_func_name, module.get());
                 }
@@ -11526,7 +11561,8 @@ public:
                     std::vector<llvm::Type*> types {
                         type_arg->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)};
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()};
                     if(runtime_func_name == "_lfortran_read_array_char"){
                         types.insert(types.begin()+1, llvm::Type::getInt64Ty(context));
                     }
@@ -11551,7 +11587,7 @@ public:
             return ;
         }
 
-        llvm::Value *unit_val, *iostat, *read_size;
+        llvm::Value *unit_val, *iostat, *iostat_for_empty_read, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
         if (x.m_unit == nullptr) {
@@ -11574,9 +11610,17 @@ public:
             this->visit_expr_wrapper(x.m_iostat, false);
             ptr_loads = ptr_copy;
             iostat = tmp;
+            iostat_for_empty_read = iostat;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
+            // Pass NULL to read functions so runtime prints specific error messages
+            iostat = llvm::ConstantPointerNull::get(
+                        llvm::Type::getInt32Ty(context)->getPointerTo());
+            // Create internal iostat for empty_read
+            iostat_for_empty_read = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt32Ty(context));
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                iostat_for_empty_read);
         }
 
         if (x.m_advance) {
@@ -11668,7 +11712,7 @@ public:
                                     size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
 
                                     llvm::Function* fn = get_read_function(arr_type);
-                                    builder->CreateCall(fn, {section_ptr, size, unit_val});
+                                    builder->CreateCall(fn, {section_ptr, size, unit_val, iostat});
                                     continue;
                                 }
 
@@ -11711,7 +11755,7 @@ public:
 
                                 // Call array read function
                                 llvm::Function* fn = get_read_function(arr_type);
-                                builder->CreateCall(fn, {section_ptr, size, unit_val});
+                                builder->CreateCall(fn, {section_ptr, size, unit_val, iostat});
                                 continue;
                             }
                         }
@@ -11774,10 +11818,10 @@ public:
                         llvm::Value* elem_ptr = tmp;
                         ptr_loads = ptr_loads_copy;
 
-                        // Read into this element (scalar read takes 2 args: ptr, unit)
+                        // Read into this element
                         ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
                         llvm::Function* read_fn = get_read_function(elem_type);
-                        builder->CreateCall(read_fn, {elem_ptr, unit_val});
+                        builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
 
                         builder->CreateBr(loop_inc);
 
@@ -11875,9 +11919,11 @@ public:
                     } else {
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
                     }
-                    builder->CreateStore(
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                        iostat);
+                    if (x.m_iostat) {
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                            iostat);
+                    }
                     return;
                 } else {
                     fn = get_read_function(type);
@@ -11911,16 +11957,17 @@ public:
                         builder->CreateCall(fn, {
                             llvm_utils->get_stringArray_data(type, original_array_representation),
                             llvm_utils->get_stringArray_length(type, original_array_representation),
-                            tmp, unit_val});
+                            tmp, unit_val, iostat});
                         tmp = nullptr;
                     } else {
-                        builder->CreateCall(fn, {arr, tmp, unit_val}); tmp = nullptr;
+                        builder->CreateCall(fn, {arr, tmp, unit_val, iostat});
+                        tmp = nullptr;
                     }
                 } else {
                     if(ASRUtils::is_string_only(type)){
                         llvm::Value* str_data, *str_len;
                         std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(type), var_to_read_into, true);
-                        builder->CreateCall(fn, {str_data, str_len, unit_val});
+                        builder->CreateCall(fn, {str_data, str_len, unit_val, iostat});
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type)
                             || ASR::is_a<ASR::Pointer_t>(*type)) {
@@ -11930,7 +11977,7 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, {var_to_read_into, unit_val});
+                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
                     }
                 }
             }
@@ -11954,7 +12001,20 @@ public:
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             module.get());
             }
-            builder->CreateCall(fn, {unit_val, iostat});
+            // When x.m_iostat is provided and values were read (n_values > 0),
+            // only call empty_read if no error occurred during value reads.
+            // When n_values == 0, no reads happened yet so call unconditionally.
+            if (x.m_iostat && x.n_values > 0) {
+                llvm::Value* iostat_val = builder->CreateLoad(
+                    llvm::Type::getInt32Ty(context), iostat_for_empty_read);
+                llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
+                    iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+                llvm_utils->create_if_else(iostat_is_zero, [&]() {
+                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                }, [](){});
+            } else {
+                builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+            }
         }
     }
 
@@ -12111,6 +12171,7 @@ public:
         llvm::Value *iostat{};
         llvm::Value *action{}, *action_len{};
         llvm::Value *delim{}, *delim_len{};
+        llvm::Value *position{}, *position_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -12163,6 +12224,11 @@ public:
         } else {
             delim = llvm::Constant::getNullValue(character_type);
             delim_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        } if (x.m_position) {
+            std::tie(position, position_len) = get_string_data_and_length(x.m_position);
+        } else {
+            position = llvm::Constant::getNullValue(character_type);
+            position_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -12179,19 +12245,22 @@ public:
                         character_type, i64, //iomsg, iomsg_len
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         character_type, i64, // action, action_len
-                        character_type, i64 // delim, delim_len
+                        character_type, i64, // delim, delim_len
+                        character_type, i64  // position, position_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, {unit_val,
-            f_name_data,f_name_len,
+            f_name_data, f_name_len,
             status_data, status_len,
             form_data, form_len,
             access_data, access_len,
             iomsg_data, iomsg_len,
             iostat,
-            action, action_len, delim, delim_len});
+            action, action_len,
+            delim, delim_len,
+            position, position_len});
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {

@@ -1,12 +1,18 @@
-program test_read
-  implicit none
-  integer :: i1, i2
+program read_14
+    implicit none
+    real :: arr(5)
+    integer :: i, j
 
-  character(len=8) :: cdata = '   1   2'
+    open(10, file="read_14_data.txt", status="replace")
+    write(10, *) 1.0, 2.0, 3.0, 4.0, 5.0
+    close(10)
 
-  read (cdata, '(i4, i4)') i1, i2
+    open(10, file="read_14_data.txt", status="old")
+    read(10, *) (arr(j), j=1,5)
+    close(10, status="delete")
 
-  if(i1 /= 1 .or. i2 /= 2) error stop
-
-  print *, "OK"
+    do i = 1, 5
+        if (abs(arr(i) - real(i)) > 1e-6) error stop
+    end do
+    print *, "PASS"
 end program
