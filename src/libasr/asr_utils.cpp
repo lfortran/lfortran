@@ -1114,7 +1114,22 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     loaded_submodules.insert(std::string(mod->m_name));
 
     for (size_t i=0;i<mod->n_dependencies;i++) {
-        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(mod->m_dependencies[i])));
+        std::string dep_name = std::string(mod->m_dependencies[i]);
+        ASR::symbol_t *dep_sym = symtab->get_symbol(dep_name);
+        if (dep_sym == nullptr) {
+            bool is_intrinsic = startswith(dep_name, "lfortran_intrinsic");
+            load_module(al, symtab, dep_name, loc, is_intrinsic, loaded_submodules,
+                        pass_options, run_verify, err, lm, false, true);
+            dep_sym = symtab->get_symbol(dep_name);
+        }
+        if (dep_sym == nullptr) {
+            continue;
+        }
+        if (!ASR::is_a<ASR::Module_t>(*dep_sym)) {
+            err("The symbol '" + dep_name + "' must be a module", loc);
+            continue;
+        }
+        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(dep_sym);
         load_dependent_submodules(al, symtab, dep_mod, loc,
                                   loaded_submodules, pass_options,
                                   run_verify, err, lm);
