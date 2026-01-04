@@ -221,6 +221,9 @@ program continue_compilation_1
     b5 = 12_8
     c5 = 2
 
+    i = 1
+    print *, string(i,i)
+
     !loop_test
     do i=1,3
        i = i + 1
@@ -252,19 +255,6 @@ program continue_compilation_1
     print *, merge_bits(8, 12_8, 2)
     !merge_bits_run
     print *, merge_bits(a5, b5, c5)
-
-    !Does not work correctly : Issue: #5469 -------------
-    ! !max_01
-    ! y1 = 5.2d0
-    ! z1 = 9.0
-    ! print *, max(y1, z1)
-    ! !max_02
-    ! print *, max(b5, a5)
-    ! !min_01
-    ! print *, min(y1, z1)
-    ! !min_02
-    ! print *, min(b5, a5)
-    !------------------------------
 
     !modulo_01
     print *, modulo(1, 0)
