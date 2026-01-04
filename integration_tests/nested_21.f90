@@ -1,6 +1,6 @@
 ! Check sync statements in do while loops 
 ! at cycle statements for scalar and arrays
-module temp
+module temp_nested_21
 
 contains
   subroutine demo()
@@ -50,10 +50,10 @@ contains
     end function g
     
   end subroutine demo 
-end module
+end module temp_nested_21
 
 program nested_21
-  use temp
+  use temp_nested_21
   implicit none
   call demo()
 end program nested_21
