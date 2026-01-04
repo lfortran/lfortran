@@ -2352,7 +2352,13 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
         llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
-        int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+        int64_t len = 0; 
+        if (str->m_len_kind == ASR::AssumedLength) {
+            // For assumed length, use the actual length of initial_data
+            len = initial_data.size();
+        } else {
+            ASRUtils::extract_value(str->m_len, len);
+        }
 
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
         llvm::Constant* string_constant;
@@ -2366,11 +2372,14 @@ namespace LCompilers {
                 )
                 break;
             }
+            case ASR::AssumedLength:
             case ASR::ExpressionLength:{
-                LCOMPILERS_ASSERT_MSG(
-                    ASRUtils::is_value_constant(str->m_len),
-                    "Global variable should have constant-compile-time known length"
-                );
+                if (str->m_len_kind == ASR::ExpressionLength) {
+                    LCOMPILERS_ASSERT_MSG(
+                        ASRUtils::is_value_constant(str->m_len),
+                        "Global variable should have constant-compile-time known length"
+                    );
+                }
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len);
                 // [len x i8] c "DATA HERE"
