@@ -5713,8 +5713,8 @@ static bool read_field(FILE *filep, int read_width, bool advance_no,
     }
 
     if (fgets(*buffer, read_width + 1, filep) == NULL) {
-        *iostat = -1;
-        *chunk = 0;
+        if (iostat) *iostat = -1;
+        if (chunk) *chunk = 0;
         free(*buffer);
         *buffer = NULL;
         *field_len = 0;
@@ -5728,9 +5728,9 @@ static bool read_field(FILE *filep, int read_width, bool advance_no,
         *consumed_newline = true;
     }
 
-    *chunk = (int32_t)(*field_len);
+    if (chunk) *chunk = (int32_t)(*field_len);
     if (advance_no && *consumed_newline && *field_len != read_width) {
-        *iostat = -2;
+        if (iostat) *iostat = -2;
     }
 
     return true;
@@ -5858,13 +5858,13 @@ static void handle_read_X(FILE *filep, int width, bool advance_no,
     for (int i = 0; i < skip; i++) {
         int c = fgetc(filep);
         if (c == EOF) {
-            *iostat = -1;
+            if (iostat) *iostat = -1;
             break;
         }
         if (c == '\n') {
             *consumed_newline = true;
             if (advance_no) {
-                *iostat = -2;
+                if (iostat) *iostat = -2;
             }
             break;
         }
@@ -5878,7 +5878,7 @@ static void handle_read_slash(FILE *filep, int32_t *iostat, bool *consumed_newli
         c = fgetc(filep);
     } while (c != '\n' && c != EOF);
     if (c == EOF) {
-        *iostat = -1;
+        if (iostat) *iostat = -1;
         return;
     }
     *consumed_newline = true;
@@ -5912,8 +5912,8 @@ LFORTRAN_API void _lfortran_formatted_read(
         filep = stdin;
     }
 
-    *chunk = 0;
-    *iostat = 0;
+    if (chunk) *chunk = 0;
+    if (iostat) *iostat = 0;
     const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
 
     int64_t fmt_pos = 0;
@@ -5981,12 +5981,12 @@ LFORTRAN_API void _lfortran_formatted_read(
             break;
         }
 
-        if (*iostat != 0) break;
+        if (iostat && *iostat != 0) break;
     }
 
     va_end(args);
 
-    if (!advance_no && !consumed_newline && *iostat == 0) {
+    if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
         do {
             c = fgetc(filep);
@@ -5995,7 +5995,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
-    *iostat = 0;
+    if (iostat) *iostat = 0;
     if (unit_num == -1) {
         // Read from stdin
         return;
@@ -6016,9 +6016,9 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
         }
 
         if (feof(fp)) {
-            *iostat = -1;
+            if (iostat) *iostat = -1;
         } else if (ferror(fp)) {
-            *iostat = 1;
+            if (iostat) *iostat = 1;
         }
     }
 }
