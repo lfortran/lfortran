@@ -43,6 +43,8 @@ function enumerate_libraries(self, prefix, libs) result(r)
         self%id == id_intel_llvm_windows) then
     end if
 
+    allocate(character(len=1) :: r)
+
 end function enumerate_libraries
 
 end module fpm_compiler
