@@ -1,23 +1,14 @@
 program read_from_file
     implicit none
-    integer :: x, ios, unit_no
-    character(len=100) :: filename
+    integer :: x, unit_no
 
-    filename = './tests/overflow_test.txt'
+    open(newunit=unit_no, file='./tests/overflow_test.txt', status='old')
 
-    ! Open the file for reading
-    open(newunit=unit_no, file=filename, status='unknown', iostat=ios)
-    if (ios /= 0) then
-        print *, "Failed to open file:", trim(filename)
-        stop
-    end if
+    read(unit_no, *) x
+    print *, "Read integer:", x
 
-    ! Attempt to read integers from the file
-    do
-        read(unit_no, *, iostat=ios) x
-        if (ios /= 0) exit
-        print *, "Read integer:", x
-    end do
+    read(unit_no, *) x
+    print *, "Read integer:", x
 
     close(unit_no)
 end program read_from_file
