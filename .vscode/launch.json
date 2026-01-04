@@ -10,7 +10,7 @@
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/src/bin/lfortran",
-            "args": ["test.f90"],
+            "args": ["examples/expr2.f90"],
             "cwd": "${workspaceFolder}"
         },
         {
