@@ -4,7 +4,9 @@ program test_read
 
   read ('   1   2', '(i4, i4)') i1, i2
 
-  if(i1 /= 1 .or. i2 /= 2) error stop
-
-  print *, "OK"
+  if (i1 == 1 .and. i2 == 2) then
+     print *, "OK"
+  else
+     print *, "FAIL"
+  end if
 end program
