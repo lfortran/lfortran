@@ -147,6 +147,7 @@ public:
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
+    std::map<std::string, ASR::Function_t*> llvm_symtab_fn_impl; // Maps fn name to Implementation ASR
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
@@ -5842,6 +5843,10 @@ public:
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
+                // Store Implementation ASR for implicit argument casting
+                if (ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface) {
+                    llvm_symtab_fn_impl[fn_name] = const_cast<ASR::Function_t*>(&x);
+                }
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
             } else {
@@ -13087,7 +13092,39 @@ public:
                     ASRUtils::extract_type(a),
                     ASRUtils::extract_type(b)),
                 "Unmatching String Physical Types");
-        }        
+        }
+    }
+
+    // Helper to get implementation parameter type for implicit interface argument casting.
+    // Returns the implementation parameter type and Variable if found, nullptr otherwise.
+    std::pair<ASR::ttype_t*, ASR::Variable_t*> get_impl_param_type(
+            ASR::symbol_t* fn_name_sym, size_t arg_idx, bool is_method) {
+        ASR::symbol_t* fn_sym = symbol_get_past_external(fn_name_sym);
+        if (!ASR::is_a<ASR::Function_t>(*fn_sym)) {
+            return {nullptr, nullptr};
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+        std::string fn_name = fn->m_name;
+        // Check if this is an Interface and we have the Implementation
+        if (ASRUtils::get_FunctionType(fn)->m_deftype != ASR::deftypeType::Interface ||
+            llvm_symtab_fn_impl.find(fn_name) == llvm_symtab_fn_impl.end()) {
+            return {nullptr, nullptr};
+        }
+        ASR::Function_t* impl = llvm_symtab_fn_impl[fn_name];
+        size_t impl_arg_idx = arg_idx + is_method;
+        if (impl_arg_idx >= impl->n_args ||
+            !ASR::is_a<ASR::Var_t>(*impl->m_args[impl_arg_idx])) {
+            return {nullptr, nullptr};
+        }
+        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(impl->m_args[impl_arg_idx]);
+        ASR::symbol_t* var_sym = symbol_get_past_external(var->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*var_sym)) {
+            return {nullptr, nullptr};
+        }
+        ASR::Variable_t* impl_arg = ASR::down_cast<ASR::Variable_t>(var_sym);
+        ASR::ttype_t* impl_param_type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(impl_arg->m_type));
+        return {impl_param_type, impl_arg};
     }
 
     template <typename T>
@@ -13596,6 +13633,127 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
+            }
+
+            // Handle CHARACTER array physical type mismatch for implicit interface
+            // When caller has PointerArray (string_descriptor) but callee expects
+            // DescriptorArray (array descriptor), create descriptor from string_descriptor
+            if (compiler_options.implicit_argument_casting) {
+                ASR::ttype_t* char_arg_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value)));
+
+                // Use helper to look up implementation parameter type
+                auto [impl_param_type, impl_arg] = get_impl_param_type(x.m_name, i, is_method);
+
+                if (impl_param_type && impl_arg &&
+                    ASRUtils::is_character(*char_arg_type) && ASRUtils::is_array(char_arg_type) &&
+                    ASRUtils::is_character(*impl_param_type) && ASRUtils::is_array(impl_param_type)) {
+
+                    ASR::array_physical_typeType arg_phy = ASRUtils::extract_physical_type(char_arg_type);
+                    ASR::array_physical_typeType param_phy = ASRUtils::extract_physical_type(impl_param_type);
+
+                    ASR::dimension_t* param_dims = nullptr;
+                    int param_n_dims = ASRUtils::extract_dimensions_from_ttype(impl_param_type, param_dims);
+
+                    // Callee may have DescriptorArray or StringArraySinglePointer with empty dims
+                    bool param_expects_descriptor =
+                        param_phy == ASR::array_physical_typeType::DescriptorArray ||
+                        (param_phy == ASR::array_physical_typeType::StringArraySinglePointer &&
+                         ASRUtils::is_dimension_empty(param_dims, param_n_dims));
+
+                    if (arg_phy == ASR::array_physical_typeType::PointerArray &&
+                        param_expects_descriptor) {
+
+                        // Create array descriptor from string_descriptor
+                        llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, impl_arg->base.base.loc, &impl_arg->base)),
+                            impl_arg->m_type, module.get());
+                        llvm::Value* descriptor = llvm_utils->CreateAlloca(*builder, descriptor_type);
+
+                        // Get data pointer from string_descriptor (field 0)
+                        llvm::Value* str_data_ptr = llvm_utils->create_gep2(string_descriptor, tmp, 0);
+                        llvm::Value* str_data = builder->CreateLoad(character_type, str_data_ptr);
+
+                        // Store data pointer in array descriptor
+                        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
+                        // Need to wrap in string_descriptor for the array
+                        llvm::Value* elem_str_desc = llvm_utils->CreateAlloca(string_descriptor, nullptr, "elem_str_desc");
+                        builder->CreateStore(str_data, llvm_utils->create_gep2(string_descriptor, elem_str_desc, 0));
+                        // Copy length from source
+                        llvm::Value* str_len_ptr = llvm_utils->create_gep2(string_descriptor, tmp, 1);
+                        llvm::Value* str_len = builder->CreateLoad(llvm::Type::getInt64Ty(context), str_len_ptr);
+                        builder->CreateStore(str_len, llvm_utils->create_gep2(string_descriptor, elem_str_desc, 1));
+                        builder->CreateStore(elem_str_desc, data_ptr);
+
+                        // Set offset to 0
+                        llvm::Value* offset_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 1);
+                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_ptr);
+
+                        // Set dimension descriptors for all dimensions
+                        ASR::dimension_t* arg_dims = nullptr;
+                        int arg_n_dims = ASRUtils::extract_dimensions_from_ttype(char_arg_type, arg_dims);
+                        llvm::Type* dim_des_type = arr_descr->create_dimension_descriptor_array_type();
+                        llvm::Type* dim_des_elem_type = arr_descr->get_dimension_descriptor_type(false);
+
+                        if (arg_n_dims > 0 && !ASRUtils::is_dimension_empty(arg_dims, arg_n_dims)) {
+                            // Fixed size array - create dimension descriptor array
+                            llvm::Value* dim_des_arr = llvm_utils->CreateAlloca(
+                                dim_des_elem_type,
+                                llvm::ConstantInt::get(context, llvm::APInt(32, arg_n_dims)),
+                                "dim_des_arr");
+
+                            // Set all dimension descriptors
+                            int64_t stride = 1;
+                            for (int d = 0; d < arg_n_dims; d++) {
+                                // Get dimension element via GEP
+                                llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(32, d));
+                                llvm::Value* dim_elem = llvm_utils->create_ptr_gep2(dim_des_elem_type, dim_des_arr, dim_idx);
+
+                                // dim_des fields: 0=stride, 1=lower_bound, 2=dim_size
+                                llvm::Value* stride_ptr = llvm_utils->create_gep2(dim_des_elem_type, dim_elem, 0);
+                                llvm::Value* lower_ptr = llvm_utils->create_gep2(dim_des_elem_type, dim_elem, 1);
+                                llvm::Value* size_ptr = llvm_utils->create_gep2(dim_des_elem_type, dim_elem, 2);
+
+                                builder->CreateStore(
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, stride)), stride_ptr);
+                                builder->CreateStore(
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, 1)), lower_ptr);
+
+                                // Get this dimension size
+                                int64_t dim_size = 1;
+                                if (arg_dims[d].m_length) {
+                                    ASR::expr_t* length_expr = arg_dims[d].m_length;
+                                    if (ASR::is_a<ASR::IntegerConstant_t>(*length_expr)) {
+                                        dim_size = ASR::down_cast<ASR::IntegerConstant_t>(length_expr)->m_n;
+                                    }
+                                }
+                                builder->CreateStore(
+                                    llvm::ConstantInt::get(context, llvm::APInt(32, dim_size)), size_ptr);
+
+                                stride *= dim_size;
+                            }
+
+                            llvm::Value* dim_des_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 2);
+                            builder->CreateStore(dim_des_arr, dim_des_ptr);
+                        } else {
+                            // Assumed size - set dim descriptor to null
+                            llvm::Value* dim_des_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 2);
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(dim_des_type)),
+                                dim_des_ptr);
+                        }
+
+                        // Set is_allocated to true
+                        llvm::Value* is_allocated_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 3);
+                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_allocated_ptr);
+
+                        // Set rank
+                        arr_descr->set_rank(descriptor_type, descriptor,
+                            llvm::ConstantInt::get(context, llvm::APInt(32, arg_n_dims)));
+
+                        tmp = descriptor;
+                    }
+                }
             }
 
             args.push_back(tmp);
