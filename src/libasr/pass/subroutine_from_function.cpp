@@ -323,17 +323,21 @@ private :
         }
         /* Handle Case `character(n) :: str` --  Create `character(:), alloactable :: str` */
         {
-            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
-                                            && !ASRUtils::is_value_constant(ASRUtils::get_string_type(new_type)->m_len)
-                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::ExpressionLength
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-            if(allocatable_needed){ 
-                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
+            ASR::ttype_t* underlying_t = ASRUtils::type_get_past_allocatable_pointer(new_type);
+            const bool allocatable_needed = ASRUtils::is_character(*underlying_t)
+                && ASR::is_a<ASR::String_t>(*underlying_t)
+                && !ASRUtils::is_value_constant(ASRUtils::get_string_type(underlying_t)->m_len)
+                && ASRUtils::get_string_type(underlying_t)->m_len_kind == ASR::ExpressionLength
+                && !ASRUtils::is_allocatable(new_type)
+                && !ASRUtils::is_pointer(new_type);
+
+            if (allocatable_needed) { 
+                ASR::String_t* const str = ASRUtils::get_string_type(underlying_t);
                 str->m_len = nullptr;
                 str->m_len_kind = ASR::DeferredLength;
                 str->m_physical_type = ASR::DescriptorString;
-                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
+                
+                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, underlying_t));
             }
         }
         return new_type;
