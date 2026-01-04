@@ -2849,3 +2849,8 @@ RUN(NAME polymorphic_select_type_01 LABELS gfortran llvm)
 RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME run_unlimited_poly_01 LABELS gfortran llvm)
+
+# Incoming tests from main
+RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
+RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
+RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
