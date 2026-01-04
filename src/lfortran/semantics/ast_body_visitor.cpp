@@ -5901,6 +5901,15 @@ public:
             }
             auto sym = current_scope->resolve_symbol(label);
 
+            if(starting_m_body == nullptr) {
+                diag.add(Diagnostic(
+                    "Cannot compute GOTO.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+
             // n_labels GOTO
             Vec<ASR::case_stmt_t*> a_body_vec;
             a_body_vec.reserve(al, x.n_labels);
