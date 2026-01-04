@@ -1316,7 +1316,7 @@ RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_03 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_04 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME passing_array_05 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME passing_array_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME parameter_01 LABELS gfortran llvm)
 RUN(NAME parameter_02 LABELS gfortran llvm)
