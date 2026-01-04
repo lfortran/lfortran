@@ -1,18 +1,16 @@
-
-program unlimited_poly
+program unlimited_poly_test
     implicit none
     class(*), allocatable :: u
-    
-    ! This triggers the crash
+
     allocate(integer :: u)
-    
     select type(u)
         type is (integer)
-            print *, 'It is an integer!'
             u = 42
-            print *, 'Value is:', u
+            print *, "It is an integer!"
+            print *, "Value is:", u
+            if (u /= 42) error stop
         class default
-            print *, 'Unknown type'
+            print *, "Unknown type"
+            error stop
     end select
-end program
-
+end program unlimited_poly_test
