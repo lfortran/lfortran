@@ -33,8 +33,27 @@ struct Arena {
 static LFORTRAN_ARENA_TLS Arena* scratch_arenas[2] = {NULL, NULL};
 static LFORTRAN_ARENA_TLS int scratch_initialized = 0;
 
+/*
+ * Thread-local current arena pointer.
+ * Tracks which arena the current function is using.
+ * NULL means no function has claimed an arena yet (top-level).
+ * Callees use this to get a DIFFERENT arena, avoiding conflicts.
+ */
+static LFORTRAN_ARENA_TLS Arena* scratch_current_arena = NULL;
+
 /* Thread-local pointer for legacy API inline access */
 LFORTRAN_ARENA_API LFORTRAN_ARENA_TLS char* _lfortran_arena_ptr = NULL;
+
+/*
+ * Handle structure for _lfortran_scratch_begin/_lfortran_scratch_end.
+ * Encodes all state needed to restore on scope exit.
+ */
+typedef struct {
+    Arena* arena;           /* Arena being used in this scope */
+    Arena* parent_arena;    /* Arena to restore as current on exit */
+    ArenaChunk* saved_chunk;/* Position: chunk */
+    char* saved_ptr;        /* Position: pointer within chunk */
+} ScratchHandle;
 
 /* --- Helper Functions --- */
 
@@ -255,6 +274,83 @@ LFORTRAN_ARENA_API Arena* scratch_get_arena_avoid_conflict(Arena* conflict) {
 
     fatal_error("scratch_get_arena_avoid_conflict: no conflict-free arena available");
     return NULL;
+}
+
+/* --- Conflict-Aware API Implementation --- */
+
+LFORTRAN_ARENA_API Arena* scratch_get_current(void) {
+    return scratch_current_arena;
+}
+
+LFORTRAN_ARENA_API void scratch_set_current(Arena* arena) {
+    scratch_current_arena = arena;
+}
+
+/* --- New Codegen API Implementation --- */
+
+LFORTRAN_ARENA_API void* _lfortran_scratch_begin(void) {
+    if (!scratch_initialized) {
+        scratch_init();
+    }
+
+    /* Allocate handle from first arena (handles are small, fixed size) */
+    ScratchHandle* handle = (ScratchHandle*)malloc(sizeof(ScratchHandle));
+    if (!handle) {
+        fatal_error("_lfortran_scratch_begin: failed to allocate handle");
+    }
+
+    /* Get parent arena (what caller is using) */
+    Arena* parent = scratch_current_arena;
+
+    /* Get an arena different from parent */
+    Arena* my_arena = scratch_get_arena_avoid_conflict(parent);
+
+    /* Save position on my arena */
+    ArenaPos saved = arena_get_pos(my_arena);
+
+    /* Set my arena as current */
+    scratch_current_arena = my_arena;
+
+    /* Fill in handle */
+    handle->arena = my_arena;
+    handle->parent_arena = parent;
+    handle->saved_chunk = saved.chunk;
+    handle->saved_ptr = saved.ptr;
+
+    return handle;
+}
+
+LFORTRAN_ARENA_API void* _lfortran_scratch_alloc(int64_t size) {
+    if (!scratch_initialized) {
+        scratch_init();
+    }
+
+    /* Allocate from the current arena */
+    if (!scratch_current_arena) {
+        fatal_error("_lfortran_scratch_alloc: no current arena");
+    }
+
+    return arena_alloc(scratch_current_arena, (size_t)size);
+}
+
+LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle_ptr) {
+    if (!handle_ptr) {
+        fatal_error("_lfortran_scratch_end: NULL handle");
+    }
+
+    ScratchHandle* handle = (ScratchHandle*)handle_ptr;
+
+    /* Restore arena position */
+    ArenaPos saved;
+    saved.chunk = handle->saved_chunk;
+    saved.ptr = handle->saved_ptr;
+    arena_reset(handle->arena, saved);
+
+    /* Restore parent as current */
+    scratch_current_arena = handle->parent_arena;
+
+    /* Free handle */
+    free(handle);
 }
 
 /* --- Legacy API Implementation --- */

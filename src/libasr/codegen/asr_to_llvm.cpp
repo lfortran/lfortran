@@ -198,8 +198,8 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
-    // Arena allocator state for current function
-    llvm::Value* arena_saved_ptr = nullptr;
+    // Arena allocator state for current function (conflict-aware two-arena pattern)
+    llvm::Value* scratch_handle = nullptr;
     bool current_function_uses_arena = false;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
@@ -268,8 +268,10 @@ public:
 
     // --- Arena Allocator Helpers ---
 
-    // Check if a function has local FixedSizeArray variables that need arena allocation
-    bool function_uses_arena(const ASR::Function_t& x) {
+    // Check if a scope has local FixedSizeArray variables that need arena allocation
+    // Works for both Function and Program scopes
+    template<typename T>
+    bool scope_uses_arena(const T& x) {
         if (compiler_options.stack_arrays) {
             return false;  // Arena disabled when stack_arrays is true
         }
@@ -289,6 +291,20 @@ public:
         return false;
     }
 
+    // Backward-compatible alias for Function-specific code
+    bool function_uses_arena(const ASR::Function_t& x) {
+        return scope_uses_arena(x);
+    }
+
+    // --- Conflict-Aware Arena Allocator Helpers (Two-Arena Pattern) ---
+    //
+    // These functions implement the two-arena alternation pattern for nested calls:
+    // - Parent function f() uses arena 0
+    // - Child function g() uses arena 1 (via scratch_begin avoiding conflict)
+    // - Grandchild h() uses arena 0 again (alternating)
+    //
+    // This prevents child allocations from corrupting parent data.
+
     // Get or create the _lfortran_arena_init function
     llvm::Function* get_arena_init_fn() {
         llvm::Function* fn = module->getFunction("_lfortran_arena_init");
@@ -301,40 +317,43 @@ public:
         return fn;
     }
 
-    // Get or create the _lfortran_arena_save function
-    llvm::Function* get_arena_save_fn() {
-        llvm::Function* fn = module->getFunction("_lfortran_arena_save");
+    // Get or create the _lfortran_scratch_begin function
+    // Returns opaque handle encoding arena, saved position, and parent arena
+    llvm::Function* get_scratch_begin_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_scratch_begin");
         if (!fn) {
             llvm::FunctionType* fn_type = llvm::FunctionType::get(
                 llvm::Type::getInt8Ty(context)->getPointerTo(), {}, false);
             fn = llvm::Function::Create(fn_type,
-                llvm::Function::ExternalLinkage, "_lfortran_arena_save", module.get());
+                llvm::Function::ExternalLinkage, "_lfortran_scratch_begin", module.get());
         }
         return fn;
     }
 
-    // Get or create the _lfortran_arena_alloc function
-    llvm::Function* get_arena_alloc_fn() {
-        llvm::Function* fn = module->getFunction("_lfortran_arena_alloc");
+    // Get or create the _lfortran_scratch_alloc function
+    // Allocates from the current scratch arena (set by scratch_begin)
+    llvm::Function* get_scratch_alloc_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_scratch_alloc");
         if (!fn) {
             llvm::FunctionType* fn_type = llvm::FunctionType::get(
                 llvm::Type::getInt8Ty(context)->getPointerTo(),
                 {llvm::Type::getInt64Ty(context)}, false);
             fn = llvm::Function::Create(fn_type,
-                llvm::Function::ExternalLinkage, "_lfortran_arena_alloc", module.get());
+                llvm::Function::ExternalLinkage, "_lfortran_scratch_alloc", module.get());
         }
         return fn;
     }
 
-    // Get or create the _lfortran_arena_restore function
-    llvm::Function* get_arena_restore_fn() {
-        llvm::Function* fn = module->getFunction("_lfortran_arena_restore");
+    // Get or create the _lfortran_scratch_end function
+    // Restores arena position and parent arena from handle
+    llvm::Function* get_scratch_end_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_scratch_end");
         if (!fn) {
             llvm::FunctionType* fn_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context),
                 {llvm::Type::getInt8Ty(context)->getPointerTo()}, false);
             fn = llvm::Function::Create(fn_type,
-                llvm::Function::ExternalLinkage, "_lfortran_arena_restore", module.get());
+                llvm::Function::ExternalLinkage, "_lfortran_scratch_end", module.get());
         }
         return fn;
     }
@@ -345,23 +364,23 @@ public:
         builder->CreateCall(get_arena_init_fn(), {});
     }
 
-    // Call arena_save at function entry and store the saved pointer
-    void emit_arena_save() {
-        arena_saved_ptr = builder->CreateCall(get_arena_save_fn(), {}, "arena_saved");
+    // Begin scratch scope: get conflict-free arena, save position, set as current
+    void emit_scratch_begin() {
+        scratch_handle = builder->CreateCall(get_scratch_begin_fn(), {}, "scratch_handle");
     }
 
-    // Call arena_restore at function exit
-    void emit_arena_restore() {
-        if (arena_saved_ptr) {
-            builder->CreateCall(get_arena_restore_fn(), {arena_saved_ptr});
+    // End scratch scope: restore position and parent arena
+    void emit_scratch_end() {
+        if (scratch_handle) {
+            builder->CreateCall(get_scratch_end_fn(), {scratch_handle});
         }
     }
 
-    // Allocate from arena (returns i8*, caller must bitcast)
-    llvm::Value* emit_arena_alloc(uint64_t size) {
+    // Allocate from current scratch arena (returns i8*, caller must bitcast)
+    llvm::Value* emit_scratch_alloc(uint64_t size) {
         llvm::Value* size_val = llvm::ConstantInt::get(
             llvm::Type::getInt64Ty(context), size);
-        return builder->CreateCall(get_arena_alloc_fn(), {size_val}, "arena_ptr");
+        return builder->CreateCall(get_scratch_alloc_fn(), {size_val}, "scratch_ptr");
     }
 
     // --- End Arena Allocator Helpers ---
@@ -4797,6 +4816,12 @@ public:
             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
                 st.second, ASRUtils::symbol_type(st.first), false, false);
         }
+        // Begin scratch scope for programs with FixedSizeArray locals
+        // Uses conflict-aware two-arena pattern to prevent nested call corruption
+        current_function_uses_arena = scope_uses_arena(x);
+        if (current_function_uses_arena) {
+            emit_scratch_begin();
+        }
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
@@ -4818,6 +4843,10 @@ public:
         }
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        // End scratch scope before return (restores position and parent arena)
+        if (current_function_uses_arena) {
+            emit_scratch_end();
+        }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -5612,8 +5641,8 @@ public:
                         llvm_utils->get_type_from_ttype_t_util(nullptr,
                             ASRUtils::extract_type(v->m_type), module.get()));
                     uint64_t total_size = fixed_size * el_size;
-                    llvm::Value* arena_ptr = emit_arena_alloc(total_size);
-                    ptr = builder->CreateBitCast(arena_ptr, type->getPointerTo(),
+                    llvm::Value* scratch_ptr = emit_scratch_alloc(total_size);
+                    ptr = builder->CreateBitCast(scratch_ptr, type->getPointerTo(),
                         std::string(v->m_name) + "_arena");
                 } else {
 #if LLVM_VERSION_MAJOR >= 15
@@ -6168,10 +6197,11 @@ public:
                 llvm_symtab[h] = array_desc;
             }
         }
-        // Arena save for functions with FixedSizeArray locals
+        // Begin scratch scope for functions with FixedSizeArray locals
+        // Uses conflict-aware two-arena pattern to prevent nested call corruption
         current_function_uses_arena = function_uses_arena(x);
         if (current_function_uses_arena) {
-            emit_arena_save();
+            emit_scratch_begin();
         }
         declare_local_vars(x);
     }
@@ -6234,17 +6264,17 @@ public:
                 ret_val2 = tmp;
                 }
             }
-            // Arena restore before return
+            // End scratch scope before return (restores position and parent arena)
             if (current_function_uses_arena) {
-                emit_arena_restore();
+                emit_scratch_end();
             }
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-            // Arena restore before return
+            // End scratch scope before return (restores position and parent arena)
             if (current_function_uses_arena) {
-                emit_arena_restore();
+                emit_scratch_end();
             }
             builder->CreateRetVoid();
         }

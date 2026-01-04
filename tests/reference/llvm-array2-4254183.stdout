@@ -4,16 +4,27 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %a = alloca [5 x float], align 4
-  %b = alloca [5 x float], align 4
-  %c = alloca [3 x i32], align 4
-  %d = alloca [2 x i1], align 1
-  %e = alloca [6 x float], align 4
-  %f = alloca [12 x i32], align 4
-  %g = alloca [10 x i1], align 1
-  %h = alloca [24 x float], align 4
-  %i = alloca [36 x i32], align 4
-  %j = alloca [20 x i1], align 1
+  %scratch_handle = call i8* @_lfortran_scratch_begin()
+  %scratch_ptr = call i8* @_lfortran_scratch_alloc(i64 20)
+  %a_arena = bitcast i8* %scratch_ptr to [5 x float]*
+  %scratch_ptr1 = call i8* @_lfortran_scratch_alloc(i64 20)
+  %b_arena = bitcast i8* %scratch_ptr1 to [5 x float]*
+  %scratch_ptr2 = call i8* @_lfortran_scratch_alloc(i64 12)
+  %c_arena = bitcast i8* %scratch_ptr2 to [3 x i32]*
+  %scratch_ptr3 = call i8* @_lfortran_scratch_alloc(i64 2)
+  %d_arena = bitcast i8* %scratch_ptr3 to [2 x i1]*
+  %scratch_ptr4 = call i8* @_lfortran_scratch_alloc(i64 24)
+  %e_arena = bitcast i8* %scratch_ptr4 to [6 x float]*
+  %scratch_ptr5 = call i8* @_lfortran_scratch_alloc(i64 48)
+  %f_arena = bitcast i8* %scratch_ptr5 to [12 x i32]*
+  %scratch_ptr6 = call i8* @_lfortran_scratch_alloc(i64 10)
+  %g_arena = bitcast i8* %scratch_ptr6 to [10 x i1]*
+  %scratch_ptr7 = call i8* @_lfortran_scratch_alloc(i64 96)
+  %h_arena = bitcast i8* %scratch_ptr7 to [24 x float]*
+  %scratch_ptr8 = call i8* @_lfortran_scratch_alloc(i64 144)
+  %i_arena = bitcast i8* %scratch_ptr8 to [36 x i32]*
+  %scratch_ptr9 = call i8* @_lfortran_scratch_alloc(i64 20)
+  %j_arena = bitcast i8* %scratch_ptr9 to [20 x i1]*
   call void @_lpython_free_argv()
   br label %return
 
@@ -21,9 +32,16 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_array2
 
 FINALIZE_SYMTABLE_array2:                         ; preds = %return
+  call void @_lfortran_scratch_end(i8* %scratch_handle)
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare i8* @_lfortran_scratch_begin()
+
+declare i8* @_lfortran_scratch_alloc(i64)
+
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_scratch_end(i8*)

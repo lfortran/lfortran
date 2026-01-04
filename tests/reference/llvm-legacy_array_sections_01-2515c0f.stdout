@@ -83,8 +83,10 @@ define i32 @main(i32 %0, i8** %1) {
   %array_bound = alloca i32, align 4
   %__libasr_index_0_ = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %scratch_handle = call i8* @_lfortran_scratch_begin()
   %__libasr_index_0_1 = alloca i32, align 4
-  %w = alloca [5 x double], align 8
+  %scratch_ptr = call i8* @_lfortran_scratch_alloc(i64 40)
+  %w_arena = bitcast i8* %scratch_ptr to [5 x double]*
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -136,7 +138,7 @@ then6:                                            ; preds = %loop.body
   unreachable
 
 ifcont7:                                          ; preds = %loop.body
-  %17 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 %13
+  %17 = getelementptr [5 x double], [5 x double]* %w_arena, i32 0, i32 %13
   store double 1.390000e+00, double* %17, align 8
   br label %loop.head
 
@@ -149,10 +151,10 @@ then8:                                            ; preds = %loop.end
   unreachable
 
 ifcont9:                                          ; preds = %loop.end
-  %18 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 0
+  %18 = getelementptr [5 x double], [5 x double]* %w_arena, i32 0, i32 0
   call void @a(double* %18)
   %19 = alloca i64, align 8
-  %20 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 0
+  %20 = getelementptr [5 x double], [5 x double]* %w_arena, i32 0, i32 0
   %21 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @serialization_info, i32 0, i32 0), i64* %19, i32 1, i32 0, i64 5, double* %20)
   %22 = load i64, i64* %19, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
@@ -175,7 +177,7 @@ then10:                                           ; preds = %ifcont9
   unreachable
 
 ifcont11:                                         ; preds = %ifcont9
-  %30 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 4
+  %30 = getelementptr [5 x double], [5 x double]* %w_arena, i32 0, i32 4
   %31 = load double, double* %30, align 8
   %32 = fsub double %31, -4.830000e+00
   %33 = call double @llvm.fabs.f64(double %32)
@@ -199,7 +201,7 @@ then15:                                           ; preds = %ifcont14
   unreachable
 
 ifcont16:                                         ; preds = %ifcont14
-  %35 = getelementptr [5 x double], [5 x double]* %w, i32 0, i32 3
+  %35 = getelementptr [5 x double], [5 x double]* %w_arena, i32 0, i32 3
   %36 = load double, double* %35, align 8
   %37 = fsub double %36, 3.140000e+00
   %38 = call double @llvm.fabs.f64(double %37)
@@ -222,10 +224,15 @@ return:                                           ; preds = %ifcont19
   br label %FINALIZE_SYMTABLE_legacy_array_sections_01
 
 FINALIZE_SYMTABLE_legacy_array_sections_01:       ; preds = %return
+  call void @_lfortran_scratch_end(i8* %scratch_handle)
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_scratch_begin()
+
+declare i8* @_lfortran_scratch_alloc(i64)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
@@ -237,5 +244,7 @@ declare void @_lfortran_free(i8*)
 declare double @llvm.fabs.f64(double) #0
 
 declare void @_lpython_free_argv()
+
+declare void @_lfortran_scratch_end(i8*)
 
 attributes #0 = { nounwind readnone speculatable willreturn }

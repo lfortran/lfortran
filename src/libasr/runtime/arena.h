@@ -151,6 +151,68 @@ LFORTRAN_ARENA_API Arena* scratch_get_arena(void);
  */
 LFORTRAN_ARENA_API Arena* scratch_get_arena_avoid_conflict(Arena* conflict);
 
+/* --- Conflict-Aware API for Nested Calls (Two-Arena Alternation) ---
+ *
+ * The pattern for nested/recursive function calls:
+ *
+ *   void f() {
+ *       Arena* parent = scratch_get_current();      // What parent is using
+ *       Arena* my_arena = scratch_get_arena_avoid_conflict(parent);
+ *       scratch_set_current(my_arena);              // Mark as active
+ *       ArenaPos saved = arena_get_pos(my_arena);
+ *       // ... allocate locals on my_arena ...
+ *       // ... call g() which will use a DIFFERENT arena ...
+ *       arena_reset(my_arena, saved);               // Restore position
+ *       scratch_set_current(parent);                // Restore parent view
+ *   }
+ *
+ * This ensures f() and h() share arena 0, while g() uses arena 1.
+ * Works for arbitrarily deep call stacks with only 2 arenas.
+ */
+
+/*
+ * Get the currently active scratch arena (what the caller is using).
+ * Returns NULL at top-level (no function has claimed an arena yet).
+ */
+LFORTRAN_ARENA_API Arena* scratch_get_current(void);
+
+/*
+ * Set the currently active scratch arena.
+ * Called at function entry to claim an arena, and at exit to restore parent.
+ */
+LFORTRAN_ARENA_API void scratch_set_current(Arena* arena);
+
+/* --- New Codegen API for Two-Arena Alternation ---
+ *
+ * These functions are used by LLVM codegen for the conflict-aware pattern.
+ * They combine multiple operations for efficiency.
+ */
+
+/*
+ * Begin a scratch scope with conflict avoidance.
+ * Gets an arena different from the current active arena, saves position,
+ * and sets the new arena as current.
+ *
+ * Returns an opaque handle encoding:
+ *   - The arena being used
+ *   - The saved position
+ *   - The parent arena to restore
+ *
+ * Call _lfortran_scratch_end to complete the scope.
+ */
+LFORTRAN_ARENA_API void* _lfortran_scratch_begin(void);
+
+/*
+ * Allocate from the current scratch arena.
+ */
+LFORTRAN_ARENA_API void* _lfortran_scratch_alloc(int64_t size);
+
+/*
+ * End a scratch scope started by _lfortran_scratch_begin.
+ * Restores the arena position and sets current back to parent.
+ */
+LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle);
+
 /* --- Legacy API (backward compatible with current LLVM codegen) --- */
 
 /*
