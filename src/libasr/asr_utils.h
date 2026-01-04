@@ -2906,6 +2906,15 @@ inline bool is_assumed_rank_array(ASR::ttype_t* x) {
     return array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
 }
 
+inline bool is_array_t(ASR::ttype_t* const x){
+    return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
+}
+
+inline bool is_array_t(ASR::expr_t* const x){
+    return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(expr_type(x)));
+}
+
+// Check through number of dims.
 inline bool is_array(ASR::ttype_t *x) {
     ASR::dimension_t* dims = nullptr;
     return extract_dimensions_from_ttype(x, dims) > 0 || is_assumed_rank_array(x);
