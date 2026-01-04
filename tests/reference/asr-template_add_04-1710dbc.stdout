@@ -84,29 +84,6 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
-                                                            lfortran_tmp:
-                                                                (Variable
-                                                                    7
-                                                                    lfortran_tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                ),
                                                             x:
                                                                 (Variable
                                                                     7
@@ -232,29 +209,22 @@
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 7 lfortran_tmp)
-                                                            (FunctionCall
-                                                                5 f
-                                                                ()
-                                                                [((Var 7 x))
-                                                                ((Var 7 y))]
-                                                                (TypeParameter
-                                                                    t
-                                                                )
-                                                                ()
-                                                                ()
-                                                            )
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                        )
-                                                        (Assignment
                                                             (Var 7 z)
                                                             (FunctionCall
                                                                 5 f
                                                                 ()
                                                                 [((Var 7 z))
-                                                                ((Var 7 lfortran_tmp))]
+                                                                ((FunctionCall
+                                                                    5 f
+                                                                    ()
+                                                                    [((Var 7 x))
+                                                                    ((Var 7 y))]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                ))]
                                                                 (TypeParameter
                                                                     t
                                                                 )
@@ -842,27 +812,6 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
-                                                            lfortran_tmp:
-                                                                (Variable
-                                                                    11
-                                                                    lfortran_tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                ),
                                                             x:
                                                                 (Variable
                                                                     11
@@ -974,27 +923,20 @@
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 11 lfortran_tmp)
-                                                            (FunctionCall
-                                                                2 func_arg_real
-                                                                ()
-                                                                [((Var 11 x))
-                                                                ((Var 11 y))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            )
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                        )
-                                                        (Assignment
                                                             (Var 11 z)
                                                             (FunctionCall
                                                                 2 func_arg_real
                                                                 ()
                                                                 [((Var 11 z))
-                                                                ((Var 11 lfortran_tmp))]
+                                                                ((FunctionCall
+                                                                    2 func_arg_real
+                                                                    ()
+                                                                    [((Var 11 x))
+                                                                    ((Var 11 y))]
+                                                                    (Real 4)
+                                                                    ()
+                                                                    ()
+                                                                ))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
