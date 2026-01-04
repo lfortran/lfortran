@@ -171,6 +171,15 @@ class ASRToLLVMVisitor;
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
         llvm::Value* lfortran_calloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size);
+
+        // Arena allocator for fixed-size local arrays
+        llvm::Value* lfortran_arena_alloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* size);
+        llvm::Value* lfortran_arena_save(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder);
+        void lfortran_arena_restore(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* saved_ptr);
+
         static inline bool is_llvm_struct(ASR::ttype_t* asr_type) {
             return ASR::is_a<ASR::Tuple_t>(*asr_type) ||
                    ASR::is_a<ASR::List_t>(*asr_type) ||

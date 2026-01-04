@@ -1,19 +1,52 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+@_lfortran_arena_ptr = external thread_local global i8*
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %a = alloca [5 x float], align 4
-  %b = alloca [5 x float], align 4
-  %c = alloca [3 x i32], align 4
-  %d = alloca [2 x i1], align 1
-  %e = alloca [6 x float], align 4
-  %f = alloca [12 x i32], align 4
-  %g = alloca [10 x i1], align 1
-  %h = alloca [24 x float], align 4
-  %i = alloca [36 x i32], align 4
-  %j = alloca [20 x i1], align 1
+  %arena_current = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new = getelementptr i8, i8* %arena_current, i64 32
+  store i8* %arena_new, i8** @_lfortran_arena_ptr, align 8
+  %2 = bitcast i8* %arena_current to [5 x float]*
+  %arena_current1 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new2 = getelementptr i8, i8* %arena_current1, i64 32
+  store i8* %arena_new2, i8** @_lfortran_arena_ptr, align 8
+  %3 = bitcast i8* %arena_current1 to [5 x float]*
+  %arena_current3 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new4 = getelementptr i8, i8* %arena_current3, i64 16
+  store i8* %arena_new4, i8** @_lfortran_arena_ptr, align 8
+  %4 = bitcast i8* %arena_current3 to [3 x i32]*
+  %arena_current5 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new6 = getelementptr i8, i8* %arena_current5, i64 16
+  store i8* %arena_new6, i8** @_lfortran_arena_ptr, align 8
+  %5 = bitcast i8* %arena_current5 to [2 x i1]*
+  %arena_current7 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new8 = getelementptr i8, i8* %arena_current7, i64 32
+  store i8* %arena_new8, i8** @_lfortran_arena_ptr, align 8
+  %6 = bitcast i8* %arena_current7 to [6 x float]*
+  %arena_current9 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new10 = getelementptr i8, i8* %arena_current9, i64 48
+  store i8* %arena_new10, i8** @_lfortran_arena_ptr, align 8
+  %7 = bitcast i8* %arena_current9 to [12 x i32]*
+  %arena_current11 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new12 = getelementptr i8, i8* %arena_current11, i64 16
+  store i8* %arena_new12, i8** @_lfortran_arena_ptr, align 8
+  %8 = bitcast i8* %arena_current11 to [10 x i1]*
+  %arena_current13 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new14 = getelementptr i8, i8* %arena_current13, i64 96
+  store i8* %arena_new14, i8** @_lfortran_arena_ptr, align 8
+  %9 = bitcast i8* %arena_current13 to [24 x float]*
+  %arena_current15 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new16 = getelementptr i8, i8* %arena_current15, i64 144
+  store i8* %arena_new16, i8** @_lfortran_arena_ptr, align 8
+  %10 = bitcast i8* %arena_current15 to [36 x i32]*
+  %arena_current17 = load i8*, i8** @_lfortran_arena_ptr, align 8
+  %arena_new18 = getelementptr i8, i8* %arena_current17, i64 32
+  store i8* %arena_new18, i8** @_lfortran_arena_ptr, align 8
+  %11 = bitcast i8* %arena_current17 to [20 x i1]*
   call void @_lpython_free_argv()
   br label %return
 
@@ -23,6 +56,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_array2:                         ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

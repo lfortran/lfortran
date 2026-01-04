@@ -123,6 +123,7 @@ FINALIZE_SYMTABLE_rectangle_area:                 ; preds = %return
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %s1 = alloca %shape_class*, align 8
   store %shape_class* null, %shape_class** %s1, align 8
@@ -596,6 +597,8 @@ is_allocated.else49:                              ; preds = %Finalize_Variable_s
 is_allocated.ifcont50:                            ; preds = %is_allocated.else49, %is_allocated.then48
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

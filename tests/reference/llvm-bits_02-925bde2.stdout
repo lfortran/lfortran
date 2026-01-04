@@ -21,6 +21,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i64 0, i64* %all_zeros, align 4
   %block_size = alloca i32, align 4
   store i32 64, i32* %block_size, align 4
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %all_ones1 = alloca i64, align 8
   store i64 -1, i64* %all_ones1, align 4
@@ -88,6 +89,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_bits_02:                        ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

@@ -347,6 +347,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value2 = alloca i1, align 1
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i1, align 1
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %mystring = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %mystring, align 1
@@ -426,6 +427,8 @@ Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_m
   call void @_lfortran_free(i8* %32)
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

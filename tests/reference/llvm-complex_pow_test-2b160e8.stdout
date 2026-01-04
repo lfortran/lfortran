@@ -13,6 +13,7 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = alloca %complex_4, align 8
   %3 = alloca %complex_4, align 8
   %4 = alloca %complex_4, align 8
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %x = alloca %complex_4, align 8
   %y = alloca %complex_4, align 8
@@ -50,6 +51,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_complex2:                       ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

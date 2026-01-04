@@ -52,6 +52,7 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %c = alloca i32, align 4
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %c1 = alloca i32, align 4
   %2 = call i32 @__module_nested_01_a_b()
@@ -65,6 +66,8 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_nested_01:                      ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 

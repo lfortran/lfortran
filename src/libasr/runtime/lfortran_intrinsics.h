@@ -30,10 +30,13 @@ typedef double _Complex double_complex_t;
 
 #ifdef _WIN32
 #define LFORTRAN_API __declspec(dllexport)
+#define LFORTRAN_THREAD_LOCAL __declspec(thread)
 #elif defined(__linux__)
 #define LFORTRAN_API __attribute__((visibility("default")))
+#define LFORTRAN_THREAD_LOCAL __thread
 #else
 #define LFORTRAN_API /* Nothing */
+#define LFORTRAN_THREAD_LOCAL __thread
 #endif
 
 
@@ -203,6 +206,20 @@ LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size);
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
+
+// Thread-local arena allocator for fixed-size local arrays
+// Provides fast bump-pointer allocation without stack overflow risk
+// Thread-local arena pointer - directly accessible for inline arena operations
+extern LFORTRAN_API LFORTRAN_THREAD_LOCAL char* _lfortran_arena_ptr;
+
+// Arena initialization - called automatically or at program start
+LFORTRAN_API void _lfortran_arena_init(void);
+
+// Arena functions (for non-inline fallback)
+LFORTRAN_API void* _lfortran_arena_alloc(int64_t size);
+LFORTRAN_API void* _lfortran_arena_save(void);
+LFORTRAN_API void _lfortran_arena_restore(void* saved_ptr);
+
 LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx);
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end);
 LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int64_t idx2, int64_t step,

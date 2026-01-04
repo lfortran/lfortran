@@ -41,6 +41,7 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value4 = alloca double, align 8
   %call_arg_value = alloca double, align 8
+  call void @_lfortran_arena_init()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca double, align 8
   %r1 = alloca double, align 8
@@ -165,6 +166,8 @@ return:                                           ; preds = %ifcont13
 FINALIZE_SYMTABLE_intrinsics_03:                  ; preds = %return
   ret i32 0
 }
+
+declare void @_lfortran_arena_init()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
