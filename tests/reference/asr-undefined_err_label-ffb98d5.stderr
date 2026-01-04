@@ -1,0 +1,5 @@
+semantic error: err= label 500 is not defined
+ --> tests/errors/undefined_err_label.f90:5:20
+  |
+5 |     read(*, *, err=500) val  
+  |                    ^^^ 

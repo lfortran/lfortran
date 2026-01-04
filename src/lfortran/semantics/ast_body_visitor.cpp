@@ -921,6 +921,17 @@ public:
         }
     }
 
+    void collect_labels() {
+        labels.clear();
+        if (starting_m_body == nullptr) return;
+        for (size_t i = 0; i < starting_n_body; ++i) {
+            int64_t label = stmt_label(starting_m_body[i]);
+            if (label != 0) {
+                labels.insert(std::to_string(label));
+            }
+        }
+    }
+
     // Returns true if parsing succeeded, false if should continue to next kwarg
     bool parse_read_label_kwarg(const char* kwarg_name, int64_t& label,
             AST::stmtType _type, const AST::kw_argstar_t& kwarg,
@@ -969,6 +980,21 @@ public:
             return false;
         }
         label = ASR::down_cast<ASR::IntegerConstant_t>(label_expr)->m_n;
+        if (labels.find(std::to_string(label)) == labels.end()) {
+            Location diag_loc = kwarg.loc;
+            if (diag_loc.first == 0 && diag_loc.last == 0) {
+                diag_loc = kwarg.m_value->base.loc;
+            }
+            if (diag_loc.first == 0 && diag_loc.last == 0) {
+                diag_loc = loc;
+            }
+
+            diag.add(Diagnostic(
+                std::string(kwarg_name) + "= label " + std::to_string(label) + " is not defined",
+                Level::Error, Stage::Semantic, {Label("", {diag_loc})}));
+            if (!compiler_options.continue_compilation) throw SemanticAbort();
+            return false;
+        }
         return true;
     }
 
@@ -1286,15 +1312,15 @@ public:
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
-                } else if (m_arg_str == "end") {
-                    if (!parse_read_label_kwarg("end", end_label, _type, kwarg, loc)) {
-                        continue;
-                    }
-                } else if (m_arg_str == "err") {
-                    if (!parse_read_label_kwarg("err", err_label, _type, kwarg, loc)) {
-                        continue;
-                    }
+            } else if (m_arg_str == "end") {
+                if (!parse_read_label_kwarg("end", end_label, _type, kwarg, loc)) {
+                    continue;
                 }
+            } else if (m_arg_str == "err") {
+                if (!parse_read_label_kwarg("err", err_label, _type, kwarg, loc)) {
+                    continue;
+                }
+            }
         }
         if( a_fmt == nullptr && a_end != nullptr ) {
             diag.add(Diagnostic(
@@ -2732,6 +2758,7 @@ public:
         current_scope = v->m_symtab;
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
+        collect_labels();
 
         for (size_t i=0; i<x.n_decl; i++) {
             visit_unit_decl2(*x.m_decl[i]);
@@ -3140,6 +3167,7 @@ public:
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
+        collect_labels();
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
@@ -3183,6 +3211,7 @@ public:
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
+        collect_labels();
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
@@ -3262,6 +3291,7 @@ public:
     void visit_Function(const AST::Function_t &x) {
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
+        collect_labels();
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if( t->type == ASR::symbolType::GenericProcedure ) {
@@ -5870,25 +5900,6 @@ public:
                 throw SemanticAbort();
             }
             auto sym = current_scope->resolve_symbol(label);
-
-            // get all labels in current scope
-            if (starting_m_body != nullptr) {
-                // collect all labels
-                for (size_t i = 0; i < starting_n_body; ++i) {
-                    int64_t label = stmt_label(starting_m_body[i]);
-                    if (label != 0) {
-                        labels.insert(std::to_string(label));
-                    }
-                }
-            } else {
-                // cannot perform expected behavior
-                diag.add(Diagnostic(
-                    "Cannot compute GOTO.",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{x.base.base.loc})
-                    }));
-                throw SemanticAbort();
-            }
 
             // n_labels GOTO
             Vec<ASR::case_stmt_t*> a_body_vec;
