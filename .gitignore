@@ -124,6 +124,7 @@ src/runtime/tests/test_sin
 src/runtime/tests/test_sin2
 src/runtime/tests/test_strings
 src/runtime/tests/test_tan
+src/runtime/*.stamp
 integration_tests/test-*
 input.txt
 input
