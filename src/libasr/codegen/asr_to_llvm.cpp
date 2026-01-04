@@ -11587,7 +11587,7 @@ public:
             return ;
         }
 
-        llvm::Value *unit_val, *iostat, *read_size;
+        llvm::Value *unit_val, *iostat, *iostat_for_empty_read, *read_size;
         llvm::Value *advance, *advance_length;
         bool is_string = false;
         if (x.m_unit == nullptr) {
@@ -11610,12 +11610,17 @@ public:
             this->visit_expr_wrapper(x.m_iostat, false);
             ptr_loads = ptr_copy;
             iostat = tmp;
+            iostat_for_empty_read = iostat;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
+            // Pass NULL to read functions so runtime prints specific error messages
+            iostat = llvm::ConstantPointerNull::get(
+                        llvm::Type::getInt32Ty(context)->getPointerTo());
+            // Create internal iostat for empty_read
+            iostat_for_empty_read = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt32Ty(context));
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                iostat);
+                iostat_for_empty_read);
         }
 
         if (x.m_advance) {
@@ -11914,9 +11919,11 @@ public:
                     } else {
                         builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
                     }
-                    builder->CreateStore(
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                        iostat);
+                    if (x.m_iostat) {
+                        builder->CreateStore(
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                            iostat);
+                    }
                     return;
                 } else {
                     fn = get_read_function(type);
@@ -11975,22 +11982,6 @@ public:
                 }
             }
 
-            // If no iostat was provided by user, check for errors and abort
-            if (!x.m_iostat) {
-                llvm::Value* iostat_val = builder->CreateLoad(
-                    llvm::Type::getInt32Ty(context), iostat);
-                llvm::Value* iostat_non_zero = builder->CreateICmpNE(
-                    iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
-                llvm_utils->create_if_else(iostat_non_zero, [&]() {
-                    // Print error message and abort when iostat is non-zero
-                    llvm::Value* fmt_ptr = LCompilers::create_global_string_ptr(
-                        context, *module, *builder, "Error: Invalid input from file.\n");
-                    LCompilers::print_error(context, *module, *builder, {fmt_ptr});
-                    LCompilers::exit(context, *module, *builder,
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
-                }, [](){});
-            }
-
             // In Fortran, read(u, *) is used to read the entire line. The
             // next read(u, *) function is intended to read the next entire
             // line. Let's take an example: `read(u, *) n`, where n is an
@@ -12015,14 +12006,14 @@ public:
             // When n_values == 0, no reads happened yet so call unconditionally.
             if (x.m_iostat && x.n_values > 0) {
                 llvm::Value* iostat_val = builder->CreateLoad(
-                    llvm::Type::getInt32Ty(context), iostat);
+                    llvm::Type::getInt32Ty(context), iostat_for_empty_read);
                 llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
                     iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
                 llvm_utils->create_if_else(iostat_is_zero, [&]() {
-                    builder->CreateCall(fn, {unit_val, iostat});
+                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
                 }, [](){});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat});
+                builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
             }
         }
     }
