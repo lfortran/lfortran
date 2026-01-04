@@ -3,7 +3,7 @@ program file_16
     integer :: j = 11
     character(len=10) :: str, x
     str = "LFortran"
-    open(j, file="test.txt")
+    open(j, file="file_16_test.txt")
     write(j, *) str
     str = ""
     rewind(j)

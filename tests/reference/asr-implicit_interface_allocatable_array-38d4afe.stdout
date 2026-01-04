@@ -98,13 +98,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Allocatable
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())]
-                                                            PointerArray
-                                                        )
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        PointerArray
                                                     )
                                                     ()
                                                     BindC
@@ -121,13 +119,11 @@
                                     sub1
                                     (FunctionType
                                         [(Integer 4)
-                                        (Allocatable
-                                            (Array
-                                                (Real 4)
-                                                [(()
-                                                ())]
-                                                PointerArray
-                                            )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            PointerArray
                                         )]
                                         ()
                                         BindC

@@ -46,6 +46,12 @@ semantic error: Assumed-rank array 'x' must be a dummy argument
 33 |      x = [1, 2]
    |      ^ 
 
+semantic error: Comparison operations are not allowed on assumed-rank arrays ('x')
+  --> tests/errors/continue_compilation_3.f90:34:19
+   |
+34 |         print *, (x /= [1, 2])
+   |                   ^^^^^^^^^^^ 
+
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_3.f90:68:26
    |

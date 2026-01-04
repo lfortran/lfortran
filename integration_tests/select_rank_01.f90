@@ -13,7 +13,7 @@ program select_rank_test
 contains
 
     subroutine check(x, expected)
-        integer, intent(in) :: x(..)
+        integer, dimension(..), intent(in) :: x
         integer, intent(in) :: expected
 
         select rank(x)

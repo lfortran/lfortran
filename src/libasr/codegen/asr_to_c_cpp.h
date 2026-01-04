@@ -3074,7 +3074,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Sinh, "sinh");
             SET_INTRINSIC_NAME(Cosh, "cosh");
             SET_INTRINSIC_NAME(Tanh, "tanh");
-            SET_INTRINSIC_NAME(Abs, "abs");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs)) : {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr(*x.m_args[0]);
+                headers.insert("math.h");
+                if (ASRUtils::is_real(*t)) {
+                    src = "fabs(" + src + ")";
+                } else {
+                    src = "abs(" + src + ")";
+                }
+                return;
+            }
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
@@ -3095,6 +3105,40 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 this->visit_expr(*x.m_args[2]);
                 std::string c = src;
                 src = a +" + "+ b +"*"+ c;
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Max)) : {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr(*x.m_args[0]);
+                std::string result = src;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i]);
+                    if (ASRUtils::is_real(*t)) {
+                        headers.insert("math.h");
+                        result = "fmax(" + result + ", " + src + ")";
+                    } else {
+                        // Integer: use ternary
+                        result = "((" + result + ") > (" + src + ") ? (" + result + ") : (" + src + "))";
+                    }
+                }
+                src = result;
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Min)) : {
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                this->visit_expr(*x.m_args[0]);
+                std::string result = src;
+                for (size_t i = 1; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i]);
+                    if (ASRUtils::is_real(*t)) {
+                        headers.insert("math.h");
+                        result = "fmin(" + result + ", " + src + ")";
+                    } else {
+                        // Integer: use ternary
+                        result = "((" + result + ") < (" + src + ") ? (" + result + ") : (" + src + "))";
+                    }
+                }
+                src = result;
                 return;
             }
             default : {

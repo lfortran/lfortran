@@ -1216,6 +1216,9 @@ implicit_spec
     | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$);
 	    WARN_CHARACTERSTAR($3, @2);}
+    | KW_CHARACTER "*" "(" expr ")" "(" kind_arg_list ")" {
+            $$ = IMPLICIT_SPEC(ATTR_TYPE_EXPR(Character, $4, @$), $7, @$);
+	    WARN_CHARACTERSTAR_EXPR(@2);}
     | KW_CHARACTER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
 
@@ -1546,6 +1549,8 @@ intrinsic_type_spec
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
     | KW_CHARACTER "*" "(" "*" ")" {
             $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
+    | KW_CHARACTER "*" "(" expr ")" {
+            $$ = ATTR_TYPE_EXPR(Character, $4, @$); WARN_CHARACTERSTAR_EXPR(@$); }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); WARN_REALSTAR($3, @$); }

@@ -490,10 +490,15 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
+            bool is_pointer_return = false;
+            bool use_temp_var_for_return = false;
             if (ASR::is_a<ASR::Assignment_t>(xx)) {
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 value = assignment->m_value;
                 target = assignment->m_target;
+                use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
+                                            !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
+                is_pointer_return = use_temp_var_for_return;
             } else if (ASR::is_a<ASR::Associate_t>(xx)) {
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
@@ -515,7 +520,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
             }
 
-            bool use_temp_var_for_return = false;
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
@@ -535,9 +539,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASR::expr_t *result_var = nullptr;
 
                 if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
-                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 } else {
-                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
 
                 // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable

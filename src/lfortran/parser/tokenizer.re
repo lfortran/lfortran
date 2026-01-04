@@ -798,7 +798,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | 'L' whitespace? int
                 | 'A' whitespace? (int)?
                 | 'D' whitespace? int whitespace? dot_int
-                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int
+                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int whitespace? E_int?
                 | 'P' whitespace? 'F' whitespace? int whitespace? dot_int
                 | 'P'
                 | 'X'
@@ -808,8 +808,18 @@ void lex_format(unsigned char *&cur, Location &loc,
                 = 'T' whitespace? ('L' | 'R')? whitespace? int
                 | int whitespace? 'X'
                 ;
+            sign_edit_desc
+                = 'S' whitespace? ('P' | 'S')?
+                ;
+
+            rounding_mode_desc
+                = 'R' whitespace? ('U' | 'D' | 'N' | 'Z')
+                ;
+
             control_edit_desc
                 = position_edit_desc
+                | sign_edit_desc
+                | rounding_mode_desc
                 | (int)? '/'
                 | ':'
                 ;
@@ -875,7 +885,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             "&" ws_comment+ whitespace? "&"? { continue; }
             '"' ('""'|[^"\x00])* '"' { continue; }
             "'" ("''"|[^'\x00])* "'" { continue; }
-            '-' { continue; }
+            '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
         */

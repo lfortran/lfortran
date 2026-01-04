@@ -257,6 +257,8 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
 LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num);
+LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num);
+LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num);

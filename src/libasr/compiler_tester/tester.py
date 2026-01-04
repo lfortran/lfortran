@@ -555,8 +555,10 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     global no_color
     no_color = args.no_color
 
-    # Remove all old test references while updating
-    if update_reference:
+    # While updating references, only wipe the whole reference directory if the
+    # user is updating the entire suite (no -t filters). For a targeted update
+    # (via -t), deleting everything is unexpected and breaks unrelated tests.
+    if update_reference and not specific_tests:
         log.debug("REMOVE: old test references")
         cmd = "rm -rf ./tests/reference/*"
         log.debug(f"+ {cmd}")

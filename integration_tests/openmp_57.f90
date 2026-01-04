@@ -13,6 +13,7 @@ program openmp_57
   !$omp single
   do i = 1, N
     !$omp task shared(A)
+        !$omp atomic
         total = total + A(index) * 2
         index=index+1
     !$omp end task

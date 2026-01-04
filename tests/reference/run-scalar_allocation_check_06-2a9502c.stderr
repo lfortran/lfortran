@@ -1,0 +1,2 @@
+At 6:14 of file tests/errors/scalar_allocation_check_06.f90
+Runtime error: Argument 1 is unallocated.
