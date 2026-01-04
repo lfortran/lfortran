@@ -5636,6 +5636,23 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
+typedef enum {
+    INPUT_FILE,
+    INPUT_STRING
+} InputMethod;
+
+typedef struct {
+    InputMethod inputMethod;
+    union {
+        FILE *file;
+        struct {
+            const fchar *buf;
+            const int64_t len;
+            size_t pos;
+        } str;
+    };
+} InputSource;
+
 // Shared buffer parsing functions for formatted reads
 // These functions parse already-read data from a buffer, allowing code reuse
 // between file-based and string-based formatted reads.
@@ -5702,7 +5719,53 @@ static void parse_character_from_buffer(char* buffer, int field_len,
     }
 }
 
-static bool read_field(FILE *filep, int read_width, bool advance_no,
+static inline char* read_line(char *buf, int size, InputSource *inputSource)
+{
+    if (size <= 0) {
+        return NULL;
+    }
+
+    int i = 0;
+
+    switch (inputSource->inputMethod) {
+    case INPUT_FILE:
+        return fgets(buf, size, inputSource->file);
+    case INPUT_STRING:
+        while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
+            char c = inputSource->str.buf[inputSource->str.pos++];
+            buf[i++] = c;
+            if (c == '\n') break;
+        }
+
+        if (i == 0) {
+            return NULL;
+        }
+
+        buf[i] = '\0';
+        return buf;
+    }
+
+    return NULL;
+}
+
+static inline int read_character(InputSource *inputSource)
+{
+    switch (inputSource->inputMethod) {
+
+    case INPUT_FILE:
+        return fgetc(inputSource->file);
+
+    case INPUT_STRING:
+        if (inputSource->str.pos < inputSource->str.len) {
+            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
+        }
+        return EOF;
+    }
+
+    return EOF;
+}
+
+static bool read_field(InputSource *inputSource, int read_width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         char **buffer, int *field_len)
 {
@@ -5712,7 +5775,7 @@ static bool read_field(FILE *filep, int read_width, bool advance_no,
         exit(1);
     }
 
-    if (fgets(*buffer, read_width + 1, filep) == NULL) {
+    if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
         if (iostat) *iostat = -1;
         if (chunk) *chunk = 0;
         free(*buffer);
@@ -5736,7 +5799,7 @@ static bool read_field(FILE *filep, int read_width, bool advance_no,
     return true;
 }
 
-static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no,
+static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
     int32_t type_code = va_arg(*args, int32_t);
@@ -5748,7 +5811,6 @@ static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no
     char* str_data = str_data_ptr ? *str_data_ptr : NULL;
     if (str_data == NULL) {
         printf("Runtime Error: Unallocated string in formatted read\n");
-        va_end(*args);
         exit(1);
     }
 
@@ -5757,7 +5819,7 @@ static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no
 
     char* buffer = NULL;
     int field_len = 0;
-    if (!read_field(filep, read_width, advance_no, iostat, chunk,
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
@@ -5768,7 +5830,7 @@ static bool handle_read_A(FILE *filep, va_list *args, int width, bool advance_no
     return true;
 }
 
-static bool handle_read_L(FILE *filep, va_list *args, int width, bool advance_no,
+static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
     int32_t type_code = va_arg(*args, int32_t);
@@ -5781,7 +5843,7 @@ static bool handle_read_L(FILE *filep, va_list *args, int width, bool advance_no
 
     char* buffer = NULL;
     int field_len = 0;
-    if (!read_field(filep, read_width, advance_no, iostat, chunk,
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
@@ -5792,7 +5854,7 @@ static bool handle_read_L(FILE *filep, va_list *args, int width, bool advance_no
     return true;
 }
 
-static bool handle_read_I(FILE *filep, va_list *args, int width, bool advance_no,
+static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
     int32_t type_code = va_arg(*args, int32_t);
@@ -5804,7 +5866,7 @@ static bool handle_read_I(FILE *filep, va_list *args, int width, bool advance_no
 
     char* buffer = NULL;
     int field_len = 0;
-    if (!read_field(filep, read_width, advance_no, iostat, chunk,
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
@@ -5825,7 +5887,7 @@ static void parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
     }
 }
 
-static bool handle_read_real(FILE *filep, va_list *args, int width, bool advance_no,
+static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
         const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
 {
@@ -5840,7 +5902,7 @@ static bool handle_read_real(FILE *filep, va_list *args, int width, bool advance
 
     char* buffer = NULL;
     int field_len = 0;
-    if (!read_field(filep, read_width, advance_no, iostat, chunk,
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
             consumed_newline, &buffer, &field_len)) {
         return false;
     }
@@ -5851,12 +5913,12 @@ static bool handle_read_real(FILE *filep, va_list *args, int width, bool advance
     return true;
 }
 
-static void handle_read_X(FILE *filep, int width, bool advance_no,
+static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, bool *consumed_newline)
 {
     int skip = (width > 0) ? width : 1;
     for (int i = 0; i < skip; i++) {
-        int c = fgetc(filep);
+        int c = read_character(inputSource);
         if (c == EOF) {
             if (iostat) *iostat = -1;
             break;
@@ -5871,17 +5933,43 @@ static void handle_read_X(FILE *filep, int width, bool advance_no,
     }
 }
 
-static void handle_read_slash(FILE *filep, int32_t *iostat, bool *consumed_newline)
+static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
     int c = 0;
     do {
-        c = fgetc(filep);
+        c = read_character(inputSource);
     } while (c != '\n' && c != EOF);
     if (c == EOF) {
         if (iostat) *iostat = -1;
         return;
     }
     *consumed_newline = true;
+}
+
+
+static void common_formatted_read(InputSource *inputSource,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args, va_list *args);
+
+LFORTRAN_API void _lfortran_string_formatted_read(
+    fchar* src_data, int64_t src_len,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args, ...) {
+    
+    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}};
+    
+    va_list args;
+    va_start(args, no_of_args);
+    
+    common_formatted_read(&inputSource, iostat, chunk,
+        advance, advance_length, fmt, fmt_len,
+        no_of_args, &args);
+    
+    va_end(args);
 }
 
 // Type codes for _lfortran_formatted_read:
@@ -5898,29 +5986,44 @@ LFORTRAN_API void _lfortran_formatted_read(
     fchar* fmt, int64_t fmt_len,
     int32_t no_of_args, ...)
 {
-    FILE *filep = NULL;
+    InputSource inputSource;
     bool unit_file_bin;
 
     if (unit_num != -1) {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+        inputSource.inputMethod = INPUT_FILE;
+        inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
             NULL, NULL, NULL, NULL);
-        if (!filep) {
+        if (!inputSource.file) {
             printf("No file found with given unit\n");
             exit(1);
         }
     } else {
-        filep = stdin;
+        inputSource.inputMethod = INPUT_FILE;
+        inputSource.file = stdin;
     }
+    
+    va_list args;
+    va_start(args, no_of_args);
+    
+    common_formatted_read(&inputSource, iostat, chunk,
+        advance, advance_length, fmt, fmt_len,
+        no_of_args, &args);
+    
+    va_end(args);
+}
 
+static void common_formatted_read(InputSource *inputSource,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args, va_list *args)
+{
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
     const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
 
     int64_t fmt_pos = 0;
     if (fmt_len > 0 && fmt[0] == '(') fmt_pos = 1;
-
-    va_list args;
-    va_start(args, no_of_args);
 
     bool consumed_newline = false;
     int arg_idx = 0;
@@ -5940,23 +6043,20 @@ LFORTRAN_API void _lfortran_formatted_read(
 
         switch (spec) {
         case 'A':
-            if (!handle_read_A(filep, &args, width, advance_no,
+            if (!handle_read_A(inputSource, args, width, advance_no,
                     iostat, chunk, &consumed_newline, &arg_idx)) {
-                va_end(args);
                 return;
             }
             break;
         case 'L':
-            if (!handle_read_L(filep, &args, width, advance_no,
+            if (!handle_read_L(inputSource, args, width, advance_no,
                     iostat, chunk, &consumed_newline, &arg_idx)) {
-                va_end(args);
                 return;
             }
             break;
         case 'I':
-            if (!handle_read_I(filep, &args, width, advance_no,
+            if (!handle_read_I(inputSource, args, width, advance_no,
                     iostat, chunk, &consumed_newline, &arg_idx)) {
-                va_end(args);
                 return;
             }
             break;
@@ -5964,18 +6064,17 @@ LFORTRAN_API void _lfortran_formatted_read(
         case 'E':
         case 'D':
         case 'G':
-            if (!handle_read_real(filep, &args, width, advance_no,
+            if (!handle_read_real(inputSource, args, width, advance_no,
                     fmt, fmt_len, &fmt_pos, iostat, chunk,
                     &consumed_newline, &arg_idx)) {
-                va_end(args);
                 return;
             }
             break;
         case 'X':
-            handle_read_X(filep, width, advance_no, iostat, &consumed_newline);
+            handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
             break;
         case '/':
-            handle_read_slash(filep, iostat, &consumed_newline);
+            handle_read_slash(inputSource, iostat, &consumed_newline);
             break;
         default:
             break;
@@ -5984,14 +6083,13 @@ LFORTRAN_API void _lfortran_formatted_read(
         if (iostat && *iostat != 0) break;
     }
 
-    va_end(args);
-
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
         do {
-            c = fgetc(filep);
+            c = read_character(inputSource);
         } while (c != '\n' && c != EOF);
     }
+
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
