@@ -651,7 +651,10 @@ namespace LCompilers {
                                          get_dimension_size(target_dim_des, false));
                     j++;
                 }
-                stride = builder->CreateMul(stride, llvm_diminfo[r]);
+                // Ensure type consistency for ILP64: llvm_diminfo may be i64 when
+                // -fdefault-integer-8 is used, but stride is i32
+                stride = builder->CreateMul(stride,
+                    builder->CreateSExtOrTrunc(llvm_diminfo[r], llvm::Type::getInt32Ty(context)));
                 r += 2;
             }
             LCOMPILERS_ASSERT(j == target_rank);
