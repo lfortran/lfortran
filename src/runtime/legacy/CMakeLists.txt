@@ -1,5 +1,6 @@
 set(SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libasr/runtime/lfortran_intrinsics.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libasr/runtime/arena.c
 )
 
 if(WIN32)
@@ -71,8 +72,9 @@ install(TARGETS lfortran_runtime
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-# Install the header
+# Install the headers
 install(
     FILES ../../../src/libasr/runtime/lfortran_intrinsics.h
+          ../../../src/libasr/runtime/arena.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lfortran/impure
 )

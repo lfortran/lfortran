@@ -198,6 +198,9 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
+    // Arena allocator state for current function
+    llvm::Value* arena_saved_ptr = nullptr;
+    bool current_function_uses_arena = false;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -262,6 +265,106 @@ public:
         llvm_utils->dim_descr_type_ = arr_descr->get_dimension_descriptor_type();
         strings_to_be_deallocated.reserve(al, 1);
     }
+
+    // --- Arena Allocator Helpers ---
+
+    // Check if a function has local FixedSizeArray variables that need arena allocation
+    bool function_uses_arena(const ASR::Function_t& x) {
+        if (compiler_options.stack_arrays) {
+            return false;  // Arena disabled when stack_arrays is true
+        }
+        for (auto& item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if ((v->m_intent == ASRUtils::intent_local ||
+                     v->m_intent == ASRUtils::intent_return_var || !v->m_intent) &&
+                    v->m_storage != ASR::storage_typeType::Save &&
+                    ASRUtils::is_array(v->m_type) &&
+                    ASRUtils::extract_physical_type(v->m_type) ==
+                        ASR::array_physical_typeType::FixedSizeArray) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Get or create the _lfortran_arena_init function
+    llvm::Function* get_arena_init_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_arena_init");
+        if (!fn) {
+            llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {}, false);
+            fn = llvm::Function::Create(fn_type,
+                llvm::Function::ExternalLinkage, "_lfortran_arena_init", module.get());
+        }
+        return fn;
+    }
+
+    // Get or create the _lfortran_arena_save function
+    llvm::Function* get_arena_save_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_arena_save");
+        if (!fn) {
+            llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                llvm::Type::getInt8Ty(context)->getPointerTo(), {}, false);
+            fn = llvm::Function::Create(fn_type,
+                llvm::Function::ExternalLinkage, "_lfortran_arena_save", module.get());
+        }
+        return fn;
+    }
+
+    // Get or create the _lfortran_arena_alloc function
+    llvm::Function* get_arena_alloc_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_arena_alloc");
+        if (!fn) {
+            llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                {llvm::Type::getInt64Ty(context)}, false);
+            fn = llvm::Function::Create(fn_type,
+                llvm::Function::ExternalLinkage, "_lfortran_arena_alloc", module.get());
+        }
+        return fn;
+    }
+
+    // Get or create the _lfortran_arena_restore function
+    llvm::Function* get_arena_restore_fn() {
+        llvm::Function* fn = module->getFunction("_lfortran_arena_restore");
+        if (!fn) {
+            llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                {llvm::Type::getInt8Ty(context)->getPointerTo()}, false);
+            fn = llvm::Function::Create(fn_type,
+                llvm::Function::ExternalLinkage, "_lfortran_arena_restore", module.get());
+        }
+        return fn;
+    }
+
+    // Call arena_init at program start
+    void emit_arena_init() {
+        if (compiler_options.stack_arrays) return;
+        builder->CreateCall(get_arena_init_fn(), {});
+    }
+
+    // Call arena_save at function entry and store the saved pointer
+    void emit_arena_save() {
+        arena_saved_ptr = builder->CreateCall(get_arena_save_fn(), {}, "arena_saved");
+    }
+
+    // Call arena_restore at function exit
+    void emit_arena_restore() {
+        if (arena_saved_ptr) {
+            builder->CreateCall(get_arena_restore_fn(), {arena_saved_ptr});
+        }
+    }
+
+    // Allocate from arena (returns i8*, caller must bitcast)
+    llvm::Value* emit_arena_alloc(uint64_t size) {
+        llvm::Value* size_val = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), size);
+        return builder->CreateCall(get_arena_alloc_fn(), {size_val}, "arena_ptr");
+    }
+
+    // --- End Arena Allocator Helpers ---
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
@@ -5496,6 +5599,22 @@ public:
                         init_value = llvm::Constant::getNullValue(type);
                     }
                     gptr->setInitializer(init_value);
+                } else if (!compiler_options.stack_arrays &&
+                           ASRUtils::is_array(v->m_type) &&
+                           ASRUtils::extract_physical_type(v->m_type) ==
+                               ASR::array_physical_typeType::FixedSizeArray) {
+                    // Use arena allocation for FixedSizeArray locals
+                    ASR::dimension_t* arr_dims = nullptr;
+                    size_t arr_n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, arr_dims);
+                    int64_t fixed_size = ASRUtils::get_fixed_size_of_array(arr_dims, arr_n_dims);
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t el_size = data_layout.getTypeAllocSize(
+                        llvm_utils->get_type_from_ttype_t_util(nullptr,
+                            ASRUtils::extract_type(v->m_type), module.get()));
+                    uint64_t total_size = fixed_size * el_size;
+                    llvm::Value* arena_ptr = emit_arena_alloc(total_size);
+                    ptr = builder->CreateBitCast(arena_ptr, type->getPointerTo(),
+                        std::string(v->m_name) + "_arena");
                 } else {
 #if LLVM_VERSION_MAJOR >= 15
                     bool is_llvm_ptr = false;
@@ -6049,6 +6168,11 @@ public:
                 llvm_symtab[h] = array_desc;
             }
         }
+        // Arena save for functions with FixedSizeArray locals
+        current_function_uses_arena = function_uses_arena(x);
+        if (current_function_uses_arena) {
+            emit_arena_save();
+        }
         declare_local_vars(x);
     }
 
@@ -6110,10 +6234,18 @@ public:
                 ret_val2 = tmp;
                 }
             }
+            // Arena restore before return
+            if (current_function_uses_arena) {
+                emit_arena_restore();
+            }
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            // Arena restore before return
+            if (current_function_uses_arena) {
+                emit_arena_restore();
+            }
             builder->CreateRetVoid();
         }
     }
