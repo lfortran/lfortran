@@ -144,6 +144,27 @@
                                                     .false.
                                                     .false.
                                                 ),
+                                            lfortran_tmp:
+                                                (Variable
+                                                    13
+                                                    lfortran_tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             s:
                                                 (Variable
                                                     13
@@ -188,27 +209,27 @@
                                     [f_string_cptr_n]
                                     [(Var 13 cptr)]
                                     [(Assignment
+                                        (Var 13 lfortran_tmp)
+                                        (FunctionCall
+                                            13 c_strlen
+                                            ()
+                                            [((Var 13 cptr))]
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
                                         (Var 13 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
                                             [((Var 13 cptr))
-                                            ((FunctionCall
-                                                13 c_strlen
-                                                ()
-                                                [((Var 13 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ))]
-                                            (String 1 (FunctionCall
-                                                13 c_strlen
-                                                ()
-                                                [((Var 13 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ) ExpressionLength DescriptorString)
+                                            ((Var 13 lfortran_tmp))]
+                                            (String 1 (Var 13 lfortran_tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )
