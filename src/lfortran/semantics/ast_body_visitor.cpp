@@ -1279,7 +1279,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted)));
+                        nullptr, 0, nullptr, newline, nullptr, formatted, nullptr)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
@@ -1398,12 +1398,12 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if (_type == AST::stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true);
+                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, nullptr);
                     print_statements[tmp] = std::make_pair(&w->base, label);
                 } else if (_type == AST::stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(),
-                        nullptr, formatted);
+                        nullptr, formatted, nullptr);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
                 if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
@@ -1431,7 +1431,7 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nullptr);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -1447,10 +1447,10 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nullptr);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
-               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
+               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr);
         }
 
         tmp_vec.push_back(tmp);
@@ -1469,7 +1469,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -1479,7 +1479,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -5145,7 +5145,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {
