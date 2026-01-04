@@ -5,7 +5,7 @@
  * Two thread-local scratch arenas for conflict-free nested allocation.
  */
 
-#include "arena.h"
+#include "lfortran_arena.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
