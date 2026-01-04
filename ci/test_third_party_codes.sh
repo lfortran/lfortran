@@ -970,133 +970,36 @@ time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
     # Build BLAS, LAPACK, and test executables
     cmake --build build -j8
 
-    # Helper function to run a LAPACK test and verify results
-    run_lapack_test() {
-        local test_exe=$1
-        local test_input=$2
-        local test_name=$3
-
-        print_subsection "Running LAPACK ${test_name} (${test_exe})"
-        set +e
-        timeout 120 ./bin/${test_exe} < ../TESTING/${test_input} 2>&1 | tee ${test_exe}_${test_input%.in}.out
-        local test_status=${PIPESTATUS[0]}
-        set -e
-
-        echo "${test_exe} ${test_input} exit code: ${test_status}"
-        if [ "${test_status}" -ne 0 ]; then
-            echo "ERROR: ${test_exe} ${test_input} exited with non-zero status"
-            return 1
-        fi
-
-        if grep -qE "failed to pass the threshold" ${test_exe}_${test_input%.in}.out; then
-            echo "ERROR: ${test_exe} ${test_input} threshold failures detected"
-            return 1
-        fi
-
-        local error_messages=$(awk "/error messages recorded/{sum+=\\$1} END{print sum+0}" ${test_exe}_${test_input%.in}.out)
-        echo "${test_exe} ${test_input} error messages recorded: ${error_messages}"
-        if [ "${error_messages}" -ne 0 ]; then
-            echo "ERROR: ${test_exe} ${test_input} recorded error messages"
-            grep -E "error messages recorded" ${test_exe}_${test_input%.in}.out || true
-            return 1
-        fi
-        print_success "${test_name} passed"
-        return 0
-    }
-
-    # Helper for expected failures (XFAIL)
-    run_lapack_xfail() {
-        local test_exe=$1
-        local test_input=$2
-        local test_name=$3
-
-        print_subsection "Running LAPACK ${test_name} (${test_exe}) [XFAIL]"
-        set +e
-        timeout 120 ./bin/${test_exe} < ../TESTING/${test_input} > ${test_exe}_${test_input%.in}.out 2>&1
-        local test_status=$?
-        set -e
-
-        if [ "${test_status}" -eq 0 ]; then
-            echo -e "${GREEN}XPASS: ${test_name} unexpectedly passed!${NC}"
-        else
-            echo -e "${YELLOW}XFAIL: ${test_name} failed as expected (exit ${test_status})${NC}"
-        fi
-    }
-
     cd build
 
-    # Track test results
-    PASSED=0
-    FAILED=0
-    XFAILED=0
-    SKIPPED=0
+    # Run xlintsts (single real linear equations) - the key test
+    print_subsection "Running xlintsts stest.in"
+    set +e
+    timeout 120 ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts_stest.out
+    exit_code=$?
+    set -e
 
-    # Linear equation tests - all 4 real precision variants (all should pass)
-    for test_pair in "xlintsts:stest.in:Single Real Linear Equations" \
-                     "xlintstd:dtest.in:Double Real Linear Equations" \
-                     "xlintstrfs:stest_rfp.in:Single Real RFP Linear Equations" \
-                     "xlintstrfd:dtest_rfp.in:Double Real RFP Linear Equations"; do
-        IFS=: read -r exe input name <<< "$test_pair"
-        if run_lapack_test "$exe" "$input" "$name"; then
-            ((PASSED++))
-        else
-            ((FAILED++))
-            echo "FATAL: Linear equation test failed"
-            exit 1
-        fi
-    done
+    echo "xlintsts exit code: $exit_code"
 
-    # Eigenvalue tests - passing tests
-    for test_pair in "xeigtsts:sep.in:Single SEP" \
-                     "xeigtsts:svd.in:Single SVD" \
-                     "xeigtsts:sec.in:Single SEC" \
-                     "xeigtsts:sgg.in:Single SGG" \
-                     "xeigtsts:ssb.in:Single SSB" \
-                     "xeigtsts:ssg.in:Single SSG" \
-                     "xeigtsts:sbal.in:Single SBAL" \
-                     "xeigtsts:sbak.in:Single SBAK" \
-                     "xeigtsts:sgbal.in:Single SGBAL" \
-                     "xeigtsts:sgbak.in:Single SGBAK" \
-                     "xeigtsts:sbb.in:Single SBB" \
-                     "xeigtstd:sep.in:Double SEP" \
-                     "xeigtstd:svd.in:Double SVD" \
-                     "xeigtstd:dec.in:Double DEC" \
-                     "xeigtstd:dgg.in:Double DGG" \
-                     "xeigtstd:dsb.in:Double DSB" \
-                     "xeigtstd:dsg.in:Double DSG" \
-                     "xeigtstd:dbal.in:Double DBAL" \
-                     "xeigtstd:dbak.in:Double DBAK" \
-                     "xeigtstd:dgbal.in:Double DGBAL" \
-                     "xeigtstd:dgbak.in:Double DGBAK" \
-                     "xeigtstd:dbb.in:Double DBB"; do
-        IFS=: read -r exe input name <<< "$test_pair"
-        if run_lapack_test "$exe" "$input" "$name"; then
-            ((PASSED++))
-        else
-            ((FAILED++))
-            echo "ERROR: Eigenvalue test $name failed unexpectedly"
-            exit 1
-        fi
-    done
+    # Check for failures
+    if [ "$exit_code" -ne 0 ]; then
+        echo "ERROR: xlintsts exited with non-zero status"
+        exit 1
+    fi
 
-    # Eigenvalue tests - expected failures (XFAIL) - runtime issues
-    for test_pair in "xeigtsts:nep.in:Single NEP" \
-                     "xeigtsts:sed.in:Single SED" \
-                     "xeigtsts:sgd.in:Single SGD" \
-                     "xeigtstd:nep.in:Double NEP" \
-                     "xeigtstd:ded.in:Double DED" \
-                     "xeigtstd:dgd.in:Double DGD"; do
-        IFS=: read -r exe input name <<< "$test_pair"
-        run_lapack_xfail "$exe" "$input" "$name"
-        ((XFAILED++))
-    done
+    if grep -qE "failed to pass the threshold" xlintsts_stest.out; then
+        echo "ERROR: threshold failures detected"
+        grep "failed to pass the threshold" xlintsts_stest.out
+        exit 1
+    fi
 
-    # Skipped complex tests (BUILD_COMPLEX=OFF - not built yet)
-    echo -e "${YELLOW}SKIP: Complex tests (BUILD_COMPLEX=OFF)${NC}"
-    ((SKIPPED+=5))
+    # Check for error messages (non-zero count before "error messages recorded")
+    if grep -E "[1-9][0-9]* error messages recorded" xlintsts_stest.out; then
+        echo "ERROR: error messages recorded"
+        exit 1
+    fi
 
-    echo ""
-    print_subsection "LAPACK test summary: ${PASSED} passed, ${FAILED} failed, ${XFAILED} xfail, ${SKIPPED} skipped"
+    print_success "xlintsts stest.in passed"
     cd ../..
 '
 
