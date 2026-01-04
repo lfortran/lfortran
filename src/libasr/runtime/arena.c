@@ -116,8 +116,13 @@ LFORTRAN_ARENA_API Arena* arena_new(size_t initial_size) {
 }
 
 LFORTRAN_ARENA_API void* arena_alloc(Arena* arena, size_t size) {
-    if (!arena || size == 0) {
-        fatal_error("arena_alloc: invalid arguments");
+    if (!arena) {
+        fatal_error("arena_alloc: NULL arena");
+    }
+
+    /* Handle zero-size allocations by returning current pointer */
+    if (size == 0) {
+        return arena->current_ptr;
     }
 
     size_t aligned_size = align_up(size, ARENA_ALIGNMENT);
@@ -355,12 +360,13 @@ LFORTRAN_ARENA_API void* _lfortran_scratch_alloc(int64_t size) {
         scratch_init();
     }
 
-    /* Allocate from the current arena */
-    if (!scratch_current_arena) {
-        fatal_error("_lfortran_scratch_alloc: no current arena");
+    /* Allocate from the current arena, or default to scratch_arenas[0] */
+    Arena* arena = scratch_current_arena;
+    if (!arena) {
+        arena = scratch_arenas[0];
     }
 
-    return arena_alloc(scratch_current_arena, (size_t)size);
+    return arena_alloc(arena, (size_t)size);
 }
 
 LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle_ptr) {

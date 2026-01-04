@@ -5638,8 +5638,10 @@ public:
                     size_t arr_n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, arr_dims);
                     int64_t fixed_size = ASRUtils::get_fixed_size_of_array(arr_dims, arr_n_dims);
                     llvm::DataLayout data_layout(module->getDataLayout());
+                    ASR::expr_t* var_expr_for_type = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, v->base.base.loc, &v->base));
                     uint64_t el_size = data_layout.getTypeAllocSize(
-                        llvm_utils->get_type_from_ttype_t_util(nullptr,
+                        llvm_utils->get_type_from_ttype_t_util(var_expr_for_type,
                             ASRUtils::extract_type(v->m_type), module.get()));
                     uint64_t total_size = fixed_size * el_size;
                     llvm::Value* scratch_ptr = emit_scratch_alloc(total_size);
