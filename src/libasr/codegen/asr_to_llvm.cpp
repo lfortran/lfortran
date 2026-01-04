@@ -373,6 +373,7 @@ public:
     void emit_scratch_end() {
         if (scratch_handle) {
             builder->CreateCall(get_scratch_end_fn(), {scratch_handle});
+            scratch_handle = nullptr;
         }
     }
 

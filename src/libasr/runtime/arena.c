@@ -55,6 +55,14 @@ typedef struct {
     char* saved_ptr;        /* Position: pointer within chunk */
 } ScratchHandle;
 
+/*
+ * Thread-local handle pool to avoid malloc/free on every scratch_begin/end.
+ * Max depth of 256 should be sufficient for any reasonable call stack.
+ */
+#define SCRATCH_HANDLE_POOL_SIZE 256
+static LFORTRAN_ARENA_TLS ScratchHandle handle_pool[SCRATCH_HANDLE_POOL_SIZE];
+static LFORTRAN_ARENA_TLS int handle_depth = 0;
+
 /* --- Helper Functions --- */
 
 static inline size_t align_up(size_t val, size_t alignment) {
@@ -182,11 +190,32 @@ LFORTRAN_ARENA_API void arena_reset(Arena* arena, ArenaPos pos) {
         fatal_error("arena_reset: invalid arguments");
     }
 
+    /* Validate that pos.chunk belongs to this arena's linked list */
+    ArenaChunk* chunk = arena->first_chunk;
+    int chunk_found = 0;
+    while (chunk) {
+        if (chunk == pos.chunk) {
+            chunk_found = 1;
+            break;
+        }
+        chunk = chunk->next;
+    }
+    if (!chunk_found) {
+        fatal_error("arena_reset: chunk does not belong to this arena");
+    }
+
+    /* Validate that pos.ptr is within chunk bounds */
+    uintptr_t data_start = (uintptr_t)(pos.chunk + 1);
+    uintptr_t chunk_end = (uintptr_t)pos.chunk + pos.chunk->size;
+    uintptr_t ptr_val = (uintptr_t)pos.ptr;
+    if (ptr_val < data_start || ptr_val > chunk_end) {
+        fatal_error("arena_reset: pointer out of chunk bounds");
+    }
+
     arena->current_chunk = pos.chunk;
     arena->current_ptr = pos.ptr;
 
     /* Recalculate remaining space in the restored chunk */
-    uintptr_t chunk_end = (uintptr_t)pos.chunk + pos.chunk->size;
     uintptr_t current_pos = (uintptr_t)pos.ptr;
 
     arena->remaining_in_chunk = (current_pos < chunk_end) ? (chunk_end - current_pos) : 0;
@@ -293,11 +322,12 @@ LFORTRAN_ARENA_API void* _lfortran_scratch_begin(void) {
         scratch_init();
     }
 
-    /* Allocate handle from first arena (handles are small, fixed size) */
-    ScratchHandle* handle = (ScratchHandle*)malloc(sizeof(ScratchHandle));
-    if (!handle) {
-        fatal_error("_lfortran_scratch_begin: failed to allocate handle");
+    /* Use thread-local handle pool instead of malloc */
+    if (handle_depth >= SCRATCH_HANDLE_POOL_SIZE) {
+        fatal_error("_lfortran_scratch_begin: handle pool exhausted (stack too deep)");
     }
+    ScratchHandle* handle = &handle_pool[handle_depth];
+    handle_depth++;
 
     /* Get parent arena (what caller is using) */
     Arena* parent = scratch_current_arena;
@@ -340,6 +370,15 @@ LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle_ptr) {
 
     ScratchHandle* handle = (ScratchHandle*)handle_ptr;
 
+    /* Validate handle is from our pool and matches current depth */
+    if (handle_depth <= 0) {
+        fatal_error("_lfortran_scratch_end: handle pool underflow");
+    }
+    ScratchHandle* expected = &handle_pool[handle_depth - 1];
+    if (handle != expected) {
+        fatal_error("_lfortran_scratch_end: handle mismatch (LIFO violation)");
+    }
+
     /* Restore arena position */
     ArenaPos saved;
     saved.chunk = handle->saved_chunk;
@@ -349,8 +388,8 @@ LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle_ptr) {
     /* Restore parent as current */
     scratch_current_arena = handle->parent_arena;
 
-    /* Free handle */
-    free(handle);
+    /* Return handle to pool (just decrement depth, no free needed) */
+    handle_depth--;
 }
 
 /* --- Legacy API Implementation --- */
