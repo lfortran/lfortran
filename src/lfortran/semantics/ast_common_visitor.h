@@ -6861,16 +6861,13 @@ public:
                 arg_replacer.replace_expr(expri_copy);
                 exprs[i] = expri_copy;
             }
-        } 
+        }
     }
 
-    void fill_new_dims(
-        ASR::Array_t* t,
-        const std::vector<ASR::expr_t*>& func_calls,
+    void fill_new_dims(ASR::Array_t* t, const std::vector<ASR::expr_t*>& func_calls,
         Vec<ASR::dimension_t>& new_dims){
         new_dims.reserve(al, t->n_dims);
-
-        for (size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++) {
+        for ( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
             if (func_calls[i] != nullptr) {
                 ASR::dimension_t new_dim;
                 new_dim.loc = func_calls[i]->base.loc;
@@ -7140,7 +7137,6 @@ public:
                 v_expr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
     }
-
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
@@ -7924,12 +7920,8 @@ public:
         }
     }
 
-    ASR::asr_t* create_FunctionCallWithASTNode(
-        const AST::FuncCallOrArray_t& x,
-        ASR::symbol_t *v,
-        Vec<ASR::call_arg_t>& args,
-        bool is_dt_present = false)
-    {
+    ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
+                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
 
         Vec<ASR::call_arg_t> new_args;
@@ -8019,16 +8011,12 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, new_args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(
-                x.base.base.loc, new_args, v, is_dt_present
-            );
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
             return create_GenericProcedureWithASTNode(x, new_args, v);
         }
     }
-
-
 
     void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
         if (struct_n_args == 0) {
@@ -11663,7 +11651,7 @@ public:
             if (x.n_member >= 1) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {
-                tmp = create_FunctionCallWithASTNode(x, v, args, false);
+                tmp = create_FunctionCallWithASTNode(x, v, args);
             }
         } else {
             switch (f2->type) {
