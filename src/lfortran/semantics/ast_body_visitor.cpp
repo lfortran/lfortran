@@ -4666,7 +4666,6 @@ public:
                 this->diag, f, args);
         }
 
-
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
