@@ -96,6 +96,22 @@ contains
         procedure(ubound_assumed_size) :: p
     end subroutine proc_param
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end module
 
 
