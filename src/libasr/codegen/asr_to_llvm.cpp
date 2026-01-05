@@ -147,7 +147,6 @@ public:
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
-    std::map<std::string, ASR::Function_t*> llvm_symtab_fn_impl; // Maps fn name to Implementation ASR
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
@@ -5864,10 +5863,6 @@ public:
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
-                // Store Implementation ASR for implicit argument casting
-                if (ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface) {
-                    llvm_symtab_fn_impl[fn_name] = const_cast<ASR::Function_t*>(&x);
-                }
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
             } else {
@@ -13709,68 +13704,6 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
-            }
-
-            // Handle integer kind mismatch for implicit argument casting
-            // When passing integer(8) where integer(4) is expected (or vice versa),
-            // create a temporary with the correct kind and copy/convert the value
-            if (compiler_options.implicit_argument_casting) {
-                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value)));
-
-                // For implicit interface, look up the actual Implementation's parameter type
-                ASR::ttype_t* impl_param_type = nullptr;
-                ASR::Variable_t* impl_arg = nullptr;
-                ASR::symbol_t* fn_sym = symbol_get_past_external(x.m_name);
-                if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
-                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
-                    std::string fn_name = fn->m_name;
-                    // Check if this is an Interface and we have the Implementation
-                    if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
-                        llvm_symtab_fn_impl.find(fn_name) != llvm_symtab_fn_impl.end()) {
-                        ASR::Function_t* impl = llvm_symtab_fn_impl[fn_name];
-                        size_t impl_arg_idx = i + is_method;
-                        if (impl_arg_idx < impl->n_args &&
-                            ASR::is_a<ASR::Var_t>(*impl->m_args[impl_arg_idx])) {
-                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(impl->m_args[impl_arg_idx]);
-                            ASR::symbol_t* var_sym = symbol_get_past_external(var->m_v);
-                            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
-                                impl_arg = ASR::down_cast<ASR::Variable_t>(var_sym);
-                                impl_param_type = ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(impl_arg->m_type));
-                            }
-                        }
-                    }
-                }
-
-                // Use Implementation's type if available, otherwise use orig_arg's type
-                ASR::ttype_t* target_type = impl_param_type ? impl_param_type :
-                    (orig_arg ? ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(orig_arg->m_type)) : nullptr);
-                ASR::Variable_t* target_arg = impl_arg ? impl_arg : orig_arg;
-
-                if (target_type && ASR::is_a<ASR::Integer_t>(*arg_type) &&
-                    ASR::is_a<ASR::Integer_t>(*target_type) &&
-                    !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(target_type)) {
-                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                    int target_kind = ASRUtils::extract_kind_from_ttype_t(target_type);
-                    if (arg_kind != target_kind) {
-                        // Create temporary with expected type
-                        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::EXPR(ASR::make_Var_t(al, target_arg->base.base.loc, &target_arg->base)),
-                            target_arg->m_type, module.get());
-                        llvm::Value* temp_var = llvm_utils->CreateAlloca(*builder, target_llvm_type);
-                        // Load source value
-                        llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_args[i].m_value, arg_type, module.get());
-                        llvm::Value* loaded = llvm_utils->CreateLoad2(arg_llvm_type, tmp);
-                        // Convert (truncate or extend) to target type
-                        llvm::Value* converted = builder->CreateSExtOrTrunc(loaded, target_llvm_type);
-                        // Store in temporary
-                        builder->CreateStore(converted, temp_var);
-                        tmp = temp_var;
-                    }
-                }
             }
 
             args.push_back(tmp);

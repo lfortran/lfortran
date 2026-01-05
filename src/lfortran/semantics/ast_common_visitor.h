@@ -7491,12 +7491,22 @@ public:
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type, arg, func->m_args[i]) &&
                     !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
-                    std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
-                    std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
-                    diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
-                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
-                                        Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
-                    throw SemanticAbort();
+                    // Allow scalar integer kind mismatch when implicit_argument_casting is enabled
+                    bool allow_mismatch = false;
+                    if (compiler_options.implicit_argument_casting &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(arg_type)) &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
+                        !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(orig_arg_type)) {
+                        allow_mismatch = true;
+                    }
+                    if (!allow_mismatch) {
+                        std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
+                        std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
+                        diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
+                                            "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
+                                            Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
+                        throw SemanticAbort();
+                    }
                 }
             }
         }
@@ -10498,6 +10508,24 @@ public:
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         std::string sym_name = to_lower(func_name);
+
+        // For implicit argument casting, look up the Implementation to get correct param types
+        ASR::Function_t* impl_func = nullptr;
+        if (compiler_options.implicit_argument_casting) {
+            SymbolTable* global_scope = parent_scope;
+            while (global_scope->parent != nullptr) {
+                global_scope = global_scope->parent;
+            }
+            ASR::symbol_t* impl_sym = global_scope->get_symbol(sym_name);
+            if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                ASR::Function_t* candidate = ASR::down_cast<ASR::Function_t>(impl_sym);
+                ASR::FunctionType_t* candidate_type = ASRUtils::get_FunctionType(candidate);
+                if (candidate_type->m_deftype == ASR::deftypeType::Implementation) {
+                    impl_func = candidate;
+                }
+            }
+        }
+
         for (size_t i=0; i<x.n_args; i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
@@ -10508,6 +10536,17 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                // Use Implementation's parameter type if available and implicit_argument_casting enabled
+                if (impl_func && i < impl_func->n_args && ASR::is_a<ASR::Var_t>(*impl_func->m_args[i])) {
+                    ASR::Variable_t* impl_arg = ASRUtils::EXPR2VAR(impl_func->m_args[i]);
+                    ASR::ttype_t* impl_type = impl_arg->m_type;
+                    // Only override for scalar integers with different kinds
+                    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(var_type)) &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(impl_type)) &&
+                        !ASRUtils::is_array(var_type) && !ASRUtils::is_array(impl_type)) {
+                        var_type = impl_type;
+                    }
+                }
                 if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer

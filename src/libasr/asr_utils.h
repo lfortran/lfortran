@@ -6642,6 +6642,21 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_expr = func->m_args[func_param->m_param_number];
                 }
             if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr)) {
+                // Handle scalar integer kind mismatch (e.g., integer(8) to integer(4))
+                if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(arg_type)) &&
+                    ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
+                    !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(orig_arg_type)) {
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    int orig_kind = ASRUtils::extract_kind_from_ttype_t(orig_arg_type);
+                    if (arg_kind != orig_kind) {
+                        // Create IntegerToInteger cast to convert argument to expected kind
+                        a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
+                            al, arg->base.loc, arg,
+                            ASR::cast_kindType::IntegerToInteger,
+                            orig_arg_type, nullptr));
+                        continue;
+                    }
+                }
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
                     // get current_scope
                     SymbolTable* current_scope = nullptr;
