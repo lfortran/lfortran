@@ -10204,6 +10204,28 @@ public:
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
+                    
+                    if (tmp != nullptr && is_specific_type_intrinsic) {
+                        if (specific_var_name == "min1" || specific_var_name == "max1") {
+                            ASR::expr_t* result_expr = ASRUtils::EXPR(tmp);
+                            ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
+                            if (ASR::is_a<ASR::Real_t>(*result_type)) {
+                                int kind = 4;
+                                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind));
+                                tmp = ASRUtils::make_Cast_t_value(al, x.base.base.loc, result_expr,
+                                    ASR::cast_kindType::RealToInteger, int_type);
+                            }
+                        } else if (specific_var_name == "amin0" || specific_var_name == "amax0") {
+                            ASR::expr_t* result_expr = ASRUtils::EXPR(tmp);
+                            ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
+                            if (ASR::is_a<ASR::Integer_t>(*result_type)) {
+                                int kind = 4;
+                                ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, kind));
+                                tmp = ASRUtils::make_Cast_t_value(al, x.base.base.loc, result_expr,
+                                    ASR::cast_kindType::IntegerToReal, real_type);
+                            }
+                        }
+                    }
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     if(var_name == "dot_product"){
                         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
