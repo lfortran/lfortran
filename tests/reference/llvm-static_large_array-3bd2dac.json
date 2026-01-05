@@ -2,11 +2,11 @@
     "basename": "llvm-static_large_array-3bd2dac",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/static_large_array.f90",
-    "infile_hash": "877f58e58801a7e585febc30f84576ce9db93faef4996eb3e62aa581",
+    "infile_hash": "58c772aef10530db338f6066fd89ed49d9e9d480787883224dea78a1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-static_large_array-3bd2dac.stdout",
-    "stdout_hash": "985871dab44e2677323e37901718d7c391ef5907daf4b0c19651d001",
+    "stdout_hash": "8b22ad15d762f03249264b657339c22231bf8b719cfca9b3c4b299a1",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

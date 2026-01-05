@@ -199,6 +199,7 @@ public:
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
     Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
+    bool in_block_context = false;  // Flag to track if we're inside a BLOCK construct
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -5501,17 +5502,22 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-                    // Large fixed-size arrays (>64 KB) use heap allocation to prevent stack overflow.
+                    // Large fixed-size arrays (>= 4 KB) use heap allocation to prevent stack overflow.
                     // This is recursion-safe unlike static storage, as each call gets its own copy.
                     // Memory is freed at function exit.
+                    // BLOCK constructs always use heap regardless of size (can be in loops).
+                    // Threshold matches arena allocator PR for fair comparison.
+                    constexpr uint64_t HEAP_ALLOC_THRESHOLD = 4096;
                     bool use_heap_allocation = false;
                     uint64_t type_size = 0;
-                    if (ASRUtils::is_array(v->m_type) &&
+                    if (!compiler_options.stack_arrays &&
+                        ASRUtils::is_array(v->m_type) &&
                         ASRUtils::extract_physical_type(v->m_type) ==
                             ASR::array_physical_typeType::FixedSizeArray) {
                         llvm::DataLayout data_layout(module->getDataLayout());
                         type_size = data_layout.getTypeAllocSize(type);
-                        if (type_size > 65536) {
+                        // BLOCKs always use heap (can be in loops), others use threshold
+                        if (in_block_context || type_size >= HEAP_ALLOC_THRESHOLD) {
                             use_heap_allocation = true;
                         }
                     }
@@ -8498,12 +8504,23 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
 
+        // BLOCK arrays always use heap allocation (can be in loops)
+        // Track allocations separately for cleanup at BLOCK exit
+        size_t heap_arrays_before = heap_fixed_size_arrays.n;
+        in_block_context = true;
         declare_vars(*block);
+        in_block_context = false;
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+
+        // Free BLOCK-local heap arrays before exiting BLOCK (important for loops)
+        for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        heap_fixed_size_arrays.n = heap_arrays_before;
 
         start_new_block(blockend);
         llvm_symtab_finalizer.finalize_symtab(block->m_symtab);

@@ -32,8 +32,8 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__libasr_index_0_2 = alloca i32, align 4
   %__libasr_index_0_13 = alloca i32, align 4
-  %2 = call i8* @_lfortran_malloc(i64 80000)
-  %3 = bitcast i8* %2 to [20000 x float]*
+  %2 = call i8* @_lfortran_malloc(i64 8000)
+  %3 = bitcast i8* %2 to [2000 x float]*
   %small_arr = alloca [100 x float], align 4
   br i1 true, label %then, label %else
 
@@ -112,7 +112,7 @@ loop.head14:                                      ; preds = %ifcont21, %ifcont13
   br i1 true, label %then16, label %else17
 
 then16:                                           ; preds = %loop.head14
-  store i32 20000, i32* %array_bound15, align 4
+  store i32 2000, i32* %array_bound15, align 4
   br label %ifcont18
 
 else17:                                           ; preds = %loop.head14
@@ -132,17 +132,17 @@ loop.body19:                                      ; preds = %ifcont18
   %30 = mul i32 1, %29
   %31 = add i32 0, %30
   %32 = icmp slt i32 %28, 1
-  %33 = icmp sgt i32 %28, 20000
+  %33 = icmp sgt i32 %28, 2000
   %34 = or i1 %32, %33
   br i1 %34, label %then20, label %ifcont21
 
 then20:                                           ; preds = %loop.body19
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @2, i32 0, i32 0), i32 %28, i32 1, i32 1, i32 20000)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @2, i32 0, i32 0), i32 %28, i32 1, i32 1, i32 2000)
   call void @exit(i32 1)
   unreachable
 
 ifcont21:                                         ; preds = %loop.body19
-  %35 = getelementptr [20000 x float], [20000 x float]* %3, i32 0, i32 %31
+  %35 = getelementptr [2000 x float], [2000 x float]* %3, i32 0, i32 %31
   store float 2.000000e+00, float* %35, align 4
   br label %loop.head14
 
@@ -172,12 +172,12 @@ ifcont27:                                         ; preds = %else26, %then25
   br i1 false, label %then28, label %ifcont29
 
 then28:                                           ; preds = %ifcont27
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @8, i32 0, i32 0), i32 1, i32 1, i32 1, i32 20000)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @8, i32 0, i32 0), i32 1, i32 1, i32 1, i32 2000)
   call void @exit(i32 1)
   unreachable
 
 ifcont29:                                         ; preds = %ifcont27
-  %39 = getelementptr [20000 x float], [20000 x float]* %3, i32 0, i32 0
+  %39 = getelementptr [2000 x float], [2000 x float]* %3, i32 0, i32 0
   %40 = load float, float* %39, align 4
   %41 = fcmp une float %40, 2.000000e+00
   br i1 %41, label %then30, label %else31
