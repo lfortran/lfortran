@@ -816,10 +816,15 @@ void lex_format(unsigned char *&cur, Location &loc,
                 = 'R' whitespace? ('U' | 'D' | 'N' | 'Z')
                 ;
 
+            blank_interp_edit_desc
+                = 'B' whitespace? ('N' | 'Z')
+                ;
+
             control_edit_desc
                 = position_edit_desc
                 | sign_edit_desc
                 | rounding_mode_desc
+                | blank_interp_edit_desc
                 | (int)? '/'
                 | ':'
                 ;
