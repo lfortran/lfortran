@@ -469,6 +469,9 @@ program continue_compilation_1
     write (*, err=9015) x
 9015 continue
 
+    read(*, *, end=999) x   
+    read(*, *, err=500) x
+
     contains
     subroutine sub(f)
         interface

@@ -954,3 +954,15 @@ semantic error: `end` is only supported for READ statements
     |
 467 |     write (*, end=9014) x
     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: end= label 999 is not defined
+   --> tests/errors/continue_compilation_1.f90:472:20
+    |
+472 |     read(*, *, end=999) x   
+    |                    ^^^ 
+
+semantic error: err= label 500 is not defined
+   --> tests/errors/continue_compilation_1.f90:473:20
+    |
+473 |     read(*, *, err=500) x
+    |                    ^^^ 
