@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 #define LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 
+#include "libasr/containers.h"
 #include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -3653,18 +3654,7 @@ public:
         current_variable_type_ = nullptr;
         current_struct_type_var_expr = nullptr;
 
-        if (x.m_vartype == nullptr &&
-                x.n_attributes == 1 &&
-                AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
-            //char *name = down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            diag.add(Diagnostic(
-                "Namelists not implemented yet",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        for (size_t i=0; i<x.n_attributes; i++) {
+        for (size_t i = 0; i < x.n_attributes; i++) {
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
                 diag.add(Diagnostic(
                     "Type must be declared first",
@@ -4229,6 +4219,22 @@ public:
                         ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
                         orig_decl_variable->m_intent = s_intent;
                     }
+                } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
+                    // namelist /EXAMPLE/ foo, bar
+                    AST::AttrNamelist_t* attr_namelist = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
+                    Vec<ASR::symbol_t*> var_list; var_list.reserve(al, x.n_syms);
+                    for (size_t i = 0; i < x.n_syms; i++) {
+                        var_list.push_back(al,
+                                           current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                    }
+                    ASR::asr_t* namelist = ASR::make_Namelist_t(al,
+                                               attr_namelist->base.base.loc,
+                                               current_scope,
+                                               s2c(al, to_lower(attr_namelist->m_name)),
+                                               var_list.p,
+                                               var_list.n);
+                    current_scope->add_symbol(s2c(al, to_lower(attr_namelist->m_name)),
+                                              ASR::down_cast<ASR::symbol_t>(namelist));
                 } else {
                     diag.add(Diagnostic(
                         "Attribute declaration not supported",
