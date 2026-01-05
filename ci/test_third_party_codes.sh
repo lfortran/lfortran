@@ -880,9 +880,9 @@ time_section "🧪 Testing LAPACK" '
 ##########################
 # Section 14: Vanilla Reference-LAPACK
 ##########################
-time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.0" '
+time_section "🧪 Testing Vanilla Reference-LAPACK v3.12.1" '
     export PATH="$(pwd)/../src/bin:$PATH"
-    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-vanilla
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-vanilla
     cd lapack-vanilla
 
     # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
@@ -939,9 +939,9 @@ TESTEOF
 ##########################
 # Section 15: Reference-LAPACK with BUILD_TESTING
 ##########################
-time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
+time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING" '
     export PATH="$(pwd)/../src/bin:$PATH"
-    git clone --depth 1 --branch v3.12.0 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing
     cd lapack-testing
 
     # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
@@ -971,16 +971,6 @@ time_section "🧪 Testing Reference-LAPACK v3.12.0 with BUILD_TESTING" '
     cmake --build build -j8
 
     cd build
-
-    # Patch schkqp3rk.f to fix uninitialized RESULT(4) bug (upstream LAPACK bug)
-    # Bug: RESULT(4) is only set to BIGNUM on failure, never initialized to ZERO
-    # This causes flaky test failures when garbage stack value >= THRESH
-    # See: https://github.com/lfortran/lfortran/issues/9371
-    sed -i '/IF( MIN(KFACT, MINMN).GE.2 ) THEN/i\                     RESULT( 4 ) = ZERO' \
-        ../TESTING/LIN/schkqp3rk.f
-
-    # Rebuild xlintsts with the patched source
-    cmake --build . --target xlintsts -j8
 
     # Run xlintsts (single real linear equations) - the key test
     print_subsection "Running xlintsts stest.in"
