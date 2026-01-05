@@ -305,7 +305,7 @@ public:
         if (compiler_options.stack_arrays) {
             return false;  // Arena disabled when stack_arrays is true
         }
-        constexpr uint64_t STACK_ARENA_THRESHOLD = 4096;
+        constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use arena
         for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
@@ -315,13 +315,13 @@ public:
                     ASRUtils::is_array(v->m_type) &&
                     ASRUtils::extract_physical_type(v->m_type) ==
                         ASR::array_physical_typeType::FixedSizeArray) {
-                    // Check if array size >= threshold
+                    // Check if array size > threshold (4KB+ uses arena)
                     ASR::dimension_t* dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, dims);
                     int64_t fixed_size = ASRUtils::get_fixed_size_of_array(dims, n_dims);
                     uint64_t elem_size = estimate_element_size(v->m_type);
                     uint64_t total_size = fixed_size * elem_size;
-                    if (total_size >= STACK_ARENA_THRESHOLD) {
+                    if (total_size > MAX_STACK_ARRAY_SIZE) {
                         return true;
                     }
                 }
@@ -5714,11 +5714,10 @@ public:
                             v->base.base.loc);
                     }
                     uint64_t total_size = fixed_size * el_size;
-                    // Threshold: use stack for arrays < 4KB, arena for >= 4KB
+                    // Threshold: use stack for arrays <= 4KB-1, arena for >= 4KB
                     // Exception: BLOCKs always use arena (can be in loops)
-                    // This matches ARENA_MIN_CHUNK_SIZE from lfortran_arena.h
-                    constexpr uint64_t STACK_ARENA_THRESHOLD = 4096;
-                    if (!in_block_context && total_size < STACK_ARENA_THRESHOLD) {
+                    constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use arena
+                    if (!in_block_context && total_size <= MAX_STACK_ARRAY_SIZE) {
                         // Small array in function - use stack allocation
 #if LLVM_VERSION_MAJOR >= 15
                         bool is_llvm_ptr = false;
