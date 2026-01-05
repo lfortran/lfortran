@@ -5036,6 +5036,43 @@ static int parse_fortran_double(const char* buffer, double* result) {
     return (endptr != temp && (*endptr == '\0' || isspace((unsigned char)*endptr)));
 }
 
+// Read a complete complex number expression from file, handling whitespace
+// within parentheses. Fortran list-directed format allows arbitrary whitespace
+// inside (real, imag) format, e.g., "( 0.1000E+01, 0.2000E+01)".
+// Returns 1 on success, 0 on failure (EOF or error).
+static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
+    int ch;
+    size_t i = 0;
+
+    // Skip leading whitespace
+    while ((ch = fgetc(filep)) != EOF && isspace(ch));
+
+    if (ch == EOF) return 0;
+
+    if (ch == '(') {
+        // Read the entire parenthesized expression
+        buffer[i++] = (char)ch;
+        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF) {
+            buffer[i++] = (char)ch;
+            if (ch == ')') break;
+        }
+        buffer[i] = '\0';
+        return (ch == ')') ? 1 : 0;
+    } else {
+        // Not a parenthesized expression, read as whitespace-delimited token
+        buffer[i++] = (char)ch;
+        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF && !isspace(ch)) {
+            buffer[i++] = (char)ch;
+        }
+        buffer[i] = '\0';
+        // Push back the whitespace character if we read one
+        if (ch != EOF && isspace(ch)) {
+            ungetc(ch, filep);
+        }
+        return 1;
+    }
+}
+
 // Improved input validation for float reading
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat)
 {
@@ -5131,8 +5168,8 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
             exit(1);
         }
     } else {
-        char buffer[100];
-        if (fscanf(filep, "%99s", buffer) != 1) {
+        char buffer[200];
+        if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Invalid input for complex float from file.\n");
             exit(1);
@@ -5147,38 +5184,26 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
             if (comma) {
                 *comma = '\0';
                 while (isspace((unsigned char)*start)) start++;
-                p->re = strtof(start, NULL);
-                p->im = strtof(comma + 1, NULL);
+                char *endptr_re;
+                p->re = strtof(start, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                char *im_start = comma + 1;
+                while (isspace((unsigned char)*im_start)) im_start++;
+                char *endptr_im;
+                p->im = strtof(im_start, &endptr_im);
             } else {
                 if (iostat) { *iostat = 1; return; }
                 fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
                 exit(1);
             }
-        } else if (start) {
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) *comma = '\0';
-            p->re = strtof(start, NULL);
-            char buffer2[100];
-            if (fscanf(filep, "%99s", buffer2) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read imaginary part.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buffer2);
-            end = strchr(buffer2, ')');
-            if (end) *end = '\0';
-            p->im = strtof(buffer2, NULL);
         } else {
+            // No parentheses: treat as two whitespace-separated numbers
             p->re = strtof(buffer, NULL);
-            char buf_im[100];
-            if (fscanf(filep, "%99s", buf_im) != 1) {
+            if (fscanf(filep, "%f", &p->im) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
                 exit(1);
             }
-            convert_fortran_d_exponent(buf_im);
-            p->im = strtof(buf_im, NULL);
         }
     }
 }
@@ -5216,8 +5241,8 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
             exit(1);
         }
     } else {
-        char buffer[100];
-        if (fscanf(filep, "%99s", buffer) != 1) {
+        char buffer[200];
+        if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Invalid input for complex double from file.\n");
             exit(1);
@@ -5232,38 +5257,26 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
             if (comma) {
                 *comma = '\0';
                 while (isspace((unsigned char)*start)) start++;
-                p->re = strtod(start, NULL);
-                p->im = strtod(comma + 1, NULL);
+                char *endptr_re;
+                p->re = strtod(start, &endptr_re);
+                while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                char *im_start = comma + 1;
+                while (isspace((unsigned char)*im_start)) im_start++;
+                char *endptr_im;
+                p->im = strtod(im_start, &endptr_im);
             } else {
                 if (iostat) { *iostat = 1; return; }
                 fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
                 exit(1);
             }
-        } else if (start) {
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) *comma = '\0';
-            p->re = strtod(start, NULL);
-            char buffer2[100];
-            if (fscanf(filep, "%99s", buffer2) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read imaginary part.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buffer2);
-            end = strchr(buffer2, ')');
-            if (end) *end = '\0';
-            p->im = strtod(buffer2, NULL);
         } else {
+            // No parentheses: treat as two whitespace-separated numbers
             p->re = strtod(buffer, NULL);
-            char buf_im[100];
-            if (fscanf(filep, "%99s", buf_im) != 1) {
+            if (fscanf(filep, "%lf", &p->im) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
                 exit(1);
             }
-            convert_fortran_d_exponent(buf_im);
-            p->im = strtod(buf_im, NULL);
         }
     }
 }
@@ -5305,8 +5318,8 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            char buffer[100];
-            if (fscanf(filep, "%99s", buffer) != 1) {
+            char buffer[200];
+            if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Invalid input for complex float from file.\n");
                 exit(1);
@@ -5321,24 +5334,26 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
                 if (comma) {
                     *comma = '\0';
                     while (isspace((unsigned char)*start)) start++;
-                    while (isspace((unsigned char)*(end - 1))) end--;
-                    p[i].re = strtof(start, NULL);
-                    p[i].im = strtof(comma + 1, NULL);
+                    char *endptr_re;
+                    p[i].re = strtof(start, &endptr_re);
+                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                    char *im_start = comma + 1;
+                    while (isspace((unsigned char)*im_start)) im_start++;
+                    char *endptr_im;
+                    p[i].im = strtof(im_start, &endptr_im);
                 } else {
                     if (iostat) { *iostat = 1; return; }
                     fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
                     exit(1);
                 }
             } else {
-                if (fscanf(filep, "%99s %99s", buf_re, buf_im) != 2) {
+                // No parentheses: treat as two whitespace-separated numbers
+                p[i].re = strtof(buffer, NULL);
+                if (fscanf(filep, "%f", &p[i].im) != 1) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex float from file.\n");
                     exit(1);
                 }
-                convert_fortran_d_exponent(buf_re);
-                convert_fortran_d_exponent(buf_im);
-                p[i].re = strtof(buf_re, NULL);
-                p[i].im = strtof(buf_im, NULL);
             }
         }
     }
@@ -5381,8 +5396,8 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            char buffer[100];
-            if (fscanf(filep, "%99s", buffer) != 1) {
+            char buffer[200];
+            if (!read_complex_expr(filep, buffer, sizeof(buffer))) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Invalid input for complex double from file.\n");
                 exit(1);
@@ -5397,24 +5412,26 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
                 if (comma) {
                     *comma = '\0';
                     while (isspace((unsigned char)*start)) start++;
-                    while (isspace((unsigned char)*(end - 1))) end--;
-                    p[i].re = strtod(start, NULL);
-                    p[i].im = strtod(comma + 1, NULL);
+                    char *endptr_re;
+                    p[i].re = strtod(start, &endptr_re);
+                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
+                    char *im_start = comma + 1;
+                    while (isspace((unsigned char)*im_start)) im_start++;
+                    char *endptr_im;
+                    p[i].im = strtod(im_start, &endptr_im);
                 } else {
                     if (iostat) { *iostat = 1; return; }
                     fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
                     exit(1);
                 }
             } else {
-                if (fscanf(filep, "%99s %99s", buf_re, buf_im) != 2) {
+                // No parentheses: treat as two whitespace-separated numbers
+                p[i].re = strtod(buffer, NULL);
+                if (fscanf(filep, "%lf", &p[i].im) != 1) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex double from file.\n");
                     exit(1);
                 }
-                convert_fortran_d_exponent(buf_re);
-                convert_fortran_d_exponent(buf_im);
-                p[i].re = strtod(buf_re, NULL);
-                p[i].im = strtod(buf_im, NULL);
             }
         }
     }
