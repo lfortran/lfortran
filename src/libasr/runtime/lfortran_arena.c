@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Compile-time validation that ARENA_ALIGNMENT is a power of two */
+#if (ARENA_ALIGNMENT & (ARENA_ALIGNMENT - 1)) != 0
+#error "ARENA_ALIGNMENT must be a power of two"
+#endif
+
 /* --- Internal Chunk Structure --- */
 
 struct ArenaChunk {
@@ -66,11 +71,21 @@ static LFORTRAN_ARENA_TLS int handle_depth = 0;
 /* --- Helper Functions --- */
 
 static inline size_t align_up(size_t val, size_t alignment) {
+    /* Handle overflow: if adding (alignment - 1) would overflow, saturate */
+    if (val > SIZE_MAX - alignment + 1) {
+        return SIZE_MAX;
+    }
     return (val + alignment - 1) & ~(alignment - 1);
 }
 
 static void fatal_error(const char* msg) {
     fprintf(stderr, "LFortran Arena Error: %s\n", msg);
+    exit(1);
+}
+
+/* Formatted fatal error with pointer context for debugging */
+static void fatal_error_ptr(const char* msg, void* ptr) {
+    fprintf(stderr, "LFortran Arena Error: %s (ptr=%p)\n", msg, ptr);
     exit(1);
 }
 
@@ -91,8 +106,13 @@ LFORTRAN_ARENA_API Arena* arena_new(size_t initial_size) {
     arena->current_ptr = NULL;
     arena->remaining_in_chunk = 0;
 
-    /* Allocate the first chunk */
-    size_t chunk_size = sizeof(ArenaChunk) + initial_size + ARENA_ALIGNMENT;
+    /* Allocate the first chunk (with overflow check) */
+    size_t header_plus_align = sizeof(ArenaChunk) + ARENA_ALIGNMENT;
+    if (initial_size > SIZE_MAX - header_plus_align) {
+        free(arena);
+        return NULL;  /* Overflow: requested size too large */
+    }
+    size_t chunk_size = header_plus_align + initial_size;
     ArenaChunk* first = (ArenaChunk*)malloc(chunk_size);
     if (!first) {
         free(arena);
@@ -117,7 +137,7 @@ LFORTRAN_ARENA_API Arena* arena_new(size_t initial_size) {
 
 LFORTRAN_ARENA_API void* arena_alloc(Arena* arena, size_t size) {
     if (!arena) {
-        fatal_error("arena_alloc: NULL arena");
+        fatal_error("arena_alloc: NULL arena - ensure scratch_init() was called");
     }
 
     /* Handle zero-size allocations by returning current pointer */
@@ -126,6 +146,11 @@ LFORTRAN_ARENA_API void* arena_alloc(Arena* arena, size_t size) {
     }
 
     size_t aligned_size = align_up(size, ARENA_ALIGNMENT);
+
+    /* Check for overflow in alignment */
+    if (aligned_size == SIZE_MAX && size != SIZE_MAX) {
+        fatal_error("arena_alloc: size overflow during alignment");
+    }
 
 try_alloc:
     /* Fast path: current chunk has enough space */
@@ -156,10 +181,15 @@ try_alloc:
         new_chunk_data_size = aligned_size;
     }
 
-    size_t new_chunk_size = sizeof(ArenaChunk) + new_chunk_data_size + ARENA_ALIGNMENT;
+    /* Overflow check for chunk size calculation */
+    size_t header_plus_align = sizeof(ArenaChunk) + ARENA_ALIGNMENT;
+    if (new_chunk_data_size > SIZE_MAX - header_plus_align) {
+        fatal_error("arena_alloc: chunk size overflow");
+    }
+    size_t new_chunk_size = header_plus_align + new_chunk_data_size;
     ArenaChunk* new_chunk = (ArenaChunk*)malloc(new_chunk_size);
     if (!new_chunk) {
-        fatal_error("arena_alloc: failed to allocate new chunk");
+        fatal_error("arena_alloc: malloc failed for new chunk - system out of memory");
     }
 
     new_chunk->next = NULL;
@@ -192,7 +222,7 @@ LFORTRAN_ARENA_API ArenaPos arena_get_pos(Arena* arena) {
 
 LFORTRAN_ARENA_API void arena_reset(Arena* arena, ArenaPos pos) {
     if (!arena || !pos.chunk || !pos.ptr) {
-        fatal_error("arena_reset: invalid arguments");
+        fatal_error("arena_reset: invalid arguments - arena, chunk, or ptr is NULL");
     }
 
     /* Validate that pos.chunk belongs to this arena's linked list */
@@ -206,7 +236,7 @@ LFORTRAN_ARENA_API void arena_reset(Arena* arena, ArenaPos pos) {
         chunk = chunk->next;
     }
     if (!chunk_found) {
-        fatal_error("arena_reset: chunk does not belong to this arena");
+        fatal_error_ptr("arena_reset: chunk does not belong to this arena", pos.chunk);
     }
 
     /* Validate that pos.ptr is within chunk bounds */
@@ -214,7 +244,7 @@ LFORTRAN_ARENA_API void arena_reset(Arena* arena, ArenaPos pos) {
     uintptr_t chunk_end = (uintptr_t)pos.chunk + pos.chunk->size;
     uintptr_t ptr_val = (uintptr_t)pos.ptr;
     if (ptr_val < data_start || ptr_val > chunk_end) {
-        fatal_error("arena_reset: pointer out of chunk bounds");
+        fatal_error_ptr("arena_reset: pointer out of chunk bounds", pos.ptr);
     }
 
     arena->current_chunk = pos.chunk;
@@ -247,6 +277,10 @@ LFORTRAN_ARENA_API void scratch_init(void) {
     scratch_arenas[0] = arena_new(ARENA_INITIAL_SIZE);
     scratch_arenas[1] = arena_new(ARENA_INITIAL_SIZE);
     if (!scratch_arenas[0] || !scratch_arenas[1]) {
+        /* Clean up if one succeeded but the other failed */
+        if (scratch_arenas[0]) arena_free(scratch_arenas[0]);
+        if (scratch_arenas[1]) arena_free(scratch_arenas[1]);
+        scratch_arenas[0] = scratch_arenas[1] = NULL;
         fatal_error("scratch_init: failed to create scratch arenas");
     }
     scratch_initialized = 1;
@@ -329,7 +363,7 @@ LFORTRAN_ARENA_API void* _lfortran_scratch_begin(void) {
 
     /* Use thread-local handle pool instead of malloc */
     if (handle_depth >= SCRATCH_HANDLE_POOL_SIZE) {
-        fatal_error("_lfortran_scratch_begin: handle pool exhausted (stack too deep)");
+        fatal_error("_lfortran_scratch_begin: handle pool exhausted - call depth exceeds 256");
     }
     ScratchHandle* handle = &handle_pool[handle_depth];
     handle_depth++;
@@ -356,6 +390,11 @@ LFORTRAN_ARENA_API void* _lfortran_scratch_begin(void) {
 }
 
 LFORTRAN_ARENA_API void* _lfortran_scratch_alloc(int64_t size) {
+    /* Validate signed-to-unsigned conversion */
+    if (size < 0) {
+        fatal_error("_lfortran_scratch_alloc: negative size");
+    }
+
     if (!scratch_initialized) {
         scratch_init();
     }
@@ -371,18 +410,18 @@ LFORTRAN_ARENA_API void* _lfortran_scratch_alloc(int64_t size) {
 
 LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle_ptr) {
     if (!handle_ptr) {
-        fatal_error("_lfortran_scratch_end: NULL handle");
+        fatal_error("_lfortran_scratch_end: NULL handle - missing scratch_begin call?");
     }
 
     ScratchHandle* handle = (ScratchHandle*)handle_ptr;
 
     /* Validate handle is from our pool and matches current depth */
     if (handle_depth <= 0) {
-        fatal_error("_lfortran_scratch_end: handle pool underflow");
+        fatal_error("_lfortran_scratch_end: handle pool underflow - more ends than begins");
     }
     ScratchHandle* expected = &handle_pool[handle_depth - 1];
     if (handle != expected) {
-        fatal_error("_lfortran_scratch_end: handle mismatch (LIFO violation)");
+        fatal_error_ptr("_lfortran_scratch_end: handle mismatch - scratch_end called out of order (LIFO violation)", handle_ptr);
     }
 
     /* Restore arena position */

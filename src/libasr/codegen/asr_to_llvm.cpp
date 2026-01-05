@@ -5643,6 +5643,13 @@ public:
                     uint64_t el_size = data_layout.getTypeAllocSize(
                         llvm_utils->get_type_from_ttype_t_util(var_expr_for_type,
                             ASRUtils::extract_type(v->m_type), module.get()));
+                    // Overflow check: fixed_size * el_size must fit in uint64_t
+                    if (el_size > 0 && static_cast<uint64_t>(fixed_size) > UINT64_MAX / el_size) {
+                        throw CodeGenError("Array size overflow for '" + std::string(v->m_name) +
+                            "': " + std::to_string(fixed_size) + " elements * " +
+                            std::to_string(el_size) + " bytes exceeds maximum",
+                            v->base.base.loc);
+                    }
                     uint64_t total_size = fixed_size * el_size;
                     llvm::Value* scratch_ptr = emit_scratch_alloc(total_size);
                     ptr = builder->CreateBitCast(scratch_ptr, type->getPointerTo(),
