@@ -3031,6 +3031,31 @@ public:
         //   data x / 1.0, 2.0 /, a, b / 1.0, 2.0 /, c / 1.0 /
         for (size_t i=0; i < x.n_items; i++) {
             AST::DataStmtSet_t *a = AST::down_cast<AST::DataStmtSet_t>(x.m_items[i]);
+            Vec<AST::expr_t*> expanded_values;
+            expanded_values.reserve(al, a->n_value * 2);
+            for (size_t j = 0; j < a->n_value; j++) {
+                AST::expr_t* value = a->m_value[j];
+                if (AST::is_a<AST::BinOp_t>(*value)) {
+                    AST::BinOp_t* binop = AST::down_cast<AST::BinOp_t>(value);
+                    if (binop->m_op == AST::operatorType::Mul) {
+                        this->visit_expr(*binop->m_left);
+                        ASR::expr_t* repeat_asr = ASRUtils::EXPR(tmp);
+                        ASR::expr_t* repeat_value = ASRUtils::expr_value(repeat_asr);
+                        
+                        if (repeat_value && ASR::is_a<ASR::IntegerConstant_t>(*repeat_value)) {
+                            int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(repeat_value)->m_n;
+                            for (int64_t k = 0; k < n; k++) {
+                                expanded_values.push_back(al, binop->m_right);
+                            }
+                            continue;
+                        }
+                    }
+                }
+                expanded_values.push_back(al, value);
+            }
+            a->m_value = expanded_values.data();
+            a->n_value = expanded_values.size();
+            
             // Now we are dealing with just one item, there are four cases possible:
             // data x / 1, 2, 3 /       ! x must be an array
             // data x / 1 /             ! x must be a scalar (integer)
