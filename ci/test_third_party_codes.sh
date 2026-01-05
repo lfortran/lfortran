@@ -940,7 +940,7 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING" '
         exit 1
     fi
 
-    print_success "xlintsts stest.in passed (including SQK with patched RESULT(4) init)"
+    print_success "xlintsts stest.in passed"
     cd ../..
 '
 
