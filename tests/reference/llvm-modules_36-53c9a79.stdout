@@ -88,19 +88,16 @@ FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0: ; preds = %return
 define void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_class* %settings, i1* %test) {
 .entry:
   %call_arg_value = alloca i32, align 4
-  %array_bound15 = alloca i32, align 4
-  %array_bound11 = alloca i32, align 4
+  %array_bound14 = alloca i32, align 4
+  %array_bound10 = alloca i32, align 4
   %array_bound = alloca i32, align 4
-  %array_size2 = alloca i32, align 4
+  %array_size1 = alloca i32, align 4
   %array_size = alloca i32, align 4
-  %scratch_handle = call i8* @_lfortran_scratch_begin()
-  %scratch_ptr = call i8* @_lfortran_scratch_alloc(i64 2)
-  %__libasr_created__intrinsic_array_function_Any_arena = bitcast i8* %scratch_ptr to [2 x i1]*
+  %__libasr_created__intrinsic_array_function_Any = alloca [2 x i1], align 1
   %__libasr_created__intrinsic_array_function_Any1 = alloca i1, align 1
   %__libasr_index_0_ = alloca i32, align 4
   %__libasr_index_0_1 = alloca i32, align 4
-  %scratch_ptr1 = call i8* @_lfortran_scratch_alloc(i64 2)
-  %found_arena = bitcast i8* %scratch_ptr1 to [2 x i1]*
+  %found = alloca [2 x i1], align 1
   %toomany = alloca i1, align 1
   br i1 true, label %then, label %else
 
@@ -113,71 +110,71 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %0 = load i32, i32* %array_size, align 4
-  br i1 true, label %then3, label %else4
+  br i1 true, label %then2, label %else3
 
-then3:                                            ; preds = %ifcont
-  store i32 2, i32* %array_size2, align 4
-  br label %ifcont5
+then2:                                            ; preds = %ifcont
+  store i32 2, i32* %array_size1, align 4
+  br label %ifcont4
 
-else4:                                            ; preds = %ifcont
-  br label %ifcont5
+else3:                                            ; preds = %ifcont
+  br label %ifcont4
 
-ifcont5:                                          ; preds = %else4, %then3
-  %1 = load i32, i32* %array_size2, align 4
+ifcont4:                                          ; preds = %else3, %then2
+  %1 = load i32, i32* %array_size1, align 4
   %2 = icmp ne i32 %1, %0
-  br i1 %2, label %then6, label %ifcont7
+  br i1 %2, label %then5, label %ifcont6
 
-then6:                                            ; preds = %ifcont5
+then5:                                            ; preds = %ifcont4
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([202 x i8], [202 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([47 x i8], [47 x i8]* @0, i32 0, i32 0), i32 %0, i32 1, i32 %1, i32 1)
   call void @exit(i32 1)
   unreachable
 
-ifcont7:                                          ; preds = %ifcont5
-  br i1 true, label %then8, label %else9
+ifcont6:                                          ; preds = %ifcont4
+  br i1 true, label %then7, label %else8
 
-then8:                                            ; preds = %ifcont7
+then7:                                            ; preds = %ifcont6
   store i32 1, i32* %array_bound, align 4
-  br label %ifcont10
+  br label %ifcont9
 
-else9:                                            ; preds = %ifcont7
-  br label %ifcont10
+else8:                                            ; preds = %ifcont6
+  br label %ifcont9
 
-ifcont10:                                         ; preds = %else9, %then8
+ifcont9:                                          ; preds = %else8, %then7
   %3 = load i32, i32* %array_bound, align 4
   store i32 %3, i32* %__libasr_index_0_1, align 4
-  br i1 true, label %then12, label %else13
+  br i1 true, label %then11, label %else12
 
-then12:                                           ; preds = %ifcont10
-  store i32 1, i32* %array_bound11, align 4
-  br label %ifcont14
+then11:                                           ; preds = %ifcont9
+  store i32 1, i32* %array_bound10, align 4
+  br label %ifcont13
 
-else13:                                           ; preds = %ifcont10
-  br label %ifcont14
+else12:                                           ; preds = %ifcont9
+  br label %ifcont13
 
-ifcont14:                                         ; preds = %else13, %then12
-  %4 = load i32, i32* %array_bound11, align 4
+ifcont13:                                         ; preds = %else12, %then11
+  %4 = load i32, i32* %array_bound10, align 4
   %5 = sub i32 %4, 1
   store i32 %5, i32* %__libasr_index_0_, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont22, %ifcont14
+loop.head:                                        ; preds = %ifcont21, %ifcont13
   %6 = load i32, i32* %__libasr_index_0_, align 4
   %7 = add i32 %6, 1
-  br i1 true, label %then16, label %else17
+  br i1 true, label %then15, label %else16
 
-then16:                                           ; preds = %loop.head
-  store i32 2, i32* %array_bound15, align 4
-  br label %ifcont18
+then15:                                           ; preds = %loop.head
+  store i32 2, i32* %array_bound14, align 4
+  br label %ifcont17
 
-else17:                                           ; preds = %loop.head
-  br label %ifcont18
+else16:                                           ; preds = %loop.head
+  br label %ifcont17
 
-ifcont18:                                         ; preds = %else17, %then16
-  %8 = load i32, i32* %array_bound15, align 4
+ifcont17:                                         ; preds = %else16, %then15
+  %8 = load i32, i32* %array_bound14, align 4
   %9 = icmp sle i32 %7, %8
   br i1 %9, label %loop.body, label %loop.end
 
-loop.body:                                        ; preds = %ifcont18
+loop.body:                                        ; preds = %ifcont17
   %10 = load i32, i32* %__libasr_index_0_, align 4
   %11 = add i32 %10, 1
   store i32 %11, i32* %__libasr_index_0_, align 4
@@ -188,15 +185,15 @@ loop.body:                                        ; preds = %ifcont18
   %16 = icmp slt i32 %12, 1
   %17 = icmp sgt i32 %12, 2
   %18 = or i1 %16, %17
-  br i1 %18, label %then19, label %ifcont20
+  br i1 %18, label %then18, label %ifcont19
 
-then19:                                           ; preds = %loop.body
+then18:                                           ; preds = %loop.body
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([47 x i8], [47 x i8]* @2, i32 0, i32 0), i32 %12, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont20:                                         ; preds = %loop.body
-  %19 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any_arena, i32 0, i32 %15
+ifcont19:                                         ; preds = %loop.body
+  %19 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 %15
   %20 = load i32, i32* %__libasr_index_0_1, align 4
   %21 = sub i32 %20, 1
   %22 = mul i32 1, %21
@@ -204,15 +201,15 @@ ifcont20:                                         ; preds = %loop.body
   %24 = icmp slt i32 %20, 1
   %25 = icmp sgt i32 %20, 2
   %26 = or i1 %24, %25
-  br i1 %26, label %then21, label %ifcont22
+  br i1 %26, label %then20, label %ifcont21
 
-then21:                                           ; preds = %ifcont20
+then20:                                           ; preds = %ifcont19
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([6 x i8], [6 x i8]* @4, i32 0, i32 0), i32 %20, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont22:                                         ; preds = %ifcont20
-  %27 = getelementptr [2 x i1], [2 x i1]* %found_arena, i32 0, i32 %23
+ifcont21:                                         ; preds = %ifcont19
+  %27 = getelementptr [2 x i1], [2 x i1]* %found, i32 0, i32 %23
   %28 = load i1, i1* %27, align 1
   %29 = xor i1 %28, true
   store i1 %29, i1* %19, align 1
@@ -221,16 +218,16 @@ ifcont22:                                         ; preds = %ifcont20
   store i32 %31, i32* %__libasr_index_0_1, align 4
   br label %loop.head
 
-loop.end:                                         ; preds = %ifcont18
-  br i1 false, label %then23, label %ifcont24
+loop.end:                                         ; preds = %ifcont17
+  br i1 false, label %then22, label %ifcont23
 
-then23:                                           ; preds = %loop.end
+then22:                                           ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([202 x i8], [202 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([35 x i8], [35 x i8]* @6, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont24:                                         ; preds = %loop.end
-  %32 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any_arena, i32 0, i32 0
+ifcont23:                                         ; preds = %loop.end
+  %32 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
   store i32 2, i32* %call_arg_value, align 4
   %33 = call i1 @_lcompilers_Any_4_1_0_logical____0(i1* %32, i32* %call_arg_value)
   store i1 %33, i1* %__libasr_created__intrinsic_array_function_Any1, align 1
@@ -263,36 +260,29 @@ ifcont24:                                         ; preds = %loop.end
   %60 = select i1 %59, i1 %52, i1 %58
   %61 = icmp eq i1 %34, false
   %62 = select i1 %61, i1 %60, i1 %34
-  br i1 %62, label %then25, label %else26
+  br i1 %62, label %then24, label %else25
 
-then25:                                           ; preds = %ifcont24
-  br label %ifcont27
+then24:                                           ; preds = %ifcont23
+  br label %ifcont26
 
-else26:                                           ; preds = %ifcont24
-  br label %ifcont27
+else25:                                           ; preds = %ifcont23
+  br label %ifcont26
 
-ifcont27:                                         ; preds = %else26, %then25
+ifcont26:                                         ; preds = %else25, %then24
   br label %return
 
-return:                                           ; preds = %ifcont27
+return:                                           ; preds = %ifcont26
   br label %FINALIZE_SYMTABLE_cmd_run
 
 FINALIZE_SYMTABLE_cmd_run:                        ; preds = %return
-  call void @_lfortran_scratch_end(i8* %scratch_handle)
   ret void
 }
-
-declare i8* @_lfortran_scratch_begin()
-
-declare i8* @_lfortran_scratch_alloc(i64)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
 declare i32 @str_compare(i8*, i64, i8*, i64)
-
-declare void @_lfortran_scratch_end(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

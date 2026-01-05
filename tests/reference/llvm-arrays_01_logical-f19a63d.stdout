@@ -118,15 +118,11 @@ define i32 @main(i32 %0, i8** %1) {
   %i = alloca i32, align 4
   %j = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %scratch_handle = call i8* @_lfortran_scratch_begin()
-  %scratch_ptr = call i8* @_lfortran_scratch_alloc(i64 3)
-  %a_arena = bitcast i8* %scratch_ptr to [3 x i1]*
-  %scratch_ptr1 = call i8* @_lfortran_scratch_alloc(i64 4)
-  %b_arena = bitcast i8* %scratch_ptr1 to [4 x i1]*
-  %scratch_ptr2 = call i8* @_lfortran_scratch_alloc(i64 4)
-  %c_arena = bitcast i8* %scratch_ptr2 to [4 x i1]*
-  %i3 = alloca i32, align 4
-  %j4 = alloca i32, align 4
+  %a = alloca [3 x i1], align 1
+  %b = alloca [4 x i1], align 1
+  %c = alloca [4 x i1], align 1
+  %i1 = alloca i32, align 4
+  %j2 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
@@ -135,38 +131,38 @@ then:                                             ; preds = %.entry
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  %2 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 0
+  %2 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
   store i1 true, i1* %2, align 1
-  store i32 1, i32* %i3, align 4
+  store i32 1, i32* %i1, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont8, %ifcont
-  %3 = load i32, i32* %i3, align 4
+loop.head:                                        ; preds = %ifcont6, %ifcont
+  %3 = load i32, i32* %i1, align 4
   %4 = add i32 %3, 1
   %5 = icmp sle i32 %4, 3
   br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %6 = load i32, i32* %i3, align 4
+  %6 = load i32, i32* %i1, align 4
   %7 = add i32 %6, 1
-  store i32 %7, i32* %i3, align 4
-  %8 = load i32, i32* %i3, align 4
+  store i32 %7, i32* %i1, align 4
+  %8 = load i32, i32* %i1, align 4
   %9 = sub i32 %8, 1
   %10 = mul i32 1, %9
   %11 = add i32 0, %10
   %12 = icmp slt i32 %8, 1
   %13 = icmp sgt i32 %8, 3
   %14 = or i1 %12, %13
-  br i1 %14, label %then5, label %ifcont6
+  br i1 %14, label %then3, label %ifcont4
 
-then5:                                            ; preds = %loop.body
+then3:                                            ; preds = %loop.body
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([184 x i8], [184 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 %8, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont6:                                          ; preds = %loop.body
-  %15 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 %11
-  %16 = load i32, i32* %i3, align 4
+ifcont4:                                          ; preds = %loop.body
+  %15 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 %11
+  %16 = load i32, i32* %i1, align 4
   %17 = sub i32 %16, 1
   %18 = sub i32 %17, 1
   %19 = mul i32 1, %18
@@ -174,110 +170,110 @@ ifcont6:                                          ; preds = %loop.body
   %21 = icmp slt i32 %17, 1
   %22 = icmp sgt i32 %17, 3
   %23 = or i1 %21, %22
-  br i1 %23, label %then7, label %ifcont8
+  br i1 %23, label %then5, label %ifcont6
 
-then7:                                            ; preds = %ifcont6
+then5:                                            ; preds = %ifcont4
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 %17, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont8:                                          ; preds = %ifcont6
-  %24 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 %20
+ifcont6:                                          ; preds = %ifcont4
+  %24 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 %20
   %25 = load i1, i1* %24, align 1
   %26 = xor i1 %25, true
   store i1 %26, i1* %15, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  br i1 false, label %then9, label %ifcont10
+  br i1 false, label %then7, label %ifcont8
 
-then9:                                            ; preds = %loop.end
+then7:                                            ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont10:                                         ; preds = %loop.end
-  %27 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 0
+ifcont8:                                          ; preds = %loop.end
+  %27 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
   %28 = load i1, i1* %27, align 1
   %29 = xor i1 %28, true
-  br i1 %29, label %then11, label %else
+  br i1 %29, label %then9, label %else
 
-then11:                                           ; preds = %ifcont10
+then9:                                            ; preds = %ifcont8
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont12
+  br label %ifcont10
 
-else:                                             ; preds = %ifcont10
-  br label %ifcont12
+else:                                             ; preds = %ifcont8
+  br label %ifcont10
 
-ifcont12:                                         ; preds = %else, %then11
-  br i1 false, label %then13, label %ifcont14
+ifcont10:                                         ; preds = %else, %then9
+  br i1 false, label %then11, label %ifcont12
 
-then13:                                           ; preds = %ifcont12
+then11:                                           ; preds = %ifcont10
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 2, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont14:                                         ; preds = %ifcont12
-  %30 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 1
+ifcont12:                                         ; preds = %ifcont10
+  %30 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 1
   %31 = load i1, i1* %30, align 1
-  br i1 %31, label %then15, label %else16
+  br i1 %31, label %then13, label %else14
 
-then15:                                           ; preds = %ifcont14
+then13:                                           ; preds = %ifcont12
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont17
+  br label %ifcont15
 
-else16:                                           ; preds = %ifcont14
-  br label %ifcont17
+else14:                                           ; preds = %ifcont12
+  br label %ifcont15
 
-ifcont17:                                         ; preds = %else16, %then15
-  br i1 false, label %then18, label %ifcont19
+ifcont15:                                         ; preds = %else14, %then13
+  br i1 false, label %then16, label %ifcont17
 
-then18:                                           ; preds = %ifcont17
+then16:                                           ; preds = %ifcont15
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 3, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont19:                                         ; preds = %ifcont17
-  %32 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 2
+ifcont17:                                         ; preds = %ifcont15
+  %32 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 2
   %33 = load i1, i1* %32, align 1
   %34 = xor i1 %33, true
-  br i1 %34, label %then20, label %else21
+  br i1 %34, label %then18, label %else19
 
-then20:                                           ; preds = %ifcont19
+then18:                                           ; preds = %ifcont17
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont22
+  br label %ifcont20
 
-else21:                                           ; preds = %ifcont19
-  br label %ifcont22
+else19:                                           ; preds = %ifcont17
+  br label %ifcont20
 
-ifcont22:                                         ; preds = %else21, %then20
-  br i1 false, label %then23, label %ifcont24
+ifcont20:                                         ; preds = %else19, %then18
+  br i1 false, label %then21, label %ifcont22
 
-then23:                                           ; preds = %ifcont22
+then21:                                           ; preds = %ifcont20
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont24:                                         ; preds = %ifcont22
-  %35 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 0
+ifcont22:                                         ; preds = %ifcont20
+  %35 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   store i1 false, i1* %35, align 1
-  store i32 11, i32* %i3, align 4
-  br label %loop.head25
+  store i32 11, i32* %i1, align 4
+  br label %loop.head23
 
-loop.head25:                                      ; preds = %ifcont30, %ifcont24
-  %36 = load i32, i32* %i3, align 4
+loop.head23:                                      ; preds = %ifcont28, %ifcont22
+  %36 = load i32, i32* %i1, align 4
   %37 = add i32 %36, 1
   %38 = icmp sle i32 %37, 14
-  br i1 %38, label %loop.body26, label %loop.end31
+  br i1 %38, label %loop.body24, label %loop.end29
 
-loop.body26:                                      ; preds = %loop.head25
-  %39 = load i32, i32* %i3, align 4
+loop.body24:                                      ; preds = %loop.head23
+  %39 = load i32, i32* %i1, align 4
   %40 = add i32 %39, 1
-  store i32 %40, i32* %i3, align 4
-  %41 = load i32, i32* %i3, align 4
+  store i32 %40, i32* %i1, align 4
+  %41 = load i32, i32* %i1, align 4
   %42 = sub i32 %41, 10
   %43 = sub i32 %42, 1
   %44 = mul i32 1, %43
@@ -285,16 +281,16 @@ loop.body26:                                      ; preds = %loop.head25
   %46 = icmp slt i32 %42, 1
   %47 = icmp sgt i32 %42, 4
   %48 = or i1 %46, %47
-  br i1 %48, label %then27, label %ifcont28
+  br i1 %48, label %then25, label %ifcont26
 
-then27:                                           ; preds = %loop.body26
+then25:                                           ; preds = %loop.body24
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 %42, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont28:                                         ; preds = %loop.body26
-  %49 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 %45
-  %50 = load i32, i32* %i3, align 4
+ifcont26:                                         ; preds = %loop.body24
+  %49 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 %45
+  %50 = load i32, i32* %i1, align 4
   %51 = sub i32 %50, 10
   %52 = sub i32 %51, 1
   %53 = sub i32 %52, 1
@@ -303,596 +299,589 @@ ifcont28:                                         ; preds = %loop.body26
   %56 = icmp slt i32 %52, 1
   %57 = icmp sgt i32 %52, 4
   %58 = or i1 %56, %57
-  br i1 %58, label %then29, label %ifcont30
+  br i1 %58, label %then27, label %ifcont28
 
-then29:                                           ; preds = %ifcont28
+then27:                                           ; preds = %ifcont26
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 %52, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont30:                                         ; preds = %ifcont28
-  %59 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 %55
+ifcont28:                                         ; preds = %ifcont26
+  %59 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 %55
   %60 = load i1, i1* %59, align 1
   %61 = xor i1 %60, true
   store i1 %61, i1* %49, align 1
-  br label %loop.head25
+  br label %loop.head23
 
-loop.end31:                                       ; preds = %loop.head25
-  br i1 false, label %then32, label %ifcont33
+loop.end29:                                       ; preds = %loop.head23
+  br i1 false, label %then30, label %ifcont31
 
-then32:                                           ; preds = %loop.end31
+then30:                                           ; preds = %loop.end29
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont33:                                         ; preds = %loop.end31
-  %62 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 0
+ifcont31:                                         ; preds = %loop.end29
+  %62 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   %63 = load i1, i1* %62, align 1
-  br i1 %63, label %then34, label %else35
+  br i1 %63, label %then32, label %else33
 
-then34:                                           ; preds = %ifcont33
+then32:                                           ; preds = %ifcont31
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont36
+  br label %ifcont34
 
-else35:                                           ; preds = %ifcont33
-  br label %ifcont36
+else33:                                           ; preds = %ifcont31
+  br label %ifcont34
 
-ifcont36:                                         ; preds = %else35, %then34
-  br i1 false, label %then37, label %ifcont38
+ifcont34:                                         ; preds = %else33, %then32
+  br i1 false, label %then35, label %ifcont36
 
-then37:                                           ; preds = %ifcont36
+then35:                                           ; preds = %ifcont34
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont38:                                         ; preds = %ifcont36
-  %64 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 1
+ifcont36:                                         ; preds = %ifcont34
+  %64 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
   %65 = load i1, i1* %64, align 1
   %66 = xor i1 %65, true
-  br i1 %66, label %then39, label %else40
+  br i1 %66, label %then37, label %else38
 
-then39:                                           ; preds = %ifcont38
+then37:                                           ; preds = %ifcont36
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont41
+  br label %ifcont39
 
-else40:                                           ; preds = %ifcont38
-  br label %ifcont41
+else38:                                           ; preds = %ifcont36
+  br label %ifcont39
 
-ifcont41:                                         ; preds = %else40, %then39
-  br i1 false, label %then42, label %ifcont43
+ifcont39:                                         ; preds = %else38, %then37
+  br i1 false, label %then40, label %ifcont41
 
-then42:                                           ; preds = %ifcont41
+then40:                                           ; preds = %ifcont39
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont43:                                         ; preds = %ifcont41
-  %67 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 2
+ifcont41:                                         ; preds = %ifcont39
+  %67 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
   %68 = load i1, i1* %67, align 1
-  br i1 %68, label %then44, label %else45
+  br i1 %68, label %then42, label %else43
 
-then44:                                           ; preds = %ifcont43
+then42:                                           ; preds = %ifcont41
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont46
+  br label %ifcont44
 
-else45:                                           ; preds = %ifcont43
-  br label %ifcont46
+else43:                                           ; preds = %ifcont41
+  br label %ifcont44
 
-ifcont46:                                         ; preds = %else45, %then44
-  br i1 false, label %then47, label %ifcont48
+ifcont44:                                         ; preds = %else43, %then42
+  br i1 false, label %then45, label %ifcont46
 
-then47:                                           ; preds = %ifcont46
+then45:                                           ; preds = %ifcont44
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @37, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont48:                                         ; preds = %ifcont46
-  %69 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 3
+ifcont46:                                         ; preds = %ifcont44
+  %69 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
   %70 = load i1, i1* %69, align 1
   %71 = xor i1 %70, true
-  br i1 %71, label %then49, label %else50
+  br i1 %71, label %then47, label %else48
 
-then49:                                           ; preds = %ifcont48
+then47:                                           ; preds = %ifcont46
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont51
+  br label %ifcont49
 
-else50:                                           ; preds = %ifcont48
-  br label %ifcont51
+else48:                                           ; preds = %ifcont46
+  br label %ifcont49
 
-ifcont51:                                         ; preds = %else50, %then49
-  store i32 0, i32* %i3, align 4
-  br label %loop.head52
+ifcont49:                                         ; preds = %else48, %then47
+  store i32 0, i32* %i1, align 4
+  br label %loop.head50
 
-loop.head52:                                      ; preds = %ifcont57, %ifcont51
-  %72 = load i32, i32* %i3, align 4
+loop.head50:                                      ; preds = %ifcont55, %ifcont49
+  %72 = load i32, i32* %i1, align 4
   %73 = add i32 %72, 1
   %74 = icmp sle i32 %73, 3
-  br i1 %74, label %loop.body53, label %loop.end58
+  br i1 %74, label %loop.body51, label %loop.end56
 
-loop.body53:                                      ; preds = %loop.head52
-  %75 = load i32, i32* %i3, align 4
+loop.body51:                                      ; preds = %loop.head50
+  %75 = load i32, i32* %i1, align 4
   %76 = add i32 %75, 1
-  store i32 %76, i32* %i3, align 4
-  %77 = load i32, i32* %i3, align 4
+  store i32 %76, i32* %i1, align 4
+  %77 = load i32, i32* %i1, align 4
   %78 = sub i32 %77, 1
   %79 = mul i32 1, %78
   %80 = add i32 0, %79
   %81 = icmp slt i32 %77, 1
   %82 = icmp sgt i32 %77, 4
   %83 = or i1 %81, %82
-  br i1 %83, label %then54, label %ifcont55
+  br i1 %83, label %then52, label %ifcont53
 
-then54:                                           ; preds = %loop.body53
+then52:                                           ; preds = %loop.body51
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @41, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @40, i32 0, i32 0), i32 %77, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont55:                                         ; preds = %loop.body53
-  %84 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 %80
-  %85 = load i32, i32* %i3, align 4
+ifcont53:                                         ; preds = %loop.body51
+  %84 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 %80
+  %85 = load i32, i32* %i1, align 4
   %86 = sub i32 %85, 1
   %87 = mul i32 1, %86
   %88 = add i32 0, %87
   %89 = icmp slt i32 %85, 1
   %90 = icmp sgt i32 %85, 3
   %91 = or i1 %89, %90
-  br i1 %91, label %then56, label %ifcont57
+  br i1 %91, label %then54, label %ifcont55
 
-then56:                                           ; preds = %ifcont55
+then54:                                           ; preds = %ifcont53
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0), i32 %85, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont57:                                         ; preds = %ifcont55
-  %92 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 %88
+ifcont55:                                         ; preds = %ifcont53
+  %92 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 %88
   %93 = load i1, i1* %92, align 1
   %94 = icmp eq i1 %93, false
   %95 = select i1 %94, i1 %93, i1 false
   store i1 %95, i1* %84, align 1
-  br label %loop.head52
+  br label %loop.head50
 
-loop.end58:                                       ; preds = %loop.head52
-  br i1 false, label %then59, label %ifcont60
+loop.end56:                                       ; preds = %loop.head50
+  br i1 false, label %then57, label %ifcont58
 
-then59:                                           ; preds = %loop.end58
+then57:                                           ; preds = %loop.end56
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @45, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @44, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont60:                                         ; preds = %loop.end58
-  %96 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 0
+ifcont58:                                         ; preds = %loop.end56
+  %96 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   %97 = load i1, i1* %96, align 1
-  br i1 %97, label %then61, label %else62
+  br i1 %97, label %then59, label %else60
 
-then61:                                           ; preds = %ifcont60
+then59:                                           ; preds = %ifcont58
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont63
+  br label %ifcont61
 
-else62:                                           ; preds = %ifcont60
-  br label %ifcont63
+else60:                                           ; preds = %ifcont58
+  br label %ifcont61
 
-ifcont63:                                         ; preds = %else62, %then61
-  br i1 false, label %then64, label %ifcont65
+ifcont61:                                         ; preds = %else60, %then59
+  br i1 false, label %then62, label %ifcont63
 
-then64:                                           ; preds = %ifcont63
+then62:                                           ; preds = %ifcont61
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont65:                                         ; preds = %ifcont63
-  %98 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 1
+ifcont63:                                         ; preds = %ifcont61
+  %98 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
   %99 = load i1, i1* %98, align 1
-  br i1 %99, label %then66, label %else67
+  br i1 %99, label %then64, label %else65
 
-then66:                                           ; preds = %ifcont65
+then64:                                           ; preds = %ifcont63
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont68
+  br label %ifcont66
 
-else67:                                           ; preds = %ifcont65
-  br label %ifcont68
+else65:                                           ; preds = %ifcont63
+  br label %ifcont66
 
-ifcont68:                                         ; preds = %else67, %then66
-  br i1 false, label %then69, label %ifcont70
+ifcont66:                                         ; preds = %else65, %then64
+  br i1 false, label %then67, label %ifcont68
 
-then69:                                           ; preds = %ifcont68
+then67:                                           ; preds = %ifcont66
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @53, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont70:                                         ; preds = %ifcont68
-  %100 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 2
+ifcont68:                                         ; preds = %ifcont66
+  %100 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
   %101 = load i1, i1* %100, align 1
-  br i1 %101, label %then71, label %else72
+  br i1 %101, label %then69, label %else70
 
-then71:                                           ; preds = %ifcont70
+then69:                                           ; preds = %ifcont68
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @54, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont73
+  br label %ifcont71
 
-else72:                                           ; preds = %ifcont70
-  br label %ifcont73
+else70:                                           ; preds = %ifcont68
+  br label %ifcont71
 
-ifcont73:                                         ; preds = %else72, %then71
-  br i1 false, label %then74, label %ifcont75
+ifcont71:                                         ; preds = %else70, %then69
+  br i1 false, label %then72, label %ifcont73
 
-then74:                                           ; preds = %ifcont73
+then72:                                           ; preds = %ifcont71
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @57, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @56, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont75:                                         ; preds = %ifcont73
-  %102 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 3
-  br i1 false, label %then76, label %ifcont77
+ifcont73:                                         ; preds = %ifcont71
+  %102 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  br i1 false, label %then74, label %ifcont75
 
-then76:                                           ; preds = %ifcont75
+then74:                                           ; preds = %ifcont73
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @59, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @58, i32 0, i32 0), i32 1, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont77:                                         ; preds = %ifcont75
-  %103 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 0
+ifcont75:                                         ; preds = %ifcont73
+  %103 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 0
   %104 = load i1, i1* %103, align 1
-  br i1 false, label %then78, label %ifcont79
+  br i1 false, label %then76, label %ifcont77
 
-then78:                                           ; preds = %ifcont77
+then76:                                           ; preds = %ifcont75
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @61, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @60, i32 0, i32 0), i32 2, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont79:                                         ; preds = %ifcont77
-  %105 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 1
+ifcont77:                                         ; preds = %ifcont75
+  %105 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 1
   %106 = load i1, i1* %105, align 1
   %107 = icmp eq i1 %104, false
   %108 = select i1 %107, i1 %106, i1 %104
-  br i1 false, label %then80, label %ifcont81
+  br i1 false, label %then78, label %ifcont79
 
-then80:                                           ; preds = %ifcont79
+then78:                                           ; preds = %ifcont77
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @63, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @62, i32 0, i32 0), i32 3, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont81:                                         ; preds = %ifcont79
-  %109 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 2
+ifcont79:                                         ; preds = %ifcont77
+  %109 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 2
   %110 = load i1, i1* %109, align 1
   %111 = icmp eq i1 %108, false
   %112 = select i1 %111, i1 %110, i1 %108
-  br i1 false, label %then82, label %ifcont83
+  br i1 false, label %then80, label %ifcont81
 
-then82:                                           ; preds = %ifcont81
+then80:                                           ; preds = %ifcont79
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @65, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @64, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont83:                                         ; preds = %ifcont81
-  %113 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 0
+ifcont81:                                         ; preds = %ifcont79
+  %113 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
   %114 = load i1, i1* %113, align 1
   %115 = icmp eq i1 %112, false
   %116 = select i1 %115, i1 %114, i1 %112
   store i1 %116, i1* %102, align 1
-  br i1 false, label %then84, label %ifcont85
+  br i1 false, label %then82, label %ifcont83
 
-then84:                                           ; preds = %ifcont83
+then82:                                           ; preds = %ifcont81
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @67, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @66, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont85:                                         ; preds = %ifcont83
-  %117 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 3
+ifcont83:                                         ; preds = %ifcont81
+  %117 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
   %118 = load i1, i1* %117, align 1
   %119 = xor i1 %118, true
-  br i1 %119, label %then86, label %else87
+  br i1 %119, label %then84, label %else85
 
-then86:                                           ; preds = %ifcont85
+then84:                                           ; preds = %ifcont83
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont88
+  br label %ifcont86
 
-else87:                                           ; preds = %ifcont85
-  br label %ifcont88
+else85:                                           ; preds = %ifcont83
+  br label %ifcont86
 
-ifcont88:                                         ; preds = %else87, %then86
-  br i1 false, label %then89, label %ifcont90
+ifcont86:                                         ; preds = %else85, %then84
+  br i1 false, label %then87, label %ifcont88
 
-then89:                                           ; preds = %ifcont88
+then87:                                           ; preds = %ifcont86
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont90:                                         ; preds = %ifcont88
-  %120 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 3
-  br i1 false, label %then91, label %ifcont92
+ifcont88:                                         ; preds = %ifcont86
+  %120 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
+  br i1 false, label %then89, label %ifcont90
 
-then91:                                           ; preds = %ifcont90
+then89:                                           ; preds = %ifcont88
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 1, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont92:                                         ; preds = %ifcont90
-  %121 = getelementptr [3 x i1], [3 x i1]* %a_arena, i32 0, i32 0
+ifcont90:                                         ; preds = %ifcont88
+  %121 = getelementptr [3 x i1], [3 x i1]* %a, i32 0, i32 0
   %122 = load i1, i1* %121, align 1
   store i1 %122, i1* %120, align 1
-  br i1 false, label %then93, label %ifcont94
+  br i1 false, label %then91, label %ifcont92
 
-then93:                                           ; preds = %ifcont92
+then91:                                           ; preds = %ifcont90
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @75, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @74, i32 0, i32 0), i32 4, i32 1, i32 1, i32 4)
   call void @exit(i32 1)
   unreachable
 
-ifcont94:                                         ; preds = %ifcont92
-  %123 = getelementptr [4 x i1], [4 x i1]* %b_arena, i32 0, i32 3
+ifcont92:                                         ; preds = %ifcont90
+  %123 = getelementptr [4 x i1], [4 x i1]* %b, i32 0, i32 3
   %124 = load i1, i1* %123, align 1
   %125 = xor i1 %124, true
-  br i1 %125, label %then95, label %else96
+  br i1 %125, label %then93, label %else94
 
-then95:                                           ; preds = %ifcont94
+then93:                                           ; preds = %ifcont92
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @77, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @76, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont97
+  br label %ifcont95
 
-else96:                                           ; preds = %ifcont94
-  br label %ifcont97
+else94:                                           ; preds = %ifcont92
+  br label %ifcont95
 
-ifcont97:                                         ; preds = %else96, %then95
-  store i32 0, i32* %i3, align 4
-  br label %loop.head98
+ifcont95:                                         ; preds = %else94, %then93
+  store i32 0, i32* %i1, align 4
+  br label %loop.head96
 
-loop.head98:                                      ; preds = %loop.end113, %ifcont97
-  %126 = load i32, i32* %i3, align 4
+loop.head96:                                      ; preds = %loop.end111, %ifcont95
+  %126 = load i32, i32* %i1, align 4
   %127 = add i32 %126, 1
   %128 = icmp sle i32 %127, 2
-  br i1 %128, label %loop.body99, label %loop.end114
+  br i1 %128, label %loop.body97, label %loop.end112
 
-loop.body99:                                      ; preds = %loop.head98
-  %129 = load i32, i32* %i3, align 4
+loop.body97:                                      ; preds = %loop.head96
+  %129 = load i32, i32* %i1, align 4
   %130 = add i32 %129, 1
-  store i32 %130, i32* %i3, align 4
-  store i32 0, i32* %j4, align 4
-  br label %loop.head100
+  store i32 %130, i32* %i1, align 4
+  store i32 0, i32* %j2, align 4
+  br label %loop.head98
 
-loop.head100:                                     ; preds = %ifcont112, %loop.body99
-  %131 = load i32, i32* %j4, align 4
+loop.head98:                                      ; preds = %ifcont110, %loop.body97
+  %131 = load i32, i32* %j2, align 4
   %132 = add i32 %131, 1
   %133 = icmp sle i32 %132, 2
-  br i1 %133, label %loop.body101, label %loop.end113
+  br i1 %133, label %loop.body99, label %loop.end111
 
-loop.body101:                                     ; preds = %loop.head100
-  %134 = load i32, i32* %j4, align 4
+loop.body99:                                      ; preds = %loop.head98
+  %134 = load i32, i32* %j2, align 4
   %135 = add i32 %134, 1
-  store i32 %135, i32* %j4, align 4
-  %136 = load i32, i32* %i3, align 4
-  %137 = load i32, i32* %j4, align 4
+  store i32 %135, i32* %j2, align 4
+  %136 = load i32, i32* %i1, align 4
+  %137 = load i32, i32* %j2, align 4
   %138 = add i32 %136, %137
-  %139 = load i32, i32* %i3, align 4
-  %140 = load i32, i32* %j4, align 4
+  %139 = load i32, i32* %i1, align 4
+  %140 = load i32, i32* %j2, align 4
   %141 = add i32 %139, %140
   %142 = sdiv i32 %141, 2
   %143 = mul i32 2, %142
   %144 = sub i32 %138, %143
   %145 = icmp eq i32 %144, 1
-  br i1 %145, label %then102, label %else107
+  br i1 %145, label %then100, label %else105
 
-then102:                                          ; preds = %loop.body101
-  %146 = load i32, i32* %i3, align 4
-  %147 = load i32, i32* %j4, align 4
+then100:                                          ; preds = %loop.body99
+  %146 = load i32, i32* %i1, align 4
+  %147 = load i32, i32* %j2, align 4
   %148 = sub i32 %146, 1
   %149 = mul i32 1, %148
   %150 = add i32 0, %149
   %151 = icmp slt i32 %146, 1
   %152 = icmp sgt i32 %146, 2
   %153 = or i1 %151, %152
-  br i1 %153, label %then103, label %ifcont104
+  br i1 %153, label %then101, label %ifcont102
 
-then103:                                          ; preds = %then102
+then101:                                          ; preds = %then100
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0), i32 %146, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont104:                                        ; preds = %then102
+ifcont102:                                        ; preds = %then100
   %154 = sub i32 %147, 1
   %155 = mul i32 2, %154
   %156 = add i32 %150, %155
   %157 = icmp slt i32 %147, 1
   %158 = icmp sgt i32 %147, 2
   %159 = or i1 %157, %158
-  br i1 %159, label %then105, label %ifcont106
+  br i1 %159, label %then103, label %ifcont104
 
-then105:                                          ; preds = %ifcont104
+then103:                                          ; preds = %ifcont102
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @81, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @80, i32 0, i32 0), i32 %147, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont106:                                        ; preds = %ifcont104
-  %160 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 %156
+ifcont104:                                        ; preds = %ifcont102
+  %160 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %156
   store i1 true, i1* %160, align 1
-  br label %ifcont112
+  br label %ifcont110
 
-else107:                                          ; preds = %loop.body101
-  %161 = load i32, i32* %i3, align 4
-  %162 = load i32, i32* %j4, align 4
+else105:                                          ; preds = %loop.body99
+  %161 = load i32, i32* %i1, align 4
+  %162 = load i32, i32* %j2, align 4
   %163 = sub i32 %161, 1
   %164 = mul i32 1, %163
   %165 = add i32 0, %164
   %166 = icmp slt i32 %161, 1
   %167 = icmp sgt i32 %161, 2
   %168 = or i1 %166, %167
-  br i1 %168, label %then108, label %ifcont109
+  br i1 %168, label %then106, label %ifcont107
 
-then108:                                          ; preds = %else107
+then106:                                          ; preds = %else105
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @83, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @82, i32 0, i32 0), i32 %161, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont109:                                        ; preds = %else107
+ifcont107:                                        ; preds = %else105
   %169 = sub i32 %162, 1
   %170 = mul i32 2, %169
   %171 = add i32 %165, %170
   %172 = icmp slt i32 %162, 1
   %173 = icmp sgt i32 %162, 2
   %174 = or i1 %172, %173
-  br i1 %174, label %then110, label %ifcont111
+  br i1 %174, label %then108, label %ifcont109
 
-then110:                                          ; preds = %ifcont109
+then108:                                          ; preds = %ifcont107
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @85, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @84, i32 0, i32 0), i32 %162, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont111:                                        ; preds = %ifcont109
-  %175 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 %171
+ifcont109:                                        ; preds = %ifcont107
+  %175 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 %171
   store i1 false, i1* %175, align 1
-  br label %ifcont112
+  br label %ifcont110
 
-ifcont112:                                        ; preds = %ifcont111, %ifcont106
-  br label %loop.head100
-
-loop.end113:                                      ; preds = %loop.head100
+ifcont110:                                        ; preds = %ifcont109, %ifcont104
   br label %loop.head98
 
-loop.end114:                                      ; preds = %loop.head98
-  br i1 false, label %then115, label %ifcont116
+loop.end111:                                      ; preds = %loop.head98
+  br label %loop.head96
 
-then115:                                          ; preds = %loop.end114
+loop.end112:                                      ; preds = %loop.head96
+  br i1 false, label %then113, label %ifcont114
+
+then113:                                          ; preds = %loop.end112
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @87, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @86, i32 0, i32 0), i32 1, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont116:                                        ; preds = %loop.end114
-  br i1 false, label %then117, label %ifcont118
+ifcont114:                                        ; preds = %loop.end112
+  br i1 false, label %then115, label %ifcont116
 
-then117:                                          ; preds = %ifcont116
+then115:                                          ; preds = %ifcont114
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @89, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @88, i32 0, i32 0), i32 1, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont118:                                        ; preds = %ifcont116
-  %176 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 0
+ifcont116:                                        ; preds = %ifcont114
+  %176 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 0
   %177 = load i1, i1* %176, align 1
-  br i1 %177, label %then119, label %else120
+  br i1 %177, label %then117, label %else118
 
-then119:                                          ; preds = %ifcont118
+then117:                                          ; preds = %ifcont116
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont121
+  br label %ifcont119
 
-else120:                                          ; preds = %ifcont118
-  br label %ifcont121
+else118:                                          ; preds = %ifcont116
+  br label %ifcont119
 
-ifcont121:                                        ; preds = %else120, %then119
-  br i1 false, label %then122, label %ifcont123
+ifcont119:                                        ; preds = %else118, %then117
+  br i1 false, label %then120, label %ifcont121
 
-then122:                                          ; preds = %ifcont121
+then120:                                          ; preds = %ifcont119
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @93, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @92, i32 0, i32 0), i32 1, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont123:                                        ; preds = %ifcont121
-  br i1 false, label %then124, label %ifcont125
+ifcont121:                                        ; preds = %ifcont119
+  br i1 false, label %then122, label %ifcont123
 
-then124:                                          ; preds = %ifcont123
+then122:                                          ; preds = %ifcont121
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0), i32 2, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont125:                                        ; preds = %ifcont123
-  %178 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 2
+ifcont123:                                        ; preds = %ifcont121
+  %178 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 2
   %179 = load i1, i1* %178, align 1
   %180 = xor i1 %179, true
-  br i1 %180, label %then126, label %else127
+  br i1 %180, label %then124, label %else125
 
-then126:                                          ; preds = %ifcont125
+then124:                                          ; preds = %ifcont123
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont128
+  br label %ifcont126
 
-else127:                                          ; preds = %ifcont125
-  br label %ifcont128
+else125:                                          ; preds = %ifcont123
+  br label %ifcont126
 
-ifcont128:                                        ; preds = %else127, %then126
-  br i1 false, label %then129, label %ifcont130
+ifcont126:                                        ; preds = %else125, %then124
+  br i1 false, label %then127, label %ifcont128
 
-then129:                                          ; preds = %ifcont128
+then127:                                          ; preds = %ifcont126
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @99, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @98, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont130:                                        ; preds = %ifcont128
-  br i1 false, label %then131, label %ifcont132
+ifcont128:                                        ; preds = %ifcont126
+  br i1 false, label %then129, label %ifcont130
 
-then131:                                          ; preds = %ifcont130
+then129:                                          ; preds = %ifcont128
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @101, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @100, i32 0, i32 0), i32 1, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont132:                                        ; preds = %ifcont130
-  %181 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 1
+ifcont130:                                        ; preds = %ifcont128
+  %181 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 1
   %182 = load i1, i1* %181, align 1
   %183 = xor i1 %182, true
-  br i1 %183, label %then133, label %else134
+  br i1 %183, label %then131, label %else132
 
-then133:                                          ; preds = %ifcont132
+then131:                                          ; preds = %ifcont130
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @103, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @102, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont135
+  br label %ifcont133
 
-else134:                                          ; preds = %ifcont132
-  br label %ifcont135
+else132:                                          ; preds = %ifcont130
+  br label %ifcont133
 
-ifcont135:                                        ; preds = %else134, %then133
-  br i1 false, label %then136, label %ifcont137
+ifcont133:                                        ; preds = %else132, %then131
+  br i1 false, label %then134, label %ifcont135
 
-then136:                                          ; preds = %ifcont135
+then134:                                          ; preds = %ifcont133
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @105, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @104, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont137:                                        ; preds = %ifcont135
-  br i1 false, label %then138, label %ifcont139
+ifcont135:                                        ; preds = %ifcont133
+  br i1 false, label %then136, label %ifcont137
 
-then138:                                          ; preds = %ifcont137
+then136:                                          ; preds = %ifcont135
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @107, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @106, i32 0, i32 0), i32 2, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
-ifcont139:                                        ; preds = %ifcont137
-  %184 = getelementptr [4 x i1], [4 x i1]* %c_arena, i32 0, i32 3
+ifcont137:                                        ; preds = %ifcont135
+  %184 = getelementptr [4 x i1], [4 x i1]* %c, i32 0, i32 3
   %185 = load i1, i1* %184, align 1
-  br i1 %185, label %then140, label %else141
+  br i1 %185, label %then138, label %else139
 
-then140:                                          ; preds = %ifcont139
+then138:                                          ; preds = %ifcont137
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @109, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @108, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont142
+  br label %ifcont140
 
-else141:                                          ; preds = %ifcont139
-  br label %ifcont142
+else139:                                          ; preds = %ifcont137
+  br label %ifcont140
 
-ifcont142:                                        ; preds = %else141, %then140
+ifcont140:                                        ; preds = %else139, %then138
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont142
+return:                                           ; preds = %ifcont140
   br label %FINALIZE_SYMTABLE_arrays_01_logical
 
 FINALIZE_SYMTABLE_arrays_01_logical:              ; preds = %return
-  call void @_lfortran_scratch_end(i8* %scratch_handle)
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
-
-declare i8* @_lfortran_scratch_begin()
-
-declare i8* @_lfortran_scratch_alloc(i64)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
 declare void @_lpython_free_argv()
-
-declare void @_lfortran_scratch_end(i8*)
