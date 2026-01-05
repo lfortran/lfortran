@@ -913,16 +913,6 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING" '
 
     cd build
 
-    # Patch schkqp3rk.f to fix uninitialized RESULT(4) bug (upstream LAPACK bug)
-    # Bug: RESULT(4) is only set to BIGNUM on failure, never initialized to ZERO
-    # This causes flaky test failures when garbage stack value >= THRESH
-    # See: https://github.com/lfortran/lfortran/issues/9371
-    sed -i '/IF( MIN(KFACT, MINMN).GE.2 ) THEN/i\                     RESULT( 4 ) = ZERO' \
-        ../TESTING/LIN/schkqp3rk.f
-
-    # Rebuild xlintsts with the patched source
-    cmake --build . --target xlintsts -j8
-
     # Run xlintsts (single real linear equations) - the key test
     print_subsection "Running xlintsts stest.in"
     set +e
