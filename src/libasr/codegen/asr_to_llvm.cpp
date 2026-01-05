@@ -5502,22 +5502,21 @@ public:
                     }
                     gptr->setInitializer(init_value);
                 } else {
-                    // Large fixed-size arrays (>= 4 KB) use heap allocation to prevent stack overflow.
+                    // Large fixed-size arrays (> 4KB-1) use heap allocation to prevent stack overflow.
                     // This is recursion-safe unlike static storage, as each call gets its own copy.
                     // Memory is freed at function exit.
                     // BLOCK constructs always use heap regardless of size (can be in loops).
-                    // Threshold matches arena allocator PR for fair comparison.
-                    constexpr uint64_t HEAP_ALLOC_THRESHOLD = 4096;
+                    constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use heap
                     bool use_heap_allocation = false;
                     uint64_t type_size = 0;
                     if (!compiler_options.stack_arrays &&
                         ASRUtils::is_array(v->m_type) &&
                         ASRUtils::extract_physical_type(v->m_type) ==
                             ASR::array_physical_typeType::FixedSizeArray) {
-                        llvm::DataLayout data_layout(module->getDataLayout());
+                        const llvm::DataLayout& data_layout = module->getDataLayout();
                         type_size = data_layout.getTypeAllocSize(type);
                         // BLOCKs always use heap (can be in loops), others use threshold
-                        if (in_block_context || type_size >= HEAP_ALLOC_THRESHOLD) {
+                        if (in_block_context || type_size > MAX_STACK_ARRAY_SIZE) {
                             use_heap_allocation = true;
                         }
                     }
