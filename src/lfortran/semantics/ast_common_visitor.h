@@ -3831,45 +3831,6 @@ public:
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
                                                     }
-                                                } else if (ASR::is_a<ASR::ComplexConstant_t>(*init_val) ||
-                                                           ASR::is_a<ASR::ComplexConstructor_t>(*init_val)) {
-                                                    // Complex to Real/Integer conversion via Cast
-                                                    ASR::expr_t* value = nullptr;
-                                                    double re_val = 0.0;
-                                                    if (ASR::is_a<ASR::ComplexConstant_t>(*init_val)) {
-                                                        re_val = ASR::down_cast<ASR::ComplexConstant_t>(init_val)->m_re;
-                                                    } else {
-                                                        ASR::ComplexConstructor_t* ctor = ASR::down_cast<ASR::ComplexConstructor_t>(init_val);
-                                                        if (ctor->m_value && ASR::is_a<ASR::ComplexConstant_t>(*ctor->m_value)) {
-                                                            re_val = ASR::down_cast<ASR::ComplexConstant_t>(ctor->m_value)->m_re;
-                                                        }
-                                                    }
-                                                    if (ASRUtils::is_real(*v->m_type)) {
-                                                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
-                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                            ASR::cast_kindType::ComplexToReal, v->m_type, value));
-                                                    } else if (ASRUtils::is_integer(*v->m_type)) {
-                                                        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, (int64_t)re_val, v->m_type));
-                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                            ASR::cast_kindType::ComplexToInteger, v->m_type, value));
-                                                    } else if (ASRUtils::is_complex(*v->m_type)) {
-                                                        int init_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(init_val));
-                                                        int var_kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
-                                                        if (init_kind != var_kind) {
-                                                            double im_val = 0.0;
-                                                            if (ASR::is_a<ASR::ComplexConstant_t>(*init_val)) {
-                                                                im_val = ASR::down_cast<ASR::ComplexConstant_t>(init_val)->m_im;
-                                                            } else {
-                                                                ASR::ComplexConstructor_t* ctor = ASR::down_cast<ASR::ComplexConstructor_t>(init_val);
-                                                                if (ctor->m_value && ASR::is_a<ASR::ComplexConstant_t>(*ctor->m_value)) {
-                                                                    im_val = ASR::down_cast<ASR::ComplexConstant_t>(ctor->m_value)->m_im;
-                                                                }
-                                                            }
-                                                            value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc, re_val, im_val, v->m_type));
-                                                            init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
-                                                                ASR::cast_kindType::ComplexToComplex, v->m_type, value));
-                                                        }
-                                                    }
                                                 }
                                                 v->m_symbolic_value = init_val;
                                                 v->m_value = ASRUtils::expr_value(init_val);
