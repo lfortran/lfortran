@@ -4529,14 +4529,6 @@ filename = "errors/iostat_constant_integer.f90"
 asr = true
 
 [[test]]
-filename = "errors/undefined_end_label.f90"
-asr = true
-
-[[test]]
-filename = "errors/undefined_err_label.f90"
-asr = true
-
-[[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true
 

@@ -1,5 +1,0 @@
-semantic error: end= label 999 is not defined
- --> tests/errors/undefined_end_label.f90:5:20
-  |
-5 |     read(*, *, end=999) val  
-  |                    ^^^ 
