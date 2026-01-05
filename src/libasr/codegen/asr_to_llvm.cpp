@@ -8629,6 +8629,15 @@ public:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
 
+        // Check if block has FixedSizeArray locals that need arena allocation
+        bool block_uses_arena = scope_uses_arena(*block);
+        llvm::Value* block_scratch_handle = nullptr;
+        if (block_uses_arena) {
+            // Save parent's scratch handle and create new scope for this block
+            block_scratch_handle = builder->CreateCall(get_scratch_begin_fn(), {},
+                "block_scratch_handle");
+        }
+
         declare_vars(*block);
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
@@ -8638,6 +8647,11 @@ public:
 
         start_new_block(blockend);
         llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
+
+        // End block's scratch scope (restores arena position)
+        if (block_uses_arena && block_scratch_handle) {
+            builder->CreateCall(get_scratch_end_fn(), {block_scratch_handle});
+        }
 
         loop_or_block_end.pop_back();
         loop_or_block_end_names.pop_back();
