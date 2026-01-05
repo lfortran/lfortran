@@ -14356,7 +14356,9 @@ public:
                             llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
                             llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
                             load_array_size_deep_copy(m_dims[j].m_length);
-                            llvm::Value* pointer_length = tmp;
+                            // Convert user dimension expression to i32 to match descriptor format
+                            llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                tmp, llvm::Type::getInt32Ty(context));
                             llvm::Value* cond = nullptr;
                             if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                 cond = builder->CreateICmpNE(descriptor_length, pointer_length);
@@ -14379,7 +14381,10 @@ public:
                     builder->CreateBr(mergeBB);
                     start_new_block(elseBB);
                     llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
-                    llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                    // Convert user array size to i32 to match descriptor format
+                    llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                        get_array_size_from_asr_type(arr_cast->m_type),
+                        llvm::Type::getInt32Ty(context));
                     llvm::Value* cond = nullptr;
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         cond = builder->CreateICmpNE(desc_size, pointer_size);
@@ -14412,7 +14417,9 @@ public:
                                 llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
                                 llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length)));
                                 load_array_size_deep_copy(m_dims_pointer[j].m_length);
-                                llvm::Value* pointer_length = tmp;
+                                // Convert user dimension expression to i32 to match fixed-size format
+                                llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                    tmp, llvm::Type::getInt32Ty(context));
                                 llvm::Value* cond = nullptr;
                                 if (compiler_options.po.strict_bounds_checking || is_return_value) {
                                     cond = builder->CreateICmpNE(fixed_length, pointer_length);
@@ -14434,7 +14441,10 @@ public:
                         }
                     } else {
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
-                        llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
+                        // Convert user array size to i32 to match fixed-size format
+                        llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                            get_array_size_from_asr_type(arr_cast->m_type),
+                            llvm::Type::getInt32Ty(context));
                         llvm::Value* cond = nullptr;
                         if (compiler_options.po.strict_bounds_checking || is_return_value) {
                             cond = builder->CreateICmpNE(fixed_size, pointer_size);

@@ -746,8 +746,29 @@ class ASRBuilder {
     }
 
     // Compare -----------------------------------------------------------------
+
+    // Helper to promote integer types for ILP64: when comparing integers of
+    // different kinds, cast the smaller to the larger kind
+    void promote_integer_types(ASR::expr_t*& left, ASR::expr_t*& right) {
+        ASR::ttype_t* left_type = expr_type(left);
+        ASR::ttype_t* right_type = expr_type(right);
+        if (ASRUtils::is_integer(*left_type) && ASRUtils::is_integer(*right_type)) {
+            int left_kind = ASRUtils::extract_kind_from_ttype_t(left_type);
+            int right_kind = ASRUtils::extract_kind_from_ttype_t(right_type);
+            if (left_kind != right_kind) {
+                if (left_kind > right_kind) {
+                    right = i2i_t(right, left_type);
+                } else {
+                    left = i2i_t(left, right_type);
+                }
+            }
+        } else {
+            LCOMPILERS_ASSERT(check_equal_type(left_type, right_type, left, right));
+        }
+    }
+
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -771,7 +792,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right),left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -795,7 +816,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *GtE(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -819,7 +840,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *LtE(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -843,7 +864,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *Eq(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -870,7 +891,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *NotEq(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
