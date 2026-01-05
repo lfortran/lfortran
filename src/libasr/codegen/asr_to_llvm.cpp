@@ -5525,7 +5525,7 @@ public:
                     if (use_heap_allocation) {
                         // Allocate on heap to avoid stack overflow (recursion-safe)
                         llvm::Value* malloc_size = llvm::ConstantInt::get(
-                            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                            llvm_utils->getIntType(8), llvm::APInt(64, type_size));
                         llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
                         ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
