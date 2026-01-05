@@ -4940,3 +4940,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/transfer_09.f90"
 asr = true
+
+[[test]]
+filename = "namelist_01.f90"
+asr = true

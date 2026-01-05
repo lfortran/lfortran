@@ -1317,6 +1317,7 @@ RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_03 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_04 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME passing_array_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME parameter_01 LABELS gfortran llvm)
 RUN(NAME parameter_02 LABELS gfortran llvm)
@@ -2337,6 +2338,7 @@ RUN(NAME read_17 LABELS gfortran llvm)
 RUN(NAME read_18 LABELS gfortran llvm)
 RUN(NAME read_19 LABELS gfortran llvm)
 RUN(NAME read_20 LABELS gfortran llvm)
+RUN(NAME read_21 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2392,6 +2394,7 @@ RUN(NAME array_slice_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 RUN(NAME declaration_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME declaration_02 LABELS gfortran llvm)
 RUN(NAME declaration_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME declaration_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME procedure_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

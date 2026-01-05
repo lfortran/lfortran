@@ -103,10 +103,6 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
         }
     }
 
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
-
-    }
-
     void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
 
     }
@@ -2399,27 +2395,6 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
 
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
-        ASR::expr_t** current_expr_copy_273 = current_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
-        call_replacer();
-        current_expr = current_expr_copy_273;
-        if( x.m_array )
-        visit_expr(*x.m_array);
-        visit_ttype(*x.m_type);
-        if (x.m_value) {
-            if (call_replacer_on_value) {
-                ASR::expr_t** current_expr_copy_275 = current_expr;
-                current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
-                call_replacer();
-                current_expr = current_expr_copy_275;
-            }
-            if( x.m_value ) {
-                visit_expr(*x.m_value);
-            }
-        }
-    }
-
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             return ;
@@ -2742,14 +2717,6 @@ class VerifySimplifierASROutput:
         al(al_), exprs_with_target(exprs_with_target_) {
         visit_compile_time_value = false;
         (void)exprs_with_target; // explicitly reference to avoid unused warning
-    }
-
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
-        visit_expr(*x.m_array);
-        visit_ttype(*x.m_type);
-        if (x.m_value && visit_compile_time_value) {
-            visit_expr(*x.m_value);
-        }
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
