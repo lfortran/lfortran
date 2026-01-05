@@ -233,9 +233,12 @@ LFORTRAN_ARENA_API void _lfortran_scratch_end(void* handle);
 /* --- Legacy API (backward compatible with current LLVM codegen) --- */
 
 /*
- * Thread-local arena pointer for inline access from generated code.
+ * Get thread-local arena pointer for inline access from generated code.
+ * Note: Direct TLS variable export is not supported on Windows,
+ * so we provide accessor functions instead.
  */
-extern LFORTRAN_ARENA_API LFORTRAN_ARENA_TLS char* _lfortran_arena_ptr;
+LFORTRAN_ARENA_API char* _lfortran_get_arena_ptr(void);
+LFORTRAN_ARENA_API void _lfortran_set_arena_ptr(char* ptr);
 
 /*
  * Initialize arena - called at program start.

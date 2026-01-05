@@ -46,8 +46,17 @@ static LFORTRAN_ARENA_TLS int scratch_initialized = 0;
  */
 static LFORTRAN_ARENA_TLS Arena* scratch_current_arena = NULL;
 
-/* Thread-local pointer for legacy API inline access */
-LFORTRAN_ARENA_API LFORTRAN_ARENA_TLS char* _lfortran_arena_ptr = NULL;
+/* Thread-local pointer for legacy API inline access (static - use accessors) */
+static LFORTRAN_ARENA_TLS char* _lfortran_arena_ptr = NULL;
+
+/* Accessor functions for TLS variable (Windows doesn't support dllexport on TLS) */
+LFORTRAN_ARENA_API char* _lfortran_get_arena_ptr(void) {
+    return _lfortran_arena_ptr;
+}
+
+LFORTRAN_ARENA_API void _lfortran_set_arena_ptr(char* ptr) {
+    _lfortran_arena_ptr = ptr;
+}
 
 /*
  * Handle structure for _lfortran_scratch_begin/_lfortran_scratch_end.
