@@ -201,6 +201,8 @@ public:
     // Arena allocator state for current function (conflict-aware two-arena pattern)
     llvm::Value* scratch_handle = nullptr;
     bool current_function_uses_arena = false;
+    // Flag to track if we're in a BLOCK context (BLOCKs skip size threshold)
+    bool in_block_context = false;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -268,10 +270,75 @@ public:
 
     // --- Arena Allocator Helpers ---
 
+    // Estimate element size from ASR type (conservative upper bound)
+    uint64_t estimate_element_size(ASR::ttype_t* type) {
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(type);
+        switch (elem_type->type) {
+            case ASR::ttypeType::Integer: {
+                int kind = ASR::down_cast<ASR::Integer_t>(elem_type)->m_kind;
+                return kind;  // 1, 2, 4, or 8 bytes
+            }
+            case ASR::ttypeType::Real: {
+                int kind = ASR::down_cast<ASR::Real_t>(elem_type)->m_kind;
+                return kind;  // 4 or 8 bytes
+            }
+            case ASR::ttypeType::Complex: {
+                int kind = ASR::down_cast<ASR::Complex_t>(elem_type)->m_kind;
+                return 2 * kind;  // 8 or 16 bytes
+            }
+            case ASR::ttypeType::Logical: {
+                int kind = ASR::down_cast<ASR::Logical_t>(elem_type)->m_kind;
+                return kind;
+            }
+            case ASR::ttypeType::String:
+                return 1;  // Per character
+            default:
+                return 16;  // Conservative default for unknown types
+        }
+    }
+
     // Check if a scope has local FixedSizeArray variables that need arena allocation
+    // Only returns true if there are arrays >= 4KB (STACK_ARENA_THRESHOLD)
     // Works for both Function and Program scopes
     template<typename T>
     bool scope_uses_arena(const T& x) {
+        if (compiler_options.stack_arrays) {
+            return false;  // Arena disabled when stack_arrays is true
+        }
+        constexpr uint64_t STACK_ARENA_THRESHOLD = 4096;
+        for (auto& item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if ((v->m_intent == ASRUtils::intent_local ||
+                     v->m_intent == ASRUtils::intent_return_var || !v->m_intent) &&
+                    v->m_storage != ASR::storage_typeType::Save &&
+                    ASRUtils::is_array(v->m_type) &&
+                    ASRUtils::extract_physical_type(v->m_type) ==
+                        ASR::array_physical_typeType::FixedSizeArray) {
+                    // Check if array size >= threshold
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, dims);
+                    int64_t fixed_size = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+                    uint64_t elem_size = estimate_element_size(v->m_type);
+                    uint64_t total_size = fixed_size * elem_size;
+                    if (total_size >= STACK_ARENA_THRESHOLD) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Backward-compatible alias for Function-specific code
+    bool function_uses_arena(const ASR::Function_t& x) {
+        return scope_uses_arena(x);
+    }
+
+    // Check if a BLOCK has ANY FixedSizeArray locals (no size threshold)
+    // BLOCKs can be inside loops, so even small arrays must use arena
+    // to prevent unbounded stack growth
+    bool block_uses_arena(const ASR::Block_t& x) {
         if (compiler_options.stack_arrays) {
             return false;  // Arena disabled when stack_arrays is true
         }
@@ -284,16 +351,11 @@ public:
                     ASRUtils::is_array(v->m_type) &&
                     ASRUtils::extract_physical_type(v->m_type) ==
                         ASR::array_physical_typeType::FixedSizeArray) {
-                    return true;
+                    return true;  // No size threshold for BLOCKs
                 }
             }
         }
         return false;
-    }
-
-    // Backward-compatible alias for Function-specific code
-    bool function_uses_arena(const ASR::Function_t& x) {
-        return scope_uses_arena(x);
     }
 
     // --- Conflict-Aware Arena Allocator Helpers (Two-Arena Pattern) ---
@@ -5633,7 +5695,8 @@ public:
                            ASRUtils::is_array(v->m_type) &&
                            ASRUtils::extract_physical_type(v->m_type) ==
                                ASR::array_physical_typeType::FixedSizeArray) {
-                    // Use arena allocation for FixedSizeArray locals
+                    // Check if array size exceeds stack threshold (4KB)
+                    // Small arrays use stack, large arrays use arena
                     ASR::dimension_t* arr_dims = nullptr;
                     size_t arr_n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, arr_dims);
                     int64_t fixed_size = ASRUtils::get_fixed_size_of_array(arr_dims, arr_n_dims);
@@ -5651,9 +5714,31 @@ public:
                             v->base.base.loc);
                     }
                     uint64_t total_size = fixed_size * el_size;
-                    llvm::Value* scratch_ptr = emit_scratch_alloc(total_size);
-                    ptr = builder->CreateBitCast(scratch_ptr, type->getPointerTo(),
-                        std::string(v->m_name) + "_arena");
+                    // Threshold: use stack for arrays < 4KB, arena for >= 4KB
+                    // Exception: BLOCKs always use arena (can be in loops)
+                    // This matches ARENA_MIN_CHUNK_SIZE from lfortran_arena.h
+                    constexpr uint64_t STACK_ARENA_THRESHOLD = 4096;
+                    if (!in_block_context && total_size < STACK_ARENA_THRESHOLD) {
+                        // Small array in function - use stack allocation
+#if LLVM_VERSION_MAJOR >= 15
+                        bool is_llvm_ptr = false;
+                        if ( LLVM::is_llvm_pointer(*v->m_type) &&
+                                !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(v->m_type))) &&
+                                !ASRUtils::is_descriptorString(v->m_type) ) {
+                            is_llvm_ptr = true;
+                        }
+                        ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                            v->m_name, is_llvm_ptr);
+#else
+                        ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+#endif
+                    } else {
+                        // Large array - use arena allocation
+                        llvm::Value* scratch_ptr = emit_scratch_alloc(total_size);
+                        ptr = builder->CreateBitCast(scratch_ptr, type->getPointerTo(),
+                            std::string(v->m_name) + "_arena");
+                    }
                 } else {
 #if LLVM_VERSION_MAJOR >= 15
                     bool is_llvm_ptr = false;
@@ -8630,15 +8715,19 @@ public:
         current_scope = block->m_symtab;
 
         // Check if block has FixedSizeArray locals that need arena allocation
-        bool block_uses_arena = scope_uses_arena(*block);
+        // BLOCKs always use arena (no size threshold) to prevent stack overflow in loops
+        bool uses_arena = block_uses_arena(*block);
         llvm::Value* block_scratch_handle = nullptr;
-        if (block_uses_arena) {
+        if (uses_arena) {
             // Save parent's scratch handle and create new scope for this block
             block_scratch_handle = builder->CreateCall(get_scratch_begin_fn(), {},
                 "block_scratch_handle");
         }
 
+        // Set flag so declare_vars skips size threshold for BLOCK arrays
+        in_block_context = true;
         declare_vars(*block);
+        in_block_context = false;
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
@@ -8649,7 +8738,7 @@ public:
         llvm_symtab_finalizer.finalize_symtab(block->m_symtab);
 
         // End block's scratch scope (restores arena position)
-        if (block_uses_arena && block_scratch_handle) {
+        if (uses_arena && block_scratch_handle) {
             builder->CreateCall(get_scratch_end_fn(), {block_scratch_handle});
         }
 
