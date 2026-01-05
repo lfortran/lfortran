@@ -4832,12 +4832,68 @@ public:
                             }
 
                         } else {
-                            diag.add(Diagnostic(
-                                "Named initialization not supported with: " + sym_name,
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
+                            // Handle initialization with named parameter constants
+                            ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
+                            if (sym_found == nullptr) {
+                                diag.add(Diagnostic(
+                                    "Symbol not found: `" + sym_name + "`",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            // Check if the symbol is a parameter variable
+                            if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                                diag.add(Diagnostic(
+                                    "Named initialization not supported with: " + sym_name,
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                            if (var->m_storage != ASR::storage_typeType::Parameter) {
+                                diag.add(Diagnostic(
+                                    "Initialization with non-constant variable `" + sym_name + "` is not allowed",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc}),
+                                        Label("declared here", {var->base.base.loc}, false)
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            // Check if parameter is a scalar
+                            // TODO: Add support for arrays as well
+                            if (ASRUtils::is_array(var->m_type)) {
+                                diag.add(Diagnostic(
+                                    "Named initialization with array parameter `" + sym_name + "` is not supported yet",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc}),
+                                        Label("array parameter declared here", {var->base.base.loc}, false)
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            // Parameters may have StructConstant in symbolic_value, but non-parameter
+                            // variables need StructConstructor so init_expr pass generates assignments
+                            ASR::expr_t* param_init = var->m_symbolic_value ? var->m_symbolic_value : var->m_value;
+                            if (!param_init) {
+                                diag.add(Diagnostic(
+                                    "Parameter `" + sym_name + "` has no initialization value",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            // Convert StructConstant to StructConstructor for non-parameter variables
+                            if (ASR::is_a<ASR::StructConstant_t>(*param_init)) {
+                                ASR::StructConstant_t* struct_const = ASR::down_cast<ASR::StructConstant_t>(param_init);
+                                // Create StructConstructor with the constant as its value
+                                init_expr = ASRUtils::EXPR(ASR::make_StructConstructor_t(
+                                    al, x.base.base.loc, struct_const->m_dt_sym,
+                                    struct_const->m_args, struct_const->n_args,
+                                    struct_const->m_type, param_init));
+                            } else {
+                                init_expr = param_init;
+                            }
                         }
                     } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
