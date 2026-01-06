@@ -10556,15 +10556,11 @@ public:
                     ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    // For CHARACTER arrays, use DescriptorArray since Fortran
-                    // assumed-size CHARACTER arrays require descriptors for
-                    // proper bounds handling. For other arrays, use PointerArray
-                    // to maintain BindC compatibility with separately-compiled code.
                     ASR::array_physical_typeType phys_type;
-                    if (array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                        phys_type = array_type->m_physical_type;
-                    } else if (ASRUtils::is_character(*array_type->m_type)) {
+                    if (ASRUtils::is_character(*array_type->m_type)) {
                         phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                        phys_type = array_type->m_physical_type;
                     } else {
                         phys_type = ASR::array_physical_typeType::PointerArray;
                     }

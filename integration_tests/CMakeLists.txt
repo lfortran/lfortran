@@ -1538,6 +1538,7 @@ RUN(NAME implicit_interface_16 LABELS gfortran llvm2 EXTRA_ARGS --implicit-inter
 RUN(NAME implicit_interface_17 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_17b.f90)
 RUN(NAME implicit_interface_18 LABELS gfortran llvmImplicit EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_19 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface EXTRAFILES implicit_interface_19b.f90)
+RUN(NAME implicit_interface_20 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
@@ -2553,10 +2554,8 @@ RUN(NAME character_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_16 LABELS gfortran llvm)
-RUN(NAME character_17 LABELS gfortran llvm)
-# TODO: character_18 tests nested EXTERNAL pattern from LAPACK - currently fails with LFortran
-# See issue #9381 - needs fix for nested implicit interface with CHARACTER arrays
-RUN(NAME character_18 LABELS gfortran)
+RUN(NAME character_17 LABELS gfortran llvmImplicit)
+RUN(NAME character_18 LABELS gfortran llvmImplicit)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
