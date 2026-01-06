@@ -4099,14 +4099,21 @@ public:
                                 ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                 std::string name = var__->m_name;
                                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var__->m_type);
+                                // Fix: shape array needs dimension length = rank to hold all extents
+                                ASR::expr_t* rank_size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, (int64_t) arr->n_dims, int_type));
+                                dim.p[0].m_length = rank_size;
                                 ASR::ttype_t* type = nullptr;
                                 ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
 
                                 Vec<ASR::dimension_t> dim2; dim2.reserve(al, arr->n_dims);
                                 for (size_t i = 0; i < arr->n_dims; i++) {
-                                    ASR::dimension_t dim2_; dim2_.m_start = nullptr; dim2_.m_length = nullptr;
-                                    dim2_.loc = asr_eq2->base.loc;
+                                    ASR::dimension_t dim2_; 
+                                    // Deferred dims required by ASR verify for Pointer arrays
+                                    // Shape will be set by CPtrToPointer at runtime
+                                    dim2_.m_start = nullptr;
+                                    dim2_.m_length = nullptr;
+                                    dim2_.loc = arr->m_dims[i].loc;
                                     dim2.push_back(al, dim2_);
                                 }
 
@@ -4134,7 +4141,7 @@ public:
                                     args.push_back(al, size);
                                 }
 
-                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args.p, args.size(), array_type, ASR::arraystorageType::ColMajor);
                                 ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr), ASR::down_cast<ASR::ArrayItem_t>(asr_eq2)->m_v, ASRUtils::EXPR(array_constant), nullptr);
 
