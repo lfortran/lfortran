@@ -831,11 +831,11 @@ semantic error: Required argument `unit` is missing in function call
 420 |     call logger % add_log_file()
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: `allocate` statement only accepts four keyword arguments: `stat`, `errmsg`, `source` and `mold`
-   --> tests/errors/continue_compilation_1.f90:422:5
-    |
-422 |     allocate(arr5, status=q1)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+ --> tests/errors/continue_compilation_1.f90:422:14
+  |
+422 |      allocate(arr5, status=q1)
+  |              ^^^^ Array specification required in allocate statement
 
 semantic error: Different `character` lengths 2 and 3 in array constructor
    --> tests/errors/continue_compilation_1.f90:425:21
