@@ -339,10 +339,10 @@ ifcont55:                                         ; preds = %else54, %then53
   br label %return
 
 return:                                           ; preds = %ifcont55
-  call void @_lfortran_free(i8* %2)
   br label %FINALIZE_SYMTABLE_static_large_array
 
 FINALIZE_SYMTABLE_static_large_array:             ; preds = %return
+  call void @_lfortran_free(i8* %2)
   ret i32 0
 }
 

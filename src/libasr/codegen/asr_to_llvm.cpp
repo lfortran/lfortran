@@ -4718,8 +4718,8 @@ public:
             builder->CreateCall(fn, {});
         }
         start_new_block(proc_return);
-        free_heap_fixed_size_arrays();
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        free_heap_fixed_size_arrays();
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -6100,8 +6100,8 @@ public:
     inline void define_function_exit(const ASR::Function_t& x) {
         if (x.m_return_var) {
             start_new_block(proc_return);
-            free_heap_fixed_size_arrays();
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            free_heap_fixed_size_arrays();
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
@@ -6158,8 +6158,8 @@ public:
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
-            free_heap_fixed_size_arrays();
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            free_heap_fixed_size_arrays();
             builder->CreateRetVoid();
         }
     }
