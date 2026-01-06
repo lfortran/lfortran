@@ -3366,9 +3366,9 @@ public:
 			common_variables_byte_offset[hash] = byte_offset;
 			byte_offset += get_type_byte_size(var__->m_type);
 		    }
-
+            constexpr char BLANK_COMMON_BLOCK[] = "blank#block";
 		    // Validate total byte size matches
-		    if (byte_offset != canonical_size) {
+            if (byte_offset != canonical_size && common_block_name != BLANK_COMMON_BLOCK) {
 			diag.add(Diagnostic(
 				     "COMMON block storage size mismatch: this declaration has " +
 				     std::to_string(byte_offset) + " bytes but previous declaration has " +
