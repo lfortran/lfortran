@@ -6770,6 +6770,37 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASRUtils::type_get_past_pointer(arg_type));
             ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_pointer(orig_arg_type));
+
+            // For implicit interface calls, check if an actual implementation exists
+            // with a different physical type, and use the implementation's type
+            if (func_type->m_deftype == ASR::deftypeType::Interface &&
+                func->m_symtab->parent != nullptr) {
+                std::string func_name = func->m_name;
+                SymbolTable* parent_scope = func->m_symtab->parent;
+                while (parent_scope != nullptr) {
+                    ASR::symbol_t* impl_sym = parent_scope->get_symbol(func_name);
+                    if (impl_sym != nullptr) {
+                        impl_sym = ASRUtils::symbol_get_past_external(impl_sym);
+                        if (ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                            ASR::Function_t* impl_func = ASR::down_cast<ASR::Function_t>(impl_sym);
+                            ASR::FunctionType_t* impl_func_type = ASRUtils::get_FunctionType(impl_func);
+                            // Check if this is the actual implementation (not another interface)
+                            if (impl_func_type->m_deftype == ASR::deftypeType::Implementation &&
+                                impl_func_type->n_arg_types > i + is_method) {
+                                ASR::ttype_t* impl_arg_type = ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(impl_func_type->m_arg_types[i + is_method]));
+                                if (ASRUtils::is_array(impl_arg_type)) {
+                                    // Use the implementation's physical type for the comparison
+                                    orig_arg_array_t = ASR::down_cast<ASR::Array_t>(impl_arg_type);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    parent_scope = parent_scope->parent;
+                }
+            }
+
             bool is_orig_assumed_rank = false;
             if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                 is_orig_assumed_rank = true;
