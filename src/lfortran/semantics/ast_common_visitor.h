@@ -11077,7 +11077,7 @@ public:
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(tmp));
             } else {
                 visit_NameUtil(x.m_member, x.n_member - 1,
-                    x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+                    x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             }
             v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
@@ -12911,7 +12911,8 @@ public:
     }
 
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
-                        char* x_m_id, const Location& loc) {
+                        char* x_m_id, const Location& loc, size_t x_member_count=0) {
+        size_t member_count = x_member_count ? x_member_count : x_n_member;
         if (x_n_member == 0) {
             ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
             if(x_m_member && x_m_member[0].m_args) {
@@ -12924,12 +12925,18 @@ public:
             tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
         } else if (x_n_member == 1) {
             // x_m_member[0].m_args ==> args of derived type variable
-            // x_m_member[1].m_args ==> args of member of that derived type variable
+            // Member args are only present when additional members exist.
             SymbolTable* scope = current_scope;
+            AST::fnarg_t* member_args = nullptr;
+            size_t member_n_args = 0;
+            if (member_count > 1) {
+                member_args = x_m_member[1].m_args;
+                member_n_args = x_m_member[1].n_args;
+            }
             tmp = (ASR::asr_t*) replace_with_common_block_variables(
                 ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
                 to_lower(x_m_member[0].m_name), scope, x_m_member[0].m_args,
-                x_m_member[0].n_args, x_m_member[1].m_args, x_m_member[1].n_args)));
+                x_m_member[0].n_args, member_args, member_n_args)));
         } else {
             SymbolTable* scope = current_scope;
             tmp = (ASR::asr_t*) replace_with_common_block_variables(
@@ -13139,7 +13146,7 @@ public:
     }
 
     void visit_Name(const AST::Name_t &x) {
-        visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc);
+        visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc, x.n_member);
     }
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
