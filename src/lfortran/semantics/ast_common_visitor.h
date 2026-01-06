@@ -3929,6 +3929,10 @@ public:
                                     create_external_function(sym, x.m_syms[i].loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
+                                    // Skip common block references (save /block/) they are handled in common block processing
+                                    if (s.m_sym == AST::symbolType::Slash) {
+                                        continue; 
+                                    }
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (!sym_) {
                                         if (compiler_options.implicit_typing) {
