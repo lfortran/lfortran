@@ -10552,14 +10552,23 @@ public:
                     }
                 }
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in BindC, so that
-                    // the C ABI is just a pointer
+                    // For arrays like A(n, m) we use A(*) in implicit interface.
                     ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type,
-                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
-                        array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
+                    // For CHARACTER arrays, use DescriptorArray since Fortran
+                    // assumed-size CHARACTER arrays require descriptors for
+                    // proper bounds handling. For other arrays, use PointerArray
+                    // to maintain BindC compatibility with separately-compiled code.
+                    ASR::array_physical_typeType phys_type;
+                    if (array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                        phys_type = array_type->m_physical_type;
+                    } else if (ASRUtils::is_character(*array_type->m_type)) {
+                        phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    } else {
+                        phys_type = ASR::array_physical_typeType::PointerArray;
+                    }
+                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
