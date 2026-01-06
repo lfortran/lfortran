@@ -651,7 +651,9 @@ namespace LCompilers {
                                          get_dimension_size(target_dim_des, false));
                     j++;
                 }
-                stride = builder->CreateMul(stride, llvm_diminfo[r]);
+                // Convert dimension info to i32 to match descriptor stride format
+                stride = builder->CreateMul(stride,
+                    builder->CreateSExtOrTrunc(llvm_diminfo[r], llvm::Type::getInt32Ty(context)));
                 r += 2;
             }
             LCOMPILERS_ASSERT(j == target_rank);
