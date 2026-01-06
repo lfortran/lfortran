@@ -411,8 +411,12 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 }
                 if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
-                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
-                        ASRUtils::type_get_past_allocatable(var_type)));
+                    if (is_allocatable) {
+                        var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                    } else {
+                        var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
+                            ASRUtils::type_get_past_allocatable(var_type)));
+                    }
                 }
                 // Create proper string type (a pointer deferred-length string)
                 if(ASRUtils::is_string_only(var_type)){ // Any non-allocatable string variable .
