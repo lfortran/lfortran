@@ -12637,6 +12637,12 @@ public:
                         m_values[i]->base.loc, m_values[i], type32, nullptr));
                     visit_StringLen(*strlen);
                     args.push_back(builder->CreateMul(kind_val, tmp));
+                    ptr_loads = 0;
+                    this->visit_expr_wrapper(m_values[i], true);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
+                    args.push_back(str_data);
+                    continue;
                 } else {
                     args.push_back(kind_val);
                     this->visit_expr_wrapper(m_values[i], true);
