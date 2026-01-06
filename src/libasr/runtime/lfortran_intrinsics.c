@@ -5727,14 +5727,32 @@ typedef struct {
 // These functions parse already-read data from a buffer, allowing code reuse
 // between file-based and string-based formatted reads.
 
+// blank_mode: 0 = BN (blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
 static void parse_integer_from_buffer(char* buffer, int field_len, 
-        void* int_ptr, int32_t type_code)
+        void* int_ptr, int32_t type_code, int blank_mode)
 {
-    if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)strtol(buffer, NULL, 10);
-    } else {
-        *((int64_t*)int_ptr) = (int64_t)strtoll(buffer, NULL, 10);
+    // Process buffer according to blank mode
+    char* processed = (char*)malloc(field_len + 1);
+    int j = 0;
+    for (int i = 0; i < field_len; i++) {
+        if (buffer[i] == ' ') {
+            if (blank_mode == 1) {  // BZ: treat blanks as zeros
+                processed[j++] = '0';
+            }
+            // BN: skip blanks (blank_mode == 0)
+        } else {
+            processed[j++] = buffer[i];
+        }
     }
+    processed[j] = '\0';
+    
+    if (type_code == 2) {
+        *((int32_t*)int_ptr) = (int32_t)strtol(processed, NULL, 10);
+    } else {
+        *((int64_t*)int_ptr) = (int64_t)strtoll(processed, NULL, 10);
+    }
+    
+    free(processed);
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
@@ -5925,7 +5943,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
 }
 
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode)
 {
     int32_t type_code = va_arg(*args, int32_t);
     void* int_ptr = va_arg(*args, void*);
@@ -5941,7 +5959,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         return false;
     }
 
-    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code);
+    parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode);
 
     free(buffer);
     return true;
@@ -6097,6 +6115,8 @@ static void common_formatted_read(InputSource *inputSource,
 
     bool consumed_newline = false;
     int arg_idx = 0;
+    int blank_mode = 0;  // 0 = BN (default: blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
+    
     while (fmt_pos < fmt_len && arg_idx < no_of_args) {
         while (fmt_pos < fmt_len && (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
             fmt_pos++;
@@ -6112,6 +6132,19 @@ static void common_formatted_read(InputSource *inputSource,
         }
 
         switch (spec) {
+        case 'B':
+            // Check for BN or BZ
+            if (fmt_pos < fmt_len) {
+                char next = toupper(fmt[fmt_pos]);
+                if (next == 'N') {
+                    blank_mode = 0;  // BN: blank null
+                    fmt_pos++;
+                } else if (next == 'Z') {
+                    blank_mode = 1;  // BZ: blank zero
+                    fmt_pos++;
+                }
+            }
+            break;
         case 'A':
             if (!handle_read_A(inputSource, args, width, advance_no,
                     iostat, chunk, &consumed_newline, &arg_idx)) {
@@ -6126,7 +6159,7 @@ static void common_formatted_read(InputSource *inputSource,
             break;
         case 'I':
             if (!handle_read_I(inputSource, args, width, advance_no,
-                    iostat, chunk, &consumed_newline, &arg_idx)) {
+                    iostat, chunk, &consumed_newline, &arg_idx, blank_mode)) {
                 return;
             }
             break;
