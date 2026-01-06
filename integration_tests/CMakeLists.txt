@@ -1312,7 +1312,7 @@ RUN(NAME intrinsics_400 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_401 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 RUN(NAME intrinsics_402 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # intrinsic statement with procedure argument
 RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min1, max1
-RUN(NAME intrinsics_404 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2043,6 +2043,7 @@ RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME inquire_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
@@ -2407,6 +2408,7 @@ RUN(NAME declaration_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME declaration_02 LABELS gfortran llvm)
 RUN(NAME declaration_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME declaration_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME declaration_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME procedure_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2490,6 +2492,7 @@ RUN(NAME common_24 LABELS gfortran llvm llvm2
     EXTRAFILES common_24a.f90 common_24b.f90
     EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME common_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
@@ -2573,6 +2576,10 @@ RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_e
 
 RUN(NAME implicit_argument_casting_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
+
+RUN(NAME implicit_argument_casting_03 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-interface --implicit-argument-casting
     GFORTRAN_ARGS -fallow-argument-mismatch)
 
 RUN(NAME specfun_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
