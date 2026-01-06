@@ -2010,7 +2010,8 @@ public:
         current_function_dependencies.push_back(al,s2c(al, func_name));
 
         ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, getter_func_sym->base.loc,
-                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, current_scope, current_function_dependencies));
+                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, current_scope, current_function_dependencies,
+                                compiler_options.implicit_argument_casting));
         return func_call;
     }
 
@@ -6993,7 +6994,8 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
-            value, nullptr, current_scope, current_function_dependencies);
+            value, nullptr, current_scope, current_function_dependencies,
+            compiler_options.implicit_argument_casting);
     }
 
     ASR::asr_t* symbol_resolve_external_generic_procedure(
@@ -7108,7 +7110,8 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
-                v_expr, current_scope, current_function_dependencies);
+                v_expr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
     }
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
@@ -7160,7 +7163,8 @@ public:
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
-                nullptr, nullptr, current_scope, current_function_dependencies);
+                nullptr, nullptr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
         }
     }
 
@@ -7224,7 +7228,8 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, nullptr, args_without_dt.p, args_without_dt.size(), type,
-                    nullptr, args[0].m_value, current_scope, current_function_dependencies);
+                    nullptr, args[0].m_value, current_scope, current_function_dependencies,
+                    compiler_options.implicit_argument_casting);
             } else {
                 if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
                     ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
@@ -7234,7 +7239,8 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
-                    nullptr, nullptr, current_scope, current_function_dependencies);
+                    nullptr, nullptr, current_scope, current_function_dependencies,
+                    compiler_options.implicit_argument_casting);
             }
         }
     }
@@ -7485,12 +7491,22 @@ public:
 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type, arg, func->m_args[i]) &&
                     !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
-                    std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
-                    std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
-                    diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
-                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
-                                        Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
-                    throw SemanticAbort();
+                    // Allow scalar integer kind mismatch when implicit_argument_casting is enabled
+                    bool allow_mismatch = false;
+                    if (compiler_options.implicit_argument_casting &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(arg_type)) &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
+                        !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(orig_arg_type)) {
+                        allow_mismatch = true;
+                    }
+                    if (!allow_mismatch) {
+                        std::string arg_str = ASRUtils::type_to_str_fortran_expr(arg_type, arg);
+                        std::string orig_arg_str = ASRUtils::type_to_str_fortran_expr(orig_arg_type, func->m_args[i]);
+                        diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +
+                                            "); passed `" + arg_str + "` to `" + orig_arg_str + "`.",
+                                            Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
+                        throw SemanticAbort();
+                    }
                 }
             }
         }
@@ -7730,7 +7746,8 @@ public:
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-            args.p, args.size(), return_type, value, nullptr, current_scope, current_function_dependencies);
+            args.p, args.size(), return_type, value, nullptr, current_scope, current_function_dependencies,
+            compiler_options.implicit_argument_casting);
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
@@ -7746,10 +7763,12 @@ public:
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p + 1, args.size() - 1, return_type, nullptr, dt, current_scope, current_function_dependencies);
+                args.p + 1, args.size() - 1, return_type, nullptr, dt, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
         } else {
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies);
+                args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
         }
     }
 
@@ -10489,6 +10508,24 @@ public:
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         std::string sym_name = to_lower(func_name);
+
+        // For implicit argument casting, look up the Implementation to get correct param types
+        ASR::Function_t* impl_func = nullptr;
+        if (compiler_options.implicit_argument_casting) {
+            SymbolTable* global_scope = parent_scope;
+            while (global_scope->parent != nullptr) {
+                global_scope = global_scope->parent;
+            }
+            ASR::symbol_t* impl_sym = global_scope->get_symbol(sym_name);
+            if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                ASR::Function_t* candidate = ASR::down_cast<ASR::Function_t>(impl_sym);
+                ASR::FunctionType_t* candidate_type = ASRUtils::get_FunctionType(candidate);
+                if (candidate_type->m_deftype == ASR::deftypeType::Implementation) {
+                    impl_func = candidate;
+                }
+            }
+        }
+
         for (size_t i=0; i<x.n_args; i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
@@ -10499,6 +10536,17 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                // Use Implementation's parameter type if available and implicit_argument_casting enabled
+                if (impl_func && i < impl_func->n_args && ASR::is_a<ASR::Var_t>(*impl_func->m_args[i])) {
+                    ASR::Variable_t* impl_arg = ASRUtils::EXPR2VAR(impl_func->m_args[i]);
+                    ASR::ttype_t* impl_type = impl_arg->m_type;
+                    // Only override for scalar integers with different kinds
+                    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(var_type)) &&
+                        ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(impl_type)) &&
+                        !ASRUtils::is_array(var_type) && !ASRUtils::is_array(impl_type)) {
+                        var_type = impl_type;
+                    }
+                }
                 if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
@@ -12246,7 +12294,8 @@ public:
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
 
-            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies);
+            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
             matched = true;
             break;
         }
@@ -12341,8 +12390,8 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
-                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies
-                );
+                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
             tmp = ASR::make_OverloadedStringConcat_t(al, x.base.base.loc,
                 left, right, return_type, nullptr, ASRUtils::EXPR(tmp));
         }

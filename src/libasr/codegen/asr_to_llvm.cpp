@@ -12583,6 +12583,10 @@ public:
             unit = tmp;
             if (unit->getType()->isPointerTy()) {
                 unit = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit);
+            } else if (unit->getType()->isIntegerTy() &&
+                       unit->getType()->getIntegerBitWidth() > 32) {
+                // Truncate i64 to i32 for runtime function (ILP64 mode)
+                unit = builder->CreateTrunc(unit, llvm::Type::getInt32Ty(context));
             }
         } else { // String Write
             std::tie(unit, string_len) = llvm_utils->get_string_length_data(
