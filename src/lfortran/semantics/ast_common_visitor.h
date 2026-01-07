@@ -3823,6 +3823,21 @@ public:
                                             if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Parameter;
+                                                // Fold constant REAL/INTEGER -> COMPLEX for PARAMETER initializers.
+                                                if (ASRUtils::is_complex(*v->m_type) &&
+                                                    !ASRUtils::is_complex(*ASRUtils::expr_type(init_val)) &&
+                                                    ASRUtils::expr_value(init_val)) {
+                                                    ASR::expr_t* init_val_value = ASRUtils::expr_value(init_val);
+                                                    if (ASR::is_a<ASR::RealConstant_t>(*init_val_value)) {
+                                                        init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                                                            al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::RealToComplex, v->m_type));
+                                                    } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val_value)) {
+                                                        init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                                                            al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::IntegerToComplex, v->m_type));
+                                                    }
+                                                }
                                                 if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
                                                     ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
                                                     if (ASRUtils::is_complex(*v->m_type)) {
