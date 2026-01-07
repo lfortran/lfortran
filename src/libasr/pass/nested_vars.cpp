@@ -814,16 +814,127 @@ public:
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
-                            ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                                        target, val));
-                            body.push_back(al, associate);
-                            // TODO : Remove the following if block (See integration test `arrays_87.f90`)
-                            if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
-                                is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
-                                && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
-                                associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                    val, target));
-                                assigns_at_end.push_back(associate);
+                            if( ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) && ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
+                                // TODO: Improve this by using Associate only when no reallocation is needed
+                                // For allocatable arrays, use Assignment instead of Associate
+                                // to properly handle reallocation in nested functions
+                                // Wrap in if(allocated) check since the array may not be allocated yet
+                                ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                                            target, val, nullptr, true, false));
+                                // First push allocate stmt for LHS
+                                ASRUtils::ASRBuilder builder(al, t->base.loc);
+                                Vec<ASR::expr_t*> to_be_deallocated;
+                                to_be_deallocated.reserve(al, 1);
+                                to_be_deallocated.push_back(al, target);
+                                body.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                    al, t->base.loc, to_be_deallocated.p, to_be_deallocated.size())));
+                                ASRUtils::ExprStmtDuplicator d(al);
+                                ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(val));
+                                ASR::dimension_t* m_dims;
+                                int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::symbol_type(sym), m_dims);
+                                Vec<ASR::dimension_t> dims_vec;
+                                dims_vec.reserve(al, n_dims);
+                                for( int i = 0; i < n_dims; i++ ) {
+                                    ASR::dimension_t dim;
+                                    dim.loc = m_dims[i].loc;
+                                    dim.m_start = builder.i32(1);
+                                    dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                        al, dim.loc, realloc_var, builder.i32(i + 1), 
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4)), nullptr));
+                                    dims_vec.push_back(al, dim);
+                                }
+                                ASR::expr_t* realloc_str_len = nullptr;
+                                if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
+                                    ASR::expr_t* len_value{}; // Compile-Time Length
+                                    int64_t len {};
+                                    if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                                        ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                                        len_value = builder.i32(len);
+                                    }
+                                    realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                                        al, t->base.loc, realloc_var, ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, 4)), len_value));
+                                }
+                                Vec<ASR::alloc_arg_t> alloc_args;
+                                alloc_args.reserve(al, 1);
+                                ASR::alloc_arg_t alloc_arg;
+                                alloc_arg.loc = t->base.loc;
+                                alloc_arg.m_a = target;
+                                alloc_arg.m_dims = dims_vec.p;
+                                alloc_arg.n_dims = dims_vec.size();
+                                alloc_arg.m_len_expr = realloc_str_len;
+                                alloc_arg.m_type = nullptr;
+                                alloc_arg.m_sym_subclass = nullptr;
+                                alloc_args.push_back(al, alloc_arg);
+
+                                body.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, t->base.loc,
+                                    alloc_args.p, alloc_args.size(),
+                                    nullptr, nullptr, nullptr)));
+
+                                body.push_back(al, create_if_allocated_block(val, assignment));
+                                if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                    assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                        val, target, nullptr, true, false));
+                                    // Similar to Above
+                                     Vec<ASR::expr_t*> to_be_deallocated;
+                                    to_be_deallocated.reserve(al, 1);
+                                    to_be_deallocated.push_back(al, val);
+                                    assigns_at_end.push_back(ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                        al, t->base.loc, to_be_deallocated.p, to_be_deallocated.size())));
+
+                                    ASRUtils::ExprStmtDuplicator d(al);
+                                    ASR::expr_t* realloc_var = d.duplicate_expr(ASRUtils::get_expr_size_expr(target));
+                                    ASR::dimension_t* m_dims;
+                                    int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::symbol_type(ext_sym), m_dims);
+                                    Vec<ASR::dimension_t> dims_vec;
+                                    dims_vec.reserve(al, n_dims);
+                                    for( int i = 0; i < n_dims; i++ ) {
+                                        ASR::dimension_t dim;
+                                        dim.loc = m_dims[i].loc;
+                                        dim.m_start = builder.i32(1);
+                                        dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                            al, dim.loc, realloc_var, builder.i32(i + 1), 
+                                            ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, 4)), nullptr));
+                                        dims_vec.push_back(al, dim);
+                                    }
+                                    ASR::expr_t* realloc_str_len = nullptr;
+                                    if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
+                                        ASR::expr_t* len_value{}; // Compile-Time Length
+                                        int64_t len {};
+                                        if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                                            ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                                            len_value = builder.i32(len);
+                                        }
+                                        realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                                            al, t->base.loc, realloc_var, ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, 4)), len_value));
+                                    }
+                                    Vec<ASR::alloc_arg_t> alloc_args;
+                                    alloc_args.reserve(al, 1);
+                                    ASR::alloc_arg_t alloc_arg;
+                                    alloc_arg.loc = t->base.loc;
+                                    alloc_arg.m_a = val;
+                                    alloc_arg.m_dims = dims_vec.p;
+                                    alloc_arg.n_dims = dims_vec.size();
+                                    alloc_arg.m_len_expr = realloc_str_len;
+                                    alloc_arg.m_type = nullptr;
+                                    alloc_arg.m_sym_subclass = nullptr;
+                                    alloc_args.push_back(al, alloc_arg);
+                                    assigns_at_end.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, t->base.loc,
+                                        alloc_args.p, alloc_args.size(),
+                                        nullptr, nullptr, nullptr)));
+                                    assigns_at_end.push_back(create_if_allocated_block(target, assignment));
+                                }
+                            } else {
+                                ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
+                                                            target, val));
+                                body.push_back(al, associate);
+                                // TODO : Remove the following if block (See integration test `arrays_87.f90`)
+                                if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                                    is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                                    && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                    associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
+                                        val, target));
+                                    assigns_at_end.push_back(associate);
+                                }
                             }
                         } else if (is_procedure_variable) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
