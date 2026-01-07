@@ -240,6 +240,7 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f -nf16
+            ./run_tests.py -b llvm_single_invocation
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
         shell: bash -e -l {0}
