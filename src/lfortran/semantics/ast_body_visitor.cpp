@@ -4680,7 +4680,7 @@ public:
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
-                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             v_expr = ASRUtils::EXPR(tmp);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
