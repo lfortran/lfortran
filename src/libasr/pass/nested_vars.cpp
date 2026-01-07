@@ -670,6 +670,28 @@ private :
         }
         return ASRUtils::STMT(ASR::make_If_t(al, RHS->base.loc, nullptr, allocated_intrinsic_call, if_body.p, if_body.size(), nullptr, 0));
     }
+
+    // Inject sync statements before cycle recursively 
+    // Currently used for do-loops
+    template<typename T>
+    static void inject_before_cycle(Allocator& al, ASR::stmt_t**& stmts, size_t& n, T& sync_stmts) {
+        Vec<ASR::stmt_t*> res;
+        res.reserve(al, n + sync_stmts.size() * 2);
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                ASR::If_t* ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+                inject_before_cycle(al, ifs->m_body, ifs->n_body, sync_stmts);
+                inject_before_cycle(al, ifs->m_orelse, ifs->n_orelse, sync_stmts);
+            }
+            if (ASR::is_a<ASR::Cycle_t>(*stmts[i])) {
+                for (size_t j = 0; j < sync_stmts.size(); j++) res.push_back(al, sync_stmts[j]);
+            }
+            res.push_back(al, stmts[i]);
+        }
+        stmts = res.p;
+        n = res.size();
+    }
+
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
@@ -686,9 +708,16 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
+        std::vector<ASR::stmt_t*> loop_end_syncs;
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
+            bool is_do_loop_sync = false;
+            if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i]) || 
+                (ASR::is_a<ASR::DoLoop_t>(*m_body[i]))) {
+                is_do_loop_sync = true;
+            }
             assigns_at_end.clear();
+            loop_end_syncs.clear();
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && calls_present) {
                 if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
@@ -814,11 +843,41 @@ public:
                                     assigns_at_end.push_back(assignment);
                                 }
                             }
+                            // For do-loop cycle statements, put a sync for scalar variables
+                            // Note: Arrays are synced during loop entries, no need to sync again
+                            // If not inside do-loop, bypass this step
+                            if (is_do_loop_sync && 
+                                ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
+                                ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In && 
+                                !ASRUtils::is_array(ASRUtils::symbol_type(sym))){
+                                ASR::stmt_t *loop_sync = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                                target, val, nullptr, false, false));
+                                if(ASRUtils::is_allocatable(ASRUtils::expr_type(val))){
+                                    loop_end_syncs.push_back(create_if_allocated_block(val, loop_sync));
+                                } else {
+                                    loop_end_syncs.push_back(loop_sync);
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            // Inject syncs before cycle/exit if this is a loop statement
+            if (!loop_end_syncs.empty()) {
+                if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
+                    ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
+                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
+                } else if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
+                    ASR::DoLoop_t* loop = ASR::down_cast<ASR::DoLoop_t>(m_body[i]);
+                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
+                }
+            }
+
             body.push_back(al, m_body[i]);
+            for (auto &stm: loop_end_syncs) {
+                body.push_back(al, stm);
+            }
             for (auto &stm: assigns_at_end) {
                 body.push_back(al, stm);
             }

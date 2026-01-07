@@ -323,13 +323,14 @@
                         0
                         (Var 2 u_ptr)
                         (StringConstant
-                            "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            "open_close_read_write_data.dat"
+                            (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (StringConstant
                             "replace"
                             (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -382,6 +383,7 @@
                             ()
                             ()
                             .true.
+                            ()
                         )]
                         []
                     )
@@ -401,13 +403,14 @@
                         999
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
-                            "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            "open_close_read_write_data.dat"
+                            (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (StringConstant
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -450,6 +453,7 @@
                             )]
                             ()
                             .true.
+                            ()
                         )]
                         []
                     )
@@ -503,6 +507,7 @@
                             ()
                             ()
                             .true.
+                            ()
                         )]
                         []
                     )]

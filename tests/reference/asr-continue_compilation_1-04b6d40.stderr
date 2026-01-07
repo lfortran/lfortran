@@ -203,6 +203,12 @@ semantic error: The upper bound of an assumed-size array's last dimension is not
 84 |         print *, ubound(c, 2)
    |                  ^^^^^^^^^^^^ 
 
+semantic error: Intrinsic 'not_real' is not recognized
+   --> tests/errors/continue_compilation_1.f90:179:14
+    |
+179 |     call sub(not_real)
+    |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
     |
@@ -918,3 +924,45 @@ semantic error: Type mismatch in argument `p`: expected a procedure but got `int
     |
 459 |     call proc_param(42)
     |                     ^^ 
+
+semantic error: `end` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:462:18
+    |
+462 |     read (*, end=x) x
+    |                  ^ 
+
+semantic error: `end` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:463:18
+    |
+463 |     read (*, end=9011.0) x
+    |                  ^^^^^^ 
+
+semantic error: `err` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:465:18
+    |
+465 |     read (*, err=x) x
+    |                  ^ 
+
+semantic error: `err` must be a literal integer label
+   --> tests/errors/continue_compilation_1.f90:466:18
+    |
+466 |     read (*, err=9013.0) x
+    |                  ^^^^^^ 
+
+semantic error: `end` is only supported for READ statements
+   --> tests/errors/continue_compilation_1.f90:467:5
+    |
+467 |     write (*, end=9014) x
+    |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: end= label 999 is not defined
+   --> tests/errors/continue_compilation_1.f90:472:20
+    |
+472 |     read(*, *, end=999) x   
+    |                    ^^^ 
+
+semantic error: err= label 500 is not defined
+   --> tests/errors/continue_compilation_1.f90:473:20
+    |
+473 |     read(*, *, err=500) x
+    |                    ^^^ 

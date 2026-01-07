@@ -2906,6 +2906,15 @@ inline bool is_assumed_rank_array(ASR::ttype_t* x) {
     return array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
 }
 
+inline bool is_array_t(ASR::ttype_t* const x){
+    return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
+}
+
+inline bool is_array_t(ASR::expr_t* const x){
+    return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(expr_type(x)));
+}
+
+// Check through number of dims.
 inline bool is_array(ASR::ttype_t *x) {
     ASR::dimension_t* dims = nullptr;
     return extract_dimensions_from_ttype(x, dims) > 0 || is_assumed_rank_array(x);
@@ -6633,6 +6642,21 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     orig_arg_expr = func->m_args[func_param->m_param_number];
                 }
             if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr)) {
+                // Handle scalar integer kind mismatch (e.g., integer(8) to integer(4))
+                if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(arg_type)) &&
+                    ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
+                    !ASRUtils::is_array(arg_type) && !ASRUtils::is_array(orig_arg_type)) {
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    int orig_kind = ASRUtils::extract_kind_from_ttype_t(orig_arg_type);
+                    if (arg_kind != orig_kind) {
+                        // Create IntegerToInteger cast to convert argument to expected kind
+                        a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
+                            al, arg->base.loc, arg,
+                            ASR::cast_kindType::IntegerToInteger,
+                            orig_arg_type, nullptr));
+                        continue;
+                    }
+                }
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
                     // get current_scope
                     SymbolTable* current_scope = nullptr;
@@ -6833,9 +6857,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt,
+    bool implicit_argument_casting = false) {
 
-    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, 
+    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, implicit_argument_casting,
         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&

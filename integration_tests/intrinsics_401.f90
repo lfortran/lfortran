@@ -12,4 +12,9 @@ program intrinsics_401
     if (any(minloc(array=arr, mask=[.false., .false., .false.]) /= 0)) then
         error stop "minloc with all-false mask (array result) should return 0"
     end if
+
+    print *, minloc(arr, .true.)
+    if(any(minloc(arr, .true.) /= 1)) error stop
+    print *, minloc(arr, .false.)
+    if(any(minloc(arr, .false.) /= 0)) error stop
 end program intrinsics_401

@@ -1349,7 +1349,13 @@ var_decl_star
     ;
 
 var_decl
-    : var_type var_modifier_list "::" var_sym_decl_list sep {
+    : TK_LABEL var_type var_modifier_list "::" var_sym_decl_list sep {
+        LLOC(@$, @5); $$ = VAR_DECL1a($2, $3, $5, TRIVIA_AFTER($6, @$), @$); }
+    | TK_LABEL var_type "::" var_sym_decl_list sep {
+        LLOC(@$, @4); $$ = VAR_DECL1b($2, $4, TRIVIA_AFTER($5, @$), @$); }
+    | TK_LABEL var_type var_sym_decl_list sep {
+        LLOC(@$, @3); $$ = VAR_DECL1c($2, $3, TRIVIA_AFTER($4, @$), @$); }
+    | var_type var_modifier_list "::" var_sym_decl_list sep {
         LLOC(@$, @4); $$ = VAR_DECL1a($1, $2, $4, TRIVIA_AFTER($5, @$), @$); }
     | var_type "::" var_sym_decl_list sep {
         LLOC(@$, @3); $$ = VAR_DECL1b($1, $3, TRIVIA_AFTER($4, @$), @$); }

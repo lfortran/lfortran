@@ -59,6 +59,7 @@
                         )
                         ()
                         .true.
+                        ()
                     )
                     (FileRead
                         0
@@ -72,6 +73,7 @@
                         [(Var 2 i)]
                         ()
                         .false.
+                        ()
                     )
                     (Print
                         (StringFormat
