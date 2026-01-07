@@ -2022,6 +2022,7 @@ RUN(NAME file_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_open_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_opne_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
