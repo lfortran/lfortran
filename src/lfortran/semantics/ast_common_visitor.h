@@ -12915,8 +12915,7 @@ public:
     }
 
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
-                        char* x_m_id, const Location& loc, size_t x_member_count=0) {
-        size_t member_count = x_member_count ? x_member_count : x_n_member;
+                        char* x_m_id, const Location& loc, size_t x_member_count) {
         if (x_n_member == 0) {
             ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
             if(x_m_member && x_m_member[0].m_args) {
@@ -12933,7 +12932,7 @@ public:
             SymbolTable* scope = current_scope;
             AST::fnarg_t* member_args = nullptr;
             size_t member_n_args = 0;
-            if (member_count > 1) {
+            if (x_member_count > 1) {
                 member_args = x_m_member[1].m_args;
                 member_n_args = x_m_member[1].n_args;
             }
