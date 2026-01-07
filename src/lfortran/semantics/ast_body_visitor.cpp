@@ -2,7 +2,7 @@
 #include <cmath>
 #include <set>
 #include <unordered_set>
-
+#include <iostream>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -69,6 +69,38 @@ public:
         ), asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
+        if (x.m_vartype == nullptr && x.n_attributes == 1 && 
+            AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
+            
+            AST::AttrNamelist_t* attr = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
+            std::string group_name = to_lower(std::string(attr->m_name));
+
+            Vec<char*> variable_names;
+            variable_names.reserve(al, x.n_syms);
+
+            for (size_t i = 0; i < x.n_syms; i++) {
+                std::string var_name = to_lower(std::string(x.m_syms[i].m_name));
+                if (!current_scope->resolve_symbol(var_name)) {
+                    diag.add(Diagnostic("Variable '" + var_name + "' in namelist is not declared",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("Undefined variable", {x.m_syms[i].loc})
+                                        }));
+                    throw SemanticAbort();
+                }
+                variable_names.push_back(al, s2c(al, var_name));
+            }
+
+            ASR::symbol_t* namelist_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Namelist_t(al, x.base.base.loc, 
+                                    current_scope, 
+                                    s2c(al, group_name), 
+                                    variable_names.p, 
+                                    variable_names.size())
+            );
+            current_scope->add_symbol(group_name, namelist_sym); 
+            return;
+        }
+
         if( from_block ) {
             visit_DeclarationUtil(x);
         }
@@ -870,7 +902,9 @@ public:
         }
     }
 
-    void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
+    void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, 
+                                            AST::stmtType _type, 
+                                            ASR::symbol_t* nml_sym){
         int64_t m_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
         AST::kw_argstar_t* m_kwargs = nullptr; size_t n_kwargs = 0;
@@ -1174,7 +1208,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted)));
+                        nullptr, 0, nullptr, newline, nullptr, formatted, nml_sym)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
@@ -1278,11 +1312,11 @@ public:
                 if( _type == AST::stmtType::Write ) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                         a_iomsg, a_iostat, a_id, a_values_vec.p,
-                        a_values_vec.size(), a_separator, a_end, nullptr, true);
+                        a_values_vec.size(), a_separator, a_end, nullptr, true, nullptr);
                     print_statements[tmp] = std::make_pair(&w->base,label);
                 } else if( _type == AST::stmtType::Read ) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, a_iostat,
-                        a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted);
+                        a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted, nml_sym);
                     print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
@@ -1304,7 +1338,7 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nml_sym);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -1320,10 +1354,10 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nml_sym);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
-               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted);
+               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nml_sym);
         }
 
         tmp_vec.push_back(tmp);
@@ -1332,11 +1366,31 @@ public:
     }
 
     void visit_Write(const AST::Write_t& x) {
-        create_read_write_ASR_node(x.base, x.class_type);
+        ASR::symbol_t* nml_sym = nullptr;
+        for (size_t i = 0; i < x.n_kwargs; i++) {
+            if (to_lower(std::string(x.m_kwargs[i].m_arg)) == "nml") {
+                if (AST::is_a<AST::Name_t>(*x.m_kwargs[i].m_value)) {
+                    AST::Name_t *n = AST::down_cast<AST::Name_t>(x.m_kwargs[i].m_value);
+                    nml_sym = current_scope->resolve_symbol(to_lower(std::string(n->m_id)));
+                }
+                break;
+            }
+        }
+        create_read_write_ASR_node(x.base, x.class_type, nml_sym);
     }
 
-    void visit_Read(const AST::Read_t& x) {
-        create_read_write_ASR_node(x.base, x.class_type);
+    void BodyVisitor::visit_Read(const AST::Read_t& x) {
+        ASR::symbol_t* nml_sym = nullptr;
+        for (size_t i = 0; i < x.n_kwargs; i++) {
+            if (to_lower(std::string(x.m_kwargs[i].m_arg)) == "nml") {
+                if (AST::is_a<AST::Name_t>(*x.m_kwargs[i].m_value)) {
+                    AST::Name_t *n = AST::down_cast<AST::Name_t>(x.m_kwargs[i].m_value);
+                    nml_sym = current_scope->resolve_symbol(to_lower(std::string(n->m_id)));
+                }
+                break;
+            }
+        }
+        create_read_write_ASR_node(x.base, x.class_type, nml_sym);
     }
 
     template <typename T>
@@ -4983,7 +5037,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {
