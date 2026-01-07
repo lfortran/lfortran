@@ -6623,6 +6623,55 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 create_string_physical_cast(al, arg, 
                     get_string_type(orig_arg_type)->m_physical_type);
         }
+
+        if( func_type->m_abi != ASR::abiType::BindC &&
+            ASRUtils::is_string_only(orig_arg_type) &&
+            ASRUtils::is_string_only(arg_type) ) {
+            ASR::String_t* arg_str_type = get_string_type(arg_type);
+            ASR::String_t* orig_arg_str_type = get_string_type(orig_arg_type);
+            
+            if (arg_str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                orig_arg_str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                arg_str_type->m_len && orig_arg_str_type->m_len &&
+                ASRUtils::is_value_constant(arg_str_type->m_len) &&
+                ASRUtils::is_value_constant(orig_arg_str_type->m_len)) {
+                
+                int64_t arg_len = ASRUtils::extract_dim_value_int(arg_str_type->m_len);
+                int64_t orig_arg_len = ASRUtils::extract_dim_value_int(orig_arg_str_type->m_len);
+                
+                if (arg_len > orig_arg_len) {
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, arg->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
+                    ASR::expr_t* end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, arg->base.loc, orig_arg_len, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
+                    
+                    ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, arg->base.loc, orig_arg_str_type->m_kind,
+                        orig_arg_str_type->m_len, orig_arg_str_type->m_len_kind,
+                        arg_str_type->m_physical_type));
+                    
+                    arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_StringSection_t(
+                        al, arg->base.loc, arg, one, end, one, section_type, nullptr));
+                }
+            } else if (orig_arg_str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                     orig_arg_str_type->m_len &&
+                     ASRUtils::is_value_constant(orig_arg_str_type->m_len)) {
+                int64_t orig_arg_len = ASRUtils::extract_dim_value_int(orig_arg_str_type->m_len);
+                
+                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, arg->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
+                ASR::expr_t* end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, arg->base.loc, orig_arg_len, ASRUtils::TYPE(ASR::make_Integer_t(al, arg->base.loc, 4))));
+                
+                ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, arg->base.loc, orig_arg_str_type->m_kind,
+                    orig_arg_str_type->m_len, orig_arg_str_type->m_len_kind,
+                    arg_str_type->m_physical_type));
+                
+                arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_StringSection_t(
+                    al, arg->base.loc, arg, one, end, one, section_type, nullptr));
+            }
+        }
         if( !ASRUtils::is_intrinsic_symbol(a_name_) &&
             !(ASRUtils::is_class_type(ASRUtils::type_get_past_array(arg_type)) ||
               ASRUtils::is_class_type(ASRUtils::type_get_past_array(orig_arg_type))) &&
