@@ -137,6 +137,19 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --backend=c --ignore-pragma ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm_single_invocation")
+            set(extra_files_full ${extra_files})
+            list(TRANSFORM extra_files_full PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+            add_custom_command(
+                OUTPUT ${CURRENT_BINARY_DIR}/${name}
+                COMMAND lfortran -I${CMAKE_CURRENT_SOURCE_DIR} ${extra_args}
+                    ${extra_files_full} ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+                    -o ${CURRENT_BINARY_DIR}/${name}
+                DEPENDS ${extra_files_full} ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            )
+            add_custom_target(${name}_single_invocation ALL DEPENDS ${CURRENT_BINARY_DIR}/${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
@@ -243,7 +256,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -328,6 +341,7 @@ endmacro(COMPILE)
 # wasm          --- compile to WASM binary directly
 # mlir          --- generate mlir, convert to llvm ir and compile to binary
 # mlir_omp      --- generate mlir with OpenMP, convert to llvm ir and compile to binary
+# llvm_single_invocation --- compile all sources in a single LFortran invocation
 # mlir_llvm_omp --- generate mlir for a module with OpenMP, convert and link
 #                   it with the existing llvm ir and compile to binary
 
@@ -1744,6 +1758,9 @@ RUN(NAME derived_types_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME derived_types_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
+RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
+RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
