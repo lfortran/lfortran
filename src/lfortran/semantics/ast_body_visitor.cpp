@@ -593,39 +593,16 @@ public:
                 }
             }
         }
-        if (a_recl != nullptr) {
-            if (a_access == nullptr) {
-                diag.add(Diagnostic(
-                    "`recl` is only valid when access='direct'",
-                    Level::Error, Stage::Semantic,
-                    { Label("", {x.base.base.loc}) }
-                ));
-                throw SemanticAbort();
-            }
-
-            if (ASR::is_a<ASR::StringConstant_t>(*a_access)) {
-                std::string acc =
-                    to_lower(ASR::down_cast<ASR::StringConstant_t>(a_access)->m_s);
-
-                if (acc != "direct") {
-                    diag.add(Diagnostic(
-                        "`recl` is only permitted with access='direct'",
-                        Level::Error, Stage::Semantic,
-                        { Label("", {x.base.base.loc}) }
-                    ));
-                    throw SemanticAbort();
-                }
-            }
-        }
-        if (a_access != nullptr &&
+        if (a_recl != nullptr &&
+            a_access != nullptr &&
             ASR::is_a<ASR::StringConstant_t>(*a_access)) {
 
             std::string acc =
                 to_lower(ASR::down_cast<ASR::StringConstant_t>(a_access)->m_s);
 
-            if (acc == "direct" && a_recl == nullptr) {
+            if (acc != "direct") {
                 diag.add(Diagnostic(
-                    "`recl` must be specified when access='direct'",
+                    "`recl` is only permitted with access='direct'",
                     Level::Error, Stage::Semantic,
                     { Label("", {x.base.base.loc}) }
                 ));
