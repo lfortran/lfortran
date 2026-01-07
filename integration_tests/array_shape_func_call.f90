@@ -25,4 +25,4 @@ contains
     integer :: x(*)
   end subroutine
 
-end program
+end program pp

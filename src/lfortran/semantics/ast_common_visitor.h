@@ -7923,88 +7923,58 @@ public:
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
                 ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
-
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, args.size());
-
         for (size_t i = 0; i < args.size(); i++) {
             ASR::call_arg_t arg = args[i];
             ASR::expr_t* val = arg.m_value;
-
             if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
-
                 ASR::ttype_t* ret_type = ASRUtils::expr_type(val);
-
                 ASR::ttype_t* base_type = ASRUtils::type_get_past_array(ret_type);
                 if (ASRUtils::is_array(ret_type) ||
                     ASR::is_a<ASR::StructType_t>(*base_type)) {
                     new_args.push_back(al, arg);
                     continue;
                 }
-
                 ASR::FunctionCall_t* fc =
                     ASR::down_cast<ASR::FunctionCall_t>(val);
-
                 ASR::symbol_t* fn_sym =
                     ASRUtils::symbol_get_past_external(fc->m_name);
-
                 bool is_pure = false;
                 if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
                     ASR::Function_t* fn =
                         ASR::down_cast<ASR::Function_t>(fn_sym);
                     is_pure = ASRUtils::get_FunctionType(fn)->m_pure;
                 }
-
                 if (!is_pure) {
                     std::string tmp_name =
                         current_scope->get_unique_name("lfortran_tmp");
-
                     ASR::symbol_t* tmp_sym =
                         ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(
-                                al,
-                                val->base.loc,
-                                current_scope,
-                                s2c(al, tmp_name),
-                                nullptr, 0,
-                                ASR::intentType::Local,
-                                nullptr, nullptr,
-                                ASR::storage_typeType::Default,
-                                ret_type,
-                                nullptr,
-                                ASR::abiType::Source,
-                                ASR::accessType::Private,
-                                ASR::presenceType::Required,
-                                false
+                            ASRUtils::make_Variable_t_util( al, val->base.loc, current_scope,
+                                s2c(al, tmp_name), nullptr, 0,
+                                ASR::intentType::Local, nullptr, nullptr,
+                                ASR::storage_typeType::Default, ret_type, nullptr, ASR::abiType::Source,
+                                ASR::accessType::Private, ASR::presenceType::Required, false
                             )
                         );
-
                     current_scope->add_symbol(tmp_name, tmp_sym);
-
                     current_body->push_back(
-                        al,
-                        ASRUtils::STMT(
+                        al, ASRUtils::STMT(
                             ASR::make_Assignment_t(
-                                al,
-                                val->base.loc,
+                                al, val->base.loc,
                                 ASRUtils::EXPR(
                                     ASR::make_Var_t(al, val->base.loc, tmp_sym)
                                 ),
-                                val,
-                                nullptr,
-                                false,
-                                false
-                            )
+                                val, nullptr, false, false)
                         )
                     );
-
                     arg.m_value =
                         ASRUtils::EXPR(
                             ASR::make_Var_t(al, val->base.loc, tmp_sym)
                         );
                 }
             }
-
             new_args.push_back(al, arg);
         }
 
