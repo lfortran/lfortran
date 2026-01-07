@@ -954,16 +954,20 @@ namespace LCompilers {
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
-                    // For bind(c) array dummies (including implicit interfaces), the ABI is
-                    // a raw pointer. `get_arg_type_from_ttype_t()` already returns the
-                    // correct pointer type, so do not add an extra level of indirection.
-                    type = type_original;
-                    is_array_type = false;
-                    if (ASRUtils::is_character(*arg->m_type)) {
-                        // For bind(c) character arrays, use raw i8* instead of any
-                        // string/descriptor representation.
+                    // For bind(c) array dummies (including implicit interfaces), handle
+                    // based on the physical type specified in the ASR.
+                    ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
+                    if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
+                        // DescriptorArray: pass pointer to descriptor struct
+                        type = type_original->getPointerTo();
+                    } else if (ASRUtils::is_character(*arg->m_type)) {
+                        // PointerArray CHARACTER: use raw i8*
                         type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    } else {
+                        // PointerArray non-CHARACTER: use element pointer
+                        type = type_original;
                     }
+                    is_array_type = false;
                 } else if (is_array_type) {
                     type = type_original->getPointerTo();
                 } else {
