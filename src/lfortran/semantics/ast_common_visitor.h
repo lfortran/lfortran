@@ -3823,9 +3823,7 @@ public:
                                             if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Parameter;
-                                                // Ensure COMPLEX parameters initialized from constant REAL/INTEGER
-                                                // expressions are represented as a proper RealToComplex/IntegerToComplex cast
-                                                // with a ComplexConstant value (handles cases like NEG_ONE = -1.0).
+                                                // Fold constant REAL/INTEGER -> COMPLEX for PARAMETER initializers.
                                                 if (ASRUtils::is_complex(*v->m_type) &&
                                                     !ASRUtils::is_complex(*ASRUtils::expr_type(init_val)) &&
                                                     ASRUtils::expr_value(init_val)) {

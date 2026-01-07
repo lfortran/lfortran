@@ -1,6 +1,5 @@
 subroutine test_complex_param
-    ! Test COMPLEX PARAMETER with negative real literal
-    ! A negative real assigned to COMPLEX must convert to (real, 0.0)
+    ! COMPLEX PARAMETER from real literal (incl. negative)
     implicit none
     complex :: pos_one, neg_one, zero
     parameter (pos_one = 1.0, neg_one = -1.0, zero = 0.0)
