@@ -3717,11 +3717,41 @@ public:
                         int dim_b_int {-1};
                         // 'm_length' isn't assigned for allocatable arrays
                         // let them be valid for now atleast
-                        if (!(dim_a.m_length && dim_b.m_length)) {
+                        if (!dim_a.m_length) {
                             continue;
                         }
                         ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
-                        ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        if (dim_b.m_length) {
+                            ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        } else if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+                            // Try to compute array section dimension size
+                            ASR::ArraySection_t* arr_sec = ASR::down_cast<ASR::ArraySection_t>(value);
+                            if (i < arr_sec->n_args) {
+                                ASR::expr_t* start = arr_sec->m_args[i].m_left;
+                                ASR::expr_t* end = arr_sec->m_args[i].m_right;
+                                ASR::expr_t* step = arr_sec->m_args[i].m_step;
+                                if (start && end && step) {
+                                    int64_t step_val = 0;
+                                    if (ASRUtils::extract_value(ASRUtils::expr_value(step), step_val) && step_val != 0) {
+                                        int64_t start_val = 0, end_val = 0;
+                                        bool start_const = ASRUtils::extract_value(ASRUtils::expr_value(start), start_val);
+                                        bool end_const = ASRUtils::extract_value(ASRUtils::expr_value(end), end_val);
+                                        if (start_const && end_const) {
+                                            // Both are constants: size = (end - start) / step + 1
+                                            dim_b_int = (end_val - start_val) / step_val + 1;
+                                        } else if (ASR::is_a<ASR::Var_t>(*start) && ASR::is_a<ASR::Var_t>(*end)) {
+                                            // Check if start and end are the same variable (e.g., x(i:i))
+                                            ASR::Var_t* start_var = ASR::down_cast<ASR::Var_t>(start);
+                                            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
+                                            if (start_var->m_v == end_var->m_v) {
+                                                // Same variable: size is always 1
+                                                dim_b_int = 1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
                             diag.add(diag::Diagnostic(
                                 "Different shape for array assignment on dimension "
