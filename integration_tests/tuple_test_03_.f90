@@ -9,7 +9,7 @@ contains
       t1 = _lfortran_tuple_constant(1, 2.0, "3")
       integer :: x
       real :: y
-      character(len=:) :: s
+      character(len=:), allocatable :: s
 
       x = _lfortran_get_item(t1, -3)
       y = _lfortran_get_item(t1, -2)

@@ -8,7 +8,7 @@ contains
       integer, intent(in) :: a
       real, intent(in) :: b
       type(_lfortran_tuple(integer, real, character(len=:), complex)) :: t
-      character(len=:) :: s
+      character(len=:), allocatable :: s
 
       s = ""
       t = _lfortran_tuple_constant(a, b, s, cmplx(a, b))
@@ -19,7 +19,7 @@ contains
       type(_lfortran_tuple(integer, real, character(len=:), complex)) :: c
       integer :: a0, b0
       real :: a1, b1
-      character(len=:) :: s
+      character(len=:), allocatable :: s
       complex :: a3, b3
 
       a0 = _lfortran_get_item(a, 0)
@@ -40,7 +40,7 @@ contains
       real :: j
       integer :: x
       real :: y
-      character(len=:) :: s
+      character(len=:), allocatable :: s
       complex :: z
 
       t1 = set_tuple(0, 0.0)
@@ -83,7 +83,7 @@ contains
 
    pure function to_string(i) result(s)
       integer, intent(in) :: i
-      character(len=:) :: s
+      character(len=:), allocatable :: s
       character(len=32) :: buffer
       write(buffer, '(I0)') i
       s = trim(buffer)
