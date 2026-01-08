@@ -175,8 +175,8 @@ program continue_compilation_1
     integer :: fmt_i1, fmt_i2, fmt_i3 ! for issue #8925
     integer, allocatable :: allocate_int = 1
     character(:), allocatable :: allocate_char = "H"
-
-
+    intrinsic :: not_real
+    call sub(not_real)
 
 
 
@@ -457,4 +457,27 @@ program continue_compilation_1
 
     !passing non procedure to procedure parameter
     call proc_param(42)
+
+    x = 9010
+    read (*, end=x) x
+    read (*, end=9011.0) x
+    x = 9012
+    read (*, err=x) x
+    read (*, err=9013.0) x
+    write (*, end=9014) x
+9014 continue
+    write (*, err=9015) x
+9015 continue
+
+    read(*, *, end=999) x   
+    read(*, *, err=500) x
+
+    contains
+    subroutine sub(f)
+        interface
+            function f(x)
+                integer :: x, f
+            end function
+        end interface
+    end subroutine
 end program

@@ -248,9 +248,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         remove_original_stmt_if_size_0(x->m_type)
+        if (result_expr == nullptr) {
+            return;
+        }
         pass_result.reserve(al, x->m_n_data);
         const Location& loc = x->base.base.loc;
-        LCOMPILERS_ASSERT(result_expr != nullptr);
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::extract_type(result_type);
 
@@ -336,9 +338,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         remove_original_stmt_if_size_0(arr_type)
 
+        if (result_expr == nullptr) {
+            return;
+        }
         pass_result.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
-        LCOMPILERS_ASSERT(result_expr != nullptr);
 
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASRUtils::ExprStmtDuplicator duplicator(al);

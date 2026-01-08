@@ -1193,16 +1193,19 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         diag::Diagnostics& diag) {
-    int64_t array_id = 0, array_mask = 1, array_dim = 2, array_dim_mask = 3;
-    int64_t overload_id = array_id;
-    std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
+    const int64_t array_id       = 0;
+    const int64_t array_mask     = 1;
+    const int64_t array_dim      = 2;
+    const int64_t array_dim_mask = 3;
+    const std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
+    ASR::expr_t*  const array = args[0];
+    ASR::ttype_t* const array_type = expr_type(array);
     ASRUtils::ASRBuilder b(al, loc);
-    ASR::expr_t* array = args[0];
-    ASR::ttype_t *array_type = expr_type(array);
     if ( !is_array(array_type) ) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be an array", loc);
         return nullptr;
-    } else if ( !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
+    }
+    if ( !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be integer, "
             "real or character", loc);
         return nullptr;
@@ -1214,14 +1217,17 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     ASR::dimension_t *m_dims;
     int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
     int dim = 0, kind = 4; // default kind
-    ASR::expr_t *dim_expr = nullptr;
-    ASR::expr_t *mask_expr = nullptr;
-    if (args[1]) {
-        dim_expr = args[1];
-        if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
+    ASR::expr_t* const mask_expr = [&args](){
+        if((args[1] && is_logical(*expr_type(args[1])))) return args[1];
+        else if(args[2]) return args[2];
+        else return (ASR::expr_t*)nullptr;
+    }();
+    ASR::expr_t* const dim_expr = mask_expr == args[1] ? nullptr : args[1];
+    if (dim_expr) {
+        if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
             append_error(diag, "`dim` should be a scalar integer type", loc);
             return nullptr;
-        } else if (!extract_value(expr_value(args[1]), dim)) {
+        } else if (!extract_value(expr_value(dim_expr), dim)) {
             append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
             return nullptr;
         }
@@ -1244,7 +1250,7 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
                 result_dims.push_back(al, tmp_dim);
             }
         }
-        m_args.push_back(al, args[1]);
+        m_args.push_back(al, dim_expr);
     } else {
         ASR::dimension_t tmp_dim;
         tmp_dim.loc = args[0]->base.loc;
@@ -1253,13 +1259,12 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         result_dims.push_back(al, tmp_dim);
         m_args.push_back(al, b.i32(-1));
     }
-    if (args[2]) {
-        mask_expr = args[2];
-        if (!is_logical(*expr_type(args[2]))) {
+    if (mask_expr) {
+        if (!is_logical(*expr_type(mask_expr))) {
             append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be logical", loc);
             return nullptr;
         }
-        m_args.push_back(al, args[2]);
+        m_args.push_back(al, mask_expr);
     } else {
         m_args.push_back(al, b.ArrayConstant({b.bool_t(1, logical)}, logical, true));
     }
@@ -1283,7 +1288,8 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     } else {
         m_args.push_back(al, b.bool_t(false, logical));
     }
-
+    
+    int64_t overload_id = array_id;
     if (dim_expr) {
         overload_id = array_dim;
     }
@@ -1350,8 +1356,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
                 if (ASRUtils::is_array(arg_types[2])) {
                     ASR::expr_t *i = declare("i", type, Local);
-                    ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                    body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                    ASR::expr_t *maskval = ASRUtils::is_array_t(args[2])? b.ArrayItem_01(args[2], {i}) : args[2];
+                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                             b.Assignment(result, i),
                             b.Exit()
@@ -1378,7 +1384,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                     }
                 }
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
-                ASR::expr_t *mask_val = ASRUtils::is_array(arg_types[2]) ? 
+                ASR::expr_t *mask_val = ASRUtils::is_array_t(arg_types[2]) ? 
                     ArrayItem_02(args[2], idx_vars) : args[2];
                 Vec<ASR::stmt_t*> comparison_body;
                 comparison_body.reserve(al, 1);
@@ -1425,8 +1431,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
                 if (ASRUtils::is_array(arg_types[2])) {
                     ASR::expr_t *i = declare("i", type, Local);
-                    ASR::expr_t *maskval = b.ArrayItem_01(args[2], {i});
-                    body.push_back(al, b.DoLoop(i, LBound(args[2], 1), UBound(args[2], 1), {
+                   ASR::expr_t *maskval = ASRUtils::is_array_t(args[2]) ? b.ArrayItem_01(args[2], {i}) : args[2];
+                    body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
                         b.If(b.Eq(maskval, b.bool_t(1, logical)), {
                             b.Assignment(result, i),
                             b.Exit()
@@ -1458,9 +1464,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 if (extract_kind_from_ttype_t(type) != 4) {
                     res_idx = b.i2i_t(res_idx, type);
                 }
-                ASR::expr_t *mask_val = ASRUtils::is_array(arg_types[2]) 
-                    ? ArrayItem_02(args[2], idx_vars)
-                    : args[2];
+                ASR::expr_t *mask_val = ASRUtils::is_array_t(args[2]) ? ArrayItem_02(args[2], idx_vars) : args[2];
                 Vec<ASR::stmt_t*> comparison_body_dim;
                 comparison_body_dim.reserve(al, 1);
                 

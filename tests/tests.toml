@@ -3943,6 +3943,14 @@ filename = "errors/scalar_allocation_check_04.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_05.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_06.f90"
+run = true
+
+[[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
 
@@ -4001,6 +4009,10 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_14.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_15.f90"
 run = true
 
 [[test]]
@@ -4928,3 +4940,16 @@ llvm = true
 [[test]]
 filename = "../integration_tests/transfer_09.f90"
 asr = true
+
+[[test]]
+filename = "namelist_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_101.f90"
+llvm = true
+
+[[test]]
+filename = "stdin_read_blank_lines_01.f90"
+run = true
+options = "< tests/stdin_read_blank_lines_01.in"

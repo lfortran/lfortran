@@ -3,7 +3,7 @@ program file_35
     integer :: lun, ios = 8
     character(len=100) :: message
 
-    open(newunit=lun, file="test.txt", status="replace")
+    open(newunit=lun, file="file_35_test.txt", status="replace")
 
     close(unit=lun, iostat=ios, iomsg=message)
     print *, ios
