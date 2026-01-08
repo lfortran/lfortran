@@ -11776,8 +11776,20 @@ public:
                                 bool is_pointer_array = (arr_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                                     arr_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray);
                                 if (is_pointer_array) {
-                                    // For pointer arrays, arr_ptr is Type**, load to get Type*
-                                    data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), arr_ptr);
+                                    // Check if this is a dummy argument (passed by value as pointer)
+                                    // vs local variable (stored as pointer-to-pointer, needs load)
+                                    bool is_dummy_arg = false;
+                                    if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                                        ASR::Variable_t* arr_var = ASRUtils::EXPR2VAR(arr_item->m_v);
+                                        is_dummy_arg = is_arg_dummy(arr_var->m_intent);
+                                    }
+                                    if (is_dummy_arg) {
+                                        // For dummy arguments, arr_ptr is already Type* (data pointer)
+                                        data_ptr = arr_ptr;
+                                    } else {
+                                        // For local pointer arrays, arr_ptr is Type**, load to get Type*
+                                        data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), arr_ptr);
+                                    }
                                 } else {
                                     data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
                                 }
