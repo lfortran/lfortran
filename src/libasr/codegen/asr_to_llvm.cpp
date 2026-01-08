@@ -908,30 +908,82 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::Function *fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        complex_type->getPointerTo(),
-                        complex_type->getPointerTo(),
-                        complex_type->getPointerTo()
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
-        }
 
         // Convert vector types to struct types if needed (BindC ABI compatibility)
         left_arg = convert_complex_vector_to_struct(left_arg, complex_type);
         right_arg = convert_complex_vector_to_struct(right_arg, complex_type);
 
-        llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(complex_type);
-        builder->CreateStore(left_arg, pleft_arg);
-        llvm::AllocaInst *pright_arg = llvm_utils->CreateAlloca(complex_type);
-        builder->CreateStore(right_arg, pright_arg);
-        llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
-        std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
-        builder->CreateCall(fn, args);
-        return llvm_utils->CreateLoad2(complex_type, presult);
+        // Extract real and imaginary parts: complex is {float, float} or {double, double}
+        llvm::Value* left_real = builder->CreateExtractValue(left_arg, {0});
+        llvm::Value* left_imag = builder->CreateExtractValue(left_arg, {1});
+        llvm::Value* right_real = builder->CreateExtractValue(right_arg, {0});
+        llvm::Value* right_imag = builder->CreateExtractValue(right_arg, {1});
+
+        llvm::Value* result_real = nullptr;
+        llvm::Value* result_imag = nullptr;
+
+        // Inline arithmetic for add, sub, mul, div; fallback to runtime for pow
+        if (runtime_func_name == "_lfortran_complex_add_32" ||
+            runtime_func_name == "_lfortran_complex_add_64") {
+            // (a+bi) + (c+di) = (a+c) + (b+d)i
+            result_real = builder->CreateFAdd(left_real, right_real);
+            result_imag = builder->CreateFAdd(left_imag, right_imag);
+        } else if (runtime_func_name == "_lfortran_complex_sub_32" ||
+                   runtime_func_name == "_lfortran_complex_sub_64") {
+            // (a+bi) - (c+di) = (a-c) + (b-d)i
+            result_real = builder->CreateFSub(left_real, right_real);
+            result_imag = builder->CreateFSub(left_imag, right_imag);
+        } else if (runtime_func_name == "_lfortran_complex_mul_32" ||
+                   runtime_func_name == "_lfortran_complex_mul_64") {
+            // (a+bi) * (c+di) = (ac-bd) + (ad+bc)i
+            llvm::Value* ac = builder->CreateFMul(left_real, right_real);
+            llvm::Value* bd = builder->CreateFMul(left_imag, right_imag);
+            llvm::Value* ad = builder->CreateFMul(left_real, right_imag);
+            llvm::Value* bc = builder->CreateFMul(left_imag, right_real);
+            result_real = builder->CreateFSub(ac, bd);
+            result_imag = builder->CreateFAdd(ad, bc);
+        } else if (runtime_func_name == "_lfortran_complex_div_32" ||
+                   runtime_func_name == "_lfortran_complex_div_64") {
+            // (a+bi) / (c+di) = ((ac+bd) + (bc-ad)i) / (c^2 + d^2)
+            llvm::Value* ac = builder->CreateFMul(left_real, right_real);
+            llvm::Value* bd = builder->CreateFMul(left_imag, right_imag);
+            llvm::Value* bc = builder->CreateFMul(left_imag, right_real);
+            llvm::Value* ad = builder->CreateFMul(left_real, right_imag);
+            llvm::Value* cc = builder->CreateFMul(right_real, right_real);
+            llvm::Value* dd = builder->CreateFMul(right_imag, right_imag);
+            llvm::Value* denom = builder->CreateFAdd(cc, dd);
+            llvm::Value* num_real = builder->CreateFAdd(ac, bd);
+            llvm::Value* num_imag = builder->CreateFSub(bc, ad);
+            result_real = builder->CreateFDiv(num_real, denom);
+            result_imag = builder->CreateFDiv(num_imag, denom);
+        } else {
+            // Fallback to runtime call for pow and any other operations
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            complex_type->getPointerTo(),
+                            complex_type->getPointerTo(),
+                            complex_type->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
+            llvm::AllocaInst *pleft_arg = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateStore(left_arg, pleft_arg);
+            llvm::AllocaInst *pright_arg = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateStore(right_arg, pright_arg);
+            llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
+            std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
+            builder->CreateCall(fn, args);
+            return llvm_utils->CreateLoad2(complex_type, presult);
+        }
+
+        // Construct result complex value
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        result = builder->CreateInsertValue(result, result_real, {0});
+        result = builder->CreateInsertValue(result, result_imag, {1});
+        return result;
     }
 
 
