@@ -944,18 +944,75 @@ public:
             result_imag = builder->CreateFAdd(ad, bc);
         } else if (runtime_func_name == "_lfortran_complex_div_32" ||
                    runtime_func_name == "_lfortran_complex_div_64") {
-            // (a+bi) / (c+di) = ((ac+bd) + (bc-ad)i) / (c^2 + d^2)
-            llvm::Value* ac = builder->CreateFMul(left_real, right_real);
-            llvm::Value* bd = builder->CreateFMul(left_imag, right_imag);
-            llvm::Value* bc = builder->CreateFMul(left_imag, right_real);
-            llvm::Value* ad = builder->CreateFMul(left_real, right_imag);
-            llvm::Value* cc = builder->CreateFMul(right_real, right_real);
-            llvm::Value* dd = builder->CreateFMul(right_imag, right_imag);
-            llvm::Value* denom = builder->CreateFAdd(cc, dd);
-            llvm::Value* num_real = builder->CreateFAdd(ac, bd);
-            llvm::Value* num_imag = builder->CreateFSub(bc, ad);
-            result_real = builder->CreateFDiv(num_real, denom);
-            result_imag = builder->CreateFDiv(num_imag, denom);
+            auto create_fabs = [&](llvm::Value* value) -> llvm::Value* {
+#if LLVM_VERSION_MAJOR >= 12
+                return builder->CreateUnaryIntrinsic(llvm::Intrinsic::fabs, value);
+#elif LLVM_VERSION_MAJOR >= 8
+                return builder->CreateIntrinsic(llvm::Intrinsic::fabs,
+                    {value->getType()}, {value});
+#else
+                llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(),
+                    llvm::Intrinsic::fabs, {value->getType()});
+                return builder->CreateCall(fn, {value});
+#endif
+            };
+
+            llvm::Value* abs_right_real = create_fabs(right_real);
+            llvm::Value* abs_right_imag = create_fabs(right_imag);
+            llvm::Value* cond = builder->CreateFCmpOGE(
+                abs_right_real, abs_right_imag);
+
+            llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock* r_ge_s_bb = llvm::BasicBlock::Create(
+                context, "complex_div_r_ge_s", parent_fn);
+            llvm::BasicBlock* r_lt_s_bb = llvm::BasicBlock::Create(
+                context, "complex_div_r_lt_s", parent_fn);
+            llvm::BasicBlock* div_cont_bb = llvm::BasicBlock::Create(
+                context, "complex_div_cont", parent_fn);
+
+            builder->CreateCondBr(cond, r_ge_s_bb, r_lt_s_bb);
+
+            builder->SetInsertPoint(r_ge_s_bb);
+            llvm::Value* ratio_r_ge = builder->CreateFDiv(
+                right_imag, right_real);
+            llvm::Value* denom_r_ge = builder->CreateFAdd(right_real,
+                builder->CreateFMul(right_imag, ratio_r_ge));
+            llvm::Value* num_real_r_ge = builder->CreateFAdd(left_real,
+                builder->CreateFMul(left_imag, ratio_r_ge));
+            llvm::Value* num_imag_r_ge = builder->CreateFSub(left_imag,
+                builder->CreateFMul(left_real, ratio_r_ge));
+            llvm::Value* res_real_r_ge = builder->CreateFDiv(
+                num_real_r_ge, denom_r_ge);
+            llvm::Value* res_imag_r_ge = builder->CreateFDiv(
+                num_imag_r_ge, denom_r_ge);
+            builder->CreateBr(div_cont_bb);
+
+            builder->SetInsertPoint(r_lt_s_bb);
+            llvm::Value* ratio_r_lt = builder->CreateFDiv(
+                right_real, right_imag);
+            llvm::Value* denom_r_lt = builder->CreateFAdd(right_imag,
+                builder->CreateFMul(right_real, ratio_r_lt));
+            llvm::Value* num_real_r_lt = builder->CreateFAdd(
+                builder->CreateFMul(left_real, ratio_r_lt), left_imag);
+            llvm::Value* num_imag_r_lt = builder->CreateFSub(
+                builder->CreateFMul(left_imag, ratio_r_lt), left_real);
+            llvm::Value* res_real_r_lt = builder->CreateFDiv(
+                num_real_r_lt, denom_r_lt);
+            llvm::Value* res_imag_r_lt = builder->CreateFDiv(
+                num_imag_r_lt, denom_r_lt);
+            builder->CreateBr(div_cont_bb);
+
+            builder->SetInsertPoint(div_cont_bb);
+            llvm::PHINode* result_real_phi = builder->CreatePHI(
+                left_real->getType(), 2);
+            result_real_phi->addIncoming(res_real_r_ge, r_ge_s_bb);
+            result_real_phi->addIncoming(res_real_r_lt, r_lt_s_bb);
+            llvm::PHINode* result_imag_phi = builder->CreatePHI(
+                left_real->getType(), 2);
+            result_imag_phi->addIncoming(res_imag_r_ge, r_ge_s_bb);
+            result_imag_phi->addIncoming(res_imag_r_lt, r_lt_s_bb);
+            result_real = result_real_phi;
+            result_imag = result_imag_phi;
         } else {
             // Fallback to runtime call for pow and any other operations
             llvm::Function *fn = module->getFunction(runtime_func_name);
