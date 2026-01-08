@@ -954,7 +954,17 @@ namespace LCompilers {
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(arr_type, reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+            llvm::Value* arr_first = nullptr;
+            if( !co.stack_arrays ) {
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                llvm::Value* total_size = builder->CreateMul(num_elements, llvm_size);
+                llvm::Value* arr_first_i8 = lfortran_malloc(context, *module, *builder, total_size);
+                arr_first = builder->CreateBitCast(arr_first_i8, llvm_data_type->getPointerTo());
+            } else {
+                arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+            }
             builder->CreateStore(arr_first, first_ptr);
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
@@ -1025,7 +1035,17 @@ namespace LCompilers {
             llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(asr_data_type)), false, false)].second;
             if( reserve_memory ) {
-                llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+                llvm::Value* arr_first = nullptr;
+                if( !co.stack_arrays ) {
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                    llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                    llvm::Value* total_size = builder->CreateMul(num_elements, llvm_size);
+                    llvm::Value* arr_first_i8 = lfortran_malloc(context, *module, *builder, total_size);
+                    arr_first = builder->CreateBitCast(arr_first_i8, llvm_data_type->getPointerTo());
+                } else {
+                    arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+                }
                 builder->CreateStore(arr_first, first_ptr);
             }
 

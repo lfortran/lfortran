@@ -1,4 +1,4 @@
-program array_section_10
+program array_section_11
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
     integer, parameter :: n = 4
