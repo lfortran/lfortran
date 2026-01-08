@@ -2440,7 +2440,12 @@ public:
                     if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
                         AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
                         for (size_t k = 0; k < attr_common->n_blks; k++) {
-                            std::string common_block_name{attr_common->m_blks[k].m_name};
+                            std::string common_block_name(
+                                attr_common->m_blks[k].m_name ? attr_common->m_blks[k].m_name : ""
+                            );
+                            if (common_block_name.empty()) {
+                                continue;
+                            }
                             // Convert to lowercase to match how symbols are stored
                             std::string common_block_name_lower = to_lower(common_block_name);
                             std::string module_name = base_module_name + common_block_name_lower;
