@@ -7412,8 +7412,50 @@ public:
                             ASR::array_physical_typeType section_phys_type = unbounded_tail ?
                                 ASR::array_physical_typeType::UnboundedPointerArray :
                                 ASR::array_physical_typeType::DescriptorArray;
-                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, section_type, section_phys_type, unbounded_tail);
+                            // For sequence association: if the dummy is 1D assumed-size and the
+                            // source is multi-dimensional, compute the total contiguous size
+                            // and create a 1D type to match the dummy's dimensionality.
+                            int dummy_n_dims = ASRUtils::extract_n_dims_from_ttype(dummy_array_type);
+                            int source_n_dims = ASRUtils::extract_n_dims_from_ttype(section_type);
+                            ASR::ttype_t* new_type = nullptr;
+                            if (expected_unbounded && dummy_n_dims == 1 && source_n_dims > 1) {
+                                // Sequence association: multi-dim source to 1D assumed-size dummy
+                                // Compute total size from section indices
+                                ASR::expr_t* total_size = nullptr;
+                                for (size_t j = 0; j < array_indices.n; j++) {
+                                    ASR::expr_t* dim_size = nullptr;
+                                    if (array_indices.p[j].m_left && array_indices.p[j].m_right) {
+                                        // size = right - left + 1
+                                        dim_size = b.Add(b.Sub(array_indices.p[j].m_right,
+                                                               array_indices.p[j].m_left),
+                                                        b.i32(1));
+                                    } else if (array_indices.p[j].m_right) {
+                                        dim_size = array_indices.p[j].m_right;
+                                    } else {
+                                        dim_size = b.i32(1);
+                                    }
+                                    if (total_size == nullptr) {
+                                        total_size = dim_size;
+                                    } else {
+                                        total_size = b.Mul(total_size, dim_size);
+                                    }
+                                }
+                                // Create 1D type with computed size
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, 1);
+                                ASR::dimension_t dim;
+                                dim.loc = array_item->base.base.loc;
+                                dim.m_start = b.i32(1);
+                                dim.m_length = total_size;
+                                dims.push_back(al, dim);
+                                ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(section_type);
+                                new_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                    elem_type, dims.p, dims.n, ASR::abiType::Source, false,
+                                    section_phys_type);
+                            } else {
+                                new_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, section_type, section_phys_type, unbounded_tail);
+                            }
                             x.m_args[arg_i].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
                                 al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
@@ -7628,14 +7670,75 @@ public:
                             array_indices.push_back(al, array_idx);
                         }
 
-                        ASR::ttype_t* section_type = ASRUtils::duplicate_type_with_empty_dims(
-                            al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                        );
+                        // For sequence association: when passing array element to 1D assumed-size dummy,
+                        // compute total contiguous size from section indices instead of using empty dims.
+                        // Use the ORIGINAL physical type from array_arg_idx[i] (not the possibly-modified expected_phys_type)
+                        // because for external symbols, expected_phys_type is forced to PointerArray.
+                        ASR::ttype_t* original_dummy_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(array_arg_idx[i]));
+                        ASR::array_physical_typeType original_phys_type = ASRUtils::extract_physical_type(original_dummy_type);
+                        int expected_n_dims = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                        bool is_assumed_size = (original_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
+                        ASR::ttype_t* section_type = nullptr;
+
+                        ASR::ttype_t* cast_target_type = nullptr;
+                        if (is_assumed_size && expected_n_dims == 1 && array_indices.size() > 1) {
+                            // Sequence association: multi-dim source to 1D assumed-size dummy
+                            // Compute total size from section indices
+                            ASR::expr_t* total_size = nullptr;
+                            for (size_t dim_i = 0; dim_i < array_indices.size(); dim_i++) {
+                                ASR::expr_t* dim_size = nullptr;
+                                if (array_indices.p[dim_i].m_left && array_indices.p[dim_i].m_right) {
+                                    // size = right - left + 1
+                                    dim_size = builder.Add(builder.Sub(array_indices.p[dim_i].m_right,
+                                                                      array_indices.p[dim_i].m_left),
+                                                          builder.i32(1));
+                                } else if (array_indices.p[dim_i].m_right) {
+                                    dim_size = array_indices.p[dim_i].m_right;
+                                } else {
+                                    dim_size = builder.i32(1);
+                                }
+                                if (total_size == nullptr) {
+                                    total_size = dim_size;
+                                } else {
+                                    total_size = builder.Mul(total_size, dim_size);
+                                }
+                            }
+                            // Create 1D type with computed size
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = array_item->base.base.loc;
+                            dim.m_start = builder.i32(1);
+                            dim.m_length = total_size;
+                            dims.push_back(al, dim);
+                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(expected_arg_type);
+                            section_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                elem_type, dims.p, dims.n, ASR::abiType::Source, false,
+                                ASR::array_physical_typeType::DescriptorArray);
+                            // Cast target type should have empty dims (assumed-size semantics)
+                            // to avoid runtime size checks - the callee uses its own size parameter
+                            Vec<ASR::dimension_t> empty_dims;
+                            empty_dims.reserve(al, 1);
+                            ASR::dimension_t empty_dim;
+                            empty_dim.loc = array_item->base.base.loc;
+                            empty_dim.m_start = nullptr;
+                            empty_dim.m_length = nullptr;
+                            empty_dims.push_back(al, empty_dim);
+                            cast_target_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
+                                expected_phys_type);
+                        } else {
+                            section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                            );
+                            cast_target_type = ASRUtils::TYPE(expected_array);
+                        }
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     section_type, nullptr));
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, ASRUtils::TYPE(expected_array), nullptr);
+                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, cast_target_type, nullptr);
                         arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);

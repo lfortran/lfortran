@@ -5501,7 +5501,15 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         // The following if check determines whether the i-th argument
         // can be called by just passing the data pointer and
         // dimensional information spearately via extra arguments.
+        // Exclude assumed-size arrays (UnboundedPointerArray) since they
+        // don't pass dimension info by design.
+        ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
+        if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(argi->m_type))) {
+            phys_type = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(argi->m_type))->m_physical_type;
+        }
         if( n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims) &&
+            phys_type != ASR::array_physical_typeType::UnboundedPointerArray &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
