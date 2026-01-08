@@ -8732,15 +8732,20 @@ public:
                     }
                     if (compiler_options.new_classes) {
                         llvm::Value* static_ptr = llvm_selector;
-                        if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                        llvm::Type* static_ptr_type = llvm_selector_type_;
+                        ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                        // If selector is a pointer type, load it first
+                        if (LLVM::is_llvm_pointer(*selector_var_type)) {
                             static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
+                            selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
+                            static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                         }
-                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_selector))) {
-                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                        if (ASRUtils::is_array(selector_var_type)) {
+                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
                                 llvm_utils->get_el_type(
                                     x.m_selector,
-                                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)),
+                                    ASRUtils::type_get_past_array(selector_var_type),
                                     module.get())->getPointerTo(),
                                 static_ptr);
                         }
@@ -8910,17 +8915,21 @@ public:
                             struct_api->create_type_info_for_intrinsic_type(type_stmt_type, kind, module.get());
                         }
                         llvm::Value* static_ptr = llvm_selector;
+                        llvm::Type* static_ptr_type = llvm_selector_type_;
+                        // If selector is a pointer type, load it first
+                        if (LLVM::is_llvm_pointer(*selector_var_type)) {
+                            static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
+                            selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
+                            static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
+                        }
                         if (ASRUtils::is_array(selector_var_type)) {
-                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
                             static_ptr = llvm_utils->CreateLoad2(
                                 llvm_utils->get_el_type(
                                     x.m_selector,
                                     ASRUtils::type_get_past_array(selector_var_type),
                                     module.get())->getPointerTo(),
                                 static_ptr);
-                        }
-                        if (LLVM::is_llvm_pointer(*selector_var_type)) {
-                            static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         }
                         llvm::Value* val = lfortran_dynamic_cast(
                             static_ptr,
@@ -13757,7 +13766,32 @@ public:
                     orig_arg->m_type, module.get());
                 llvm::Value* descriptor = llvm_utils->CreateAlloca(*builder, descriptor_type);
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
-                builder->CreateStore(tmp, data_ptr);
+                // If target is unlimited polymorphic, wrap the scalar in a polymorphic type
+                ASR::ttype_t* orig_arg_type_past_pointer = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(orig_arg->m_type));
+                if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
+                        ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)))) {
+                    // Get the element type of the polymorphic array (unlimited_polymorphic_type)
+                    llvm::Type* poly_elem_type = llvm_utils->get_el_type(
+                        ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                        ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get());
+                    llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
+                    
+                    // Store vptr for intrinsic type
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
+                    struct_api->store_intrinsic_type_vptr(arg_type,
+                        ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
+                    
+                    // Store data pointer (bitcast scalar pointer to i8*)
+                    llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
+                    builder->CreateStore(builder->CreateBitCast(tmp, llvm_utils->i8_ptr), poly_data_ptr);
+                    
+                    // Store the polymorphic wrapper pointer in the descriptor
+                    builder->CreateStore(poly_wrapper, data_ptr);
+                } else {
+                    builder->CreateStore(tmp, data_ptr);
+                }
+                
                 llvm::Value* offset_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 1);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_ptr);
                 llvm::Value* dim_des_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 2);
@@ -13773,7 +13807,14 @@ public:
 
             // To avoid segmentation faults when original argument
             // is not a ASR::Variable_t like callbacks.
-            if( orig_arg ) {
+            // Skip polymorphic conversion if we've already wrapped the scalar in an assumed-rank
+            // polymorphic descriptor above
+            bool skip_polymorphic_conversion = orig_arg && 
+                ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) &&
+                ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
+                    ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)));
+            if( orig_arg && !skip_polymorphic_conversion ) {
                 tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     ASRUtils::type_get_past_allocatable(
@@ -16281,7 +16322,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         v.module->print(os, nullptr);
         std::cout << os.str();
         msg = "asr_to_llvm: module failed verification. Error:\n" + err.str();
-        std::cout << msg << std::endl;
+        std::cout << msg << std::endl;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
         diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
             diag::Level::Error, diag::Stage::CodeGen));
         Error error;
