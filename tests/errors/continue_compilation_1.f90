@@ -276,6 +276,10 @@ program continue_compilation_1
     print*, nint(1000000000000.0000000000000000d0)
     ! open_invalid_kwarg1
     OPEN(file="numbers", hello="world")
+    ! open_duplicate_recl
+    OPEN(newunit=unit, file="numbers", access="direct", recl=10, recl=20)
+    ! open_recl_wrong_access
+    OPEN(newunit=unit, file="numbers", access="sequential", recl=10)
     !parameter_01
     i1 = 3
     print*,i1
