@@ -1741,7 +1741,6 @@ void free_serialization_info(Serialization_Info* s_info){
     free(s_info->string_lengths.ptr);
     free_stack(s_info->array_sizes_stack);
     free_stack(s_info->array_serialiation_start_index);
-    va_end(*s_info->current_arg_info.args);
 }
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string,
@@ -1788,6 +1787,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     if(format == NULL){
         default_formatting(&result, result_size, &s_info);
         free_serialization_info(&s_info);
+        va_end(args);
         return result;
     }
 
@@ -1798,6 +1798,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     char* cleaned_format = remove_spaces_except_quotes((const fchar*)format, format_len, &len);
     if (!cleaned_format) {
         free_serialization_info(&s_info);
+        va_end(args);
         return NULL;
     }
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
