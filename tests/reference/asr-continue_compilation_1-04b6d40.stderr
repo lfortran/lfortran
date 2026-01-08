@@ -209,6 +209,18 @@ semantic error: Intrinsic 'not_real' is not recognized
 179 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
 
+semantic error: Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:180:5
+    |
+180 |     OPEN(unit=10, recl=10, recl=20)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `recl` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:181:5
+    |
+181 |     OPEN(unit=10, recl=10.5)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
     |
