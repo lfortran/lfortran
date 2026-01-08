@@ -890,15 +890,17 @@ public:
     // on non-macOS ARM platforms, but we use struct types internally.
     llvm::Value* convert_complex_vector_to_struct(llvm::Value* val, llvm::Type* complex_type) {
         llvm::Type* val_type = val->getType();
-        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
-            // val is a vector type like <2 x float> or <2 x double>
-            // Convert to struct type like {float, float} or {double, double}
-            llvm::AllocaInst *p_vec = llvm_utils->CreateAlloca(*builder, val_type);
-            builder->CreateStore(val, p_vec);
-            llvm::Value* p_struct = builder->CreateBitCast(p_vec, complex_type->getPointerTo());
-            return llvm_utils->CreateLoad2(complex_type, p_struct);
+        if (!llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            return val;
         }
-        return val;
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        llvm::Value* idx0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* idx1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
+        llvm::Value* re = builder->CreateExtractElement(val, idx0);
+        llvm::Value* im = builder->CreateExtractElement(val, idx1);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value* lfortran_complex_bin_op(llvm::Value* left_arg, llvm::Value* right_arg,
@@ -1283,37 +1285,36 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        if( c->getType()->isPointerTy() ) {
-            c = llvm_utils->CreateLoad2(complex_type, c);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            return builder->CreateExtractElement(val, idx0);
         }
+        return builder->CreateExtractValue(val, {0});
     }
 
     llvm::Value *complex_im(llvm::Value *c, llvm::Type* complex_type=nullptr) {
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            return builder->CreateExtractElement(val, idx1);
+        }
+        return builder->CreateExtractValue(val, {1});
     }
 
     llvm::Value *complex_from_floats(llvm::Value *re, llvm::Value *im,
@@ -1321,18 +1322,20 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, complex_type);
-        std::vector<llvm::Value *> idx1 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        std::vector<llvm::Value *> idx2 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pre = llvm_utils->CreateGEP2(complex_type, pres, idx1);
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pres, idx2);
-        builder->CreateStore(re, pre);
-        builder->CreateStore(im, pim);
-        return llvm_utils->CreateLoad2(complex_type, pres);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(complex_type)) {
+            llvm::Value* result = llvm::UndefValue::get(complex_type);
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            result = builder->CreateInsertElement(result, re, idx0);
+            result = builder->CreateInsertElement(result, im, idx1);
+            return result;
+        }
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
