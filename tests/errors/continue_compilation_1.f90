@@ -177,8 +177,8 @@ program continue_compilation_1
     character(:), allocatable :: allocate_char = "H"
     intrinsic :: not_real
     call sub(not_real)
-    OPEN(unit=10, recl=10, recl=20)
-    OPEN(unit=10, recl=10.5)
+
+
 
 
 
@@ -471,6 +471,9 @@ program continue_compilation_1
 
     read(*, *, end=999) x   
     read(*, *, err=500) x
+    
+    OPEN(unit=10, recl=10, recl=20)
+    OPEN(unit=10, recl=10.5)
 
     contains
     subroutine sub(f)
