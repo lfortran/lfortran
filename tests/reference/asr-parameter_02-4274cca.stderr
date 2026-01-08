@@ -1,0 +1,5 @@
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+ --> tests/errors/parameter_02.f90:3:36
+  |
+3 |     integer, parameter :: result = minloc(arr, 1, [.false., .false., .false.])
+  |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
