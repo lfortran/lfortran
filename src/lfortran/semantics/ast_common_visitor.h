@@ -6865,7 +6865,7 @@ public:
     }
 
     void fill_new_dims(ASR::Array_t* t, const std::vector<ASR::expr_t*>& func_calls,
-        Vec<ASR::dimension_t>& new_dims){
+        Vec<ASR::dimension_t>& new_dims) {
         new_dims.reserve(al, t->n_dims);
         for ( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
             if (func_calls[i] != nullptr) {
