@@ -2421,8 +2421,13 @@ public:
                             ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                         current_scope->add_symbol(x.m_assoc_name, assoc_sym);
                         ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
-                        ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
-                            ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                        ASR::expr_t* cast_expr = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*variable_type) && rank == 0) {
+                            cast_expr = m_selector;
+                        } else {
+                            cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
+                                ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                        }
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
                         rank_body.push_back(al, assoc_stmt);
                     }

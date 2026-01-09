@@ -6926,7 +6926,22 @@ public:
                     llvm_target = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
 
                     // Store vptr
-                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                    if (ASRUtils::is_array(value_type)) {
+                        llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value, ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable_pointer(value_type)), module.get());
+                        llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), 
+                            arr_descr->get_pointer_to_data(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type), llvm_value, module.get()));
+                        
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                           llvm::Value* src_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, 
+                               llvm_utils->create_gep2(value_el_type, src_data_ptr, 0));
+                           
+                           llvm::Value* dest_vptr_ptr = llvm_utils->create_gep2(target_llvm_type, llvm_target, 0);
+                           builder->CreateStore(src_vptr, dest_vptr_ptr);
+                           
+                           llvm_value = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, 
+                               llvm_utils->create_gep2(value_el_type, src_data_ptr, 1));
+                        }
+                    } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
                         struct_api->store_class_vptr(
                             ASRUtils::get_struct_sym_from_struct_expr(x.m_value), llvm_target, module.get());
                     } else {
