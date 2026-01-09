@@ -9677,11 +9677,14 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
-        llvm::Value *left_val = tmp;
+        llvm::Value* left_val, *left_len;
+        std::tie(left_val, left_len) = get_string_data_and_length(x.m_left);
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
         tmp = lfortran_strrepeat(left_val, right_val);
+        right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt64Ty(context));
+        tmp = llvm_utils->create_string_descriptor(tmp,
+            builder->CreateMul(left_len, right_val), "strRepeat_desc");
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
