@@ -13944,6 +13944,23 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
             }
 
+            if (orig_arg && x_abi == ASR::abiType::BindC &&
+                ASRUtils::is_character(*orig_arg->m_type) &&
+                ASRUtils::is_array(orig_arg->m_type)) {
+                ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(orig_arg->m_type);
+                if (phys_type == ASR::array_physical_typeType::PointerArray ||
+                    phys_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+                    llvm::Type* tmp_type = tmp->getType();
+                    if (tmp_type->isPointerTy()) {
+                        llvm::Type* pointee_type = tmp_type->getPointerElementType();
+                        if (pointee_type == llvm_utils->string_descriptor) {
+                            llvm::Value* data_ptr = llvm_utils->CreateGEP2(llvm_utils->string_descriptor, tmp, 0);
+                            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr);
+                        }
+                    }
+                }
+            }
+
             args.push_back(tmp);
         }
         return args;
