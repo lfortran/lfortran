@@ -177,8 +177,8 @@ program continue_compilation_1
     character(:), allocatable :: allocate_char = "H"
     intrinsic :: not_real
     call sub(not_real)
-
-
+    integer :: param_arr(3) = [5, 10, 15]
+    integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
 
 
 

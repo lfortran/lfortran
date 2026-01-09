@@ -185,6 +185,12 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
 177 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:181:42
+    |
+181 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
   --> tests/errors/continue_compilation_1.f90:82:18
    |
