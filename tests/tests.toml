@@ -4695,14 +4695,6 @@ filename = "errors/array_shape_02.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_shape_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/array_shape_04.f90"
-asr = true
-
-[[test]]
 filename = "errors/array_shape_05.f90"
 run = true
 

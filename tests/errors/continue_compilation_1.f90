@@ -179,15 +179,12 @@ program continue_compilation_1
     call sub(not_real)
     integer :: param_arr(3) = [5, 10, 15]
     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
-
-
-
-
-
-
-
-
-
+    integer :: cc_a3(2) = [2, 3]
+    integer :: cc_temp3(2)
+    integer :: cc_i0 = 1
+    integer :: cc_a4(2)
+    integer :: cc_temp4(5)
+    integer :: cc_i1 = 1
 
 
 
@@ -220,6 +217,11 @@ program continue_compilation_1
     a5 = 8
     b5 = 12_8
     c5 = 2
+
+    cc_a3 = cc_temp3(cc_i0:cc_i0)
+    print *, size(cc_a3)
+    cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    print *, size(cc_a4)
 
     !loop_test
     do i=1,3
