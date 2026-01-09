@@ -1,4 +1,4 @@
-program main
+program str_to_char
    implicit none
 
    character(kind=1, len=3) :: text = "hej"
@@ -16,4 +16,4 @@ contains
       print *, "get_index called with: ", len(c)
       print *, "index: ", index(lowercase, c)
    end subroutine
-end program
+end program str_to_char
