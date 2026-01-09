@@ -6507,6 +6507,48 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
+                // Compile-time bounds check for fixed-size arrays
+                ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)));
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+                for (size_t i = 0; i < std::min(n_dims, args.size()); i++) {
+                    // Only check scalar indices (m_left=null, m_step=null, m_right=index)
+                    if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
+                        continue;
+                    }
+                    ASR::expr_t* idx_expr = args[i].m_right;
+                    if (idx_expr == nullptr) continue;
+                    ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
+                    int64_t idx = 0;
+                    if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
+                        // Get lower bound (default 1)
+                        int64_t lb = 1;
+                        if (m_dims[i].m_start) {
+                            ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
+                            if (start_val) {
+                                ASRUtils::extract_value(start_val, lb);
+                            }
+                        }
+                        // Get upper bound if length is known
+                        if (m_dims[i].m_length) {
+                            ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
+                            int64_t len = 0;
+                            if (len_val && ASRUtils::extract_value(len_val, len)) {
+                                int64_t ub = lb + len - 1;
+                                if (idx < lb || idx > ub) {
+                                    diag.add(Diagnostic(
+                                        "Array index " + std::to_string(idx) +
+                                        " is out of bounds (" + std::to_string(lb) +
+                                        " to " + std::to_string(ub) +
+                                        ") in dimension " + std::to_string(i + 1),
+                                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                                    throw SemanticAbort();
+                                }
+                            }
+                        }
+                    }
+                }
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
