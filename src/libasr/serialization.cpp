@@ -1,3 +1,5 @@
+#include <string>
+
 #include <libasr/config.h>
 #include <libasr/serialization.h>
 #include <libasr/asr_utils.h>
@@ -32,12 +34,9 @@ public:
     }
 
     void write_symbol(const ASR::symbol_t &x) {
-        uint64_t symtab_counter = symbol_parent_symtab(&x)->counter;
-        uint8_t sym_type = static_cast<uint8_t>(x.type);
-        std::string sym_name = symbol_name(&x);
-        write_int64(symtab_counter);
-        write_int8(sym_type);
-        write_string(sym_name);
+        write_int64(symbol_parent_symtab(&x)->counter);
+        write_int8(x.type);
+        write_string(symbol_name(&x));
     }
 };
 
@@ -49,10 +48,7 @@ std::string serialize(const ASR::asr_t &asr) {
 }
 
 std::string serialize(const ASR::TranslationUnit_t &unit) {
-    ASRSerializationVisitor v;
-    v.write_int8(unit.base.type);
-    v.visit_TranslationUnit(unit);
-    return v.get_str();
+    return serialize((ASR::asr_t&)(unit));
 }
 
 class ASRDeserializationVisitor :
