@@ -12268,11 +12268,9 @@ public:
         args.push_back(advance);
         args.push_back(advance_length);
 
-        this->visit_expr_wrapper(fmt_expr, true);
-        llvm::Value* fmt_data = llvm_utils->get_string_data(
-            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
-        llvm::Value* fmt_len = llvm_utils->get_string_length(
-            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        llvm::Value* fmt_data;
+        llvm::Value* fmt_len;
+        std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
         args.push_back(fmt_data);
         args.push_back(fmt_len);
 
