@@ -209,8 +209,6 @@ program continue_compilation_1
 
 
 
-
-
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -220,9 +218,6 @@ program continue_compilation_1
     a5 = 8
     b5 = 12_8
     c5 = 2
-
-    i = 1
-    print *, string(i,i)
 
     !loop_test
     do i=1,3
@@ -256,6 +251,19 @@ program continue_compilation_1
     !merge_bits_run
     print *, merge_bits(a5, b5, c5)
 
+    !Does not work correctly : Issue: #5469 -------------
+    ! !max_01
+    ! y1 = 5.2d0
+    ! z1 = 9.0
+    ! print *, max(y1, z1)
+    ! !max_02
+    ! print *, max(b5, a5)
+    ! !min_01
+    ! print *, min(y1, z1)
+    ! !min_02
+    ! print *, min(b5, a5)
+    !------------------------------
+
     !modulo_01
     print *, modulo(1, 0)
     !more_kwargs_than_acceptable_to_subroutine
@@ -272,6 +280,8 @@ program continue_compilation_1
     call FLUSH(1, 2)
 
     print*, verify(string, set, kind= [4, 4] )
+    i = 1
+    print *, string(i,i)
     print *, and([1, 2, 3], [1, 2, 3])
 
     print *, dshiftl(1, 2, 34)
