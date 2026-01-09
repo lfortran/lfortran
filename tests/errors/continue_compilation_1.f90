@@ -209,6 +209,8 @@ program continue_compilation_1
 
 
 
+
+
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -280,8 +282,6 @@ program continue_compilation_1
     call FLUSH(1, 2)
 
     print*, verify(string, set, kind= [4, 4] )
-    i = 1
-    print *, string(i,i)
     print *, and([1, 2, 3], [1, 2, 3])
 
     print *, dshiftl(1, 2, 34)
@@ -474,6 +474,9 @@ program continue_compilation_1
     
     OPEN(unit=10, recl=10, recl=20)
     OPEN(unit=10, recl=10.5)
+
+    i = 1
+    print *, string(i,i)
 
     contains
     subroutine sub(f)

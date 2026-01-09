@@ -210,145 +210,139 @@ semantic error: Intrinsic 'not_real' is not recognized
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
 
 semantic error: Assignment to loop variable `i` is not allowed
-   --> tests/errors/continue_compilation_1.f90:224:8
+   --> tests/errors/continue_compilation_1.f90:226:8
     |
-224 |        i = i + 1
+226 |        i = i + 1
     |        ^ 
 
 semantic error:  first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=4)
-   --> tests/errors/continue_compilation_1.f90:228:13
+   --> tests/errors/continue_compilation_1.f90:230:13
     |
-228 |     print*, maskl(63)
+230 |     print*, maskl(63)
     |             ^^^^^^^^^ 
 
 semantic error: first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=4)
-   --> tests/errors/continue_compilation_1.f90:230:13
+   --> tests/errors/continue_compilation_1.f90:232:13
     |
-230 |     print*, maskr(63)
+232 |     print*, maskr(63)
     |             ^^^^^^^^^ 
 
 semantic error: first argument of `maskl` must be nonnegative
-   --> tests/errors/continue_compilation_1.f90:232:13
+   --> tests/errors/continue_compilation_1.f90:234:13
     |
-232 |     print*, maskl(-24)
+234 |     print*, maskl(-24)
     |             ^^^^^^^^^^ 
 
 semantic error: first argument of `maskr` must be nonnegative
-   --> tests/errors/continue_compilation_1.f90:234:13
+   --> tests/errors/continue_compilation_1.f90:236:13
     |
-234 |     print*, maskr(-24)
+236 |     print*, maskr(-24)
     |             ^^^^^^^^^^ 
 
 semantic error: The argument `matrix_a` in `matmul` must be of type Integer, Real, Complex or Logical
-   --> tests/errors/continue_compilation_1.f90:236:21
+   --> tests/errors/continue_compilation_1.f90:238:21
     |
-236 |     print *, matmul(a1, b1)
+238 |     print *, matmul(a1, b1)
     |                     ^^ 
 
 semantic error: The argument `matrix_b` in `matmul` must be of type Integer, Real or Complex if first matrix is of numeric type
-   --> tests/errors/continue_compilation_1.f90:238:25
+   --> tests/errors/continue_compilation_1.f90:240:25
     |
-238 |     print *, matmul(b1, a1)
+240 |     print *, matmul(b1, a1)
     |                         ^^ 
 
 semantic error: The `matmul` intrinsic doesn't handle logical type yet
-   --> tests/errors/continue_compilation_1.f90:240:14
+   --> tests/errors/continue_compilation_1.f90:242:14
     |
-240 |     print *, matmul(a2, b1)
+242 |     print *, matmul(a2, b1)
     |              ^^^^^^^^^^^^^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 3
-   --> tests/errors/continue_compilation_1.f90:242:21
+   --> tests/errors/continue_compilation_1.f90:244:21
     |
-242 |     print *, matmul(a3, b1)
+244 |     print *, matmul(a3, b1)
     |                     ^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 4
-   --> tests/errors/continue_compilation_1.f90:244:25
+   --> tests/errors/continue_compilation_1.f90:246:25
     |
-244 |     print *, matmul(b1, b4)
+246 |     print *, matmul(b1, b4)
     |                         ^^ 
 
 semantic error: The argument `matrix_b` in `matmul` must be of rank 2, provided an array with rank, 1
-   --> tests/errors/continue_compilation_1.f90:246:24
+   --> tests/errors/continue_compilation_1.f90:248:24
     |
-246 |     print *, matmul(a, b)
+248 |     print *, matmul(a, b)
     |                        ^ 
 
 semantic error: `transpose` accepts arrays of rank 2 only, provided an array with rank, 1
-   --> tests/errors/continue_compilation_1.f90:248:24
+   --> tests/errors/continue_compilation_1.f90:250:24
     |
-248 |     print *, transpose(a)
+250 |     print *, transpose(a)
     |                        ^ 
-
-semantic error: Kind of all the arguments of Mergebits must be the same
-   --> tests/errors/continue_compilation_1.f90:250:14
-    |
-250 |     print *, merge_bits(8, 12_8, 2)
-    |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Kind of all the arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_1.f90:252:14
     |
-252 |     print *, merge_bits(a5, b5, c5)
+252 |     print *, merge_bits(8, 12_8, 2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Mergebits must be the same
+   --> tests/errors/continue_compilation_1.f90:254:14
+    |
+254 |     print *, merge_bits(a5, b5, c5)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Second argument of modulo cannot be 0
-   --> tests/errors/continue_compilation_1.f90:268:14
+   --> tests/errors/continue_compilation_1.f90:270:14
     |
-268 |     print *, modulo(1, 0)
+270 |     print *, modulo(1, 0)
     |              ^^^^^^^^^^^^ 
 
 semantic error: Procedure 'my_func' accepts 2 arguments, but 3 were provided
-   --> tests/errors/continue_compilation_1.f90:270:5
+   --> tests/errors/continue_compilation_1.f90:272:5
     |
-270 |     call my_func(y=1, x=2, z=1)
+272 |     call my_func(y=1, x=2, z=1)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ incorrect number of arguments to 'my_func'
 
 semantic error: Result of `nint` overflows its kind(4)
-   --> tests/errors/continue_compilation_1.f90:273:13
+   --> tests/errors/continue_compilation_1.f90:275:13
     |
-273 |     print*, nint(1e12_8)
+275 |     print*, nint(1e12_8)
     |             ^^^^^^^^^^^^ 
 
 semantic error: Result of `nint` overflows its kind(4)
-   --> tests/errors/continue_compilation_1.f90:274:13
+   --> tests/errors/continue_compilation_1.f90:276:13
     |
-274 |     print*, nint(1000000000000.0000000000000000d0)
+276 |     print*, nint(1000000000000.0000000000000000d0)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid argument `hello` supplied
-   --> tests/errors/continue_compilation_1.f90:276:5
+   --> tests/errors/continue_compilation_1.f90:278:5
     |
-276 |     OPEN(file="numbers", hello="world")
+278 |     OPEN(file="numbers", hello="world")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Cannot assign to a constant variable
-   --> tests/errors/continue_compilation_1.f90:278:5
+   --> tests/errors/continue_compilation_1.f90:280:5
     |
-278 |     i1 = 3
+280 |     i1 = 3
     |     ^^^^^^ assignment here
     |
 130 |     integer, parameter :: i1 = 2
     |                           ~~~~~~ declared as constant
 
 semantic error: Expected 0 or 1 arguments, got 2 arguments instead.
-   --> tests/errors/continue_compilation_1.f90:280:5
+   --> tests/errors/continue_compilation_1.f90:282:5
     |
-280 |     call FLUSH(1, 2)
+282 |     call FLUSH(1, 2)
     |     ^^^^^^^^^^^^^^^^ 
 
 semantic error: `kind` argument of `verify` intrinsic must be a scalar
-   --> tests/errors/continue_compilation_1.f90:282:39
+   --> tests/errors/continue_compilation_1.f90:284:39
     |
-282 |     print*, verify(string, set, kind= [4, 4] )
+284 |     print*, verify(string, set, kind= [4, 4] )
     |                                       ^^^^^^ 
-
-semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
-   --> tests/errors/continue_compilation_1.f90:284:14
-    |
-284 |     print *, string(i,i)
-    |              ^^^^^^^^^^^ 
 
 semantic error: arguments of `and` intrinsic must be scalar
    --> tests/errors/continue_compilation_1.f90:285:14
@@ -984,3 +978,9 @@ semantic error: `recl` must be of type, Integer
     |
 476 |     OPEN(unit=10, recl=10.5)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
+   --> tests/errors/continue_compilation_1.f90:479:14
+    |
+479 |     print *, string(i,i)
+    |              ^^^^^^^^^^^ 
