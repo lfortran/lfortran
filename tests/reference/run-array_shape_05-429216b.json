@@ -2,12 +2,12 @@
     "basename": "run-array_shape_05-429216b",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/errors/array_shape_05.f90",
-    "infile_hash": "d9b94449a4895243144cbbb6973a8467ab9bc3a938649ba86ef2f37d",
+    "infile_hash": "6aaeaa16ca6d95cc558475aad2175d4c3fe33eeabdd5b6e5d8778161",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-array_shape_05-429216b.stderr",
-    "stderr_hash": "1fb1af27efe14b1c783fa6d77a143a2ee28e93d96ccb6f884bf8cfe3",
+    "stderr_hash": "236d0d038197b0cc91ab35a56f5e4c9f825ffdce7fa99652e16e7e01",
     "returncode": 1
 }
