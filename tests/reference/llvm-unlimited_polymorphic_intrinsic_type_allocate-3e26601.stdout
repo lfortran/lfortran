@@ -27,42 +27,44 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %2 = alloca i1, align 1
+  %3 = alloca i1, align 1
+  %4 = alloca i1, align 1
+  %x1 = alloca i64, align 8
+  %var = alloca %"~unlimited_polymorphic_type"*, align 8
   %x = alloca i64, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %var = alloca %"~unlimited_polymorphic_type"*, align 8
   store %"~unlimited_polymorphic_type"* null, %"~unlimited_polymorphic_type"** %var, align 8
-  %x1 = alloca i64, align 8
   store i64 10, i64* %x1, align 4
-  %2 = call i8* @_lfortran_malloc(i64 8)
-  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 8, i1 false)
-  %3 = call i8* @_lfortran_malloc(i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
-  %4 = bitcast i8* %3 to %"~unlimited_polymorphic_type"*
-  store %"~unlimited_polymorphic_type"* %4, %"~unlimited_polymorphic_type"** %var, align 8
-  %5 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  %6 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %5, i32 0, i32 1
-  store i8* %2, i8** %6, align 8
-  %7 = load i8*, i8** %6, align 8
-  %8 = bitcast i8* %7 to i64*
-  %9 = bitcast %"~unlimited_polymorphic_type"* %4 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [2 x i8*] }, { [2 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %9, align 8
-  %10 = load i64, i64* %x1, align 4
-  store i64 %10, i64* %8, align 4
-  %11 = alloca i1, align 1
-  %12 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  %13 = bitcast %"~unlimited_polymorphic_type"* %12 to i8*
-  %14 = call i8* @__lfortran_dynamic_cast(i8* %13, i8* bitcast ({ i8*, i8* }* @_Type_Info_integer_8 to i8*), i1 true)
-  %15 = icmp ne i8* %14, null
-  store i1 %15, i1* %11, align 1
-  %16 = load i1, i1* %11, align 1
-  br i1 %16, label %then, label %else
+  %5 = call i8* @_lfortran_malloc(i64 8)
+  call void @llvm.memset.p0i8.i32(i8* %5, i8 0, i32 8, i1 false)
+  %6 = call i8* @_lfortran_malloc(i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 16, i1 false)
+  %7 = bitcast i8* %6 to %"~unlimited_polymorphic_type"*
+  store %"~unlimited_polymorphic_type"* %7, %"~unlimited_polymorphic_type"** %var, align 8
+  %8 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
+  %9 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %8, i32 0, i32 1
+  store i8* %5, i8** %9, align 8
+  %10 = load i8*, i8** %9, align 8
+  %11 = bitcast i8* %10 to i64*
+  %12 = bitcast %"~unlimited_polymorphic_type"* %7 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [2 x i8*] }, { [2 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  %13 = load i64, i64* %x1, align 4
+  store i64 %13, i64* %11, align 4
+  %14 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
+  %15 = bitcast %"~unlimited_polymorphic_type"* %14 to i8*
+  %16 = call i8* @__lfortran_dynamic_cast(i8* %15, i8* bitcast ({ i8*, i8* }* @_Type_Info_integer_8 to i8*), i1 true)
+  %17 = icmp ne i8* %16, null
+  store i1 %17, i1* %4, align 1
+  %18 = load i1, i1* %4, align 1
+  br i1 %18, label %then, label %else
 
 then:                                             ; preds = %.entry
   br label %"~select_type_block_.start"
 
 "~select_type_block_.start":                      ; preds = %then
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %19 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %19, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %"~select_type_block_.end"
 
 "~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
@@ -72,21 +74,20 @@ then:                                             ; preds = %.entry
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %18 = alloca i1, align 1
-  %19 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
-  %20 = bitcast %"~unlimited_polymorphic_type"* %19 to i8*
-  %21 = call i8* @__lfortran_dynamic_cast(i8* %20, i8* bitcast ({ i8*, i8* }* @_Type_Info_integer_4 to i8*), i1 true)
-  %22 = icmp ne i8* %21, null
-  store i1 %22, i1* %18, align 1
-  %23 = load i1, i1* %18, align 1
-  br i1 %23, label %then2, label %else3
+  %20 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
+  %21 = bitcast %"~unlimited_polymorphic_type"* %20 to i8*
+  %22 = call i8* @__lfortran_dynamic_cast(i8* %21, i8* bitcast ({ i8*, i8* }* @_Type_Info_integer_4 to i8*), i1 true)
+  %23 = icmp ne i8* %22, null
+  store i1 %23, i1* %3, align 1
+  %24 = load i1, i1* %3, align 1
+  br i1 %24, label %then2, label %else3
 
 then2:                                            ; preds = %else
   br label %"~select_type_block_1.start"
 
 "~select_type_block_1.start":                     ; preds = %then2
-  %24 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %24, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %25 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %25, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   br label %"~select_type_block_1.end"
 
 "~select_type_block_1.end":                       ; preds = %"~select_type_block_1.start"
@@ -96,13 +97,12 @@ then2:                                            ; preds = %else
   br label %ifcont
 
 else3:                                            ; preds = %else
-  %25 = alloca i1, align 1
   %26 = load %"~unlimited_polymorphic_type"*, %"~unlimited_polymorphic_type"** %var, align 8
   %27 = bitcast %"~unlimited_polymorphic_type"* %26 to i8*
   %28 = call i8* @__lfortran_dynamic_cast(i8* %27, i8* bitcast ({ i8*, i8* }* @_Type_Info_real_4 to i8*), i1 true)
   %29 = icmp ne i8* %28, null
-  store i1 %29, i1* %25, align 1
-  %30 = load i1, i1* %25, align 1
+  store i1 %29, i1* %2, align 1
+  %30 = load i1, i1* %2, align 1
   br i1 %30, label %then4, label %else5
 
 then4:                                            ; preds = %else3

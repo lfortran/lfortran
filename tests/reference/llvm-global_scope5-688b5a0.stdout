@@ -5,8 +5,8 @@ source_filename = "LFortran"
 
 define i32 @__lfortran_evaluate_1() {
 .entry:
-  %__lfortran_evaluate_11 = alloca i32, align 4
   %__lfortran_evaluate_12 = alloca i32, align 4
+  %__lfortran_evaluate_11 = alloca i32, align 4
   store i32 6, i32* @x, align 4
   %0 = load i32, i32* @x, align 4
   %1 = mul i32 2, %0
