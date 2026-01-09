@@ -198,7 +198,7 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
-    Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
+    Vec<llvm::Value*> heap_fixed_size_arrays;  // i8** slots for heap allocations to free
     bool in_block_context = false;  // Flag to track if we're inside a BLOCK construct
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
@@ -3531,8 +3531,7 @@ public:
                 if( !compiler_options.stack_arrays ) {
                     llvm::Value* data_ptr = arr_descr->get_pointer_to_data(array_type, tmp);
                     llvm::Value* data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
-                    heap_fixed_size_arrays.push_back(al,
-                        builder->CreateBitCast(data, llvm_utils->i8_ptr));
+                    track_heap_fixed_size_array(builder->CreateBitCast(data, llvm_utils->i8_ptr));
                 }
                 break;
             }
@@ -3554,7 +3553,7 @@ public:
                     llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, total_size_val);
                     target = builder->CreateBitCast(ptr_i8, target_type->getPointerTo());
-                    heap_fixed_size_arrays.push_back(al, ptr_i8);
+                    track_heap_fixed_size_array(ptr_i8);
                 } else {
                     target = llvm_utils->CreateAlloca(
                         target_type, nullptr, "fixed_size_reshaped_array");
@@ -5672,7 +5671,7 @@ public:
                             context, *module, *builder, malloc_size);
                         ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                         // Track for cleanup at function exit
-                        heap_fixed_size_arrays.push_back(al, ptr_i8);
+                        track_heap_fixed_size_array(ptr_i8);
                     } else {
 #if LLVM_VERSION_MAJOR >= 15
                         bool is_llvm_ptr = false;
@@ -6246,9 +6245,26 @@ public:
     inline void free_heap_fixed_size_arrays() {
         // Free all heap-allocated large fixed-size arrays
         for (size_t i = 0; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+            llvm::Value* slot = heap_fixed_size_arrays[i];
+            llvm::Value* ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+            llvm_utils->lfortran_free(ptr);
         }
         heap_fixed_size_arrays.n = 0;
+    }
+
+    llvm::Value* create_heap_alloc_slot() {
+        llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+        llvm::IRBuilder<> entry_builder(context);
+        entry_builder.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+        llvm::Value* slot = entry_builder.CreateAlloca(llvm_utils->i8_ptr, nullptr, "heap_alloc_slot");
+        entry_builder.CreateStore(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr), slot);
+        return slot;
+    }
+
+    void track_heap_fixed_size_array(llvm::Value* ptr_i8) {
+        llvm::Value* slot = create_heap_alloc_slot();
+        builder->CreateStore(ptr_i8, slot);
+        heap_fixed_size_arrays.push_back(al, slot);
     }
 
     inline void define_function_exit(const ASR::Function_t& x) {
@@ -8784,7 +8800,9 @@ public:
 
         // Free BLOCK-local heap arrays before exiting BLOCK (important for loops)
         for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+            llvm::Value* slot = heap_fixed_size_arrays[i];
+            llvm::Value* ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+            llvm_utils->lfortran_free(ptr);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
 
