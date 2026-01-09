@@ -204,9 +204,12 @@ inline std::string get_intrinsic_name(int64_t x) {
 
 namespace IntrinsicElementalFunctionRegistry {
 
-    static const std::map<int64_t,
+    inline const std::map<int64_t,
         std::tuple<impl_function,
-                   verify_function>>& intrinsic_function_by_id_db = {
+                   verify_function>>& get_intrinsic_function_by_id_db() {
+        static const std::map<int64_t,
+            std::tuple<impl_function,
+                       verify_function>> intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicElementalFunctions::ObjectType),
             {nullptr, &ObjectType::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Gamma),
@@ -565,9 +568,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
-    };
+        };
+        return intrinsic_function_by_id_db;
+    }
 
-    static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
+    inline const std::map<int64_t, std::string>& get_intrinsic_function_id_to_name() {
+        static const std::map<int64_t, std::string> intrinsic_function_id_to_name = {
         {static_cast<int64_t>(IntrinsicElementalFunctions::ObjectType),
             "type"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Gamma),
@@ -922,12 +928,16 @@ namespace IntrinsicElementalFunctionRegistry {
             "SymbolicGetArgument"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             "int"},
-    };
+        };
+        return intrinsic_function_id_to_name;
+    }
 
-
-    static const std::map<std::string,
+    inline const std::map<std::string,
         std::tuple<create_intrinsic_function,
-                    eval_intrinsic_function>>& intrinsic_function_by_name_db = {
+                    eval_intrinsic_function>>& get_intrinsic_function_by_name_db() {
+        static const std::map<std::string,
+            std::tuple<create_intrinsic_function,
+                        eval_intrinsic_function>> intrinsic_function_by_name_db = {
                 {"type", {&ObjectType::create_ObjectType, &ObjectType::eval_ObjectType}},
                 {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
                 {"log", {&Log::create_Log, &Log::eval_Log}},
@@ -1106,37 +1116,39 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"SinQ", {&SymbolicSinQ::create_SymbolicSinQ, &SymbolicSinQ::eval_SymbolicSinQ}},
                 {"GetArgument", {&SymbolicGetArgument::create_SymbolicGetArgument, &SymbolicGetArgument::eval_SymbolicGetArgument}},
                 {"int", {&Int::create_Int, &Int::eval_Int}},
-    };
+        };
+        return intrinsic_function_by_name_db;
+    }
 
     static inline bool is_intrinsic_function(const std::string& name) {
-        return intrinsic_function_by_name_db.find(name) != intrinsic_function_by_name_db.end();
+        return get_intrinsic_function_by_name_db().find(name) != get_intrinsic_function_by_name_db().end();
     }
 
     static inline bool is_intrinsic_function(int64_t id) {
-        return intrinsic_function_by_id_db.find(id) != intrinsic_function_by_id_db.end();
+        return get_intrinsic_function_by_id_db().find(id) != get_intrinsic_function_by_id_db().end();
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return std::get<0>(intrinsic_function_by_name_db.at(name));
+        return std::get<0>(get_intrinsic_function_by_name_db().at(name));
     }
 
     static inline verify_function get_verify_function(int64_t id) {
-        return std::get<1>(intrinsic_function_by_id_db.at(id));
+        return std::get<1>(get_intrinsic_function_by_id_db().at(id));
     }
 
     static inline impl_function get_instantiate_function(int64_t id) {
-        if( intrinsic_function_by_id_db.find(id) == intrinsic_function_by_id_db.end() ) {
+        if( get_intrinsic_function_by_id_db().find(id) == get_intrinsic_function_by_id_db().end() ) {
             return nullptr;
         }
-        return std::get<0>(intrinsic_function_by_id_db.at(id));
+        return std::get<0>(get_intrinsic_function_by_id_db().at(id));
     }
 
     static inline std::string get_intrinsic_function_name(int64_t id) {
-        if( intrinsic_function_id_to_name.find(id) == intrinsic_function_id_to_name.end() ) {
+        if( get_intrinsic_function_id_to_name().find(id) == get_intrinsic_function_id_to_name().end() ) {
             throw LCompilersException("IntrinsicFunction with ID " + std::to_string(id) +
                                       " has no name registered for it");
         }
-        return intrinsic_function_id_to_name.at(id);
+        return get_intrinsic_function_id_to_name().at(id);
     }
 
 } // namespace IntrinsicElementalFunctionRegistry
@@ -1199,19 +1211,23 @@ namespace IsIostatEor {
 
 namespace IntrinsicImpureFunctionRegistry {
 
-    static const std::map<std::string, std::tuple<create_intrinsic_function,
-            eval_intrinsic_function>>& function_by_name_db = {
-        {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
-        {"is_iostat_eor", {&IsIostatEor::create_IsIostatEor, nullptr}},
-        {"allocated", {&Allocated::create_Allocated, nullptr}},
-    };
+    inline const std::map<std::string, std::tuple<create_intrinsic_function,
+            eval_intrinsic_function>>& get_function_by_name_db() {
+        static const std::map<std::string, std::tuple<create_intrinsic_function,
+                eval_intrinsic_function>> function_by_name_db = {
+            {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
+            {"is_iostat_eor", {&IsIostatEor::create_IsIostatEor, nullptr}},
+            {"allocated", {&Allocated::create_Allocated, nullptr}},
+        };
+        return function_by_name_db;
+    }
 
     static inline bool is_intrinsic_function(const std::string& name) {
-        return function_by_name_db.find(name) != function_by_name_db.end();
+        return get_function_by_name_db().find(name) != get_function_by_name_db().end();
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return  std::get<0>(function_by_name_db.at(name));
+        return  std::get<0>(get_function_by_name_db().at(name));
     }
 
 } // namespace IntrinsicImpureFunctionRegistry
