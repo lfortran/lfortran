@@ -1,4 +1,4 @@
-program pp
+program array_shape_func_call
   integer :: call_count = 0
 
   call ss(ff(f(), 20))
@@ -25,4 +25,4 @@ contains
     integer :: x(*)
   end subroutine
 
-end program pp
+end program array_shape_func_call
