@@ -1,0 +1,731 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            fpm_manifest_executable_modules_30:
+                (Module
+                    (SymbolTable
+                        7
+                        {
+                            default_executable:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            1_executable_config_main:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_executable_config_main
+                                                    8 main
+                                                    executable_config
+                                                    []
+                                                    main
+                                                    Public
+                                                ),
+                                            1_executable_config_name:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_executable_config_name
+                                                    8 name
+                                                    executable_config
+                                                    []
+                                                    name
+                                                    Public
+                                                ),
+                                            1_executable_config_source_dir:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_executable_config_source_dir
+                                                    8 source_dir
+                                                    executable_config
+                                                    []
+                                                    source_dir
+                                                    Public
+                                                ),
+                                            name:
+                                                (Variable
+                                                    9
+                                                    name
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    9
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    7 executable_config
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    default_executable
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (String 1 () AssumedLength DescriptorString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 self)
+                                    (Var 9 name)]
+                                    [(Assignment
+                                        (StructInstanceMember
+                                            (Var 9 self)
+                                            9 1_executable_config_name
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                        (Var 9 name)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (Var 9 self)
+                                            9 1_executable_config_source_dir
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                        (StringConstant
+                                            "app"
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (StructInstanceMember
+                                            (Var 9 self)
+                                            9 1_executable_config_main
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )
+                                        (StringConstant
+                                            "main.f90"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            executable_config:
+                                (Struct
+                                    (SymbolTable
+                                        8
+                                        {
+                                            main:
+                                                (Variable
+                                                    8
+                                                    main
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            name:
+                                                (Variable
+                                                    8
+                                                    name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            source_dir:
+                                                (Variable
+                                                    8
+                                                    source_dir
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    executable_config
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [name
+                                    source_dir
+                                    main]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    fpm_manifest_executable_modules_30
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                ),
+            fpm_manifest_modules_30:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            default_executable:
+                                (ExternalSymbol
+                                    2
+                                    default_executable
+                                    7 default_executable
+                                    fpm_manifest_executable_modules_30
+                                    []
+                                    default_executable
+                                    Public
+                                ),
+                            package_config_t:
+                                (ExternalSymbol
+                                    2
+                                    package_config_t
+                                    4 package_config_t
+                                    fpm_manifest_package_modules_30
+                                    []
+                                    package_config_t
+                                    Public
+                                ),
+                            package_defaults:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            1_package_config_t_executable:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_package_config_t_executable
+                                                    5 executable
+                                                    package_config_t
+                                                    []
+                                                    executable
+                                                    Public
+                                                ),
+                                            1_package_config_t_name:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_package_config_t_name
+                                                    5 name
+                                                    package_config_t
+                                                    []
+                                                    name
+                                                    Public
+                                                ),
+                                            package:
+                                                (Variable
+                                                    10
+                                                    package
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 package_config_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            root:
+                                                (Variable
+                                                    10
+                                                    root
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    package_defaults
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (String 1 () AssumedLength DescriptorString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 package)
+                                    (Var 10 root)]
+                                    [(Allocate
+                                        [((StructInstanceMember
+                                            (Var 10 package)
+                                            10 1_package_config_t_executable
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            ()
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        2 default_executable
+                                        ()
+                                        [((ArrayItem
+                                            (StructInstanceMember
+                                                (Var 10 package)
+                                                10 1_package_config_t_executable
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (StructType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ColMajor
+                                            ()
+                                        ))
+                                        ((StructInstanceMember
+                                            (Var 10 package)
+                                            10 1_package_config_t_name
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    fpm_manifest_modules_30
+                    ()
+                    [fpm_manifest_package_modules_30
+                    fpm_manifest_executable_modules_30]
+                    .false.
+                    .false.
+                    .false.
+                ),
+            fpm_manifest_package_modules_30:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            executable_config:
+                                (ExternalSymbol
+                                    4
+                                    executable_config
+                                    7 executable_config
+                                    fpm_manifest_executable_modules_30
+                                    []
+                                    executable_config
+                                    Public
+                                ),
+                            package_config_t:
+                                (Struct
+                                    (SymbolTable
+                                        5
+                                        {
+                                            executable:
+                                                (Variable
+                                                    5
+                                                    executable
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    4 executable_config
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            name:
+                                                (Variable
+                                                    5
+                                                    name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    package_config_t
+                                    (StructType
+                                        [(Allocatable
+                                            (Array
+                                                (StructType
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [name
+                                    executable]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    fpm_manifest_package_modules_30
+                    ()
+                    [fpm_manifest_executable_modules_30]
+                    .true.
+                    .false.
+                    .false.
+                ),
+            modules_30:
+                (Program
+                    (SymbolTable
+                        11
+                        {
+                            
+                        })
+                    modules_30
+                    []
+                    [(Print
+                        (StringConstant
+                            "running modules_30 program"
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                )
+        })
+    []
+)
