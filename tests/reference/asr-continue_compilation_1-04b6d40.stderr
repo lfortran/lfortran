@@ -966,3 +966,15 @@ semantic error: err= label 500 is not defined
     |
 473 |     read(*, *, err=500) x
     |                    ^^^ 
+
+semantic error: Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:475:5
+    |
+475 |     OPEN(unit=10, recl=10, recl=20)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `recl` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:476:5
+    |
+476 |     OPEN(unit=10, recl=10.5)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
