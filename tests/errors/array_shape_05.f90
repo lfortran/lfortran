@@ -3,8 +3,9 @@ program array_shape_05
     integer :: a(2)
     integer :: temp(5)
     integer :: i
+    integer :: j
 
-    call system_clock(count=i)
-    i = 1 + mod(i, size(temp))
-    a = temp(i:i)
+    i = 1
+    j = i
+    a = temp(i:j)
 end program
