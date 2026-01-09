@@ -1,0 +1,4 @@
+At 11:5 of file tests/errors/array_shape_05.f90
+Runtime Error: Array shape mismatch in assignment to 'a'
+
+Tried to match size 2 of dimension 1 of LHS with size 1 of dimension 1 of RHS.

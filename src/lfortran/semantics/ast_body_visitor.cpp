@@ -3715,8 +3715,6 @@ public:
                         ASR::dimension_t dim_b = value_dims[i];
                         int dim_a_int {-1};
                         int dim_b_int {-1};
-                        // 'm_length' isn't assigned for allocatable arrays
-                        // let them be valid for now atleast
                         if (!dim_a.m_length) {
                             continue;
                         }
