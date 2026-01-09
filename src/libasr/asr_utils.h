@@ -4640,6 +4640,114 @@ static inline ASR::symbol_t* import_enum_member(Allocator& al, ASR::symbol_t* v,
     return scope->get_symbol(v_ext_name);
 }
 
+// Import a Struct type from an external module into the target scope.
+// Returns the ExternalSymbol for the Struct, or the original symbol if local.
+static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* struct_sym,
+    SymbolTable* scope) {
+    struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        return struct_sym;
+    }
+    std::string struct_name = ASRUtils::symbol_name(struct_sym);
+
+    // Get the module that owns this struct
+    ASR::symbol_t* struct_module = ASRUtils::get_asr_owner(struct_sym);
+    if (struct_module == nullptr) {
+        return struct_sym;
+    }
+
+    // Get the module symtab for the target scope
+    SymbolTable* target_module_scope = scope;
+    while (target_module_scope->asr_owner == nullptr ||
+           !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(target_module_scope->asr_owner))) {
+        target_module_scope = target_module_scope->parent;
+        if (target_module_scope == nullptr || target_module_scope->asr_owner == nullptr) {
+            return struct_sym;
+        }
+        if (!ASR::is_a<ASR::symbol_t>(*target_module_scope->asr_owner)) {
+            return struct_sym;
+        }
+    }
+
+    // Check if the struct is from the same module as target scope
+    ASR::symbol_t* target_module = ASR::down_cast<ASR::symbol_t>(target_module_scope->asr_owner);
+    if (struct_module == target_module) {
+        return struct_sym;  // Local symbol, no need to externalize
+    }
+
+    // Check if ExternalSymbol already exists
+    std::string ext_sym_name = struct_name;
+    ASR::symbol_t* existing = target_module_scope->resolve_symbol(ext_sym_name);
+    if (existing && ASRUtils::symbol_get_past_external(existing) == struct_sym) {
+        return existing;
+    }
+    if (existing) {
+        ext_sym_name = "1_" + struct_name;
+        existing = target_module_scope->get_symbol(ext_sym_name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == struct_sym) {
+            return existing;
+        }
+    }
+
+    // Create ExternalSymbol if not exists
+    if (target_module_scope->get_symbol(ext_sym_name) == nullptr) {
+        ASR::symbol_t* ext_sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, struct_sym->base.loc, target_module_scope,
+                s2c(al, ext_sym_name), struct_sym, ASRUtils::symbol_name(struct_module),
+                nullptr, 0, s2c(al, struct_name), ASR::accessType::Public));
+        target_module_scope->add_symbol(ext_sym_name, ext_sym);
+    }
+
+    return target_module_scope->get_symbol(ext_sym_name);
+}
+
+// Recursively process a default initialization expression and externalize
+// any Struct references that are from external modules.
+static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
+    ASR::expr_t* init_expr, SymbolTable* scope) {
+    if (init_expr == nullptr) return nullptr;
+
+    if (ASR::is_a<ASR::StructConstant_t>(*init_expr)) {
+        ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(init_expr);
+        ASR::symbol_t* ext_sym = import_struct_type(al, sc->m_dt_sym, scope);
+
+        // Recursively process arguments
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, sc->n_args);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = sc->m_args[i].loc;
+            arg.m_value = externalize_struct_refs_in_init(al, sc->m_args[i].m_value, scope);
+            new_args.push_back(al, arg);
+        }
+
+        ASR::ttype_t* new_type = ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true);
+        return ASRUtils::EXPR(ASR::make_StructConstant_t(al, init_expr->base.loc,
+            ext_sym, new_args.p, new_args.size(), new_type));
+    } else if (ASR::is_a<ASR::StructConstructor_t>(*init_expr)) {
+        ASR::StructConstructor_t* sc = ASR::down_cast<ASR::StructConstructor_t>(init_expr);
+        ASR::symbol_t* ext_sym = import_struct_type(al, sc->m_dt_sym, scope);
+
+        // Recursively process arguments
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, sc->n_args);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = sc->m_args[i].loc;
+            arg.m_value = externalize_struct_refs_in_init(al, sc->m_args[i].m_value, scope);
+            new_args.push_back(al, arg);
+        }
+
+        ASR::ttype_t* new_type = ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true);
+        ASR::expr_t* new_value = externalize_struct_refs_in_init(al, sc->m_value, scope);
+        return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, init_expr->base.loc,
+            ext_sym, new_args.p, new_args.size(), new_type, new_value));
+    }
+
+    // For other expression types, return as-is (they don't contain struct references in their construction)
+    return init_expr;
+}
+
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     private:

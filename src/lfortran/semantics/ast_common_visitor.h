@@ -13075,14 +13075,11 @@ public:
                         "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
                 }
-                // Replace symbols in StructConstant to external symbols
-                if (default_init && ASR::is_a<ASR::StructConstant_t>(*default_init)) {
-                    ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
-                    ASR::symbol_t *ext_sym = ASRUtils::symbol_parent_symtab(fn)->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
-                        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym, true);
-                        default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
-                    }
+                // Recursively externalize struct references in default initialization
+                // This handles nested StructConstant/StructConstructor expressions that may
+                // reference Struct symbols from external modules not explicitly imported
+                if (default_init) {
+                    default_init = ASRUtils::externalize_struct_refs_in_init(al, default_init, current_scope);
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
