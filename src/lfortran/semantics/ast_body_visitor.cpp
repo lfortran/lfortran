@@ -4835,7 +4835,7 @@ public:
                                 actual_str->m_physical_type ==
                                     ASR::string_physical_typeType::DescriptorString) {
                                 std::string tmp_name =
-                                    current_scope->get_unique_name("__lfortran_char_tmp");
+                                    current_scope->get_unique_name("lfortran_char_tmp");
                                 ASR::asr_t *tmp_var_asr =
                                     ASR::make_Variable_t(
                                         al, x.base.base.loc, current_scope, s2c(al, tmp_name), nullptr, 0,
