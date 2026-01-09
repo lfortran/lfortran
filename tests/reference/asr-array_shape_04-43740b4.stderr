@@ -1,0 +1,5 @@
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+ --> tests/errors/array_shape_04.f90:5:5
+  |
+5 |     a = temp(i+1:i+1)
+  |     ^^^^^^^^^^^^^^^^^ 

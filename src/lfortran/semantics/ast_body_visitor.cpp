@@ -3739,14 +3739,9 @@ public:
                                         if (start_const && end_const) {
                                             // Both are constants: size = (end - start) / step + 1
                                             dim_b_int = (end_val - start_val) / step_val + 1;
-                                        } else if (ASR::is_a<ASR::Var_t>(*start) && ASR::is_a<ASR::Var_t>(*end)) {
-                                            // Check if start and end are the same variable (e.g., x(i:i))
-                                            ASR::Var_t* start_var = ASR::down_cast<ASR::Var_t>(start);
-                                            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
-                                            if (start_var->m_v == end_var->m_v) {
-                                                // Same variable: size is always 1
-                                                dim_b_int = 1;
-                                            }
+                                        } else if (ASRUtils::expr_equal(start, end)) {
+                                            // Same expression (e.g., x(i:i), x(i+1:i+1)): size is 1
+                                            dim_b_int = 1;
                                         }
                                     }
                                 }

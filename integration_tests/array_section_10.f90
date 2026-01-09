@@ -10,6 +10,16 @@ program array_section_10
     a = temp(i:i)
     if (size(a) /= 1) error stop
 
+    ! Valid: expression section (i+1:i+1) to size-1 array
+    i = 1
+    a = temp(i+1:i+1)
+    if (size(a) /= 1) error stop
+
+    ! Valid: expression section (2*i:2*i) to size-1 array
+    i = 2
+    a = temp(2*i:2*i)
+    if (size(a) /= 1) error stop
+
     ! Valid: two element section to size-2 array
     b = temp(1:2)
     if (size(b) /= 2) error stop
