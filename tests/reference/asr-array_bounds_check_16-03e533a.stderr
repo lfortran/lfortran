@@ -1,5 +1,0 @@
-semantic error: Array index 10 is out of bounds (1 to 5) in dimension 1
- --> tests/errors/array_bounds_check_16.f90:4:14
-  |
-4 |     print *, a(10)
-  |              ^^^^^ 
