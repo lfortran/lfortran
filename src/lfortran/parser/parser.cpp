@@ -237,6 +237,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
+    p.m_tokenizer.openmp_enabled = co.openmp;
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {
