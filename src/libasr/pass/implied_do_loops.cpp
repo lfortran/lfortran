@@ -192,9 +192,6 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
             al, loc, len_expr, ASR::cmpopType::Gt, len_var, bool_type, nullptr));
 
-        ASR::expr_t* len_var_cast = b.i2i_t(len_var, int32_type);
-        (void)len_var_cast;
-
         Vec<ASR::stmt_t*> if_body;
         if_body.reserve(al, 1);
         if_body.push_back(al, ASRUtils::STMT(PassUtils::make_Assignment_t_util(
