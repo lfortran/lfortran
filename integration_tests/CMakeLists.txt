@@ -2657,7 +2657,7 @@ RUN(NAME optional_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME mangle_underscore_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --mangle-underscore --all-mangling)
-RUN(NAME mangle_underscore_extern_01 LABELS llvm EXTRAFILES mangle_underscore_extern_01_def.f90 EXTRA_ARGS --implicit-interface --mangle-underscore)
+RUN(NAME mangle_underscore_02 LABELS llvm EXTRAFILES mangle_underscore_02_def.f90 EXTRA_ARGS --implicit-interface --mangle-underscore)
 
 RUN(NAME nan_handling_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
