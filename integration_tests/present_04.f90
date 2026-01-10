@@ -18,6 +18,7 @@ end module present_04_mod
 program present_04
     use present_04_mod, only: called, s
     implicit none
+    external :: f
 
     called = 0
 
