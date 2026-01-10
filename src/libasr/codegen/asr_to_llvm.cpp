@@ -12291,7 +12291,10 @@ public:
 
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
+            bool is_assignment_target_copy = is_assignment_target;
+            is_assignment_target = true;
             this->visit_expr(*val_expr);
+            is_assignment_target = is_assignment_target_copy;
             llvm::Value* var_ptr = tmp;
             ptr_loads = ptr_loads_copy;
 
