@@ -236,8 +236,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
-    p.m_tokenizer.openmp_enabled = co.openmp;
+    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {
