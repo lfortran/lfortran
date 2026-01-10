@@ -11429,31 +11429,6 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            if (ASRUtils::is_intrinsic_symbol(f2) && var_name == "ieee_value") {//special case for ieee value
-                
-                this->visit_expr(*x.m_args[0].m_end);
-                ASR::expr_t* type_expr = ASRUtils::EXPR(tmp);
-                ASR::ttype_t* ret_type = ASRUtils::expr_type(type_expr);
-                bool quiet = true;
-                if (x.n_args >= 2) {
-                    this->visit_expr(*x.m_args[1].m_end);
-                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    if (ASR::is_a<ASR::Var_t>(*kind_expr)) {
-                        ASR::symbol_t* sym =
-                            ASR::down_cast<ASR::Var_t>(kind_expr)->m_v;
-                        if (ASRUtils::symbol_name(sym) == std::string("ieee_signaling_nan")) {
-                            quiet = false;
-                        }
-                    }
-                }
-                double nan_value = quiet
-                    ? std::numeric_limits<double>::quiet_NaN()
-                    : std::numeric_limits<double>::signaling_NaN();
-                tmp = ASR::make_RealConstant_t(
-                    al, x.base.base.loc, nan_value, ret_type
-                );
-                return;
-            }
 
             visit_expr_list(x.m_args, x.n_args, args);
             if (x.n_member >= 1) {

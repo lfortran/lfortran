@@ -197,7 +197,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Present,
     And,
     Or,
-    Xor
+    Xor,
+    IEEEValue
     // ...
 };
 

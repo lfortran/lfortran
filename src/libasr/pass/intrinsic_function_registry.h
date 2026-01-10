@@ -196,6 +196,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SymbolicSinQ)
         INTRINSIC_NAME_CASE(SymbolicGetArgument)
         INTRINSIC_NAME_CASE(Int)
+        INTRINSIC_NAME_CASE(IEEEValue)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
