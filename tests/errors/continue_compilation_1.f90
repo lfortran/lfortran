@@ -231,10 +231,10 @@ program continue_compilation_1
     a5 = 8
     b5 = 12_8
     c5 = 2
-    
-    
-    
-    
+    cc_a3 = cc_temp3(cc_i0:cc_i0)
+    print *, size(cc_a3)
+    cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    print *, size(cc_a4)
 
     !loop_test
     do i=1,3
@@ -469,10 +469,8 @@ program continue_compilation_1
     assign 13 to fmt_i3
     13 format ()
     read (5, fmt_i3)
-    cc_a3 = cc_temp3(cc_i0:cc_i0)
     !passing non procedure to procedure parameter
     call proc_param(42)
-    print *, size(cc_a3)
     x = 9010
     read (*, end=x) x
     read (*, end=9011.0) x
@@ -483,10 +481,8 @@ program continue_compilation_1
 9014 continue
     write (*, err=9015) x
 9015 continue
-    cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
     read(*, *, end=999) x   
     read(*, *, err=500) x
-    print *, size(cc_a4)
     OPEN(unit=10, recl=10, recl=20)
     OPEN(unit=10, recl=10.5)
 
