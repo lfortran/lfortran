@@ -207,7 +207,6 @@ program continue_compilation_1
 
 
 
-
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -217,7 +216,8 @@ program continue_compilation_1
     a5 = 8
     b5 = 12_8
     c5 = 2
-
+    a = 1
+    print *, a(10)
     cc_a3 = cc_temp3(cc_i0:cc_i0)
     print *, size(cc_a3)
     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
