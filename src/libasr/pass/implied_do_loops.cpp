@@ -168,6 +168,92 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return nullptr;
     }
 
+    bool array_constructor_contains_implied_do(ASR::ArrayConstructor_t* x) {
+        for (size_t i = 0; i < x->n_args; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_args[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void update_string_len_max(ASR::expr_t* len_var, ASR::expr_t* value, const Location& loc,
+                               Vec<ASR::stmt_t*>& body) {
+        if (!len_var || !value) return;
+        if (!ASRUtils::is_character(*ASRUtils::expr_type(value))) return;
+
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t* bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+
+        ASR::expr_t* len_expr = b.StringLen(value);
+        len_expr = b.i2i_t(len_expr, int32_type);
+
+        ASR::expr_t* cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+            al, loc, len_expr, ASR::cmpopType::Gt, len_var, bool_type, nullptr));
+
+        ASR::expr_t* len_var_cast = b.i2i_t(len_var, int32_type);
+        (void)len_var_cast;
+
+        Vec<ASR::stmt_t*> if_body;
+        if_body.reserve(al, 1);
+        if_body.push_back(al, ASRUtils::STMT(PassUtils::make_Assignment_t_util(
+            al, loc, len_var, len_expr, nullptr, false)));
+
+        body.push_back(al, ASRUtils::STMT(ASR::make_If_t(
+            al, loc, nullptr, cond, if_body.p, if_body.size(), nullptr, 0)));
+    }
+
+    ASR::stmt_t* create_do_loop_max_string_len_from_idl(ASR::ImpliedDoLoop_t* x,
+                                                        ASR::expr_t* len_var) {
+        ASR::stmt_t* do_loop = nullptr;
+        const Location& loc = x->base.base.loc;
+        ASR::do_loop_head_t do_loop_head;
+        do_loop_head.loc = loc;
+        do_loop_head.m_v = x->m_var;
+        do_loop_head.m_start = x->m_start;
+        do_loop_head.m_end = x->m_end;
+        do_loop_head.m_increment = x->m_increment;
+
+        Vec<ASR::stmt_t*> do_loop_body;
+        do_loop_body.reserve(al, x->n_values);
+        for (size_t i = 0; i < x->n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i])) {
+                do_loop_body.push_back(al, create_do_loop_max_string_len_from_idl(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), len_var));
+            } else {
+                update_string_len_max(len_var, x->m_values[i], x->m_values[i]->base.loc, do_loop_body);
+            }
+        }
+        do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(
+            al, loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        return do_loop;
+    }
+
+    ASR::expr_t* get_array_constructor_string_len_max(ASR::ArrayConstructor_t* x) {
+        const Location& loc = x->base.base.loc;
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+        ASR::expr_t* len_var = PassUtils::create_var(result_counter, "_string_len_",
+            loc, int32_type, al, current_scope);
+        result_counter += 1;
+
+        ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type));
+        pass_result.push_back(al, ASRUtils::STMT(PassUtils::make_Assignment_t_util(
+            al, loc, len_var, zero, nullptr, false)));
+
+        for (size_t i = 0; i < x->n_args; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_args[i])) {
+                pass_result.push_back(al, create_do_loop_max_string_len_from_idl(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_args[i]), len_var));
+            } else {
+                update_string_len_max(len_var, x->m_args[i], x->m_args[i]->base.loc, pass_result);
+            }
+        }
+
+        return len_var;
+    }
+
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
         std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
@@ -516,8 +602,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         // Prefer declared source length if available; else fall back to previously detected expr
         arg.m_len_expr = elem_len_expr_for_alloc ? elem_len_expr_for_alloc : non_const_len_expr;
 
-        if (is_allocatable && element_type && ASRUtils::is_character(*element_type) && !arg.m_len_expr) {
-            if (x->n_args > 0) {
+        if (is_allocatable && element_type && ASRUtils::is_character(*element_type)) {
+            if (array_constructor_contains_implied_do(x)) {
+                arg.m_len_expr = get_array_constructor_string_len_max(x);
+            } else if (!arg.m_len_expr && x->n_args > 0) {
                 arg.m_len_expr = get_string_len_expr_for_alloc(x->m_args[0], loc);
             }
         }
