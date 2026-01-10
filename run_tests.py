@@ -155,10 +155,13 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
+            ast_cmd = "lfortran --show-ast --no-color {infile} -o {outfile}"
+            if asr_openmp:
+                ast_cmd = "lfortran --show-ast --no-color --openmp {infile} -o {outfile}"
             run_test(
                 filename,
                 "ast",
-                "lfortran --show-ast --no-color {infile} -o {outfile}",
+                ast_cmd,
                 filename,
                 update_reference,
                 verify_hash,
