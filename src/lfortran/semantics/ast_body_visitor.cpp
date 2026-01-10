@@ -4830,10 +4830,9 @@ public:
                             if (dummy_str->m_len &&
                                 ASR::is_a<ASR::IntegerConstant_t>(*dummy_str->m_len) &&
                                 ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n == 1 &&
-                                dummy_str->m_len_kind !=
-                                    ASR::string_length_kindType::AssumedLength &&
-                                actual_str->m_physical_type ==
-                                    ASR::string_physical_typeType::DescriptorString) {
+                                dummy_str->m_len_kind != ASR::string_length_kindType::AssumedLength &&
+                                actual_str->m_physical_type == ASR::string_physical_typeType::DescriptorString &&
+                                dummy_var->m_intent == ASR::intentType::In) {
                                 std::string tmp_name =
                                     current_scope->get_unique_name("lfortran_char_tmp");
                                 ASR::asr_t *tmp_var_asr =
