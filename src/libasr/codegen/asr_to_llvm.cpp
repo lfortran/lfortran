@@ -68,6 +68,22 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+static inline std::string maybe_mangle_underscore_externalundefined_interface(
+    const std::string &name, const ASR::FunctionType_t *fn_type,
+    const LCompilers::CompilerOptions &compiler_options)
+{
+    if (fn_type->m_abi != ASR::abiType::ExternalUndefined) {
+        return name;
+    }
+    if (!compiler_options.po.mangle_underscore) {
+        return name;
+    }
+    if (!name.empty() && name.back() == '_') {
+        return name;
+    }
+    return name + "_";
+}
+
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
@@ -6000,15 +6016,17 @@ public:
                 }
             }
             std::string fn_name;
-            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                if (ASRUtils::get_FunctionType(x)->m_bindc_name) {
-                    fn_name = ASRUtils::get_FunctionType(x)->m_bindc_name;
+            ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(x);
+            if (fn_type->m_abi == ASR::abiType::BindC) {
+                if (fn_type->m_bindc_name) {
+                    fn_name = fn_type->m_bindc_name;
                 } else {
                     fn_name = sym_name;
                 }
-            } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
-                ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
-                fn_name = sym_name;
+            } else if (fn_type->m_deftype == ASR::deftypeType::Interface &&
+                fn_type->m_abi != ASR::abiType::Intrinsic && !fn_type->m_module) {
+                fn_name = maybe_mangle_underscore_externalundefined_interface(
+                    sym_name, fn_type, compiler_options);
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
@@ -6078,15 +6096,17 @@ public:
                     llvm::FunctionType* function_type = llvm_utils->get_function_type(*var, module.get());
                     std::string fn_name;
                     std::string sym_name = v->m_name;
-                    if (ASRUtils::get_FunctionType(*var)->m_abi == ASR::abiType::BindC) {
-                        if (ASRUtils::get_FunctionType(*var)->m_bindc_name) {
-                            fn_name = ASRUtils::get_FunctionType(*var)->m_bindc_name;
+                    ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(*var);
+                    if (fn_type->m_abi == ASR::abiType::BindC) {
+                        if (fn_type->m_bindc_name) {
+                            fn_name = fn_type->m_bindc_name;
                         } else {
                             fn_name = sym_name;
                         }
-                    } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
-                        ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
-                        fn_name = sym_name;
+                    } else if (fn_type->m_deftype == ASR::deftypeType::Interface &&
+                        fn_type->m_abi != ASR::abiType::Intrinsic) {
+                        fn_name = maybe_mangle_underscore_externalundefined_interface(
+                            sym_name, fn_type, compiler_options);
                     } else {
                         fn_name = mangle_prefix + sym_name;
                     }
