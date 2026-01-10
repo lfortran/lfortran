@@ -4797,6 +4797,12 @@ public:
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
+        if (original_sym && is_external) {
+            ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(original_sym);
+            if (ASRUtils::is_symbol_procedure_variable(sym_past_external)) {
+                is_external = false;
+            }
+        }
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "exit") {
                 diag.semantic_warning_label(

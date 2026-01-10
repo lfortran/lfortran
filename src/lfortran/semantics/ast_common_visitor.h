@@ -3409,6 +3409,32 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+            if (sym_ && ASR::is_a<ASR::Variable_t>(*sym_)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym_);
+                if (ASRUtils::is_arg_dummy(var->m_intent)) {
+                    ASR::ttype_t* proc_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                        al, loc, nullptr, 0, nullptr, ASR::abiType::Source,
+                        ASR::deftypeType::Implementation, nullptr, false, false,
+                        false, false, false, nullptr, 0, false));
+                    var->m_type = proc_type;
+                    if (var->m_type_declaration == nullptr) {
+                        SymbolTable* parent_scope = current_scope->parent;
+                        LCOMPILERS_ASSERT(parent_scope != nullptr);
+                        std::string iface_name = "~proc_" + sym + "_" +
+                            current_scope->get_counter();
+                        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+                        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_Function_t(
+                                al, loc, fn_scope, s2c(al, iface_name),
+                                proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
+                                nullptr, ASR::accessType::Public, false, false,
+                                nullptr, nullptr, nullptr));
+                        parent_scope->add_symbol(iface_name, iface);
+                        var->m_type_declaration = iface;
+                    }
+                    return;
+                }
+            }
             assgnd_access[sym] = ASR::accessType::Public;
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3935,9 +3961,77 @@ public:
                                     if (!sym_) {
                                         assgnd_presence[sym] = ASR::presenceType::Optional;
                                     } else {
-                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                                            ASRUtils::symbol_get_past_external(sym_));
-                                        v->m_presence = ASR::presenceType::Optional;
+                                        Location& attr_loc = x.m_syms[i].loc;
+                                        ASR::symbol_t* sym_past_external =
+                                            ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                                sym_past_external);
+                                            v->m_presence = ASR::presenceType::Optional;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_past_external)) {
+                                            ASR::ttype_t* proc_type = ASRUtils::TYPE(
+                                                    ASR::make_FunctionType_t(
+                                                    al, attr_loc, nullptr, 0, nullptr,
+                                                    ASR::abiType::Source,
+                                                    ASR::deftypeType::Implementation, nullptr,
+                                                    false, false, false, false, false,
+                                                    nullptr, 0, false));
+                                            SetChar variable_dependencies_vec;
+                                            variable_dependencies_vec.reserve(al, 1);
+                                            ASRUtils::collect_variable_dependencies(
+                                                al, variable_dependencies_vec, proc_type);
+                                            SymbolTable* parent_scope = current_scope->parent;
+                                            LCOMPILERS_ASSERT(parent_scope != nullptr);
+                                            std::string iface_name = "~proc_" + sym + "_" +
+                                                current_scope->get_counter();
+                                            SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+                                            ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+                                                ASR::make_Function_t(
+                                                    al, attr_loc, fn_scope, s2c(al, iface_name),
+                                                    proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
+                                                    nullptr, ASR::accessType::Public, false, false,
+                                                    nullptr, nullptr, nullptr));
+                                            parent_scope->add_symbol(iface_name, iface);
+                                            ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
+                                                al, attr_loc, current_scope,
+                                                s2c(al, sym),
+                                                variable_dependencies_vec.p,
+                                                variable_dependencies_vec.size(),
+                                                ASRUtils::intent_unspecified, nullptr,
+                                                nullptr, ASR::storage_typeType::Default,
+                                                proc_type, iface,
+                                                ASR::abiType::Source,
+                                                ASR::accessType::Public,
+                                                ASR::presenceType::Optional, false);
+                                            ASR::symbol_t* proc_var_sym =
+                                                ASR::down_cast<ASR::symbol_t>(proc_var);
+                                            current_scope->add_or_overwrite_symbol(sym, proc_var_sym);
+                                            if (current_scope->asr_owner &&
+                                                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                                                ASR::symbol_t* asr_owner_sym =
+                                                    ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                                                if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                                                    ASR::Function_t* current_function =
+                                                        ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                                                    for (size_t j = 0; j < current_function->n_args; j++) {
+                                                        if (ASR::is_a<ASR::Var_t>(*current_function->m_args[j])) {
+                                                            ASR::Var_t* var =
+                                                                ASR::down_cast<ASR::Var_t>(current_function->m_args[j]);
+                                                            if (std::string(ASRUtils::symbol_name(var->m_v)) == sym) {
+                                                                var->m_v = proc_var_sym;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            diag.add(Diagnostic(
+                                                "Optional attribute can only be applied to variables",
+                                                Level::Error, Stage::Semantic, {
+                                                    Label("", {attr_loc})
+                                                }));
+                                            throw SemanticAbort();
+                                        }
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
