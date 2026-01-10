@@ -6926,7 +6926,22 @@ public:
                     llvm_target = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
 
                     // Store vptr
-                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                    if (ASRUtils::is_array(value_type)) {
+                        llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value, ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable_pointer(value_type)), module.get());
+                        llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), 
+                            arr_descr->get_pointer_to_data(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type), llvm_value, module.get()));
+                        
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                           llvm::Value* src_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, 
+                               llvm_utils->create_gep2(value_el_type, src_data_ptr, 0));
+                           
+                           llvm::Value* dest_vptr_ptr = llvm_utils->create_gep2(target_llvm_type, llvm_target, 0);
+                           builder->CreateStore(src_vptr, dest_vptr_ptr);
+                           
+                           llvm_value = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, 
+                               llvm_utils->create_gep2(value_el_type, src_data_ptr, 1));
+                        }
+                    } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
                         struct_api->store_class_vptr(
                             ASRUtils::get_struct_sym_from_struct_expr(x.m_value), llvm_target, module.get());
                     } else {
@@ -12253,11 +12268,9 @@ public:
         args.push_back(advance);
         args.push_back(advance_length);
 
-        this->visit_expr_wrapper(fmt_expr, true);
-        llvm::Value* fmt_data = llvm_utils->get_string_data(
-            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
-        llvm::Value* fmt_len = llvm_utils->get_string_length(
-            ASRUtils::get_string_type(expr_type(fmt_expr)), tmp);
+        llvm::Value* fmt_data;
+        llvm::Value* fmt_len;
+        std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
         args.push_back(fmt_data);
         args.push_back(fmt_len);
 
@@ -13945,6 +13958,22 @@ public:
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
+            }
+
+            // For bind(c) character array arguments passed as Var, extract the raw data pointer
+            // from the string descriptor. For other expression types, the conversion may have
+            // already occurred via ArrayPhysicalCast or other mechanisms.
+            if (orig_arg && x_abi == ASR::abiType::BindC &&
+                ASRUtils::is_character(*orig_arg->m_type) &&
+                ASRUtils::is_array(orig_arg->m_type) &&
+                ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(orig_arg->m_type);
+                if (phys_type == ASR::array_physical_typeType::PointerArray ||
+                    phys_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+                    // tmp is a string_descriptor* - extract the char* data pointer (field 0)
+                    llvm::Value* data_ptr = llvm_utils->CreateGEP2(llvm_utils->string_descriptor, tmp, 0);
+                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), data_ptr);
+                }
             }
 
             args.push_back(tmp);

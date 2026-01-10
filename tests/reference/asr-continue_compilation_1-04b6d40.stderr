@@ -209,6 +209,12 @@ semantic error: Intrinsic 'not_real' is not recognized
 179 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
 
+semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
+   --> tests/errors/continue_compilation_1.f90:219:14
+    |
+219 |     print *, a(10)
+    |              ^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
     |
