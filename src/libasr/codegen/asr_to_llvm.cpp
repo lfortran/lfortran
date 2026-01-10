@@ -68,6 +68,18 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+static inline std::string maybe_mangle_underscore_external(
+    const std::string &name, const LCompilers::CompilerOptions &compiler_options)
+{
+    if (!compiler_options.po.mangle_underscore) {
+        return name;
+    }
+    if (!name.empty() && name.back() == '_') {
+        return name;
+    }
+    return name + "_";
+}
+
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
@@ -6008,7 +6020,7 @@ public:
                 }
             } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
-                fn_name = sym_name;
+                fn_name = maybe_mangle_underscore_external(sym_name, compiler_options);
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
@@ -6086,7 +6098,7 @@ public:
                         }
                     } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
                         ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
-                        fn_name = sym_name;
+                        fn_name = maybe_mangle_underscore_external(sym_name, compiler_options);
                     } else {
                         fn_name = mangle_prefix + sym_name;
                     }
