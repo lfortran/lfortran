@@ -232,6 +232,11 @@ program continue_compilation_1
     b5 = 12_8
     c5 = 2
 
+    cc_a3 = cc_temp3(cc_i0:cc_i0)
+    print *, size(cc_a3)
+    cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    print *, size(cc_a4)
+
     !loop_test
     do i=1,3
        i = i + 1

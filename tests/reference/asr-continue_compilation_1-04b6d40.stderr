@@ -216,10 +216,22 @@ semantic error: Intrinsic 'not_real' is not recognized
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
 
 semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
-   --> tests/errors/continue_compilation_1.f90:219:14
+   --> tests/errors/continue_compilation_1.f90:214:14
     |
-219 |     print *, a(10)
+214 |     print *, a(10)
     |              ^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:219:5
+    |
+219 |     cc_a3 = cc_temp3(cc_i0:cc_i0)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:221:5
+    |
+221 |     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
