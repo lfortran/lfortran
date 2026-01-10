@@ -2424,6 +2424,7 @@ RUN(NAME write_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_14 LABELS gfortran llvm)
+RUN(NAME write_15 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
