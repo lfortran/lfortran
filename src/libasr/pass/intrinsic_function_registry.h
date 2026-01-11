@@ -566,6 +566,9 @@ namespace IntrinsicElementalFunctionRegistry {
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::IEEEValue),
+            {nullptr, &IEEEValue::verify_args}},
+
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -923,6 +926,9 @@ namespace IntrinsicElementalFunctionRegistry {
             "SymbolicGetArgument"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             "int"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::IEEEValue),
+            "ieee_value"},
+
     };
 
 
@@ -1107,6 +1113,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"SinQ", {&SymbolicSinQ::create_SymbolicSinQ, &SymbolicSinQ::eval_SymbolicSinQ}},
                 {"GetArgument", {&SymbolicGetArgument::create_SymbolicGetArgument, &SymbolicGetArgument::eval_SymbolicGetArgument}},
                 {"int", {&Int::create_Int, &Int::eval_Int}},
+                {"ieee_value", {&IEEEValue::create_IEEEValue, nullptr}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
