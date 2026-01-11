@@ -1,0 +1,56 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            character_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            str:
+                                (Variable
+                                    2
+                                    str
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerBinOp
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        Add
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                    ) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    character_03
+                    []
+                    [(Assignment
+                        (Var 2 str)
+                        (StringConstant
+                            "hello"
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (Var 2 str)
+                    )]
+                )
+        })
+    []
+)

@@ -940,21 +940,35 @@ namespace LCompilers {
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
-                type_original = get_arg_type_from_ttype_t(x.m_args[i], arg->m_type,
+                ASR::ttype_t* arg_type_for_abi = arg->m_type;
+                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
+                    ASRUtils::is_array(arg_type_for_abi)) {
+                    arg_type_for_abi = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(arg_type_for_abi));
+                }
+                type_original = get_arg_type_from_ttype_t(x.m_args[i], arg_type_for_abi,
                     arg->m_type_declaration,
                     ASRUtils::get_FunctionType(x)->m_abi,
                     arg->m_abi, arg->m_storage, arg->m_value_attr,
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
-                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
-                    is_array_type &&
-                    ASRUtils::is_character(*arg->m_type)) {
-
-                    // For bind(c) character arrays, use raw i8* instead of array descriptor
-                    type = llvm::Type::getInt8Ty(context)->getPointerTo();  // i8*
-                    is_array_type = false;  // Prevent further array processing
-
-                } else if( is_array_type ) {
+                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
+                    // For bind(c) array dummies (including implicit interfaces), handle
+                    // based on the physical type specified in the ASR.
+                    ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
+                    if (phys_type == ASR::array_physical_typeType::DescriptorArray) {
+                        // DescriptorArray: pass pointer to descriptor struct
+                        type = type_original->getPointerTo();
+                    } else if (ASRUtils::is_character(*arg->m_type)) {
+                        // PointerArray CHARACTER: use raw i8*
+                        type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    } else {
+                        // PointerArray non-CHARACTER: use element pointer
+                        type = type_original;
+                    }
+                    is_array_type = false;
+                } else if (is_array_type) {
                     type = type_original->getPointerTo();
                 } else {
                     type = type_original;
@@ -2211,6 +2225,21 @@ namespace LCompilers {
         std::tie(lhs_data, lhs_len) = get_string_length_data(dest_str_type, dest, true, true);
         std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src);
 
+        // For struct members (like common blocks) with fixed-length CHARACTER,
+        // the descriptor may be initialized with zeroinitializer (length=0).
+        // If we know the declared length at compile time, store it in the
+        // descriptor before calling strcpy so the runtime allocates the right size.
+        if (is_dest_allocatable && dest_str_type->m_len &&
+            ASRUtils::is_value_constant(dest_str_type->m_len)) {
+            int64_t declared_len = 0;
+            ASRUtils::extract_value(dest_str_type->m_len, declared_len);
+            if (declared_len > 0) {
+                llvm::Value* len_const = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), declared_len);
+                builder->CreateStore(len_const, lhs_len);
+            }
+        }
+
         return lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len,
                                            dest_str_type->m_len_kind == ASR::string_length_kindType::DeferredLength,
                                            is_dest_allocatable);
@@ -2327,7 +2356,13 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
         llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
-        int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+        int64_t len = 0; 
+        if (str->m_len_kind == ASR::AssumedLength) {
+            // For assumed length, use the actual length of initial_data
+            len = initial_data.size();
+        } else {
+            ASRUtils::extract_value(str->m_len, len);
+        }
 
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
         llvm::Constant* string_constant;
@@ -2341,11 +2376,14 @@ namespace LCompilers {
                 )
                 break;
             }
+            case ASR::AssumedLength:
             case ASR::ExpressionLength:{
-                LCOMPILERS_ASSERT_MSG(
-                    ASRUtils::is_value_constant(str->m_len),
-                    "Global variable should have constant-compile-time known length"
-                );
+                if (str->m_len_kind == ASR::ExpressionLength) {
+                    LCOMPILERS_ASSERT_MSG(
+                        ASRUtils::is_value_constant(str->m_len),
+                        "Global variable should have constant-compile-time known length"
+                    );
+                }
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len);
                 // [len x i8] c "DATA HERE"
@@ -3031,6 +3069,29 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             return val->getType()->isIntegerTy() ?
                 builder->CreateSExt(val, target_type): builder->CreateFPExt(val, target_type);
         }
+    }
+
+    llvm::Value* LLVMUtils::apply_common_block_alias_cast(
+        llvm::Value* ptr,
+        ASR::expr_t* expr,
+        ASR::ttype_t* expected_type,
+        ASR::ttype_t* actual_type)
+    {
+    #if LLVM_VERSION_MAJOR < 15
+        llvm::Type* expected_llvm_type = get_type_from_ttype_t_util(
+            expr, expected_type, module);
+        llvm::Type* actual_llvm_type = get_type_from_ttype_t_util(
+            expr, actual_type, module);
+        
+        if (expected_llvm_type != actual_llvm_type) {
+            return builder->CreateBitCast(ptr, expected_llvm_type->getPointerTo());
+        }
+    #else
+        (void)expr;
+        (void)expected_type;
+        (void)actual_type;
+    #endif
+        return ptr;
     }
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,
@@ -6610,8 +6671,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     LLVMTuple::LLVMTuple(llvm::LLVMContext& context_,
                          LLVMUtils* llvm_utils_,
-                         llvm::IRBuilder<>* /*builder_*/) :
-    context(context_), llvm_utils(llvm_utils_) {}
+                         llvm::IRBuilder<>* builder_) :
+    context(context_), llvm_utils(llvm_utils_), builder(builder_) {}
 
     llvm::Type* LLVMTuple::get_tuple_type(std::string& type_code,
                                           std::vector<llvm::Type*>& el_types) {
@@ -6652,6 +6713,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         for( size_t i = 0; i < values.size(); i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, tuple_type->m_type[i], module);
             llvm::Value* item_ptr = read_item_using_pos(el_type, llvm_tuple, tuple_type, i, true);
+            if (ASRUtils::is_descriptorString(tuple_type->m_type[i]) && ASRUtils::is_deferredLength_string(tuple_type->m_type[i])) {
+                builder->CreateStore(llvm::Constant::getNullValue(llvm_utils->string_descriptor), item_ptr);
+                ASR::String_t *t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(tuple_type->m_type[i]));
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, item_ptr, llvm_utils->get_string_length(t, item_ptr));
+            }
+
             llvm_utils->deepcopy(nullptr, values[i], item_ptr,
                                  tuple_type->m_type[i],
                                  tuple_type->m_type[i],
@@ -6664,9 +6731,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, tuple_type->m_type[i], module);
-            llvm::Value* src_item = read_item_using_pos(el_type, src, tuple_type, i, LLVM::is_llvm_struct(
-                                              tuple_type->m_type[i]));
+            llvm::Value* src_item = read_item_using_pos(el_type, src, tuple_type, i, 
+                                            LLVM::is_llvm_struct(tuple_type->m_type[i]) ||
+                                            ASRUtils::is_allocatable(tuple_type->m_type[i]));
             llvm::Value* dest_item_ptr = read_item_using_pos(el_type, dest, tuple_type, i, true);
+            if (ASRUtils::is_descriptorString(tuple_type->m_type[i]) && ASRUtils::is_deferredLength_string(tuple_type->m_type[i])) {
+                builder->CreateStore(llvm::Constant::getNullValue(llvm_utils->string_descriptor), dest_item_ptr);
+                ASR::String_t *t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(tuple_type->m_type[i]));
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, dest_item_ptr, llvm_utils->get_string_length(t, dest_item_ptr));
+            }
             llvm_utils->deepcopy(nullptr, src_item, dest_item_ptr,
                                  tuple_type->m_type[i],
                                  tuple_type->m_type[i],
@@ -6750,11 +6823,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         std::vector<llvm::Value*> values;
         for( size_t i = 0; i < tuple_type_1->n_type; i++ ) {
             values.push_back(llvm_utils->tuple_api->read_item(t1, tuple_type_1, i,
-                LLVM::is_llvm_struct(tuple_type_1->m_type[i])));
+                LLVM::is_llvm_struct(tuple_type_1->m_type[i]) || ASRUtils::is_allocatable_descriptor_string(tuple_type_1->m_type[i])));
         }
         for( size_t i = 0; i < tuple_type_2->n_type; i++ ) {
             values.push_back(llvm_utils->tuple_api->read_item(t2, tuple_type_2, i,
-                LLVM::is_llvm_struct(tuple_type_2->m_type[i])));
+                LLVM::is_llvm_struct(tuple_type_2->m_type[i]) || ASRUtils::is_allocatable_descriptor_string(tuple_type_2->m_type[i])));
         }
         tuple_init(tuple_1_expr, concat_tuple, values, concat_tuple_type,
                    module);
@@ -8809,13 +8882,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                 llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
             }
 
-            // Get Copy function
+            // Get Copy function (for non-unlimited polymorphic types)
             llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
             llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-            llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
-            llvm::Value* fn = llvm_utils->CreateLoad2(
-                llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
-            fn = builder->CreateBitCast(fn, fnPtrTy);
+            bool is_unlimited_polymorphic = (std::string)struct_sym->m_name == "~unlimited_polymorphic_type";
+            llvm::Value* fn = nullptr;
+            if (!is_unlimited_polymorphic) {
+                llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
+                fn = llvm_utils->CreateLoad2(
+                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
+                fn = builder->CreateBitCast(fn, fnPtrTy);
+            }
 
             // Deep copy each struct element
             llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.head");
@@ -8841,41 +8918,56 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
-            // Get actual struct from class wrapper
-            if (is_src_class) {
-                llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                    struct_sym->m_struct_signature, &struct_sym->base, module);
-                src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+            // For unlimited polymorphic, handle specially
+            if (is_unlimited_polymorphic) {
+                // Get copy function from each element's vptr
+                llvm::Value* vptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->vptr_type->getPointerTo());
+                vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                llvm::Value* elem_fn = llvm_utils->CreateLoad2(
+                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
+                elem_fn = builder->CreateBitCast(elem_fn, fnPtrTy);
+                // Get actual data pointers from offset 1 in the wrapper struct
+                llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                     llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
-            }
-            if (is_dest_class) {
-                llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                    struct_sym->m_struct_signature, &struct_sym->base, module);
-                if (ASRUtils::is_allocatable(dest_ty)) {
-                    llvm::DataLayout data_layout(module->getDataLayout());
-                    int64_t type_size = data_layout.getTypeAllocSize(actual_struct_type);
-                    llvm::Value* malloc_size = llvm::ConstantInt::get(
-                        llvm_utils->getIntType(4), llvm::APInt(32, type_size));
-                    llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
-                        context, *module, *builder, malloc_size);
-                    builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
-                        context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
-                    builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
+                llvm::Value* dest_data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
+                builder->CreateCall(fnTy, elem_fn, {src_data_ptr, dest_data_ptr});
+            } else {
+                // Get actual struct from class wrapper
+                if (is_src_class) {
+                    llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        struct_sym->m_struct_signature, &struct_sym->base, module);
+                    src_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
+                        llvm_utils->create_gep2(llvm_data_type, src_elem_ptr, 1));
+                }
+                if (is_dest_class) {
+                    llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        struct_sym->m_struct_signature, &struct_sym->base, module);
+                    if (ASRUtils::is_allocatable(dest_ty)) {
+                        llvm::DataLayout data_layout(module->getDataLayout());
+                        int64_t type_size = data_layout.getTypeAllocSize(actual_struct_type);
+                        llvm::Value* malloc_size = llvm::ConstantInt::get(
+                            llvm_utils->getIntType(4), llvm::APInt(32, type_size));
+                        llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
+                            context, *module, *builder, malloc_size);
+                        builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(
+                            context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
+                        builder->CreateStore(builder->CreateBitCast(malloc_ptr, actual_struct_type->getPointerTo()),
+                            llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
+                    }
+                    dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
                         llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
                 }
-                dest_elem_ptr =  llvm_utils->CreateLoad2(actual_struct_type,
-                    llvm_utils->create_gep2(llvm_data_type, dest_elem_ptr, 1));
-            }
 
-            if (is_descriptor_array) {
-                allocate_struct_array_members(
-                    struct_sym, dest_elem_ptr, struct_sym->m_struct_signature, false);    
-            }
+                if (is_descriptor_array) {
+                    allocate_struct_array_members(
+                        struct_sym, dest_elem_ptr, struct_sym->m_struct_signature, false);
+                }
 
-            // Call Struct_copy function for each element
-            src_elem_ptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr);
-            dest_elem_ptr = builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr);
-            builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
+                src_elem_ptr = builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr);
+                dest_elem_ptr = builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr);
+                builder->CreateCall(fnTy, fn, {src_elem_ptr, dest_elem_ptr});
+            }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(i_next, i);
@@ -8939,17 +9031,50 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     }
                 }
             }
+            
+            bool is_unlimited_polymorphic = (std::string)struct_sym->m_name == "~unlimited_polymorphic_type";
+            if (is_unlimited_polymorphic || (is_src_class && is_dest_class)) {
+                // For unlimited polymorphic structs or class-to-class copy,
+                // we need to copy from vtable copy function to handle derived types
+                llvm::Value* vptr = builder->CreateBitCast(src, llvm_utils->vptr_type->getPointerTo());
+                vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                llvm::FunctionType* fnTy = llvm_utils->struct_copy_functype;
+                llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+                llvm::Value* fn = llvm_utils->CreateLoad2(
+                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vptr);
+                fn = builder->CreateBitCast(fn, fnPtrTy);
+                llvm::Type* poly_llvm_type = llvm_utils->getClassType(struct_sym, false);
+                llvm::Value* src_ptr;
+                llvm::Value* dest_ptr;
+                if (is_unlimited_polymorphic) {
+                    src_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                    dest_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                } else {
+                    llvm::Type* struct_llvm_type = llvm_utils->getStructType(struct_sym, module);
+                    src_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
+                        llvm_utils->create_gep2(poly_llvm_type, src, 1));
+                    dest_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(),
+                        llvm_utils->create_gep2(poly_llvm_type, dest, 1));
+                    src_ptr = builder->CreateBitCast(src_ptr, llvm_utils->i8_ptr);
+                    dest_ptr = builder->CreateBitCast(dest_ptr, llvm_utils->i8_ptr);
+                }
+
+                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
+                return ;
+            }
 
             if (is_src_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                src =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                     llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), src, 1));
             }
             if (is_dest_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                      struct_sym->m_struct_signature, &struct_sym->base, module);
-                dest =  llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                     llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), dest, 1));
             }
 

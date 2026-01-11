@@ -15,6 +15,7 @@ public:
     unsigned int line_num;
     unsigned char *string_start;
     bool fixed_form=false;
+    bool openmp_enabled=false;
 
     int last_token=-1;
 

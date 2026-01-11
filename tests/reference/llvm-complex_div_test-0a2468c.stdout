@@ -20,88 +20,168 @@ define i32 @main(i32 %0, i8** %1) {
   %x = alloca %complex_4, align 8
   store %complex_4 <{ float 3.000000e+00, float 4.000000e+00 }>, %complex_4* %x, align 1
   %2 = load %complex_4, %complex_4* %x, align 1
-  %3 = alloca %complex_4, align 8
-  store %complex_4 %2, %complex_4* %3, align 1
-  %4 = alloca %complex_4, align 8
-  store %complex_4 <{ float 4.000000e+00, float 0.000000e+00 }>, %complex_4* %4, align 1
-  %5 = alloca %complex_4, align 8
-  call void @_lfortran_complex_div_32(%complex_4* %3, %complex_4* %4, %complex_4* %5)
-  %6 = load %complex_4, %complex_4* %5, align 1
-  store %complex_4 %6, %complex_4* %x, align 1
-  %7 = alloca i64, align 8
-  %8 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i64* %7, i32 0, i32 0, %complex_4* %x)
-  %9 = load i64, i64* %7, align 4
+  %3 = extractvalue %complex_4 %2, 0
+  %4 = extractvalue %complex_4 %2, 1
+  %5 = call float @llvm.fabs.f32(float 4.000000e+00)
+  %6 = call float @llvm.fabs.f32(float 0.000000e+00)
+  %7 = fcmp oge float %5, %6
+  br i1 %7, label %complex_div_r_ge_s, label %complex_div_r_lt_s
+
+complex_div_r_ge_s:                               ; preds = %.entry
+  %8 = fmul float %4, 0.000000e+00
+  %9 = fadd float %3, %8
+  %10 = fmul float %3, 0.000000e+00
+  %11 = fsub float %4, %10
+  %12 = fdiv float %9, 4.000000e+00
+  %13 = fdiv float %11, 4.000000e+00
+  br label %complex_div_cont
+
+complex_div_r_lt_s:                               ; preds = %.entry
+  %14 = fmul float %3, 0x7FF0000000000000
+  %15 = fadd float %14, %4
+  %16 = fmul float %4, 0x7FF0000000000000
+  %17 = fsub float %16, %3
+  %18 = fdiv float %15, 0x7FF0000000000000
+  %19 = fdiv float %17, 0x7FF0000000000000
+  br label %complex_div_cont
+
+complex_div_cont:                                 ; preds = %complex_div_r_lt_s, %complex_div_r_ge_s
+  %20 = phi float [ %12, %complex_div_r_ge_s ], [ %18, %complex_div_r_lt_s ]
+  %21 = phi float [ %13, %complex_div_r_ge_s ], [ %19, %complex_div_r_lt_s ]
+  %22 = insertvalue %complex_4 undef, float %20, 0
+  %23 = insertvalue %complex_4 %22, float %21, 1
+  store %complex_4 %23, %complex_4* %x, align 1
+  %24 = alloca i64, align 8
+  %25 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info, i32 0, i32 0), i64* %24, i32 0, i32 0, %complex_4* %x)
+  %26 = load i64, i64* %24, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %8, i8** %10, align 8
-  %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %9, i64* %11, align 4
-  %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %13 = load i8*, i8** %12, align 8
-  %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %15 = load i64, i64* %14, align 4
-  %16 = trunc i64 %15 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %8)
-  %17 = load %complex_4, %complex_4* %x, align 1
-  %18 = alloca %complex_4, align 8
-  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, %complex_4* %18, align 1
-  %19 = alloca %complex_4, align 8
-  store %complex_4 %17, %complex_4* %19, align 1
-  %20 = alloca %complex_4, align 8
-  call void @_lfortran_complex_div_32(%complex_4* %18, %complex_4* %19, %complex_4* %20)
-  %21 = load %complex_4, %complex_4* %20, align 1
-  store %complex_4 %21, %complex_4* %x, align 1
-  %22 = alloca i64, align 8
-  %23 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.1, i32 0, i32 0), i64* %22, i32 0, i32 0, %complex_4* %x)
-  %24 = load i64, i64* %22, align 4
-  %stringFormat_desc1 = alloca %string_descriptor, align 8
-  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
-  store i8* %23, i8** %25, align 8
-  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
-  store i64 %24, i64* %26, align 4
-  %27 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
-  %28 = load i8*, i8** %27, align 8
-  %29 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
-  %30 = load i64, i64* %29, align 4
-  %31 = trunc i64 %30 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %28, i32 %31, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %23)
-  %32 = load %complex_4, %complex_4* %x, align 1
-  %33 = alloca %complex_4, align 8
-  store %complex_4 %32, %complex_4* %33, align 1
-  %34 = alloca %complex_4, align 8
-  store %complex_4 <{ float 0.000000e+00, float 3.000000e+00 }>, %complex_4* %34, align 1
-  %35 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(%complex_4* %33, %complex_4* %34, %complex_4* %35)
-  %36 = load %complex_4, %complex_4* %35, align 1
-  %37 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+00, float 0.000000e+00 }>, %complex_4* %37, align 1
-  %38 = alloca %complex_4, align 8
-  store %complex_4 %36, %complex_4* %38, align 1
-  %39 = alloca %complex_4, align 8
-  call void @_lfortran_complex_div_32(%complex_4* %37, %complex_4* %38, %complex_4* %39)
-  %40 = load %complex_4, %complex_4* %39, align 1
-  store %complex_4 %40, %complex_4* %x, align 1
-  %41 = alloca i64, align 8
-  %42 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.2, i32 0, i32 0), i64* %41, i32 0, i32 0, %complex_4* %x)
-  %43 = load i64, i64* %41, align 4
-  %stringFormat_desc2 = alloca %string_descriptor, align 8
-  %44 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  store i8* %42, i8** %44, align 8
-  %45 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  store i64 %43, i64* %45, align 4
-  %46 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  %47 = load i8*, i8** %46, align 8
-  %48 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  %49 = load i64, i64* %48, align 4
-  %50 = trunc i64 %49 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %47, i32 %50, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %42)
+  %27 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %25, i8** %27, align 8
+  %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %26, i64* %28, align 4
+  %29 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %30 = load i8*, i8** %29, align 8
+  %31 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %32 = load i64, i64* %31, align 4
+  %33 = trunc i64 %32 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %30, i32 %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %25)
+  %34 = load %complex_4, %complex_4* %x, align 1
+  %35 = extractvalue %complex_4 %34, 0
+  %36 = extractvalue %complex_4 %34, 1
+  %37 = call float @llvm.fabs.f32(float %35)
+  %38 = call float @llvm.fabs.f32(float %36)
+  %39 = fcmp oge float %37, %38
+  br i1 %39, label %complex_div_r_ge_s1, label %complex_div_r_lt_s2
+
+complex_div_r_ge_s1:                              ; preds = %complex_div_cont
+  %40 = fdiv float %36, %35
+  %41 = fmul float %36, %40
+  %42 = fadd float %35, %41
+  %43 = fmul float 0.000000e+00, %40
+  %44 = fadd float 2.000000e+00, %43
+  %45 = fmul float 2.000000e+00, %40
+  %46 = fsub float 0.000000e+00, %45
+  %47 = fdiv float %44, %42
+  %48 = fdiv float %46, %42
+  br label %complex_div_cont3
+
+complex_div_r_lt_s2:                              ; preds = %complex_div_cont
+  %49 = fdiv float %35, %36
+  %50 = fmul float %35, %49
+  %51 = fadd float %36, %50
+  %52 = fmul float 2.000000e+00, %49
+  %53 = fadd float %52, 0.000000e+00
+  %54 = fmul float 0.000000e+00, %49
+  %55 = fsub float %54, 2.000000e+00
+  %56 = fdiv float %53, %51
+  %57 = fdiv float %55, %51
+  br label %complex_div_cont3
+
+complex_div_cont3:                                ; preds = %complex_div_r_lt_s2, %complex_div_r_ge_s1
+  %58 = phi float [ %47, %complex_div_r_ge_s1 ], [ %56, %complex_div_r_lt_s2 ]
+  %59 = phi float [ %48, %complex_div_r_ge_s1 ], [ %57, %complex_div_r_lt_s2 ]
+  %60 = insertvalue %complex_4 undef, float %58, 0
+  %61 = insertvalue %complex_4 %60, float %59, 1
+  store %complex_4 %61, %complex_4* %x, align 1
+  %62 = alloca i64, align 8
+  %63 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.1, i32 0, i32 0), i64* %62, i32 0, i32 0, %complex_4* %x)
+  %64 = load i64, i64* %62, align 4
+  %stringFormat_desc4 = alloca %string_descriptor, align 8
+  %65 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 0
+  store i8* %63, i8** %65, align 8
+  %66 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 1
+  store i64 %64, i64* %66, align 4
+  %67 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 0
+  %68 = load i8*, i8** %67, align 8
+  %69 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc4, i32 0, i32 1
+  %70 = load i64, i64* %69, align 4
+  %71 = trunc i64 %70 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %68, i32 %71, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %63)
+  %72 = load %complex_4, %complex_4* %x, align 1
+  %73 = extractvalue %complex_4 %72, 0
+  %74 = extractvalue %complex_4 %72, 1
+  %75 = fadd float %73, 0.000000e+00
+  %76 = fadd float %74, 3.000000e+00
+  %77 = insertvalue %complex_4 undef, float %75, 0
+  %78 = insertvalue %complex_4 %77, float %76, 1
+  %79 = extractvalue %complex_4 %78, 0
+  %80 = extractvalue %complex_4 %78, 1
+  %81 = call float @llvm.fabs.f32(float %79)
+  %82 = call float @llvm.fabs.f32(float %80)
+  %83 = fcmp oge float %81, %82
+  br i1 %83, label %complex_div_r_ge_s5, label %complex_div_r_lt_s6
+
+complex_div_r_ge_s5:                              ; preds = %complex_div_cont3
+  %84 = fdiv float %80, %79
+  %85 = fmul float %80, %84
+  %86 = fadd float %79, %85
+  %87 = fmul float 0.000000e+00, %84
+  %88 = fadd float 1.000000e+00, %87
+  %89 = fmul float 1.000000e+00, %84
+  %90 = fsub float 0.000000e+00, %89
+  %91 = fdiv float %88, %86
+  %92 = fdiv float %90, %86
+  br label %complex_div_cont7
+
+complex_div_r_lt_s6:                              ; preds = %complex_div_cont3
+  %93 = fdiv float %79, %80
+  %94 = fmul float %79, %93
+  %95 = fadd float %80, %94
+  %96 = fmul float 1.000000e+00, %93
+  %97 = fadd float %96, 0.000000e+00
+  %98 = fmul float 0.000000e+00, %93
+  %99 = fsub float %98, 1.000000e+00
+  %100 = fdiv float %97, %95
+  %101 = fdiv float %99, %95
+  br label %complex_div_cont7
+
+complex_div_cont7:                                ; preds = %complex_div_r_lt_s6, %complex_div_r_ge_s5
+  %102 = phi float [ %91, %complex_div_r_ge_s5 ], [ %100, %complex_div_r_lt_s6 ]
+  %103 = phi float [ %92, %complex_div_r_ge_s5 ], [ %101, %complex_div_r_lt_s6 ]
+  %104 = insertvalue %complex_4 undef, float %102, 0
+  %105 = insertvalue %complex_4 %104, float %103, 1
+  store %complex_4 %105, %complex_4* %x, align 1
+  %106 = alloca i64, align 8
+  %107 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @serialization_info.2, i32 0, i32 0), i64* %106, i32 0, i32 0, %complex_4* %x)
+  %108 = load i64, i64* %106, align 4
+  %stringFormat_desc8 = alloca %string_descriptor, align 8
+  %109 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 0
+  store i8* %107, i8** %109, align 8
+  %110 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 1
+  store i64 %108, i64* %110, align 4
+  %111 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 0
+  %112 = load i8*, i8** %111, align 8
+  %113 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc8, i32 0, i32 1
+  %114 = load i64, i64* %113, align 4
+  %115 = trunc i64 %114 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %112, i32 %115, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %107)
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %complex_div_cont7
   br label %FINALIZE_SYMTABLE_complex2
 
 FINALIZE_SYMTABLE_complex2:                       ; preds = %return
@@ -110,7 +190,8 @@ FINALIZE_SYMTABLE_complex2:                       ; preds = %return
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lfortran_complex_div_32(%complex_4*, %complex_4*, %complex_4*)
+; Function Attrs: nounwind readnone speculatable willreturn
+declare float @llvm.fabs.f32(float) #0
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
@@ -118,6 +199,6 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free(i8*)
 
-declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*)
-
 declare void @_lpython_free_argv()
+
+attributes #0 = { nounwind readnone speculatable willreturn }

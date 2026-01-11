@@ -169,7 +169,7 @@ public:
                 print_args.p, print_args.size()));
         } else if (_type == ASR::stmtType::FileWrite) {
             statement = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, 0, unit,
-                nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end, overloaded, true,nullptr));
+                nullptr, nullptr, nullptr, print_args.p, print_args.size(), separator, end, overloaded, true, nullptr));
         }
         print_body.clear();
         return statement;
@@ -232,7 +232,7 @@ public:
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));
         ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, loc,
-                0, unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, true,nullptr));
+                0, unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, true, nullptr));
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
@@ -257,11 +257,11 @@ public:
                     format_args.push_back(al, string_format);
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
                         al, loc, i, unit, nullptr, nullptr, nullptr,
-                        format_args.p, format_args.size(), nullptr, empty_space, nullptr, true,nullptr));
+                        format_args.p, format_args.size(), nullptr, empty_space, nullptr, true, nullptr));
                 } else {
                     write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
                         al, loc, i, unit, nullptr, nullptr, nullptr,
-                        print_args.p, print_args.size(), nullptr, nullptr, nullptr, true,nullptr));
+                        print_args.p, print_args.size(), nullptr, nullptr, nullptr, true, nullptr));
                 }
                 doloop_body.push_back(al, write_stmt);
             } else {
@@ -278,7 +278,7 @@ public:
         body.from_pointer_n_copy(al, write_body.data(), write_body.size());
         ASR::stmt_t* write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
             al, x.base.base.loc, x.m_label, x.m_unit, x.m_iomsg,
-            x.m_iostat, x.m_id, body.p, body.size(), x.m_separator, x.m_end, x.m_overloaded, true,nullptr));
+            x.m_iostat, x.m_id, body.p, body.size(), x.m_separator, x.m_end, x.m_overloaded, true, nullptr));
         pass_result.push_back(al, write_stmt);
         write_body.clear();
     }

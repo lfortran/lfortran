@@ -237,7 +237,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* access, int64_t access_len,
     char* iomsg, int64_t iomsg_len,
     int32_t *iostat,
-    char* action, int64_t action_len, char* delim, int64_t delim_len);
+    char* action, int64_t action_len,
+    char* delim, int64_t delim_len,
+    char* position, int64_t position_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
@@ -248,18 +250,24 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *name, int64_t name_len);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
-LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num);
+LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_size, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, 
         int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);

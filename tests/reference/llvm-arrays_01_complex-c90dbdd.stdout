@@ -523,14 +523,13 @@ then46:                                           ; preds = %ifcont45
 ifcont47:                                         ; preds = %ifcont45
   %181 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 %177
   %182 = load %complex_4, %complex_4* %181, align 1
-  %183 = alloca %complex_4, align 8
-  store %complex_4 %182, %complex_4* %183, align 1
-  %184 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+01, float 0.000000e+00 }>, %complex_4* %184, align 1
-  %185 = alloca %complex_4, align 8
-  call void @_lfortran_complex_sub_32(%complex_4* %183, %complex_4* %184, %complex_4* %185)
-  %186 = load %complex_4, %complex_4* %185, align 1
-  store %complex_4 %186, %complex_4* %173, align 1
+  %183 = extractvalue %complex_4 %182, 0
+  %184 = extractvalue %complex_4 %182, 1
+  %185 = fsub float %183, 1.000000e+01
+  %186 = fsub float %184, 0.000000e+00
+  %187 = insertvalue %complex_4 undef, float %185, 0
+  %188 = insertvalue %complex_4 %187, float %186, 1
+  store %complex_4 %188, %complex_4* %173, align 1
   br label %loop.head42
 
 loop.end48:                                       ; preds = %loop.head42
@@ -542,28 +541,28 @@ then49:                                           ; preds = %loop.end48
   unreachable
 
 ifcont50:                                         ; preds = %loop.end48
-  %187 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
-  %188 = load %complex_4, %complex_4* %187, align 1
-  %189 = alloca %complex_4, align 8
-  store %complex_4 %188, %complex_4* %189, align 1
-  %190 = getelementptr %complex_4, %complex_4* %189, i32 0, i32 0
-  %191 = load float, float* %190, align 4
-  %192 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+00, float 0.000000e+00 }>, %complex_4* %192, align 1
-  %193 = getelementptr %complex_4, %complex_4* %192, i32 0, i32 0
-  %194 = load float, float* %193, align 4
-  %195 = alloca %complex_4, align 8
-  store %complex_4 %188, %complex_4* %195, align 1
-  %196 = getelementptr %complex_4, %complex_4* %195, i32 0, i32 1
-  %197 = load float, float* %196, align 4
-  %198 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+00, float 0.000000e+00 }>, %complex_4* %198, align 1
-  %199 = getelementptr %complex_4, %complex_4* %198, i32 0, i32 1
-  %200 = load float, float* %199, align 4
-  %201 = fcmp one float %191, %194
-  %202 = fcmp one float %197, %200
-  %203 = or i1 %201, %202
-  br i1 %203, label %then51, label %else52
+  %189 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
+  %190 = load %complex_4, %complex_4* %189, align 1
+  %191 = alloca %complex_4, align 8
+  store %complex_4 %190, %complex_4* %191, align 1
+  %192 = getelementptr %complex_4, %complex_4* %191, i32 0, i32 0
+  %193 = load float, float* %192, align 4
+  %194 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.000000e+00, float 0.000000e+00 }>, %complex_4* %194, align 1
+  %195 = getelementptr %complex_4, %complex_4* %194, i32 0, i32 0
+  %196 = load float, float* %195, align 4
+  %197 = alloca %complex_4, align 8
+  store %complex_4 %190, %complex_4* %197, align 1
+  %198 = getelementptr %complex_4, %complex_4* %197, i32 0, i32 1
+  %199 = load float, float* %198, align 4
+  %200 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.000000e+00, float 0.000000e+00 }>, %complex_4* %200, align 1
+  %201 = getelementptr %complex_4, %complex_4* %200, i32 0, i32 1
+  %202 = load float, float* %201, align 4
+  %203 = fcmp one float %193, %196
+  %204 = fcmp one float %199, %202
+  %205 = or i1 %203, %204
+  br i1 %205, label %then51, label %else52
 
 then51:                                           ; preds = %ifcont50
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
@@ -582,28 +581,28 @@ then54:                                           ; preds = %ifcont53
   unreachable
 
 ifcont55:                                         ; preds = %ifcont53
-  %204 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
-  %205 = load %complex_4, %complex_4* %204, align 1
-  %206 = alloca %complex_4, align 8
-  store %complex_4 %205, %complex_4* %206, align 1
-  %207 = getelementptr %complex_4, %complex_4* %206, i32 0, i32 0
-  %208 = load float, float* %207, align 4
-  %209 = alloca %complex_4, align 8
-  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, %complex_4* %209, align 1
-  %210 = getelementptr %complex_4, %complex_4* %209, i32 0, i32 0
-  %211 = load float, float* %210, align 4
-  %212 = alloca %complex_4, align 8
-  store %complex_4 %205, %complex_4* %212, align 1
-  %213 = getelementptr %complex_4, %complex_4* %212, i32 0, i32 1
-  %214 = load float, float* %213, align 4
-  %215 = alloca %complex_4, align 8
-  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, %complex_4* %215, align 1
-  %216 = getelementptr %complex_4, %complex_4* %215, i32 0, i32 1
-  %217 = load float, float* %216, align 4
-  %218 = fcmp one float %208, %211
-  %219 = fcmp one float %214, %217
-  %220 = or i1 %218, %219
-  br i1 %220, label %then56, label %else57
+  %206 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
+  %207 = load %complex_4, %complex_4* %206, align 1
+  %208 = alloca %complex_4, align 8
+  store %complex_4 %207, %complex_4* %208, align 1
+  %209 = getelementptr %complex_4, %complex_4* %208, i32 0, i32 0
+  %210 = load float, float* %209, align 4
+  %211 = alloca %complex_4, align 8
+  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, %complex_4* %211, align 1
+  %212 = getelementptr %complex_4, %complex_4* %211, i32 0, i32 0
+  %213 = load float, float* %212, align 4
+  %214 = alloca %complex_4, align 8
+  store %complex_4 %207, %complex_4* %214, align 1
+  %215 = getelementptr %complex_4, %complex_4* %214, i32 0, i32 1
+  %216 = load float, float* %215, align 4
+  %217 = alloca %complex_4, align 8
+  store %complex_4 <{ float 2.000000e+00, float 0.000000e+00 }>, %complex_4* %217, align 1
+  %218 = getelementptr %complex_4, %complex_4* %217, i32 0, i32 1
+  %219 = load float, float* %218, align 4
+  %220 = fcmp one float %210, %213
+  %221 = fcmp one float %216, %219
+  %222 = or i1 %220, %221
+  br i1 %222, label %then56, label %else57
 
 then56:                                           ; preds = %ifcont55
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0))
@@ -622,28 +621,28 @@ then59:                                           ; preds = %ifcont58
   unreachable
 
 ifcont60:                                         ; preds = %ifcont58
-  %221 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
-  %222 = load %complex_4, %complex_4* %221, align 1
-  %223 = alloca %complex_4, align 8
-  store %complex_4 %222, %complex_4* %223, align 1
-  %224 = getelementptr %complex_4, %complex_4* %223, i32 0, i32 0
-  %225 = load float, float* %224, align 4
-  %226 = alloca %complex_4, align 8
-  store %complex_4 <{ float 3.000000e+00, float 0.000000e+00 }>, %complex_4* %226, align 1
-  %227 = getelementptr %complex_4, %complex_4* %226, i32 0, i32 0
-  %228 = load float, float* %227, align 4
-  %229 = alloca %complex_4, align 8
-  store %complex_4 %222, %complex_4* %229, align 1
-  %230 = getelementptr %complex_4, %complex_4* %229, i32 0, i32 1
-  %231 = load float, float* %230, align 4
-  %232 = alloca %complex_4, align 8
-  store %complex_4 <{ float 3.000000e+00, float 0.000000e+00 }>, %complex_4* %232, align 1
-  %233 = getelementptr %complex_4, %complex_4* %232, i32 0, i32 1
-  %234 = load float, float* %233, align 4
-  %235 = fcmp one float %225, %228
-  %236 = fcmp one float %231, %234
-  %237 = or i1 %235, %236
-  br i1 %237, label %then61, label %else62
+  %223 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
+  %224 = load %complex_4, %complex_4* %223, align 1
+  %225 = alloca %complex_4, align 8
+  store %complex_4 %224, %complex_4* %225, align 1
+  %226 = getelementptr %complex_4, %complex_4* %225, i32 0, i32 0
+  %227 = load float, float* %226, align 4
+  %228 = alloca %complex_4, align 8
+  store %complex_4 <{ float 3.000000e+00, float 0.000000e+00 }>, %complex_4* %228, align 1
+  %229 = getelementptr %complex_4, %complex_4* %228, i32 0, i32 0
+  %230 = load float, float* %229, align 4
+  %231 = alloca %complex_4, align 8
+  store %complex_4 %224, %complex_4* %231, align 1
+  %232 = getelementptr %complex_4, %complex_4* %231, i32 0, i32 1
+  %233 = load float, float* %232, align 4
+  %234 = alloca %complex_4, align 8
+  store %complex_4 <{ float 3.000000e+00, float 0.000000e+00 }>, %complex_4* %234, align 1
+  %235 = getelementptr %complex_4, %complex_4* %234, i32 0, i32 1
+  %236 = load float, float* %235, align 4
+  %237 = fcmp one float %227, %230
+  %238 = fcmp one float %233, %236
+  %239 = or i1 %237, %238
+  br i1 %239, label %then61, label %else62
 
 then61:                                           ; preds = %ifcont60
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
@@ -662,7 +661,7 @@ then64:                                           ; preds = %ifcont63
   unreachable
 
 ifcont65:                                         ; preds = %ifcont63
-  %238 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %240 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
   br i1 false, label %then66, label %ifcont67
 
 then66:                                           ; preds = %ifcont65
@@ -671,8 +670,8 @@ then66:                                           ; preds = %ifcont65
   unreachable
 
 ifcont67:                                         ; preds = %ifcont65
-  %239 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
-  %240 = load %complex_4, %complex_4* %239, align 1
+  %241 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 0
+  %242 = load %complex_4, %complex_4* %241, align 1
   br i1 false, label %then68, label %ifcont69
 
 then68:                                           ; preds = %ifcont67
@@ -681,15 +680,16 @@ then68:                                           ; preds = %ifcont67
   unreachable
 
 ifcont69:                                         ; preds = %ifcont67
-  %241 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
-  %242 = load %complex_4, %complex_4* %241, align 1
-  %243 = alloca %complex_4, align 8
-  store %complex_4 %240, %complex_4* %243, align 1
-  %244 = alloca %complex_4, align 8
-  store %complex_4 %242, %complex_4* %244, align 1
-  %245 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(%complex_4* %243, %complex_4* %244, %complex_4* %245)
-  %246 = load %complex_4, %complex_4* %245, align 1
+  %243 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 1
+  %244 = load %complex_4, %complex_4* %243, align 1
+  %245 = extractvalue %complex_4 %242, 0
+  %246 = extractvalue %complex_4 %242, 1
+  %247 = extractvalue %complex_4 %244, 0
+  %248 = extractvalue %complex_4 %244, 1
+  %249 = fadd float %245, %247
+  %250 = fadd float %246, %248
+  %251 = insertvalue %complex_4 undef, float %249, 0
+  %252 = insertvalue %complex_4 %251, float %250, 1
   br i1 false, label %then70, label %ifcont71
 
 then70:                                           ; preds = %ifcont69
@@ -698,15 +698,16 @@ then70:                                           ; preds = %ifcont69
   unreachable
 
 ifcont71:                                         ; preds = %ifcont69
-  %247 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
-  %248 = load %complex_4, %complex_4* %247, align 1
-  %249 = alloca %complex_4, align 8
-  store %complex_4 %246, %complex_4* %249, align 1
-  %250 = alloca %complex_4, align 8
-  store %complex_4 %248, %complex_4* %250, align 1
-  %251 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(%complex_4* %249, %complex_4* %250, %complex_4* %251)
-  %252 = load %complex_4, %complex_4* %251, align 1
+  %253 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 2
+  %254 = load %complex_4, %complex_4* %253, align 1
+  %255 = extractvalue %complex_4 %252, 0
+  %256 = extractvalue %complex_4 %252, 1
+  %257 = extractvalue %complex_4 %254, 0
+  %258 = extractvalue %complex_4 %254, 1
+  %259 = fadd float %255, %257
+  %260 = fadd float %256, %258
+  %261 = insertvalue %complex_4 undef, float %259, 0
+  %262 = insertvalue %complex_4 %261, float %260, 1
   br i1 false, label %then72, label %ifcont73
 
 then72:                                           ; preds = %ifcont71
@@ -715,16 +716,17 @@ then72:                                           ; preds = %ifcont71
   unreachable
 
 ifcont73:                                         ; preds = %ifcont71
-  %253 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
-  %254 = load %complex_4, %complex_4* %253, align 1
-  %255 = alloca %complex_4, align 8
-  store %complex_4 %252, %complex_4* %255, align 1
-  %256 = alloca %complex_4, align 8
-  store %complex_4 %254, %complex_4* %256, align 1
-  %257 = alloca %complex_4, align 8
-  call void @_lfortran_complex_add_32(%complex_4* %255, %complex_4* %256, %complex_4* %257)
-  %258 = load %complex_4, %complex_4* %257, align 1
-  store %complex_4 %258, %complex_4* %238, align 1
+  %263 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
+  %264 = load %complex_4, %complex_4* %263, align 1
+  %265 = extractvalue %complex_4 %262, 0
+  %266 = extractvalue %complex_4 %262, 1
+  %267 = extractvalue %complex_4 %264, 0
+  %268 = extractvalue %complex_4 %264, 1
+  %269 = fadd float %265, %267
+  %270 = fadd float %266, %268
+  %271 = insertvalue %complex_4 undef, float %269, 0
+  %272 = insertvalue %complex_4 %271, float %270, 1
+  store %complex_4 %272, %complex_4* %240, align 1
   br i1 false, label %then74, label %ifcont75
 
 then74:                                           ; preds = %ifcont73
@@ -733,28 +735,28 @@ then74:                                           ; preds = %ifcont73
   unreachable
 
 ifcont75:                                         ; preds = %ifcont73
-  %259 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
-  %260 = load %complex_4, %complex_4* %259, align 1
-  %261 = alloca %complex_4, align 8
-  store %complex_4 %260, %complex_4* %261, align 1
-  %262 = getelementptr %complex_4, %complex_4* %261, i32 0, i32 0
-  %263 = load float, float* %262, align 4
-  %264 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.700000e+01, float 0.000000e+00 }>, %complex_4* %264, align 1
-  %265 = getelementptr %complex_4, %complex_4* %264, i32 0, i32 0
-  %266 = load float, float* %265, align 4
-  %267 = alloca %complex_4, align 8
-  store %complex_4 %260, %complex_4* %267, align 1
-  %268 = getelementptr %complex_4, %complex_4* %267, i32 0, i32 1
-  %269 = load float, float* %268, align 4
-  %270 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.700000e+01, float 0.000000e+00 }>, %complex_4* %270, align 1
-  %271 = getelementptr %complex_4, %complex_4* %270, i32 0, i32 1
-  %272 = load float, float* %271, align 4
-  %273 = fcmp one float %263, %266
-  %274 = fcmp one float %269, %272
-  %275 = or i1 %273, %274
-  br i1 %275, label %then76, label %else77
+  %273 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %274 = load %complex_4, %complex_4* %273, align 1
+  %275 = alloca %complex_4, align 8
+  store %complex_4 %274, %complex_4* %275, align 1
+  %276 = getelementptr %complex_4, %complex_4* %275, i32 0, i32 0
+  %277 = load float, float* %276, align 4
+  %278 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.700000e+01, float 0.000000e+00 }>, %complex_4* %278, align 1
+  %279 = getelementptr %complex_4, %complex_4* %278, i32 0, i32 0
+  %280 = load float, float* %279, align 4
+  %281 = alloca %complex_4, align 8
+  store %complex_4 %274, %complex_4* %281, align 1
+  %282 = getelementptr %complex_4, %complex_4* %281, i32 0, i32 1
+  %283 = load float, float* %282, align 4
+  %284 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.700000e+01, float 0.000000e+00 }>, %complex_4* %284, align 1
+  %285 = getelementptr %complex_4, %complex_4* %284, i32 0, i32 1
+  %286 = load float, float* %285, align 4
+  %287 = fcmp one float %277, %280
+  %288 = fcmp one float %283, %286
+  %289 = or i1 %287, %288
+  br i1 %289, label %then76, label %else77
 
 then76:                                           ; preds = %ifcont75
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @61, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @60, i32 0, i32 0))
@@ -773,7 +775,7 @@ then79:                                           ; preds = %ifcont78
   unreachable
 
 ifcont80:                                         ; preds = %ifcont78
-  %276 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %290 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
   br i1 false, label %then81, label %ifcont82
 
 then81:                                           ; preds = %ifcont80
@@ -782,9 +784,9 @@ then81:                                           ; preds = %ifcont80
   unreachable
 
 ifcont82:                                         ; preds = %ifcont80
-  %277 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
-  %278 = load %complex_4, %complex_4* %277, align 1
-  store %complex_4 %278, %complex_4* %276, align 1
+  %291 = getelementptr [3 x %complex_4], [3 x %complex_4]* %a, i32 0, i32 0
+  %292 = load %complex_4, %complex_4* %291, align 1
+  store %complex_4 %292, %complex_4* %290, align 1
   br i1 false, label %then83, label %ifcont84
 
 then83:                                           ; preds = %ifcont82
@@ -793,28 +795,28 @@ then83:                                           ; preds = %ifcont82
   unreachable
 
 ifcont84:                                         ; preds = %ifcont82
-  %279 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
-  %280 = load %complex_4, %complex_4* %279, align 1
-  %281 = alloca %complex_4, align 8
-  store %complex_4 %280, %complex_4* %281, align 1
-  %282 = getelementptr %complex_4, %complex_4* %281, i32 0, i32 0
-  %283 = load float, float* %282, align 4
-  %284 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.100000e+01, float 0.000000e+00 }>, %complex_4* %284, align 1
-  %285 = getelementptr %complex_4, %complex_4* %284, i32 0, i32 0
-  %286 = load float, float* %285, align 4
-  %287 = alloca %complex_4, align 8
-  store %complex_4 %280, %complex_4* %287, align 1
-  %288 = getelementptr %complex_4, %complex_4* %287, i32 0, i32 1
-  %289 = load float, float* %288, align 4
-  %290 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.100000e+01, float 0.000000e+00 }>, %complex_4* %290, align 1
-  %291 = getelementptr %complex_4, %complex_4* %290, i32 0, i32 1
-  %292 = load float, float* %291, align 4
-  %293 = fcmp one float %283, %286
-  %294 = fcmp one float %289, %292
-  %295 = or i1 %293, %294
-  br i1 %295, label %then85, label %else86
+  %293 = getelementptr [4 x %complex_4], [4 x %complex_4]* %b, i32 0, i32 3
+  %294 = load %complex_4, %complex_4* %293, align 1
+  %295 = alloca %complex_4, align 8
+  store %complex_4 %294, %complex_4* %295, align 1
+  %296 = getelementptr %complex_4, %complex_4* %295, i32 0, i32 0
+  %297 = load float, float* %296, align 4
+  %298 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.100000e+01, float 0.000000e+00 }>, %complex_4* %298, align 1
+  %299 = getelementptr %complex_4, %complex_4* %298, i32 0, i32 0
+  %300 = load float, float* %299, align 4
+  %301 = alloca %complex_4, align 8
+  store %complex_4 %294, %complex_4* %301, align 1
+  %302 = getelementptr %complex_4, %complex_4* %301, i32 0, i32 1
+  %303 = load float, float* %302, align 4
+  %304 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.100000e+01, float 0.000000e+00 }>, %complex_4* %304, align 1
+  %305 = getelementptr %complex_4, %complex_4* %304, i32 0, i32 1
+  %306 = load float, float* %305, align 4
+  %307 = fcmp one float %297, %300
+  %308 = fcmp one float %303, %306
+  %309 = or i1 %307, %308
+  br i1 %309, label %then85, label %else86
 
 then85:                                           ; preds = %ifcont84
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @69, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @68, i32 0, i32 0))
@@ -829,71 +831,71 @@ ifcont87:                                         ; preds = %else86, %then85
   br label %loop.head88
 
 loop.head88:                                      ; preds = %loop.end96, %ifcont87
-  %296 = load i32, i32* %i1, align 4
-  %297 = add i32 %296, 1
-  %298 = icmp sle i32 %297, 2
-  br i1 %298, label %loop.body89, label %loop.end97
+  %310 = load i32, i32* %i1, align 4
+  %311 = add i32 %310, 1
+  %312 = icmp sle i32 %311, 2
+  br i1 %312, label %loop.body89, label %loop.end97
 
 loop.body89:                                      ; preds = %loop.head88
-  %299 = load i32, i32* %i1, align 4
-  %300 = add i32 %299, 1
-  store i32 %300, i32* %i1, align 4
+  %313 = load i32, i32* %i1, align 4
+  %314 = add i32 %313, 1
+  store i32 %314, i32* %i1, align 4
   store i32 0, i32* %j2, align 4
   br label %loop.head90
 
 loop.head90:                                      ; preds = %ifcont95, %loop.body89
-  %301 = load i32, i32* %j2, align 4
-  %302 = add i32 %301, 1
-  %303 = icmp sle i32 %302, 2
-  br i1 %303, label %loop.body91, label %loop.end96
+  %315 = load i32, i32* %j2, align 4
+  %316 = add i32 %315, 1
+  %317 = icmp sle i32 %316, 2
+  br i1 %317, label %loop.body91, label %loop.end96
 
 loop.body91:                                      ; preds = %loop.head90
-  %304 = load i32, i32* %j2, align 4
-  %305 = add i32 %304, 1
-  store i32 %305, i32* %j2, align 4
-  %306 = load i32, i32* %i1, align 4
-  %307 = load i32, i32* %j2, align 4
-  %308 = sub i32 %306, 1
-  %309 = mul i32 1, %308
-  %310 = add i32 0, %309
-  %311 = icmp slt i32 %306, 1
-  %312 = icmp sgt i32 %306, 2
-  %313 = or i1 %311, %312
-  br i1 %313, label %then92, label %ifcont93
+  %318 = load i32, i32* %j2, align 4
+  %319 = add i32 %318, 1
+  store i32 %319, i32* %j2, align 4
+  %320 = load i32, i32* %i1, align 4
+  %321 = load i32, i32* %j2, align 4
+  %322 = sub i32 %320, 1
+  %323 = mul i32 1, %322
+  %324 = add i32 0, %323
+  %325 = icmp slt i32 %320, 1
+  %326 = icmp sgt i32 %320, 2
+  %327 = or i1 %325, %326
+  br i1 %327, label %then92, label %ifcont93
 
 then92:                                           ; preds = %loop.body91
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 %306, i32 1, i32 1, i32 2)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0), i32 %320, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
 ifcont93:                                         ; preds = %loop.body91
-  %314 = sub i32 %307, 1
-  %315 = mul i32 2, %314
-  %316 = add i32 %310, %315
-  %317 = icmp slt i32 %307, 1
-  %318 = icmp sgt i32 %307, 2
-  %319 = or i1 %317, %318
-  br i1 %319, label %then94, label %ifcont95
+  %328 = sub i32 %321, 1
+  %329 = mul i32 2, %328
+  %330 = add i32 %324, %329
+  %331 = icmp slt i32 %321, 1
+  %332 = icmp sgt i32 %321, 2
+  %333 = or i1 %331, %332
+  br i1 %333, label %then94, label %ifcont95
 
 then94:                                           ; preds = %ifcont93
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 %307, i32 2, i32 1, i32 2)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([185 x i8], [185 x i8]* @73, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @72, i32 0, i32 0), i32 %321, i32 2, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
 ifcont95:                                         ; preds = %ifcont93
-  %320 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 %316
-  %321 = load i32, i32* %i1, align 4
-  %322 = load i32, i32* %j2, align 4
-  %323 = add i32 %321, %322
-  %324 = add i32 %323, 10
-  %325 = sitofp i32 %324 to float
-  %326 = alloca %complex_4, align 8
-  %327 = getelementptr %complex_4, %complex_4* %326, i32 0, i32 0
-  %328 = getelementptr %complex_4, %complex_4* %326, i32 0, i32 1
-  store float %325, float* %327, align 4
-  store float 0.000000e+00, float* %328, align 4
-  %329 = load %complex_4, %complex_4* %326, align 1
-  store %complex_4 %329, %complex_4* %320, align 1
+  %334 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 %330
+  %335 = load i32, i32* %i1, align 4
+  %336 = load i32, i32* %j2, align 4
+  %337 = add i32 %335, %336
+  %338 = add i32 %337, 10
+  %339 = sitofp i32 %338 to float
+  %340 = alloca %complex_4, align 8
+  %341 = getelementptr %complex_4, %complex_4* %340, i32 0, i32 0
+  %342 = getelementptr %complex_4, %complex_4* %340, i32 0, i32 1
+  store float %339, float* %341, align 4
+  store float 0.000000e+00, float* %342, align 4
+  %343 = load %complex_4, %complex_4* %340, align 1
+  store %complex_4 %343, %complex_4* %334, align 1
   br label %loop.head90
 
 loop.end96:                                       ; preds = %loop.head90
@@ -916,28 +918,28 @@ then100:                                          ; preds = %ifcont99
   unreachable
 
 ifcont101:                                        ; preds = %ifcont99
-  %330 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 0
-  %331 = load %complex_4, %complex_4* %330, align 1
-  %332 = alloca %complex_4, align 8
-  store %complex_4 %331, %complex_4* %332, align 1
-  %333 = getelementptr %complex_4, %complex_4* %332, i32 0, i32 0
-  %334 = load float, float* %333, align 4
-  %335 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.200000e+01, float 0.000000e+00 }>, %complex_4* %335, align 1
-  %336 = getelementptr %complex_4, %complex_4* %335, i32 0, i32 0
-  %337 = load float, float* %336, align 4
-  %338 = alloca %complex_4, align 8
-  store %complex_4 %331, %complex_4* %338, align 1
-  %339 = getelementptr %complex_4, %complex_4* %338, i32 0, i32 1
-  %340 = load float, float* %339, align 4
-  %341 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.200000e+01, float 0.000000e+00 }>, %complex_4* %341, align 1
-  %342 = getelementptr %complex_4, %complex_4* %341, i32 0, i32 1
-  %343 = load float, float* %342, align 4
-  %344 = fcmp one float %334, %337
-  %345 = fcmp one float %340, %343
-  %346 = or i1 %344, %345
-  br i1 %346, label %then102, label %else103
+  %344 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 0
+  %345 = load %complex_4, %complex_4* %344, align 1
+  %346 = alloca %complex_4, align 8
+  store %complex_4 %345, %complex_4* %346, align 1
+  %347 = getelementptr %complex_4, %complex_4* %346, i32 0, i32 0
+  %348 = load float, float* %347, align 4
+  %349 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.200000e+01, float 0.000000e+00 }>, %complex_4* %349, align 1
+  %350 = getelementptr %complex_4, %complex_4* %349, i32 0, i32 0
+  %351 = load float, float* %350, align 4
+  %352 = alloca %complex_4, align 8
+  store %complex_4 %345, %complex_4* %352, align 1
+  %353 = getelementptr %complex_4, %complex_4* %352, i32 0, i32 1
+  %354 = load float, float* %353, align 4
+  %355 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.200000e+01, float 0.000000e+00 }>, %complex_4* %355, align 1
+  %356 = getelementptr %complex_4, %complex_4* %355, i32 0, i32 1
+  %357 = load float, float* %356, align 4
+  %358 = fcmp one float %348, %351
+  %359 = fcmp one float %354, %357
+  %360 = or i1 %358, %359
+  br i1 %360, label %then102, label %else103
 
 then102:                                          ; preds = %ifcont101
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
@@ -964,28 +966,28 @@ then107:                                          ; preds = %ifcont106
   unreachable
 
 ifcont108:                                        ; preds = %ifcont106
-  %347 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 2
-  %348 = load %complex_4, %complex_4* %347, align 1
-  %349 = alloca %complex_4, align 8
-  store %complex_4 %348, %complex_4* %349, align 1
-  %350 = getelementptr %complex_4, %complex_4* %349, i32 0, i32 0
-  %351 = load float, float* %350, align 4
-  %352 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %352, align 1
-  %353 = getelementptr %complex_4, %complex_4* %352, i32 0, i32 0
-  %354 = load float, float* %353, align 4
-  %355 = alloca %complex_4, align 8
-  store %complex_4 %348, %complex_4* %355, align 1
-  %356 = getelementptr %complex_4, %complex_4* %355, i32 0, i32 1
-  %357 = load float, float* %356, align 4
-  %358 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %358, align 1
-  %359 = getelementptr %complex_4, %complex_4* %358, i32 0, i32 1
-  %360 = load float, float* %359, align 4
-  %361 = fcmp one float %351, %354
-  %362 = fcmp one float %357, %360
-  %363 = or i1 %361, %362
-  br i1 %363, label %then109, label %else110
+  %361 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 2
+  %362 = load %complex_4, %complex_4* %361, align 1
+  %363 = alloca %complex_4, align 8
+  store %complex_4 %362, %complex_4* %363, align 1
+  %364 = getelementptr %complex_4, %complex_4* %363, i32 0, i32 0
+  %365 = load float, float* %364, align 4
+  %366 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %366, align 1
+  %367 = getelementptr %complex_4, %complex_4* %366, i32 0, i32 0
+  %368 = load float, float* %367, align 4
+  %369 = alloca %complex_4, align 8
+  store %complex_4 %362, %complex_4* %369, align 1
+  %370 = getelementptr %complex_4, %complex_4* %369, i32 0, i32 1
+  %371 = load float, float* %370, align 4
+  %372 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %372, align 1
+  %373 = getelementptr %complex_4, %complex_4* %372, i32 0, i32 1
+  %374 = load float, float* %373, align 4
+  %375 = fcmp one float %365, %368
+  %376 = fcmp one float %371, %374
+  %377 = or i1 %375, %376
+  br i1 %377, label %then109, label %else110
 
 then109:                                          ; preds = %ifcont108
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @85, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @84, i32 0, i32 0))
@@ -1012,28 +1014,28 @@ then114:                                          ; preds = %ifcont113
   unreachable
 
 ifcont115:                                        ; preds = %ifcont113
-  %364 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 1
-  %365 = load %complex_4, %complex_4* %364, align 1
-  %366 = alloca %complex_4, align 8
-  store %complex_4 %365, %complex_4* %366, align 1
-  %367 = getelementptr %complex_4, %complex_4* %366, i32 0, i32 0
-  %368 = load float, float* %367, align 4
-  %369 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %369, align 1
-  %370 = getelementptr %complex_4, %complex_4* %369, i32 0, i32 0
-  %371 = load float, float* %370, align 4
-  %372 = alloca %complex_4, align 8
-  store %complex_4 %365, %complex_4* %372, align 1
-  %373 = getelementptr %complex_4, %complex_4* %372, i32 0, i32 1
-  %374 = load float, float* %373, align 4
-  %375 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %375, align 1
-  %376 = getelementptr %complex_4, %complex_4* %375, i32 0, i32 1
-  %377 = load float, float* %376, align 4
-  %378 = fcmp one float %368, %371
-  %379 = fcmp one float %374, %377
-  %380 = or i1 %378, %379
-  br i1 %380, label %then116, label %else117
+  %378 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 1
+  %379 = load %complex_4, %complex_4* %378, align 1
+  %380 = alloca %complex_4, align 8
+  store %complex_4 %379, %complex_4* %380, align 1
+  %381 = getelementptr %complex_4, %complex_4* %380, i32 0, i32 0
+  %382 = load float, float* %381, align 4
+  %383 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %383, align 1
+  %384 = getelementptr %complex_4, %complex_4* %383, i32 0, i32 0
+  %385 = load float, float* %384, align 4
+  %386 = alloca %complex_4, align 8
+  store %complex_4 %379, %complex_4* %386, align 1
+  %387 = getelementptr %complex_4, %complex_4* %386, i32 0, i32 1
+  %388 = load float, float* %387, align 4
+  %389 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.300000e+01, float 0.000000e+00 }>, %complex_4* %389, align 1
+  %390 = getelementptr %complex_4, %complex_4* %389, i32 0, i32 1
+  %391 = load float, float* %390, align 4
+  %392 = fcmp one float %382, %385
+  %393 = fcmp one float %388, %391
+  %394 = or i1 %392, %393
+  br i1 %394, label %then116, label %else117
 
 then116:                                          ; preds = %ifcont115
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
@@ -1060,28 +1062,28 @@ then121:                                          ; preds = %ifcont120
   unreachable
 
 ifcont122:                                        ; preds = %ifcont120
-  %381 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 3
-  %382 = load %complex_4, %complex_4* %381, align 1
-  %383 = alloca %complex_4, align 8
-  store %complex_4 %382, %complex_4* %383, align 1
-  %384 = getelementptr %complex_4, %complex_4* %383, i32 0, i32 0
-  %385 = load float, float* %384, align 4
-  %386 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.400000e+01, float 0.000000e+00 }>, %complex_4* %386, align 1
-  %387 = getelementptr %complex_4, %complex_4* %386, i32 0, i32 0
-  %388 = load float, float* %387, align 4
-  %389 = alloca %complex_4, align 8
-  store %complex_4 %382, %complex_4* %389, align 1
-  %390 = getelementptr %complex_4, %complex_4* %389, i32 0, i32 1
-  %391 = load float, float* %390, align 4
-  %392 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.400000e+01, float 0.000000e+00 }>, %complex_4* %392, align 1
-  %393 = getelementptr %complex_4, %complex_4* %392, i32 0, i32 1
-  %394 = load float, float* %393, align 4
-  %395 = fcmp one float %385, %388
-  %396 = fcmp one float %391, %394
-  %397 = or i1 %395, %396
-  br i1 %397, label %then123, label %else124
+  %395 = getelementptr [4 x %complex_4], [4 x %complex_4]* %c, i32 0, i32 3
+  %396 = load %complex_4, %complex_4* %395, align 1
+  %397 = alloca %complex_4, align 8
+  store %complex_4 %396, %complex_4* %397, align 1
+  %398 = getelementptr %complex_4, %complex_4* %397, i32 0, i32 0
+  %399 = load float, float* %398, align 4
+  %400 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.400000e+01, float 0.000000e+00 }>, %complex_4* %400, align 1
+  %401 = getelementptr %complex_4, %complex_4* %400, i32 0, i32 0
+  %402 = load float, float* %401, align 4
+  %403 = alloca %complex_4, align 8
+  store %complex_4 %396, %complex_4* %403, align 1
+  %404 = getelementptr %complex_4, %complex_4* %403, i32 0, i32 1
+  %405 = load float, float* %404, align 4
+  %406 = alloca %complex_4, align 8
+  store %complex_4 <{ float 1.400000e+01, float 0.000000e+00 }>, %complex_4* %406, align 1
+  %407 = getelementptr %complex_4, %complex_4* %406, i32 0, i32 1
+  %408 = load float, float* %407, align 4
+  %409 = fcmp one float %399, %402
+  %410 = fcmp one float %405, %408
+  %411 = or i1 %409, %410
+  br i1 %411, label %then123, label %else124
 
 then123:                                          ; preds = %ifcont122
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
@@ -1107,9 +1109,5 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-declare void @_lfortran_complex_sub_32(%complex_4*, %complex_4*, %complex_4*)
-
-declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*)
 
 declare void @_lpython_free_argv()

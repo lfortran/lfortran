@@ -3,7 +3,7 @@ program test_inquire_size
     integer :: fh
     integer :: length
     character(*), parameter :: test_lines = 'build.f90'
-    open(newunit=fh, file="test", access="stream", form='unformatted')
+    open(newunit=fh, file="test_inquire_size_test.txt", access="stream", form='unformatted', status='replace')
     write(fh) test_lines
     inquire(fh, size=length)
     close(fh)

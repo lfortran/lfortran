@@ -18,7 +18,7 @@ contains
          _lfortran_tuple(_lfortran_list(integer), _lfortran_list(character(len=:))))    :: t7
       _lfortran_list(_lfortran_tuple(integer, real, _lfortran_tuple(real, integer)))    :: l1
       integer:: i
-      character(len=:):: s
+      character(len=:), allocatable :: s
       t1 = _lfortran_tuple_constant(-1, -2)
       t2 = _lfortran_tuple_constant(-3, -4)
       t3 = _lfortran_tuple_constant(t1, t2, t1, t2)

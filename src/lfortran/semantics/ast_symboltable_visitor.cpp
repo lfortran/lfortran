@@ -51,6 +51,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -60,7 +61,8 @@ public:
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
-            common_variables_hash, external_procedures_mapping,
+            common_variables_hash, common_variables_byte_offset,
+            external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
             entry_function_arguments_mapping, data_structure, lm
@@ -389,6 +391,20 @@ public:
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+            // Check the module's symbol table
+            ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
+            if (current_sym == placeholder_sym) {
+                diag.add(diag::Diagnostic(
+                    "Interface '" + name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
+                    }));
+            }
+        }
+        pending_proc_placeholders.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
@@ -464,7 +480,6 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -498,6 +513,11 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // Mark COMMON blocks as declared before processing contained procedures.
+        // This ensures that internal procedures referencing the same COMMON block
+        // will map their variables to the existing struct members by byte offset,
+        // rather than creating new struct members.
+        mark_common_blocks_as_declared();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -534,6 +554,18 @@ public:
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
+             if (current_sym == placeholder_sym) {
+                 diag.add(diag::Diagnostic(
+                    "Interface '" + name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
+                    }));
+             }
+        }
+        pending_proc_placeholders.clear();
+        in_program = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1769,17 +1801,21 @@ public:
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
-                    // TODO: Throw error when interface definition and implementation signatures are different
+                  // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
-                    if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
-                        ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
-                        diag.add(diag::Diagnostic(
-                            "Argument(s) or return type mismatch in interface and implementation",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {tmp->loc})}));
-                        throw SemanticAbort();
+                    bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
+
+                    if (!is_placeholder) {
+                       if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
+                                ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
+        
+                            diag.add(diag::Diagnostic(
+                                "Argument(s) or return type mismatch in interface and implementation",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {tmp->loc})}));
+                            throw SemanticAbort();
+                        }
                     }
-                    // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
                     diag.add(diag::Diagnostic(
@@ -2171,9 +2207,11 @@ public:
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
+        std::vector<std::string> old_procedure_args = current_procedure_args;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
+        current_procedure_args = old_procedure_args;
         return;
     }
 
@@ -2402,7 +2440,12 @@ public:
                     if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
                         AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
                         for (size_t k = 0; k < attr_common->n_blks; k++) {
-                            std::string common_block_name{attr_common->m_blks[k].m_name};
+                            std::string common_block_name(
+                                attr_common->m_blks[k].m_name ? attr_common->m_blks[k].m_name : ""
+                            );
+                            if (common_block_name.empty()) {
+                                continue;
+                            }
                             // Convert to lowercase to match how symbols are stored
                             std::string common_block_name_lower = to_lower(common_block_name);
                             std::string module_name = base_module_name + common_block_name_lower;
@@ -2737,7 +2780,10 @@ public:
     }
 
     bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
-        if (ASRUtils::is_class_type(ASRUtils::expr_type(var_expr))) {
+        ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+        // Get past pointer type if present
+        var_type = ASRUtils::type_get_past_pointer(var_type);
+        if (ASRUtils::is_class_type(var_type)) {
             ASR::symbol_t* var_type_clss_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
@@ -2760,6 +2806,17 @@ public:
                         diag::Label("", {loc})}));
                 throw SemanticAbort();
             }
+            // Check for INTENT(IN) POINTER - issue warning but allow compilation
+            ASR::Variable_t* first_arg = ASRUtils::EXPR2VAR(func->m_args[0]);
+            if (ASRUtils::is_pointer(first_arg->m_type) &&
+                first_arg->m_intent == ASR::intentType::In) {
+                diag.add(diag::Diagnostic(
+                    "Passed-object dummy argument '" + std::string(first_arg->m_name) +
+                    "' of procedure '" + std::string(func->m_name) +
+                    "' that is an INTENT(IN) POINTER is not standard",
+                    diag::Level::Warning, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+            }
         } else {
             bool is_pass_arg_name_found = false;
             for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
@@ -2773,6 +2830,16 @@ public:
                             diag::Level::Error, diag::Stage::Semantic, {
                                 diag::Label("", {loc})}));
                         throw SemanticAbort();
+                    }
+                    // Check for INTENT(IN) POINTER - issue warning but allow compilation
+                    if (ASRUtils::is_pointer(v->m_type) &&
+                        v->m_intent == ASR::intentType::In) {
+                        diag.add(diag::Diagnostic(
+                            "Passed-object dummy argument '" + std::string(v->m_name) +
+                            "' of procedure '" + std::string(func->m_name) +
+                            "' that is an INTENT(IN) POINTER is not standard",
+                            diag::Level::Warning, diag::Stage::Semantic, {
+                                diag::Label("", {loc})}));
                     }
                     is_pass_arg_name_found = true;
                 }
@@ -4549,6 +4616,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -4557,9 +4625,12 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
+                         implicit_mapping, common_variables_hash,
+                         common_variables_byte_offset, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
+                         instantiate_types, instantiate_symbols, entry_functions,
+                         entry_function_arguments_mapping, data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

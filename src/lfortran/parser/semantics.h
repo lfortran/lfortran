@@ -280,6 +280,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
             nullptr, nullptr, None)
 
+#define ATTR_TYPE_EXPR(x, e, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            a2kind_list(p.m_a, l, e).p, 1, \
+            nullptr, nullptr, None)
+
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
@@ -1873,10 +1879,21 @@ return make_Program_t(al, a_loc,
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
-    int64_t n = LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Num_t>(repeat)->m_n;
-    for (int64_t i=0; i<n; i++) {
-        v.push_back(al, e);
+    if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::expr_t>(*repeat)) {
+        LCompilers::LFortran::AST::expr_t* repeat_expr = 
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::expr_t>(repeat);
+        if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Num_t>(*repeat_expr)) {
+            int64_t n = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Num_t>(repeat_expr)->m_n;
+            for (int64_t i=0; i<n; i++) {
+                v.push_back(al, e);
+            }
+            return;
+        }
     }
+    Location loc = repeat->loc;
+    ast_t* binop = LCompilers::LFortran::AST::make_BinOp_t(al, loc,
+        EXPR(repeat), LCompilers::LFortran::AST::operatorType::Mul, EXPR(e));
+    v.push_back(al, binop);
 }
 #define REPEAT_LIST_ADD(l, r, x) repeat_list_add(l, p.m_a, r, x)
 
@@ -1962,8 +1979,16 @@ void add_ws_warning(const Location &loc,
                             LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
-                std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
-                std::string msg2 = "help: write this as 'character("+std::to_string(a_kind)+")'";
+                std::string msg1;
+                std::string msg2;
+                if (a_kind == -1) {
+                        // Expression form: character*(<expr>)
+                        msg1 = "Use character(<len>) instead of character*(<len>)";
+                        msg2 = "help: write this as 'character(<len>)'";
+                } else {
+                        msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
+                        msg2 = "help: write this as 'character("+std::to_string(a_kind)+")'";
+                }
                 diagnostics.parser_style_label(
                 msg1,
                 {loc},
@@ -2003,6 +2028,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
