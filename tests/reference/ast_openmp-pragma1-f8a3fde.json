@@ -1,11 +1,11 @@
 {
-    "basename": "ast-pragma1-f8a3fde",
+    "basename": "ast_openmp-pragma1-f8a3fde",
     "cmd": "lfortran --show-ast --no-color --openmp {infile} -o {outfile}",
     "infile": "tests/pragma1.f90",
     "infile_hash": "0b9eea06186cb7eb1866b55256263d4e562835c40920f35b92ed18ee",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "ast-pragma1-f8a3fde.stdout",
+    "stdout": "ast_openmp-pragma1-f8a3fde.stdout",
     "stdout_hash": "5fe83e4aa643e6315c760999d691cf2c8e2d454961a668974dbbd005",
     "stderr": null,
     "stderr_hash": null,

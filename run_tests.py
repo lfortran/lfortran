@@ -37,6 +37,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
+    ast_openmp = is_included("ast_openmp")
     lookup_name = is_included("lookup_name")
     rename_symbol = is_included("rename_symbol")
     line = "-1"
@@ -155,13 +156,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
-            ast_cmd = "lfortran --show-ast --no-color {infile} -o {outfile}"
-            if asr_openmp:
-                ast_cmd = "lfortran --show-ast --no-color --openmp {infile} -o {outfile}"
             run_test(
                 filename,
                 "ast",
-                ast_cmd,
+                "lfortran --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 verify_hash,
@@ -175,7 +173,17 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
+
+    if ast_openmp:
+        run_test(
+            filename,
+            "ast_openmp",
+            "lfortran --show-ast --no-color --openmp {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if enable_and_disable_implicit_typing:
         if no_llvm:
             log.info(f"{filename} * obj    SKIPPED as requested")
