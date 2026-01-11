@@ -198,7 +198,7 @@ public:
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
     LLVMFinalize llvm_symtab_finalizer;
     Vec<llvm::Value*> strings_to_be_deallocated;
-    Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
+    Vec<llvm::Value*> heap_fixed_size_arrays;  // i8** slots for heap allocations to free
     bool in_block_context = false;  // Flag to track if we're inside a BLOCK construct
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
@@ -890,15 +890,17 @@ public:
     // on non-macOS ARM platforms, but we use struct types internally.
     llvm::Value* convert_complex_vector_to_struct(llvm::Value* val, llvm::Type* complex_type) {
         llvm::Type* val_type = val->getType();
-        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
-            // val is a vector type like <2 x float> or <2 x double>
-            // Convert to struct type like {float, float} or {double, double}
-            llvm::AllocaInst *p_vec = llvm_utils->CreateAlloca(*builder, val_type);
-            builder->CreateStore(val, p_vec);
-            llvm::Value* p_struct = builder->CreateBitCast(p_vec, complex_type->getPointerTo());
-            return llvm_utils->CreateLoad2(complex_type, p_struct);
+        if (!llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            return val;
         }
-        return val;
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        llvm::Value* idx0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* idx1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
+        llvm::Value* re = builder->CreateExtractElement(val, idx0);
+        llvm::Value* im = builder->CreateExtractElement(val, idx1);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value* lfortran_complex_bin_op(llvm::Value* left_arg, llvm::Value* right_arg,
@@ -1283,37 +1285,36 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        if( c->getType()->isPointerTy() ) {
-            c = llvm_utils->CreateLoad2(complex_type, c);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            return builder->CreateExtractElement(val, idx0);
         }
+        return builder->CreateExtractValue(val, {0});
     }
 
     llvm::Value *complex_im(llvm::Value *c, llvm::Type* complex_type=nullptr) {
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            return builder->CreateExtractElement(val, idx1);
+        }
+        return builder->CreateExtractValue(val, {1});
     }
 
     llvm::Value *complex_from_floats(llvm::Value *re, llvm::Value *im,
@@ -1321,23 +1322,25 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, complex_type);
-        std::vector<llvm::Value *> idx1 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        std::vector<llvm::Value *> idx2 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pre = llvm_utils->CreateGEP2(complex_type, pres, idx1);
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pres, idx2);
-        builder->CreateStore(re, pre);
-        builder->CreateStore(im, pim);
-        return llvm_utils->CreateLoad2(complex_type, pres);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(complex_type)) {
+            llvm::Value* result = llvm::UndefValue::get(complex_type);
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            result = builder->CreateInsertElement(result, re, idx0);
+            result = builder->CreateInsertElement(result, im, idx1);
+            return result;
+        }
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
             llvm::StructType* rd) {
-        llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, rd);
+        llvm::AllocaInst *pres = llvm_utils->CreateAlloca(rd);
         llvm::Value *pim = llvm_utils->CreateGEP2(rd, pres, vals);
         llvm::Type* elem_type = rd->getStructElementType(vals.size() - 1);
         return llvm_utils->CreateLoad2(elem_type, pim);
@@ -1357,7 +1360,7 @@ public:
     llvm::Value* lfortran_intrinsic(llvm::Function *fn, llvm::Value* pa, int a_kind)
     {
         llvm::Type *presult_type = llvm_utils->getFPType(a_kind);
-        llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, presult_type);
+        llvm::AllocaInst *presult = llvm_utils->CreateAlloca(presult_type);
         llvm::Value* a = llvm_utils->CreateLoad2(presult_type, pa);
         std::vector<llvm::Value*> args = {a, presult};
         builder->CreateCall(fn, args);
@@ -3527,13 +3530,15 @@ public:
                 llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get());
+                if( !compiler_options.stack_arrays ) {
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(array_type, tmp);
+                    llvm::Value* data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                    track_heap_fixed_size_array(builder->CreateBitCast(data, llvm_utils->i8_ptr));
+                }
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, x_m_array_type, module.get());
-                llvm::Value *target = llvm_utils->CreateAlloca(
-                    target_type, nullptr, "fixed_size_reshaped_array");
-                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -3541,6 +3546,21 @@ public:
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
+                uint64_t total_size = data_size * static_cast<uint64_t>(size);
+                constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;
+                llvm::Value* target = nullptr;
+                if( !compiler_options.stack_arrays && total_size > MAX_STACK_ARRAY_SIZE ) {
+                    llvm::Value* total_size_val = llvm::ConstantInt::get(
+                        context, llvm::APInt(32, total_size));
+                    llvm::Value* ptr_i8 = LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, total_size_val);
+                    target = builder->CreateBitCast(ptr_i8, target_type->getPointerTo());
+                    track_heap_fixed_size_array(ptr_i8);
+                } else {
+                    target = llvm_utils->CreateAlloca(
+                        target_type, nullptr, "fixed_size_reshaped_array");
+                }
+                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 llvm_size = builder->CreateMul(llvm_size,
                     llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
@@ -5640,7 +5660,7 @@ public:
                             context, *module, *builder, malloc_size);
                         ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                         // Track for cleanup at function exit
-                        heap_fixed_size_arrays.push_back(al, ptr_i8);
+                        track_heap_fixed_size_array(ptr_i8);
                     } else {
 #if LLVM_VERSION_MAJOR >= 15
                         bool is_llvm_ptr = false;
@@ -6214,9 +6234,26 @@ public:
     inline void free_heap_fixed_size_arrays() {
         // Free all heap-allocated large fixed-size arrays
         for (size_t i = 0; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+            llvm::Value* slot = heap_fixed_size_arrays[i];
+            llvm::Value* ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+            llvm_utils->lfortran_free(ptr);
         }
         heap_fixed_size_arrays.n = 0;
+    }
+
+    llvm::Value* create_heap_alloc_slot() {
+        llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+        llvm::IRBuilder<> entry_builder(context);
+        entry_builder.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+        llvm::Value* slot = entry_builder.CreateAlloca(llvm_utils->i8_ptr, nullptr, "heap_alloc_slot");
+        entry_builder.CreateStore(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr), slot);
+        return slot;
+    }
+
+    void track_heap_fixed_size_array(llvm::Value* ptr_i8) {
+        llvm::Value* slot = create_heap_alloc_slot();
+        builder->CreateStore(ptr_i8, slot);
+        heap_fixed_size_arrays.push_back(al, slot);
     }
 
     inline void define_function_exit(const ASR::Function_t& x) {
@@ -8654,7 +8691,9 @@ public:
 
         // Free BLOCK-local heap arrays before exiting BLOCK (important for loops)
         for (size_t i = heap_arrays_before; i < heap_fixed_size_arrays.n; i++) {
-            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+            llvm::Value* slot = heap_fixed_size_arrays[i];
+            llvm::Value* ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+            llvm_utils->lfortran_free(ptr);
         }
         heap_fixed_size_arrays.n = heap_arrays_before;
 
@@ -13655,7 +13694,7 @@ public:
                     if (orig_arg &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                         !LLVM::is_llvm_pointer(*arg->m_type)) {
-                        llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
+                        llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
@@ -13904,7 +13943,7 @@ public:
                 llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     orig_arg->m_type, module.get());
-                llvm::Value* descriptor = llvm_utils->CreateAlloca(*builder, descriptor_type);
+                llvm::Value* descriptor = llvm_utils->CreateAlloca(descriptor_type);
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
                 // If target is unlimited polymorphic, wrap the scalar in a polymorphic type
                 ASR::ttype_t* orig_arg_type_past_pointer = ASRUtils::type_get_past_allocatable(

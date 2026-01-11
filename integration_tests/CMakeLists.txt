@@ -1655,6 +1655,7 @@ RUN(NAME complex_28 LABELS gfortran llvm)
 RUN(NAME complex_29 LABELS gfortran llvm)
 RUN(NAME complex_30 LABELS gfortran llvm)
 RUN(NAME complex_31 LABELS gfortran llvm)
+RUN(NAME complex_32 LABELS gfortran llvm)
 RUN(NAME complex_array_member_access LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_implicit_cast LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME complex_sub_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
@@ -2349,6 +2350,7 @@ RUN(NAME array_section_09 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME array_section_10 LABELS gfortran llvm)
+RUN(NAME array_section_11 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
@@ -2409,6 +2411,7 @@ RUN(NAME write_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_14 LABELS gfortran llvm)
+RUN(NAME write_15 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)

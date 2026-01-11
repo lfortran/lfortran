@@ -33,12 +33,16 @@ declare float @_lfortran_scos(float)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %a = alloca float, align 4
-  %myreal = alloca float, align 4
-  %theta = alloca float, align 4
-  %x = alloca float, align 4
+  %2 = alloca i64, align 8
+  %3 = alloca i64, align 8
+  %z = alloca float, align 4
+  %v = alloca float*, align 8
   %y = alloca float, align 4
+  %x = alloca float, align 4
+  %theta = alloca float, align 4
+  %myreal = alloca float, align 4
+  %a = alloca float, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store float 0x3FDAE147A0000000, float* %x, align 4
   store float 0x3FD6666660000000, float* %y, align 4
   store float 0x4022333340000000, float* %myreal, align 4
@@ -47,59 +51,55 @@ define i32 @main(i32 %0, i8** %1) {
   br label %associate_block_start
 
 associate_block_start:                            ; preds = %.entry
-  %v = alloca float*, align 8
   store float* null, float** %v, align 8
-  %z = alloca float, align 4
-  %2 = load float, float* %x, align 4
-  %3 = fmul float %2, 2.000000e+00
-  %4 = load float, float* %y, align 4
+  %4 = load float, float* %x, align 4
   %5 = fmul float %4, 2.000000e+00
-  %6 = fadd float %3, %5
-  %7 = fneg float %6
-  %8 = call float @_lcompilers_cos_f32(float* %theta)
-  %9 = fmul float %7, %8
-  store float %9, float* %z, align 4
+  %6 = load float, float* %y, align 4
+  %7 = fmul float %6, 2.000000e+00
+  %8 = fadd float %5, %7
+  %9 = fneg float %8
+  %10 = call float @_lcompilers_cos_f32(float* %theta)
+  %11 = fmul float %9, %10
+  store float %11, float* %z, align 4
   store float* %myreal, float** %v, align 8
-  %10 = alloca i64, align 8
-  %11 = load float, float* %a, align 4
-  %12 = load float, float* %z, align 4
-  %13 = fadd float %11, %12
-  %14 = alloca float, align 4
-  store float %13, float* %14, align 4
-  %15 = load float, float* %a, align 4
-  %16 = load float, float* %z, align 4
-  %17 = fsub float %15, %16
-  %18 = alloca float, align 4
-  store float %17, float* %18, align 4
-  %19 = load float*, float** %v, align 8
-  %20 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i64* %10, i32 0, i32 0, float* %14, float* %18, float* %19)
-  %21 = load i64, i64* %10, align 4
+  %12 = load float, float* %a, align 4
+  %13 = load float, float* %z, align 4
+  %14 = fadd float %12, %13
+  %15 = alloca float, align 4
+  store float %14, float* %15, align 4
+  %16 = load float, float* %a, align 4
+  %17 = load float, float* %z, align 4
+  %18 = fsub float %16, %17
+  %19 = alloca float, align 4
+  store float %18, float* %19, align 4
+  %20 = load float*, float** %v, align 8
+  %21 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, float* %15, float* %19, float* %20)
+  %22 = load i64, i64* %3, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %20, i8** %22, align 8
-  %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %21, i64* %23, align 4
-  %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %25 = load i8*, i8** %24, align 8
-  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %27 = load i64, i64* %26, align 4
-  %28 = trunc i64 %27 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %25, i32 %28, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %20)
-  %29 = load float*, float** %v, align 8
+  %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %21, i8** %23, align 8
+  %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %22, i64* %24, align 4
+  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %26 = load i8*, i8** %25, align 8
+  %27 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %28 = load i64, i64* %27, align 4
+  %29 = trunc i64 %28 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %26, i32 %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %21)
   %30 = load float*, float** %v, align 8
-  %31 = load float, float* %30, align 4
-  %32 = fmul float %31, 0x4012666660000000
-  store float %32, float* %29, align 4
+  %31 = load float*, float** %v, align 8
+  %32 = load float, float* %31, align 4
+  %33 = fmul float %32, 0x4012666660000000
+  store float %33, float* %30, align 4
   br label %associate_block_end
 
 associate_block_end:                              ; preds = %associate_block_start
   br label %FINALIZE_SYMTABLE_associate_block
 
 FINALIZE_SYMTABLE_associate_block:                ; preds = %associate_block_end
-  %33 = alloca i64, align 8
-  %34 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %33, i32 0, i32 0, float* %myreal)
-  %35 = load i64, i64* %33, align 4
+  %34 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %2, i32 0, i32 0, float* %myreal)
+  %35 = load i64, i64* %2, align 4
   %stringFormat_desc1 = alloca %string_descriptor, align 8
   %36 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
   store i8* %34, i8** %36, align 8

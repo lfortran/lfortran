@@ -4,11 +4,11 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value = alloca i32, align 4
-  %a = alloca i32, align 4
-  %i = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %a1 = alloca i32, align 4
   %i2 = alloca i32, align 4
+  %a1 = alloca i32, align 4
+  %i = alloca i32, align 4
+  %a = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 0, i32* %i2, align 4
   br label %loop.head
 
