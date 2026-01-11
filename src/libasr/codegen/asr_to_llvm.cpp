@@ -4943,7 +4943,8 @@ public:
     }
 
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
-            ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true) {
+            ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
+            bool is_array_element = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -4952,10 +4953,22 @@ public:
             return;
         }
 
+        /// allocate memory for array-struct element.
+        if (is_array_element && ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) { 
+            llvm::Type*  const class_type  = llvm_utils->getClassType(struct_sym, false);
+            llvm::Type*  const struct_type = llvm_utils->getStructType(struct_sym, module.get(), false);
+            llvm::Value* const struct_element_fetched = llvm_utils->create_gep2(class_type, ptr, 1 /*{Vtable, struct*}*/);
+            int64_t const struct_alloc_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(struct_type);
+            llvm::Value* const allocated_memory = LLVM::lfortran_malloc(context, *module, *builder,
+                                                llvm::ConstantInt::get(context, llvm::APInt(64, struct_alloc_size)));
+            llvm::Value* const allocated_memory_casted_to_struct_type = builder->CreateBitCast(allocated_memory, struct_type->getPointerTo());
+            builder->CreateStore(allocated_memory_casted_to_struct_type, struct_element_fetched);
+        }
+
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
-            llvm::Type* class_type = llvm_utils->getClassType(struct_sym, false);
+            llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
+            llvm::Type* const struct_type = llvm_utils->getStructType(struct_sym, module.get(), true);
             ptr = llvm_utils->create_gep2(class_type, ptr, 1);
-            llvm::Type* struct_type = llvm_utils->getStructType(struct_sym, module.get(), true);
             ptr = llvm_utils->CreateLoad2(struct_type, ptr);
         }
         while (struct_type_t) {
@@ -5217,7 +5230,7 @@ public:
                 }
                 allocate_array_members_of_struct(
                     ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                        ptr_i, ASRUtils::extract_type(v_m_type));
+                        ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
