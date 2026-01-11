@@ -475,6 +475,9 @@ program continue_compilation_1
     OPEN(unit=10, recl=10, recl=20)
     OPEN(unit=10, recl=10.5)
 
+    i = 1
+    print *, string(i,i)
+
     contains
     subroutine sub(f)
         interface

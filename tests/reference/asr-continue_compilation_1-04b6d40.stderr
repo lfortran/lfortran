@@ -1002,3 +1002,9 @@ semantic error: `recl` must be of type, Integer
     |
 476 |     OPEN(unit=10, recl=10.5)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
+   --> tests/errors/continue_compilation_1.f90:479:14
+    |
+479 |     print *, string(i,i)
+    |              ^^^^^^^^^^^ 
