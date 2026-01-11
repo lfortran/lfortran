@@ -6013,20 +6013,21 @@ public:
             std::string fn_name;
             bool is_external_interface_bypass = false;
             ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
-            // Check if this is an external interface function that should bypass mangling
-            // (unless --all-mangling is set)
-            if (ftype->m_deftype == ASR::deftypeType::Interface &&
-                ftype->m_abi != ASR::abiType::Intrinsic && !ftype->m_module &&
-                !compiler_options.po.all_symbols_mangling) {
-                fn_name = sym_name;
-                is_external_interface_bypass = true;
-            } else if (ftype->m_abi == ASR::abiType::BindC
+            // BindC functions always bypass mangling (unless bindc_mangling is set)
+            // Check this FIRST because a function can be both Interface and BindC
+            if (ftype->m_abi == ASR::abiType::BindC
                 && !compiler_options.po.bindc_mangling) {
                 if (ftype->m_bindc_name) {
                     fn_name = ftype->m_bindc_name;
                 } else {
                     fn_name = sym_name;
                 }
+            } else if (ftype->m_deftype == ASR::deftypeType::Interface &&
+                ftype->m_abi != ASR::abiType::Intrinsic && !ftype->m_module &&
+                !compiler_options.po.all_symbols_mangling) {
+                // External interface functions bypass mangling (unless --all-mangling is set)
+                fn_name = sym_name;
+                is_external_interface_bypass = true;
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
