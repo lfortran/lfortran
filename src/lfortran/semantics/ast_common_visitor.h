@@ -3411,16 +3411,24 @@ public:
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
             if (sym_ && ASR::is_a<ASR::Variable_t>(*sym_)) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym_);
-                if (ASRUtils::is_arg_dummy(var->m_intent)) {
+                // For dummy arguments (non-Local intent), keep as Variable with FunctionType
+                // This preserves the return type from the original declaration
+                if (var->m_intent != ASR::intentType::Local) {
+                    ASR::ttype_t* return_type = nullptr;
+                    if (var->m_type && !ASR::is_a<ASR::FunctionType_t>(*var->m_type)) {
+                        return_type = var->m_type;
+                    }
                     ASR::ttype_t* proc_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                        al, loc, nullptr, 0, nullptr, ASR::abiType::Source,
-                        ASR::deftypeType::Implementation, nullptr, false, false,
+                        al, loc, nullptr, 0, return_type, ASR::abiType::Source,
+                        ASR::deftypeType::Interface, nullptr, false, false,
                         false, false, false, nullptr, 0, false));
                     var->m_type = proc_type;
+                    // Create an interface function for m_type_declaration
+                    // (required by get_function() for procedure variables)
                     if (var->m_type_declaration == nullptr) {
                         SymbolTable* parent_scope = current_scope->parent;
                         LCOMPILERS_ASSERT(parent_scope != nullptr);
-                        std::string iface_name = "~proc_" + sym + "_" +
+                        std::string iface_name = "~implicit_interface_" + sym + "_" +
                             current_scope->get_counter();
                         SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
                         ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
@@ -3969,13 +3977,9 @@ public:
                                                 sym_past_external);
                                             v->m_presence = ASR::presenceType::Optional;
                                         } else if (ASR::is_a<ASR::Function_t>(*sym_past_external)) {
-                                            ASR::ttype_t* proc_type = ASRUtils::TYPE(
-                                                    ASR::make_FunctionType_t(
-                                                    al, attr_loc, nullptr, 0, nullptr,
-                                                    ASR::abiType::Source,
-                                                    ASR::deftypeType::Implementation, nullptr,
-                                                    false, false, false, false, false,
-                                                    nullptr, 0, false));
+                                            ASR::Function_t* func =
+                                                ASR::down_cast<ASR::Function_t>(sym_past_external);
+                                            ASR::ttype_t* proc_type = func->m_function_signature;
                                             SetChar variable_dependencies_vec;
                                             variable_dependencies_vec.reserve(al, 1);
                                             ASRUtils::collect_variable_dependencies(
@@ -11528,7 +11532,7 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function && ( !v || (v && is_external_procedure))) {
+            if (compiler_options.implicit_interface && is_function && ( !v || (v && is_external_procedure && !ASRUtils::is_symbol_procedure_variable(v)))) {
                 // Function Call is not defined in this case.
                 // We need to create an interface and add the Function into
                 // the symbol table.
