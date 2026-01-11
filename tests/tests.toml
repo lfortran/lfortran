@@ -4045,7 +4045,7 @@ asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "pragma1.f90"
-ast = true
+ast_openmp = true
 asr_openmp = true
 
 [[test]]
