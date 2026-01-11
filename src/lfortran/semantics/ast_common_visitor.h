@@ -9382,6 +9382,48 @@ public:
         }
     }
 
+    ASR::asr_t* create_Rep(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 2 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_rep expects exactly two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
+        }
+
+        
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 2);
+
+        for (int i=0;i<2;i++){
+            AST::expr_t* source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            args.push_back(al, ASRUtils::EXPR(tmp));
+        }   
+
+        ASR::ttype_t* arg_type_1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t* arg_type_2 = ASRUtils::expr_type(args[1]);
+        if (!ASR::is_a<ASR::Integer_t>(*arg_type_2) && !ASR::is_a<ASR::UnsignedInteger_t>(*arg_type_2)) {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type_2, nullptr);
+            diag.add(Diagnostic(
+                "Type mismatch in _lfortran_rep",
+                Level::Error, Stage::Semantic, {
+                    Label("Types mismatch (found '" + 
+                arg_type_str + "', expected type `integer` / type(unsigned).",{x.m_args[1].loc})
+                }));
+            throw SemanticAbort();
+        }
+
+        if (ASRUtils::is_allocatable_descriptor_string(arg_type_1)) {
+            return ASR::make_StringRepeat_t(al, x.base.base.loc, args[0], args[1], arg_type_1, nullptr);
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type_1, nullptr);
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_rep has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* create_Eq(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_eq expects no keyword arguments",
@@ -10598,6 +10640,8 @@ public:
                     tmp = create_Pop(x);
                 else if ( var_name == "_lfortran_concat")
                     tmp = create_Concat(x);
+                else if ( var_name == "_lfortran_rep")
+                    tmp = create_Rep(x);
                 else if ( var_name == "_lfortran_eq")
                     tmp = create_Eq(x);
                 else if ( var_name == "_lfortran_list_constant")
