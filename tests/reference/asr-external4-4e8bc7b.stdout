@@ -65,9 +65,9 @@
                                                     Default
                                                     (FunctionType
                                                         []
-                                                        ()
+                                                        (Real 8)
                                                         Source
-                                                        Implementation
+                                                        Interface
                                                         ()
                                                         .false.
                                                         .false.
@@ -77,7 +77,7 @@
                                                         []
                                                         .false.
                                                     )
-                                                    1 ~proc_f_2
+                                                    1 ~implicit_interface_f_2
                                                     BindC
                                                     Public
                                                     Required
@@ -93,9 +93,9 @@
                                     (FunctionType
                                         [(FunctionType
                                             []
-                                            ()
+                                            (Real 8)
                                             Source
-                                            Implementation
+                                            Interface
                                             ()
                                             .false.
                                             .false.
@@ -127,126 +127,18 @@
                                     ()
                                 ),
                             f:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            centr:
-                                                (Variable
-                                                    6
-                                                    centr
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            f_arg_0:
-                                                (Variable
-                                                    6
-                                                    f_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            f_return_var_name:
-                                                (Variable
-                                                    6
-                                                    f_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (FunctionType
-                                                        []
-                                                        ()
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                    )
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            hlgth:
-                                                (Variable
-                                                    6
-                                                    hlgth
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
-                                        })
+                                (Variable
+                                    2
                                     f
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
                                     (FunctionType
-                                        [(Real 4)]
-                                        (FunctionType
-                                            []
-                                            ()
-                                            Source
-                                            Implementation
-                                            ()
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            []
-                                            .false.
-                                        )
-                                        BindC
+                                        []
+                                        (Real 8)
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -257,14 +149,16 @@
                                         []
                                         .false.
                                     )
-                                    []
-                                    [(Var 6 f_arg_0)]
-                                    []
-                                    (Var 6 f_return_var_name)
+                                    1 ~implicit_interface_f_2
+                                    Source
                                     Public
+                                    Required
+                                    .false.
                                     .false.
                                     .false.
                                     ()
+                                    .false.
+                                    .false.
                                 ),
                             hlgth:
                                 (Variable
@@ -292,9 +186,9 @@
                     (FunctionType
                         [(FunctionType
                             []
-                            ()
+                            (Real 8)
                             Source
-                            Implementation
+                            Interface
                             ()
                             .false.
                             .false.
@@ -338,20 +232,7 @@
                                     (Real 4)
                                     ()
                                 ))]
-                                (FunctionType
-                                    []
-                                    ()
-                                    Source
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    .false.
-                                )
+                                (Real 8)
                                 ()
                                 ()
                             )]
@@ -391,19 +272,19 @@
                     .false.
                     ()
                 ),
-            ~proc_f_2:
+            ~implicit_interface_f_2:
                 (Function
                     (SymbolTable
                         3
                         {
                             
                         })
-                    ~proc_f_2
+                    ~implicit_interface_f_2
                     (FunctionType
                         []
-                        ()
+                        (Real 8)
                         Source
-                        Implementation
+                        Interface
                         ()
                         .false.
                         .false.
