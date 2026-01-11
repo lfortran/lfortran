@@ -195,6 +195,15 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x->m_args[i]);
                     ASR::dimension_t* dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
+
+                    // Check if this is an assumed-size array (UnboundedPointerArray)
+                    // If so, don't add dimension variables - keep dimensions as-is
+                    ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
+                    if (phys_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                        // Don't modify assumed-size arrays - they don't pass dimension info
+                        continue;
+                    }
+
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
                     PassUtils::create_vars(dim_variables, n_dims, arg->base.base.loc, al,

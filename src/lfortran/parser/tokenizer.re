@@ -680,8 +680,18 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
-            omp_end / newline { TK_TRIVIA(TK_OMP_END) }
-            omp / newline { TK_TRIVIA(TK_OMP) }
+            omp_end / newline {
+                if (!openmp_enabled) {
+                    TK_TRIVIA(TK_COMMENT)
+                }
+                TK_TRIVIA(TK_OMP_END)
+            }
+            omp / newline {
+                if (!openmp_enabled) {
+                    TK_TRIVIA(TK_COMMENT)
+                }
+                TK_TRIVIA(TK_OMP)
+            }
             pragma_decl / newline { TK_TRIVIA(TK_PRAGMA_DECL) }
 
             comment newline {

@@ -59,7 +59,7 @@ void save_js_glue_wasi(std::string filename) {
 R"(async function main() {
     const fs = require("fs");
     const { WASI } = require("wasi");
-    const wasi = new WASI();
+    const wasi = new WASI({ version: 'preview1' });
     const importObject = {
         wasi_snapshot_preview1: wasi.wasiImport,
         js: {

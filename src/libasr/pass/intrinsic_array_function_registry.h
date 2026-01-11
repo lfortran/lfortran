@@ -5833,8 +5833,10 @@ namespace Transpose {
 
 namespace IntrinsicArrayFunctionRegistry {
 
-    static const std::map<int64_t, std::tuple<impl_function,
-            verify_array_function>>& intrinsic_function_by_id_db = {
+    inline const std::map<int64_t, std::tuple<impl_function,
+            verify_array_function>>& get_intrinsic_function_by_id_db() {
+        static const std::map<int64_t, std::tuple<impl_function,
+                verify_array_function>> intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicArrayFunctions::Any),
             {&Any::instantiate_Any, &Any::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::All),
@@ -5883,10 +5885,14 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Eoshift::instantiate_Eoshift, &Eoshift::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Spread),
             {&Spread::instantiate_Spread, &Spread::verify_args}},
-    };
+        };
+        return intrinsic_function_by_id_db;
+    }
 
-    static const std::map<std::string, std::tuple<create_intrinsic_function,
-            eval_intrinsic_function>>& function_by_name_db = {
+    inline const std::map<std::string, std::tuple<create_intrinsic_function,
+            eval_intrinsic_function>>& get_function_by_name_db() {
+        static const std::map<std::string, std::tuple<create_intrinsic_function,
+                eval_intrinsic_function>> function_by_name_db = {
         {"any", {&Any::create_Any, &Any::eval_Any}},
         {"all", {&All::create_All, &All::eval_All}},
         {"iany", {&Iany::create_Iany, &Iany::eval_Iany}},
@@ -5911,25 +5917,27 @@ namespace IntrinsicArrayFunctionRegistry {
         {"count", {&Count::create_Count, &Count::eval_Count}},
         {"parity", {&Parity::create_Parity, &Parity::eval_Parity}},
         {"dot_product", {&DotProduct::create_DotProduct, &DotProduct::eval_DotProduct}},
-    };
+        };
+        return function_by_name_db;
+    }
 
     static inline bool is_intrinsic_function(const std::string& name) {
-        return function_by_name_db.find(name) != function_by_name_db.end();
+        return get_function_by_name_db().find(name) != get_function_by_name_db().end();
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return  std::get<0>(function_by_name_db.at(name));
+        return  std::get<0>(get_function_by_name_db().at(name));
     }
 
     static inline impl_function get_instantiate_function(int64_t id) {
-        if( intrinsic_function_by_id_db.find(id) == intrinsic_function_by_id_db.end() ) {
+        if( get_intrinsic_function_by_id_db().find(id) == get_intrinsic_function_by_id_db().end() ) {
             return nullptr;
         }
-        return std::get<0>(intrinsic_function_by_id_db.at(id));
+        return std::get<0>(get_intrinsic_function_by_id_db().at(id));
     }
 
     static inline verify_array_function get_verify_function(int64_t id) {
-        return std::get<1>(intrinsic_function_by_id_db.at(id));
+        return std::get<1>(get_intrinsic_function_by_id_db().at(id));
     }
 
     /*

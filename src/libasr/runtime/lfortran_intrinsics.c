@@ -5766,6 +5766,25 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
 static void parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code)
 {
+    // Handle integer types (type_code 2 = int32, type_code 3 = int64)
+    if (type_code == 2 || type_code == 3) {
+        char* temp = (char*)malloc(field_len + 1);
+        if (temp) {
+            memcpy(temp, buffer, field_len);
+            temp[field_len] = '\0';
+            if (type_code == 2) {
+                char* endptr;
+                long val = strtol(temp, &endptr, 10);
+                *(int32_t*)real_ptr = (int32_t)val;
+            } else {
+                char* endptr;
+                long long val = strtoll(temp, &endptr, 10);
+                *(int64_t*)real_ptr = (int64_t)val;
+            }
+            free(temp);
+        }
+        return;
+    }
     // Replace D/d with E for parsing
     for (int i = 0; i < field_len; i++) {
         if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
@@ -5985,7 +6004,7 @@ static void parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
 
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
         const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx)
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode)
 {
     int32_t type_code = va_arg(*args, int32_t);
     void* real_ptr = va_arg(*args, void*);
@@ -6001,6 +6020,25 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
             consumed_newline, &buffer, &field_len)) {
         return false;
+    }
+    // Apply blank mode processing
+    if (blank_mode == 0) {
+        // BN mode: remove all blanks from the buffer
+        int write_idx = 0;
+        for (int read_idx = 0; read_idx < field_len; read_idx++) {
+            if (buffer[read_idx] != ' ') {
+                buffer[write_idx++] = buffer[read_idx];
+            }
+        }
+        buffer[write_idx] = '\0';
+        field_len = write_idx;
+    } else if (blank_mode == 1) {
+        // BZ mode: replace blanks with zeros
+        for (int i = 0; i < field_len; i++) {
+            if (buffer[i] == ' ') {
+                buffer[i] = '0';
+            }
+        }
     }
 
     parse_real_from_buffer(buffer, field_len, real_ptr, type_code);
@@ -6177,7 +6215,7 @@ static void common_formatted_read(InputSource *inputSource,
         case 'G':
             if (!handle_read_real(inputSource, args, width, advance_no,
                     fmt, fmt_len, &fmt_pos, iostat, chunk,
-                    &consumed_newline, &arg_idx)) {
+                    &consumed_newline, &arg_idx, blank_mode)) {
                 return;
             }
             break;

@@ -264,7 +264,7 @@ public:
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
-            *a_position = nullptr;
+            *a_recl = nullptr, *a_position = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -556,8 +556,29 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-            } else {
-                const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "pad"};
+            } else if (m_arg_str == std::string("recl")) {
+                if (a_recl != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_recl = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_recl_type = ASRUtils::expr_type(a_recl);
+                if (!ASRUtils::is_integer(*a_recl_type)) {
+                    diag.add(Diagnostic(
+                        "`recl` must be of type, Integer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+            else {
+                const std::unordered_set<std::string> unsupported_args {"err", "blank", "fileopt", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -572,6 +593,22 @@ public:
                 }
             }
         }
+        if (a_recl != nullptr &&
+            a_access != nullptr &&
+            ASR::is_a<ASR::StringConstant_t>(*a_access)) {
+
+            std::string acc =
+                to_lower(ASR::down_cast<ASR::StringConstant_t>(a_access)->m_s);
+
+            if (acc != "direct") {
+                diag.add(Diagnostic(
+                    "`recl` is only permitted with access='direct'",
+                    Level::Error, Stage::Semantic,
+                    { Label("", {x.base.base.loc}) }
+                ));
+                throw SemanticAbort();
+            }
+        }
         if( a_newunit == nullptr ) {
             diag.add(Diagnostic(
                 "`newunit` or `unit` must be specified either in argument or keyword arguments.",
@@ -581,7 +618,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_position);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
@@ -2384,8 +2421,13 @@ public:
                             ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                         current_scope->add_symbol(x.m_assoc_name, assoc_sym);
                         ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
-                        ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
-                            ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                        ASR::expr_t* cast_expr = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*variable_type) && rank == 0) {
+                            cast_expr = m_selector;
+                        } else {
+                            cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
+                                ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                        }
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
                         rank_body.push_back(al, assoc_stmt);
                     }
@@ -3673,13 +3715,36 @@ public:
                         ASR::dimension_t dim_b = value_dims[i];
                         int dim_a_int {-1};
                         int dim_b_int {-1};
-                        // 'm_length' isn't assigned for allocatable arrays
-                        // let them be valid for now atleast
-                        if (!(dim_a.m_length && dim_b.m_length)) {
+                        if (!dim_a.m_length) {
                             continue;
                         }
                         ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
-                        ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        if (dim_b.m_length) {
+                            ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        } else if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+                            // Try to compute array section dimension size
+                            ASR::ArraySection_t* arr_sec = ASR::down_cast<ASR::ArraySection_t>(value);
+                            if (i < arr_sec->n_args) {
+                                ASR::expr_t* start = arr_sec->m_args[i].m_left;
+                                ASR::expr_t* end = arr_sec->m_args[i].m_right;
+                                ASR::expr_t* step = arr_sec->m_args[i].m_step;
+                                if (start && end && step) {
+                                    int64_t step_val = 0;
+                                    if (ASRUtils::extract_value(ASRUtils::expr_value(step), step_val) && step_val != 0) {
+                                        int64_t start_val = 0, end_val = 0;
+                                        bool start_const = ASRUtils::extract_value(ASRUtils::expr_value(start), start_val);
+                                        bool end_const = ASRUtils::extract_value(ASRUtils::expr_value(end), end_val);
+                                        if (start_const && end_const) {
+                                            // Both are constants: size = (end - start) / step + 1
+                                            dim_b_int = (end_val - start_val) / step_val + 1;
+                                        } else if (ASRUtils::expr_equal(start, end)) {
+                                            // Same expression (e.g., x(i:i), x(i+1:i+1)): size is 1
+                                            dim_b_int = 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
                             diag.add(diag::Diagnostic(
                                 "Different shape for array assignment on dimension "

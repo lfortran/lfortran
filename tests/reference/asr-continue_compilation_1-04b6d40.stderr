@@ -185,6 +185,12 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
 177 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:181:42
+    |
+181 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
   --> tests/errors/continue_compilation_1.f90:82:18
    |
@@ -208,6 +214,12 @@ semantic error: Intrinsic 'not_real' is not recognized
     |
 179 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
+semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
+   --> tests/errors/continue_compilation_1.f90:219:14
+    |
+219 |     print *, a(10)
+    |              ^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:226:8
@@ -861,6 +873,12 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
 425 |     print *, ["aa", "aaa"]
     |                     ^^^^^ 
 
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:426:5
+    |
+426 |     cc_a3 = cc_temp3(cc_i0:cc_i0)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
    --> tests/errors/continue_compilation_1.f90:427:25
     |
@@ -872,6 +890,12 @@ semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot a
     |
 430 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:431:5
+    |
+431 |     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid syntax of derived type for array constructor
    --> tests/errors/continue_compilation_1.f90:432:12
@@ -966,3 +990,21 @@ semantic error: err= label 500 is not defined
     |
 473 |     read(*, *, err=500) x
     |                    ^^^ 
+
+semantic error: Duplicate value of `recl` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:475:5
+    |
+475 |     OPEN(unit=10, recl=10, recl=20)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `recl` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:476:5
+    |
+476 |     OPEN(unit=10, recl=10.5)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
+   --> tests/errors/continue_compilation_1.f90:479:14
+    |
+479 |     print *, string(i,i)
+    |              ^^^^^^^^^^^ 

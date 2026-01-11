@@ -3823,6 +3823,21 @@ public:
                                             if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Parameter;
+                                                // Fold constant REAL/INTEGER -> COMPLEX for PARAMETER initializers.
+                                                if (ASRUtils::is_complex(*v->m_type) &&
+                                                    !ASRUtils::is_complex(*ASRUtils::expr_type(init_val)) &&
+                                                    ASRUtils::expr_value(init_val)) {
+                                                    ASR::expr_t* init_val_value = ASRUtils::expr_value(init_val);
+                                                    if (ASR::is_a<ASR::RealConstant_t>(*init_val_value)) {
+                                                        init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                                                            al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::RealToComplex, v->m_type));
+                                                    } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val_value)) {
+                                                        init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
+                                                            al, x.base.base.loc, init_val,
+                                                            ASR::cast_kindType::IntegerToComplex, v->m_type));
+                                                    }
+                                                }
                                                 if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
                                                     ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
                                                     if (ASRUtils::is_complex(*v->m_type)) {
@@ -5393,6 +5408,34 @@ public:
                                 ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
+                                // For IntrinsicArrayFunction (transformational intrinsics like minloc, maxloc, sum, etc.),
+                                // check if the first argument is a non-parameter variable
+                                if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) &&
+                                    storage_type == ASR::storage_typeType::Parameter) {
+                                    ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(init_expr);
+                                    if (iaf->n_args > 0) {
+                                        ASR::expr_t* first_arg = iaf->m_args[0];
+                                        // Unwrap ArrayPhysicalCast if present
+                                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*first_arg)) {
+                                            first_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(first_arg)->m_arg;
+                                        }
+                                        // Check if it's a direct Var reference to a non-parameter
+                                        if (ASR::is_a<ASR::Var_t>(*first_arg)) {
+                                            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(first_arg)->m_v;
+                                            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                                                if (var->m_storage != ASR::storage_typeType::Parameter) {
+                                                    diag.add(Diagnostic(
+                                                        "Transformational intrinsic is not permitted in an initialization expression",
+                                                        Level::Error, Stage::Semantic, {
+                                                            Label("", {init_expr->base.loc})
+                                                        }));
+                                                    throw SemanticAbort();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 value = init_expr;
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
                                         ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
@@ -5612,9 +5655,14 @@ public:
                 Vec<ASR::ttype_t *> type_vec;
                 type_vec.reserve(al, sym_type->n_attr);
 
-                for (size_t i=0;i<sym_type->n_attr;i++)
-                    type_vec.push_back(al, determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
-                                                       is_allocatable, dims, var_sym, type_declaration, abi));
+                for (size_t i=0;i<sym_type->n_attr;i++) {
+                    auto type = determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                                is_allocatable, dims, var_sym, type_declaration, abi);
+                    if (ASRUtils::is_deferredLength_string(type) && ASRUtils::is_descriptorString(type))
+                        type = determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                            true, dims, var_sym, type_declaration, abi);
+                    type_vec.push_back(al, type);
+                }
 
                 return ASRUtils::TYPE(ASR::make_Tuple_t(al, sym_type->base.base.loc, type_vec.p, type_vec.n));
             }
@@ -6487,6 +6535,48 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
+                // Compile-time bounds check for fixed-size arrays
+                ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)));
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+                for (size_t i = 0; i < std::min(n_dims, args.size()); i++) {
+                    // Only check scalar indices (m_left=null, m_step=null, m_right=index)
+                    if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
+                        continue;
+                    }
+                    ASR::expr_t* idx_expr = args[i].m_right;
+                    if (idx_expr == nullptr) continue;
+                    ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
+                    int64_t idx = 0;
+                    if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
+                        // Get lower bound (default 1)
+                        int64_t lb = 1;
+                        if (m_dims[i].m_start) {
+                            ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
+                            if (start_val) {
+                                ASRUtils::extract_value(start_val, lb);
+                            }
+                        }
+                        // Get upper bound if length is known
+                        if (m_dims[i].m_length) {
+                            ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
+                            int64_t len = 0;
+                            if (len_val && ASRUtils::extract_value(len_val, len)) {
+                                int64_t ub = lb + len - 1;
+                                if (idx < lb || idx > ub) {
+                                    diag.add(Diagnostic(
+                                        "Array index " + std::to_string(idx) +
+                                        " is out of bounds (" + std::to_string(lb) +
+                                        " to " + std::to_string(ub) +
+                                        ") in dimension " + std::to_string(i + 1),
+                                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                                    throw SemanticAbort();
+                                }
+                            }
+                        }
+                    }
+                }
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
@@ -6847,9 +6937,9 @@ public:
     void fill_new_dims(ASR::Array_t* t, const std::vector<ASR::expr_t*>& func_calls,
         Vec<ASR::dimension_t>& new_dims) {
         new_dims.reserve(al, t->n_dims);
-        for( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
-            ASR::dimension_t new_dim;
+        for ( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
             if (func_calls[i] != nullptr) {
+                ASR::dimension_t new_dim;
                 new_dim.loc = func_calls[i]->base.loc;
                 new_dim.m_start = func_calls[i];
                 new_dim.m_length = func_calls[i + 1];
@@ -7392,8 +7482,50 @@ public:
                             ASR::array_physical_typeType section_phys_type = unbounded_tail ?
                                 ASR::array_physical_typeType::UnboundedPointerArray :
                                 ASR::array_physical_typeType::DescriptorArray;
-                            ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, section_type, section_phys_type, unbounded_tail);
+                            // For sequence association: if the dummy is 1D assumed-size and the
+                            // source is multi-dimensional, compute the total contiguous size
+                            // and create a 1D type to match the dummy's dimensionality.
+                            int dummy_n_dims = ASRUtils::extract_n_dims_from_ttype(dummy_array_type);
+                            int source_n_dims = ASRUtils::extract_n_dims_from_ttype(section_type);
+                            ASR::ttype_t* new_type = nullptr;
+                            if (expected_unbounded && dummy_n_dims == 1 && source_n_dims > 1) {
+                                // Sequence association: multi-dim source to 1D assumed-size dummy
+                                // Compute total size from section indices
+                                ASR::expr_t* total_size = nullptr;
+                                for (size_t j = 0; j < array_indices.n; j++) {
+                                    ASR::expr_t* dim_size = nullptr;
+                                    if (array_indices.p[j].m_left && array_indices.p[j].m_right) {
+                                        // size = right - left + 1
+                                        dim_size = b.Add(b.Sub(array_indices.p[j].m_right,
+                                                               array_indices.p[j].m_left),
+                                                        b.i32(1));
+                                    } else if (array_indices.p[j].m_right) {
+                                        dim_size = array_indices.p[j].m_right;
+                                    } else {
+                                        dim_size = b.i32(1);
+                                    }
+                                    if (total_size == nullptr) {
+                                        total_size = dim_size;
+                                    } else {
+                                        total_size = b.Mul(total_size, dim_size);
+                                    }
+                                }
+                                // Create 1D type with computed size
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, 1);
+                                ASR::dimension_t dim;
+                                dim.loc = array_item->base.base.loc;
+                                dim.m_start = b.i32(1);
+                                dim.m_length = total_size;
+                                dims.push_back(al, dim);
+                                ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(section_type);
+                                new_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                    elem_type, dims.p, dims.n, ASR::abiType::Source, false,
+                                    section_phys_type);
+                            } else {
+                                new_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, section_type, section_phys_type, unbounded_tail);
+                            }
                             x.m_args[arg_i].m_value = ASRUtils::EXPR(ASR::make_ArraySection_t(
                                 al, array_item->base.base.loc, array_item->m_v,
                                 array_indices.p, array_indices.n, new_type, nullptr));
@@ -7608,14 +7740,75 @@ public:
                             array_indices.push_back(al, array_idx);
                         }
 
-                        ASR::ttype_t* section_type = ASRUtils::duplicate_type_with_empty_dims(
-                            al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                        );
+                        // For sequence association: when passing array element to 1D assumed-size dummy,
+                        // compute total contiguous size from section indices instead of using empty dims.
+                        // Use the ORIGINAL physical type from array_arg_idx[i] (not the possibly-modified expected_phys_type)
+                        // because for external symbols, expected_phys_type is forced to PointerArray.
+                        ASR::ttype_t* original_dummy_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(array_arg_idx[i]));
+                        ASR::array_physical_typeType original_phys_type = ASRUtils::extract_physical_type(original_dummy_type);
+                        int expected_n_dims = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                        bool is_assumed_size = (original_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
+                        ASR::ttype_t* section_type = nullptr;
+
+                        ASR::ttype_t* cast_target_type = nullptr;
+                        if (is_assumed_size && expected_n_dims == 1 && array_indices.size() > 1) {
+                            // Sequence association: multi-dim source to 1D assumed-size dummy
+                            // Compute total size from section indices
+                            ASR::expr_t* total_size = nullptr;
+                            for (size_t dim_i = 0; dim_i < array_indices.size(); dim_i++) {
+                                ASR::expr_t* dim_size = nullptr;
+                                if (array_indices.p[dim_i].m_left && array_indices.p[dim_i].m_right) {
+                                    // size = right - left + 1
+                                    dim_size = builder.Add(builder.Sub(array_indices.p[dim_i].m_right,
+                                                                      array_indices.p[dim_i].m_left),
+                                                          builder.i32(1));
+                                } else if (array_indices.p[dim_i].m_right) {
+                                    dim_size = array_indices.p[dim_i].m_right;
+                                } else {
+                                    dim_size = builder.i32(1);
+                                }
+                                if (total_size == nullptr) {
+                                    total_size = dim_size;
+                                } else {
+                                    total_size = builder.Mul(total_size, dim_size);
+                                }
+                            }
+                            // Create 1D type with computed size
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = array_item->base.base.loc;
+                            dim.m_start = builder.i32(1);
+                            dim.m_length = total_size;
+                            dims.push_back(al, dim);
+                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(expected_arg_type);
+                            section_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                elem_type, dims.p, dims.n, ASR::abiType::Source, false,
+                                ASR::array_physical_typeType::DescriptorArray);
+                            // Cast target type should have empty dims (assumed-size semantics)
+                            // to avoid runtime size checks - the callee uses its own size parameter
+                            Vec<ASR::dimension_t> empty_dims;
+                            empty_dims.reserve(al, 1);
+                            ASR::dimension_t empty_dim;
+                            empty_dim.loc = array_item->base.base.loc;
+                            empty_dim.m_start = nullptr;
+                            empty_dim.m_length = nullptr;
+                            empty_dims.push_back(al, empty_dim);
+                            cast_target_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
+                                elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
+                                expected_phys_type);
+                        } else {
+                            section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                            );
+                            cast_target_type = ASRUtils::TYPE(expected_array);
+                        }
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     section_type, nullptr));
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, ASRUtils::TYPE(expected_array), nullptr);
+                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, cast_target_type, nullptr);
                         arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);
@@ -7800,13 +7993,68 @@ public:
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
                 ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, args.size());
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::call_arg_t arg = args[i];
+            ASR::expr_t* val = arg.m_value;
+            if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
+                ASR::ttype_t* ret_type = ASRUtils::expr_type(val);
+                ASR::ttype_t* base_type = ASRUtils::type_get_past_array(ret_type);
+                if (ASRUtils::is_array(ret_type) ||
+                    ASR::is_a<ASR::StructType_t>(*base_type)) {
+                    new_args.push_back(al, arg);
+                    continue;
+                }
+                ASR::FunctionCall_t* fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(val);
+                ASR::symbol_t* fn_sym =
+                    ASRUtils::symbol_get_past_external(fc->m_name);
+                bool is_pure = false;
+                if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+                    ASR::Function_t* fn =
+                        ASR::down_cast<ASR::Function_t>(fn_sym);
+                    is_pure = ASRUtils::get_FunctionType(fn)->m_pure;
+                }
+                if (!is_pure) {
+                    std::string tmp_name =
+                        current_scope->get_unique_name("lfortran_tmp");
+                    ASR::symbol_t* tmp_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util( al, val->base.loc, current_scope,
+                                s2c(al, tmp_name), nullptr, 0,
+                                ASR::intentType::Local, nullptr, nullptr,
+                                ASR::storage_typeType::Default, ret_type, nullptr, ASR::abiType::Source,
+                                ASR::accessType::Private, ASR::presenceType::Required, false
+                            )
+                        );
+                    current_scope->add_symbol(tmp_name, tmp_sym);
+                    current_body->push_back(
+                        al, ASRUtils::STMT(
+                            ASR::make_Assignment_t(
+                                al, val->base.loc,
+                                ASRUtils::EXPR(
+                                    ASR::make_Var_t(al, val->base.loc, tmp_sym)
+                                ),
+                                val, nullptr, false, false)
+                        )
+                    );
+                    arg.m_value =
+                        ASRUtils::EXPR(
+                            ASR::make_Var_t(al, val->base.loc, tmp_sym)
+                        );
+                }
+            }
+            new_args.push_back(al, arg);
+        }
+
         if (ASR::is_a<ASR::Function_t>(*f2)) {
-            return create_Function(x.base.base.loc, args, v);
+            return create_Function(x.base.base.loc, new_args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v, is_dt_present);
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
         } else {
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
-            return create_GenericProcedureWithASTNode(x, args, v);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
+            return create_GenericProcedureWithASTNode(x, new_args, v);
         }
     }
 
@@ -9426,6 +9674,12 @@ public:
             args.push_back(al, arg);
 
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
+                arg_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                            ASR::make_String_t(al, x.base.base.loc, 1, nullptr,
+                                                    ASR::string_length_kindType::DeferredLength,
+                                                    ASR::string_physical_typeType::DescriptorString))));
+            }
             type_vec.push_back(al, arg_type);
         }
 
@@ -10552,14 +10806,19 @@ public:
                     }
                 }
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in BindC, so that
-                    // the C ABI is just a pointer
+                    // For arrays like A(n, m) we use A(*) in implicit interface.
                     ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type,
-                        ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) ?
-                        array_type->m_physical_type : ASR::array_physical_typeType::PointerArray, true);
+                    ASR::array_physical_typeType phys_type;
+                    if (ASRUtils::is_character(*array_type->m_type)) {
+                        phys_type = ASR::array_physical_typeType::DescriptorArray;
+                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                        phys_type = array_type->m_physical_type;
+                    } else {
+                        phys_type = ASR::array_physical_typeType::PointerArray;
+                    }
+                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -11437,11 +11696,29 @@ public:
         } else {
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
-                // TODO: Make create_StringRef for character (non-array) variables.
+
+                ASR::ttype_t* t = ASRUtils::symbol_type(v);
+                bool is_char = ASRUtils::is_character(*t);
+                bool is_array = ASRUtils::is_array(t);
+
+                if (is_char && !is_array &&
+                    x.n_args == 2 &&
+                    x.n_subargs == 0) {
+
+                    diag.add(Diagnostic(
+                        "Invalid substring syntax: use lower:upper instead of lower,upper",
+                        Level::Error,
+                        Stage::Semantic,
+                        { Label("", { x.base.base.loc }) }
+                    ));
+                    throw SemanticAbort();
+                }
+
                 tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args,
                                       x.m_subargs, x.n_subargs, v_expr, v, f2);
                 break;
             }
+
             case(ASR::symbolType::Struct): {
                 tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
                                                     x.m_keywords, x.n_keywords, v);
@@ -12886,14 +13163,11 @@ public:
                         "Argument '" + constructor_args[i] + "' not specified for " + ASRUtils::symbol_name(fn));
                     throw SemanticAbort();
                 }
-                // Replace symbols in StructConstant to external symbols
-                if (default_init && ASR::is_a<ASR::StructConstant_t>(*default_init)) {
-                    ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
-                    ASR::symbol_t *ext_sym = ASRUtils::symbol_parent_symtab(fn)->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
-                        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym, true);
-                        default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
-                    }
+                // Recursively externalize struct references in default initialization
+                // This handles nested StructConstant/StructConstructor expressions that may
+                // reference Struct symbols from external modules not explicitly imported
+                if (default_init) {
+                    default_init = ASRUtils::externalize_struct_refs_in_init(al, default_init, current_scope);
                 }
                 args.p[i].m_value = default_init;
                 args.p[i].loc = arg_sym->base.loc;
