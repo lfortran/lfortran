@@ -4515,17 +4515,12 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
     }
 }
 
-// Improved input validation for integer reading
-// - Prevents auto-casting of invalid inputs to integers
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
-    // --- START OF FIX FOR #9382 ---
     if (unit_num == -1) {
         char buffer[128];
-        // Use fscanf to read the next token, skipping whitespace and newlines automatically.
-        // %127s prevents buffer overflow.
         if (fscanf(stdin, "%127s", buffer) != 1) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read input (EOF or error).\n");
@@ -4536,14 +4531,12 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         errno = 0;
         long long_val = strtol(buffer, &endptr, 10);
 
-        // Check for invalid characters (e.g. "10abc")
         if (endptr == buffer || *endptr != '\0') {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for int32_t: '%s'\n", buffer);
             exit(1);
         }
 
-        // Check integer range
         if (errno == ERANGE || long_val < INT32_MIN || long_val > INT32_MAX) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Value %ld is out of integer(4) range.\n", long_val);
@@ -4553,9 +4546,6 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         *p = (int32_t)long_val;
         return;
     }
-    // --- END OF FIX ---
-
-    // Keep the existing file handling logic below unchanged...
     bool unit_file_bin;
     int access_mode;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL);
@@ -4565,7 +4555,6 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         exit(1);
     }
     
-    // ... (rest of the function remains the same)
     if (unit_file_bin) {
         if (access_mode == 0) {
             int32_t record_start = 0, record_end = 0;
