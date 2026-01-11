@@ -4953,3 +4953,7 @@ llvm = true
 filename = "stdin_read_blank_lines_01.f90"
 run = true
 options = "< tests/stdin_read_blank_lines_01.in"
+
+[[test]]
+filename = "test_issue_9434.f90"
+run = true

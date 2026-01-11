@@ -4302,19 +4302,37 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
     }
     if (f_name_data != NULL) {
         char *c_f_name_data = to_c_string(f_name_data, f_name_len);
-        FILE *fp = fopen(c_f_name_data, "r");
-        free(c_f_name_data);
-
-        if (fp != NULL) {
-            *exists = true;
+        FILE *fp_check = fopen(c_f_name_data, "r");
+        if (exists != NULL) {
+            *exists = (fp_check != NULL);
+        }
+        if (fp_check != NULL) {
             if (size != NULL) {
-                fseek(fp, 0, SEEK_END);
-                *size = ftell(fp);
+                fseek(fp_check, 0, SEEK_END);
+                *size = ftell(fp_check);
             }
-            fclose(fp); // close the file
+            fclose(fp_check);
+        }
+
+        int found_unit = -1;
+        for (int u = 0; u < 1000; u++) {
+            bool dummy;
+            char *u_name = get_file_name_from_unit(u, &dummy);
+            if (u_name != NULL && strcmp(u_name, c_f_name_data) == 0) {
+                found_unit = u;
+                break;
+            }
+        }
+        if (opened != NULL) {
+            *opened = (found_unit != -1);
+        }
+        if (found_unit != -1) {
+            unit_num = found_unit;
+        } else {
+            free(c_f_name_data);
             return;
         }
-        *exists = false;
+        free(c_f_name_data);
     }
     if (unit_num != -1) {
         bool unit_file_bin;
