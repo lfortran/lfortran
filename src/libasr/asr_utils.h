@@ -4121,6 +4121,28 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
 
+                // Check if either is an implicit interface (n_arg_types=0, deftype=Interface)
+                // If so, treat as compatible - actual call signature will be checked at call site
+                bool a_is_implicit = (a2->n_arg_types == 0 &&
+                    a2->m_deftype == ASR::deftypeType::Interface);
+                bool b_is_implicit = (b2->n_arg_types == 0 &&
+                    b2->m_deftype == ASR::deftypeType::Interface);
+
+                if (a_is_implicit || b_is_implicit) {
+                    // For implicit interfaces, skip detailed comparison
+                    // The actual call signature will be checked at call site
+                    // We only check return type compatibility if both have return types
+                    // (don't fail if one is function and other is subroutine - we don't know
+                    // what the implicit interface really is until runtime)
+                    if (a2->m_return_var_type != nullptr && b2->m_return_var_type != nullptr) {
+                        if (!types_equal(a2->m_return_var_type, b2->m_return_var_type,
+                            nullptr, nullptr, true)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
