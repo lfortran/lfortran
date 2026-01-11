@@ -786,7 +786,7 @@
                         (StructType
                             [(Integer 4)]
                             []
-                            .true.
+                            .false.
                             .false.
                         ))]
                         ()

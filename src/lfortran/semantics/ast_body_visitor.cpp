@@ -1459,21 +1459,15 @@ public:
             ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
             int64_t label = a_fmt_int->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                if (_type == AST::stmtType::Write) {
-                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, nullptr);
-                    print_statements[tmp] = std::make_pair(&w->base, label);
-                } else if (_type == AST::stmtType::Read) {
-                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
-                        a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(),
-                        nullptr, formatted, nullptr);
-                    print_statements[tmp] = std::make_pair(&r->base, label);
-                }
-                if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
-                    tmp_vec.push_back(tmp);
-                    tmp = nullptr;
-                    emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
-                    tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
+                if( _type == AST::stmtType::Write ) {
+                    tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
+                        a_iomsg, a_iostat, a_id, a_values_vec.p,
+                        a_values_vec.size(), a_separator, a_end, nullptr, true, nullptr);
+                    print_statements[tmp] = std::make_pair(&w->base,label);
+                } else if( _type == AST::stmtType::Read ) {
+                    tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg, a_iostat,
+                        a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), nullptr, formatted, nullptr);
+                    print_statements[tmp] = std::make_pair(&r->base,label);
                 }
                 return;
             }
@@ -1869,6 +1863,7 @@ public:
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_step));
                 tmp_stmt = ASRUtils::EXPR(tmp);
+                
                 if( AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i].m_start) ) {
                     AST::FuncCallOrArray_t* func_call_t =
                         AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
@@ -1897,21 +1892,36 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(name_t->m_id));
+                    std::string type_name = to_lower(name_t->m_id);
+                    ASR::symbol_t *v = current_scope->resolve_symbol(type_name);
+                        
+                    // 1. If a user-defined type exists, use it!
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(v);
+                        ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, sym, false);
                         new_arg.m_type = struct_t;
-                        new_arg.m_sym_subclass = v;
+                        new_arg.m_sym_subclass = sym;
+                    }
+                    // 2. If not, check for Intrinsics (Integer, Real, Complex, Logical)
+                    else if (type_name == "integer") {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    } else if (type_name == "real") {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                    } else if (type_name == "complex") {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4));
+                    } else if (type_name == "logical") {
+                        new_arg.m_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                     } else {
+                        // 3. Error: Unknown type
                         diag.add(Diagnostic(
-                            "`The type-spec: " + std::string(name_t->m_id)
-                            + "` is not supported yet",
+                            "The type-spec: '" + std::string(name_t->m_id) + "' is not supported yet",
                             Level::Error, Stage::Semantic, {
-                                Label("",{x.m_args[i].m_start->base.loc})
+                                Label("", {x.m_args[i].m_start->base.loc})
                             }));
                         throw SemanticAbort();
                     }
-                } else {
+                }
+                else {
                     LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
                 }
             }
@@ -1964,7 +1974,6 @@ public:
             }
         }
 
-        bool cond = x.n_keywords == 0;
         bool stat_cond = false, errmsg_cond = false, source_cond = false, mold_cond = false;
         ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr, *mold = nullptr;
         for ( size_t i=0; i<x.n_keywords; i++ ) {
@@ -1972,7 +1981,6 @@ public:
             errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[i].m_arg) == "errmsg");
             source_cond = !source_cond && (to_lower(x.m_keywords[i].m_arg) == "source");
             mold_cond = !mold_cond && (to_lower(x.m_keywords[i].m_arg) == "mold");
-            cond = cond || (stat_cond || errmsg_cond || source_cond || mold_cond);
             if( stat_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
@@ -2064,17 +2072,6 @@ public:
             }
             alloc_args_vec = new_alloc_args_vec;
             source = mold;
-        }
-
-        if( !cond ) {
-            diag.add(Diagnostic(
-                "`allocate` statement only "
-                "accepts four keyword arguments: "
-                "`stat`, `errmsg`, `source` and `mold`",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
         }
 
         // Perform all validation checks BEFORE creating any ASR nodes
