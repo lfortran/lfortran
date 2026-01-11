@@ -55,10 +55,8 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %22 = load i32, i32* %z1, align 4
-  store i32 %22, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
-  %23 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %23, i32* %z1, align 4
+  %22 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %22, i32* %z1, align 4
   call void @_lpython_free_argv()
   br label %return
 

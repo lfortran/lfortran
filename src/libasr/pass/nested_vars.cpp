@@ -698,6 +698,7 @@ public:
 
     ASR::symbol_t *cur_func_sym = nullptr;
     bool calls_present = false;
+    bool calls_in_loop_condition = false;
 
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
@@ -711,6 +712,7 @@ public:
         std::vector<ASR::stmt_t*> loop_end_syncs;
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
+            calls_in_loop_condition = false;
             bool is_do_loop_sync = false;
             if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i]) || 
                 (ASR::is_a<ASR::DoLoop_t>(*m_body[i]))) {
@@ -719,7 +721,7 @@ public:
             assigns_at_end.clear();
             loop_end_syncs.clear();
             visit_stmt(*m_body[i]);
-            if (cur_func_sym != nullptr && calls_present) {
+            if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
                 if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
                     for (auto &sym: nesting_map[cur_func_sym]) {
                         std::string m_name = nested_var_to_ext_var[sym].first;
@@ -846,7 +848,7 @@ public:
                             // For do-loop cycle statements, put a sync for scalar variables
                             // Note: Arrays are synced during loop entries, no need to sync again
                             // If not inside do-loop, bypass this step
-                            if (is_do_loop_sync && 
+                            if (is_do_loop_sync && calls_in_loop_condition && 
                                 ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                 ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In && 
                                 !ASRUtils::is_array(ASRUtils::symbol_type(sym))){
@@ -873,13 +875,85 @@ public:
                     inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
                 }
             }
+            // Handling for loop condition having function calls
+            if (calls_in_loop_condition && is_do_loop_sync) { 
+                ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
+                Vec<ASR::stmt_t*> new_body;
+                new_body.reserve(al, loop->n_body + assigns_at_end.size() * 2);
+                // LOOP START:  Handle Assignments to main from function temporaries
+                for (auto &stm: assigns_at_end) {
+                    new_body.push_back(al, stm);
+                }
+                // Original loop body
+                for (size_t j = 0; j < loop->n_body; j++) {
+                    new_body.push_back(al, loop->m_body[j]);
+                }
+                // LOOP END: Handle Assignments from main to temporaries 
+                // (for next iteration's condition)
+                if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
+                    for (auto &sym: nesting_map[cur_func_sym]) {
+                        std::string m_name = nested_var_to_ext_var[sym].first;
+                        ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
+                        ASR::symbol_t *ext_sym = current_scope->get_symbol(ASRUtils::symbol_name(t));
 
-            body.push_back(al, m_body[i]);
-            for (auto &stm: loop_end_syncs) {
-                body.push_back(al, stm);
-            }
-            for (auto &stm: assigns_at_end) {
-                body.push_back(al, stm);
+                        ASR::symbol_t* sym_ = sym;
+                        if (current_scope->get_counter() != ASRUtils::symbol_parent_symtab(sym_)->get_counter()) {
+                            sym_ = current_scope->get_symbol(ASRUtils::symbol_name(sym_));
+                        }
+
+                        if (ext_sym && sym_ &&
+                            !ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                            ASRUtils::EXPR2VAR(ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_)))->m_storage
+                                != ASR::storage_typeType::Parameter &&
+                            ASRUtils::EXPR2VAR(ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_)))->m_intent
+                                != ASR::intentType::In) {
+                            ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
+                            ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
+                            ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                                al, t->base.loc, target, val, nullptr, false, false));
+                            new_body.push_back(al, assignment);
+                        }
+                    }
+                }
+                loop->m_body = new_body.p;
+                loop->n_body = new_body.size();
+                new_body.n = 0;  // Clear size
+                new_body.p = nullptr;  // Clear pointer after ownership transfer
+                body.push_back(al, m_body[i]);
+                calls_in_loop_condition = false;  // Reset flag
+
+            } else if (calls_in_loop_condition && ASR::is_a<ASR::If_t>(*m_body[i])) {
+                // Handling for IF condition having function calls
+                // Handle assignments from function temporaries to main
+                ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
+                Vec<ASR::stmt_t*> new_body;
+                new_body.reserve(al, if_stmt->n_body + assigns_at_end.size());
+                for (auto &stm: assigns_at_end) {
+                    new_body.push_back(al, stm);
+                }
+                // Original if body
+                for (size_t j = 0; j < if_stmt->n_body; j++) {
+                    new_body.push_back(al, if_stmt->m_body[j]);
+                }
+
+                if_stmt->m_body = new_body.p;
+                if_stmt->n_body = new_body.size();
+                new_body.n = 0;
+                new_body.p = nullptr;
+                body.push_back(al, m_body[i]);
+                calls_in_loop_condition = false;  // Reset flag
+            } else {
+                // Original behavior: append loop, then syncs after loop
+                body.push_back(al, m_body[i]);
+                for (auto &stm: loop_end_syncs) {
+                    body.push_back(al, stm);
+                }
+                for (auto &stm: assigns_at_end) {
+                    body.push_back(al, stm);
+                }
+                if (is_do_loop_sync) {
+                    calls_in_loop_condition = false;  // Reset flag
+                }
             }
         }
         m_body = body.p;
@@ -980,33 +1054,32 @@ public:
         visit_expr(*x.m_array);
     }
 
-    // Generic helper to preserve calls_present across recursive transform_stmts
-    // Used for compound statements (loops, if, where, etc.) that:
-    // 1. Visit conditional/test expressions (which may contain function calls)
-    // 2. Recursively call transform_stmts on body (which resets calls_present)
-    // 3. Handle calls_present to preserve calls_present from condition separately.
-    template<typename BaseVisitorCall>
-    void visit_compound_stmt_with_test(BaseVisitorCall base_visitor) {
-        // Save calls_present before processing body
-        bool calls_present_in_condition = calls_present;
-        // Call base visitor to process body (which may reset calls_present)
-        base_visitor();
-        // Restore: preserve both condition calls AND body calls
-        calls_present = calls_present || calls_present_in_condition;
-    }
-
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        // Step 1: Detect calls in loop condition
+        calls_present = false;
         visit_expr(*x.m_test);
-        visit_compound_stmt_with_test([&]() {
-            PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
-        });
+        bool has_calls_in_condition = calls_present;
+        // Step 2: Visit body to detect calls there
+        calls_present = false;
+        // Now calls_present = true if body has calls
+        PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
+        // Step 3: Set the condition flag (transform_stmts may 
+        // reset the flag for calls_in_loop_condition while visiting body)
+        calls_in_loop_condition = has_calls_in_condition;
     }
 
     void visit_If(const ASR::If_t &x) {
+        // Step 1: Detect calls in condition
+        calls_present = false;
         visit_expr(*x.m_test);
-        visit_compound_stmt_with_test([&]() {
-            PassUtils::PassVisitor<AssignNestedVars>::visit_If(x);
-        });
+        bool has_calls_in_condition = calls_present;
+        // Step 2: Visit body to detect calls there
+        calls_present = false;
+        // Now calls_present = true if body has calls
+        PassUtils::PassVisitor<AssignNestedVars>::visit_If(x);
+        // Step 3: Set the condition flag (transform_stmts may 
+        // reset the flag for calls_in_loop_condition while visiting body)
+        calls_in_loop_condition = has_calls_in_condition;
     }
 };
 
