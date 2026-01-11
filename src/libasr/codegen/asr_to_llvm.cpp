@@ -6011,15 +6011,22 @@ public:
                 }
             }
             std::string fn_name;
-            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                if (ASRUtils::get_FunctionType(x)->m_bindc_name) {
-                    fn_name = ASRUtils::get_FunctionType(x)->m_bindc_name;
+            bool is_external_interface_bypass = false;
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+            // Check if this is an external interface function that should bypass mangling
+            // (unless --all-mangling is set)
+            if (ftype->m_deftype == ASR::deftypeType::Interface &&
+                ftype->m_abi != ASR::abiType::Intrinsic && !ftype->m_module &&
+                !compiler_options.po.all_symbols_mangling) {
+                fn_name = sym_name;
+                is_external_interface_bypass = true;
+            } else if (ftype->m_abi == ASR::abiType::BindC
+                && !compiler_options.po.bindc_mangling) {
+                if (ftype->m_bindc_name) {
+                    fn_name = ftype->m_bindc_name;
                 } else {
                     fn_name = sym_name;
                 }
-            } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
-                ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
-                fn_name = sym_name;
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
@@ -6030,6 +6037,20 @@ public:
                 ) {
                 std::string parent_function_name = std::string(parent_function->m_name);
                 fn_name = parent_function_name+ "." + fn_name;
+            }
+            // Apply underscore mangling when requested
+            // For external interface functions, only apply if --all-mangling is also set (conservative behavior)
+            if (compiler_options.po.mangle_underscore && !is_external_interface_bypass) {
+                // Don't mangle Intrinsic functions
+                bool should_add_underscore = (ftype->m_abi != ASR::abiType::Intrinsic);
+                // Don't mangle user-specified BindC functions (those with bindc_name) unless bindc_mangling is enabled
+                bool is_explicit_bindc = (ftype->m_abi == ASR::abiType::BindC && ftype->m_bindc_name != nullptr);
+                if (is_explicit_bindc && !compiler_options.po.bindc_mangling) {
+                    should_add_underscore = false;
+                }
+                if (should_add_underscore) {
+                    fn_name = fn_name + "_";
+                }
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
