@@ -191,6 +191,48 @@ semantic error: Transformational intrinsic is not permitted in an initialization
 181 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Variable `uninitialized_param_local` with parameter attribute is not initialised
+   --> tests/errors/continue_compilation_1.f90:189:5
+    |
+189 |     type(MyClass), parameter :: uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol not found: `non_existent_symbol`
+   --> tests/errors/continue_compilation_1.f90:190:5
+    |
+190 |     type(MyClass) :: err_obj1 = non_existent_symbol
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Named initialization not supported with: my_func
+   --> tests/errors/continue_compilation_1.f90:191:5
+    |
+191 |     type(MyClass) :: err_obj2 = my_func
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization with non-constant variable `non_parameter_var` is not allowed
+   --> tests/errors/continue_compilation_1.f90:193:5
+    |
+193 |     type(MyClass) :: err_obj3 = non_parameter_var
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+192 |     integer :: non_parameter_var = 5
+    |                ~~~~~~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+   --> tests/errors/continue_compilation_1.f90:194:5
+    |
+194 |     type(MyClass) :: err_obj4 = myclass_array
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+155 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
+    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
+
+semantic error: Symbol not found: `uninitialized_param_local`
+   --> tests/errors/continue_compilation_1.f90:195:5
+    |
+195 |     type(MyClass) :: err_obj5 = uninitialized_param_local
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
   --> tests/errors/continue_compilation_1.f90:82:18
    |
