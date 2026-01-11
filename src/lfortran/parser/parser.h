@@ -26,8 +26,11 @@ public:
     bool fixed_form;
     bool continue_compilation;
 
-    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false, const bool &continue_compilation=false)
-            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}, continue_compilation(continue_compilation){
+    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false,
+        const bool &continue_compilation=false, const bool &openmp=false)
+            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form},
+            continue_compilation(continue_compilation) {
+        m_tokenizer.openmp_enabled = openmp;
         result.reserve(al, 32);
     }
 

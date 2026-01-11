@@ -5408,6 +5408,34 @@ public:
                                 ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
+                                // For IntrinsicArrayFunction (transformational intrinsics like minloc, maxloc, sum, etc.),
+                                // check if the first argument is a non-parameter variable
+                                if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) &&
+                                    storage_type == ASR::storage_typeType::Parameter) {
+                                    ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(init_expr);
+                                    if (iaf->n_args > 0) {
+                                        ASR::expr_t* first_arg = iaf->m_args[0];
+                                        // Unwrap ArrayPhysicalCast if present
+                                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*first_arg)) {
+                                            first_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(first_arg)->m_arg;
+                                        }
+                                        // Check if it's a direct Var reference to a non-parameter
+                                        if (ASR::is_a<ASR::Var_t>(*first_arg)) {
+                                            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(first_arg)->m_v;
+                                            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                                                if (var->m_storage != ASR::storage_typeType::Parameter) {
+                                                    diag.add(Diagnostic(
+                                                        "Transformational intrinsic is not permitted in an initialization expression",
+                                                        Level::Error, Stage::Semantic, {
+                                                            Label("", {init_expr->base.loc})
+                                                        }));
+                                                    throw SemanticAbort();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 value = init_expr;
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
                                         ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {

@@ -177,14 +177,14 @@ program continue_compilation_1
     character(:), allocatable :: allocate_char = "H"
     intrinsic :: not_real
     call sub(not_real)
-
-
-
-
-
-
-
-
+    integer :: param_arr(3) = [5, 10, 15]
+    integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    integer :: cc_a3(2) = [2, 3]
+    integer :: cc_temp3(2)
+    integer :: cc_i0 = 1
+    integer :: cc_a4(2)
+    integer :: cc_temp4(5)
+    integer :: cc_i1 = 1
 
 
 
@@ -423,14 +423,14 @@ program continue_compilation_1
     allocate(arr5, mold = arr4)
 
     print *, ["aa", "aaa"]
-
+    cc_a3 = cc_temp3(cc_i0:cc_i0)
     print *, pack(arr2, mask1)
-
+    print *, size(cc_a3)
     ! assigning to a *PROTECTED* struct instance member, not allowed
     protected_module_my_class_obj%value = 42
-
+    cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
     arr = [type(MyClass) :: v1, v2, v3]
-
+    print *, size(cc_a4)
     arr = [NonExistingType :: v1, v2, v3]
 
     !Data Statements with different number of arguments on LHS and RHS

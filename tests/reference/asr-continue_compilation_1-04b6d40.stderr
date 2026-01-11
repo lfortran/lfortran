@@ -185,6 +185,12 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
 177 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Transformational intrinsic is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:181:42
+    |
+181 |     integer, parameter :: param_minloc = minloc(param_arr, 1, [.false., .false., .false.])
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
   --> tests/errors/continue_compilation_1.f90:82:18
    |
@@ -867,6 +873,12 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
 425 |     print *, ["aa", "aaa"]
     |                     ^^^^^ 
 
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:426:5
+    |
+426 |     cc_a3 = cc_temp3(cc_i0:cc_i0)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
    --> tests/errors/continue_compilation_1.f90:427:25
     |
@@ -878,6 +890,12 @@ semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot a
     |
 430 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(2 and 1)
+   --> tests/errors/continue_compilation_1.f90:431:5
+    |
+431 |     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid syntax of derived type for array constructor
    --> tests/errors/continue_compilation_1.f90:432:12
