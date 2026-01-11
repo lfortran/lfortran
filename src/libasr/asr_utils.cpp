@@ -2523,10 +2523,24 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
-                Allocator al(512);
-                if (!types_equal(arg1, arg2, args[i].m_value,
-                    ASRUtils::get_expr_from_sym(al, &f->base), false)) {
-                    return false;
+
+                // Check if actual argument is an implicit interface procedure
+                // (FunctionType with no arg types and Interface deftype).
+                // Implicit interfaces are compatible with any explicit interface
+                // - actual compatibility is checked at call site.
+                bool arg1_is_implicit = false;
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                    ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                    arg1_is_implicit = (ft->n_arg_types == 0 &&
+                        ft->m_deftype == ASR::deftypeType::Interface);
+                }
+
+                if (!arg1_is_implicit) {
+                    Allocator al(512);
+                    if (!types_equal(arg1, arg2, args[i].m_value,
+                        ASRUtils::get_expr_from_sym(al, &f->base), false)) {
+                        return false;
+                    }
                 }
             }
         }
