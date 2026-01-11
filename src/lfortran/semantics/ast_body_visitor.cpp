@@ -2079,6 +2079,24 @@ public:
 
         // Perform all validation checks BEFORE creating any ASR nodes
         // to avoid creating malformed ASR when continuing compilation after errors
+        for (size_t i = 0; i < alloc_args_vec.n; i++) {
+            ASR::expr_t* alloc_expr = alloc_args_vec.p[i].m_a;
+            ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
+            
+            if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
+                std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
+                ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
+                std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
+                
+                diag.add(Diagnostic(
+                    "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
+                    Level::Error, Stage::Semantic, {
+                        Label("'" + var_name + "' is not allocatable or pointer", {alloc_expr->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+        
         if (source) {
             for (size_t i = 0; i < alloc_args_vec.n ; i++) {
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
@@ -4830,6 +4848,51 @@ public:
         // checking for intent mismatch   
         if (f) { 
             ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
+            for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
+                if (args[i].m_value == nullptr) continue;
+                ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+                    ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+                    ASR::ttype_t* dummy_type = dummy_var->m_type;
+                    ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    if (ASRUtils::is_allocatable(dummy_type)) {
+                        ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_allocatable(dummy_type);
+                        ASR::ttype_t* actual_type_unwrapped = ASRUtils::type_get_past_allocatable(actual_type);
+                        if (ASR::is_a<ASR::String_t>(*dummy_type_unwrapped) && 
+                            ASR::is_a<ASR::String_t>(*actual_type_unwrapped)) {
+                            ASR::String_t* dummy_str = ASR::down_cast<ASR::String_t>(dummy_type_unwrapped);
+                            ASR::String_t* actual_str = ASR::down_cast<ASR::String_t>(actual_type_unwrapped);
+                            
+                            if (dummy_str->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                                actual_str->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                                dummy_str->m_len != nullptr && actual_str->m_len != nullptr) {
+                                
+                                int64_t dummy_len = -1;
+                                int64_t actual_len = -1;
+                                
+                                if (ASR::is_a<ASR::IntegerConstant_t>(*dummy_str->m_len)) {
+                                    dummy_len = ASR::down_cast<ASR::IntegerConstant_t>(dummy_str->m_len)->m_n;
+                                }
+                                if (ASR::is_a<ASR::IntegerConstant_t>(*actual_str->m_len)) {
+                                    actual_len = ASR::down_cast<ASR::IntegerConstant_t>(actual_str->m_len)->m_n;
+                                }
+                                
+                                if (dummy_len > 0 && actual_len > 0 && dummy_len != actual_len) {
+                                    std::string dummy_name = dummy_var->m_name;
+                                    std::string error_msg = "Type mismatch: allocatable character dummy argument '" + 
+                                        dummy_name + "' has length " + std::to_string(dummy_len) + 
+                                        " but actual argument has length " + std::to_string(actual_len) + ".";
+                                    diag.semantic_error_label(
+                                        error_msg, {args[i].m_value->base.loc},
+                                        "dummy argument '" + dummy_name + "' declared here");
+                                    throw SemanticAbort();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         ASR::symbol_t *final_sym=nullptr;

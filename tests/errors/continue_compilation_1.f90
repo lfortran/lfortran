@@ -96,10 +96,10 @@ contains
         procedure(ubound_assumed_size) :: p
     end subroutine proc_param
 
-
-
-
-
+    subroutine modify_and_deallocate(s)
+        character(5), allocatable :: s
+        deallocate(s)
+    end subroutine modify_and_deallocate
 
 
 
@@ -185,7 +185,7 @@ program continue_compilation_1
     integer :: cc_a4(2)
     integer :: cc_temp4(5)
     integer :: cc_i1 = 1
-
+    character(10) :: strx
 
 
 
@@ -477,6 +477,11 @@ program continue_compilation_1
 
     i = 1
     print *, string(i,i)
+    
+    allocate(strx)
+    strx = "hello12345"
+    call modify_and_deallocate(strx)
+    print *, allocated(strx)
 
     contains
     subroutine sub(f)
