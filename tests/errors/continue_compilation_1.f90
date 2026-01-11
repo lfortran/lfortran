@@ -186,13 +186,13 @@ program continue_compilation_1
     integer :: cc_temp4(5)
     integer :: cc_i1 = 1
     character(10) :: strx
-
-
-
-
-
-
-
+    type(MyClass), parameter :: uninitialized_param_local
+    type(MyClass) :: err_obj1 = non_existent_symbol
+    type(MyClass) :: err_obj2 = my_func
+    integer :: non_parameter_var = 5
+    type(MyClass) :: err_obj3 = non_parameter_var
+    type(MyClass) :: err_obj4 = myclass_array
+    type(MyClass) :: err_obj5 = uninitialized_param_local
 
 
 
