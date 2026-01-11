@@ -240,6 +240,9 @@ ifcont31:                                         ; preds = %else30, %then29
   br label %return
 
 return:                                           ; preds = %ifcont31
+  br label %FINALIZE_SYMTABLE_subroutines_01
+
+FINALIZE_SYMTABLE_subroutines_01:                 ; preds = %return
   ret i32 0
 }
 
@@ -251,6 +254,9 @@ define void @f(i32* %a, i32* %b) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 

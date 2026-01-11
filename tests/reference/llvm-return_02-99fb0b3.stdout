@@ -31,6 +31,9 @@ define i32 @__module_many_returns_b(i32* %a) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_b
+
+FINALIZE_SYMTABLE_b:                              ; preds = %return
   %2 = load i32, i32* %b, align 4
   ret i32 %2
 }
@@ -87,6 +90,9 @@ ifcont8:                                          ; preds = %else7, %unreachable
   br label %return
 
 return:                                           ; preds = %ifcont8, %then5, %then1, %then
+  br label %FINALIZE_SYMTABLE_d
+
+FINALIZE_SYMTABLE_d:                              ; preds = %return
   %6 = load i32, i32* %d, align 4
   ret i32 %6
 }
@@ -178,6 +184,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_returns
+
+FINALIZE_SYMTABLE_returns:                        ; preds = %return
   ret i32 0
 }
 

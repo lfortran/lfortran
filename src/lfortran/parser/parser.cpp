@@ -236,7 +236,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
+    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {
@@ -500,7 +500,7 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
     while (pos < s.size() && s[pos] != '\n') {
         pos++;
     }
-    pos++; // Skip the last '\n'
+    if (pos < s.size()) pos++; // Skip the last '\n' if present
 }
 
 // Parses string, including possible continuation lines
@@ -604,7 +604,7 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
         }
     }
     // not always a program end's with '\n', but when it does, copy it
-    if (s[pos] == '\n') {
+    if (pos < s.size() && s[pos] == '\n') {
         out += s[pos];
         pos++;
     }

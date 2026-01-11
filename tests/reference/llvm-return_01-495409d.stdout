@@ -29,6 +29,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
@@ -62,6 +65,9 @@ ifcont:                                           ; preds = %else, %unreachable_
   br label %return
 
 return:                                           ; preds = %ifcont, %then
+  br label %FINALIZE_SYMTABLE_main1
+
+FINALIZE_SYMTABLE_main1:                          ; preds = %return
   %6 = load i32, i32* %main1, align 4
   ret i32 %6
 }

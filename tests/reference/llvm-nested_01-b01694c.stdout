@@ -24,6 +24,9 @@ define i32 @__module_nested_01_a_b() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_b
+
+FINALIZE_SYMTABLE_b:                              ; preds = %return
   %2 = load i32, i32* %b, align 4
   ret i32 %2
 }
@@ -37,6 +40,9 @@ define i32 @b.__module_nested_01_a_d() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_d
+
+FINALIZE_SYMTABLE_d:                              ; preds = %return
   %1 = load i32, i32* %d, align 4
   ret i32 %1
 }
@@ -54,6 +60,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_nested_01
+
+FINALIZE_SYMTABLE_nested_01:                      ; preds = %return
   ret i32 0
 }
 

@@ -32,6 +32,9 @@ loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
+  br label %FINALIZE_SYMTABLE_do7
+
+FINALIZE_SYMTABLE_do7:                            ; preds = %return
   ret i32 0
 }
 
@@ -44,6 +47,9 @@ define i32 @f(i32* %a) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   %2 = load i32, i32* %f, align 4
   ret i32 %2
 }

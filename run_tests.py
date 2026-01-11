@@ -77,7 +77,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
-    llvm_new_classes = is_included("llvm_new_classes")
     cpp = is_included("cpp")
     cpp_infer = is_included("cpp_infer")
     c = is_included("c")
@@ -156,10 +155,13 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
+            ast_cmd = "lfortran --show-ast --no-color {infile} -o {outfile}"
+            if asr_openmp:
+                ast_cmd = "lfortran --show-ast --no-color --openmp {infile} -o {outfile}"
             run_test(
                 filename,
                 "ast",
-                "lfortran --show-ast --no-color {infile} -o {outfile}",
+                ast_cmd,
                 filename,
                 update_reference,
                 verify_hash,
@@ -455,7 +457,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if syntax_only_cc:
-        run_test(filename, "asr", "lfortran --continue-compilation --show-ast --no-color {infile}",
+        run_test(filename, "ast", "lfortran --continue-compilation --show-ast --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -653,19 +655,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-    
-    if llvm_new_classes:
-        if no_llvm:
-            log.info(f"{filename} * llvm_new_classes   SKIPPED as requested")
-        else:
-            run_test(
-                filename,
-                "llvm_new_classes",
-                "lfortran --no-color --show-llvm --new-classes {infile} -o {outfile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
 
     if cpp:
         run_test(filename, "cpp", "lfortran --no-color --show-cpp {infile}",
@@ -751,7 +740,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename, "run_dbg",
-                "lfortran {infile} -g --debug-with-line-column --no-color",
+                "lfortran {infile} -g --no-color",
             filename,
             update_reference,
             verify_hash,

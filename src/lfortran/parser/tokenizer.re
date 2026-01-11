@@ -680,8 +680,18 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
-            omp_end / newline { TK_TRIVIA(TK_OMP_END) }
-            omp / newline { TK_TRIVIA(TK_OMP) }
+            omp_end / newline {
+                if (!openmp_enabled) {
+                    TK_TRIVIA(TK_COMMENT)
+                }
+                TK_TRIVIA(TK_OMP_END)
+            }
+            omp / newline {
+                if (!openmp_enabled) {
+                    TK_TRIVIA(TK_COMMENT)
+                }
+                TK_TRIVIA(TK_OMP)
+            }
             pragma_decl / newline { TK_TRIVIA(TK_PRAGMA_DECL) }
 
             comment newline {
@@ -749,8 +759,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
-            string1 { token_str(al, yylval.string, '"'); RET(TK_STRING) }
-            string2 { token_str(al, yylval.string, '\''); RET(TK_STRING) }
+            string1 { lex_string(al, yylval.str_prefix, '"'); RET(TK_STRING) }
+            string2 { lex_string(al, yylval.str_prefix, '\''); RET(TK_STRING) }
 
             defop { token(yylval.string); RET(TK_DEF_OP) }
             name { token(yylval.string); RET(TK_NAME) }
@@ -798,7 +808,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | 'L' whitespace? int
                 | 'A' whitespace? (int)?
                 | 'D' whitespace? int whitespace? dot_int
-                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int
+                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int whitespace? E_int?
                 | 'P' whitespace? 'F' whitespace? int whitespace? dot_int
                 | 'P'
                 | 'X'
@@ -808,8 +818,23 @@ void lex_format(unsigned char *&cur, Location &loc,
                 = 'T' whitespace? ('L' | 'R')? whitespace? int
                 | int whitespace? 'X'
                 ;
+            sign_edit_desc
+                = 'S' whitespace? ('P' | 'S')?
+                ;
+
+            rounding_mode_desc
+                = 'R' whitespace? ('U' | 'D' | 'N' | 'Z')
+                ;
+
+            blank_interp_edit_desc
+                = 'B' whitespace? ('N' | 'Z')
+                ;
+
             control_edit_desc
                 = position_edit_desc
+                | sign_edit_desc
+                | rounding_mode_desc
+                | blank_interp_edit_desc
                 | (int)? '/'
                 | ':'
                 ;
@@ -875,7 +900,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             "&" ws_comment+ whitespace? "&"? { continue; }
             '"' ('""'|[^"\x00])* '"' { continue; }
             "'" ("''"|[^'\x00])* "'" { continue; }
-            '-' { continue; }
+            '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
         */

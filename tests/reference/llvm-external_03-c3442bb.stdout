@@ -32,6 +32,9 @@ define void @a(float (float*)* %f) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_a
+
+FINALIZE_SYMTABLE_a:                              ; preds = %return
   ret void
 }
 
@@ -43,6 +46,9 @@ define void @b() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_b
+
+FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret void
 }
 
@@ -62,6 +68,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_external_03
+
+FINALIZE_SYMTABLE_external_03:                    ; preds = %return
   ret i32 0
 }
 

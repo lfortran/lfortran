@@ -160,6 +160,7 @@
                         ((Var 5 ptr))
                         ((Var 5 f))]
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         5 get_value@get_elem_value_string
@@ -170,6 +171,7 @@
                         (())
                         ((Var 5 f))]
                         ()
+                        .false.
                     )]
                 ),
             subroutines_09_tomlf_build_array:

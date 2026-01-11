@@ -102,6 +102,9 @@ define void @__module_nested_05_a_b() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_b
+
+FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret void
 }
 
@@ -142,6 +145,9 @@ define void @b.__module_nested_05_a_c() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_c
+
+FINALIZE_SYMTABLE_c:                              ; preds = %return
   ret void
 }
 
@@ -159,6 +165,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_nested_05
+
+FINALIZE_SYMTABLE_nested_05:                      ; preds = %return
   ret i32 0
 }
 

@@ -19,6 +19,9 @@ define void @__module_dr_fortran_cb_print_dr() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_print_dr
+
+FINALIZE_SYMTABLE_print_dr:                       ; preds = %return
   ret void
 }
 
@@ -28,6 +31,9 @@ define void @__module_dr_fortran_cb_print_dr_fortran(void ()* %title_or_name) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_print_dr_fortran
+
+FINALIZE_SYMTABLE_print_dr_fortran:               ; preds = %return
   ret void
 }
 
@@ -40,6 +46,9 @@ define void @__module_dr_fortran_cb_print_fortran() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_print_fortran
+
+FINALIZE_SYMTABLE_print_fortran:                  ; preds = %return
   ret void
 }
 
@@ -54,6 +63,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

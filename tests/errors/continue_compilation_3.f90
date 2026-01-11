@@ -25,14 +25,14 @@ contains
         y = y + 1
     end subroutine intent_inout_test
 
-
-
-
-
-
-
-
-
+    subroutine assumed_rank(x)
+        integer, intent(in) :: x(..)
+        print *, x
+        print *, reshape(x, [size(x)])
+        print *, x(1)
+	    x = [1, 2]
+        print *, (x /= [1, 2])
+    end subroutine assumed_rank
 
 
 

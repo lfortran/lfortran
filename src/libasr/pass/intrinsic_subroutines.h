@@ -883,18 +883,33 @@ namespace GetEnvironmentVariable {
     }
 
     static inline ASR::asr_t* create_GetEnvironmentVariable(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        // Encode which optional parameters are present in overload_id
+        // Bit 0: value present, Bit 1: length present, Bit 2: status present, Bit 3: trim_name present
+        int64_t overload_id = 0;
+        if (args.size() > 1 && args[1]) overload_id |= (1 << 0); // value
+        if (args.size() > 2 && args[2]) overload_id |= (1 << 1); // length
+        if (args.size() > 3 && args[3]) overload_id |= (1 << 2); // status
+        if (args.size() > 4 && args[4]) overload_id |= (1 << 3); // trim_name
+
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
         m_args.push_back(al, args[0]);
         for (int i = 1; i < int(args.size()); i++) {
             if(args[i]) m_args.push_back(al, args[i]);
         }
-        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable), m_args.p, m_args.n, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable), m_args.p, m_args.n, overload_id);
     }
 
     static inline ASR::stmt_t* instantiate_GetEnvironmentVariable(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-                
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+
+        // Decode which optional parameters are present from overload_id
+        // Bit 0: value, Bit 1: length, Bit 2: status, Bit 3: trim_name
+        bool has_value = (overload_id & (1 << 0)) != 0;
+        bool has_length = (overload_id & (1 << 1)) != 0;
+        bool has_status = (overload_id & (1 << 2)) != 0;
+        bool has_trim_name = (overload_id & (1 << 3)) != 0;
+
         std::string c_func_name = "_lfortran_get_environment_variable";
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
@@ -944,8 +959,8 @@ namespace GetEnvironmentVariable {
             // Declare interface `_lfortran_get_length_of_environment_variable`
             std::string c_func_name = "_lfortran_get_length_of_environment_variable";
             ASR::symbol_t *_lfortran_get_length_of_environment_variable = b.create_c_func_subroutines_with_return_type(
-                c_func_name, fn_symtab, 2, 
-                {   b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1), 
+                c_func_name, fn_symtab, 2,
+                {   b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
                     int32},
                 int32);
             fn_symtab->add_symbol(c_func_name, _lfortran_get_length_of_environment_variable);
@@ -975,37 +990,76 @@ namespace GetEnvironmentVariable {
             // Deallocate `envVar_string_holder`
             body.push_back(al, b.Deallocate(envVar_string_holder));
 
-            if (arg_types.size() >= 3) {
-                fill_func_arg_sub("length", arg_types[2], InOut);
-                body.push_back(al, b.Assignment(args[2], length_to_allocate)); // Reuse `length_to_allocate`
+            // Handle optional parameters based on which ones are present
+            int arg_idx = 2; // Start after name and value
+            if (has_length) {
+                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                body.push_back(al, b.Assignment(args[arg_idx], length_to_allocate));
+                arg_idx++;
             }
-            if (arg_types.size() >= 4) {
-                fill_func_arg_sub("status", arg_types[3], InOut);
+            if (has_status) {
+                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                // Declare interface `_lfortran_get_environment_variable_status`
+                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
+                    status_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                     int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
+                dep.push_back(al, s2c(al, status_func_name));
+                // Call the status function and assign result
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
+                arg_idx++;
             }
-            if (arg_types.size() >= 5) {
-                fill_func_arg_sub("trim_name", arg_types[4], InOut);
+            if (has_trim_name) {
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
             }
-        } else if ( arg_types.size() >= 2 && ASRUtils::is_integer(*arg_types[1]) ) {
-            // this is the case where args[1] is `length`
-            c_func_name = "_lfortran_get_length_of_environment_variable";
-            fill_func_arg_sub("length", arg_types[1], InOut);
-            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2, 
-                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                int32},
-                arg_types[1]);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-            call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-            call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
-            body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
+        } else if ( !has_value && arg_types.size() >= 2 ) {
+            // this is the case where value is not provided
+            // args[1] onwards could be: length, status, or trim_name
+            int arg_idx = 1;
 
-            if (arg_types.size() >= 3) {
-                fill_func_arg_sub("status", arg_types[2], InOut);
+            if (has_length) {
+                c_func_name = "_lfortran_get_length_of_environment_variable";
+                fill_func_arg_sub("length", arg_types[arg_idx], InOut);
+                ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                    int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(c_func_name, s);
+                dep.push_back(al, s2c(al, c_func_name));
+                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
+                call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(s, call_args, arg_types[arg_idx])));
+                arg_idx++;
             }
 
-            if (arg_types.size() >= 4) {
-                fill_func_arg_sub("trim_name", arg_types[3], InOut);
+            if (has_status) {
+                fill_func_arg_sub("status", arg_types[arg_idx], InOut);
+                // Declare interface `_lfortran_get_environment_variable_status`
+                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
+                    status_func_name, fn_symtab, 2,
+                    {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
+                     int32},
+                    arg_types[arg_idx]);
+                fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
+                dep.push_back(al, s2c(al, status_func_name));
+                // Call the status function and assign result
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
+                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
+                arg_idx++;
+            }
+
+            if (has_trim_name) {
+                fill_func_arg_sub("trim_name", arg_types[arg_idx], InOut);
             }
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1068,12 +1122,19 @@ namespace ExecuteCommandLine {
             fill_func_arg_sub("cmdmsg", arg_types[optional_arg_index], InOut);
         }
 
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
-            ASR::expr_t *arg = b.Variable(fn_symtab_1, "n",
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+
+        {
+            ASR::expr_t *str_arg = b.Variable(fn_symtab_1, "m",
                 b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
                 ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
-            args_1.push_back(al, arg);
+            args_1.push_back(al, str_arg);
+
+            ASR::expr_t *len_arg = b.Variable(fn_symtab_1, "n", ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+            args_1.push_back(al, len_arg);
+        }
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
         ret_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
@@ -1086,7 +1147,13 @@ namespace ExecuteCommandLine {
         dep.push_back(al, s2c(al, c_func_name));
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-        call_args.push_back(al, create_string_physical_cast(al, args[0], ASR::CChar));
+
+        // Push the arguments to call_args vector, the string and its length
+        {
+            call_args.push_back(al, create_string_physical_cast(al, args[0], ASR::CChar));
+            call_args.push_back(al, b.StringLen(args[0]));
+        }
+
         optional_arg_index = 2;
         if (overload_id & WAIT_BIT) {
             // TODO: handle this
@@ -1095,6 +1162,19 @@ namespace ExecuteCommandLine {
         if (overload_id & EXITSTAT_BIT) {
             body.push_back(al, b.Assignment(args[optional_arg_index], exit_status_local));
             optional_arg_index++;
+        }
+
+        std::vector<ASR::stmt_t*> failure_handlers;
+        if (overload_id & CMDSTAT_BIT) {
+            ASR::expr_t *cmdstat_arg = args[optional_arg_index];
+            ASR::ttype_t *cmdstat_type = ASRUtils::expr_type(cmdstat_arg);
+            body.push_back(al, b.Assignment(cmdstat_arg, b.i_t(0, cmdstat_type)));
+            failure_handlers.push_back(b.Assignment(cmdstat_arg, b.i_t(1, cmdstat_type)));
+            optional_arg_index++;
+        }
+        if (!failure_handlers.empty()) {
+            ASR::expr_t *system_failed = b.Eq(exit_status_local, b.i_t(-1, ret_type));
+            body.push_back(al, b.If(system_failed, failure_handlers, {}));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1169,42 +1249,121 @@ namespace MoveAlloc {
         bool is_struct_type_from = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
         bool is_struct_type_to = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[1]));
         declare_basic_variables(new_name);
+
+        auto get_safe_type = [&](ASR::ttype_t* type) -> ASR::ttype_t* {
+            if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                ASR::Allocatable_t* alloc = ASR::down_cast<ASR::Allocatable_t>(type);
+                ASR::ttype_t* inner = alloc->m_type;
+                
+                if (ASR::is_a<ASR::Array_t>(*inner)) {
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inner);
+                    if (ASR::is_a<ASR::String_t>(*arr->m_type)) {
+                        ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(arr->m_type);
+                        if (str_t->m_len && ASR::is_a<ASR::Var_t>(*str_t->m_len)) {
+                            ASR::ttype_t* deferred_str = ASRUtils::TYPE(ASR::make_String_t(
+                                al, str_t->base.base.loc, str_t->m_kind, nullptr,
+                                ASR::string_length_kindType::DeferredLength,
+                                str_t->m_physical_type));
+                            ASR::ttype_t* new_array = ASRUtils::TYPE(ASR::make_Array_t(
+                                al, arr->base.base.loc, deferred_str, arr->m_dims, arr->n_dims,
+                                arr->m_physical_type));
+                            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, type->base.loc, new_array));
+                        }
+                    }
+                }
+                else if (ASR::is_a<ASR::String_t>(*inner)) {
+                    ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(inner);
+                    if (str_t->m_len && ASR::is_a<ASR::Var_t>(*str_t->m_len)) {
+                        ASR::ttype_t* deferred_str = ASRUtils::TYPE(ASR::make_String_t(
+                            al, str_t->base.base.loc, str_t->m_kind, nullptr,
+                            ASR::string_length_kindType::DeferredLength,
+                            str_t->m_physical_type));
+                        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, type->base.loc, deferred_str));
+                    }
+                }
+            }
+            return type;
+        };
+        
+        ASR::ttype_t* safe_arg_type_0 = get_safe_type(arg_types[0]);
+        ASR::ttype_t* safe_arg_type_1 = get_safe_type(arg_types[1]);
+        
         if (is_struct_type_from) {
-            fill_func_arg_sub_struct_type("from", arg_types[0], In, new_args[0].m_value);
+            fill_func_arg_sub_struct_type("from", safe_arg_type_0, In, new_args[0].m_value);
         } else {
-            fill_func_arg_sub("from", arg_types[0], In);
+            fill_func_arg_sub("from", safe_arg_type_0, In);
         }
         if (is_struct_type_to) {
-            fill_func_arg_sub_struct_type("to", arg_types[1], InOut, new_args[1].m_value);
+            fill_func_arg_sub_struct_type("to", safe_arg_type_1, InOut, new_args[1].m_value);
         } else {
-            fill_func_arg_sub("to", arg_types[1], InOut);
+            fill_func_arg_sub("to", safe_arg_type_1, InOut);
         }
 
-        Vec<ASR::expr_t*> allocated_args; allocated_args.reserve(al, 1);
-        allocated_args.push_back(al, args[0]);
+        Vec<ASR::expr_t*> allocated_args_from; allocated_args_from.reserve(al, 1);
+        allocated_args_from.push_back(al, args[0]);
 
         // ASR node for `allocated(from)`
         ASR::expr_t* is_from_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(IntrinsicImpureFunctions::Allocated),
-                allocated_args.p, allocated_args.n, 0, logical, nullptr));
+                allocated_args_from.p, allocated_args_from.n, 0, logical, nullptr));
+
+        Vec<ASR::expr_t*> allocated_args_to; allocated_args_to.reserve(al, 1);
+        allocated_args_to.push_back(al, args[1]);
+
+        // ASR node for `allocated(to)`
+        ASR::expr_t* is_to_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicImpureFunctions::Allocated),
+                allocated_args_to.p, allocated_args_to.n, 0, logical, nullptr));
+
+        // If `to` is already allocated, deallocate it first.
+        // This matches standard MOVE_ALLOC semantics and avoids double-allocation at runtime.
+        Vec<ASR::expr_t*> deallocate_to_args; deallocate_to_args.reserve(al, 1);
+        deallocate_to_args.push_back(al, args[1]);
+        ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+            al, loc, deallocate_to_args.p, deallocate_to_args.n));
+        std::vector<ASR::stmt_t*> deallocate_to_body;
+        deallocate_to_body.push_back(deallocate_to);
+        body.push_back(al, b.If(is_to_allocated, deallocate_to_body, {}));
 
         std::vector<ASR::stmt_t*> if_body;
 
-        if (!ASRUtils::is_character(*arg_types[0])) {
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
-            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
-            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            for(int i=0; i<n_dims; i++) {
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, 1, integer_type));
-                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-        al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
-                alloc_dims.push_back(al, dim);
-            }
-            if_body.push_back(b.Allocate(args[1], alloc_dims));
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+        Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        for(int i=0; i<n_dims; i++) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, integer_type));
+            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+    al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
+            alloc_dims.push_back(al, dim);
         }
+        
+        ASR::expr_t* len_expr = nullptr;
+        if (ASRUtils::is_character(*arg_types[0])) {
+            len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], integer_type, nullptr));
+        }
+        
+        ASR::symbol_t* from_struct = nullptr;
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_types[1]))) {
+            from_struct = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr( new_args[0].m_value));
+        }
+        
+        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = args[1];
+        alloc_arg.m_dims = alloc_dims.p;
+        alloc_arg.n_dims = alloc_dims.n;
+        alloc_arg.m_type = from_struct ? ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::symbol_type(from_struct)) : nullptr;
+        alloc_arg.m_len_expr = len_expr;
+        alloc_arg.m_sym_subclass = from_struct;
+        alloc_args.push_back(al, alloc_arg);
+        if_body.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
+            nullptr, nullptr, nullptr)));
         if_body.push_back(b.Assignment(args[1], args[0]));
         Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
                     explicit_deallocate_args.push_back(al, args[0]);

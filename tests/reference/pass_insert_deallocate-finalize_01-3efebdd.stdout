@@ -105,10 +105,7 @@
                                                                 )
                                                         })
                                                     bl
-                                                    [(ImplicitDeallocate
-                                                        [(Var 7 arr_in_block)]
-                                                    )
-                                                    (Exit
+                                                    [(Exit
                                                         bl
                                                     )
                                                     (Return)]
@@ -164,14 +161,8 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(ImplicitDeallocate
-                                            [(Var 6 arr_real)]
-                                        )
-                                        (Return)]
+                                        [(Return)]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 arr_real)]
                                     )]
                                     ()
                                     Public
@@ -240,15 +231,14 @@
                         ()
                         []
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         5 internal_sub
                         ()
                         []
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 5 arr)]
+                        .false.
                     )
                     (Return)]
                 ),
@@ -325,17 +315,8 @@
                                             .true.
                                             (Logical 4)
                                         )
-                                        [(ImplicitDeallocate
-                                            [(Var 4 arr)]
-                                        )
-                                        (Return)]
-                                        [(ImplicitDeallocate
-                                            [(Var 4 arr)]
-                                        )
-                                        (Return)]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 4 arr)]
+                                        [(Return)]
+                                        [(Return)]
                                     )]
                                     ()
                                     Public

@@ -373,7 +373,7 @@ public :
             new_call_args.push_back(al, {result_var->base.loc, result_var});
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
-                                                nullptr, false, current_scope));
+                                                nullptr, false, current_scope, std::nullopt, true));
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
@@ -484,17 +484,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     PassUtils::is_aggregate_or_array_type(array_t->m_type);
             }
 
-            return (ASRUtils::is_aggregate_type(ASRUtils::expr_type(m_value)) ||
-                    PassUtils::is_aggregate_or_array_type(m_value));
+            return PassUtils::is_aggregate_or_array_type(m_value);
         }
 
         void subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
+            bool is_pointer_return = false;
+            bool use_temp_var_for_return = false;
             if (ASR::is_a<ASR::Assignment_t>(xx)) {
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 value = assignment->m_value;
                 target = assignment->m_target;
+                use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
+                                            !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
+                is_pointer_return = use_temp_var_for_return;
             } else if (ASR::is_a<ASR::Associate_t>(xx)) {
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
@@ -516,7 +520,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
             }
 
-            bool use_temp_var_for_return = false;
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
@@ -536,9 +539,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASR::expr_t *result_var = nullptr;
 
                 if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
-                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 } else {
-                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_");     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
 
                 // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable
@@ -571,7 +574,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope));
+                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope, std::nullopt, true));
             pass_result.push_back(al, subrout_call);
 
             if (value_and_target_allocatable_array || use_temp_var_for_return) {
@@ -612,6 +615,45 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx);
             }
         }
+
+    /**
+     * In case `x.test` expression needs temporaries
+     *
+     * FROM :
+     *      do while(ff(flag) == "Hello")
+     *       ...
+     *      END DO
+     * TO :
+     *     DO while (.true.)
+     *      temp1 = ff(flag)
+     *      if ((temp1 == "Hello") == .false.) exit
+     *      ...
+     *     END DO
+     */
+    void visit_WhileLoop(const ASR::WhileLoop_t &x){
+        Vec<ASR::stmt_t*> pass_result_TMP; // Move pass_result
+        pass_result_TMP.p   = pass_result.p;
+        pass_result_TMP.n   = pass_result.n;
+        pass_result_TMP.max = pass_result.max;
+
+        pass_result.reserve(al, 0); // Reset
+        visit_expr(*x.m_test);
+        if (!pass_result.empty()){ // Temps Created!
+            ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+            pass_result.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            for(size_t i = 0; i< x.n_body; i++){
+                pass_result.push_back(al, x.m_body[i]);
+            }
+            const_cast<ASR::WhileLoop_t&>(x).m_body = pass_result.p; 
+            const_cast<ASR::WhileLoop_t&>(x).n_body = pass_result.n;
+            const_cast<ASR::WhileLoop_t&>(x).m_test = builder.logical_true();
+        }
+        // Move back
+        pass_result.p   = pass_result_TMP.p;
+        pass_result.n   = pass_result_TMP.n;
+        pass_result.max = pass_result_TMP.max;
+        CallReplacerOnExpressionsVisitor::visit_WhileLoop(x);      
+    }
 };
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,

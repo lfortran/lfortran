@@ -23,7 +23,6 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-I TEXT ...`: Include path
 - `-J TEXT`: Where to save mod files
 - `-g`: Compile with debugging information
-- `--debug-with-line-column`: Convert the linear location info into line + column in the debugging information
 - `-D TEXT ...`: Define `<macro>=<value>` (or 1 if `<value>` omitted)
 - `--version`: Display compiler version information
 - `-W TEXT ...`: Linker flags
@@ -79,7 +78,8 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--dump-all-passes`: Apply all the passes and dump the ASR into a file
 - `--dump-all-passes-fortran`: Apply all passes and dump the ASR after each pass into a Fortran file
 - `--cumulative`: Apply all the passes cumulatively till the given pass
-- `--realloc-lhs`: Reallocate left-hand side automatically
+- `--realloc-lhs-arrays`: Reallocate left hand side automatically for arrays
+- `--disable-realloc-lhs-arrays`: Disables reallocating left hand side automatically for arrays
 - `--module-mangling`: Mangles the module name
 - `--global-mangling`: Mangles all the global symbols
 - `--intrinsic-mangling`: Mangles all the intrinsic symbols

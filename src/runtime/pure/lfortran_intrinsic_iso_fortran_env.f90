@@ -8,6 +8,7 @@ integer, parameter :: int64 = 8
 integer, parameter :: real32 = 4
 integer, parameter :: real64 = 8
 integer, parameter :: real128 = -1
+integer, parameter :: logical8 = 8
 
 integer, parameter :: input_unit = 5
 integer, parameter :: output_unit = 6
@@ -16,7 +17,7 @@ integer, parameter :: error_unit = 0
 integer, parameter :: integer_kinds(2) = [4, 8]
 integer, parameter :: real_kinds(2) = [4, 8]
 integer, parameter :: character_kinds(1) = [1]
-integer, parameter :: logical_kinds(1) = [4]
+integer, parameter :: logical_kinds(2) = [4,8]
 
 integer, parameter :: iostat_end = -1
 integer, parameter :: iostat_eor = -2
@@ -29,6 +30,13 @@ function compiler_version() result(version)
     character(len=:), allocatable :: version
     version = _lfortran_compiler_version() ! note: LFortran takes this and creates an IntrinsicElementalFunction
 end function compiler_version
+
+function compiler_options() result(options)
+    character(len=:), allocatable :: options
+    ! During AST->ASR conversion, this function call is replaced with a CompilerOptions ASR node
+    ! containing the compiler options string from lcompilers_commandline_options at compile time.
+    ! This ensures the options are captured when this code is compiled, not when the main program runs.
+end function compiler_options
 
 
 end module

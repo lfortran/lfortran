@@ -20,6 +20,9 @@ define i32 @__lfortran_evaluate_1() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
+
+FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
   %6 = load i32, i32* %__lfortran_evaluate_12, align 4
   ret i32 %6
 }

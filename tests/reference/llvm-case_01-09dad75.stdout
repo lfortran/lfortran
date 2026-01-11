@@ -163,6 +163,9 @@ ifcont23:                                         ; preds = %else22, %then21
   br label %return
 
 return:                                           ; preds = %ifcont23
+  br label %FINALIZE_SYMTABLE_case_01
+
+FINALIZE_SYMTABLE_case_01:                        ; preds = %return
   ret i32 0
 }
 

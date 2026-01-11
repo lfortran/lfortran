@@ -117,7 +117,7 @@
             (Print
                 0
                 ()
-                [(String "hello ")
+                [(String "hello " ())
                 cmd]
                 ()
             )]

@@ -8,33 +8,33 @@ source_filename = "LFortran"
 @serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
-@3 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@3 = private unnamed_addr constant [190 x i8] c"At 13:18 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"arr1\00", align 1
-@9 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@9 = private unnamed_addr constant [189 x i8] c"At 20:5 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @12 = private unnamed_addr constant [5 x i8] c"arr1\00", align 1
-@13 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@13 = private unnamed_addr constant [189 x i8] c"At 21:5 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @16 = private unnamed_addr constant [5 x i8] c"arr1\00", align 1
-@17 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@17 = private unnamed_addr constant [189 x i8] c"At 22:5 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @main.b = internal global [3 x i32] zeroinitializer
 @20 = private unnamed_addr constant [2 x i8] c"b\00", align 1
-@21 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@21 = private unnamed_addr constant [189 x i8] c"At 3:12 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @22 = private unnamed_addr constant [2 x i8] c"b\00", align 1
-@23 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@23 = private unnamed_addr constant [189 x i8] c"At 3:12 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @24 = private unnamed_addr constant [2 x i8] c"b\00", align 1
-@25 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@25 = private unnamed_addr constant [189 x i8] c"At 3:12 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @26 = private unnamed_addr constant [7 x i8] c"driver\00", align 1
-@27 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
+@27 = private unnamed_addr constant [212 x i8] c"At 6:39 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -52,7 +52,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %8, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 %2, i32 1, i32 1, i32 3)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 %2, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
@@ -70,7 +70,7 @@ ifcont:                                           ; preds = %.entry
   br i1 %16, label %then2, label %ifcont3
 
 then2:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 %10, i32 1, i32 1, i32 3)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 %10, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
@@ -88,7 +88,7 @@ ifcont3:                                          ; preds = %ifcont
   br i1 %24, label %then4, label %ifcont5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 %18, i32 1, i32 1, i32 3)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 %18, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
@@ -100,7 +100,7 @@ ifcont5:                                          ; preds = %ifcont3
   br i1 %27, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont5
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([143 x i8], [143 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @26, i32 0, i32 0), i32 3, i32 1, i32 2, i32 %26)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([212 x i8], [212 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @26, i32 0, i32 0), i32 3, i32 1, i32 2, i32 %26)
   call void @exit(i32 1)
   unreachable
 
@@ -110,6 +110,9 @@ ifcont7:                                          ; preds = %ifcont5
   br label %return
 
 return:                                           ; preds = %ifcont7
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
@@ -140,7 +143,7 @@ define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
   br i1 %15, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %13)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([190 x i8], [190 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %13)
   call void @exit(i32 1)
   unreachable
 
@@ -151,6 +154,9 @@ ifcont:                                           ; preds = %.entry
   br label %return
 
 return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_driver
+
+FINALIZE_SYMTABLE_driver:                         ; preds = %return
   ret void
 }
 
@@ -192,7 +198,7 @@ ifcont3:                                          ; preds = %else2, %then1
   br i1 %8, label %then4, label %ifcont5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i32 1, i32 1, i32 1, i32 %6)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i32 1, i32 1, i32 1, i32 %6)
   call void @exit(i32 1)
   unreachable
 
@@ -220,7 +226,7 @@ ifcont8:                                          ; preds = %else7, %then6
   br i1 %17, label %then9, label %ifcont10
 
 then9:                                            ; preds = %ifcont8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i32 2, i32 1, i32 1, i32 %15)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i32 2, i32 1, i32 1, i32 %15)
   call void @exit(i32 1)
   unreachable
 
@@ -248,7 +254,7 @@ ifcont13:                                         ; preds = %else12, %then11
   br i1 %26, label %then14, label %ifcont15
 
 then14:                                           ; preds = %ifcont13
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %24)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %24)
   call void @exit(i32 1)
   unreachable
 
@@ -271,6 +277,9 @@ ifcont18:                                         ; preds = %else17, %then16
   br label %return
 
 return:                                           ; preds = %ifcont18
+  br label %FINALIZE_SYMTABLE_implicit_interface_check
+
+FINALIZE_SYMTABLE_implicit_interface_check:       ; preds = %return
   ret void
 }
 

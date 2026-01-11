@@ -231,6 +231,9 @@ ifcont28:                                         ; preds = %else27, %then26
   br label %return
 
 return:                                           ; preds = %ifcont28
+  br label %FINALIZE_SYMTABLE_doloop_03
+
+FINALIZE_SYMTABLE_doloop_03:                      ; preds = %return
   ret i32 0
 }
 

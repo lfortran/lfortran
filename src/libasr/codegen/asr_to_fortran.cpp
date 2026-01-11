@@ -246,6 +246,9 @@ public:
                         }
                     }
                 }
+                if (arr_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    bounds = "..";
+                }
                 r = get_type(arr_type->m_type, type_decl) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
@@ -780,7 +783,7 @@ public:
             r += " = ";
             visit_expr(*x.m_symbolic_value);
             r += src;
-        } else if (x.m_value) {
+        } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 r += " => ";
             } else {
@@ -1270,35 +1273,105 @@ public:
     // void visit_FileInquire(const ASR::FileInquire_t &x) {}
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        std::string r = indent;
-        r += "write";
-        r += "(";
-        if (!x.m_unit) {
-            r += "*, ";
-        }
+        ASR::StringFormat_t *sf = nullptr;
         if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
-            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
-            if(sf->m_fmt){
+            sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        }
+
+        std::string unit_src;
+        if (x.m_unit) {
+            visit_expr(*x.m_unit);
+            unit_src = src;
+        } else {
+            unit_src = "*";
+        }
+
+        std::string fmt_src = "*";
+        if (sf) {
+            if (sf->m_fmt) {
                 visit_expr(*sf->m_fmt);
+                fmt_src = src;
                 if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
-                        && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
-                    src = "\"(" + src.substr(1, src.size()-2) + ")\"";
+                        && (!startswith(fmt_src, "\"(") || !endswith(fmt_src, ")\""))) {
+                    fmt_src = "\"(" + fmt_src.substr(1, fmt_src.size()-2) + ")\"";
                 }
-                r += src;
             } else {
-                r += "*";
+                fmt_src = "*";
+            }
+        }
+
+        std::string iomsg_src, iostat_src, id_src, end_src;
+        if (x.m_iomsg) {
+            visit_expr(*x.m_iomsg);
+            iomsg_src = src;
+        }
+        if (x.m_iostat) {
+            visit_expr(*x.m_iostat);
+            iostat_src = src;
+        }
+        if (x.m_id) {
+            visit_expr(*x.m_id);
+            id_src = src;
+        }
+        if (x.m_end) {
+            visit_expr(*x.m_end);
+            end_src = src;
+        }
+
+        auto build_prefix = [&](std::string &out) {
+            out = indent;
+            out += "write";
+            out += "(";
+            out += unit_src;
+            out += ", ";
+            out += fmt_src;
+            if (!iomsg_src.empty()) {
+                out += ", iomsg=";
+                out += iomsg_src;
+            }
+            if (!iostat_src.empty()) {
+                out += ", iostat=";
+                out += iostat_src;
+            }
+            if (!id_src.empty()) {
+                out += ", id=";
+                out += id_src;
+            }
+            if (x.m_end) {
+                out += ", advance='no'";
+            }
+            out += ") ";
+        };
+
+        std::string r;
+        build_prefix(r);
+        if (sf) {
+            for (size_t i = 0; i < sf->n_args; i++) {
+                visit_expr(*sf->m_args[i]);
+                r += src;
+                if (i < sf->n_args - 1) r += ", ";
             }
         } else {
-            r += "*";
-        }
-        r += ") ";
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
-            r += src;
-            if (i < x.n_values-1) r += ", ";
+            for (size_t i = 0; i < x.n_values; i++) {
+                visit_expr(*x.m_values[i]);
+                r += src;
+                if (i < x.n_values - 1) r += ", ";
+            }
         }
         handle_line_truncation(r, 2);
         r += "\n";
+
+        if (x.m_end) {
+            std::string end_stmt = indent;
+            end_stmt += "write(";
+            end_stmt += unit_src;
+            end_stmt += ", '(A)', advance='no') ";
+            end_stmt += end_src;
+            handle_line_truncation(end_stmt, 2);
+            end_stmt += "\n";
+            r += end_stmt;
+        }
+
         src = r;
     }
 
@@ -1330,6 +1403,58 @@ public:
         if (x.n_default > 0) {
             r += indent;
             r += "case default\n";
+            inc_indent();
+            for(size_t i = 0; i < x.n_default; i ++) {
+                visit_stmt(*x.m_default[i]);
+                r += src;
+            }
+            dec_indent();
+        }
+        dec_indent();
+        r += indent;
+        r += "end select\n";
+        src = r;
+    }
+
+    void visit_SelectRank(const ASR::SelectRank_t &x) {
+        std::string r = indent;
+        r += "select rank";
+        r += " (";
+        visit_expr(*x.m_selector);
+        r += src;
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        inc_indent();
+        if (x.n_body > 0) {
+            for(size_t i=0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::RankExpr_t>(*x.m_body[i])) {
+                    ASR::RankExpr_t* rank_expr = ASR::down_cast<ASR::RankExpr_t>(x.m_body[i]);
+                    r += indent;
+                    r += "rank(";
+                    visit_expr(*rank_expr->m_rank);
+                    r += src;
+                    r += ")\n";
+                    inc_indent();
+                    for(size_t j=0; j < rank_expr->n_body; j++) {
+                        if (ASR::is_a<ASR::BlockCall_t>(*rank_expr->m_body[j])) {
+                            ASR::BlockCall_t* block_call = ASR::down_cast<ASR::BlockCall_t>(rank_expr->m_body[j]);
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
+                            ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                            for(size_t k=0; k < block->n_body; k++) {
+                                visit_stmt(*block->m_body[k]);
+                                r += src;
+                            }
+                        }
+                    }
+                    dec_indent();
+                }
+            }
+        }
+        // Rank Default
+        if (x.n_default > 0) {
+            r += indent;
+            r += "rank default\n";
             inc_indent();
             for(size_t i = 0; i < x.n_default; i ++) {
                 visit_stmt(*x.m_default[i]);
@@ -1637,6 +1762,28 @@ public:
         src = out;
     }
 
+    void handle_cmplx_intrinsic(std::string &out, const ASR::IntrinsicElementalFunction_t &x) {
+        visit_expr(*x.m_args[0]);
+        std::string arg1 = src;
+
+        bool first_is_complex = ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x.m_args[0]));
+
+        out += "(" + arg1;
+
+        if (!first_is_complex && x.n_args >= 2) {
+            visit_expr(*x.m_args[1]);
+            out += ", " + src;
+        }
+
+        if (x.n_args == 3) {
+            visit_expr(*x.m_args[2]);
+            out += ", kind=" + src;
+        }
+
+        out += ")";
+        src = out;
+    }
+
     void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
         if ( x.m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CompilerVersion) ) {
             src = "";
@@ -1647,6 +1794,10 @@ public:
         }
         src = "";
         out += func_name;
+        if (to_lower(func_name) == "cmplx") {
+            handle_cmplx_intrinsic(out, x);
+            return;
+        }
         if (x.n_args > 0) visit_expr(*x.m_args[0]);
         out += "(" + src;
         for (size_t i = 1; i < x.n_args; i++) {
@@ -1667,13 +1818,13 @@ public:
         else if(intrinsic_func_name == "SelectedRealKind") intrinsic_func_name = "selected_real_kind";
         else if(intrinsic_func_name == "SelectedIntKind") intrinsic_func_name = "selected_int_kind";
         else if(intrinsic_func_name == "SelectedCharKind") intrinsic_func_name = "selected_char_kind";
+        else if(intrinsic_func_name == "SelectedLogicalKind") intrinsic_func_name = "selected_logical_kind";
         else if(intrinsic_func_name == "LogGamma") intrinsic_func_name = "log_gamma";
         else if(intrinsic_func_name == "SetExponent") intrinsic_func_name = "set_exponent";
         else if(intrinsic_func_name == "Mergebits") intrinsic_func_name = "merge_bits";
         else if(intrinsic_func_name == "StringLenTrim") intrinsic_func_name = "len_trim";
         else if(intrinsic_func_name == "StringTrim") intrinsic_func_name = "trim";
         else if(intrinsic_func_name == "MoveAlloc") intrinsic_func_name = "move_alloc";
-        else if(intrinsic_func_name == "CompilerOptions") intrinsic_func_name = "compiler_options";
         else if(intrinsic_func_name == "CompilerVersion") intrinsic_func_name = "compiler_version";
         else if(intrinsic_func_name == "CommandArgumentCount") intrinsic_func_name = "command_argument_count";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
@@ -1957,6 +2108,11 @@ public:
             src.append(x.m_s);
         }
         src += "\"";
+        last_expr_precedence = Precedence::Ext;
+    }
+
+    void visit_CompilerOptions(const ASR::CompilerOptions_t &/*x*/) {
+        src = "compiler_options()";
         last_expr_precedence = Precedence::Ext;
     }
 

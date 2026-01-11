@@ -110,6 +110,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedIntKind,
     SelectedRealKind,
     SelectedCharKind,
+    SelectedLogicalKind,
     Adjustl,
     Adjustr,
     StringConcat,
@@ -140,7 +141,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     CompilerVersion,
-    CompilerOptions,
     CommandArgumentCount,
     SignFromValue,
     Logical,
@@ -169,6 +169,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Popcnt,
     Poppar,
     Real,
+    Cmplx,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -219,6 +220,41 @@ typedef void (*verify_function)(
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_func)(Allocator&, ASR::ttype_t*);
+
+// Check if expression contains FunctionCall - used to determine if we need
+// FunctionCall wrapper (for proper pass handling) vs direct IntrinsicElementalFunction
+static inline bool contains_function_call(ASR::expr_t* expr) {
+    if (!expr) return false;
+    switch (expr->type) {
+        case ASR::exprType::FunctionCall:
+            return true;
+        case ASR::exprType::IntrinsicElementalFunction: {
+            auto* x = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (contains_function_call(x->m_args[i])) return true;
+            }
+            return false;
+        }
+        case ASR::exprType::StringLen:
+            return contains_function_call(ASR::down_cast<ASR::StringLen_t>(expr)->m_arg);
+        case ASR::exprType::Cast:
+            return contains_function_call(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        case ASR::exprType::IntegerBinOp: {
+            auto* x = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            return contains_function_call(x->m_left) || contains_function_call(x->m_right);
+        }
+        case ASR::exprType::RealBinOp: {
+            auto* x = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            return contains_function_call(x->m_left) || contains_function_call(x->m_right);
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+            return contains_function_call(ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+        case ASR::exprType::RealUnaryMinus:
+            return contains_function_call(ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_arg);
+        default:
+            return false;
+    }
+}
 
 namespace UnaryIntrinsicFunction {
 
@@ -832,7 +868,18 @@ namespace Abs {
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM fabs/select intrinsics
+        if ((is_integer(*arg_types[0]) || is_real(*arg_types[0])) &&
+            !contains_function_call(new_args[0].m_value)) {
+            Vec<ASR::expr_t*> args; args.reserve(al, 1);
+            args.push_back(al, new_args[0].m_value);
+            return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Abs),
+                args.p, 1, overload_id, return_type, nullptr));
+        }
+        // Complex or args contain FunctionCall: create wrapper function
         std::string func_name = "_lcompilers_abs_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
         declare_basic_variables(func_name);
         if (scope->get_symbol(func_name)) {
@@ -842,13 +889,6 @@ namespace Abs {
         }
         fill_func_arg("x", arg_types[0]);
         auto result = declare(func_name, return_type, ReturnVar);
-        /*
-            * if (x >= 0) then
-            *     r = x
-            * else
-            *     r = -x
-            * end if
-        */
         if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
             if (is_integer(*arg_types[0])) {
                 body.push_back(al, b.If(b.GtE(args[0], b.i_t(0, arg_types[0])), {
@@ -864,7 +904,7 @@ namespace Abs {
                 }));
             }
         } else {
-            // * Complex type: `r = (real(x)**2 + aimag(x)**2)**0.5`
+            // Complex type: r = sqrt(real(x)**2 + aimag(x)**2)
             ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
                                         ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
             ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
@@ -1199,29 +1239,20 @@ namespace CompilerVersion {
 
 namespace CompilerOptions {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 0,
-            "compiler_options() takes no argument",
-            x.base.base.loc, diagnostics);
-    }
-
-    static ASR::expr_t *eval_CompilerOptions(Allocator &al, const Location &loc,
-            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        ASRUtils::ASRBuilder b(al, loc);
-        return b.StringConstant(lcompilers_commandline_options, character(lcompilers_commandline_options.length()));
-    }
-
     static inline ASR::asr_t* create_CompilerOptions(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASRUtils::ASRBuilder b(al, loc);
-        ASR::ttype_t *return_type = b.String(nullptr, ASR::DeferredLength);
-        ASR::expr_t *m_value = nullptr;
-        return_type = ASRUtils::extract_type(return_type);
-        m_value = eval_CompilerOptions(al, loc, return_type, args, diag);
-        if (diag.has_error()) {
+        if (args.size() != 0) {
+            diag.semantic_error_label("compiler_options() takes no arguments", {loc}, "");
             return nullptr;
         }
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
-                nullptr, 0, 0, return_type, m_value);
+        // Create CompilerOptions ASR node with the current compiler options string
+        char* c_str = s2c(al, lcompilers_commandline_options);
+        size_t str_len = lcompilers_commandline_options.length();
+        // Create a string type with the actual length of the compiler options string
+        ASR::expr_t* len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            str_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::Decimal));
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 
+            1, len_expr, ASR::ExpressionLength, ASR::DescriptorString));
+        return ASR::make_CompilerOptions_t(al, loc, c_str, return_type);
     }
 } // namespace CompilerOptions
 
@@ -3616,7 +3647,6 @@ namespace Maskl {
         *    end if
         *end if
         */
-    //    std::cout<<ASRUtils::extract_kind_from_ttype_t(return_type)<<" "<<ASRUtils::extract_kind_from_ttype_t(arg_types[0])<<std::endl;
        if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
             body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
                 b.Assignment(result, b.i_t(-1, return_type))
@@ -4185,6 +4215,145 @@ namespace Real {
 
 } // namespace Real
 
+namespace Cmplx {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args > 3)  {
+            ASRUtils::require_impl(false, "Unexpected number of args, `cmplx` takes atleast 1 and atmost 3 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        ASRUtils::ASRBuilder b(al, loc);
+        double arg1_val = 0.0;
+        double arg2_val = 0.0;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[0])) {
+            arg1_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            // If the first argument is already a complex constant, construct
+            // a complex constant of the requested return type `t1` to ensure
+            // the kind matches (e.g., cmplx(complex(4), kind=8)).
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
+            double im = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_im;
+            return b.complex_t(re, im, t1);
+        } else {
+            append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
+            return nullptr;
+        }
+
+        if (ASR::is_a<ASR::RealConstant_t>(*args[1])) {
+            arg2_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r;
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+            arg2_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[1])) {
+           arg2_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
+        } else {
+            append_error(diag, "Invalid second argument to `cmplx` intrinsic", loc);
+            return nullptr;
+        }
+        return b.complex_t(arg1_val, arg2_val, t1);
+    }
+
+    static inline ASR::asr_t* create_Cmplx(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASRUtils::ASRBuilder b(al, loc);
+        if (args[0] == nullptr) {
+                append_error(diag, "The first argument of `cmplx` intrinsic must be present", loc);
+                return nullptr;
+        } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(args[0]))) {
+            if (args[1]) {
+                append_error(diag, "The first argument of `cmplx` intrinsic is of complex type, the second argument in this case must be absent", loc);
+                return nullptr;
+            }
+        }
+       
+        ASR::ttype_t *return_type = complex32;
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, args[0]);
+        if (args[1])  m_args.push_back(al, args[1]);
+        else m_args.push_back(al, b.f32(0.0));
+        m_args.push_back(al, args[2]);
+        if ( args[2] != nullptr ) {
+            int kind = -1;
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[2])) || !extract_value(ASRUtils::expr_value(args[2]), kind)) {
+                append_error(diag, "`kind` argument of the `Cmplx` function must be a scalar Integer constant", args[2]->base.loc);
+                return nullptr;
+            }
+            set_kind_to_ttype_t(return_type, kind);
+        }
+        for( size_t i = 0; i < 1; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);
+                break;
+            }
+        }
+
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
+            args_values.push_back(al, expr_value(m_args[0]));
+            args_values.push_back(al, expr_value(m_args[1]));
+            args_values.push_back(al, expr_value(m_args[2]));
+            m_value = eval_Cmplx(al, loc, return_type, args_values, diag);
+            if (diag.has_error()) {
+                return nullptr;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx), m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Cmplx(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_cmplx_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("kind", int32);
+                
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function cmplx(a) result(result)
+            any :: a
+            cmplx :: result
+            result = a
+        end function
+        */
+        if (is_integer(*arg_types[0])) {
+            if (is_integer(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  b.i2r_t(args[1], real32), return_type, nullptr))));
+            } else if (is_real(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  args[1], return_type, nullptr))));
+            }
+        } else if (is_real(*arg_types[0])) {
+            if (is_integer(*arg_types[1])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0], b.i2r_t(args[1], real32), return_type, nullptr))));
+            } else if (is_real(*arg_types[0])) {
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0],  args[1], return_type, nullptr))));
+            }
+        } else if (is_complex(*arg_types[0])) {
+            if (ASRUtils::check_equal_type(ASRUtils::expr_type(args[0]), return_type, args[0], nullptr)) {
+                body.push_back(al, b.Assignment(result, args[0]));
+            } else {
+                body.push_back(al, b.Assignment(result, b.c2c_t(args[0], return_type)));
+            }
+        } else {
+            throw LCompilersException("Invalid argument to `cmplx` intrinsic");
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Cmplx
+
 namespace Mergebits {
 
     static int compute_merge_bits(int a, int b, int mask, int total_bits) {
@@ -4680,6 +4849,66 @@ namespace SelectedCharKind {
 
 } // namespace SelectedCharKind
 
+namespace SelectedLogicalKind {
+
+    static inline ASR::expr_t *eval_SelectedLogicalKind(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t bits = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t kind;
+        if (bits <= 8) {
+            kind = 1;
+        } else if (bits <= 16) {
+            kind = 2;
+        } else if (bits <= 32) {
+            kind = 4;
+        } else if (bits <= 64) {
+            kind = 8;
+        } else if (bits <= 128) {
+            kind = 16;
+        } else {
+            kind = -1;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.i32(kind);
+    }
+
+    static inline ASR::expr_t* instantiate_SelectedLogicalKind(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_selected_logical_kind_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        fill_func_arg("bits", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        body.push_back(al, b.If(b.LtE(args[0], b.i_t(8, arg_types[0])), {
+            b.Assignment(result, b.i_t(1, return_type))
+        }, {
+            b.If(b.LtE(args[0], b.i_t(16, arg_types[0])), {
+                b.Assignment(result, b.i_t(2, return_type))
+            }, {
+                b.If(b.LtE(args[0], b.i_t(32, arg_types[0])), {
+                    b.Assignment(result, b.i_t(4, return_type))
+                }, {
+                    b.If(b.LtE(args[0], b.i_t(64, arg_types[0])), {
+                        b.Assignment(result, b.i_t(8, return_type))
+                    }, {
+                        b.If(b.LtE(args[0], b.i_t(128, arg_types[0])), {
+                            b.Assignment(result, b.i_t(16, return_type))
+                        }, {
+                            b.Assignment(result, b.i_t(-1, return_type))
+                        })
+                    })
+                })
+            })
+        }));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace SelectedLogicalKind
+
 namespace Kind {
 
     static ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
@@ -4981,55 +5210,82 @@ namespace StringConcat {
     }
 
     
+    // Compute string length expression without embedding nested StringConcats.
+    // For StringConcat expressions, recursively compute len(arg1) + len(arg2).
+    // For other expressions, use StringLen directly.
+    inline ASR::expr_t* get_safe_string_len(Allocator &al, const Location &loc,
+            ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
+        if (str_type->m_len) {
+            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+        }
+        // For deferred-length strings, check if expr is a StringConcat.
+        // If so, recursively compute the length to avoid embedding the
+        // StringConcat expression in a StringLen node (which causes infinite
+        // recursion when the visitor processes the call arguments).
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+            ASR::IntrinsicElementalFunction_t* ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            if (ief->m_intrinsic_id == static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat)) {
+                ASR::expr_t* len1 = get_safe_string_len(al, loc, ief->m_args[0],
+                    ASRUtils::expr_type(ief->m_args[0]), b);
+                ASR::expr_t* len2 = get_safe_string_len(al, loc, ief->m_args[1],
+                    ASRUtils::expr_type(ief->m_args[1]), b);
+                return b.Add(len1, len2);
+            }
+        }
+        return b.StringLen(expr);
+    }
+
     inline ASR::expr_t* instantiate_StringConcat(Allocator &al, const Location &loc,
-        SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t* /*return_type*/,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* /*return_type*/,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
         char intrinsic_fn_name[] = "_lcompilers_stringconcat";
-        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){ //Avoid duplication
-            ASRBuilder b(al, loc);
-            ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-            return f_call;
-        }
-        
         declare_basic_variables(intrinsic_fn_name)
 
-        /* Args */
+        // Compute argument lengths safely, avoiding circular references for
+        // nested StringConcat expressions.
+        ASR::expr_t* s1_len_arg = get_safe_string_len(al, loc, new_args[0].m_value, arg_types[0], b);
+        ASR::expr_t* s2_len_arg = get_safe_string_len(al, loc, new_args[1].m_value, arg_types[1], b);
+
+        // Build call_args with explicit lengths
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 4);
+        call_args.push_back(al, new_args[0]);
+        call_args.push_back(al, new_args[1]);
+        ASR::call_arg_t len1_arg; len1_arg.loc = loc; len1_arg.m_value = s1_len_arg;
+        ASR::call_arg_t len2_arg; len2_arg.loc = loc; len2_arg.m_value = s2_len_arg;
+        call_args.push_back(al, len1_arg);
+        call_args.push_back(al, len2_arg);
+
+        if(ASR::symbol_t* f_sym = scope->resolve_symbol(intrinsic_fn_name)){
+            return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
+        }
+
+        /* Function signature: (s1, s2, s1_len, s2_len) -> concat_result */
         fill_func_arg("s1", b.String(nullptr, ASR::AssumedLength))
         fill_func_arg("s2", b.String(nullptr, ASR::AssumedLength))
+        fill_func_arg("s1_len", int32)
+        fill_func_arg("s2_len", int32)
 
-        /* Return Variable */
         ASR::expr_t* ret_var = declare(
-                                "concat_result",
-                                b.String(b.Add(b.StringLen(args[0]) /* s1 */, b.StringLen(args[1]) /* s2 */), ASR::ExpressionLength),
-                                ReturnVar);
+            "concat_result",
+            b.String(b.Add(args[2], args[3]), ASR::ExpressionLength),
+            ReturnVar);
 
-        /* Body */
-        /*
-            function lcompilers_stringconcat(s1, s2) result(concat_result)
-                character(*) :: s1
-                character(*) :: s2
-                character(len(s1) + len(s2)) :: concat_result
-                concat_result(1 : len(s1)) = s1
-                concat_result(len(s1) + 1 : len(concat_result)) = s2
-            end function
-        */
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.i32(1), b.StringLen(args[0]/*s1*/)), args[0]));
-        body.push_back(al, b.Assignment(b.StringSection(ret_var, b.Add(b.StringLen(args[0]/*s1*/), b.i32(1)), b.StringLen(ret_var)), args[1]));
+        /* Body: copy s1 then s2 into result using explicit lengths */
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.i32(1), args[2]),
+            args[0]));
+        body.push_back(al, b.Assignment(
+            b.StringSection(ret_var, b.Add(args[2], b.i32(1)), b.StringLen(ret_var)),
+            args[1]));
 
-        /* Create The function symbol */
-        ASR::symbol_t *f_sym = make_ASR_Function_t( 
-                                fn_name, fn_symtab,
-                                dep, args,
-                                body,
-                                ret_var,
-                                ASR::abiType::Source,
-                                ASR::deftypeType::Implementation,
-                                nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(
+            fn_name, fn_symtab, dep, args, body, ret_var,
+            ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_or_overwrite_symbol(fn_name, f_sym);
 
-        /* Create Call + Replace FuncParams */
-        ASR::expr_t* f_call = b.Call(f_sym, new_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
-        return f_call;
+        return b.Call(f_sym, call_args, ASRUtils::get_FunctionType(f_sym)->m_return_var_type, nullptr);
     }
 
 }
@@ -6480,10 +6736,31 @@ namespace Max {
 
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM FCmp+select
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            bool has_func_call = false;
+            for (size_t i = 0; i < new_args.size(); i++) {
+                if (contains_function_call(new_args[i].m_value)) {
+                    has_func_call = true;
+                    break;
+                }
+            }
+            if (!has_func_call) {
+                Vec<ASR::expr_t*> args; args.reserve(al, new_args.size());
+                for (size_t i = 0; i < new_args.size(); i++) {
+                    args.push_back(al, new_args[i].m_value);
+                }
+                return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+                    args.p, args.size(), overload_id, return_type, nullptr));
+            }
+        }
+        // String or args contain FunctionCall: create wrapper function
         declare_basic_variables("_lcompilers_max0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-        ASR::ttype_t* function_return_type = return_type; // Function-variable-return type.
+        ASR::ttype_t* function_return_type = return_type;
         if (ASRUtils::is_string_only(arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
@@ -6499,34 +6776,15 @@ namespace Max {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, function_return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Gt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else {
-            LCOMPILERS_ASSERT(false);
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Gt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
         }
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -6651,10 +6909,30 @@ namespace Min {
 
     static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        // For integer/real without FunctionCall in args: use IntrinsicElementalFunction
+        // which gets lowered to LLVM FCmp+select
+        if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
+            bool has_func_call = false;
+            for (size_t i = 0; i < new_args.size(); i++) {
+                if (contains_function_call(new_args[i].m_value)) {
+                    has_func_call = true;
+                    break;
+                }
+            }
+            if (!has_func_call) {
+                Vec<ASR::expr_t*> args; args.reserve(al, new_args.size());
+                for (size_t i = 0; i < new_args.size(); i++) {
+                    args.push_back(al, new_args[i].m_value);
+                }
+                return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(IntrinsicElementalFunctions::Min),
+                    args.p, args.size(), overload_id, return_type, nullptr));
+            }
+        }
+        // String or args contain FunctionCall: create wrapper function
         declare_basic_variables("_lcompilers_min0_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
@@ -6671,38 +6949,21 @@ namespace Min {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
-        if (ASR::is_a<ASR::Integer_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
-        } else if (ASR::is_a<ASR::String_t>(*return_type)) {
-            for (size_t i = 1; i < args.size(); i++) {
-                body.push_back(al, b.If(b.Lt(args[i], result), {
-                    b.Assignment(result, args[i])
-                }, {}));
-            }
+        for (size_t i = 1; i < args.size(); i++) {
+            body.push_back(al, b.If(b.Lt(args[i], result), {
+                b.Assignment(result, args[i])
+            }, {}));
+        }
+        if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
-
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);

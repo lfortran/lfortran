@@ -111,7 +111,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.files.back().in_filename,
+        pass_manager, diagnostics, lm, lm.files.back().in_filename,
         nullptr);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
@@ -334,7 +334,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         return asr.error;
     }
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
-        diagnostics, lm.files.back().in_filename, nullptr);
+        diagnostics, lm, lm.files.back().in_filename, nullptr);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -356,10 +356,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
-    diag::Diagnostics &diagnostics
+    diag::Diagnostics &diagnostics, LocationManager& lm
 #else
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
-    diag::Diagnostics &/*diagnostics*/
+    diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
   [[maybe_unused]] int* time_opt=nullptr)
@@ -372,25 +372,12 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
-    if (compiler_options.emit_debug_info) {
-        if (!compiler_options.emit_debug_line_column) {
-            diagnostics.add(LCompilers::diag::Diagnostic(
-                "The `emit_debug_line_column` is not enabled; please use the "
-                "`--debug-with-line-column` option to get the correct "
-                "location information",
-                LCompilers::diag::Level::Error,
-                LCompilers::diag::Stage::Semantic, {})
-            );
-            Error err;
-            return err;
-        }
-    }
     // ASR -> LLVM
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn, "", infile);
+            compiler_options, run_fn, "", infile, lm);
     if (res.ok) {
         m = std::move(res.result);
     } else {

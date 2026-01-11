@@ -88,6 +88,9 @@ ifcont5:                                          ; preds = %else4, %then3
   br label %return
 
 return:                                           ; preds = %ifcont5
+  br label %FINALIZE_SYMTABLE_associate_03
+
+FINALIZE_SYMTABLE_associate_03:                   ; preds = %return
   ret i32 0
 }
 

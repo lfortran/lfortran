@@ -854,29 +854,31 @@ namespace LCompilers {
 
         ASR::expr_t* create_compare_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                                 ASR::cmpopType op) {
-            ASR::ttype_t* type = ASRUtils::expr_type(left);
-            ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::ttype_t* const cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::ttype_t* const l_type = ASRUtils::expr_type(left);
+            ASR::ttype_t* const r_type = ASRUtils::expr_type(right);
+            LCOMPILERS_ASSERT(ASRUtils::extract_type(l_type)->type == ASRUtils::extract_type(r_type)->type)
             // TODO: compute `value`:
-            int lhs_kind = ASRUtils::extract_kind_from_ttype_t(type);
-            int rhs_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(right));
-            if (ASRUtils::is_integer(*type)) {
-                if (lhs_kind != rhs_kind) {
-                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::IntegerToInteger, type, nullptr));
-                }
+
+            ASRUtils::ASRBuilder b(al, loc);
+            const int lhs_kind = ASRUtils::extract_kind_from_ttype_t(l_type);
+            const int rhs_kind = ASRUtils::extract_kind_from_ttype_t(r_type);
+            // Cast to largest kind
+            if (lhs_kind > rhs_kind) { 
+                right = b.t2t(right, r_type, l_type);
+            } else if (lhs_kind < rhs_kind){
+                left = b.t2t(left, l_type, r_type);
+            }
+
+            if (ASRUtils::is_integer(*l_type)) {
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, op, right, cmp_type, nullptr));
-            } else if (ASRUtils::is_real(*type)) {
-                if (lhs_kind != rhs_kind) {
-                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::RealToReal, type, nullptr));
-                }
+            } else if (ASRUtils::is_real(*l_type)) {
                 return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, left, op, right, cmp_type, nullptr));
-            } else if (ASRUtils::is_complex(*type)) {
-                if (lhs_kind != rhs_kind) {
-                    right = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, right, ASR::cast_kindType::ComplexToComplex, type, nullptr));
-                }
+            } else if (ASRUtils::is_complex(*l_type)) {
                 return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, left, op, right, cmp_type, nullptr));
-            } else if (ASRUtils::is_logical(*type)) {
+            } else if (ASRUtils::is_logical(*l_type)) {
                 return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, left, op, right, cmp_type, nullptr));
-            } else if (ASRUtils::is_character(*type)) {
+            } else if (ASRUtils::is_character(*l_type)) {
                 return ASRUtils::EXPR(ASR::make_StringCompare_t(al, loc, left, op, right, cmp_type, nullptr));
             } else {
                 throw LCompilersException("Type not supported");

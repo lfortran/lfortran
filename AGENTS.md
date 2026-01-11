@@ -24,11 +24,6 @@ reference how to contribute to the project.
   - `cmake --build build -j`
 - Release build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_LLVM=ON`
 - Tests: `./run_tests.py` (compiler); `cd integration_tests && ./run_tests.py -j16`
-- Local integration tip (LLVM): some evaluator/diagnostic paths require precise
-  location info. When running integration tests locally with the LLVM backend,
-  prefer injecting the flag via environment rather than changing CMake:
-  - `cd integration_tests && FFLAGS="--debug-with-line-column" ./run_tests.py -j8`
-  This mirrors CI closely while enabling line/column emission.
 
 ## Quick Smoke Test
 - We usually build with LLVM enabled (`-DWITH_LLVM=ON`).
@@ -89,15 +84,11 @@ reference how to contribute to the project.
 - Minimal local (without micromamba):
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
   - Run: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16`
-  - If diagnostics need line/column mapping during local debugging, inject:
-    `FFLAGS="--debug-with-line-column" ./run_tests.py -b llvm`
-- If builds fail with messages about missing debug info or line/column emission:
+- If builds fail with messages about missing debug info:
   - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
     `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
   - Rebuild with runtime stacktraces if needed:
     `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes -DWITH_UNWIND=ON`
-  - Run integration with LFortran flags injected via env:
-    `FFLAGS="--debug-with-line-column" ./run_tests.py -j8`
   - More details: `integration_tests/run_tests.py` (CLI flags and supported backends).
 
 ### Unit/Reference Tests (`tests/`)

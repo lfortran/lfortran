@@ -91,7 +91,7 @@ end module continue_compilation_2_mod
 ! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_2
     use continue_compilation_2_mod
-    use iso_fortran_env
+    
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
     implicit real(a-z)
@@ -246,7 +246,7 @@ program continue_compilation_2
     ! close_invalid_kwarg1
     CLOSE(end=200)
     ! cmplx_01
-    a = cmplx(y = 2)
+    print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
     ! cmplx_02
     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
     ! cmplx_03
@@ -462,6 +462,8 @@ program continue_compilation_2
     !size_intrinsic_check
     print *, size(ichar_runtime)
     lhs = rhs
+    print *, index( substring = 'de', back = .true. )
+    print *, compiler_options()
     contains
     logical function f(x)
         integer, intent(in), optional :: x
@@ -469,3 +471,9 @@ program continue_compilation_2
     end function
 
 end program
+
+! Test for multiple PROGRAM units in same file
+program second_program_test
+    implicit none
+    print *, "This is a second program - should cause error"
+end program second_program_test

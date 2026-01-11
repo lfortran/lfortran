@@ -98,34 +98,28 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing fortran-regex" '
-  git clone https://github.com/perazz/fortran-regex.git
+  git clone https://github.com/jinangshah21/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf1
   micromamba install -c conda-forge fpm
 
-  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  git checkout c3807f49bf3a88df9b1527b2c49fc956abb77398
   fpm --compiler=$FC build
-  
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes"
+  fpm --compiler=$FC test
 
   print_success "Done with fortran-regex"
   cd ..
 '
 
 time_section "🧪 Testing fortran-shlex" '
-  git clone https://github.com/jinangshah21/fortran-shlex.git
+  git clone https://github.com/perazz/fortran-shlex.git
   cd fortran-shlex
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-1
   micromamba install -c conda-forge fpm
 
-  git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
- 
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --realloc-lhs-arrays"
 
   print_success "Done with fortran-shlex"
   cd ..
@@ -135,14 +129,12 @@ time_section "🧪 Testing toml-f" '
   git clone https://github.com/jinangshah21/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-2
+  git checkout lf-7
   micromamba install -c conda-forge fpm
 
-  git checkout 38c294fc5d9cb5fa6a9d3569514da28b8705f3fb
-  fpm --compiler=$FC build
-  
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes"
+  git checkout 65ef20430e2543ac89a5558a11ae1c8404d46763
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
   print_success "Done with toml-f"
   cd ..
@@ -152,14 +144,11 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-4
+  git checkout lf-6
   micromamba install -c conda-forge fpm
 
-  git checkout 81ee9efbf265301986d3ab682994f63c1a20f1cc
+  git checkout 1055a955a87fd16f88be93a4779cee54fdb2c70a
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
-  
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--new-classes --cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
   cd ..
@@ -169,15 +158,12 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
+  git checkout lf-7
   micromamba install -c conda-forge fpm
-  git checkout 600737dc23004c1efa10d2233d4a631d0521fd53
+  git checkout edf5c93091ff257eeefb916045ab47d76a3c358e
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
-  git clean -dfx
-  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --new-classes"
-  fpm --compiler=$FC test --flag "--realloc-lhs-arrays --new-classes"
   print_success "Done with M_CLI2"
   cd ..
 '
@@ -254,13 +240,6 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
       -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
-  git clean -dfx
-  FC=$FC cmake . \
-      -DTEST_DRIVE_BUILD_TESTING=OFF \
-      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--new-classes --cpp --realloc-lhs-arrays --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
-  make -j8
-  ctest
 
   git clean -dfx
   git restore .
@@ -285,11 +264,11 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-7
+  git checkout lf-15
   micromamba install -c conda-forge fpm
-  git checkout 0495209655831f5a13f643feaa790e08851adf8a
-  fpm --compiler=$FC build
-  fpm --compiler=$FC build --flag "--new-classes"
+  git checkout 03ec186d812777552595624103a22470a4f24b25
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
   cd ..
 '
@@ -881,7 +860,89 @@ time_section "🧪 Testing SNAP" '
     make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
+##########################
+# Section 13: LAPACK
+##########################
+time_section "🧪 Testing LAPACK" '
+    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone https://github.com/gxyd/lapack.git
+    cd lapack
+    git fetch origin lf_07
+    git checkout lf_07
+    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    cd build
+    ./build_lf.sh
+    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
+'
 
+
+##########################
+# Section 14: Reference-LAPACK with BUILD_TESTING
+##########################
+time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING" '
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    cd lapack-testing
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Configure with LFortran and BUILD_TESTING=ON
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=OFF \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=OFF \
+      -DBUILD_COMPLEX16=OFF \
+      -DBUILD_TESTING=ON
+
+    # Build BLAS, LAPACK, and test executables
+    cmake --build build -j8
+
+    cd build
+
+    # Run xlintsts (single real linear equations) - the key test
+    print_subsection "Running xlintsts stest.in"
+    set +e
+    timeout 120 ./bin/xlintsts < ../TESTING/stest.in 2>&1 | tee xlintsts_stest.out
+    exit_code=$?
+    set -e
+
+    echo "xlintsts exit code: $exit_code"
+
+    # Check for failures
+    if [ "$exit_code" -ne 0 ]; then
+        echo "ERROR: xlintsts exited with non-zero status"
+        exit 1
+    fi
+
+    if grep -qE "failed to pass the threshold" xlintsts_stest.out; then
+        echo "ERROR: threshold failures detected"
+        grep "failed to pass the threshold" xlintsts_stest.out
+        exit 1
+    fi
+
+    # Check for error messages (non-zero count before "error messages recorded")
+    if grep -E "[1-9][0-9]* error messages recorded" xlintsts_stest.out; then
+        echo "ERROR: error messages recorded"
+        exit 1
+    fi
+
+    print_success "xlintsts stest.in passed"
+    cd ../..
+'
 
 ##################################
 # Final Summary and Cleanup

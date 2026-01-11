@@ -12,6 +12,9 @@ define i32 @__module_string_54_mod_double_(i32* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_double_
+
+FINALIZE_SYMTABLE_double_:                        ; preds = %return
   %2 = load i32, i32* %ret, align 4
   ret i32 %2
 }
@@ -21,6 +24,9 @@ define void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char) 
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_foo_sub
+
+FINALIZE_SYMTABLE_foo_sub:                        ; preds = %return
   ret void
 }
 
@@ -42,6 +48,12 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_string_54
+
+FINALIZE_SYMTABLE_string_54:                      ; preds = %return
+  br label %Finalize_Variable_char
+
+Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
   %5 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
   %6 = load i8*, i8** %5, align 8
   call void @_lfortran_free(i8* %6)

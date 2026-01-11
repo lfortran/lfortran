@@ -349,6 +349,9 @@ loop.end33:                                       ; preds = %loop.head31
   br label %return
 
 return:                                           ; preds = %loop.end33
+  br label %FINALIZE_SYMTABLE_doloop_04
+
+FINALIZE_SYMTABLE_doloop_04:                      ; preds = %return
   ret i32 0
 }
 

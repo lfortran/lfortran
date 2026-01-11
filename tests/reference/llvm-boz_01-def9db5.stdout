@@ -138,6 +138,9 @@ ifcont20:                                         ; preds = %else19, %then18
   br label %return
 
 return:                                           ; preds = %ifcont20
+  br label %FINALIZE_SYMTABLE_boz_01
+
+FINALIZE_SYMTABLE_boz_01:                         ; preds = %return
   ret i32 0
 }
 

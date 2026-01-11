@@ -18,6 +18,9 @@ define void @__module_dflt_intent_foo(float* %c, float* %d) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_foo
+
+FINALIZE_SYMTABLE_foo:                            ; preds = %return
   ret void
 }
 
@@ -45,6 +48,9 @@ define float @foo.__module_dflt_intent_f(float* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_f
+
+FINALIZE_SYMTABLE_f:                              ; preds = %return
   %12 = load float, float* %f, align 4
   ret float %12
 }
@@ -67,6 +73,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

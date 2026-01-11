@@ -48,6 +48,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
+        bool old_classes = false;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -66,8 +67,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
-        app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-            "Convert the linear location info into line + column in the debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
@@ -126,7 +125,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
-        app.add_flag("--new-classes", compiler_options.new_classes, "Uses the new design for OOPs")->group(group_output_debugging_options);
+        app.add_flag("--old-classes", old_classes, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
@@ -183,6 +182,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
+        app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
 
         // LSP specific options
         app.add_flag("--show-errors", opts.show_errors, "Show errors when LSP is running in the background")->group(group_lsp_options);
@@ -300,10 +300,15 @@ namespace LCompilers::CommandLineInterface {
 
         if (disable_bounds_checking || compiler_options.po.fast) {
             compiler_options.po.bounds_checking = false;
+            compiler_options.po.strict_bounds_checking = false;
         }
 
         if (disable_realloc_lhs) {
             compiler_options.po.realloc_lhs_arrays = false;
+        }
+
+        if (old_classes) {
+            compiler_options.new_classes = false;
         }
 
         compiler_options.use_colors = !opts.arg_no_color;
@@ -354,7 +359,7 @@ namespace LCompilers::CommandLineInterface {
 
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && endswith(opts.arg_file, ".f")) {
+        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 

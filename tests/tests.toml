@@ -522,6 +522,10 @@ filename = "warnings/character_02.f90"
 asr = true
 
 [[test]]
+filename = "warnings/character_03.f90"
+asr = true
+
+[[test]]
 filename = "warnings/preprocess_01.f90"
 asr = true
 
@@ -743,6 +747,10 @@ run = true
 
 [[test]]
 filename = "../integration_tests/error_stop_04.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/write_12.f90"
 run = true
 
 [[test]]
@@ -1543,8 +1551,21 @@ filename = "errors/allocate_01.f90"
 run = true
 
 [[test]]
+filename = "errors/allocated_04.f90"
+run = true
+
+[[test]]
+filename = "errors/allocated_05.f90"
+run = true
+
+[[test]]
 filename = "finalize_01.f90"
 pass = "insert_deallocate"
+llvm = true
+
+[[test]]
+filename = "finalize_02.f90"
+llvm = true
 
 [[test]]
 filename = "../integration_tests/block_01.f90"
@@ -1621,6 +1642,14 @@ run = true
 [[test]]
 filename = "write7.f90"
 asr = true
+
+[[test]]
+filename = "errors/write_01.f90"
+run = true
+
+[[test]]
+filename = "errors/write_02.f90"
+run = true
 
 [[test]]
 filename = "read1.f90"
@@ -1939,6 +1968,18 @@ run = true
 
 [[test]]
 filename = "../integration_tests/format_35.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_37.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_39.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_40.f90"
 run = true
 
 [[test]]
@@ -2736,8 +2777,16 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "optional1.f90"
+filename = "optional_01.f90"
 asr = true
+
+[[test]]
+filename = "optional_02.f90"
+pass = "transform_optional_argument_functions"
+
+[[test]]
+filename = "optional_03.f90"
+pass = "transform_optional_argument_functions"
 
 [[test]]
 filename = "attributes1.f90"
@@ -3172,6 +3221,14 @@ fixed_form_cc_asr = true
 [[test]]
 filename = "errors/continue_compilation_ff_2.f"
 fixed_form_cc_asr = true
+
+[[test]]
+filename = "errors/mre_segfault.f90"
+continue_compilation = true
+
+[[test]]
+filename = "errors/mre_parameter.f90"
+continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
@@ -3874,6 +3931,30 @@ filename = "errors/scalar_allocation_check_01.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_02.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_03.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_04.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_05.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_06.f90"
+run = true
+
+[[test]]
+filename = "errors/matmul_unallocated_01.f90"
+run = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -3888,6 +3969,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_04.f90"
 run = true
+options = "--strict-array-bounds-checking"
 
 [[test]]
 filename = "errors/array_bounds_check_05.f90"
@@ -3907,6 +3989,30 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_09.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_10.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_11.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_12.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_13.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_14.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_15.f90"
 run = true
 
 [[test]]
@@ -4057,6 +4163,10 @@ asr = true
 [[test]]
 filename = "errors/subroutine3.f90"
 asr = true
+
+[[test]]
+filename = "errors/implicit_call_01.f90"
+asr_implicit_typing = true
 
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
@@ -4583,6 +4693,11 @@ asr = true
 [[test]]
 filename = "errors/array_shape_02.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_shape_05.f90"
+run = true
+
 [[test]]
 filename = "function_call1.f90"
 asr = true
@@ -4800,11 +4915,11 @@ ast = true
 
 [[test]]
 filename = "classes1.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "classes2.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "implied_do_loop2.f90"
@@ -4816,8 +4931,25 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/select_type_13.f90"
-llvm_new_classes = true
+llvm = true
 
 [[test]]
 filename = "unlimited_polymorphic_intrinsic_type_allocate.f90"
-llvm_new_classes = true
+llvm = true
+
+[[test]]
+filename = "../integration_tests/transfer_09.f90"
+asr = true
+
+[[test]]
+filename = "namelist_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_101.f90"
+llvm = true
+
+[[test]]
+filename = "stdin_read_blank_lines_01.f90"
+run = true
+options = "< tests/stdin_read_blank_lines_01.in"

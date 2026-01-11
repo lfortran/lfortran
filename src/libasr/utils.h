@@ -68,6 +68,7 @@ struct PassOptions {
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
+    bool strict_bounds_checking = false;
     std::vector<std::string> vector_of_time_report;
 };
 
@@ -100,7 +101,7 @@ struct CompilerOptions {
     std::string column = "";
     bool continue_compilation = false;
     bool semantics_only = false;
-    bool new_classes = false;
+    bool new_classes = true;
     /*
         Generates object code for modules as well as global procedures ( subroutines / functions )
         avialable in ASR. This needs to be explicity set to true.
@@ -131,7 +132,6 @@ struct CompilerOptions {
     std::string target = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
-    bool emit_debug_line_column = false;
     bool enable_cpython = false;
     bool enable_symengine = false;
     bool link_numpy = false;

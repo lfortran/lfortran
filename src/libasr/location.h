@@ -18,7 +18,8 @@ static inline uint32_t bisection(const std::vector<uint32_t> &vec, uint32_t i) {
     if (i >= vec[vec.size()-1]) return vec.size();
     uint32_t i1 = 0, i2 = vec.size()-1;
     while (i1 < i2-1) {
-        uint32_t imid = (i1+i2)/2;
+        // Use i1 + (i2-i1)/2 to avoid overflow for large uint32_t values
+        uint32_t imid = i1 + (i2 - i1) / 2;
         if (i < vec[imid]) {
             i2 = imid;
         } else {
@@ -127,6 +128,13 @@ struct LocationManager {
     // Every character in the output code has a corresponding location in the
     // original code, so this function always succeeds
     uint32_t output_to_input_pos(uint32_t out_pos, bool show_last) const {
+        // Check if out_pos is beyond all known file ranges
+        // This can happen when locations from loaded modfiles don't map to the
+        // current LocationManager state (e.g., symbols imported from modules
+        // that were compiled in a different context with different offsets)
+        if (!file_ends.empty() && out_pos > file_ends.back()) {
+            return 0;
+        }
         // Determine where the error is from using position, i.e., loc
         uint32_t index = bisection(file_ends, out_pos);
         if (index != 0 && index == file_ends.size()) index -= 1;
@@ -134,14 +142,25 @@ struct LocationManager {
         uint32_t interval = bisection(files[index].out_start, out_pos)-1;
         uint32_t rel_pos = out_pos - files[index].out_start[interval];
         uint32_t in_pos = files[index].in_start[interval] + rel_pos;
+        // For positions from imported modules (index > 0), we need to add a
+        // global offset so that pos_to_linecol can correctly identify the file
+        // using bisection on file_ends. We use file_ends[index-1] as the offset
+        // since that represents where this file's range starts in the global space.
+        uint32_t global_offset = (index > 0) ? file_ends[index - 1] : 0;
+
         if (files[index].preprocessor) {
             // If preprocessor was used, do one more remapping
             uint32_t interval0 = bisection(files[index].out_start0, in_pos)-1;
+            // Check for out-of-bounds access which can happen with invalid
+            // locations from imported symbols
+            if (interval0 >= files[index].interval_type0.size()) {
+                return 0;
+            }
             if (files[index].interval_type0[interval0] == 0) {
                 // 1:1 interval
                 uint32_t rel_pos0 = in_pos - files[index].out_start0[interval0];
                 uint32_t in_pos0 = files[index].in_start0[interval0] + rel_pos0;
-                return in_pos0;
+                return global_offset + in_pos0;
             } else {
                 // many to many interval
                 uint32_t in_pos0;
@@ -153,17 +172,22 @@ struct LocationManager {
                     // Otherwise return the beginning of the interval in "in"
                     in_pos0 = files[index].in_start0[interval0];
                 }
-                return in_pos0;
+                return global_offset + in_pos0;
             }
         } else {
-            return in_pos;
+            return global_offset + in_pos;
         }
     }
 
+    // Note: This function is currently only used for positions from the main
+    // file (obtained via linecol_to_pos which uses files[0]). It does NOT
+    // handle global offsets for imported modules because linecol_to_pos cannot
+    // produce modfile positions. If this function is ever extended to handle
+    // modfile positions, it would need symmetric global_offset handling like
+    // output_to_input_pos has.
     uint32_t input_to_output_pos(uint32_t in_pos, bool show_last) const {
-
-        // Determine where the error is from using position, i.e., loc
-        uint32_t index = bisection(file_ends, in_pos); // seems this is with respect to output, TODO: change it to input file ends
+        // Determine which file this position belongs to
+        uint32_t index = bisection(file_ends, in_pos);
         if (index != 0 && index == file_ends.size()) index -= 1;
         if (files[index].in_start.size() == 0) return 0;
         uint32_t interval = bisection(files[index].in_start, in_pos)-1;

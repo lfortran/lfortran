@@ -147,6 +147,9 @@ ifcont12:                                         ; preds = %ifcont11, %then7
   br label %return
 
 return:                                           ; preds = %ifcont12
+  br label %FINALIZE_SYMTABLE_case03
+
+FINALIZE_SYMTABLE_case03:                         ; preds = %return
   ret i32 0
 }
 

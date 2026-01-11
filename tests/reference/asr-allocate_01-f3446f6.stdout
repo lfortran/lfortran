@@ -1263,7 +1263,14 @@
                         ())]
                         ()
                         ()
+                        (Var 2 d)
+                    )
+                    (Assignment
+                        (Var 2 e)
+                        (Var 2 d)
                         ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -1298,7 +1305,14 @@
                         ())]
                         ()
                         ()
+                        (Var 2 e)
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (Var 2 e)
                         ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -1356,7 +1370,14 @@
                         ())]
                         ()
                         ()
+                        (Var 2 b)
+                    )
+                    (Assignment
+                        (Var 2 f)
+                        (Var 2 b)
                         ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -1440,7 +1461,14 @@
                         ())]
                         ()
                         ()
+                        (Var 2 c)
+                    )
+                    (Assignment
+                        (Var 2 g)
+                        (Var 2 c)
                         ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -1746,6 +1774,7 @@
                         ((Var 2 b))
                         ((Var 2 c))]
                         ()
+                        .false.
                     )
                     (If
                         ()

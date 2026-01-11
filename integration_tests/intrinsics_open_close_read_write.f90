@@ -13,13 +13,13 @@ do i = 1, 100
     y(i) = sin(x(i)) * (1 - cos(x(i)/3.0))  
 end do  
  
-open(unit=u_ptr, file='data.dat', status='replace')  
+open(unit=u_ptr, file='open_close_read_write_data.dat', status='replace')
 do i = 1, 100  
     write(u, '(10F8.2)') x(i), y(i)   
 end do  
 close(1, err=999, iomsg=msg, iostat=u)
 
-999 open (2, file='data.dat', status='old')
+999 open (2, file='open_close_read_write_data.dat', status='old')
 do i = 1, 100  
     read(2, *) p(i), q(i)
 end do 

@@ -14,6 +14,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_types_01
+
+FINALIZE_SYMTABLE_types_01:                       ; preds = %return
   ret i32 0
 }
 

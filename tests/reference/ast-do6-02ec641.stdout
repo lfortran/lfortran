@@ -628,7 +628,7 @@
             (())]
             []
             [(/ (* 10 correct) 25)
-            (String "% correct")]
+            (String "% correct" ())]
             (TriviaNode
                 []
                 [(EndOfLine)

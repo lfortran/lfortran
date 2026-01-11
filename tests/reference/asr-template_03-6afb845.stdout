@@ -25,6 +25,7 @@
                         ()
                         []
                         ()
+                        .false.
                     )]
                 ),
             template_03_m:
@@ -78,6 +79,29 @@
                                                                     ()
                                                                     Source
                                                                     Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_tmp:
+                                                                (Variable
+                                                                    8
+                                                                    lfortran_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -193,6 +217,33 @@
                                                         )
                                                         ())
                                                         [(Assignment
+                                                            (Var 8 lfortran_tmp)
+                                                            (FunctionCall
+                                                                5 times
+                                                                ()
+                                                                [((Var 8 a))
+                                                                ((ArrayItem
+                                                                    (Var 8 x)
+                                                                    [(()
+                                                                    (Var 8 i)
+                                                                    ())]
+                                                                    (TypeParameter
+                                                                        u
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (TypeParameter
+                                                                    w
+                                                                )
+                                                                ()
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (Assignment
                                                             (ArrayItem
                                                                 (Var 8 y)
                                                                 [(()
@@ -218,27 +269,7 @@
                                                                     ColMajor
                                                                     ()
                                                                 ))
-                                                                ((FunctionCall
-                                                                    5 times
-                                                                    ()
-                                                                    [((Var 8 a))
-                                                                    ((ArrayItem
-                                                                        (Var 8 x)
-                                                                        [(()
-                                                                        (Var 8 i)
-                                                                        ())]
-                                                                        (TypeParameter
-                                                                            u
-                                                                        )
-                                                                        ColMajor
-                                                                        ()
-                                                                    ))]
-                                                                    (TypeParameter
-                                                                        w
-                                                                    )
-                                                                    ()
-                                                                    ()
-                                                                ))]
+                                                                ((Var 8 lfortran_tmp))]
                                                                 (TypeParameter
                                                                     v
                                                                 )
@@ -658,6 +689,27 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_tmp:
+                                                                (Variable
+                                                                    12
+                                                                    lfortran_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             x:
                                                                 (Variable
                                                                     12
@@ -755,6 +807,29 @@
                                                         )
                                                         ())
                                                         [(Assignment
+                                                            (Var 12 lfortran_tmp)
+                                                            (FunctionCall
+                                                                9 ~mul_intrinsic
+                                                                ()
+                                                                [((Var 12 a))
+                                                                ((ArrayItem
+                                                                    (Var 12 x)
+                                                                    [(()
+                                                                    (Var 12 i)
+                                                                    ())]
+                                                                    (Integer 4)
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (Real 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )
+                                                        (Assignment
                                                             (ArrayItem
                                                                 (Var 12 y)
                                                                 [(()
@@ -776,23 +851,7 @@
                                                                     ColMajor
                                                                     ()
                                                                 ))
-                                                                ((FunctionCall
-                                                                    9 ~mul_intrinsic
-                                                                    ()
-                                                                    [((Var 12 a))
-                                                                    ((ArrayItem
-                                                                        (Var 12 x)
-                                                                        [(()
-                                                                        (Var 12 i)
-                                                                        ())]
-                                                                        (Integer 4)
-                                                                        ColMajor
-                                                                        ()
-                                                                    ))]
-                                                                    (Real 4)
-                                                                    ()
-                                                                    ()
-                                                                ))]
+                                                                ((Var 12 lfortran_tmp))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -1293,6 +1352,7 @@
                                             ()
                                         ))]
                                         ()
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat

@@ -71,6 +71,9 @@
                             "read"
                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -87,6 +90,7 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
                     )
                     (FileWrite
                         0
@@ -110,6 +114,7 @@
                         ()
                         ()
                         .true.
+                        ()
                     )
                     (FileBackspace
                         0
@@ -132,6 +137,7 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
                     )
                     (FileWrite
                         0
@@ -158,6 +164,7 @@
                         ()
                         ()
                         .true.
+                        ()
                     )
                     (FileWrite
                         0
@@ -181,6 +188,7 @@
                         ()
                         ()
                         .true.
+                        ()
                     )
                     (If
                         ()

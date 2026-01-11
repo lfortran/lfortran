@@ -423,6 +423,9 @@ ifcont70:                                         ; preds = %else69, %then68
   br label %return
 
 return:                                           ; preds = %ifcont70
+  br label %FINALIZE_SYMTABLE_types_06
+
+FINALIZE_SYMTABLE_types_06:                       ; preds = %return
   ret i32 0
 }
 

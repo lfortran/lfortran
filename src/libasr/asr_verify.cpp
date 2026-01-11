@@ -60,6 +60,7 @@ private:
     bool _processing_dims = false;
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
+    bool _processing_assumed_rank_array = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -976,14 +977,15 @@ public:
         if (check_external) {
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Array type");
 
+            require(x.n_components > 0, "DebugCheckArrayBounds::n_components should be greater than 0");
             for (size_t i = 0; i < x.n_components; i++) {
                 require(ASR::is_a<ASR::Var_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_vars element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
 
-                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_vars element must have an Array type");
+                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
             }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
@@ -1045,7 +1047,12 @@ public:
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
             bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
             _inside_array_physical_cast_type = true;
+            bool _processing_assumed_rank_array_copy = _processing_assumed_rank_array;
+            if (x.m_old == ASR::array_physical_typeType::AssumedRankArray) {
+                _processing_assumed_rank_array = true;
+            }
             visit_ttype(*x.m_type);
+            _processing_assumed_rank_array = _processing_assumed_rank_array_copy;
             _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
@@ -1260,13 +1267,15 @@ public:
             int64_t len;
             require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
+        } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
     }
 
     void visit_dimension(const dimension_t &x) {
-        if (_inside_array_physical_cast_type && !_inside_call) {
+        if (_inside_array_physical_cast_type && !_inside_call && !_processing_assumed_rank_array) {
             require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
                     "Dimensions in ArrayPhysicalCast must be present if not inside a call",
                     x.loc);

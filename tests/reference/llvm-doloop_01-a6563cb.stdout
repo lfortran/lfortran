@@ -610,6 +610,9 @@ ifcont71:                                         ; preds = %else70, %then69
   br label %return
 
 return:                                           ; preds = %ifcont71
+  br label %FINALIZE_SYMTABLE_doloop_01
+
+FINALIZE_SYMTABLE_doloop_01:                      ; preds = %return
   ret i32 0
 }
 

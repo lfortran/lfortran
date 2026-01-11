@@ -67,7 +67,8 @@
                                     {
                                         "node": "String",
                                         "fields": {
-                                            "s": "A \"string\"."
+                                            "s": "A \"string\".",
+                                            "kind": []
                                         },
                                         "loc": {
                                             "first": 59,

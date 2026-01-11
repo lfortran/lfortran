@@ -321,6 +321,7 @@
                         [((Var 2 temp_struct_var__))
                         ((Var 2 temp_struct_var__1))]
                         ()
+                        .false.
                     )
                     (If
                         ()

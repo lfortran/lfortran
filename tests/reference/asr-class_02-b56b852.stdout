@@ -25,6 +25,7 @@
                         ()
                         []
                         ()
+                        .false.
                     )]
                 ),
             class_circle2:
@@ -463,6 +464,7 @@
                                         ()
                                         []
                                         (Var 6 c)
+                                        .false.
                                     )]
                                     ()
                                     Public

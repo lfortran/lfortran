@@ -788,7 +788,8 @@ public:
             ASR::expr_t* arg_expr = x_m_args[i].m_value;
             if ( x_m_args[i].m_value && is_descriptor_array_casted_to_pointer_to_data(x_m_args[i].m_value) &&
                  !is_func_bind_c && !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value)) &&
-                 !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                 !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) 
+                 && !ASRUtils::is_stringToArray_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg)) {
                 ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
                 ASR::expr_t* arg_expr_past_cast = ASRUtils::get_past_array_physical_cast(arg_expr);
                 const Location& loc = arg_expr->base.loc;
@@ -857,6 +858,13 @@ public:
                             create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank)
                         }, {}));
                     }
+                    // Nullify the pointer after the call if it was associated (contiguous case).
+                    // This prevents double-free on the next loop iteration: without nullification,
+                    // the ExplicitDeallocate at the start of the loop would try to free memory
+                    // that belongs to the source array (was aliased via Associate).
+                    body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
+                        ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                    }, {}));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                 }

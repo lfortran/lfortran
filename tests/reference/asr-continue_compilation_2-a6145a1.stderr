@@ -270,6 +270,23 @@ semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
 215 |     integer :: aRank1(..)
     |                ^^^^^^^^^^ 
 
+semantic error: More than one main program found
+   --> tests/errors/continue_compilation_2.f90:92:1 - 473:11
+    |
+ 92 |    program continue_compilation_2
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+473 |    end program
+    | ...^^^^^^^^^^^ first main program defined here
+    |
+476 |    program second_program_test
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+479 |    end program second_program_test
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
    |
@@ -351,11 +368,11 @@ semantic error: Invalid argument `end` supplied
 247 |     CLOSE(end=200)
     |     ^^^^^^^^^^^^^^ 
 
-semantic error: The first argument of `cmplx` intrinsic must be present
-   --> tests/errors/continue_compilation_2.f90:249:9
+semantic error: Missing actual argument 'x' in call to 'cmplx'
+   --> tests/errors/continue_compilation_2.f90:249:14
     |
-249 |     a = cmplx(y = 2)
-    |         ^^^^^^^^^^^^ 
+249 |     print *, cmplx(y = 2) ! a = cmplx(y = 2) ! does not work with continue compilation
+    |              ^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
    --> tests/errors/continue_compilation_2.f90:255:11
@@ -902,3 +919,15 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 464 |     lhs = rhs
     |     ^^^   ^^^ type mismatch (string and string[:])
+
+semantic error: Missing actual argument 'string' in call to 'index'
+   --> tests/errors/continue_compilation_2.f90:465:14
+    |
+465 |     print *, index( substring = 'de', back = .true. )
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'compiler_options' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_2.f90:466:14
+    |
+466 |     print *, compiler_options()
+    |              ^^^^^^^^^^^^^^^^^^ 

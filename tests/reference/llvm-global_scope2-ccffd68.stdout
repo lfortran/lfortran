@@ -9,5 +9,8 @@ define void @__lfortran_evaluate_1() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
+
+FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
   ret void
 }

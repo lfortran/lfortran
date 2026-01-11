@@ -483,6 +483,9 @@ ifcont57:                                         ; preds = %ifcont56, %then40
   br label %return
 
 return:                                           ; preds = %ifcont57
+  br label %FINALIZE_SYMTABLE_case_02
+
+FINALIZE_SYMTABLE_case_02:                        ; preds = %return
   ret i32 0
 }
 

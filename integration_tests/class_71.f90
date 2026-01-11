@@ -1,5 +1,5 @@
-! This file checks correct type-conversions in print statements 
-! inside select statements with --new-classes
+! This file checks correct type-conversions in print statements
+! inside select statements
 program class_71
     class(*), allocatable :: x
     allocate(x, source=42)

@@ -393,6 +393,10 @@ class ASRBuilder {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
     }
 
+    inline ASR::expr_t* c2c_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToComplex, t, nullptr));
+    }
+
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
         ASR::expr_t* value = ASRUtils::expr_value(x);
         if ( value != nullptr ) {
@@ -742,8 +746,29 @@ class ASRBuilder {
     }
 
     // Compare -----------------------------------------------------------------
+
+    // Helper to promote integer types for ILP64: when comparing integers of
+    // different kinds, cast the smaller to the larger kind
+    void promote_integer_types(ASR::expr_t*& left, ASR::expr_t*& right) {
+        ASR::ttype_t* left_type = expr_type(left);
+        ASR::ttype_t* right_type = expr_type(right);
+        if (ASRUtils::is_integer(*left_type) && ASRUtils::is_integer(*right_type)) {
+            int left_kind = ASRUtils::extract_kind_from_ttype_t(left_type);
+            int right_kind = ASRUtils::extract_kind_from_ttype_t(right_type);
+            if (left_kind != right_kind) {
+                if (left_kind > right_kind) {
+                    right = i2i_t(right, left_type);
+                } else {
+                    left = i2i_t(left, right_type);
+                }
+            }
+        } else {
+            LCOMPILERS_ASSERT(check_equal_type(left_type, right_type, left, right));
+        }
+    }
+
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -767,7 +792,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right),left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -791,7 +816,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *GtE(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -815,7 +840,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *LtE(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -839,7 +864,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *Eq(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -866,7 +891,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *NotEq(ASR::expr_t *left, ASR::expr_t *right) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right), left, right));
+        promote_integer_types(left, right);
         ASR::ttype_t *type = expr_type(left);
         switch(type->type){
             case ASR::ttypeType::Integer: {
@@ -1021,16 +1046,17 @@ class ASRBuilder {
         }
     }
 
-    ASR::stmt_t *Allocate(ASR::expr_t *m_a, Vec<ASR::dimension_t> dims) {
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, Vec<ASR::dimension_t> dims, ASR::symbol_t* sym_subclass = nullptr) {
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
         alloc_arg.loc = loc;
         alloc_arg.m_a = m_a;
         alloc_arg.m_dims = dims.p;
         alloc_arg.n_dims = dims.n;
-        alloc_arg.m_type = nullptr;
+        alloc_arg.m_type = sym_subclass ? ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::symbol_type(sym_subclass)) : nullptr;
         alloc_arg.m_len_expr = nullptr;
-        alloc_arg.m_sym_subclass = nullptr;
+        alloc_arg.m_sym_subclass = sym_subclass;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));

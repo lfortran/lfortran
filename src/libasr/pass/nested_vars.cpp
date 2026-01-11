@@ -181,6 +181,12 @@ public:
         current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
     }
+    /// Is a variable declared in a module scope
+    bool is_module_variable(ASR::Variable_t* const v){
+        ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
+        return  ASR::is_a<ASR::symbol_t>(*asr_owner) &&
+                ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+    }
 
     void visit_Var(const ASR::Var_t &x) {
         // Only attempt if we are actually in a nested function
@@ -190,6 +196,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                if(is_module_variable(v)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope, it is a
                 // "needed global" since we need to be able to access it from the
@@ -397,11 +404,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
                         } else {
-                            var_type = var_type_;
-                        }
-                        if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_allocatable(var->m_type)) ) {
-                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
-                                ASRUtils::type_get_past_allocatable(var_type)));
+                            auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
+                            var_type = pointer_var_type_;
                         }
                     }
                 }
@@ -666,6 +670,28 @@ private :
         }
         return ASRUtils::STMT(ASR::make_If_t(al, RHS->base.loc, nullptr, allocated_intrinsic_call, if_body.p, if_body.size(), nullptr, 0));
     }
+
+    // Inject sync statements before cycle recursively 
+    // Currently used for do-loops
+    template<typename T>
+    static void inject_before_cycle(Allocator& al, ASR::stmt_t**& stmts, size_t& n, T& sync_stmts) {
+        Vec<ASR::stmt_t*> res;
+        res.reserve(al, n + sync_stmts.size() * 2);
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                ASR::If_t* ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+                inject_before_cycle(al, ifs->m_body, ifs->n_body, sync_stmts);
+                inject_before_cycle(al, ifs->m_orelse, ifs->n_orelse, sync_stmts);
+            }
+            if (ASR::is_a<ASR::Cycle_t>(*stmts[i])) {
+                for (size_t j = 0; j < sync_stmts.size(); j++) res.push_back(al, sync_stmts[j]);
+            }
+            res.push_back(al, stmts[i]);
+        }
+        stmts = res.p;
+        n = res.size();
+    }
+
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
@@ -682,9 +708,16 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
+        std::vector<ASR::stmt_t*> loop_end_syncs;
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
+            bool is_do_loop_sync = false;
+            if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i]) || 
+                (ASR::is_a<ASR::DoLoop_t>(*m_body[i]))) {
+                is_do_loop_sync = true;
+            }
             assigns_at_end.clear();
+            loop_end_syncs.clear();
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && calls_present) {
                 if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
@@ -810,11 +843,41 @@ public:
                                     assigns_at_end.push_back(assignment);
                                 }
                             }
+                            // For do-loop cycle statements, put a sync for scalar variables
+                            // Note: Arrays are synced during loop entries, no need to sync again
+                            // If not inside do-loop, bypass this step
+                            if (is_do_loop_sync && 
+                                ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
+                                ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In && 
+                                !ASRUtils::is_array(ASRUtils::symbol_type(sym))){
+                                ASR::stmt_t *loop_sync = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                                target, val, nullptr, false, false));
+                                if(ASRUtils::is_allocatable(ASRUtils::expr_type(val))){
+                                    loop_end_syncs.push_back(create_if_allocated_block(val, loop_sync));
+                                } else {
+                                    loop_end_syncs.push_back(loop_sync);
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            // Inject syncs before cycle/exit if this is a loop statement
+            if (!loop_end_syncs.empty()) {
+                if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
+                    ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
+                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
+                } else if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
+                    ASR::DoLoop_t* loop = ASR::down_cast<ASR::DoLoop_t>(m_body[i]);
+                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
+                }
+            }
+
             body.push_back(al, m_body[i]);
+            for (auto &stm: loop_end_syncs) {
+                body.push_back(al, stm);
+            }
             for (auto &stm: assigns_at_end) {
                 body.push_back(al, stm);
             }
@@ -915,6 +978,35 @@ public:
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
         visit_expr(*x.m_array);
+    }
+
+    // Generic helper to preserve calls_present across recursive transform_stmts
+    // Used for compound statements (loops, if, where, etc.) that:
+    // 1. Visit conditional/test expressions (which may contain function calls)
+    // 2. Recursively call transform_stmts on body (which resets calls_present)
+    // 3. Handle calls_present to preserve calls_present from condition separately.
+    template<typename BaseVisitorCall>
+    void visit_compound_stmt_with_test(BaseVisitorCall base_visitor) {
+        // Save calls_present before processing body
+        bool calls_present_in_condition = calls_present;
+        // Call base visitor to process body (which may reset calls_present)
+        base_visitor();
+        // Restore: preserve both condition calls AND body calls
+        calls_present = calls_present || calls_present_in_condition;
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        visit_expr(*x.m_test);
+        visit_compound_stmt_with_test([&]() {
+            PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
+        });
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        visit_expr(*x.m_test);
+        visit_compound_stmt_with_test([&]() {
+            PassUtils::PassVisitor<AssignNestedVars>::visit_If(x);
+        });
     }
 };
 

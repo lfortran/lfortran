@@ -15,6 +15,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_print_it
+
+FINALIZE_SYMTABLE_print_it:                       ; preds = %return
   ret i32 0
 }
 
@@ -40,6 +43,9 @@ define void @print_int() {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_print_int
+
+FINALIZE_SYMTABLE_print_int:                      ; preds = %return
   ret void
 }
 

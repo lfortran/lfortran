@@ -50,6 +50,14 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
         replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayItem);
     }
 
+    void replace_StringSection(ASR::StringSection_t* x) {
+        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringSection);
+    }
+
+    void replace_StringItem(ASR::StringItem_t* x) {
+        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringItem);
+    }
+
     void replace_expr(ASR::expr_t* x) {
         if( x == nullptr || inside_prohibited_expression ) {
             return ;
@@ -107,6 +115,93 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayItem);
     }
 
+    void visit_StringSection(const ASR::StringSection_t& x) {
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringSection);
+    }
+
+    void visit_StringItem(const ASR::StringItem_t& x) {
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        // Don't replace the assignment target with its compile-time value
+        // (e.g., ch(5:5) should not become "4" when used as an assignment target)
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+
+        // Visit the target without calling the replacer
+        bool inside_prohibited_expression_copy = replacer.inside_prohibited_expression;
+        replacer.inside_prohibited_expression = true;
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &(xx.m_target);
+        replacer.current_expr = current_expr;
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        current_expr = current_expr_copy;
+        replacer.inside_prohibited_expression = inside_prohibited_expression_copy;
+
+        // Visit the value normally (can be replaced)
+        current_expr = &(xx.m_value);
+        replacer.current_expr = current_expr;
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        current_expr = current_expr_copy;
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        // Don't replace string write targets as compile-time constants
+        ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        ASR::expr_t** current_expr_copy = current_expr;
+        // Check if writing to a string (not a file unit)
+        bool is_string_write = xx.m_unit && ASRUtils::is_character(*ASRUtils::expr_type(xx.m_unit));
+        if (is_string_write) {
+            // Visit the unit (write target) without calling the replacer
+            bool inside_prohibited_expression_copy = replacer.inside_prohibited_expression;
+            replacer.inside_prohibited_expression = true;
+            current_expr = &(xx.m_unit);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+            replacer.inside_prohibited_expression = inside_prohibited_expression_copy;
+        } else {
+            // Unit can be replaced normally
+            if (xx.m_unit) {
+                current_expr = &(xx.m_unit);
+                replacer.current_expr = current_expr;
+                ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+            }
+        }
+        // Visit other expr_t* fields normally
+        if (xx.m_iomsg) {
+            current_expr = &(xx.m_iomsg);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_iostat) {
+            current_expr = &(xx.m_iostat);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_id) {
+            current_expr = &(xx.m_id);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        // Visit values (can be replaced)
+        for (size_t i = 0; i < xx.n_values; i++) {
+            current_expr = &(xx.m_values[i]);
+            replacer.current_expr = current_expr;
+            this->visit_expr(*xx.m_values[i]);
+        }
+        if (xx.m_separator) {
+            current_expr = &(xx.m_separator);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        if (xx.m_end) {
+            current_expr = &(xx.m_end);
+            replacer.current_expr = current_expr;
+            ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_expr(**current_expr);
+        }
+        current_expr = current_expr_copy;
+    }
+    
 };
 
 void pass_replace_with_compile_time_values(

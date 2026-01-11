@@ -14,6 +14,9 @@ define void @__module_callback_05_px_call1(i32* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_px_call1
+
+FINALIZE_SYMTABLE_px_call1:                       ; preds = %return
   ret void
 }
 
@@ -37,6 +40,9 @@ define void @px_call1.__module_callback_05_printx(i32* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_printx
+
+FINALIZE_SYMTABLE_printx:                         ; preds = %return
   ret void
 }
 
@@ -46,6 +52,9 @@ define void @__module_callback_05_px_call2(void (i32*)* %f, i32* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_px_call2
+
+FINALIZE_SYMTABLE_px_call2:                       ; preds = %return
   ret void
 }
 
@@ -57,6 +66,9 @@ define void @__module_callback_05_px_call3(void (i32*)* %f, i32* %x) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_px_call3
+
+FINALIZE_SYMTABLE_px_call3:                       ; preds = %return
   ret void
 }
 
@@ -76,6 +88,9 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_main
+
+FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 

@@ -19,6 +19,8 @@
 // This is only used in parser.tab.cc, nowhere else, so we simply include
 // everything from LCompilers::LFortran::AST to save typing:
 using namespace LCompilers::LFortran::AST;
+using LCompilers::LFortran::StrPrefix;
+using LCompilers::LFortran::IntSuffix;
 using LCompilers::Location;
 using LCompilers::Vec;
 using LCompilers::LFortran::FnArg;
@@ -276,6 +278,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
+            nullptr, nullptr, None)
+
+#define ATTR_TYPE_EXPR(x, e, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            a2kind_list(p.m_a, l, e).p, 1, \
             nullptr, nullptr, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
@@ -1042,6 +1050,14 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
+char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
+    if (s == nullptr) {
+        return nullptr;
+    } else {
+        return str2str_null(al, *s);
+    }
+}
+
 #define SYMBOL(x, l) make_Name_t(p.m_a, l, x.c_str(p.m_a), nullptr, 0)
 // `x.int_n` is of type BigInt but we store the int64_t directly in AST
 #define INTEGER(x, l) make_Num_t(p.m_a, l, x.int_n.n, str2str_null(p.m_a, x.int_kind))
@@ -1049,7 +1065,7 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
 #define INTEGER3(x) (x.int_n.as_smallint())
 #define REAL(x, l) make_Real_t(p.m_a, l, x.c_str(p.m_a))
 #define COMPLEX(x, y, l) make_Complex_t(p.m_a, l, EXPR(x), EXPR(y))
-#define STRING(x, l) make_String_t(p.m_a, l, x.c_str(p.m_a))
+#define STRING(x, l) make_String_t(p.m_a, l, x.str_s.c_str(p.m_a), strptr2str_null(p.m_a, x.str_kind))
 #define BOZ(x, l) make_BOZ_t(p.m_a, l, x.c_str(p.m_a))
 #define ASSIGN(label, variable, l) make_Assign_t(p.m_a, l, 0, label, name2char(variable), nullptr)
 #define ASSIGNMENT(x, y, l) make_Assignment_t(p.m_a, l, 0, EXPR(x), EXPR(y), nullptr)
@@ -1307,7 +1323,7 @@ ast_t* builtin3(Allocator &al,
 #define FLUSH(args0, l) builtin1(p.m_a, args0, l, make_Flush_t)
 #define ENDFILE(args0, l) builtin1(p.m_a, args0, l, make_Endfile_t)
 
-#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.c_str(p.m_a), nullptr)
+#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.str_s.c_str(p.m_a), nullptr)
 #define INQUIRE0(args0, l) builtin2(p.m_a, args0, empty_vecast(), l, \
             make_Inquire_t)
 #define INQUIRE(args0, args, l) builtin2(p.m_a, args0, args, l, make_Inquire_t)
@@ -1863,10 +1879,21 @@ return make_Program_t(al, a_loc,
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
-    int64_t n = LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Num_t>(repeat)->m_n;
-    for (int64_t i=0; i<n; i++) {
-        v.push_back(al, e);
+    if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::expr_t>(*repeat)) {
+        LCompilers::LFortran::AST::expr_t* repeat_expr = 
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::expr_t>(repeat);
+        if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Num_t>(*repeat_expr)) {
+            int64_t n = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Num_t>(repeat_expr)->m_n;
+            for (int64_t i=0; i<n; i++) {
+                v.push_back(al, e);
+            }
+            return;
+        }
     }
+    Location loc = repeat->loc;
+    ast_t* binop = LCompilers::LFortran::AST::make_BinOp_t(al, loc,
+        EXPR(repeat), LCompilers::LFortran::AST::operatorType::Mul, EXPR(e));
+    v.push_back(al, binop);
 }
 #define REPEAT_LIST_ADD(l, r, x) repeat_list_add(l, p.m_a, r, x)
 
@@ -1896,7 +1923,7 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
             construct_name += " " + omp_stmt[i];
         } else {
             m_clauses.push_back(al, EXPR(make_String_t(al, loc,
-                LCompilers::s2c(al, omp_stmt[i]))));
+                LCompilers::s2c(al, omp_stmt[i]), nullptr)));
         }
     }
     return make_Pragma_t(al, loc, 0, LCompilers::LFortran::AST::OMPPragma, m_end,
@@ -1952,8 +1979,16 @@ void add_ws_warning(const Location &loc,
                             LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_CHARACTER) {
-                std::string msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
-                std::string msg2 = "help: write this as 'character("+std::to_string(a_kind)+")'";
+                std::string msg1;
+                std::string msg2;
+                if (a_kind == -1) {
+                        // Expression form: character*(<expr>)
+                        msg1 = "Use character(<len>) instead of character*(<len>)";
+                        msg2 = "help: write this as 'character(<len>)'";
+                } else {
+                        msg1 = "Use character("+std::to_string(a_kind)+") instead of character*"+std::to_string(a_kind);
+                        msg2 = "help: write this as 'character("+std::to_string(a_kind)+")'";
+                }
                 diagnostics.parser_style_label(
                 msg1,
                 {loc},
@@ -1993,6 +2028,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
@@ -2271,7 +2307,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), temp_args, l)
 
-ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
+ast_t* SUBSTRING_(Allocator &al, const StrPrefix &str,
         const Vec<FnArg> &args, Location &l, LCompilers::diag::Diagnostics &diagnostics) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
@@ -2283,7 +2319,7 @@ ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         }
         v.push_back(al, item.arg);
     }
-    return make_Substring_t(al, l, str.c_str(al), v.p, v.size());
+    return make_Substring_t(al, l, str.str_s.c_str(al), v.p, v.size());
 }
 
 #define SUBSTRING(str, args, l) SUBSTRING_(p.m_a, str, args, l, p.diag)

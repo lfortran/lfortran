@@ -85,18 +85,17 @@ namespace LCompilers {
         Descriptor::get_descriptor
         (llvm::LLVMContext& context, llvm::IRBuilder<>* builder,
          LLVMUtils* llvm_utils, DESCR_TYPE descr_type,
-         CompilerOptions& co, std::vector<llvm::Value*>& heap_arrays_) {
+         CompilerOptions& co) {
             switch( descr_type ) {
                 case DESCR_TYPE::_SimpleCMODescriptor: {
-                    return std::make_unique<SimpleCMODescriptor>(context, builder, llvm_utils, co, heap_arrays_);
+                    return std::make_unique<SimpleCMODescriptor>(context, builder, llvm_utils, co);
                 }
             }
             return nullptr;
         }
 
         SimpleCMODescriptor::SimpleCMODescriptor(llvm::LLVMContext& _context,
-            llvm::IRBuilder<>* _builder, LLVMUtils* _llvm_utils, CompilerOptions& co_,
-            std::vector<llvm::Value*>& heap_arrays_):
+            llvm::IRBuilder<>* _builder, LLVMUtils* _llvm_utils, CompilerOptions& co_):
         context(_context),
         llvm_utils(std::move(_llvm_utils)),
         builder(std::move(_builder)),
@@ -107,7 +106,7 @@ namespace LCompilers {
                  llvm::Type::getInt32Ty(context),
                  llvm::Type::getInt32Ty(context)}),
                  "dimension_descriptor")
-        ), co(co_), heap_arrays(heap_arrays_) {
+        ), co(co_) {
         }
 
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
@@ -189,6 +188,12 @@ namespace LCompilers {
         (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
         bool get_pointer) {
             std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
+            if (ASRUtils::is_character(*m_type_)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(m_type_));
+                if (str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    array_key += "desc";
+                }
+            }
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();
@@ -311,7 +316,6 @@ namespace LCompilers {
                     llvm::ConstantInt::get(context, llvm::APInt(32, size))), llvm_size);
                 llvm::Value* arr_first_i8 = lfortran_malloc(
                     context, *module, *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), llvm_size));
-                heap_arrays.push_back(arr_first_i8);
                 arr_first = builder->CreateBitCast(
                     arr_first_i8, llvm_data_type->getPointerTo());
             } else {
@@ -493,7 +497,7 @@ namespace LCompilers {
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
-            int value_rank, int target_rank) {
+            int value_rank, int target_rank, LocationManager& lm) {
             llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), value_desc, llvm_utils->module));
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
@@ -508,7 +512,7 @@ namespace LCompilers {
             llvm::Type* type_llvm = llvm_utils->get_type_from_ttype_t_util(
                 target_expr, ASRUtils::type_get_past_allocatable_pointer(target_type), llvm_utils->module);
             llvm::Value* target_offset = cmo_convertor_single_element(
-                type_llvm, value_desc, section_first_indices, value_rank, false);
+                type_llvm, value_desc, section_first_indices, value_rank, false, lm);
 
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
@@ -579,7 +583,7 @@ namespace LCompilers {
             llvm::Value* target, ASR::ttype_t* target_type, ASR::expr_t* target_expr,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
-            llvm::Value** llvm_diminfo, int value_rank, int target_rank) {
+            llvm::Value** llvm_diminfo, int value_rank, int target_rank, LocationManager& lm) {
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -591,7 +595,7 @@ namespace LCompilers {
                 }
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
-                llvm_diminfo, section_first_indices, value_rank, false);
+                llvm_diminfo, section_first_indices, value_rank, false, lm);
             if(ASRUtils::is_character(*value_type)){
                 LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(value_type),
                     "Only descriptor strings are supported for now");
@@ -647,7 +651,9 @@ namespace LCompilers {
                                          get_dimension_size(target_dim_des, false));
                     j++;
                 }
-                stride = builder->CreateMul(stride, llvm_diminfo[r]);
+                // Convert dimension info to i32 to match descriptor stride format
+                stride = builder->CreateMul(stride,
+                    builder->CreateSExtOrTrunc(llvm_diminfo[r], llvm::Type::getInt32Ty(context)));
                 r += 2;
             }
             LCOMPILERS_ASSERT(j == target_rank);
@@ -710,7 +716,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
             llvm::Type* type, llvm::Value* arr, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, std::string array_name) {
+            int n_args, bool check_for_bounds, LocationManager& lm, std::string array_name, std::string infile, Location loc) {
             llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(
                 dim_des->getPointerTo(), llvm_utils->create_gep2(type, arr, 2));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
@@ -734,8 +740,11 @@ namespace LCompilers {
                     llvm_utils->generate_runtime_error(builder->CreateOr(
                                                             lbound_check,
                                                             ubound_check),
-                                            "Runtime error: Array '%s' index out of bounds.\n\n"
+                                                "Runtime error: Array '%s' index out of bounds.\n\n"
                                                      "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                     infile,
+                                                     loc,
+                                                     lm,
                                                      LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                      req_idx,
                                                      dimension,
@@ -751,7 +760,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data, std::string array_name) {
+            int n_args, bool check_for_bounds,LocationManager& lm, bool is_unbounded_pointer_to_data, std::string array_name, std::string infile, Location loc) {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
@@ -781,6 +790,9 @@ namespace LCompilers {
                                                                 ubound_check),
                                                 "Runtime error: Array '%s' index out of bounds.\n\n"
                                                         "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                        infile,
+                                                        loc,
+                                                        lm,
                                                         LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
                                                         req_idx,
                                                         dimension,
@@ -794,14 +806,14 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name, std::string infile) {
             llvm::Value* tmp = nullptr;
             llvm::Value* idx = nullptr;
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
-                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data, array_name);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else {
@@ -814,7 +826,7 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
-                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, array_name);
+                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
                 llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
@@ -831,8 +843,7 @@ namespace LCompilers {
             return tmp;
         }
 
-        llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array,
-            llvm::Type* llvm_data_type, ASR::expr_t* array_exp) {
+        llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
             llvm::PointerType* memory_holder_type;
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
@@ -854,7 +865,9 @@ namespace LCompilers {
             // Handle an array of strings
             memory_holder_type = ASRUtils::is_character(*array_type) ?
                 llvm_utils->character_type
-                : llvm_data_type->getPointerTo();
+                : llvm_utils->get_type_from_ttype_t_util(
+                    array_exp,
+                    ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
 
             if(ASRUtils::is_character(*array_type)){
                 llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(
@@ -1145,6 +1158,82 @@ namespace LCompilers {
             }
             num_elements = builder->CreateMul(num_elements, llvm_size);
             builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
+        }
+
+        llvm::Value* SimpleCMODescriptor::create_contiguous_copy_from_descriptor(
+            llvm::Type* source_llvm_type, llvm::Value* source_desc,
+            llvm::Type* elem_type, int rank, llvm::Module* module) {
+            // Get dimension bounds from the descriptor first
+            llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
+                source_llvm_type, source_desc, true);
+            // Collect bounds and compute actual number of elements to copy
+            std::vector<llvm::Value*> extents(rank);
+            // Calculate number of elements as product of (ub - lb + 1) for each dimension
+            llvm::Value* num_elements = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            for (int d = 0; d < rank; d++) {
+                llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                    dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                llvm::Value* lb = get_lower_bound(dim_des_elem);
+                llvm::Value* ub = get_upper_bound(dim_des_elem);
+                // extent = ub - lb + 1
+                extents[d] = builder->CreateSub(ub, lb);
+                extents[d] = builder->CreateAdd(extents[d],
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                num_elements = builder->CreateMul(num_elements, extents[d]);
+            }
+            // Allocate contiguous data buffer on heap for only the
+            // Number of elements to be copied
+            llvm::DataLayout data_layout(module->getDataLayout());
+            uint64_t elem_size = data_layout.getTypeAllocSize(elem_type);
+            llvm::Value* llvm_elem_size = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), elem_size);
+            llvm::Value* total_size = builder->CreateMul(num_elements, llvm_elem_size);
+            llvm::Value* data_buffer_i8 = lfortran_malloc(context, *module, *builder, total_size);
+            llvm::Value* data_buffer = builder->CreateBitCast(
+                data_buffer_i8, elem_type->getPointerTo());
+            llvm::Value* src_data = get_pointer_to_data(source_llvm_type, source_desc);
+            src_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), src_data);
+            // Single flat loop over all elements
+            llvm::Value* iter_ptr = builder->CreateAlloca(
+                llvm::Type::getInt32Ty(context), nullptr, "copy_iter");
+            builder->CreateStore(llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0), iter_ptr);
+            llvm_utils->create_loop("copy_array",
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iter_ptr);
+                    return builder->CreateICmpSLT(iter, num_elements);
+                },
+                [&]() {
+                    llvm::Value* iter = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), iter_ptr);
+                    llvm::Value* linear_offset = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 0);
+                    llvm::Value* remaining = iter;
+                    for (int d = 0; d < rank; d++) {
+                        llvm::Value* dim_idx = builder->CreateSRem(remaining, extents[d]);
+                        remaining = builder->CreateSDiv(remaining, extents[d]);
+                        llvm::Value* dim_des_elem = get_pointer_to_dimension_descriptor(
+                            dim_des_array, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                        llvm::Value* stride = get_stride(dim_des_elem);
+                        llvm::Value* dim_offset = builder->CreateMul(dim_idx, stride);
+                        linear_offset = builder->CreateAdd(linear_offset, dim_offset);
+                    }
+                    llvm::Value* base_offset = get_offset(source_llvm_type, source_desc);
+                    linear_offset = builder->CreateAdd(linear_offset, base_offset);
+                    // Copy element
+                    llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
+                    llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
+                    llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
+                    builder->CreateStore(elem_val, dest_ptr);
+                    // Increment iterator
+                    llvm::Value* new_iter = builder->CreateAdd(iter,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                    builder->CreateStore(new_iter, iter_ptr);
+                }
+            );
+            return data_buffer;
         }
 
     } // LLVMArrUtils
