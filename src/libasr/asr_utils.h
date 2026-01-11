@@ -3874,10 +3874,44 @@ inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
         std::string(b->m_name) == "~unlimited_polymorphic_type");
 }
 
-// TODO: Scaled up implementation for all exprTypes
-// One way is to do it in asdl_cpp.py
+// Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
+// Returns the non-identity operand if so, nullptr otherwise
+// Note: deliberately excludes x*1 to match GFortran behavior
+inline ASR::expr_t* get_identity_operand(ASR::IntegerBinOp_t* binop) {
+    int64_t val = 0;
+    if (binop->m_op == ASR::binopType::Add || binop->m_op == ASR::binopType::Sub) {
+        // x+0, 0+x, x-0 are identity
+        if (ASR::is_a<ASR::IntegerConstant_t>(*binop->m_right)) {
+            if (extract_value(binop->m_right, val) && val == 0) {
+                return binop->m_left;
+            }
+        }
+        if (binop->m_op == ASR::binopType::Add &&
+            ASR::is_a<ASR::IntegerConstant_t>(*binop->m_left)) {
+            if (extract_value(binop->m_left, val) && val == 0) {
+                return binop->m_right;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Compares two expressions for structural equality
+// Handles: Var (by symbol), IntegerBinOp (recursive), constants
+// Returns true for unknown types to avoid false negatives
 inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
     if( x->type != y->type ) {
+        // Handle identity operations: compare x with y+0, y-0, etc.
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*y)) {
+            ASR::expr_t* y_simple = get_identity_operand(
+                ASR::down_cast<ASR::IntegerBinOp_t>(y));
+            if (y_simple) return expr_equal(x, y_simple);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*x)) {
+            ASR::expr_t* x_simple = get_identity_operand(
+                ASR::down_cast<ASR::IntegerBinOp_t>(x));
+            if (x_simple) return expr_equal(x_simple, y);
+        }
         return false;
     }
 
@@ -3914,7 +3948,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), x, y, true);
+            return var_x->m_v == var_y->m_v;
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
