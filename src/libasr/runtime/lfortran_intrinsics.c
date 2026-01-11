@@ -6593,12 +6593,60 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
     lfortran_error("Reading into an array of int64_t is not supported.");
 }
 
-LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr) {
-    lfortran_error("Reading into an array of float is not supported.");
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr)
+{
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) {
+        fprintf(stderr, "LFortran Runtime Error: Out of memory in string read.\n");
+        exit(1);
+    }
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    char *curr = buf;
+    char *end_ptr = NULL;
+    int idx = 0;
+
+    while (*curr != '\0') {
+        while (isspace(*curr)) curr++;
+        if (*curr == '\0') break;
+
+        float val = strtof(curr, &end_ptr);
+
+        if (curr == end_ptr) {
+            break; 
+        }
+        arr[idx++] = val;
+        curr = end_ptr;
+    }
+    free(buf);
 }
 
-LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr) {
-    lfortran_error("Reading into an array of double is not supported.");
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr)
+{
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) {
+        fprintf(stderr, "LFortran Runtime Error: Out of memory in string read.\n");
+        exit(1);
+    }
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+
+    char *curr = buf;
+    char *end_ptr = NULL;
+    int idx = 0;
+
+    while (*curr != '\0') {
+        while (isspace(*curr)) curr++;
+        if (*curr == '\0') break;
+
+        double val = strtod(curr, &end_ptr);
+
+        if (curr == end_ptr) break;
+
+        arr[idx++] = val;
+        curr = end_ptr;
+    }
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {

@@ -1,0 +1,13 @@
+{
+    "basename": "run-test_issue_9442-a40ac46",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/test_issue_9442.f90",
+    "infile_hash": "4b68a4d7d17dd6e567f3ee63aa377a639db4250ad80065105e42cb9e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-test_issue_9442-a40ac46.stdout",
+    "stdout_hash": "e5ef4e7282dd26b066fe696aa1e8777c057b7bf6c71393e1b597f119",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
