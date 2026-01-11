@@ -38,6 +38,32 @@ public:
         write_int8(x.type);
         write_string(symbol_name(&x));
     }
+
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        write_int8(x.base.type);
+        write_int64(x.base.base.loc.first);
+        write_int64(x.base.base.loc.last);
+
+        int64_t len = 0;
+        bool len_found = false;
+        if (x.m_type && ASR::is_a<ASR::String_t>(*x.m_type)) {
+            ASR::String_t* t = ASR::down_cast<ASR::String_t>(x.m_type);
+            if (t->m_len && ASR::is_a<ASR::IntegerConstant_t>(*t->m_len)) {
+                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(t->m_len);
+                len = ic->m_n;
+                len_found = true;
+            }
+        }
+        
+        if (!len_found) {
+            len = strlen(x.m_s);
+        }
+
+        std::string str_data(x.m_s, len);
+        write_string(str_data);
+
+        visit_ttype(*x.m_type);
+    }
 };
 
 std::string serialize(const ASR::asr_t &asr) {
