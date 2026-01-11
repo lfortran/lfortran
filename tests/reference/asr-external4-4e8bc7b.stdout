@@ -54,14 +54,47 @@
                                     (SymbolTable
                                         4
                                         {
-                                            
+                                            dqk15w_arg_0:
+                                                (Variable
+                                                    4
+                                                    dqk15w_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        []
+                                                        (Real 8)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                    )
+                                                    1 ~implicit_interface_f_2
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
                                         })
                                     dqk15w
                                     (FunctionType
                                         [(FunctionType
                                             []
                                             (Real 8)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -85,7 +118,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 2 f)]
+                                    [(Var 4 dqk15w_arg_0)]
                                     []
                                     ()
                                     Public
@@ -94,100 +127,18 @@
                                     ()
                                 ),
                             f:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            centr:
-                                                (Variable
-                                                    6
-                                                    centr
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            f_arg_0:
-                                                (Variable
-                                                    6
-                                                    f_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            f_return_var_name:
-                                                (Variable
-                                                    6
-                                                    f_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            hlgth:
-                                                (Variable
-                                                    6
-                                                    hlgth
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
-                                        })
+                                (Variable
+                                    2
                                     f
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
                                     (FunctionType
-                                        [(Real 4)]
+                                        []
                                         (Real 8)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -198,14 +149,16 @@
                                         []
                                         .false.
                                     )
-                                    []
-                                    [(Var 6 f_arg_0)]
-                                    []
-                                    (Var 6 f_return_var_name)
+                                    1 ~implicit_interface_f_2
+                                    Source
                                     Public
+                                    Required
+                                    .false.
                                     .false.
                                     .false.
                                     ()
+                                    .false.
+                                    .false.
                                 ),
                             hlgth:
                                 (Variable
@@ -234,7 +187,7 @@
                         [(FunctionType
                             []
                             (Real 8)
-                            BindC
+                            Source
                             Interface
                             ()
                             .false.
@@ -313,6 +266,37 @@
                             ()
                         )
                     )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            ~implicit_interface_f_2:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    ~implicit_interface_f_2
+                    (FunctionType
+                        []
+                        (Real 8)
+                        Source
+                        Interface
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    []
                     ()
                     Public
                     .false.

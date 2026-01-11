@@ -6753,6 +6753,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         is_method = false;
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
+    // Skip arg processing for implicit interfaces (no declared parameter types)
+    if (func_type->n_arg_types == 0) {
+        return;
+    }
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
