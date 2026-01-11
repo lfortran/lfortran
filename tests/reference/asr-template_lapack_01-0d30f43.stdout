@@ -820,6 +820,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    10
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    10
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     10
@@ -982,17 +1024,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 10 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 10 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         7 gemm
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 10 lfortran_char_tmp))
+                                                        ((Var 10 lfortran_char_tmp1))
                                                         ((Var 10 m))
                                                         ((Var 10 n))
                                                         ((Var 10 k))
@@ -1900,6 +1956,48 @@
                                                     .false.
                                                     .false.
                                                 ),
+                                            lfortran_char_tmp:
+                                                (Variable
+                                                    15
+                                                    lfortran_char_tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            lfortran_char_tmp1:
+                                                (Variable
+                                                    15
+                                                    lfortran_char_tmp1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             m:
                                                 (Variable
                                                     15
@@ -2052,17 +2150,31 @@
                                         .false.
                                         .false.
                                     )
+                                    (Assignment
+                                        (Var 15 lfortran_char_tmp)
+                                        (StringConstant
+                                            "n"
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 15 lfortran_char_tmp1)
+                                        (StringConstant
+                                            "n"
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
                                     (SubroutineCall
                                         2 my_gemm_real
                                         ()
-                                        [((StringConstant
-                                            "n"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                        ))
-                                        ((StringConstant
-                                            "n"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                        ))
+                                        [((Var 15 lfortran_char_tmp))
+                                        ((Var 15 lfortran_char_tmp1))
                                         ((Var 15 m))
                                         ((Var 15 n))
                                         ((Var 15 k))
@@ -3574,6 +3686,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    19
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    19
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     19
@@ -3736,17 +3890,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 19 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 19 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         16 gemm
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 19 lfortran_char_tmp))
+                                                        ((Var 19 lfortran_char_tmp1))
                                                         ((Var 19 m))
                                                         ((Var 19 n))
                                                         ((Var 19 k))
@@ -4012,6 +4180,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    24
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    24
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     24
@@ -4164,17 +4374,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 24 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 24 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         2 my_gemm_real
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 24 lfortran_char_tmp))
+                                                        ((Var 24 lfortran_char_tmp1))
                                                         ((Var 24 m))
                                                         ((Var 24 n))
                                                         ((Var 24 k))
@@ -4385,6 +4609,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    25
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    25
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     25
@@ -4537,17 +4803,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 25 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 25 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         2 my_gemm_double
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 25 lfortran_char_tmp))
+                                                        ((Var 25 lfortran_char_tmp1))
                                                         ((Var 25 m))
                                                         ((Var 25 n))
                                                         ((Var 25 k))
@@ -4956,6 +5236,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    22
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    22
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     22
@@ -5108,17 +5430,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 22 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 22 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         2 my_gemm_double
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 22 lfortran_char_tmp))
+                                                        ((Var 22 lfortran_char_tmp1))
                                                         ((Var 22 m))
                                                         ((Var 22 n))
                                                         ((Var 22 k))
@@ -5329,6 +5665,48 @@
                                                                     .false.
                                                                     .false.
                                                                 ),
+                                                            lfortran_char_tmp:
+                                                                (Variable
+                                                                    21
+                                                                    lfortran_char_tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
+                                                            lfortran_char_tmp1:
+                                                                (Variable
+                                                                    21
+                                                                    lfortran_char_tmp1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                ),
                                                             m:
                                                                 (Variable
                                                                     21
@@ -5481,17 +5859,31 @@
                                                         .false.
                                                         .false.
                                                     )
+                                                    (Assignment
+                                                        (Var 21 lfortran_char_tmp)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 21 lfortran_char_tmp1)
+                                                        (StringConstant
+                                                            "n"
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
                                                     (SubroutineCall
                                                         2 my_gemm_real
                                                         ()
-                                                        [((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
-                                                        ((StringConstant
-                                                            "n"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        ))
+                                                        [((Var 21 lfortran_char_tmp))
+                                                        ((Var 21 lfortran_char_tmp1))
                                                         ((Var 21 m))
                                                         ((Var 21 n))
                                                         ((Var 21 k))
