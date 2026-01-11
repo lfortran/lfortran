@@ -1443,6 +1443,8 @@ RUN(NAME modules_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
         EXTRAFILES modules_62_terminal.f90 modules_62_parser.f90)
+RUN(NAME modules_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+        EXTRAFILES modules_63_module.f90)
 
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
