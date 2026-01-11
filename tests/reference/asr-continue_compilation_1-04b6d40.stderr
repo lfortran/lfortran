@@ -1008,3 +1008,20 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
     |
 479 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+   --> tests/errors/continue_compilation_1.f90:478:14
+    |
+478 |     allocate(strx)
+    |              ^^^^ 'strx' is not allocatable or pointer
+
+semantic error: Type mismatch: allocatable character dummy argument 's' has length 5 but actual argument has length 10.
+   --> tests/errors/continue_compilation_1.f90:480:32
+    |
+480 |     call modify_and_deallocate(strx)
+    |                                ^^^^ dummy argument 's' declared here
+
+semantic error: Intrinsic `allocated` can be called only on allocatable argument
+   --> tests/errors/continue_compilation_1.f90:481:14
+    |
+481 |     print *, allocated(strx)
+    |              ^^^^^^^^^^^^^^^ 
