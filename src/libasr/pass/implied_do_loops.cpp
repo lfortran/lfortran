@@ -596,8 +596,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t arg;
-        // Prefer declared source length if available; else fall back to previously detected expr
-        arg.m_len_expr = elem_len_expr_for_alloc ? elem_len_expr_for_alloc : non_const_len_expr;
+        arg.m_len_expr = elem_len_expr_for_alloc;
 
         if (is_allocatable && element_type && ASRUtils::is_character(*element_type)) {
             if (array_constructor_contains_implied_do(x)) {
