@@ -98,13 +98,12 @@ time_section "🧪 Testing splpak" '
 '
 
 time_section "🧪 Testing fortran-regex" '
-  git clone https://github.com/jinangshah21/fortran-regex.git
+  git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf1
   micromamba install -c conda-forge fpm
 
-  git checkout c3807f49bf3a88df9b1527b2c49fc956abb77398
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
   fpm --compiler=$FC test
 
@@ -118,6 +117,7 @@ time_section "🧪 Testing fortran-shlex" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
+  git checkout e20b6f86c82e33fae78b54b074bab5369efde6a3
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -126,13 +126,12 @@ time_section "🧪 Testing fortran-shlex" '
 '
 
 time_section "🧪 Testing toml-f" '
-  git clone https://github.com/jinangshah21/toml-f.git
+  git clone https://github.com/toml-f/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-7
   micromamba install -c conda-forge fpm
 
-  git checkout 65ef20430e2543ac89a5558a11ae1c8404d46763
+  git checkout 27abd768e79c7c790ffa58fe5ccfb105ba00883d
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
@@ -144,10 +143,10 @@ time_section "🧪 Testing jonquil" '
   git clone https://github.com/jinangshah21/jonquil.git
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
+  git checkout lf-7
   micromamba install -c conda-forge fpm
 
-  git checkout 1055a955a87fd16f88be93a4779cee54fdb2c70a
+  git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
   print_success "Done with jonquil"
@@ -158,9 +157,9 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-7
+  git checkout lf-8
   micromamba install -c conda-forge fpm
-  git checkout edf5c93091ff257eeefb916045ab47d76a3c358e
+  git checkout 28c5718bc8b5066e023c628ac88f29bc4f10a0a9
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -264,9 +263,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-15
+  git checkout lf-17
   micromamba install -c conda-forge fpm
-  git checkout 03ec186d812777552595624103a22470a4f24b25
+  git checkout 0321239b19291cbbf2c4e6597a2aa118b2cc6a4a
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"
