@@ -10528,8 +10528,10 @@ public:
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
-                    // Validate trim character intrinsics with unlimited polymorphic arguments
-                    if (var_name == "trim")  {
+                    // Validate character intrinsics with unlimited polymorphic arguments
+                    // They should be only accessed inside select block
+                    if ((var_name == "trim") || (var_name == "len_trim") ||
+                        (var_name == "adjustl") || (var_name == "adjustr"))  {
                         // Check if any argument is unlimited polymorphic
                         bool has_polymorphic_arg = false;
                         for (size_t i = 0; i < args.size(); i++) {
