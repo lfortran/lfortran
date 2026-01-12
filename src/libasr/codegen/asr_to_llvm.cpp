@@ -68,6 +68,93 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+// Helper functions for LLVM function name mangling
+namespace {
+
+/**
+ * Check if a function is an external interface function.
+ * External interface functions are functions with:
+ * - Interface deftype
+ * - Not intrinsic ABI
+ * - Not in a module
+ */
+static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
+    return ftype->m_deftype == ASR::deftypeType::Interface &&
+           ftype->m_abi != ASR::abiType::Intrinsic &&
+           !ftype->m_module;
+}
+
+/**
+ * Check if a function name has a reserved LFortran/LPython/LCompilers prefix.
+ * These functions should not be mangled by user-facing flags.
+ */
+static inline bool has_reserved_prefix(const std::string& name) {
+    return name.rfind("_lfortran", 0) == 0 ||
+           name.rfind("_lpython", 0) == 0 ||
+           name.rfind("_lcompilers", 0) == 0;
+}
+
+/**
+ * Compute the final mangled LLVM function name.
+ *
+ * This function encapsulates all mangling logic in one place:
+ * 1. Determines base name (BindC, external interface, or prefixed)
+ * 2. Adds parent function prefix if applicable
+ * 3. Applies underscore mangling for external interface functions if requested
+ *
+ * @param sym_name Original symbol name from ASR
+ * @param ftype Function type information
+ * @param compiler_options Compiler options including mangling flags
+ * @param mangle_prefix Prefix to add (typically "_lfortran_")
+ * @param parent_function Parent function if this is a nested function
+ * @return Final mangled name to use in LLVM
+ */
+static std::string compute_llvm_function_name(
+    const std::string& sym_name,
+    ASR::FunctionType_t* ftype,
+    const CompilerOptions& compiler_options,
+    const std::string& mangle_prefix,
+    const ASR::Function_t* parent_function
+) {
+    std::string fn_name;
+
+    // Step 1: Determine base name based on function type
+    if (ftype->m_abi == ASR::abiType::BindC) {
+        // BindC functions use their bind(C, name="...") or bare symbol name
+        fn_name = ftype->m_bindc_name ? ftype->m_bindc_name : sym_name;
+    } else if (is_external_interface_function(ftype)) {
+        // External interface functions use bare symbol name
+        fn_name = sym_name;
+    } else {
+        // Normal functions get the LFortran prefix
+        fn_name = mangle_prefix + sym_name;
+    }
+
+    // Step 2: Add parent function prefix for nested functions
+    if (parent_function != nullptr &&
+        ftype->m_deftype != ASR::deftypeType::Interface &&
+        ftype->m_abi != ASR::abiType::Intrinsic &&
+        ftype->m_abi != ASR::abiType::BindC) {
+        fn_name = std::string(parent_function->m_name) + "." + fn_name;
+    }
+
+    // Step 3: Apply underscore mangling for external interface functions
+    // This is used for LAPACK/BLAS compatibility when --mangle-underscore-external is set
+    if (compiler_options.po.mangle_underscore_external &&
+        is_external_interface_function(ftype)) {
+        // Don't mangle reserved runtime functions or already-mangled names
+        if (!has_reserved_prefix(fn_name) &&
+            !fn_name.empty() &&
+            fn_name.back() != '_') {
+            fn_name += "_";
+        }
+    }
+
+    return fn_name;
+}
+
+} // anonymous namespace
+
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
@@ -6010,38 +6097,11 @@ public:
                     }
                 }
             }
-            std::string fn_name;
+            // Compute the mangled function name using centralized logic
             ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
-            if (ftype->m_abi == ASR::abiType::BindC) {
-                if (ftype->m_bindc_name) {
-                    fn_name = ftype->m_bindc_name;
-                } else {
-                    fn_name = sym_name;
-                }
-            } else if (ftype->m_deftype == ASR::deftypeType::Interface &&
-                ftype->m_abi != ASR::abiType::Intrinsic && !ftype->m_module) {
-                fn_name = sym_name;
-            } else {
-                fn_name = mangle_prefix + sym_name;
-            }
-            if ( parent_function != nullptr &&
-                 ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface &&
-                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic &&
-                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
-                ) {
-                std::string parent_function_name = std::string(parent_function->m_name);
-                fn_name = parent_function_name+ "." + fn_name;
-            }
-            if (compiler_options.po.mangle_underscore_external &&
-                ftype->m_deftype == ASR::deftypeType::Interface &&
-                ftype->m_abi != ASR::abiType::Intrinsic && !ftype->m_module) {
-                bool is_reserved = fn_name.rfind("_lfortran", 0) == 0 ||
-                                   fn_name.rfind("_lpython", 0) == 0 ||
-                                   fn_name.rfind("_lcompilers", 0) == 0;
-                if (!is_reserved && !fn_name.empty() && fn_name.back() != '_') {
-                    fn_name = fn_name + "_";
-                }
-            }
+            std::string fn_name = compute_llvm_function_name(
+                sym_name, ftype, compiler_options, mangle_prefix, parent_function
+            );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
