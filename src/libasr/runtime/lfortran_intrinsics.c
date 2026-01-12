@@ -6970,27 +6970,38 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     }
     strcpy(filename, base_name);
     strcat(filename, "_lines.dat.txt");
-    int64_t fd = _lpython_open(filename, "r");
+    FILE *fp = fopen(filename, "r");
     free(base_name);
-    free(filename);
-    if (fd < 0) {
+    if (!fp) {
+        free(filename);
         return;
     }
-    uint32_t size = get_file_size(fd);
-    if (size == 0) {
-        _lpython_close(fd);
+
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (file_size <= 0) {
+        fclose(fp);
+        free(filename);
         return;
     }
-    char *file_contents = _lpython_read(fd, size);
-    _lpython_close(fd);
+
+    char *file_contents = malloc((size_t)file_size + 1);
     if (file_contents == NULL) {
+        fclose(fp);
+        free(filename);
         return;
     }
+
+    size_t bytes_read = fread(file_contents, 1, (size_t)file_size, fp);
+    fclose(fp);
+    file_contents[bytes_read] = '\0';
+    free(filename);
 
     char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     bool address = true;
     uint32_t j = 0;
-    for (uint32_t i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < (uint32_t)bytes_read; i++) {
         if (file_contents[i] == '\n') {
             memset(s, '\0', sizeof(s));
             j = 0;
