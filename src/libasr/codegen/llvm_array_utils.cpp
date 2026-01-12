@@ -375,7 +375,6 @@ namespace LCompilers {
                 prod = builder->CreateMul(prod, dim_size);
             }
             llvm::Value* ptr2firstptr = get_pointer_to_data(arr_type,  arr);
-            llvm::AllocaInst *arg_size = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
 
             // Handle special allocation for strings. All Other types are handled the same.
             if(ASRUtils::is_character(*asr_type)){
@@ -391,15 +390,15 @@ namespace LCompilers {
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 prod = builder->CreateMul(prod, llvm_size);
-                builder->CreateStore(prod, arg_size);
+                llvm::Value* arg_size = builder->CreateBitCast(prod, llvm::Type::getInt32Ty(context));
                 llvm::Value* ptr_as_char_ptr = nullptr;
                 if( realloc ) {
                     ptr_as_char_ptr = lfortran_realloc(context, *module,
                         *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
-                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), arg_size));
+                        arg_size);
                 } else {
                     ptr_as_char_ptr = lfortran_malloc(context, *module,
-                        *builder, llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), arg_size));
+                        *builder, arg_size);
                 }
                 llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
                 builder->CreateStore(first_ptr, ptr2firstptr);
