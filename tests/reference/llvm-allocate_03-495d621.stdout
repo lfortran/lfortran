@@ -133,44 +133,45 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %r = alloca i32, align 4
-  %stat = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %c = alloca %array*, align 8
-  store %array* null, %array** %c, align 8
-  %arr_desc = alloca %array, align 8
-  %2 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
-  %3 = alloca i32, align 4
-  store i32 3, i32* %3, align 4
-  %4 = load i32, i32* %3, align 4
-  %5 = alloca %dimension_descriptor, i32 %4, align 8
-  %6 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 1
-  store i32 1, i32* %6, align 4
-  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %5, i32 0, i32 2
-  store i32 1, i32* %7, align 4
-  store %dimension_descriptor* %5, %dimension_descriptor** %2, align 8
-  %8 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
-  store i32 3, i32* %8, align 4
-  %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
-  store i32* null, i32** %9, align 8
-  store %array* %arr_desc, %array** %c, align 8
-  %r1 = alloca i32, align 4
+  %2 = alloca i64, align 8
   %stat2 = alloca i32, align 4
+  %r1 = alloca i32, align 4
+  %3 = alloca i32, align 4
+  %arr_desc = alloca %array, align 8
+  %c = alloca %array*, align 8
+  %stat = alloca i32, align 4
+  %r = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store %array* null, %array** %c, align 8
+  %4 = getelementptr %array, %array* %arr_desc, i32 0, i32 2
+  store i32 3, i32* %3, align 4
+  %5 = load i32, i32* %3, align 4
+  %6 = alloca %dimension_descriptor, i32 %5, align 8
+  %7 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 1
+  store i32 1, i32* %7, align 4
+  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %6, i32 0, i32 2
+  store i32 1, i32* %8, align 4
+  store %dimension_descriptor* %6, %dimension_descriptor** %4, align 8
+  %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 4
+  store i32 3, i32* %9, align 4
+  %10 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
+  store i32* null, i32** %10, align 8
+  store %array* %arr_desc, %array** %c, align 8
   store i32 1, i32* %stat2, align 4
-  %10 = load %array*, %array** %c, align 8
-  %11 = ptrtoint %array* %10 to i64
-  %12 = icmp eq i64 %11, 0
-  br i1 %12, label %merge_allocated, label %check_data
+  %11 = load %array*, %array** %c, align 8
+  %12 = ptrtoint %array* %11 to i64
+  %13 = icmp eq i64 %12, 0
+  br i1 %13, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %13 = getelementptr %array, %array* %10, i32 0, i32 0
-  %14 = load i32*, i32** %13, align 8
-  %15 = ptrtoint i32* %14 to i64
-  %16 = icmp ne i64 %15, 0
+  %14 = getelementptr %array, %array* %11, i32 0, i32 0
+  %15 = load i32*, i32** %14, align 8
+  %16 = ptrtoint i32* %15 to i64
+  %17 = icmp ne i64 %16, 0
   br label %merge_allocated
 
 merge_allocated:                                  ; preds = %check_data, %.entry
-  %is_allocated = phi i1 [ false, %.entry ], [ %16, %check_data ]
+  %is_allocated = phi i1 [ false, %.entry ], [ %17, %check_data ]
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
@@ -179,40 +180,40 @@ then:                                             ; preds = %merge_allocated
   unreachable
 
 ifcont:                                           ; preds = %merge_allocated
-  %17 = load %array*, %array** %c, align 8
-  %18 = getelementptr %array, %array* %17, i32 0, i32 1
-  store i32 0, i32* %18, align 4
-  %19 = getelementptr %array, %array* %17, i32 0, i32 2
-  %20 = load %dimension_descriptor*, %dimension_descriptor** %19, align 8
-  %21 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %20, i32 0
-  %22 = getelementptr %dimension_descriptor, %dimension_descriptor* %21, i32 0, i32 0
-  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %21, i32 0, i32 1
-  %24 = getelementptr %dimension_descriptor, %dimension_descriptor* %21, i32 0, i32 2
-  store i32 1, i32* %22, align 4
+  %18 = load %array*, %array** %c, align 8
+  %19 = getelementptr %array, %array* %18, i32 0, i32 1
+  store i32 0, i32* %19, align 4
+  %20 = getelementptr %array, %array* %18, i32 0, i32 2
+  %21 = load %dimension_descriptor*, %dimension_descriptor** %20, align 8
+  %22 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 0
+  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 0
+  %24 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 1
+  %25 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 2
   store i32 1, i32* %23, align 4
-  store i32 3, i32* %24, align 4
-  %25 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %20, i32 1
-  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 0
-  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 1
-  %28 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 2
-  store i32 3, i32* %26, align 4
-  store i32 1, i32* %27, align 4
-  store i32 3, i32* %28, align 4
-  %29 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %20, i32 2
-  %30 = getelementptr %dimension_descriptor, %dimension_descriptor* %29, i32 0, i32 0
-  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %29, i32 0, i32 1
-  %32 = getelementptr %dimension_descriptor, %dimension_descriptor* %29, i32 0, i32 2
-  store i32 9, i32* %30, align 4
-  store i32 1, i32* %31, align 4
-  store i32 3, i32* %32, align 4
-  %33 = getelementptr %array, %array* %17, i32 0, i32 0
-  %34 = call i8* @_lfortran_malloc(i64 108)
-  %35 = bitcast i8* %34 to i32*
-  store i32* %35, i32** %33, align 8
+  store i32 1, i32* %24, align 4
+  store i32 3, i32* %25, align 4
+  %26 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 1
+  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 0
+  %28 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 1
+  %29 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 2
+  store i32 3, i32* %27, align 4
+  store i32 1, i32* %28, align 4
+  store i32 3, i32* %29, align 4
+  %30 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 2
+  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %30, i32 0, i32 0
+  %32 = getelementptr %dimension_descriptor, %dimension_descriptor* %30, i32 0, i32 1
+  %33 = getelementptr %dimension_descriptor, %dimension_descriptor* %30, i32 0, i32 2
+  store i32 9, i32* %31, align 4
+  store i32 1, i32* %32, align 4
+  store i32 3, i32* %33, align 4
+  %34 = getelementptr %array, %array* %18, i32 0, i32 0
+  %35 = call i8* @_lfortran_malloc(i64 108)
+  %36 = bitcast i8* %35 to i32*
+  store i32* %36, i32** %34, align 8
   store i32 0, i32* %stat2, align 4
-  %36 = load i32, i32* %stat2, align 4
-  %37 = icmp ne i32 %36, 0
-  br i1 %37, label %then3, label %else
+  %37 = load i32, i32* %stat2, align 4
+  %38 = icmp ne i32 %37, 0
+  br i1 %38, label %then3, label %else
 
 then3:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
@@ -223,22 +224,22 @@ else:                                             ; preds = %ifcont
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else, %then3
-  %38 = load %array*, %array** %c, align 8
-  %39 = ptrtoint %array* %38 to i64
-  %40 = icmp eq i64 %39, 0
-  br i1 %40, label %merge_allocated6, label %check_data5
+  %39 = load %array*, %array** %c, align 8
+  %40 = ptrtoint %array* %39 to i64
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %merge_allocated6, label %check_data5
 
 check_data5:                                      ; preds = %ifcont4
-  %41 = getelementptr %array, %array* %38, i32 0, i32 0
-  %42 = load i32*, i32** %41, align 8
-  %43 = ptrtoint i32* %42 to i64
-  %44 = icmp ne i64 %43, 0
+  %42 = getelementptr %array, %array* %39, i32 0, i32 0
+  %43 = load i32*, i32** %42, align 8
+  %44 = ptrtoint i32* %43 to i64
+  %45 = icmp ne i64 %44, 0
   br label %merge_allocated6
 
 merge_allocated6:                                 ; preds = %check_data5, %ifcont4
-  %is_allocated7 = phi i1 [ false, %ifcont4 ], [ %44, %check_data5 ]
-  %45 = xor i1 %is_allocated7, true
-  br i1 %45, label %then8, label %ifcont9
+  %is_allocated7 = phi i1 [ false, %ifcont4 ], [ %45, %check_data5 ]
+  %46 = xor i1 %is_allocated7, true
+  br i1 %46, label %then8, label %ifcont9
 
 then8:                                            ; preds = %merge_allocated6
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([116 x i8], [116 x i8]* @93, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @92, i32 0, i32 0))
@@ -246,107 +247,107 @@ then8:                                            ; preds = %merge_allocated6
   unreachable
 
 ifcont9:                                          ; preds = %merge_allocated6
-  %46 = getelementptr %array, %array* %38, i32 0, i32 2
-  %47 = load %dimension_descriptor*, %dimension_descriptor** %46, align 8
-  %48 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %47, i32 0
-  %49 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 1
-  %50 = load i32, i32* %49, align 4
-  %51 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 2
-  %52 = load i32, i32* %51, align 4
-  %53 = sub i32 1, %50
-  %54 = add i32 %50, %52
-  %55 = sub i32 %54, 1
-  %56 = icmp slt i32 1, %50
-  %57 = icmp sgt i32 1, %55
-  %58 = or i1 %56, %57
-  br i1 %58, label %then10, label %ifcont11
+  %47 = getelementptr %array, %array* %39, i32 0, i32 2
+  %48 = load %dimension_descriptor*, %dimension_descriptor** %47, align 8
+  %49 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %48, i32 0
+  %50 = getelementptr %dimension_descriptor, %dimension_descriptor* %49, i32 0, i32 1
+  %51 = load i32, i32* %50, align 4
+  %52 = getelementptr %dimension_descriptor, %dimension_descriptor* %49, i32 0, i32 2
+  %53 = load i32, i32* %52, align 4
+  %54 = sub i32 1, %51
+  %55 = add i32 %51, %53
+  %56 = sub i32 %55, 1
+  %57 = icmp slt i32 1, %51
+  %58 = icmp sgt i32 1, %56
+  %59 = or i1 %57, %58
+  br i1 %59, label %then10, label %ifcont11
 
 then10:                                           ; preds = %ifcont9
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0), i32 1, i32 1, i32 %50, i32 %55)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0), i32 1, i32 1, i32 %51, i32 %56)
   call void @exit(i32 1)
   unreachable
 
 ifcont11:                                         ; preds = %ifcont9
-  %59 = getelementptr %dimension_descriptor, %dimension_descriptor* %48, i32 0, i32 0
-  %60 = load i32, i32* %59, align 4
-  %61 = mul i32 %60, %53
-  %62 = add i32 0, %61
-  %63 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %47, i32 1
-  %64 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 1
-  %65 = load i32, i32* %64, align 4
-  %66 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 2
-  %67 = load i32, i32* %66, align 4
-  %68 = sub i32 1, %65
-  %69 = add i32 %65, %67
-  %70 = sub i32 %69, 1
-  %71 = icmp slt i32 1, %65
-  %72 = icmp sgt i32 1, %70
-  %73 = or i1 %71, %72
-  br i1 %73, label %then12, label %ifcont13
+  %60 = getelementptr %dimension_descriptor, %dimension_descriptor* %49, i32 0, i32 0
+  %61 = load i32, i32* %60, align 4
+  %62 = mul i32 %61, %54
+  %63 = add i32 0, %62
+  %64 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %48, i32 1
+  %65 = getelementptr %dimension_descriptor, %dimension_descriptor* %64, i32 0, i32 1
+  %66 = load i32, i32* %65, align 4
+  %67 = getelementptr %dimension_descriptor, %dimension_descriptor* %64, i32 0, i32 2
+  %68 = load i32, i32* %67, align 4
+  %69 = sub i32 1, %66
+  %70 = add i32 %66, %68
+  %71 = sub i32 %70, 1
+  %72 = icmp slt i32 1, %66
+  %73 = icmp sgt i32 1, %71
+  %74 = or i1 %72, %73
+  br i1 %74, label %then12, label %ifcont13
 
 then12:                                           ; preds = %ifcont11
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0), i32 1, i32 2, i32 %65, i32 %70)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0), i32 1, i32 2, i32 %66, i32 %71)
   call void @exit(i32 1)
   unreachable
 
 ifcont13:                                         ; preds = %ifcont11
-  %74 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 0
-  %75 = load i32, i32* %74, align 4
-  %76 = mul i32 %75, %68
-  %77 = add i32 %62, %76
-  %78 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %47, i32 2
-  %79 = getelementptr %dimension_descriptor, %dimension_descriptor* %78, i32 0, i32 1
-  %80 = load i32, i32* %79, align 4
-  %81 = getelementptr %dimension_descriptor, %dimension_descriptor* %78, i32 0, i32 2
-  %82 = load i32, i32* %81, align 4
-  %83 = sub i32 1, %80
-  %84 = add i32 %80, %82
-  %85 = sub i32 %84, 1
-  %86 = icmp slt i32 1, %80
-  %87 = icmp sgt i32 1, %85
-  %88 = or i1 %86, %87
-  br i1 %88, label %then14, label %ifcont15
+  %75 = getelementptr %dimension_descriptor, %dimension_descriptor* %64, i32 0, i32 0
+  %76 = load i32, i32* %75, align 4
+  %77 = mul i32 %76, %69
+  %78 = add i32 %63, %77
+  %79 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %48, i32 2
+  %80 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 1
+  %81 = load i32, i32* %80, align 4
+  %82 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 2
+  %83 = load i32, i32* %82, align 4
+  %84 = sub i32 1, %81
+  %85 = add i32 %81, %83
+  %86 = sub i32 %85, 1
+  %87 = icmp slt i32 1, %81
+  %88 = icmp sgt i32 1, %86
+  %89 = or i1 %87, %88
+  br i1 %89, label %then14, label %ifcont15
 
 then14:                                           ; preds = %ifcont13
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @99, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @98, i32 0, i32 0), i32 1, i32 3, i32 %80, i32 %85)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @99, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @98, i32 0, i32 0), i32 1, i32 3, i32 %81, i32 %86)
   call void @exit(i32 1)
   unreachable
 
 ifcont15:                                         ; preds = %ifcont13
-  %89 = getelementptr %dimension_descriptor, %dimension_descriptor* %78, i32 0, i32 0
-  %90 = load i32, i32* %89, align 4
-  %91 = mul i32 %90, %83
-  %92 = add i32 %77, %91
-  %93 = getelementptr %array, %array* %38, i32 0, i32 1
-  %94 = load i32, i32* %93, align 4
-  %95 = add i32 %92, %94
-  %96 = getelementptr %array, %array* %38, i32 0, i32 0
-  %97 = load i32*, i32** %96, align 8
-  %98 = getelementptr inbounds i32, i32* %97, i32 %95
-  store i32 3, i32* %98, align 4
-  %99 = load %array*, %array** %c, align 8
-  %100 = ptrtoint %array* %99 to i64
-  %101 = icmp eq i64 %100, 0
-  br i1 %101, label %merge_allocated17, label %check_data16
+  %90 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 0
+  %91 = load i32, i32* %90, align 4
+  %92 = mul i32 %91, %84
+  %93 = add i32 %78, %92
+  %94 = getelementptr %array, %array* %39, i32 0, i32 1
+  %95 = load i32, i32* %94, align 4
+  %96 = add i32 %93, %95
+  %97 = getelementptr %array, %array* %39, i32 0, i32 0
+  %98 = load i32*, i32** %97, align 8
+  %99 = getelementptr inbounds i32, i32* %98, i32 %96
+  store i32 3, i32* %99, align 4
+  %100 = load %array*, %array** %c, align 8
+  %101 = ptrtoint %array* %100 to i64
+  %102 = icmp eq i64 %101, 0
+  br i1 %102, label %merge_allocated17, label %check_data16
 
 check_data16:                                     ; preds = %ifcont15
-  %102 = getelementptr %array, %array* %99, i32 0, i32 0
-  %103 = load i32*, i32** %102, align 8
-  %104 = ptrtoint i32* %103 to i64
-  %105 = icmp ne i64 %104, 0
+  %103 = getelementptr %array, %array* %100, i32 0, i32 0
+  %104 = load i32*, i32** %103, align 8
+  %105 = ptrtoint i32* %104 to i64
+  %106 = icmp ne i64 %105, 0
   br label %merge_allocated17
 
 merge_allocated17:                                ; preds = %check_data16, %ifcont15
-  %is_allocated18 = phi i1 [ false, %ifcont15 ], [ %105, %check_data16 ]
+  %is_allocated18 = phi i1 [ false, %ifcont15 ], [ %106, %check_data16 ]
   br i1 %is_allocated18, label %then19, label %else20
 
 then19:                                           ; preds = %merge_allocated17
-  %106 = getelementptr %array, %array* %99, i32 0, i32 0
-  %107 = load i32*, i32** %106, align 8
-  %108 = bitcast i32* %107 to i8*
-  call void @_lfortran_free(i8* %108)
-  %109 = getelementptr %array, %array* %99, i32 0, i32 0
-  store i32* null, i32** %109, align 8
+  %107 = getelementptr %array, %array* %100, i32 0, i32 0
+  %108 = load i32*, i32** %107, align 8
+  %109 = bitcast i32* %108 to i8*
+  call void @_lfortran_free(i8* %109)
+  %110 = getelementptr %array, %array* %100, i32 0, i32 0
+  store i32* null, i32** %110, align 8
   br label %ifcont21
 
 else20:                                           ; preds = %merge_allocated17
@@ -354,24 +355,24 @@ else20:                                           ; preds = %merge_allocated17
 
 ifcont21:                                         ; preds = %else20, %then19
   call void @h(%array** %c)
-  %110 = call i32 @g(%array** %c)
-  store i32 %110, i32* %r1, align 4
-  %111 = load %array*, %array** %c, align 8
-  %112 = ptrtoint %array* %111 to i64
-  %113 = icmp eq i64 %112, 0
-  br i1 %113, label %merge_allocated23, label %check_data22
+  %111 = call i32 @g(%array** %c)
+  store i32 %111, i32* %r1, align 4
+  %112 = load %array*, %array** %c, align 8
+  %113 = ptrtoint %array* %112 to i64
+  %114 = icmp eq i64 %113, 0
+  br i1 %114, label %merge_allocated23, label %check_data22
 
 check_data22:                                     ; preds = %ifcont21
-  %114 = getelementptr %array, %array* %111, i32 0, i32 0
-  %115 = load i32*, i32** %114, align 8
-  %116 = ptrtoint i32* %115 to i64
-  %117 = icmp ne i64 %116, 0
+  %115 = getelementptr %array, %array* %112, i32 0, i32 0
+  %116 = load i32*, i32** %115, align 8
+  %117 = ptrtoint i32* %116 to i64
+  %118 = icmp ne i64 %117, 0
   br label %merge_allocated23
 
 merge_allocated23:                                ; preds = %check_data22, %ifcont21
-  %is_allocated24 = phi i1 [ false, %ifcont21 ], [ %117, %check_data22 ]
-  %118 = xor i1 %is_allocated24, true
-  br i1 %118, label %then25, label %ifcont26
+  %is_allocated24 = phi i1 [ false, %ifcont21 ], [ %118, %check_data22 ]
+  %119 = xor i1 %is_allocated24, true
+  br i1 %119, label %then25, label %ifcont26
 
 then25:                                           ; preds = %merge_allocated23
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([116 x i8], [116 x i8]* @101, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @100, i32 0, i32 0))
@@ -379,86 +380,86 @@ then25:                                           ; preds = %merge_allocated23
   unreachable
 
 ifcont26:                                         ; preds = %merge_allocated23
-  %119 = getelementptr %array, %array* %111, i32 0, i32 2
-  %120 = load %dimension_descriptor*, %dimension_descriptor** %119, align 8
-  %121 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %120, i32 0
-  %122 = getelementptr %dimension_descriptor, %dimension_descriptor* %121, i32 0, i32 1
-  %123 = load i32, i32* %122, align 4
-  %124 = getelementptr %dimension_descriptor, %dimension_descriptor* %121, i32 0, i32 2
-  %125 = load i32, i32* %124, align 4
-  %126 = sub i32 1, %123
-  %127 = add i32 %123, %125
-  %128 = sub i32 %127, 1
-  %129 = icmp slt i32 1, %123
-  %130 = icmp sgt i32 1, %128
-  %131 = or i1 %129, %130
-  br i1 %131, label %then27, label %ifcont28
+  %120 = getelementptr %array, %array* %112, i32 0, i32 2
+  %121 = load %dimension_descriptor*, %dimension_descriptor** %120, align 8
+  %122 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %121, i32 0
+  %123 = getelementptr %dimension_descriptor, %dimension_descriptor* %122, i32 0, i32 1
+  %124 = load i32, i32* %123, align 4
+  %125 = getelementptr %dimension_descriptor, %dimension_descriptor* %122, i32 0, i32 2
+  %126 = load i32, i32* %125, align 4
+  %127 = sub i32 1, %124
+  %128 = add i32 %124, %126
+  %129 = sub i32 %128, 1
+  %130 = icmp slt i32 1, %124
+  %131 = icmp sgt i32 1, %129
+  %132 = or i1 %130, %131
+  br i1 %132, label %then27, label %ifcont28
 
 then27:                                           ; preds = %ifcont26
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @103, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @102, i32 0, i32 0), i32 1, i32 1, i32 %123, i32 %128)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @103, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @102, i32 0, i32 0), i32 1, i32 1, i32 %124, i32 %129)
   call void @exit(i32 1)
   unreachable
 
 ifcont28:                                         ; preds = %ifcont26
-  %132 = getelementptr %dimension_descriptor, %dimension_descriptor* %121, i32 0, i32 0
-  %133 = load i32, i32* %132, align 4
-  %134 = mul i32 %133, %126
-  %135 = add i32 0, %134
-  %136 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %120, i32 1
-  %137 = getelementptr %dimension_descriptor, %dimension_descriptor* %136, i32 0, i32 1
-  %138 = load i32, i32* %137, align 4
-  %139 = getelementptr %dimension_descriptor, %dimension_descriptor* %136, i32 0, i32 2
-  %140 = load i32, i32* %139, align 4
-  %141 = sub i32 1, %138
-  %142 = add i32 %138, %140
-  %143 = sub i32 %142, 1
-  %144 = icmp slt i32 1, %138
-  %145 = icmp sgt i32 1, %143
-  %146 = or i1 %144, %145
-  br i1 %146, label %then29, label %ifcont30
+  %133 = getelementptr %dimension_descriptor, %dimension_descriptor* %122, i32 0, i32 0
+  %134 = load i32, i32* %133, align 4
+  %135 = mul i32 %134, %127
+  %136 = add i32 0, %135
+  %137 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %121, i32 1
+  %138 = getelementptr %dimension_descriptor, %dimension_descriptor* %137, i32 0, i32 1
+  %139 = load i32, i32* %138, align 4
+  %140 = getelementptr %dimension_descriptor, %dimension_descriptor* %137, i32 0, i32 2
+  %141 = load i32, i32* %140, align 4
+  %142 = sub i32 1, %139
+  %143 = add i32 %139, %141
+  %144 = sub i32 %143, 1
+  %145 = icmp slt i32 1, %139
+  %146 = icmp sgt i32 1, %144
+  %147 = or i1 %145, %146
+  br i1 %147, label %then29, label %ifcont30
 
 then29:                                           ; preds = %ifcont28
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @105, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @104, i32 0, i32 0), i32 1, i32 2, i32 %138, i32 %143)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @105, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @104, i32 0, i32 0), i32 1, i32 2, i32 %139, i32 %144)
   call void @exit(i32 1)
   unreachable
 
 ifcont30:                                         ; preds = %ifcont28
-  %147 = getelementptr %dimension_descriptor, %dimension_descriptor* %136, i32 0, i32 0
-  %148 = load i32, i32* %147, align 4
-  %149 = mul i32 %148, %141
-  %150 = add i32 %135, %149
-  %151 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %120, i32 2
-  %152 = getelementptr %dimension_descriptor, %dimension_descriptor* %151, i32 0, i32 1
-  %153 = load i32, i32* %152, align 4
-  %154 = getelementptr %dimension_descriptor, %dimension_descriptor* %151, i32 0, i32 2
-  %155 = load i32, i32* %154, align 4
-  %156 = sub i32 1, %153
-  %157 = add i32 %153, %155
-  %158 = sub i32 %157, 1
-  %159 = icmp slt i32 1, %153
-  %160 = icmp sgt i32 1, %158
-  %161 = or i1 %159, %160
-  br i1 %161, label %then31, label %ifcont32
+  %148 = getelementptr %dimension_descriptor, %dimension_descriptor* %137, i32 0, i32 0
+  %149 = load i32, i32* %148, align 4
+  %150 = mul i32 %149, %142
+  %151 = add i32 %136, %150
+  %152 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %121, i32 2
+  %153 = getelementptr %dimension_descriptor, %dimension_descriptor* %152, i32 0, i32 1
+  %154 = load i32, i32* %153, align 4
+  %155 = getelementptr %dimension_descriptor, %dimension_descriptor* %152, i32 0, i32 2
+  %156 = load i32, i32* %155, align 4
+  %157 = sub i32 1, %154
+  %158 = add i32 %154, %156
+  %159 = sub i32 %158, 1
+  %160 = icmp slt i32 1, %154
+  %161 = icmp sgt i32 1, %159
+  %162 = or i1 %160, %161
+  br i1 %162, label %then31, label %ifcont32
 
 then31:                                           ; preds = %ifcont30
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @107, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @106, i32 0, i32 0), i32 1, i32 3, i32 %153, i32 %158)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @107, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @106, i32 0, i32 0), i32 1, i32 3, i32 %154, i32 %159)
   call void @exit(i32 1)
   unreachable
 
 ifcont32:                                         ; preds = %ifcont30
-  %162 = getelementptr %dimension_descriptor, %dimension_descriptor* %151, i32 0, i32 0
-  %163 = load i32, i32* %162, align 4
-  %164 = mul i32 %163, %156
-  %165 = add i32 %150, %164
-  %166 = getelementptr %array, %array* %111, i32 0, i32 1
-  %167 = load i32, i32* %166, align 4
-  %168 = add i32 %165, %167
-  %169 = getelementptr %array, %array* %111, i32 0, i32 0
-  %170 = load i32*, i32** %169, align 8
-  %171 = getelementptr inbounds i32, i32* %170, i32 %168
-  %172 = load i32, i32* %171, align 4
-  %173 = icmp ne i32 %172, 8
-  br i1 %173, label %then33, label %else34
+  %163 = getelementptr %dimension_descriptor, %dimension_descriptor* %152, i32 0, i32 0
+  %164 = load i32, i32* %163, align 4
+  %165 = mul i32 %164, %157
+  %166 = add i32 %151, %165
+  %167 = getelementptr %array, %array* %112, i32 0, i32 1
+  %168 = load i32, i32* %167, align 4
+  %169 = add i32 %166, %168
+  %170 = getelementptr %array, %array* %112, i32 0, i32 0
+  %171 = load i32*, i32** %170, align 8
+  %172 = getelementptr inbounds i32, i32* %171, i32 %169
+  %173 = load i32, i32* %172, align 4
+  %174 = icmp ne i32 %173, 8
+  br i1 %174, label %then33, label %else34
 
 then33:                                           ; preds = %ifcont32
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @109, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @108, i32 0, i32 0))
@@ -469,7 +470,6 @@ else34:                                           ; preds = %ifcont32
   br label %ifcont35
 
 ifcont35:                                         ; preds = %else34, %then33
-  %174 = alloca i64, align 8
   %175 = load %array*, %array** %c, align 8
   %176 = ptrtoint %array* %175 to i64
   %177 = icmp eq i64 %176, 0
@@ -573,8 +573,8 @@ ifcont46:                                         ; preds = %ifcont44
   %236 = load i32, i32* %235, align 4
   %237 = alloca i32, align 4
   store i32 %236, i32* %237, align 4
-  %238 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %174, i32 0, i32 0, i32* %237)
-  %239 = load i64, i64* %174, align 4
+  %238 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %2, i32 0, i32 0, i32* %237)
+  %239 = load i64, i64* %2, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %240 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %238, i8** %240, align 8
@@ -824,24 +824,25 @@ FINALIZE_SYMTABLE_f:                              ; preds = %return
 
 define i32 @g(%array** %x) {
 .entry:
-  %r = alloca i32, align 4
   %0 = alloca i64, align 8
-  %1 = load %array*, %array** %x, align 8
-  %2 = ptrtoint %array* %1 to i64
-  %3 = icmp eq i64 %2, 0
-  br i1 %3, label %merge_allocated, label %check_data
+  %1 = alloca i64, align 8
+  %r = alloca i32, align 4
+  %2 = load %array*, %array** %x, align 8
+  %3 = ptrtoint %array* %2 to i64
+  %4 = icmp eq i64 %3, 0
+  br i1 %4, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %4 = getelementptr %array, %array* %1, i32 0, i32 0
-  %5 = load i32*, i32** %4, align 8
-  %6 = ptrtoint i32* %5 to i64
-  %7 = icmp ne i64 %6, 0
+  %5 = getelementptr %array, %array* %2, i32 0, i32 0
+  %6 = load i32*, i32** %5, align 8
+  %7 = ptrtoint i32* %6 to i64
+  %8 = icmp ne i64 %7, 0
   br label %merge_allocated
 
 merge_allocated:                                  ; preds = %check_data, %.entry
-  %is_allocated = phi i1 [ false, %.entry ], [ %7, %check_data ]
-  %8 = xor i1 %is_allocated, true
-  br i1 %8, label %then, label %ifcont
+  %is_allocated = phi i1 [ false, %.entry ], [ %8, %check_data ]
+  %9 = xor i1 %is_allocated, true
+  br i1 %9, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([117 x i8], [117 x i8]* @12, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
@@ -849,116 +850,116 @@ then:                                             ; preds = %merge_allocated
   unreachable
 
 ifcont:                                           ; preds = %merge_allocated
-  %9 = getelementptr %array, %array* %1, i32 0, i32 2
-  %10 = load %dimension_descriptor*, %dimension_descriptor** %9, align 8
-  %11 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %10, i32 0
-  %12 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 1
-  %13 = load i32, i32* %12, align 4
-  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 2
-  %15 = load i32, i32* %14, align 4
-  %16 = sub i32 1, %13
-  %17 = add i32 %13, %15
-  %18 = sub i32 %17, 1
-  %19 = icmp slt i32 1, %13
-  %20 = icmp sgt i32 1, %18
-  %21 = or i1 %19, %20
-  br i1 %21, label %then1, label %ifcont2
+  %10 = getelementptr %array, %array* %2, i32 0, i32 2
+  %11 = load %dimension_descriptor*, %dimension_descriptor** %10, align 8
+  %12 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %11, i32 0
+  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 1
+  %14 = load i32, i32* %13, align 4
+  %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 2
+  %16 = load i32, i32* %15, align 4
+  %17 = sub i32 1, %14
+  %18 = add i32 %14, %16
+  %19 = sub i32 %18, 1
+  %20 = icmp slt i32 1, %14
+  %21 = icmp sgt i32 1, %19
+  %22 = or i1 %20, %21
+  br i1 %22, label %then1, label %ifcont2
 
 then1:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i32 1, i32 1, i32 %13, i32 %18)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i32 1, i32 1, i32 %14, i32 %19)
   call void @exit(i32 1)
   unreachable
 
 ifcont2:                                          ; preds = %ifcont
-  %22 = getelementptr %dimension_descriptor, %dimension_descriptor* %11, i32 0, i32 0
-  %23 = load i32, i32* %22, align 4
-  %24 = mul i32 %23, %16
-  %25 = add i32 0, %24
-  %26 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %10, i32 1
-  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 1
-  %28 = load i32, i32* %27, align 4
-  %29 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 2
-  %30 = load i32, i32* %29, align 4
-  %31 = sub i32 1, %28
-  %32 = add i32 %28, %30
-  %33 = sub i32 %32, 1
-  %34 = icmp slt i32 1, %28
-  %35 = icmp sgt i32 1, %33
-  %36 = or i1 %34, %35
-  br i1 %36, label %then3, label %ifcont4
+  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 0
+  %24 = load i32, i32* %23, align 4
+  %25 = mul i32 %24, %17
+  %26 = add i32 0, %25
+  %27 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %11, i32 1
+  %28 = getelementptr %dimension_descriptor, %dimension_descriptor* %27, i32 0, i32 1
+  %29 = load i32, i32* %28, align 4
+  %30 = getelementptr %dimension_descriptor, %dimension_descriptor* %27, i32 0, i32 2
+  %31 = load i32, i32* %30, align 4
+  %32 = sub i32 1, %29
+  %33 = add i32 %29, %31
+  %34 = sub i32 %33, 1
+  %35 = icmp slt i32 1, %29
+  %36 = icmp sgt i32 1, %34
+  %37 = or i1 %35, %36
+  br i1 %37, label %then3, label %ifcont4
 
 then3:                                            ; preds = %ifcont2
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @16, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i32 1, i32 2, i32 %28, i32 %33)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @16, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i32 1, i32 2, i32 %29, i32 %34)
   call void @exit(i32 1)
   unreachable
 
 ifcont4:                                          ; preds = %ifcont2
-  %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 0
-  %38 = load i32, i32* %37, align 4
-  %39 = mul i32 %38, %31
-  %40 = add i32 %25, %39
-  %41 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %10, i32 2
-  %42 = getelementptr %dimension_descriptor, %dimension_descriptor* %41, i32 0, i32 1
-  %43 = load i32, i32* %42, align 4
-  %44 = getelementptr %dimension_descriptor, %dimension_descriptor* %41, i32 0, i32 2
-  %45 = load i32, i32* %44, align 4
-  %46 = sub i32 1, %43
-  %47 = add i32 %43, %45
-  %48 = sub i32 %47, 1
-  %49 = icmp slt i32 1, %43
-  %50 = icmp sgt i32 1, %48
-  %51 = or i1 %49, %50
-  br i1 %51, label %then5, label %ifcont6
+  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %27, i32 0, i32 0
+  %39 = load i32, i32* %38, align 4
+  %40 = mul i32 %39, %32
+  %41 = add i32 %26, %40
+  %42 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %11, i32 2
+  %43 = getelementptr %dimension_descriptor, %dimension_descriptor* %42, i32 0, i32 1
+  %44 = load i32, i32* %43, align 4
+  %45 = getelementptr %dimension_descriptor, %dimension_descriptor* %42, i32 0, i32 2
+  %46 = load i32, i32* %45, align 4
+  %47 = sub i32 1, %44
+  %48 = add i32 %44, %46
+  %49 = sub i32 %48, 1
+  %50 = icmp slt i32 1, %44
+  %51 = icmp sgt i32 1, %49
+  %52 = or i1 %50, %51
+  br i1 %52, label %then5, label %ifcont6
 
 then5:                                            ; preds = %ifcont4
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0), i32 1, i32 3, i32 %43, i32 %48)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([180 x i8], [180 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0), i32 1, i32 3, i32 %44, i32 %49)
   call void @exit(i32 1)
   unreachable
 
 ifcont6:                                          ; preds = %ifcont4
-  %52 = getelementptr %dimension_descriptor, %dimension_descriptor* %41, i32 0, i32 0
-  %53 = load i32, i32* %52, align 4
-  %54 = mul i32 %53, %46
-  %55 = add i32 %40, %54
-  %56 = getelementptr %array, %array* %1, i32 0, i32 1
-  %57 = load i32, i32* %56, align 4
-  %58 = add i32 %55, %57
-  %59 = getelementptr %array, %array* %1, i32 0, i32 0
-  %60 = load i32*, i32** %59, align 8
-  %61 = getelementptr inbounds i32, i32* %60, i32 %58
-  %62 = load i32, i32* %61, align 4
-  %63 = alloca i32, align 4
-  store i32 %62, i32* %63, align 4
-  %64 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %0, i32 0, i32 0, i32* %63)
-  %65 = load i64, i64* %0, align 4
+  %53 = getelementptr %dimension_descriptor, %dimension_descriptor* %42, i32 0, i32 0
+  %54 = load i32, i32* %53, align 4
+  %55 = mul i32 %54, %47
+  %56 = add i32 %41, %55
+  %57 = getelementptr %array, %array* %2, i32 0, i32 1
+  %58 = load i32, i32* %57, align 4
+  %59 = add i32 %56, %58
+  %60 = getelementptr %array, %array* %2, i32 0, i32 0
+  %61 = load i32*, i32** %60, align 8
+  %62 = getelementptr inbounds i32, i32* %61, i32 %59
+  %63 = load i32, i32* %62, align 4
+  %64 = alloca i32, align 4
+  store i32 %63, i32* %64, align 4
+  %65 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32* %64)
+  %66 = load i64, i64* %1, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %66 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %64, i8** %66, align 8
-  %67 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %65, i64* %67, align 4
-  %68 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %69 = load i8*, i8** %68, align 8
-  %70 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %71 = load i64, i64* %70, align 4
-  %72 = trunc i64 %71 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %69, i32 %72, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %64)
-  %73 = load %array*, %array** %x, align 8
-  %74 = ptrtoint %array* %73 to i64
-  %75 = icmp eq i64 %74, 0
-  br i1 %75, label %merge_allocated8, label %check_data7
+  %67 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %65, i8** %67, align 8
+  %68 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %66, i64* %68, align 4
+  %69 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %70 = load i8*, i8** %69, align 8
+  %71 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %72 = load i64, i64* %71, align 4
+  %73 = trunc i64 %72 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %70, i32 %73, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
+  call void @_lfortran_free(i8* %65)
+  %74 = load %array*, %array** %x, align 8
+  %75 = ptrtoint %array* %74 to i64
+  %76 = icmp eq i64 %75, 0
+  br i1 %76, label %merge_allocated8, label %check_data7
 
 check_data7:                                      ; preds = %ifcont6
-  %76 = getelementptr %array, %array* %73, i32 0, i32 0
-  %77 = load i32*, i32** %76, align 8
-  %78 = ptrtoint i32* %77 to i64
-  %79 = icmp ne i64 %78, 0
+  %77 = getelementptr %array, %array* %74, i32 0, i32 0
+  %78 = load i32*, i32** %77, align 8
+  %79 = ptrtoint i32* %78 to i64
+  %80 = icmp ne i64 %79, 0
   br label %merge_allocated8
 
 merge_allocated8:                                 ; preds = %check_data7, %ifcont6
-  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %79, %check_data7 ]
-  %80 = xor i1 %is_allocated9, true
-  br i1 %80, label %then10, label %ifcont11
+  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %80, %check_data7 ]
+  %81 = xor i1 %is_allocated9, true
+  br i1 %81, label %then10, label %ifcont11
 
 then10:                                           ; preds = %merge_allocated8
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([116 x i8], [116 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
@@ -966,86 +967,86 @@ then10:                                           ; preds = %merge_allocated8
   unreachable
 
 ifcont11:                                         ; preds = %merge_allocated8
-  %81 = getelementptr %array, %array* %73, i32 0, i32 2
-  %82 = load %dimension_descriptor*, %dimension_descriptor** %81, align 8
-  %83 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %82, i32 0
-  %84 = getelementptr %dimension_descriptor, %dimension_descriptor* %83, i32 0, i32 1
-  %85 = load i32, i32* %84, align 4
-  %86 = getelementptr %dimension_descriptor, %dimension_descriptor* %83, i32 0, i32 2
-  %87 = load i32, i32* %86, align 4
-  %88 = sub i32 1, %85
-  %89 = add i32 %85, %87
-  %90 = sub i32 %89, 1
-  %91 = icmp slt i32 1, %85
-  %92 = icmp sgt i32 1, %90
-  %93 = or i1 %91, %92
-  br i1 %93, label %then12, label %ifcont13
+  %82 = getelementptr %array, %array* %74, i32 0, i32 2
+  %83 = load %dimension_descriptor*, %dimension_descriptor** %82, align 8
+  %84 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %83, i32 0
+  %85 = getelementptr %dimension_descriptor, %dimension_descriptor* %84, i32 0, i32 1
+  %86 = load i32, i32* %85, align 4
+  %87 = getelementptr %dimension_descriptor, %dimension_descriptor* %84, i32 0, i32 2
+  %88 = load i32, i32* %87, align 4
+  %89 = sub i32 1, %86
+  %90 = add i32 %86, %88
+  %91 = sub i32 %90, 1
+  %92 = icmp slt i32 1, %86
+  %93 = icmp sgt i32 1, %91
+  %94 = or i1 %92, %93
+  br i1 %94, label %then12, label %ifcont13
 
 then12:                                           ; preds = %ifcont11
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1, i32 1, i32 %85, i32 %90)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1, i32 1, i32 %86, i32 %91)
   call void @exit(i32 1)
   unreachable
 
 ifcont13:                                         ; preds = %ifcont11
-  %94 = getelementptr %dimension_descriptor, %dimension_descriptor* %83, i32 0, i32 0
-  %95 = load i32, i32* %94, align 4
-  %96 = mul i32 %95, %88
-  %97 = add i32 0, %96
-  %98 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %82, i32 1
-  %99 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 1
-  %100 = load i32, i32* %99, align 4
-  %101 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 2
-  %102 = load i32, i32* %101, align 4
-  %103 = sub i32 1, %100
-  %104 = add i32 %100, %102
-  %105 = sub i32 %104, 1
-  %106 = icmp slt i32 1, %100
-  %107 = icmp sgt i32 1, %105
-  %108 = or i1 %106, %107
-  br i1 %108, label %then14, label %ifcont15
+  %95 = getelementptr %dimension_descriptor, %dimension_descriptor* %84, i32 0, i32 0
+  %96 = load i32, i32* %95, align 4
+  %97 = mul i32 %96, %89
+  %98 = add i32 0, %97
+  %99 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %83, i32 1
+  %100 = getelementptr %dimension_descriptor, %dimension_descriptor* %99, i32 0, i32 1
+  %101 = load i32, i32* %100, align 4
+  %102 = getelementptr %dimension_descriptor, %dimension_descriptor* %99, i32 0, i32 2
+  %103 = load i32, i32* %102, align 4
+  %104 = sub i32 1, %101
+  %105 = add i32 %101, %103
+  %106 = sub i32 %105, 1
+  %107 = icmp slt i32 1, %101
+  %108 = icmp sgt i32 1, %106
+  %109 = or i1 %107, %108
+  br i1 %109, label %then14, label %ifcont15
 
 then14:                                           ; preds = %ifcont13
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1, i32 2, i32 %100, i32 %105)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1, i32 2, i32 %101, i32 %106)
   call void @exit(i32 1)
   unreachable
 
 ifcont15:                                         ; preds = %ifcont13
-  %109 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 0
-  %110 = load i32, i32* %109, align 4
-  %111 = mul i32 %110, %103
-  %112 = add i32 %97, %111
-  %113 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %82, i32 2
-  %114 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 1
-  %115 = load i32, i32* %114, align 4
-  %116 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 2
-  %117 = load i32, i32* %116, align 4
-  %118 = sub i32 1, %115
-  %119 = add i32 %115, %117
-  %120 = sub i32 %119, 1
-  %121 = icmp slt i32 1, %115
-  %122 = icmp sgt i32 1, %120
-  %123 = or i1 %121, %122
-  br i1 %123, label %then16, label %ifcont17
+  %110 = getelementptr %dimension_descriptor, %dimension_descriptor* %99, i32 0, i32 0
+  %111 = load i32, i32* %110, align 4
+  %112 = mul i32 %111, %104
+  %113 = add i32 %98, %112
+  %114 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %83, i32 2
+  %115 = getelementptr %dimension_descriptor, %dimension_descriptor* %114, i32 0, i32 1
+  %116 = load i32, i32* %115, align 4
+  %117 = getelementptr %dimension_descriptor, %dimension_descriptor* %114, i32 0, i32 2
+  %118 = load i32, i32* %117, align 4
+  %119 = sub i32 1, %116
+  %120 = add i32 %116, %118
+  %121 = sub i32 %120, 1
+  %122 = icmp slt i32 1, %116
+  %123 = icmp sgt i32 1, %121
+  %124 = or i1 %122, %123
+  br i1 %124, label %then16, label %ifcont17
 
 then16:                                           ; preds = %ifcont15
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0), i32 1, i32 3, i32 %115, i32 %120)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([179 x i8], [179 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0), i32 1, i32 3, i32 %116, i32 %121)
   call void @exit(i32 1)
   unreachable
 
 ifcont17:                                         ; preds = %ifcont15
-  %124 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 0
-  %125 = load i32, i32* %124, align 4
-  %126 = mul i32 %125, %118
-  %127 = add i32 %112, %126
-  %128 = getelementptr %array, %array* %73, i32 0, i32 1
-  %129 = load i32, i32* %128, align 4
-  %130 = add i32 %127, %129
-  %131 = getelementptr %array, %array* %73, i32 0, i32 0
-  %132 = load i32*, i32** %131, align 8
-  %133 = getelementptr inbounds i32, i32* %132, i32 %130
-  %134 = load i32, i32* %133, align 4
-  %135 = icmp ne i32 %134, 8
-  br i1 %135, label %then18, label %else
+  %125 = getelementptr %dimension_descriptor, %dimension_descriptor* %114, i32 0, i32 0
+  %126 = load i32, i32* %125, align 4
+  %127 = mul i32 %126, %119
+  %128 = add i32 %113, %127
+  %129 = getelementptr %array, %array* %74, i32 0, i32 1
+  %130 = load i32, i32* %129, align 4
+  %131 = add i32 %128, %130
+  %132 = getelementptr %array, %array* %74, i32 0, i32 0
+  %133 = load i32*, i32** %132, align 8
+  %134 = getelementptr inbounds i32, i32* %133, i32 %131
+  %135 = load i32, i32* %134, align 4
+  %136 = icmp ne i32 %135, 8
+  br i1 %136, label %then18, label %else
 
 then18:                                           ; preds = %ifcont17
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0))
@@ -1056,29 +1057,29 @@ else:                                             ; preds = %ifcont17
   br label %ifcont19
 
 ifcont19:                                         ; preds = %else, %then18
-  %136 = load %array*, %array** %x, align 8
-  %137 = ptrtoint %array* %136 to i64
-  %138 = icmp eq i64 %137, 0
-  br i1 %138, label %merge_allocated21, label %check_data20
+  %137 = load %array*, %array** %x, align 8
+  %138 = ptrtoint %array* %137 to i64
+  %139 = icmp eq i64 %138, 0
+  br i1 %139, label %merge_allocated21, label %check_data20
 
 check_data20:                                     ; preds = %ifcont19
-  %139 = getelementptr %array, %array* %136, i32 0, i32 0
-  %140 = load i32*, i32** %139, align 8
-  %141 = ptrtoint i32* %140 to i64
-  %142 = icmp ne i64 %141, 0
+  %140 = getelementptr %array, %array* %137, i32 0, i32 0
+  %141 = load i32*, i32** %140, align 8
+  %142 = ptrtoint i32* %141 to i64
+  %143 = icmp ne i64 %142, 0
   br label %merge_allocated21
 
 merge_allocated21:                                ; preds = %check_data20, %ifcont19
-  %is_allocated22 = phi i1 [ false, %ifcont19 ], [ %142, %check_data20 ]
+  %is_allocated22 = phi i1 [ false, %ifcont19 ], [ %143, %check_data20 ]
   br i1 %is_allocated22, label %then23, label %else24
 
 then23:                                           ; preds = %merge_allocated21
-  %143 = getelementptr %array, %array* %136, i32 0, i32 0
-  %144 = load i32*, i32** %143, align 8
-  %145 = bitcast i32* %144 to i8*
-  call void @_lfortran_free(i8* %145)
-  %146 = getelementptr %array, %array* %136, i32 0, i32 0
-  store i32* null, i32** %146, align 8
+  %144 = getelementptr %array, %array* %137, i32 0, i32 0
+  %145 = load i32*, i32** %144, align 8
+  %146 = bitcast i32* %145 to i8*
+  call void @_lfortran_free(i8* %146)
+  %147 = getelementptr %array, %array* %137, i32 0, i32 0
+  store i32* null, i32** %147, align 8
   br label %ifcont25
 
 else24:                                           ; preds = %merge_allocated21
@@ -1086,7 +1087,6 @@ else24:                                           ; preds = %merge_allocated21
 
 ifcont25:                                         ; preds = %else24, %then23
   call void @f(%array** %x)
-  %147 = alloca i64, align 8
   %148 = load %array*, %array** %x, align 8
   %149 = ptrtoint %array* %148 to i64
   %150 = icmp eq i64 %149, 0
@@ -1190,8 +1190,8 @@ ifcont36:                                         ; preds = %ifcont34
   %209 = load i32, i32* %208, align 4
   %210 = alloca i32, align 4
   store i32 %209, i32* %210, align 4
-  %211 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %147, i32 0, i32 0, i32* %210)
-  %212 = load i64, i64* %147, align 4
+  %211 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %0, i32 0, i32 0, i32* %210)
+  %212 = load i64, i64* %0, align 4
   %stringFormat_desc37 = alloca %string_descriptor, align 8
   %213 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc37, i32 0, i32 0
   store i8* %211, i8** %213, align 8
@@ -1431,47 +1431,48 @@ FINALIZE_SYMTABLE_g:                              ; preds = %return
 
 define void @h(%array** %c) {
 .entry:
-  %0 = load %array*, %array** %c, align 8
+  %0 = alloca i64, align 8
   %1 = load %array*, %array** %c, align 8
-  %2 = ptrtoint %array* %1 to i64
-  %3 = icmp eq i64 %2, 0
-  br i1 %3, label %merge_allocated, label %check_data
+  %2 = load %array*, %array** %c, align 8
+  %3 = ptrtoint %array* %2 to i64
+  %4 = icmp eq i64 %3, 0
+  br i1 %4, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %4 = getelementptr %array, %array* %1, i32 0, i32 0
-  %5 = load i32*, i32** %4, align 8
-  %6 = ptrtoint i32* %5 to i64
-  %7 = icmp ne i64 %6, 0
+  %5 = getelementptr %array, %array* %2, i32 0, i32 0
+  %6 = load i32*, i32** %5, align 8
+  %7 = ptrtoint i32* %6 to i64
+  %8 = icmp ne i64 %7, 0
   br label %merge_allocated
 
 merge_allocated:                                  ; preds = %check_data, %.entry
-  %is_allocated = phi i1 [ false, %.entry ], [ %7, %check_data ]
+  %is_allocated = phi i1 [ false, %.entry ], [ %8, %check_data ]
   br i1 %is_allocated, label %then, label %else5
 
 then:                                             ; preds = %merge_allocated
-  %8 = load %array*, %array** %c, align 8
-  %9 = ptrtoint %array* %8 to i64
-  %10 = icmp eq i64 %9, 0
-  br i1 %10, label %merge_allocated2, label %check_data1
+  %9 = load %array*, %array** %c, align 8
+  %10 = ptrtoint %array* %9 to i64
+  %11 = icmp eq i64 %10, 0
+  br i1 %11, label %merge_allocated2, label %check_data1
 
 check_data1:                                      ; preds = %then
-  %11 = getelementptr %array, %array* %8, i32 0, i32 0
-  %12 = load i32*, i32** %11, align 8
-  %13 = ptrtoint i32* %12 to i64
-  %14 = icmp ne i64 %13, 0
+  %12 = getelementptr %array, %array* %9, i32 0, i32 0
+  %13 = load i32*, i32** %12, align 8
+  %14 = ptrtoint i32* %13 to i64
+  %15 = icmp ne i64 %14, 0
   br label %merge_allocated2
 
 merge_allocated2:                                 ; preds = %check_data1, %then
-  %is_allocated3 = phi i1 [ false, %then ], [ %14, %check_data1 ]
+  %is_allocated3 = phi i1 [ false, %then ], [ %15, %check_data1 ]
   br i1 %is_allocated3, label %then4, label %else
 
 then4:                                            ; preds = %merge_allocated2
-  %15 = getelementptr %array, %array* %8, i32 0, i32 0
-  %16 = load i32*, i32** %15, align 8
-  %17 = bitcast i32* %16 to i8*
-  call void @_lfortran_free(i8* %17)
-  %18 = getelementptr %array, %array* %8, i32 0, i32 0
-  store i32* null, i32** %18, align 8
+  %16 = getelementptr %array, %array* %9, i32 0, i32 0
+  %17 = load i32*, i32** %16, align 8
+  %18 = bitcast i32* %17 to i8*
+  call void @_lfortran_free(i8* %18)
+  %19 = getelementptr %array, %array* %9, i32 0, i32 0
+  store i32* null, i32** %19, align 8
   br label %ifcont
 
 else:                                             ; preds = %merge_allocated2
@@ -1484,21 +1485,21 @@ else5:                                            ; preds = %merge_allocated
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %ifcont
-  %19 = load %array*, %array** %c, align 8
   %20 = load %array*, %array** %c, align 8
-  %21 = ptrtoint %array* %20 to i64
-  %22 = icmp eq i64 %21, 0
-  br i1 %22, label %merge_allocated8, label %check_data7
+  %21 = load %array*, %array** %c, align 8
+  %22 = ptrtoint %array* %21 to i64
+  %23 = icmp eq i64 %22, 0
+  br i1 %23, label %merge_allocated8, label %check_data7
 
 check_data7:                                      ; preds = %ifcont6
-  %23 = getelementptr %array, %array* %20, i32 0, i32 0
-  %24 = load i32*, i32** %23, align 8
-  %25 = ptrtoint i32* %24 to i64
-  %26 = icmp ne i64 %25, 0
+  %24 = getelementptr %array, %array* %21, i32 0, i32 0
+  %25 = load i32*, i32** %24, align 8
+  %26 = ptrtoint i32* %25 to i64
+  %27 = icmp ne i64 %26, 0
   br label %merge_allocated8
 
 merge_allocated8:                                 ; preds = %check_data7, %ifcont6
-  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %26, %check_data7 ]
+  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %27, %check_data7 ]
   br i1 %is_allocated9, label %then10, label %else11
 
 then10:                                           ; preds = %merge_allocated8
@@ -1510,29 +1511,29 @@ else11:                                           ; preds = %merge_allocated8
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  %27 = load %array*, %array** %c, align 8
-  %28 = ptrtoint %array* %27 to i64
-  %29 = icmp eq i64 %28, 0
-  br i1 %29, label %merge_allocated14, label %check_data13
+  %28 = load %array*, %array** %c, align 8
+  %29 = ptrtoint %array* %28 to i64
+  %30 = icmp eq i64 %29, 0
+  br i1 %30, label %merge_allocated14, label %check_data13
 
 check_data13:                                     ; preds = %ifcont12
-  %30 = getelementptr %array, %array* %27, i32 0, i32 0
-  %31 = load i32*, i32** %30, align 8
-  %32 = ptrtoint i32* %31 to i64
-  %33 = icmp ne i64 %32, 0
+  %31 = getelementptr %array, %array* %28, i32 0, i32 0
+  %32 = load i32*, i32** %31, align 8
+  %33 = ptrtoint i32* %32 to i64
+  %34 = icmp ne i64 %33, 0
   br label %merge_allocated14
 
 merge_allocated14:                                ; preds = %check_data13, %ifcont12
-  %is_allocated15 = phi i1 [ false, %ifcont12 ], [ %33, %check_data13 ]
+  %is_allocated15 = phi i1 [ false, %ifcont12 ], [ %34, %check_data13 ]
   br i1 %is_allocated15, label %then16, label %else17
 
 then16:                                           ; preds = %merge_allocated14
-  %34 = getelementptr %array, %array* %27, i32 0, i32 0
-  %35 = load i32*, i32** %34, align 8
-  %36 = bitcast i32* %35 to i8*
-  call void @_lfortran_free(i8* %36)
-  %37 = getelementptr %array, %array* %27, i32 0, i32 0
-  store i32* null, i32** %37, align 8
+  %35 = getelementptr %array, %array* %28, i32 0, i32 0
+  %36 = load i32*, i32** %35, align 8
+  %37 = bitcast i32* %36 to i8*
+  call void @_lfortran_free(i8* %37)
+  %38 = getelementptr %array, %array* %28, i32 0, i32 0
+  store i32* null, i32** %38, align 8
   br label %ifcont18
 
 else17:                                           ; preds = %merge_allocated14
@@ -1540,7 +1541,6 @@ else17:                                           ; preds = %merge_allocated14
 
 ifcont18:                                         ; preds = %else17, %then16
   call void @f(%array** %c)
-  %38 = alloca i64, align 8
   %39 = load %array*, %array** %c, align 8
   %40 = ptrtoint %array* %39 to i64
   %41 = icmp eq i64 %40, 0
@@ -1644,8 +1644,8 @@ ifcont29:                                         ; preds = %ifcont27
   %100 = load i32, i32* %99, align 4
   %101 = alloca i32, align 4
   store i32 %100, i32* %101, align 4
-  %102 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %38, i32 0, i32 0, i32* %101)
-  %103 = load i64, i64* %38, align 4
+  %102 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %0, i32 0, i32 0, i32* %101)
+  %103 = load i64, i64* %0, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %104 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %102, i8** %104, align 8
