@@ -1,4 +1,4 @@
-program blank_types_demo
+program file_40
    implicit none
    integer           :: i
    real              :: r
