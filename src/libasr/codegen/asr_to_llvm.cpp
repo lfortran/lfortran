@@ -1976,9 +1976,7 @@ public:
 
     inline void call_lfortran_free(llvm::Function* fn, llvm::Type* tmp_typ,  llvm::Type* llvm_data_type) {
         llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp_typ, tmp));
-        llvm::AllocaInst *arg_arr = llvm_utils->CreateAlloca(*builder, character_type);
-        builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
-        std::vector<llvm::Value*> args = { llvm_utils->CreateLoad2(character_type, arg_arr) };
+        std::vector<llvm::Value*> args = { builder->CreateBitCast(arr, character_type) };
         builder->CreateCall(fn, args);
         arr_descr->reset_is_allocated_flag(tmp_typ, tmp, llvm_data_type);
     }
