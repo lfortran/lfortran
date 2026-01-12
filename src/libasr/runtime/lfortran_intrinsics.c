@@ -4046,7 +4046,19 @@ _lfortran_open(int32_t unit_num,
     char* access_c = to_c_string((const fchar*)access, access_len);
     bool ini_form = true;
     if (form == NULL) {
-        if (access_c != NULL && streql(access_c, "stream")) {
+        bool is_stream_or_direct = false;
+        if (access != NULL) {
+            char* access_c_temp = (char*)malloc(access_len + 1);
+            if (access_c_temp) {
+                memcpy(access_c_temp, access, access_len);
+                access_c_temp[access_len] = '\0';                
+                if (streql(access_c_temp, "stream") || streql(access_c_temp, "direct")) {
+                    is_stream_or_direct = true;
+                }
+                free(access_c_temp);
+            }
+        }
+        if (is_stream_or_direct) {
             form = "unformatted";
             form_len = 11;
         } else {
