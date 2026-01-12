@@ -116,33 +116,31 @@ static std::string compute_llvm_function_name(
     const std::string& mangle_prefix,
     const ASR::Function_t* parent_function
 ) {
+    // Check function properties once
+    bool is_external_interface = is_external_interface_function(ftype);
+    bool is_bindc = (ftype->m_abi == ASR::abiType::BindC);
+
     std::string fn_name;
 
     // Step 1: Determine base name based on function type
-    if (ftype->m_abi == ASR::abiType::BindC) {
-        // BindC functions use their bind(C, name="...") or bare symbol name
+    if (is_bindc) {
         fn_name = ftype->m_bindc_name ? ftype->m_bindc_name : sym_name;
-    } else if (is_external_interface_function(ftype)) {
-        // External interface functions use bare symbol name
+    } else if (is_external_interface) {
         fn_name = sym_name;
     } else {
-        // Normal functions get the LFortran prefix
         fn_name = mangle_prefix + sym_name;
     }
 
     // Step 2: Add parent function prefix for nested functions
     if (parent_function != nullptr &&
-        ftype->m_deftype != ASR::deftypeType::Interface &&
+        !is_external_interface &&
         ftype->m_abi != ASR::abiType::Intrinsic &&
-        ftype->m_abi != ASR::abiType::BindC) {
+        !is_bindc) {
         fn_name = std::string(parent_function->m_name) + "." + fn_name;
     }
 
     // Step 3: Apply underscore mangling for external interface functions
-    // This is used for LAPACK/BLAS compatibility when --mangle-underscore-external is set
-    if (compiler_options.po.mangle_underscore_external &&
-        is_external_interface_function(ftype)) {
-        // Don't mangle reserved runtime functions or already-mangled names
+    if (compiler_options.po.mangle_underscore_external && is_external_interface) {
         if (!has_reserved_prefix(fn_name) &&
             !fn_name.empty() &&
             fn_name.back() != '_') {
