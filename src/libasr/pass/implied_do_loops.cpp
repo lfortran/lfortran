@@ -28,13 +28,51 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     bool realloc_lhs, allocate_target;
 
     ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
+        // Visitor to replace loop variable with its starting value in an expression
+        class ReplaceLoopVarWithStart : public ASR::BaseExprReplacer<ReplaceLoopVarWithStart> {
+        public:
+            Allocator& al;
+            ASR::symbol_t* loop_var_sym;
+            ASR::expr_t* start_value;
+
+            ReplaceLoopVarWithStart(Allocator& al_, ASR::symbol_t* loop_var_sym_, ASR::expr_t* start_value_)
+                : al(al_), loop_var_sym(loop_var_sym_), start_value(start_value_) {}
+
+            void replace_Var(ASR::Var_t* x) {
+                if (x->m_v == loop_var_sym) {
+                    *current_expr = start_value;
+                }
+            }
+        };
         if( expr == nullptr ) {
             return nullptr;
         }
         if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
             ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
             for( size_t i = 0; i < idl->n_values; i++ ) {
-                ASR::expr_t* candidate = get_first_scalar_expr(idl->m_values[i]);
+                // Replace loop variable with its starting value in the expression
+                ASR::expr_t* value_expr = idl->m_values[i];
+                
+                // Get the loop variable symbol
+                if (ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var);
+                    ASR::symbol_t* loop_var_sym = var->m_v;
+                    
+                    // Create a copy of the expression and replace the loop var with start value
+                    value_expr = ASRUtils::expr_value(value_expr);
+                    if (value_expr == nullptr) {
+                        value_expr = idl->m_values[i];
+                    }
+
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    value_expr = duplicator.duplicate_expr(value_expr);
+                    
+                    ReplaceLoopVarWithStart replacer(al, loop_var_sym, idl->m_start);
+                    replacer.current_expr = &value_expr;
+                    replacer.replace_expr(value_expr);
+                }
+                
+                ASR::expr_t* candidate = get_first_scalar_expr(value_expr);
                 if( candidate != nullptr ) {
                     return candidate;
                 }
@@ -67,14 +105,35 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             ASR::IntrinsicElementalFunction_t* f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
             if (f->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim) && f->n_args >= 1) {
                 return get_string_source_len(f->m_args[0]);
+            } else if (f->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat) && f->n_args > 1) {
+                ASR::expr_t* total_len = nullptr;
+                for (size_t i = 0; i < f->n_args; i++) {
+                    ASR::expr_t* arg_len = get_string_source_len(f->m_args[i]);
+                    if (arg_len == nullptr) {
+                        return nullptr;
+                    }
+                    if (total_len == nullptr) {
+                        total_len = arg_len;
+                    } else {
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, expr->base.loc, 4));
+                        total_len = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, expr->base.loc,
+                            total_len, ASR::binopType::Add, arg_len,
+                            int_type, nullptr));
+                    }
+                }
+                return total_len;
             }
         }
+
         ASR::ttype_t* t = ASRUtils::expr_type(expr);
-        t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(t));
+        t = ASRUtils::extract_type(t);
         if (ASR::is_a<ASR::String_t>(*t)) {
             ASR::String_t* st = ASR::down_cast<ASR::String_t>(t);
             if (st->m_len && ASRUtils::is_value_constant(st->m_len)) {
                 return st->m_len;
+            } else {
+                return ASRUtils::EXPR(ASR::make_StringLen_t(al, expr->base.loc,
+                    expr, ASRUtils::TYPE(ASR::make_Integer_t(al, expr->base.loc, 4)), nullptr));
             }
         }
         return nullptr;
@@ -360,7 +419,6 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
         ASR::ttype_t* result_type_ = nullptr;
-        ASR::expr_t* non_const_len_expr = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
 
@@ -373,15 +431,6 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             declared_len_expr = string_type->m_len;
             bool len_is_constant = ASRUtils::is_value_constant(declared_len_expr);
             if( !len_is_constant ) {
-                // Start with declared length from the type-spec (safe, no implied-do indices).
-                non_const_len_expr = declared_len_expr;
-                // Prefer a length derived from an element expression when available, but avoid
-                // evaluating implied-do indices before initialization.
-                if (x->n_args > 0) {
-                    ASR::expr_t* sample_expr = get_first_scalar_expr(x->m_args[0]);
-                    ASR::expr_t* derived_len = get_string_source_len(sample_expr);
-                    if (derived_len) non_const_len_expr = derived_len;
-                }
                 is_allocatable = true;
             }
         }
@@ -425,7 +474,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if (element_type && ASRUtils::is_character(*element_type)) {
             // Default to declared length if available; override with a derived source length when safe.
             elem_len_expr_for_alloc = declared_len_expr;
-            if (x->n_args > 0) {
+            if (!declared_len_expr && x->n_args > 0) {
                 ASR::expr_t* sample_expr_any = get_first_scalar_expr(x->m_args[0]);
                 ASR::expr_t* derived_len = get_string_source_len(sample_expr_any);
                 if (derived_len) elem_len_expr_for_alloc = derived_len;
@@ -436,7 +485,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t arg;
         // Prefer declared source length if available; else fall back to previously detected expr
-        arg.m_len_expr = elem_len_expr_for_alloc ? elem_len_expr_for_alloc : non_const_len_expr;
+        arg.m_len_expr = elem_len_expr_for_alloc;
         
         // If we're allocating a deferred-length string but have no length expression,
         // we cannot proceed. In this case, revert to non-deferred type.

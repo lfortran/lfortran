@@ -9382,6 +9382,48 @@ public:
         }
     }
 
+    ASR::asr_t* create_Rep(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 2 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_rep expects exactly two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
+        }
+
+        
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 2);
+
+        for (int i=0;i<2;i++){
+            AST::expr_t* source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            args.push_back(al, ASRUtils::EXPR(tmp));
+        }   
+
+        ASR::ttype_t* arg_type_1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t* arg_type_2 = ASRUtils::expr_type(args[1]);
+        if (!ASR::is_a<ASR::Integer_t>(*arg_type_2) && !ASR::is_a<ASR::UnsignedInteger_t>(*arg_type_2)) {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type_2, nullptr);
+            diag.add(Diagnostic(
+                "Type mismatch in _lfortran_rep",
+                Level::Error, Stage::Semantic, {
+                    Label("Types mismatch (found '" + 
+                arg_type_str + "', expected type `integer` / type(unsigned).",{x.m_args[1].loc})
+                }));
+            throw SemanticAbort();
+        }
+
+        if (ASRUtils::is_allocatable_descriptor_string(arg_type_1)) {
+            return ASR::make_StringRepeat_t(al, x.base.base.loc, args[0], args[1], arg_type_1, nullptr);
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran_expr(arg_type_1, nullptr);
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_rep has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* create_Eq(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_eq expects no keyword arguments",
@@ -9821,6 +9863,25 @@ public:
         } else {
             if( ASR::is_a<ASR::ArrayConstant_t>(*mold) ||
                 ASRUtils::is_array(ASRUtils::expr_type(mold)) ) {
+                // Check if mold is an ArraySection with explicit bounds 
+                if (ASR::is_a<ASR::ArraySection_t>(*mold)) {
+                    ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(mold);
+                    if (array_section->n_args > 0 && array_section->m_args[0].m_right) {
+                        ASR::dimension_t size_dim;
+                        size_dim.loc = x.base.base.loc;
+                        ASR::expr_t* start = array_section->m_args[0].m_left;
+                        if (!start) {
+                            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                            start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+                        }
+                        size_dim.m_start = start;
+                        size_dim.m_length = array_section->m_args[0].m_right;
+                        new_dims.push_back(al, size_dim);
+                        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
+                        return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                    }
+                }
                 // Calculate resulting array size from source and mold byte sizes
                 ASR::ttype_t* src_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
@@ -9861,7 +9922,6 @@ public:
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
                 }
-
                 ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
                 ASR::dimension_t size_dim;
@@ -10598,6 +10658,8 @@ public:
                     tmp = create_Pop(x);
                 else if ( var_name == "_lfortran_concat")
                     tmp = create_Concat(x);
+                else if ( var_name == "_lfortran_rep")
+                    tmp = create_Rep(x);
                 else if ( var_name == "_lfortran_eq")
                     tmp = create_Eq(x);
                 else if ( var_name == "_lfortran_list_constant")
