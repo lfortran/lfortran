@@ -11545,6 +11545,10 @@ public:
             } else if (compiler_options.implicit_interface && is_function && v && ASRUtils::is_symbol_procedure_variable(v)) {
                 // Procedure variable being called - create/update its interface
                 ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(v);
+                // Skip if interface already exists to avoid duplicate symbol error
+                if (proc_var->m_type_declaration != nullptr) {
+                    return;
+                }
                 ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(proc_var->m_type);
                 ASR::ttype_t* return_type = func_type->m_return_var_type;
                 if (!return_type) {
