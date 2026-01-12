@@ -239,7 +239,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     int32_t *iostat,
     char* action, int64_t action_len,
     char* delim, int64_t delim_len,
-    char* position, int64_t position_len);
+    char* position, int64_t position_len,
+    char* blank, int64_t blank_len);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
