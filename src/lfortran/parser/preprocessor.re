@@ -313,7 +313,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             char =  [a-zA-Z_];
             name = char (char | digit)*;
 
-
             end {
                 if (ConditionalDirective_stack.size() > 0) {
                     ConditionalDirective directive = ConditionalDirective_stack[ConditionalDirective_stack.size() - 1];
@@ -664,7 +663,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 }
                 continue;
             }
-
             '"' ('""'|[^"\x00])* '"' {
                 if (!branch_enabled) continue;
                 output.append(token(tok, cur));
@@ -1197,4 +1195,3 @@ int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_sy
 }
 
 } // namespace LCompilers::LFortran
-
