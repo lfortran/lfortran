@@ -65,13 +65,9 @@ ifcont:                                           ; preds = %merge_allocated
   store i32 1, i32* %21, align 4
   store i32 10, i32* %22, align 4
   %23 = getelementptr %array, %array* %15, i32 0, i32 0
-  %24 = alloca i32, align 4
-  store i32 40, i32* %24, align 4
-  %25 = load i32, i32* %24, align 4
-  %26 = sext i32 %25 to i64
-  %27 = call i8* @_lfortran_malloc(i64 %26)
-  %28 = bitcast i8* %27 to i32*
-  store i32* %28, i32** %23, align 8
+  %24 = call i8* @_lfortran_malloc(i64 40)
+  %25 = bitcast i8* %24 to i32*
+  store i32* %25, i32** %23, align 8
   br i1 true, label %then1, label %else
 
 then1:                                            ; preds = %ifcont
@@ -96,11 +92,11 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_ss
-  %29 = load %array*, %array** %arr, align 8
-  %30 = getelementptr %array, %array* %29, i32 0, i32 0
-  %31 = load i32*, i32** %30, align 8
-  %32 = bitcast i32* %31 to i8*
-  call void @_lfortran_free(i8* %32)
+  %26 = load %array*, %array** %arr, align 8
+  %27 = getelementptr %array, %array* %26, i32 0, i32 0
+  %28 = load i32*, i32** %27, align 8
+  %29 = bitcast i32* %28 to i8*
+  call void @_lfortran_free(i8* %29)
   ret void
 }
 

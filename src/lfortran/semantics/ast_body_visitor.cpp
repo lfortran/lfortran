@@ -264,7 +264,7 @@ public:
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
-            *a_recl = nullptr, *a_position = nullptr;
+            *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -576,9 +576,29 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("blank")) {
+                if  (a_blank != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `blank` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_blank = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_blank_type = ASRUtils::expr_type(a_blank);
+                if (!ASRUtils::is_character(*a_blank_type)) {
+                    diag.add(Diagnostic(
+                        "`blank` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
             else {
-                const std::unordered_set<std::string> unsupported_args {"err", "blank", "fileopt", "pad"};
+                const std::unordered_set<std::string> unsupported_args {"err", "fileopt", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -618,7 +638,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
@@ -2689,7 +2709,11 @@ public:
                                                     al, type_stmt_type->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
+                    // Track type guard context for polymorphic intrinsic validation
+                    ASR::ttype_t* prev_select_type_guard = current_select_type_guard;
+                    current_select_type_guard = selector_type;
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    current_select_type_guard = prev_select_type_guard;
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = type_stmt_type_body.p;
                     block_t_->n_body = type_stmt_type_body.size();

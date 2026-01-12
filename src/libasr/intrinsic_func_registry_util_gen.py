@@ -864,7 +864,8 @@ intrinsic_funcs_args = {
     "StringTrim": [
         {
             "args": [("char",)],
-            "return" : "allocatable_deferred_string()"
+            "return" : "allocatable_deferred_string()",
+            "allow_polymorphic_arg": [0]
         }
     ],
 }
@@ -924,7 +925,7 @@ def compute_arg_kinds(indent, no_of_args):
     for i in range(no_of_args):
         src += indent + f"int kind{i} = ASRUtils::extract_kind_from_ttype_t(arg_type{i});\n"
 
-def compute_arg_condition(no_of_args, args_lists):
+def compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, args_var):
     condition = []
     cond_in_msg = []
     for arg_list in args_lists:
@@ -932,7 +933,11 @@ def compute_arg_condition(no_of_args, args_lists):
         subcond_in_msg = []
         for i in range(no_of_args):
             arg = arg_list[i]
-            subcond.append(f"{type_to_asr_type_check[arg]}(*arg_type{i})")
+            type_check = f"{type_to_asr_type_check[arg]}(*arg_type{i})"
+            # Add unlimited polymorphic check if specified
+            if allow_polymorphic_arg and i in allow_polymorphic_arg:
+                type_check = f"({type_check} || (is_unlimited_polymorphic_type({args_var}[{i}])))"
+            subcond.append(type_check)
             subcond_in_msg.append(arg)
         condition.append(" && ".join(subcond))
         cond_in_msg.append(", ".join(subcond_in_msg))
@@ -958,7 +963,8 @@ def add_verify_arg_type_src(func_name):
         src += 2 * indent + f"{else_if} (x.n_args == {no_of_args}) " + " {\n"
         src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
-        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
+        allow_polymorphic_arg = arg_info.get("allow_polymorphic_arg", None)
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, "x.m_args")
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
         if same_kind_arg:
             compute_arg_kinds(3 * indent, same_kind_arg)
@@ -1000,7 +1006,8 @@ def add_create_func_arg_type_src(func_name):
         else_if = "else if" if i > 0 else "if"
         src += 2 * indent + f"{else_if} (args.size() == {no_of_args + int(kind_arg)}) " + " {\n"
         compute_arg_types(3 * indent, no_of_args, "args")
-        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
+        allow_polymorphic_arg = arg_info.get("allow_polymorphic_arg", None)
+        condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists, allow_polymorphic_arg, "args")
         src += 3 * indent + f'if(!({condition}))' + ' {\n'
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'

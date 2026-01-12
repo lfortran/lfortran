@@ -313,6 +313,11 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             char =  [a-zA-Z_];
             name = char (char | digit)*;
 
+            * {
+                if (!branch_enabled) continue;
+                output.append(token(tok, cur));
+                continue;
+            }
             end {
                 if (ConditionalDirective_stack.size() > 0) {
                     ConditionalDirective directive = ConditionalDirective_stack[ConditionalDirective_stack.size() - 1];
@@ -681,11 +686,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 }
                 cur++;
                 interval_end_type_0(lm, output.size(), cur-string_start);
-                continue;
-            }
-            * {
-                if (!branch_enabled) continue;
-                output.append(token(tok, cur));
                 continue;
             }
         */

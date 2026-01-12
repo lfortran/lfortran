@@ -101,10 +101,10 @@ contains
         deallocate(s)
     end subroutine modify_and_deallocate
 
-
-
-
-
+    subroutine intrinsic_polymorphic(generic)
+        class(*), intent(in) :: generic
+        print *, trim(generic)
+    end subroutine intrinsic_polymorphic
 
 
 
@@ -482,6 +482,8 @@ program continue_compilation_1
     strx = "hello12345"
     call modify_and_deallocate(strx)
     print *, allocated(strx)
+
+    call intrinsic_polymorphic("  Hello World  ")
 
     contains
     subroutine sub(f)

@@ -251,6 +251,12 @@ semantic error: The upper bound of an assumed-size array's last dimension is not
 84 |         print *, ubound(c, 2)
    |                  ^^^^^^^^^^^^ 
 
+semantic error: Character intrinsic 'trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:106:18
+    |
+106 |         print *, trim(generic)
+    |                  ^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:179:14
     |
