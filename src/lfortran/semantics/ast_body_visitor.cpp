@@ -2689,7 +2689,11 @@ public:
                                                     al, type_stmt_type->base.base.loc,
                                                     current_scope, s2c(al, block_name),
                                                     nullptr, 0));
+                    // Track type guard context for polymorphic intrinsic validation
+                    ASR::ttype_t* prev_select_type_guard = current_select_type_guard;
+                    current_select_type_guard = selector_type;
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    current_select_type_guard = prev_select_type_guard;
                     ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
                     block_t_->m_body = type_stmt_type_body.p;
                     block_t_->n_body = type_stmt_type_body.size();

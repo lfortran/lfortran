@@ -1591,6 +1591,7 @@ public:
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
     ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
+    ASR::ttype_t* current_select_type_guard = nullptr; // tracks type guard in select type statements for polymorphic statements
 
     int32_t enum_init_val;
     bool default_storage_save = false;
@@ -10546,6 +10547,30 @@ public:
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
+                    // Validate trim character intrinsics with unlimited polymorphic arguments
+                    if (var_name == "trim")  {
+                        // Check if any argument is unlimited polymorphic
+                        bool has_polymorphic_arg = false;
+                        for (size_t i = 0; i < args.size(); i++) {
+                            if (args[i] && ASRUtils::is_unlimited_polymorphic_type(args[i])) {
+                                has_polymorphic_arg = true;
+                                break;
+                            }
+                        }
+                        if (has_polymorphic_arg) {
+                            // Must be inside character type guard
+                            if (current_select_type_guard == nullptr ||
+                                !ASRUtils::is_character(*current_select_type_guard)) {
+                                diag.add(Diagnostic(
+                                    "Character intrinsic '" + var_name +
+                                    "' with class(*) argument must be inside 'type is (character(len=*))' guard",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("invalid use of character intrinsic with polymorphic argument", {x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
