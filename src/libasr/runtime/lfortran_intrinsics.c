@@ -4036,9 +4036,17 @@ _lfortran_open(int32_t unit_num,
         status_len = 7;
         ini_status = false;
     }
+    bool ini_access = true;
+    if (access == NULL) {
+        access = "sequential";
+        access_len = 10;
+        ini_access = false;
+    }
+    trim_trailing_spaces(&access, &access_len, ini_access);
+    char* access_c = to_c_string((const fchar*)access, access_len);
     bool ini_form = true;
     if (form == NULL) {
-        if (access != NULL && streql(access, "stream")) {
+        if (access_c != NULL && streql(access_c, "stream")) {
             form = "unformatted";
             form_len = 11;
         } else {
@@ -4046,12 +4054,6 @@ _lfortran_open(int32_t unit_num,
             form_len = 9;
         }
         ini_form = false;
-    }
-    bool ini_access = true;
-    if (access == NULL) {
-        access = "sequential";
-        access_len = 10;
-        ini_access = false;
     }
     bool ini_action = true;
     if (action == NULL) {
@@ -4085,7 +4087,6 @@ _lfortran_open(int32_t unit_num,
     char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
     char* status_c = to_c_string((const fchar*)status, status_len);
     char* form_c = to_c_string((const fchar*)form, form_len);
-    char* access_c = to_c_string((const fchar*)access, access_len);
     char* action_c = to_c_string((const fchar*)action, action_len);
     char* delim_c = to_c_string((const fchar*)delim, delim_len);
     char* blank_c = to_c_string((const fchar*)blank, blank_len);
