@@ -1984,7 +1984,6 @@ public:
             }
         }
 
-        bool cond = x.n_keywords == 0;
         bool stat_cond = false, errmsg_cond = false, source_cond = false, mold_cond = false;
         ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr, *mold = nullptr;
         for ( size_t i=0; i<x.n_keywords; i++ ) {
@@ -1992,7 +1991,6 @@ public:
             errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[i].m_arg) == "errmsg");
             source_cond = !source_cond && (to_lower(x.m_keywords[i].m_arg) == "source");
             mold_cond = !mold_cond && (to_lower(x.m_keywords[i].m_arg) == "mold");
-            cond = cond || (stat_cond || errmsg_cond || source_cond || mold_cond);
             if( stat_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
@@ -2084,17 +2082,6 @@ public:
             }
             alloc_args_vec = new_alloc_args_vec;
             source = mold;
-        }
-
-        if( !cond ) {
-            diag.add(Diagnostic(
-                "`allocate` statement only "
-                "accepts four keyword arguments: "
-                "`stat`, `errmsg`, `source` and `mold`",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
         }
 
         // Perform all validation checks BEFORE creating any ASR nodes
