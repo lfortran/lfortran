@@ -354,26 +354,54 @@ FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
   %97 = load %complex_4*, %complex_4** %c, align 8
-  %98 = bitcast %complex_4* %97 to i8*
-  call void @_lfortran_free(i8* %98)
+  %98 = icmp eq %complex_4* %97, null
+  br i1 %98, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_c
+  %99 = bitcast %complex_4* %97 to i8*
+  call void @_lfortran_free(i8* %99)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_c
   br label %Finalize_Variable_i
 
-Finalize_Variable_i:                              ; preds = %Finalize_Variable_c
-  %99 = load i32*, i32** %i, align 8
-  %100 = bitcast i32* %99 to i8*
-  call void @_lfortran_free(i8* %100)
+Finalize_Variable_i:                              ; preds = %free_done
+  %100 = load i32*, i32** %i, align 8
+  %101 = icmp eq i32* %100, null
+  br i1 %101, label %free_done51, label %free_nonnull50
+
+free_nonnull50:                                   ; preds = %Finalize_Variable_i
+  %102 = bitcast i32* %100 to i8*
+  call void @_lfortran_free(i8* %102)
+  br label %free_done51
+
+free_done51:                                      ; preds = %free_nonnull50, %Finalize_Variable_i
   br label %Finalize_Variable_l
 
-Finalize_Variable_l:                              ; preds = %Finalize_Variable_i
-  %101 = load i1*, i1** %l, align 8
-  %102 = bitcast i1* %101 to i8*
-  call void @_lfortran_free(i8* %102)
+Finalize_Variable_l:                              ; preds = %free_done51
+  %103 = load i1*, i1** %l, align 8
+  %104 = icmp eq i1* %103, null
+  br i1 %104, label %free_done53, label %free_nonnull52
+
+free_nonnull52:                                   ; preds = %Finalize_Variable_l
+  %105 = bitcast i1* %103 to i8*
+  call void @_lfortran_free(i8* %105)
+  br label %free_done53
+
+free_done53:                                      ; preds = %free_nonnull52, %Finalize_Variable_l
   br label %Finalize_Variable_r
 
-Finalize_Variable_r:                              ; preds = %Finalize_Variable_l
-  %103 = load float*, float** %r, align 8
-  %104 = bitcast float* %103 to i8*
-  call void @_lfortran_free(i8* %104)
+Finalize_Variable_r:                              ; preds = %free_done53
+  %106 = load float*, float** %r, align 8
+  %107 = icmp eq float* %106, null
+  br i1 %107, label %free_done55, label %free_nonnull54
+
+free_nonnull54:                                   ; preds = %Finalize_Variable_r
+  %108 = bitcast float* %106 to i8*
+  call void @_lfortran_free(i8* %108)
+  br label %free_done55
+
+free_done55:                                      ; preds = %free_nonnull54, %Finalize_Variable_r
   ret i32 0
 }
 

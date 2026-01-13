@@ -134,23 +134,30 @@ define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
   %9 = load i64, i64* %8, align 4
   %10 = trunc i64 %9 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i32 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %2)
-  %11 = load i32, i32* %m, align 4
-  %12 = add i32 1, %11
-  %13 = sub i32 %12, 1
-  %14 = icmp sgt i32 3, %13
-  %15 = or i1 false, %14
-  br i1 %15, label %then, label %ifcont
+  %11 = icmp eq i8* %2, null
+  br i1 %11, label %free_done, label %free_nonnull
 
-then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([190 x i8], [190 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %13)
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  %12 = load i32, i32* %m, align 4
+  %13 = add i32 1, %12
+  %14 = sub i32 %13, 1
+  %15 = icmp sgt i32 3, %14
+  %16 = or i1 false, %15
+  br i1 %16, label %then, label %ifcont
+
+then:                                             ; preds = %free_done
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([190 x i8], [190 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %14)
   call void @exit(i32 1)
   unreachable
 
-ifcont:                                           ; preds = %.entry
-  %16 = mul i32 1, %11
-  %17 = getelementptr inbounds i32, i32* %arr, i32 2
-  call void %fnc(i32* %arr, i32* %m, i32* %17)
+ifcont:                                           ; preds = %free_done
+  %17 = mul i32 1, %12
+  %18 = getelementptr inbounds i32, i32* %arr, i32 2
+  call void %fnc(i32* %arr, i32* %m, i32* %18)
   br label %return
 
 return:                                           ; preds = %ifcont

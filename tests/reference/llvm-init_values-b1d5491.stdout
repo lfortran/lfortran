@@ -71,11 +71,18 @@ define i32 @main(i32 %0, i8** %1) {
   %18 = load i64, i64* %17, align 4
   %19 = trunc i64 %18 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %16, i32 %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %20 = icmp eq i8* %11, null
+  br i1 %20, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
   call void @_lfortran_free(i8* %11)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_init_values
 
 FINALIZE_SYMTABLE_init_values:                    ; preds = %return

@@ -308,21 +308,28 @@ ifcont51:                                         ; preds = %loop.end49
   %68 = load float, float* %67, align 4
   %69 = fadd float %66, %68
   store float %69, float* %sum, align 4
+  %70 = icmp eq i8* %47, null
+  br i1 %70, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont51
   call void @_lfortran_free(i8* %47)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont51
   br label %block.end
 
-block.end:                                        ; preds = %ifcont51
+block.end:                                        ; preds = %free_done
   br label %FINALIZE_SYMTABLE_block
 
 FINALIZE_SYMTABLE_block:                          ; preds = %block.end
   br label %loop.head34
 
 loop.end52:                                       ; preds = %loop.head34
-  %70 = load float, float* %sum, align 4
-  %71 = fsub float %70, 5.005000e+05
-  %72 = call float @llvm.fabs.f32(float %71)
-  %73 = fcmp ogt float %72, 0x3FB99999A0000000
-  br i1 %73, label %then53, label %else54
+  %71 = load float, float* %sum, align 4
+  %72 = fsub float %71, 5.005000e+05
+  %73 = call float @llvm.fabs.f32(float %72)
+  %74 = fcmp ogt float %73, 0x3FB99999A0000000
+  br i1 %74, label %then53, label %else54
 
 then53:                                           ; preds = %loop.end52
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
@@ -333,8 +340,8 @@ else54:                                           ; preds = %loop.end52
   br label %ifcont55
 
 ifcont55:                                         ; preds = %else54, %then53
-  %74 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %74, i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1)
+  %75 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %75, i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -342,7 +349,14 @@ return:                                           ; preds = %ifcont55
   br label %FINALIZE_SYMTABLE_static_large_array
 
 FINALIZE_SYMTABLE_static_large_array:             ; preds = %return
+  %76 = icmp eq i8* %2, null
+  br i1 %76, label %free_done57, label %free_nonnull56
+
+free_nonnull56:                                   ; preds = %FINALIZE_SYMTABLE_static_large_array
   call void @_lfortran_free(i8* %2)
+  br label %free_done57
+
+free_done57:                                      ; preds = %free_nonnull56, %FINALIZE_SYMTABLE_static_large_array
   ret i32 0
 }
 

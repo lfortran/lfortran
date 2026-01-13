@@ -61,18 +61,25 @@ define i32 @main(i32 %0, i8** %1) {
   %18 = load i64, i64* %17, align 4
   %19 = trunc i64 %18 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %16, i32 %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %11)
-  %20 = getelementptr %base, %base* %b, i32 0, i32 0
-  %21 = load i32, i32* %20, align 4
-  %22 = icmp ne i32 %21, 12
-  br i1 %22, label %then, label %else
+  %20 = icmp eq i8* %11, null
+  br i1 %20, label %free_done, label %free_nonnull
 
-then:                                             ; preds = %.entry
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(i8* %11)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  %21 = getelementptr %base, %base* %b, i32 0, i32 0
+  %22 = load i32, i32* %21, align 4
+  %23 = icmp ne i32 %22, 12
+  br i1 %23, label %then, label %else
+
+then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
-else:                                             ; preds = %.entry
+else:                                             ; preds = %free_done
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

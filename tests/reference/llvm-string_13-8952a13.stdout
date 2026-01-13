@@ -82,11 +82,18 @@ ifcont9:                                          ; preds = %else8, %then7
   %13 = load i64, i64* %12, align 4
   %14 = trunc i64 %13 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %11, i32 %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  %15 = icmp eq i8* %6, null
+  br i1 %15, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont9
   call void @_lfortran_free(i8* %6)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont9
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont9
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_string_13
 
 FINALIZE_SYMTABLE_string_13:                      ; preds = %return
