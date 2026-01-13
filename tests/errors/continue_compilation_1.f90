@@ -104,10 +104,10 @@ contains
     subroutine intrinsic_polymorphic(generic)
         class(*), intent(in) :: generic
         print *, trim(generic)
+        print *, adjustl(generic)
+        print *, adjustr(generic)
+        print *, len_trim(generic)
     end subroutine intrinsic_polymorphic
-
-
-
 
 
 
