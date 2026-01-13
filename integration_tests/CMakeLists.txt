@@ -1333,6 +1333,7 @@ RUN(NAME intrinsics_402 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min1, max1
 RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_406 LABELS gfortran llvm) # iachar with array arguments
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
