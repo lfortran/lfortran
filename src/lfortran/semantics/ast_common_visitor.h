@@ -1356,6 +1356,7 @@ public:
         {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
         {"achar", IntrinsicSignature({"I", "kind"}, 1, 2)},
+        {"iachar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},
         {"dshiftl", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
         {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
@@ -10077,27 +10078,6 @@ public:
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
-    ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"C", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
-        ASR::expr_t *arg = args[0], *kind = args[1];
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
-        ASR::expr_t* iachar_value = nullptr;
-        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
-        if( arg_value ) {
-            std::string arg_str;
-            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
-            if( is_const_value ) {
-                int64_t ascii_code = uint8_t(arg_str[0]);
-                iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                ascii_code, type));
-            }
-        }
-        return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
-    }
-
     ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
         const Location &loc = x.base.base.loc;
         Vec<ASR::expr_t*> args;
@@ -10196,6 +10176,7 @@ public:
         if (it != kind_arg_index_map.end()) {
             int kind_arg_index = it->second;
 
+            LCOMPILERS_ASSERT(kind_arg_index < (int)args.size());
             if (args[kind_arg_index]) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(args[kind_arg_index]))) {
                     diag.add(Diagnostic(
@@ -10658,8 +10639,6 @@ public:
                 tmp = create_BitCast(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
-            } else if( var_name == "iachar" ) {
-                tmp = create_Iachar(x);
             } else if( var_name == "len" ) {
                 tmp = create_StringLen(x);
             } else if( var_name == "null" ) {
