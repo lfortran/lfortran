@@ -168,6 +168,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)")->group(group_mangling_options);
         app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax")->group(group_mangling_options);
         app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore")->group(group_mangling_options);
+        app.add_flag("--mangle-underscore-external", compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
 
         // Miscellaneous flags
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
