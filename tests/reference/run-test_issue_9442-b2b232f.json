@@ -1,0 +1,13 @@
+{
+    "basename": "run-test_issue_9442-b2b232f",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/test_issue_9442.f90",
+    "infile_hash": "4b68a4d7d17dd6e567f3ee63aa377a639db4250ad80065105e42cb9e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-test_issue_9442-b2b232f.stderr",
+    "stderr_hash": "c2aa49c6c80fc790f5ae040694170e8a00790b73bc098b78646e2d06",
+    "returncode": 1
+}
