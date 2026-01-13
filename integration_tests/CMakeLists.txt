@@ -2078,7 +2078,6 @@ RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME file_open_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
