@@ -13635,9 +13635,13 @@ public:
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
-                ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                if (v->m_type_declaration != nullptr) {
+                    ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                    func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                }
+                // If m_type_declaration is nullptr (implicit interface without call),
+                // continue with default values for x_abi, orig_arg, etc.
             } else {
                 LCOMPILERS_ASSERT(false)
             }
@@ -15169,6 +15173,10 @@ public:
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            if (v->m_type_declaration == nullptr) {
+                throw CodeGenError("Procedure variable '" + std::string(v->m_name)
+                    + "' has no interface. Add explicit interface or ensure it is called somewhere.");
+            }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
@@ -15774,8 +15782,12 @@ public:
             }
             proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
-            ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
-            LCOMPILERS_ASSERT(type_decl);
+            ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            ASR::symbol_t *type_decl = proc_var->m_type_declaration;
+            if (type_decl == nullptr) {
+                throw CodeGenError("Procedure variable '" + std::string(proc_var->m_name)
+                    + "' has no interface. Add explicit interface or ensure it is called somewhere.");
+            }
             s = ASR::down_cast<ASR::Function_t>(type_decl);
         } else {
             throw CodeGenError("FunctionCall: Symbol type not supported");
