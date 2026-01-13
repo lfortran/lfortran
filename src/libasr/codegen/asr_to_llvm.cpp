@@ -12511,6 +12511,7 @@ public:
         llvm::Value *readwrite{}, *readwrite_len{};
         llvm::Value *access_val{}, *access_len{};
         llvm::Value *name_val{}, *name_len{};
+        llvm::Value *blank_val{}, *blank_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -12624,6 +12625,17 @@ public:
             name_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_blank) {
+            this->visit_expr_load_wrapper(x.m_blank, 0);
+            std::tie(blank_val, blank_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_blank),
+                    tmp);
+        } else {
+            blank_val = llvm::Constant::getNullValue(character_type);
+            blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -12639,7 +12651,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context), // read_data, read_len
                         character_type, llvm::Type::getInt64Ty(context), // readwrite_data, readwrite_len
                         character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
-                        character_type, llvm::Type::getInt64Ty(context)  // name_data, name_len
+                        character_type, llvm::Type::getInt64Ty(context),  // name_data, name_len
+                        character_type, llvm::Type::getInt64Ty(context)  // blank_data, blank_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -12652,7 +12665,8 @@ public:
             read, read_len,
             readwrite, readwrite_len,
             access_val, access_len,
-            name_val, name_len});
+            name_val, name_len,
+            blank_val, blank_len});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
