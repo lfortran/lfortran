@@ -143,13 +143,20 @@ is_allocated.then:                                ; preds = %Finalize_Variable_v
   %35 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %33, i32 0, i32 1
   %36 = load %"~unlimited_polymorphic_type"*, i8** %35, align 8
   %37 = bitcast %"~unlimited_polymorphic_type"* %33 to i8*
+  %38 = icmp eq i8* %37, null
+  br i1 %38, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
   call void @_lfortran_free(i8* %37)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %Finalize_Variable_var
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
   ret i32 0
 }
 

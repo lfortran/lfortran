@@ -133,11 +133,18 @@ ifcont20:                                         ; preds = %else19, %then18
   %23 = load i64, i64* %22, align 4
   %24 = trunc i64 %23 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %21, i32 %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  %25 = icmp eq i8* %16, null
+  br i1 %25, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont20
   call void @_lfortran_free(i8* %16)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont20
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont20
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_boz_01
 
 FINALIZE_SYMTABLE_boz_01:                         ; preds = %return

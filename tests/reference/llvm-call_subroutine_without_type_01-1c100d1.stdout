@@ -56,21 +56,28 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   %14 = load i64, i64* %13, align 4
   %15 = trunc i64 %14 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  call void @_lfortran_free(i8* %7)
-  %16 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self, align 8
-  %17 = getelementptr %mytype_class, %mytype_class* %16, i32 0, i32 1
-  %18 = load %mytype*, %mytype** %17, align 8
-  %19 = getelementptr %mytype, %mytype* %18, i32 0, i32 0
-  %20 = load float, float* %19, align 4
-  %21 = fcmp une float %20, 1.000000e+00
-  br i1 %21, label %then, label %else
+  %16 = icmp eq i8* %7, null
+  br i1 %16, label %free_done, label %free_nonnull
 
-then:                                             ; preds = %.entry
+free_nonnull:                                     ; preds = %.entry
+  call void @_lfortran_free(i8* %7)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
+  %17 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self, align 8
+  %18 = getelementptr %mytype_class, %mytype_class* %17, i32 0, i32 1
+  %19 = load %mytype*, %mytype** %18, align 8
+  %20 = getelementptr %mytype, %mytype* %19, i32 0, i32 0
+  %21 = load float, float* %20, align 4
+  %22 = fcmp une float %21, 1.000000e+00
+  br i1 %22, label %then, label %else
+
+then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
-else:                                             ; preds = %.entry
+else:                                             ; preds = %free_done
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
@@ -153,13 +160,20 @@ is_allocated.then:                                ; preds = %Finalize_Variable_o
   %26 = load %mytype*, %mytype** %25, align 8
   %27 = getelementptr %mytype, %mytype* %26, i32 0, i32 0
   %28 = bitcast %mytype_class* %23 to i8*
+  %29 = icmp eq i8* %28, null
+  br i1 %29, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %is_allocated.then
   call void @_lfortran_free(i8* %28)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %is_allocated.then
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %Finalize_Variable_obj
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
   ret i32 0
 }
 

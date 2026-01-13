@@ -42,25 +42,32 @@ then:                                             ; preds = %.entry
   %14 = load i64, i64* %13, align 4
   %15 = trunc i64 %14 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %16 = icmp eq i8* %7, null
+  br i1 %16, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %then
   call void @_lfortran_free(i8* %7)
-  %16 = load i32, i32* %x, align 4
-  store i32 %16, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %then
+  %17 = load i32, i32* %x, align 4
+  store i32 %17, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
   call void @sub1.__module_recursion_01_sub2()
-  %17 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
-  store i32 %17, i32* %x, align 4
-  %18 = load i32, i32* %x, align 4
-  store i32 %18, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  %18 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  store i32 %18, i32* %x, align 4
+  %19 = load i32, i32* %x, align 4
+  store i32 %19, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
   call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
-  %19 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
-  store i32 %19, i32* %x, align 4
+  %20 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  store i32 %20, i32* %x, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
-ifcont:                                           ; preds = %else, %then
-  %20 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
-  store i32 %20, i32* %x, align 4
+ifcont:                                           ; preds = %else, %free_done
+  %21 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  store i32 %21, i32* %x, align 4
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -89,11 +96,18 @@ define void @sub1.__module_recursion_01_sub2() {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %12 = icmp eq i8* %3, null
+  br i1 %12, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
   call void @_lfortran_free(i8* %3)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_sub2
 
 FINALIZE_SYMTABLE_sub2:                           ; preds = %return

@@ -28,10 +28,17 @@ define void @a(float (float*)* %f) {
   %9 = load i64, i64* %8, align 4
   %10 = trunc i64 %9 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i32 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %11 = icmp eq i8* %2, null
+  br i1 %11, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
   call void @_lfortran_free(i8* %2)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_a
 
 FINALIZE_SYMTABLE_a:                              ; preds = %return
