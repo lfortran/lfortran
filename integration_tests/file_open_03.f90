@@ -6,11 +6,11 @@ program open_direct_form
 
     x = 654321
 
-    open(10, file="data.bin", access="direct", recl=4)
+    open(10, file="file_open_03_data.bin", access="direct", recl=4)
     write(10, rec=1) x
     close(10)
 
-    open(10, file="data.bin", access="direct", recl=4)
+    open(10, file="file_open_03_data.bin", access="direct", recl=4)
     read(10, rec=1) y
     close(10)
 
