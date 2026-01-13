@@ -1,4 +1,4 @@
-module test_mod
+module implicit_interface_22_mod
   implicit none
   interface generic_sub
     module procedure real_sub
@@ -20,7 +20,7 @@ contains
 end module
 
 program test
-  use test_mod
+  use implicit_interface_22_mod
   implicit none
   external :: my_f
   call generic_sub(my_f, 3)
