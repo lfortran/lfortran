@@ -7284,6 +7284,104 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+
+        // Special-case: transfer(character, int8_array, size) lowered as BitCast.
+        // When scalarized into element-wise assignments, extract the corresponding
+        // byte from the source string.
+        if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
+            ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
+                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)) &&
+                ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_target))->m_kind == 1 &&
+                ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source))) {
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                if (ai->n_args == 1 && ai->m_args[0].m_right) {
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    visit_expr(*x.m_target);
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* dest_ptr = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 0;
+                    visit_expr_wrapper(bc->m_source, true);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* src_desc = tmp;
+                    llvm::Value* src_data = llvm_utils->get_string_data(
+                        ASRUtils::get_string_type(bc->m_source), src_desc);
+                    src_data = builder->CreateBitCast(src_data, llvm_utils->i8_ptr);
+
+                    visit_expr_wrapper(ai->m_args[0].m_right, true);
+                    llvm::Value* idx = tmp;
+                    idx = builder->CreateZExtOrTrunc(idx, llvm::Type::getInt64Ty(context));
+                    llvm::Value* zero_based = builder->CreateSub(idx, llvm::ConstantInt::get(idx->getType(), 1));
+                    llvm::Value* src_byte_ptr = builder->CreateGEP(
+                        llvm::Type::getInt8Ty(context), src_data, zero_based);
+                    llvm::Value* byte_val = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt8Ty(context), src_byte_ptr);
+                    builder->CreateStore(byte_val, dest_ptr);
+                    return;
+                }
+            }
+
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            ASR::ttype_t* target_type_past_alloc =
+                ASRUtils::type_get_past_allocatable_pointer(target_type);
+            if (ASRUtils::is_array(target_type_past_alloc) &&
+                ASRUtils::extract_physical_type(target_type_past_alloc) ==
+                    ASR::array_physical_typeType::DescriptorArray) {
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(target_type_past_alloc);
+                bool is_int8 = ASRUtils::is_integer(*elem_type) &&
+                               ASR::down_cast<ASR::Integer_t>(elem_type)->m_kind == 1;
+                bool src_is_string = ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source));
+                bool is_whole_array_target = (x.m_target->type == ASR::exprType::Var ||
+                                              x.m_target->type == ASR::exprType::StructInstanceMember);
+                if (is_int8 && src_is_string && is_whole_array_target) {
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    visit_expr(*x.m_target);
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* target = tmp;
+
+                    visit_ArrayPhysicalCastUtil(
+                        target, x.m_target,
+                        target_type_past_alloc, target_type_past_alloc,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASR::array_physical_typeType::PointerArray);
+                    llvm::Value* dest_data = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 0;
+                    visit_expr_wrapper(bc->m_source, true);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* src_desc = tmp;
+                    llvm::Value* src_data = llvm_utils->get_string_data(
+                        ASRUtils::get_string_type(bc->m_source), src_desc);
+                    src_data = builder->CreateBitCast(src_data, llvm_utils->i8_ptr);
+
+                    llvm::Value* nbytes = nullptr;
+                    if (bc->m_size) {
+                        visit_expr_wrapper(bc->m_size, true);
+                        nbytes = tmp;
+                    } else {
+                        nbytes = llvm_utils->get_string_length(
+                            ASRUtils::get_string_type(bc->m_source), src_desc);
+                    }
+                    if (nbytes->getType()->isIntegerTy(32)) {
+                        nbytes = builder->CreateZExt(nbytes, llvm::Type::getInt64Ty(context));
+                    } else if (!nbytes->getType()->isIntegerTy(64)) {
+                        nbytes = builder->CreateIntCast(nbytes, llvm::Type::getInt64Ty(context), false);
+                    }
+
+                    builder->CreateMemCpy(
+                        dest_data, llvm::MaybeAlign(1),
+                        src_data, llvm::MaybeAlign(1),
+                        nbytes);
+                    return;
+                }
+            }
+        }
+
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
