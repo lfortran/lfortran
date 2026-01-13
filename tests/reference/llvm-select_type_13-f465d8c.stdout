@@ -582,12 +582,12 @@ Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_s
 is_allocated.then:                                ; preds = %Finalize_Variable_s1
   %178 = getelementptr %shape_class, %shape_class* %176, i32 0, i32 1
   %179 = load %shape*, %shape** %178, align 8
-  %180 = bitcast %shape_class* %176 to i8*
-  %181 = icmp eq i8* %180, null
-  br i1 %181, label %free_done51, label %free_nonnull50
+  %180 = icmp eq %shape_class* %176, null
+  br i1 %180, label %free_done51, label %free_nonnull50
 
 free_nonnull50:                                   ; preds = %is_allocated.then
-  call void @_lfortran_free(i8* %180)
+  %181 = bitcast %shape_class* %176 to i8*
+  call void @_lfortran_free(i8* %181)
   br label %free_done51
 
 free_done51:                                      ; preds = %free_nonnull50, %is_allocated.then
@@ -607,12 +607,12 @@ Finalize_Variable_s2:                             ; preds = %is_allocated.ifcont
 is_allocated.then52:                              ; preds = %Finalize_Variable_s2
   %184 = getelementptr %shape_class, %shape_class* %182, i32 0, i32 1
   %185 = load %shape*, %shape** %184, align 8
-  %186 = bitcast %shape_class* %182 to i8*
-  %187 = icmp eq i8* %186, null
-  br i1 %187, label %free_done54, label %free_nonnull53
+  %186 = icmp eq %shape_class* %182, null
+  br i1 %186, label %free_done54, label %free_nonnull53
 
 free_nonnull53:                                   ; preds = %is_allocated.then52
-  call void @_lfortran_free(i8* %186)
+  %187 = bitcast %shape_class* %182 to i8*
+  call void @_lfortran_free(i8* %187)
   br label %free_done54
 
 free_done54:                                      ; preds = %free_nonnull53, %is_allocated.then52

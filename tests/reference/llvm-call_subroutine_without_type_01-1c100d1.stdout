@@ -159,12 +159,12 @@ is_allocated.then:                                ; preds = %Finalize_Variable_o
   %25 = getelementptr %mytype_class, %mytype_class* %23, i32 0, i32 1
   %26 = load %mytype*, %mytype** %25, align 8
   %27 = getelementptr %mytype, %mytype* %26, i32 0, i32 0
-  %28 = bitcast %mytype_class* %23 to i8*
-  %29 = icmp eq i8* %28, null
-  br i1 %29, label %free_done, label %free_nonnull
+  %28 = icmp eq %mytype_class* %23, null
+  br i1 %28, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.then
-  call void @_lfortran_free(i8* %28)
+  %29 = bitcast %mytype_class* %23 to i8*
+  call void @_lfortran_free(i8* %29)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %is_allocated.then

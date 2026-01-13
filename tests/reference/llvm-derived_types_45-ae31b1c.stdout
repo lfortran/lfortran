@@ -90,12 +90,12 @@ Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_d
 
 is_allocated.then:                                ; preds = %Finalize_Variable_ins
   %22 = getelementptr %myint, %myint* %20, i32 0, i32 0
-  %23 = bitcast %myint* %20 to i8*
-  %24 = icmp eq i8* %23, null
-  br i1 %24, label %free_done, label %free_nonnull
+  %23 = icmp eq %myint* %20, null
+  br i1 %23, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.then
-  call void @_lfortran_free(i8* %23)
+  %24 = bitcast %myint* %20 to i8*
+  call void @_lfortran_free(i8* %24)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %is_allocated.then

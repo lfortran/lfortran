@@ -607,12 +607,12 @@ Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_a
   %248 = load %array*, %array** %c, align 8
   %249 = getelementptr %array, %array* %248, i32 0, i32 0
   %250 = load i32*, i32** %249, align 8
-  %251 = bitcast i32* %250 to i8*
-  %252 = icmp eq i8* %251, null
-  br i1 %252, label %free_done48, label %free_nonnull47
+  %251 = icmp eq i32* %250, null
+  br i1 %251, label %free_done48, label %free_nonnull47
 
 free_nonnull47:                                   ; preds = %Finalize_Variable_c
-  call void @_lfortran_free(i8* %251)
+  %252 = bitcast i32* %250 to i8*
+  call void @_lfortran_free(i8* %252)
   br label %free_done48
 
 free_done48:                                      ; preds = %free_nonnull47, %Finalize_Variable_c

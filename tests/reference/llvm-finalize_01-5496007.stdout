@@ -95,12 +95,12 @@ Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_s
   %26 = load %array*, %array** %arr, align 8
   %27 = getelementptr %array, %array* %26, i32 0, i32 0
   %28 = load i32*, i32** %27, align 8
-  %29 = bitcast i32* %28 to i8*
-  %30 = icmp eq i8* %29, null
-  br i1 %30, label %free_done, label %free_nonnull
+  %29 = icmp eq i32* %28, null
+  br i1 %29, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_arr
-  call void @_lfortran_free(i8* %29)
+  %30 = bitcast i32* %28 to i8*
+  call void @_lfortran_free(i8* %30)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_arr
@@ -175,12 +175,12 @@ Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_f
   %16 = load %array*, %array** %arr, align 8
   %17 = getelementptr %array, %array* %16, i32 0, i32 0
   %18 = load i32*, i32** %17, align 8
-  %19 = bitcast i32* %18 to i8*
-  %20 = icmp eq i8* %19, null
-  br i1 %20, label %free_done, label %free_nonnull
+  %19 = icmp eq i32* %18, null
+  br i1 %19, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_arr
-  call void @_lfortran_free(i8* %19)
+  %20 = bitcast i32* %18 to i8*
+  call void @_lfortran_free(i8* %20)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_arr
@@ -261,12 +261,12 @@ Finalize_Variable_arr_in_block:                   ; preds = %FINALIZE_SYMTABLE_b
   %16 = load %array*, %array** %arr_in_block, align 8
   %17 = getelementptr %array, %array* %16, i32 0, i32 0
   %18 = load i32*, i32** %17, align 8
-  %19 = bitcast i32* %18 to i8*
-  %20 = icmp eq i8* %19, null
-  br i1 %20, label %free_done, label %free_nonnull
+  %19 = icmp eq i32* %18, null
+  br i1 %19, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_arr_in_block
-  call void @_lfortran_free(i8* %19)
+  %20 = bitcast i32* %18 to i8*
+  call void @_lfortran_free(i8* %20)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_arr_in_block
@@ -294,12 +294,12 @@ Finalize_Variable_arr_real:                       ; preds = %FINALIZE_SYMTABLE_i
   %21 = load %array.0*, %array.0** %arr_real, align 8
   %22 = getelementptr %array.0, %array.0* %21, i32 0, i32 0
   %23 = load float*, float** %22, align 8
-  %24 = bitcast float* %23 to i8*
-  %25 = icmp eq i8* %24, null
-  br i1 %25, label %free_done4, label %free_nonnull3
+  %24 = icmp eq float* %23, null
+  br i1 %24, label %free_done4, label %free_nonnull3
 
 free_nonnull3:                                    ; preds = %Finalize_Variable_arr_real
-  call void @_lfortran_free(i8* %24)
+  %25 = bitcast float* %23 to i8*
+  call void @_lfortran_free(i8* %25)
   br label %free_done4
 
 free_done4:                                       ; preds = %free_nonnull3, %Finalize_Variable_arr_real

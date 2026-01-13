@@ -223,12 +223,12 @@ is_allocated.else:                                ; preds = %Finalize_Variable_a
   br label %is_allocated.ifcont
 
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %Finalize_array_of_structs.end
-  %84 = bitcast %tt* %60 to i8*
-  %85 = icmp eq i8* %84, null
-  br i1 %85, label %free_done, label %free_nonnull
+  %84 = icmp eq %tt* %60, null
+  br i1 %84, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.ifcont
-  call void @_lfortran_free(i8* %84)
+  %85 = bitcast %tt* %60 to i8*
+  call void @_lfortran_free(i8* %85)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %is_allocated.ifcont
@@ -238,12 +238,12 @@ Finalize_Variable_arr_02:                         ; preds = %free_done
   %86 = load %array.0*, %array.0** %arr_02, align 8
   %87 = getelementptr %array.0, %array.0* %86, i32 0, i32 0
   %88 = load i32*, i32** %87, align 8
-  %89 = bitcast i32* %88 to i8*
-  %90 = icmp eq i8* %89, null
-  br i1 %90, label %free_done7, label %free_nonnull6
+  %89 = icmp eq i32* %88, null
+  br i1 %89, label %free_done7, label %free_nonnull6
 
 free_nonnull6:                                    ; preds = %Finalize_Variable_arr_02
-  call void @_lfortran_free(i8* %89)
+  %90 = bitcast i32* %88 to i8*
+  call void @_lfortran_free(i8* %90)
   br label %free_done7
 
 free_done7:                                       ; preds = %free_nonnull6, %Finalize_Variable_arr_02
@@ -251,12 +251,12 @@ free_done7:                                       ; preds = %free_nonnull6, %Fin
 
 Finalize_Variable_arr_03:                         ; preds = %free_done7
   %91 = load i32*, i32** %arr_03, align 8
-  %92 = bitcast i32* %91 to i8*
-  %93 = icmp eq i8* %92, null
-  br i1 %93, label %free_done9, label %free_nonnull8
+  %92 = icmp eq i32* %91, null
+  br i1 %92, label %free_done9, label %free_nonnull8
 
 free_nonnull8:                                    ; preds = %Finalize_Variable_arr_03
-  call void @_lfortran_free(i8* %92)
+  %93 = bitcast i32* %91 to i8*
+  call void @_lfortran_free(i8* %93)
   br label %free_done9
 
 free_done9:                                       ; preds = %free_nonnull8, %Finalize_Variable_arr_03
@@ -295,12 +295,12 @@ Finalize_Variable_arr_06:                         ; preds = %free_done13
   %103 = load %array.0*, %array.0** %arr_06, align 8
   %104 = getelementptr %array.0, %array.0* %103, i32 0, i32 0
   %105 = load i32*, i32** %104, align 8
-  %106 = bitcast i32* %105 to i8*
-  %107 = icmp eq i8* %106, null
-  br i1 %107, label %free_done15, label %free_nonnull14
+  %106 = icmp eq i32* %105, null
+  br i1 %106, label %free_done15, label %free_nonnull14
 
 free_nonnull14:                                   ; preds = %Finalize_Variable_arr_06
-  call void @_lfortran_free(i8* %106)
+  %107 = bitcast i32* %105 to i8*
+  call void @_lfortran_free(i8* %107)
   br label %free_done15
 
 free_done15:                                      ; preds = %free_nonnull14, %Finalize_Variable_arr_06
@@ -336,12 +336,12 @@ free_done19:                                      ; preds = %free_nonnull18, %Fi
   br label %Finalize_Variable_arr_09
 
 Finalize_Variable_arr_09:                         ; preds = %free_done19
-  %117 = bitcast i32* %57 to i8*
-  %118 = icmp eq i8* %117, null
-  br i1 %118, label %free_done21, label %free_nonnull20
+  %117 = icmp eq i32* %57, null
+  br i1 %117, label %free_done21, label %free_nonnull20
 
 free_nonnull20:                                   ; preds = %Finalize_Variable_arr_09
-  call void @_lfortran_free(i8* %117)
+  %118 = bitcast i32* %57 to i8*
+  call void @_lfortran_free(i8* %118)
   br label %free_done21
 
 free_done21:                                      ; preds = %free_nonnull20, %Finalize_Variable_arr_09
