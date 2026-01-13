@@ -4093,7 +4093,7 @@ _lfortran_open(int32_t unit_num,
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -4320,7 +4320,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
                                     char *access, int64_t access_len,
-                                    char *name, int64_t name_len) {
+                                    char *name, int64_t name_len,
+                                    char *blank, int64_t blank_len) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -4386,6 +4387,13 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 _lfortran_copy_str_and_pad(name, name_len, unit_name, strlen(unit_name));
             } else {
                 _lfortran_copy_str_and_pad(name, name_len, "", 0);
+            }
+        }
+        if (blank != NULL) {
+            if (blank_zero) {
+                _lfortran_copy_str_and_pad(blank, blank_len, "ZERO", 4);
+            } else {
+                _lfortran_copy_str_and_pad(blank, blank_len, "NULL", 4);
             }
         }
         if (opened != NULL) {
