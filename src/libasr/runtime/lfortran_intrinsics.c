@@ -4540,31 +4540,24 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
     }
 }
 
-// Improved input validation for integer reading
-// - Prevents auto-casting of invalid inputs to integers
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
-        char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
-            return;
-        }
-
-        char *token = strtok(buffer, " \t\n");
-        if (token == NULL) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+        char buffer[128];
+        if (fscanf(stdin, "%127s", buffer) != 1) {
+            if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read input (EOF or error).\n");
             exit(1);
         }
 
         char *endptr = NULL;
         errno = 0;
-        long long_val = strtol(token, &endptr, 10);
+        long long_val = strtol(buffer, &endptr, 10);
 
-        if (endptr == token || *endptr != '\0') {
+        if (endptr == buffer || *endptr != '\0') {
             if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int32_t.\n");
+            fprintf(stderr, "Error: Invalid input for int32_t: '%s'\n", buffer);
             exit(1);
         }
 
@@ -4577,7 +4570,6 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         *p = (int32_t)long_val;
         return;
     }
-
     bool unit_file_bin;
     int access_mode;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL);
@@ -4586,7 +4578,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         fprintf(stderr, "Internal Compiler Error: No file found with given unit number %d.\n", unit_num);
         exit(1);
     }
-
+    
     if (unit_file_bin) {
         if (access_mode == 0) {
             int32_t record_start = 0, record_end = 0;
