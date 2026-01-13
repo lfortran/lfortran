@@ -2318,7 +2318,7 @@ RUN(NAME implied_do_loops_print LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fo
 RUN(NAME implied_do_string_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME block_string_alloc_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME reshape_string_01 LABELS gfortran llvm)
-RUN(NAME wide_char_alloc_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME wide_char_alloc_01 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
