@@ -217,8 +217,11 @@ static inline ASR::Function_t* get_function(ASR::symbol_t* x)
     if (ASR::is_a<ASR::Function_t>(*a_name)) {
         return ASR::down_cast<ASR::Function_t>(a_name);
     } else if (ASR::is_a<ASR::Variable_t>(*a_name)) {
-        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration));
+        ASR::symbol_t* type_decl = ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration;
+        if (type_decl == nullptr) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
     } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name)) {
         return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name)->m_proc));
