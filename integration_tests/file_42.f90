@@ -14,15 +14,15 @@ program bnbz2
   open (newunit=iunit, file='bnbz.dat', status='old', blank='null')
   read (iunit, '(2i4)') i1, i2
   if (i1 /= 1 .or. i2 /= 1) error stop
-!   inquire (unit=iunit, blank=blank_mode)
-!   print *, 'blank=', trim (blank_mode), ': ', merge ('pass', 'fail', blank_mode=='NULL')
+  inquire (unit=iunit, blank=blank_mode)
+  if (blank_mode /= 'NULL') error stop
   close (iunit)
 
   open (newunit=iunit, file='bnbz.dat', status='old', blank='zero')
   read (iunit, '(2i4)') i1, i2
   if (i1 /= 1000 .or. i2 /= 1000) error stop
-!   inquire (unit=iunit, blank=blank_mode)
-!   print *, 'blank=', trim (blank_mode), ': ', merge ('pass', 'fail', blank_mode=='ZERO')
+  inquire (unit=iunit, blank=blank_mode)
+  if (blank_mode /= 'ZERO') error stop
   close (iunit)
 
 end program
