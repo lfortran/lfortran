@@ -6203,6 +6203,12 @@ static void common_formatted_read(InputSource *inputSource,
         }
         if (fmt_pos >= fmt_len || fmt[fmt_pos] == ')') break;
 
+        int repeat_count = 0;
+        while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
+            repeat_count = repeat_count * 10 + (fmt[fmt_pos] - '0');
+            fmt_pos++;
+        }
+        if (repeat_count == 0) repeat_count = 1;
         char spec = toupper(fmt[fmt_pos++]);
 
         int width = 0;
@@ -6210,60 +6216,62 @@ static void common_formatted_read(InputSource *inputSource,
             width = width * 10 + (fmt[fmt_pos] - '0');
             fmt_pos++;
         }
-
-        switch (spec) {
-        case 'B':
-            // Check for BN or BZ
-            if (fmt_pos < fmt_len) {
-                char next = toupper(fmt[fmt_pos]);
-                if (next == 'N') {
-                    blank_mode = 0;  // BN: blank null
-                    fmt_pos++;
-                } else if (next == 'Z') {
-                    blank_mode = 1;  // BZ: blank zero
-                    fmt_pos++;
+        for (int rep = 0; rep < repeat_count; rep++)  {
+            switch (spec) {
+            case 'B':
+                // Check for BN or BZ
+                if (fmt_pos < fmt_len) {
+                    char next = toupper(fmt[fmt_pos]);
+                    if (next == 'N') {
+                        blank_mode = 0;  // BN: blank null
+                        fmt_pos++;
+                    } else if (next == 'Z') {
+                        blank_mode = 1;  // BZ: blank zero
+                        fmt_pos++;
+                    }
                 }
+                break;
+            case 'A':
+                if (!handle_read_A(inputSource, args, width, advance_no,
+                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                    return;
+                }
+                break;
+            case 'L':
+                if (!handle_read_L(inputSource, args, width, advance_no,
+                        iostat, chunk, &consumed_newline, &arg_idx)) {
+                    return;
+                }
+                break;
+            case 'I':
+                if (!handle_read_I(inputSource, args, width, advance_no,
+                        iostat, chunk, &consumed_newline, &arg_idx, blank_mode)) {
+                    return;
+                }
+                break;
+            case 'F':
+            case 'E':
+            case 'D':
+            case 'G':
+                if (!handle_read_real(inputSource, args, width, advance_no,
+                        fmt, fmt_len, &fmt_pos, iostat, chunk,
+                        &consumed_newline, &arg_idx, blank_mode)) {
+                    return;
+                }
+                break;
+            case 'X':
+                handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                break;
+            case '/':
+                handle_read_slash(inputSource, iostat, &consumed_newline);
+                break;
+            default:
+                break;
             }
-            break;
-        case 'A':
-            if (!handle_read_A(inputSource, args, width, advance_no,
-                    iostat, chunk, &consumed_newline, &arg_idx)) {
-                return;
-            }
-            break;
-        case 'L':
-            if (!handle_read_L(inputSource, args, width, advance_no,
-                    iostat, chunk, &consumed_newline, &arg_idx)) {
-                return;
-            }
-            break;
-        case 'I':
-            if (!handle_read_I(inputSource, args, width, advance_no,
-                    iostat, chunk, &consumed_newline, &arg_idx, blank_mode)) {
-                return;
-            }
-            break;
-        case 'F':
-        case 'E':
-        case 'D':
-        case 'G':
-            if (!handle_read_real(inputSource, args, width, advance_no,
-                    fmt, fmt_len, &fmt_pos, iostat, chunk,
-                    &consumed_newline, &arg_idx, blank_mode)) {
-                return;
-            }
-            break;
-        case 'X':
-            handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
-            break;
-        case '/':
-            handle_read_slash(inputSource, iostat, &consumed_newline);
-            break;
-        default:
-            break;
-        }
 
-        if (iostat && *iostat != 0) break;
+            if (iostat && *iostat != 0) break;
+            if (arg_idx >= no_of_args) break;
+        }
     }
 
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
