@@ -1,0 +1,5 @@
+C preprocessor error: Unterminated #if
+ --> tests/preprocessor20.f90:6:1
+  |
+6 | #if !defined negative_constant
+  | ^ 

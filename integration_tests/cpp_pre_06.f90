@@ -1,4 +1,4 @@
-program preprocessor_mre
+program cpp_pre_06
 implicit none
 
 #define A 10
@@ -57,4 +57,4 @@ print *, "FLAG4 =", FLAG4
 print *, "FLAG5 =", FLAG5
 print *, "x =", x
 
-end program preprocessor_mre
+end program cpp_pre_06
