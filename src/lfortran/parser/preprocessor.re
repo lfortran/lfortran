@@ -396,7 +396,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "undef" whitespace @t1 name @t2 whitespace? newline  {
+            "#" whitespace? "undef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2);
                 auto search = macro_definitions.find(macro_name);
@@ -459,7 +459,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline  {
+            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 whitespace? comment? whitespace? newline  {
                 ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
@@ -486,7 +486,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "else" whitespace? newline  {
+            "#" whitespace? "else" whitespace? comment? whitespace? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -510,7 +510,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
+            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 whitespace? comment? whitespace? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -540,7 +540,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "endif" whitespace? newline  {
+            "#" whitespace? "endif" whitespace? comment? whitespace? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -558,7 +558,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
+            "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]*  newline {
                 if (!branch_enabled) continue;
                 std::string filename = token(t1, t2);
                 std::vector<std::filesystem::path> include_dirs;

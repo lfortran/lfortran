@@ -5,9 +5,9 @@
     "infile_hash": "92d5833a5aa287f9dcaba4d229be92cebb43f929bdf60abf94329359",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr_preprocess-preprocessor20-4100cdf.stderr",
-    "stderr_hash": "66778a913526371179c319586afbdd7beab445fb68404cf166349680",
-    "returncode": 2
+    "stdout": "asr_preprocess-preprocessor20-4100cdf.stdout",
+    "stdout_hash": "2a725a8c93f610ba9081cde29a9c307c33f520092ed551b935df8ccb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }
