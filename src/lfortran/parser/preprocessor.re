@@ -232,6 +232,31 @@ void interval_end_type_0(LocationManager &lm, size_t output_len,
     interval_end(lm, output_len, input_len, input_interval_len, 0);
 }
 
+static void strip_cpp_comments(std::string &s) {
+    // Strip //
+    if (auto p = s.find("//"); p != std::string::npos) {
+        s.erase(p);
+    }
+
+    // Strip /* */
+    while (true) {
+        auto b = s.find("/*");
+        if (b == std::string::npos) break;
+        auto e = s.find("*/", b + 2);
+        if (e == std::string::npos) {
+            s.erase(b);
+            break;
+        }
+        s.erase(b, e - b + 2);
+    }
+
+    // Strip whitespace
+    while (!s.empty() && std::isspace(s.back())) {
+        s.pop_back();
+    }
+}
+
+
 enum class DirectiveType {
     If,
     Ifdef,
@@ -339,12 +364,13 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 output.append(token(tok, cur));
                 continue;
             }
-            "#" whitespace? "define" whitespace @t1 name @t2 (whitespace? | whitespace @t3 [^\n\x00]* @t4 ) (comment whitespace?)? newline  {
+            "#" whitespace? "define" whitespace @t1 name @t2 (whitespace @t3 [^\n\x00]* @t4)? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2), macro_subs;
                 if (t3 != nullptr) {
                     LCOMPILERS_ASSERT(t4 != nullptr);
                     macro_subs = token(t3, t4);
+                    strip_cpp_comments(macro_subs);
                     handle_continuation_lines(macro_subs, cur);
                 }
                 CPPMacro fn;
@@ -354,10 +380,11 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? (comment whitespace?)? newline  {
+            "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
+                strip_cpp_comments(macro_subs);
                 handle_continuation_lines(macro_subs, cur);
                 std::vector<std::string> args = parse_arguments(string_start, t2, true);
                 CPPMacro fn;
@@ -369,7 +396,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "undef" whitespace @t1 name @t2 whitespace? (comment whitespace?)? newline  {
+            "#" whitespace? "undef" whitespace @t1 name @t2 whitespace? newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2);
                 auto search = macro_definitions.find(macro_name);
@@ -380,7 +407,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? (comment whitespace?)? newline {
+            "#" whitespace? "ifdef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
                 ConditionalDirective ifdef;
                 ifdef.active = branch_enabled;
                 ifdef.type = DirectiveType::Ifdef;
@@ -406,7 +433,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? (comment whitespace?)? newline {
+            "#" whitespace? "ifndef" whitespace @t1 name @t2 whitespace? comment? whitespace? newline {
                 ConditionalDirective ifndef;
                 ifndef.active = branch_enabled;
                 ifndef.type = DirectiveType::Ifndef;
@@ -432,7 +459,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 (comment whitespace?)? newline {
+            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline  {
                 ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
@@ -441,8 +468,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 loc.last = loc.first;
                 if_directive.loc = loc;
                 if (if_directive.active) {
-                    bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
-                    cur = t1;
+                    unsigned char *expr_cur = t1;
+                    bool test_true = parse_bexpr(string_start, expr_cur, macro_definitions) > 0;
                     if (test_true) {
                         if_directive.branch_enabled = true;
                         if_directive.enabled_branch_executed = true;
@@ -459,7 +486,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "else" whitespace? (comment whitespace?)? newline  {
+            "#" whitespace? "else" whitespace? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -483,7 +510,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 (comment whitespace?)? newline  {
+            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -493,8 +520,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ConditionalDirective ifdef = ConditionalDirective_stack[ConditionalDirective_stack.size()-1];
                 if (ifdef.active) {
                     if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
-                        bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
-                        cur = t1;
+                        unsigned char *expr_cur = t1;
+                        bool test_true = parse_bexpr(string_start, expr_cur, macro_definitions) > 0;
                         if (test_true) {
                             ifdef.branch_enabled = true;
                             ifdef.enabled_branch_executed = true;
@@ -513,7 +540,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "endif" whitespace? (comment whitespace?)? newline  {
+            "#" whitespace? "endif" whitespace? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -531,7 +558,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* (comment whitespace?)? newline {
+            "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
                 if (!branch_enabled) continue;
                 std::string filename = token(t1, t2);
                 std::vector<std::filesystem::path> include_dirs;
