@@ -1,2 +1,5 @@
-At 27:13 of file tests/errors/array_bounds_check_13.f90
-Runtime error: Argument 1 of subroutine my is unallocated.
+[0;31;1mruntime error[0;0m[0;1m: Argument 1 of subroutine my is unallocated.[0;0m
+  [0;34;1m-->[0;0m tests/errors/array_bounds_check_13.f90:27:13
+   [0;34;1m|[0;0m
+[0;34;1m27 |[0;0m     call my(my_array, i)
+   [0;34;1m|[0;0m             [0;31;1m^^^^^^^^^ [0;0m

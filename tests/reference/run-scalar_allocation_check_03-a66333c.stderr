@@ -1,2 +1,5 @@
-At 10:14 of file tests/errors/scalar_allocation_check_03.f90
-Runtime error: Tried to access member of unallocated variable 'var'
+[0;31;1mruntime error[0;0m[0;1m: Tried to access member of unallocated variable 'var'[0;0m
+  [0;34;1m-->[0;0m tests/errors/scalar_allocation_check_03.f90:10:14
+   [0;34;1m|[0;0m
+[0;34;1m10 |[0;0m     print *, var%x
+   [0;34;1m|[0;0m              [0;31;1m^^^^^ [0;0m

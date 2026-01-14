@@ -1,4 +1,5 @@
-At 7:13 of file tests/errors/array_bounds_check_05.f90
-Runtime error: Array shape mismatch in subroutine 'my'
-
-Tried to match size 3 of dimension 1 of argument number 1, but expected size is 5
+[0;31;1mruntime error[0;0m[0;1m: Array shape mismatch in subroutine 'my' Tried to match size 3 of dimension 1 of argument number 1, but expected size is 5[0;0m
+ [0;34;1m-->[0;0m tests/errors/array_bounds_check_05.f90:7:13
+  [0;34;1m|[0;0m
+[0;34;1m7 |[0;0m     call my(x, 5)
+  [0;34;1m|[0;0m             [0;31;1m^^ [0;0m

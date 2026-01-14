@@ -1,4 +1,5 @@
-At 11:9 of file tests/errors/array_bounds_check_02.f90
-Runtime Error: Array shape mismatch in assignment to 'y'
-
-Tried to match size 4 of dimension 1 of LHS with size 3 of dimension 1 of RHS.
+[0;31;1mruntime error[0;0m[0;1m: Runtime Error: Array shape mismatch in assignment to 'y' Tried to match size 4 of dimension 1 of LHS with size 3 of dimension 1 of RHS.[0;0m
+  [0;34;1m-->[0;0m tests/errors/array_bounds_check_02.f90:11:9
+   [0;34;1m|[0;0m
+[0;34;1m11 |[0;0m         y = [1, 2, 3]
+   [0;34;1m|[0;0m         [0;31;1m^ [0;0m
