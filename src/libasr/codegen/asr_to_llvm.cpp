@@ -13854,6 +13854,19 @@ public:
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
+                    // Bitcast procedure pointer if types don't match (implicit interface)
+                    // Only for procedure values passed by value (not intent inout/out)
+                    if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
+                            ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
+                            orig_arg_intent != ASR::intentType::InOut &&
+                            orig_arg_intent != ASR::intentType::Out) {
+                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            orig_arg->m_type, module.get());
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
+                    }
                 } else if (ASR::is_a<ASR::Function_t>(*var_sym)) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(var_sym);
                     uint32_t h = get_hash((ASR::asr_t*)fn);
