@@ -8682,11 +8682,48 @@ public:
                     ASRUtils::type_get_past_pointer(m_type)), module.get());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
+            llvm::Value* source_desc = tmp;
             builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
-                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
-                arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target_type, target));
+                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, source_desc, module.get())),
+                arr_descr->get_offset(arr_type, source_desc)), arr_descr->get_pointer_to_data(target_type, target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
+            int source_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(m_arg));
+            if (source_n_dims < n_dims) {
+                ASR::dimension_t* m_dims = nullptr;
+                [[maybe_unused]] int dims_n = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
+                LCOMPILERS_ASSERT(dims_n == n_dims);
+                Vec<llvm::Value*> lbs;
+                Vec<llvm::Value*> lengths;
+                lbs.reserve(al, n_dims);
+                lengths.reserve(al, n_dims);
+                llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+                for (int i = 0; i < n_dims; i++) {
+                    llvm::Value* lb = nullptr;
+                    llvm::Value* length = nullptr;
+                    if (m_dims[i].m_start) {
+                        visit_expr_wrapper(m_dims[i].m_start, true);
+                        lb = tmp;
+                    } else {
+                        lb = llvm::ConstantInt::get(i32, llvm::APInt(32, 1));
+                    }
+                    if (m_dims[i].m_length) {
+                        visit_expr_wrapper(m_dims[i].m_length, true);
+                        length = tmp;
+                    }
+                    if (lb) {
+                        lb = builder->CreateSExtOrTrunc(lb, i32);
+                    }
+                    if (length) {
+                        length = builder->CreateSExtOrTrunc(length, i32);
+                    }
+                    lbs.push_back(al, lb);
+                    lengths.push_back(al, length);
+                }
+                arr_descr->reset_array_details(target_type, target, source_desc,
+                    lbs.p, lengths.p, n_dims);
+            } else {
+                arr_descr->reset_array_details(target_type, target, source_desc, n_dims);
+            }
             tmp = target;
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
