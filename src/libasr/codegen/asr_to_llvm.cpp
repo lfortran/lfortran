@@ -13585,7 +13585,8 @@ public:
                                         std::string& orig_arg_name, ASR::intentType& arg_intent,
                                         size_t arg_idx) {
         m_h = get_hash((ASR::asr_t*)func_subrout);
-        if( ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
+        if( arg_idx < func_subrout->n_args &&
+            ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
             ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(func_subrout->m_args[arg_idx]);
             ASR::symbol_t* arg_sym = symbol_get_past_external(arg_var->m_v);
             if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
@@ -13683,7 +13684,7 @@ public:
                                     llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
-                            } else if ( x_abi == ASR::abiType::BindC ) {
+                            } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
                                     ASR::ttype_t* arg_type = arg->m_type;
                                     llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -14025,18 +14026,21 @@ public:
                     ASR::Variable_t *orig_arg = nullptr;
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                        orig_arg = EXPR2VAR(func->m_args[i + is_method]);
+                        size_t arg_idx = i + is_method;
+                        if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
+                            orig_arg = EXPR2VAR(func->m_args[arg_idx]);
+                        }
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
-                    if (orig_arg->m_abi == ASR::abiType::BindC
+                    if (orig_arg != nullptr && orig_arg->m_abi == ASR::abiType::BindC
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
                         use_value = true;
                     }
-                    if (!use_value) {
+                    if (!use_value && orig_arg != nullptr) {
                         // Create alloca to get a pointer, but do it
                         // at the beginning of the function to avoid
                         // using alloca inside a loop, which would
@@ -14089,6 +14093,10 @@ public:
                         } else {
                             tmp = value;
                         }
+                    } else if (!use_value) {
+                        // orig_arg is null (implicit interface without arg info)
+                        // Just pass the value as-is
+                        tmp = value;
                     }
                 }
             }
