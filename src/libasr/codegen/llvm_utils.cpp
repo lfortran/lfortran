@@ -9230,8 +9230,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         }, [=]() {});
                     } else {
                         // If member is allocatable string, we need to check if it is allocated before copying
+                        bool is_alloc_str_only = false;
                         if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
                             ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
+                            is_alloc_str_only = true;
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
@@ -9246,7 +9248,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
                             module);
-                        }, [=]() {});
+                        }, [&]() {
+                            if (is_alloc_str_only) {
+                                // If source allocatable string is not allocated, then
+                                // deallocate the destination allocatable string
+                                llvm::Value* str_data, *str_len;
+                                std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
+                                    ASRUtils::get_string_type(member_type), dest_member, true, true);
+                                builder->CreateCall(llvm_utils->_Deallocate(),
+                                    {builder->CreateLoad(llvm_utils->character_type, str_data)});
+                                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm_utils->character_type), str_data);
+                                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+                            }
+                        });
                     }
                 }
                 if( struct_sym->m_parent != nullptr ) {
