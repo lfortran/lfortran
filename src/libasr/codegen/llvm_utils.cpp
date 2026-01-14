@@ -2898,6 +2898,30 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             }
         }
     }
+    llvm::Value* LLVMUtils::get_class_element_from_array(ASR::Struct_t* const class_symbol,[[maybe_unused]] ASR::StructType_t* const struct_type, 
+                                llvm::Value* const array_data_ptr, llvm::Value* const idx){
+        LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && idx)
+        LCOMPILERS_ASSERT_MSG(!struct_type->m_is_unlimited_polymorphic, "Can't get elements for array of polymorphic type");
+        LCOMPILERS_ASSERT_MSG(ASRUtils::is_class_type(&struct_type->base), "Operate on class type only")
+        validate_llvm_SSA(getClassType(class_symbol, true), array_data_ptr);
+
+        /*Class            => {Vtable*, struct_t*} */
+        /*Array of classes => {Vtable*, struct_t*}* -- single Vtable + consecutive structs */
+        
+        llvm::Value* const consecutive_struct_ptr = CreateLoad2(getStructType(class_symbol, module, true), 
+                                                                CreateGEP2(getClassType(class_symbol), array_data_ptr, 1));
+        llvm::Value* const struct_element = CreateInBoundsGEP2(getStructType(class_symbol, module), consecutive_struct_ptr, {idx});
+        return struct_api->create_class_view(class_symbol, struct_element);
+    }
+
+    void LLVMUtils::validate_llvm_SSA([[maybe_unused]] llvm::Type* const type_to_check_against,[[maybe_unused]] llvm::Value* const llvm_SSA){
+        #if LLVM_VERSION_MAJOR < 15
+            LCOMPILERS_ASSERT(type_to_check_against == llvm_SSA->getType())
+        #else
+            // Can't validate with llvm >=15
+        #endif
+    }
+
 
     void LLVMUtils::deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                              ASR::ttype_t* asr_dest_type,
@@ -8421,6 +8445,48 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* v_ptr = builder->CreateBitCast(ptr, llvm_utils->vptr_type->getPointerTo());
         llvm::Constant* ptr_to_method = get_pointer_to_method(struct_sym, module);
         builder->CreateStore(ptr_to_method, v_ptr);
+    }
+    void LLVMStruct::store_class_struct(ASR::Struct_t* const class_sym, llvm::Value* const class_ptr, llvm::Value* const struct_ptr){
+        LCOMPILERS_ASSERT(class_sym && class_ptr && struct_ptr)
+        LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&class_sym->base), "This function doesn't handle unlimited polymorphic types")
+        llvm::Value* const struct_gep_out_of_class = llvm_utils->CreateGEP2(llvm_utils->getClassType(class_sym), class_ptr, 1);
+        builder->CreateStore(struct_ptr, struct_gep_out_of_class);
+    }
+    
+    llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol, llvm::Value* const viewed_struct){
+        llvm::Value* const allocated_class_structure = builder->CreateAlloca(llvm_utils->getClassType(class_symbol));
+        store_class_vptr(&class_symbol->base, allocated_class_structure, llvm_utils->module);
+        store_class_struct(class_symbol, allocated_class_structure, viewed_struct);
+        return allocated_class_structure;
+
+    }
+
+    void LLVMStruct::allocate_array_of_classes(ASR::Struct_t* const class_symbol, 
+        [[maybe_unused]] ASR::StructType_t* const struct_type, 
+        llvm::Value* const array_data_ptr, llvm::Value* const size, const bool realloc){
+        LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && size)
+        LCOMPILERS_ASSERT_MSG(!struct_type->m_is_unlimited_polymorphic, 
+                                "Can't operate on polymorphic types")
+        LCOMPILERS_ASSERT_MSG(ASRUtils::is_class_type(&struct_type->base), "Only operate on class type")
+        llvm_utils->validate_llvm_SSA(llvm_utils->getClassType(class_symbol, true)->getPointerTo(), array_data_ptr);
+        
+        llvm::Type* const llvm_class_type = llvm_utils->getClassType(class_symbol);
+        llvm::Type* const llvm_underlying_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
+        
+        /// Allocate consecutive-struct-structures and insert into class structure -- HEAP
+        /// (Store struct*, struct**) 
+        const int64_t underlying_struct_alloc_size = llvm::DataLayout(llvm_utils->module).getTypeAllocSize(llvm_underlying_struct_type);
+        llvm::Value* const total_bytes_to_alloc = builder->CreateMul(size, 
+                                                llvm::ConstantInt::get(context, llvm::APInt(64, underlying_struct_alloc_size))); 
+        llvm::Value* const plain_mem_allocated /* i8* */= realloc ? 
+                                                      LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, builder->CreateLoad(llvm_class_type->getPointerTo(), array_data_ptr), total_bytes_to_alloc)
+                                                    : LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
+        llvm::Value* const allocated_mem = builder->CreateBitCast(plain_mem_allocated,llvm_underlying_struct_type->getPointerTo());
+        llvm::Value* const underlying_struct_ptr_in_array_data_ptr = llvm_utils->CreateGEP2(
+                                                                llvm_class_type,
+                                                                builder->CreateLoad(llvm_class_type->getPointerTo(), array_data_ptr),
+                                                                1);
+        builder->CreateStore(allocated_mem, underlying_struct_ptr_in_array_data_ptr);
     }
 
     void LLVMStruct::store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module)

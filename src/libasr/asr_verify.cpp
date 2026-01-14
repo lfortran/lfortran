@@ -1313,6 +1313,10 @@ public:
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
         }
+        if(ASRUtils::is_class_type(x.m_type)){
+            require(x.m_physical_type != ASR::FixedSizeArray,
+                "Array of classes can't be of physical type \"FixedSizeArray\"")
+        }
         _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);

@@ -18,6 +18,7 @@ program derived_types_92
     if(instance(1)%str /= "Hi") error stop
     
     call foo(instance)
+    call foo2(instance)
 
     contains
     subroutine foo(arg)
@@ -27,5 +28,17 @@ program derived_types_92
     
         print *, arg(1)%str
         if(arg(1)%str /= "Hi") error stop
+
+        arg(1)%num = 10
+        arg(1)%str = "bye"
+    end subroutine 
+
+    subroutine foo2(arg)
+    class(package_t):: arg(:)
+    print *, arg(1)%num
+    if(arg(1)%num /= 10) error stop
+
+    print *, arg(1)%str
+    if(arg(1)%str /= "bye") error stop
     end subroutine 
 end program 

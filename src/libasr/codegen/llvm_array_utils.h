@@ -153,7 +153,7 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    llvm::Module* module, bool realloc=false) = 0;
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type,llvm::Value* arr, int n_dims) = 0;
@@ -286,6 +286,7 @@ namespace LCompilers {
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
+                    ASR::symbol_t* variable_type_decl,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
@@ -411,7 +412,7 @@ namespace LCompilers {
                 void fill_malloc_array_details(
                     llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-                    llvm::Module* module, bool realloc=false);
+                    ASR::symbol_t* variable_declaration, llvm::Module* module, bool realloc=false);
 
                 virtual
                 void fill_dimension_descriptor(llvm::Type* type, llvm::Value* arr, int n_dims);
@@ -492,6 +493,7 @@ namespace LCompilers {
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
+                    ASR::symbol_t* variable_type_decl,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,

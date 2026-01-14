@@ -5816,6 +5816,16 @@ static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
             == std::string("~unlimited_polymorphic_type"));
 }
 
+inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t){
+    if(!ASR::is_a<ASR::StructType_t>(*extract_type(t))) return false;
+
+    return ASR::down_cast<ASR::StructType_t>(extract_type(t))->m_is_unlimited_polymorphic;
+}
+/// Check if type is a class + not unlimited-polymorphic one
+inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
+    return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
+}
+
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
         SymbolTable *scope) {
     int8_t IntegerConsecutiveFromZero = 1;
