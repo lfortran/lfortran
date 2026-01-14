@@ -13161,6 +13161,68 @@ public:
         return asr_list;
     }
 
+    // Create an interface for a procedure variable that is passed as an argument
+    // without being called directly. This ensures m_type_declaration is not null.
+    // If expected_type is provided, use it for the interface signature instead of
+    // the procedure variable's own FunctionType (which may have incomplete info).
+    void create_interface_for_procedure_variable(ASR::Variable_t* proc_var,
+            const Location& loc, ASR::FunctionType_t* expected_type = nullptr) {
+        ASR::FunctionType_t* func_type = expected_type ? expected_type :
+            ASR::down_cast<ASR::FunctionType_t>(proc_var->m_type);
+        ASR::ttype_t* return_type = func_type->m_return_var_type;
+        if (!return_type) {
+            return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+        }
+        std::string var_name = proc_var->m_name;
+        std::string iface_name = "~implicit_interface_" + var_name + "_" +
+            current_scope->get_counter();
+        SymbolTable* parent_scope = current_scope->parent ? current_scope->parent : current_scope;
+        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, func_type->n_arg_types);
+        Vec<ASR::ttype_t*> arg_types;
+        arg_types.reserve(al, func_type->n_arg_types);
+        // Use arg types from the FunctionType
+        for (size_t i = 0; i < func_type->n_arg_types; i++) {
+            ASR::ttype_t* arg_type = func_type->m_arg_types[i];
+            std::string arg_name = iface_name + "_arg_" + std::to_string(i);
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Variable_t(al, loc, fn_scope, s2c(al, arg_name),
+                    nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
+                    ASR::storage_typeType::Default, arg_type, nullptr,
+                    ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false, false, false, nullptr, false, false));
+            fn_scope->add_symbol(arg_name, arg_sym);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
+            arg_types.push_back(al, arg_type);
+        }
+        // Create return var
+        std::string return_var_name = iface_name + "_return_var";
+        ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Variable_t(al, loc, fn_scope, s2c(al, return_var_name),
+                nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                ASR::storage_typeType::Default, return_type, nullptr,
+                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+        fn_scope->add_symbol(return_var_name, return_sym);
+        ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
+        // Create interface FunctionType
+        ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+            al, loc, arg_types.p, arg_types.size(), return_type,
+            ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+            false, false, false, false, false, nullptr, 0, false));
+        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Function_t(
+                al, loc, fn_scope, s2c(al, iface_name),
+                iface_type, nullptr, 0, args.p, args.size(), nullptr, 0,
+                return_var, ASR::accessType::Public, false, false,
+                nullptr, nullptr, nullptr));
+        parent_scope->add_symbol(iface_name, iface);
+        // Update the procedure variable's type and type_declaration
+        proc_var->m_type = iface_type;
+        proc_var->m_type_declaration = iface;
+    }
+
     void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {

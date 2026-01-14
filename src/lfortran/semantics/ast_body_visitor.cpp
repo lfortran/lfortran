@@ -5250,7 +5250,7 @@ public:
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
                         ASR::ttype_t* param_type = v->m_type;
-                        // Check if parameter expects a procedure type 
+                        // Check if parameter expects a procedure type
                         if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))){
                             if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type))){
                                 std::string passed_str =ASRUtils::type_to_str_fortran_expr(passed_type, nullptr);
@@ -5261,6 +5261,21 @@ public:
                                         diag::Label("", {passed_arg->base.loc})
                                     }));
                                 throw SemanticAbort();
+                            }
+                            // Create interface for procedure variable passed as argument
+                            // using the expected parameter type for the correct signature
+                            if (compiler_options.implicit_interface &&
+                                    ASR::is_a<ASR::Var_t>(*passed_arg)) {
+                                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
+                                if (ASRUtils::is_symbol_procedure_variable(sym)) {
+                                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(sym);
+                                    if (proc_var->m_type_declaration == nullptr) {
+                                        ASR::FunctionType_t* expected_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                            ASRUtils::type_get_past_array(param_type));
+                                        create_interface_for_procedure_variable(
+                                            proc_var, passed_arg->base.loc, expected_ft);
+                                    }
+                                }
                             }
                         }
                         // Skip type checking for implicit argument_casting, 

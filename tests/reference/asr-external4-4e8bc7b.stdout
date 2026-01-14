@@ -136,7 +136,7 @@
                                     ()
                                     Default
                                     (FunctionType
-                                        [(Real 4)]
+                                        []
                                         (Real 8)
                                         BindC
                                         Interface
@@ -277,27 +277,6 @@
                     (SymbolTable
                         4
                         {
-                            ~implicit_interface_f_2_arg_0:
-                                (Variable
-                                    4
-                                    ~implicit_interface_f_2_arg_0
-                                    []
-                                    Unspecified
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    BindC
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
                             ~implicit_interface_f_2_return_var:
                                 (Variable
                                     4
@@ -322,7 +301,7 @@
                         })
                     ~implicit_interface_f_2
                     (FunctionType
-                        [(Real 4)]
+                        []
                         (Real 8)
                         BindC
                         Interface
@@ -336,7 +315,7 @@
                         .false.
                     )
                     []
-                    [(Var 4 ~implicit_interface_f_2_arg_0)]
+                    []
                     []
                     (Var 4 ~implicit_interface_f_2_return_var)
                     Public
