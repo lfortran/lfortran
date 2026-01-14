@@ -9132,9 +9132,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             (!ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(
                                 ASR::make_Var_t(al, mem_sym->base.loc, mem_sym))) ||
                                 llvm_utils->compiler_options.new_classes)) {
+                        llvm::Value* dest_member_ptr = dest_member;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
                         }
+                        llvm::Value* dest_member_copy = dest_member;
                         llvm_utils->create_if_else(is_allocated, [&]() {
                             // Call Struct Copy function for struct type members
                             ASR::symbol_t* mem_struct = ASRUtils::symbol_get_past_external(
@@ -9227,7 +9229,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
                                 fn = builder->CreateBitCast(fn, fnPtrTy);
                             }
-                        }, [=]() {});
+                        }, [&]() {
+                            if (ASRUtils::is_allocatable(member_type)) {
+                                // If source allocatable struct is not allocated, then
+                                // deallocate the destination allocatable struct
+                                // TODO: Properly Deallocate all members of struct
+                                builder->CreateCall(llvm_utils->_Deallocate(),
+                                    {builder->CreateBitCast(dest_member_copy, llvm_utils->i8_ptr)});
+                                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(mem_type), dest_member_ptr);
+                                // llvm_utils->lfortran_free(builder->CreateBitCast(dest_member_ptr, llvm_utils->i8_ptr));
+                            }
+                        });
                     } else {
                         // If member is allocatable string, we need to check if it is allocated before copying
                         bool is_alloc_str_only = false;

@@ -1,8 +1,13 @@
 module derived_types_93_mod
     implicit none
 
+    type :: temp_test
+        integer :: val
+    end type temp_test 
+
     type :: dep_t
         character(len=:), allocatable :: proj_dir
+        type(temp_test), allocatable :: tmp
     contains
         procedure :: equal_dep
         generic   :: operator(==) => equal_dep
@@ -35,6 +40,10 @@ program derived_types_93
     do i = 1, 3
         d1(i)%proj_dir = "AAA"
         d2(i)%proj_dir = "AAA"
+        allocate(d1(i)%tmp)
+        allocate(d2(i)%tmp)
+        d1(i)%tmp%val = i
+        d2(i)%tmp%val = i
     end do
 
     do i = 1, size(d1)
