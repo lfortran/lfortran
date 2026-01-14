@@ -5263,15 +5263,18 @@ public:
                                 throw SemanticAbort();
                             }
                             // Create interface for procedure variable passed as argument
-                            // using the expected parameter type for the correct signature
+                            // using the expected parameter type for the correct signature.
+                            // Only create if the expected type has arg info (callee body processed).
                             if (compiler_options.implicit_interface &&
                                     ASR::is_a<ASR::Var_t>(*passed_arg)) {
                                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
                                 if (ASRUtils::is_symbol_procedure_variable(sym)) {
                                     ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(sym);
-                                    if (proc_var->m_type_declaration == nullptr) {
-                                        ASR::FunctionType_t* expected_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                            ASRUtils::type_get_past_array(param_type));
+                                    ASR::FunctionType_t* expected_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                        ASRUtils::type_get_past_array(param_type));
+                                    // Only use expected type if it has arg info
+                                    if (proc_var->m_type_declaration == nullptr &&
+                                            expected_ft->n_arg_types > 0) {
                                         create_interface_for_procedure_variable(
                                             proc_var, passed_arg->base.loc, expected_ft);
                                     }

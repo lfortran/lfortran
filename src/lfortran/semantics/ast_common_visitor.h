@@ -11602,6 +11602,25 @@ public:
                 // Update the procedure variable's type and type_declaration
                 proc_var->m_type = iface_type;
                 proc_var->m_type_declaration = iface;
+                // Also update the arg type in the containing function's signature
+                if (current_scope->asr_owner &&
+                        ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                        ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                    ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(
+                        ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                    ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                        owner_func->m_function_signature);
+                    for (size_t i = 0; i < owner_func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                                owner_func->m_args[i])->m_v;
+                            if (arg_sym == v) {
+                                owner_ft->m_arg_types[i] = iface_type;
+                                break;
+                            }
+                        }
+                    }
+                }
                 }
             }
         }
@@ -13221,6 +13240,26 @@ public:
         // Update the procedure variable's type and type_declaration
         proc_var->m_type = iface_type;
         proc_var->m_type_declaration = iface;
+        // Also update the arg type in the containing function's signature
+        ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_var->m_name);
+        if (proc_sym && current_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(
+                ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+            ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                owner_func->m_function_signature);
+            for (size_t i = 0; i < owner_func->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
+                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                        owner_func->m_args[i])->m_v;
+                    if (arg_sym == proc_sym) {
+                        owner_ft->m_arg_types[i] = iface_type;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
