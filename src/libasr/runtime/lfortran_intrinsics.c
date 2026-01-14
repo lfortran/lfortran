@@ -2281,13 +2281,229 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     return result;
 }
 
+static int runtime_line_num_width(unsigned int line) {
+    if (line >= 10000) {
+        return 5;
+    } else if (line >= 1000) {
+        return 4;
+    } else if (line >= 100) {
+        return 3;
+    } else if (line >= 10) {
+        return 2;
+    }
+    return 1;
+}
+
+static void runtime_sanitize_line(char *line) {
+    char *p = line;
+    char *w = line;
+    while (*p) {
+        if (*p == '\t') {
+            *w++ = ' ';
+        } else if (*p != '\r') {
+            *w++ = *p;
+        }
+        p++;
+    }
+    *w = '\0';
+    size_t len = strlen(line);
+    if (len > 0 && line[len - 1] == '\n') {
+        line[len - 1] = '\0';
+    }
+}
+
+static char* runtime_read_line(const char *filename, unsigned int line_no) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        return NULL;
+    }
+    char *line = NULL;
+    size_t cap = 0;
+    unsigned int current = 1;
+    while (getline(&line, &cap, file) != -1) {
+        if (current == line_no) {
+            fclose(file);
+            runtime_sanitize_line(line);
+            return line;
+        }
+        current++;
+    }
+    fclose(file);
+    free(line);
+    return NULL;
+}
+
+static size_t runtime_squiggle_len(const char *line, unsigned int column) {
+    size_t len = strlen(line);
+    if (len == 0) {
+        return 1;
+    }
+    if (column == 0) {
+        column = 1;
+    }
+    size_t start = column - 1;
+    if (start >= len) {
+        return 1;
+    }
+    if (isspace((unsigned char)line[start])) {
+        return 1;
+    }
+    size_t i = start;
+    while (i < len && !isspace((unsigned char)line[i])) {
+        i++;
+    }
+    if (i == start) {
+        return 1;
+    }
+    return i - start;
+}
+
+static char* runtime_compact_message(const char *message) {
+    size_t len = strlen(message);
+    char *out = (char*)malloc(len + 1);
+    if (!out) {
+        return NULL;
+    }
+    size_t w = 0;
+    int in_space = 1;
+    for (size_t i = 0; i < len; i++) {
+        char c = message[i];
+        if (c == '\n' || c == '\r' || c == '\t') {
+            c = ' ';
+        }
+        if (c == ' ') {
+            if (in_space) {
+                continue;
+            }
+            in_space = 1;
+        } else {
+            in_space = 0;
+        }
+        out[w++] = c;
+    }
+    while (w > 0 && out[w - 1] == ' ') {
+        w--;
+    }
+    out[w] = '\0';
+    return out;
+}
+
+static int runtime_try_render_error(const char *formatted) {
+    const char *prefix = "At ";
+    const char *file_marker = " of file ";
+    if (strncmp(formatted, prefix, strlen(prefix)) != 0) {
+        return 0;
+    }
+    const char *p = formatted + strlen(prefix);
+    char *endptr = NULL;
+    unsigned long line = strtoul(p, &endptr, 10);
+    if (!endptr || *endptr != ':') {
+        return 0;
+    }
+    p = endptr + 1;
+    unsigned long column = strtoul(p, &endptr, 10);
+    if (!endptr) {
+        return 0;
+    }
+    const char *file_pos = strstr(endptr, file_marker);
+    if (!file_pos) {
+        return 0;
+    }
+    const char *filename_start = file_pos + strlen(file_marker);
+    const char *filename_end = strchr(filename_start, '\n');
+    if (!filename_end) {
+        return 0;
+    }
+    size_t filename_len = (size_t)(filename_end - filename_start);
+    char *filename = (char*)malloc(filename_len + 1);
+    if (!filename) {
+        return 0;
+    }
+    memcpy(filename, filename_start, filename_len);
+    filename[filename_len] = '\0';
+    const char *message_start = filename_end + 1;
+    if (*message_start == '\0') {
+        free(filename);
+        return 0;
+    }
+    const char *runtime_prefix = "Runtime error:";
+    if (strncmp(message_start, runtime_prefix, strlen(runtime_prefix)) == 0) {
+        message_start += strlen(runtime_prefix);
+        while (*message_start == ' ') {
+            message_start++;
+        }
+    }
+    char *message = runtime_compact_message(message_start);
+    if (!message) {
+        free(filename);
+        return 0;
+    }
+    char *line_text = runtime_read_line(filename, (unsigned int)line);
+    if (!line_text) {
+        free(filename);
+        free(message);
+        return 0;
+    }
+
+    const char *color_reset = "\033[0;0m";
+    const char *color_bold = "\033[0;1m";
+    const char *color_bold_red = "\033[0;31;1m";
+    const char *color_bold_blue = "\033[0;34;1m";
+    int width = runtime_line_num_width((unsigned int)line);
+    size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
+
+    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+            color_bold_red, color_reset, color_bold, message, color_reset);
+    fprintf(stderr, "%*s%s-->%s %s:%lu:%lu\n",
+            width, "", color_bold_blue, color_reset, filename, line, column);
+    fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
+    fprintf(stderr, "%s%*lu |%s %s\n",
+            color_bold_blue, width, line, color_reset, line_text);
+    fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
+    if (column > 1) {
+        fprintf(stderr, "%*s", (int)(column - 1), "");
+    }
+    fprintf(stderr, "%s", color_bold_red);
+    for (size_t i = 0; i < squiggle_len; i++) {
+        fputc('^', stderr);
+    }
+    fprintf(stderr, " %s\n", color_reset);
+    fflush(stderr);
+
+    free(filename);
+    free(message);
+    free(line_text);
+    return 1;
+}
+
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, format, args);
-    fflush(stderr);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    char *formatted = (char*)malloc((size_t)needed + 1);
+    if (!formatted) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    vsnprintf(formatted, (size_t)needed + 1, format, args);
     va_end(args);
+    if (!runtime_try_render_error(formatted)) {
+        fputs(formatted, stderr);
+        fflush(stderr);
+    }
+    free(formatted);
 }
 
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
