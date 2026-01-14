@@ -5264,7 +5264,6 @@ public:
                             }
                             // Create interface for procedure variable passed as argument
                             // using the expected parameter type for the correct signature.
-                            // Only create if the expected type has arg info (callee body processed).
                             if (compiler_options.implicit_interface &&
                                     ASR::is_a<ASR::Var_t>(*passed_arg)) {
                                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
@@ -5272,9 +5271,22 @@ public:
                                     ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(sym);
                                     ASR::FunctionType_t* expected_ft = ASR::down_cast<ASR::FunctionType_t>(
                                         ASRUtils::type_get_past_array(param_type));
-                                    // Only use expected type if it has arg info
-                                    if (proc_var->m_type_declaration == nullptr &&
-                                            expected_ft->n_arg_types > 0) {
+                                    // Create interface if none exists. If one exists but has no
+                                    // arg info and expected has arg info, update it. Don't override
+                                    // existing arg info with empty expected (preserves info from calls).
+                                    bool has_type_decl = proc_var->m_type_declaration != nullptr;
+                                    bool has_arg_info = false;
+                                    if (has_type_decl) {
+                                        // Follow ExternalSymbol to get actual Function
+                                        ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(
+                                            proc_var->m_type_declaration);
+                                        if (ASR::is_a<ASR::Function_t>(*actual_decl)) {
+                                            has_arg_info = ASR::down_cast<ASR::FunctionType_t>(
+                                                ASR::down_cast<ASR::Function_t>(actual_decl)->m_function_signature
+                                            )->n_arg_types > 0;
+                                        }
+                                    }
+                                    if (!has_type_decl || (!has_arg_info && expected_ft->n_arg_types > 0)) {
                                         create_interface_for_procedure_variable(
                                             proc_var, passed_arg->base.loc, expected_ft);
                                     }
