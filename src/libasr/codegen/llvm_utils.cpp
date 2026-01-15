@@ -166,10 +166,20 @@ namespace LCompilers {
                     }, false);
             fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
         }
-        std::vector<llvm::Value*> args = {
-            builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
-        };
-        return builder->CreateCall(fn, args);
+        // Null check prevents freeing null pointers and ensures dominance
+        // when allocations happen conditionally but frees happen at cleanup.
+        // The bitcast must be inside the non-null branch to preserve dominance.
+        llvm::Value* is_null = builder->CreateIsNull(ptr);
+        llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* free_bb = llvm::BasicBlock::Create(context, "free_nonnull", current_fn);
+        llvm::BasicBlock* cont_bb = llvm::BasicBlock::Create(context, "free_done", current_fn);
+        builder->CreateCondBr(is_null, cont_bb, free_bb);
+        builder->SetInsertPoint(free_bb);
+        llvm::Value* ptr_i8 = builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+        builder->CreateCall(fn, {ptr_i8});
+        builder->CreateBr(cont_bb);
+        builder->SetInsertPoint(cont_bb);
+        return nullptr;
     }
 
     llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args)

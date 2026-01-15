@@ -401,10 +401,17 @@ else:                                             ; preds = %.entry
   %27 = load i64, i64* %26, align 4
   %28 = trunc i64 %27 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %25, i32 %28, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %29 = icmp eq i8* %20, null
+  br i1 %29, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %else
   call void @_lfortran_free(i8* %20)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %else
   br label %ifcont
 
-ifcont:                                           ; preds = %else, %then
+ifcont:                                           ; preds = %free_done, %then
   call void @_lpython_free_argv()
   br label %return
 
@@ -415,15 +422,29 @@ FINALIZE_SYMTABLE_string_11:                      ; preds = %return
   br label %Finalize_Variable_mystring
 
 Finalize_Variable_mystring:                       ; preds = %FINALIZE_SYMTABLE_string_11
-  %29 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
-  %30 = load i8*, i8** %29, align 8
-  call void @_lfortran_free(i8* %30)
+  %30 = getelementptr %string_descriptor, %string_descriptor* %mystring, i32 0, i32 0
+  %31 = load i8*, i8** %30, align 8
+  %32 = icmp eq i8* %31, null
+  br i1 %32, label %free_done5, label %free_nonnull4
+
+free_nonnull4:                                    ; preds = %Finalize_Variable_mystring
+  call void @_lfortran_free(i8* %31)
+  br label %free_done5
+
+free_done5:                                       ; preds = %free_nonnull4, %Finalize_Variable_mystring
   br label %Finalize_Variable_teststring
 
-Finalize_Variable_teststring:                     ; preds = %Finalize_Variable_mystring
-  %31 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
-  %32 = load i8*, i8** %31, align 8
-  call void @_lfortran_free(i8* %32)
+Finalize_Variable_teststring:                     ; preds = %free_done5
+  %33 = getelementptr %string_descriptor, %string_descriptor* %teststring, i32 0, i32 0
+  %34 = load i8*, i8** %33, align 8
+  %35 = icmp eq i8* %34, null
+  br i1 %35, label %free_done7, label %free_nonnull6
+
+free_nonnull6:                                    ; preds = %Finalize_Variable_teststring
+  call void @_lfortran_free(i8* %34)
+  br label %free_done7
+
+free_done7:                                       ; preds = %free_nonnull6, %Finalize_Variable_teststring
   ret i32 0
 }
 

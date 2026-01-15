@@ -56,7 +56,14 @@ FINALIZE_SYMTABLE_string_54:                      ; preds = %return
 Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
   %5 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
   %6 = load i8*, i8** %5, align 8
+  %7 = icmp eq i8* %6, null
+  br i1 %7, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %Finalize_Variable_char
   call void @_lfortran_free(i8* %6)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_char
   ret i32 0
 }
 
