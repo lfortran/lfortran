@@ -1580,19 +1580,31 @@ namespace LCompilers {
             /*is_llvm_ptr*/
 #endif
         ) {
-        llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
-        llvm::IRBuilder<> builder0(context);
-        builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
 #if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
 #else
         llvm::Type *type_ = type;
 #endif
-        if (Name != "") {
-            alloca = builder0.CreateAlloca(type_, size, Name);
+        // Only hoist constant-size allocas to entry block. Variable-size
+        // allocas stay at current insertion point to avoid stack growth
+        // when created inside loops.
+        bool use_entry_block = (size == nullptr) || llvm::isa<llvm::Constant>(size);
+        if (use_entry_block) {
+            llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+            llvm::IRBuilder<> builder0(context);
+            builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+            if (Name != "") {
+                alloca = builder0.CreateAlloca(type_, size, Name);
+            } else {
+                alloca = builder0.CreateAlloca(type_, size);
+            }
         } else {
-            alloca = builder0.CreateAlloca(type_, size);
+            if (Name != "") {
+                alloca = builder->CreateAlloca(type_, size, Name);
+            } else {
+                alloca = builder->CreateAlloca(type_, size);
+            }
         }
         return alloca;
     }
