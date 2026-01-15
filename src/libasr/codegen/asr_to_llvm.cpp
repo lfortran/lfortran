@@ -13588,7 +13588,8 @@ public:
                                         std::string& orig_arg_name, ASR::intentType& arg_intent,
                                         size_t arg_idx) {
         m_h = get_hash((ASR::asr_t*)func_subrout);
-        if( ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
+        if( arg_idx < func_subrout->n_args &&
+            ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
             ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(func_subrout->m_args[arg_idx]);
             ASR::symbol_t* arg_sym = symbol_get_past_external(arg_var->m_v);
             if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
@@ -13638,9 +13639,13 @@ public:
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
-                ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                if (v->m_type_declaration != nullptr) {
+                    ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                    func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
+                }
+                // If m_type_declaration is nullptr (implicit interface without call),
+                // continue with default values for x_abi, orig_arg, etc.
             } else {
                 LCOMPILERS_ASSERT(false)
             }
@@ -13682,7 +13687,7 @@ public:
                                     llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
-                            } else if ( x_abi == ASR::abiType::BindC ) {
+                            } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
                                     ASR::ttype_t* arg_type = arg->m_type;
                                     llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -13851,6 +13856,19 @@ public:
                         llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
+                    }
+                    // Bitcast procedure pointer if types don't match (implicit interface)
+                    // Only for procedure values passed by value (not intent inout/out)
+                    if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
+                            ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
+                            orig_arg_intent != ASR::intentType::InOut &&
+                            orig_arg_intent != ASR::intentType::Out) {
+                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            orig_arg->m_type, module.get());
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                 } else if (ASR::is_a<ASR::Function_t>(*var_sym)) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(var_sym);
@@ -14024,18 +14042,21 @@ public:
                     ASR::Variable_t *orig_arg = nullptr;
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                        orig_arg = EXPR2VAR(func->m_args[i + is_method]);
+                        size_t arg_idx = i + is_method;
+                        if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
+                            orig_arg = EXPR2VAR(func->m_args[arg_idx]);
+                        }
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
-                    if (orig_arg->m_abi == ASR::abiType::BindC
+                    if (orig_arg != nullptr && orig_arg->m_abi == ASR::abiType::BindC
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
                         use_value = true;
                     }
-                    if (!use_value) {
+                    if (!use_value && orig_arg != nullptr) {
                         // Create alloca to get a pointer, but do it
                         // at the beginning of the function to avoid
                         // using alloca inside a loop, which would
@@ -14088,6 +14109,10 @@ public:
                         } else {
                             tmp = value;
                         }
+                    } else if (!use_value) {
+                        // orig_arg is null (implicit interface without arg info)
+                        // Just pass the value as-is
+                        tmp = value;
                     }
                 }
             }
@@ -15172,6 +15197,10 @@ public:
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            if (v->m_type_declaration == nullptr) {
+                throw CodeGenError("Procedure variable '" + std::string(v->m_name)
+                    + "' has no interface. Add explicit interface or ensure it is called somewhere.");
+            }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
@@ -15777,8 +15806,12 @@ public:
             }
             proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
-            ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
-            LCOMPILERS_ASSERT(type_decl);
+            ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(proc_sym);
+            ASR::symbol_t *type_decl = proc_var->m_type_declaration;
+            if (type_decl == nullptr) {
+                throw CodeGenError("Procedure variable '" + std::string(proc_var->m_name)
+                    + "' has no interface. Add explicit interface or ensure it is called somewhere.");
+            }
             s = ASR::down_cast<ASR::Function_t>(type_decl);
         } else {
             throw CodeGenError("FunctionCall: Symbol type not supported");

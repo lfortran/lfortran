@@ -1888,15 +1888,33 @@ namespace Present {
             return nullptr;
         }
 
-        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
-        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-        if (var->m_presence != ASR::presenceType::Optional) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+        if (!sym) {
             diag.semantic_error_label(
                 "Argument to 'present' must be an optional dummy argument",
                 {arg->base.loc},
-                "This variable is not 'optional'"
+                "Could not resolve symbol"
             );
+            return nullptr;
+        }
 
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_presence != ASR::presenceType::Optional) {
+                diag.semantic_error_label(
+                    "Argument to 'present' must be an optional dummy argument",
+                    {arg->base.loc},
+                    "This variable is not 'optional'"
+                );
+
+                return nullptr;
+            }
+        } else if (!ASR::is_a<ASR::Function_t>(*sym)) {
+            diag.semantic_error_label(
+                "Argument to 'present' must be an optional dummy argument",
+                {arg->base.loc},
+                "Expected an optional variable or procedure here"
+            );
             return nullptr;
         }
 

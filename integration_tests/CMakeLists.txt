@@ -1569,6 +1569,7 @@ RUN(NAME implicit_interface_19 LABELS gfortran llvm EXTRA_ARGS --implicit-typing
 RUN(NAME implicit_interface_20 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_21 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME implicit_interface_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
@@ -2779,6 +2780,9 @@ RUN(NAME transfer_11 LABELS gfortran llvm)
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME present_04 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME present_05 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME present_06 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME types_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrayprint_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
