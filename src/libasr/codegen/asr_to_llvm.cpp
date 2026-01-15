@@ -13589,8 +13589,8 @@ public:
                                         std::string& orig_arg_name, ASR::intentType& arg_intent,
                                         size_t arg_idx) {
         m_h = get_hash((ASR::asr_t*)func_subrout);
-        if( arg_idx < func_subrout->n_args &&
-            ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
+        LCOMPILERS_ASSERT(arg_idx < func_subrout->n_args);
+        if( ASR::is_a<ASR::Var_t>(*func_subrout->m_args[arg_idx]) ) {
             ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(func_subrout->m_args[arg_idx]);
             ASR::symbol_t* arg_sym = symbol_get_past_external(arg_var->m_v);
             if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
@@ -13858,7 +13858,11 @@ public:
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
-                    // Bitcast procedure pointer if types don't match (implicit interface)
+                    // TODO (#9532): Bitcast procedure pointer if types don't match.
+                    // This is a workaround for implicit interfaces where the actual
+                    // function signature differs from the declared signature. The proper
+                    // fix is to insert explicit cast nodes in ASR during semantic analysis
+                    // rather than patching types here in codegen.
                     // Only for procedure values passed by value (not intent inout/out)
                     if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
                             ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
@@ -14044,7 +14048,8 @@ public:
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                         size_t arg_idx = i + is_method;
-                        if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
+                        LCOMPILERS_ASSERT(arg_idx < func->n_args);
+                        if (func->m_args[arg_idx] != nullptr) {
                             orig_arg = EXPR2VAR(func->m_args[arg_idx]);
                         }
                     } else {
