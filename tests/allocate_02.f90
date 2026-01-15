@@ -1,4 +1,4 @@
-program allocate_34
+program allocate_02
     implicit none
     integer, allocatable :: arr(:)
     integer :: i
