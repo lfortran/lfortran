@@ -7801,9 +7801,18 @@ public:
                                 elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
                                 expected_phys_type);
                         } else {
-                            section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                            );
+                            int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                            int actual_n_dims = static_cast<int>(array_indices.size());
+                            if (expected_n_dims_cast != actual_n_dims) {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, ASRUtils::expr_type(array_expr),
+                                    ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            } else {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            }
                             cast_target_type = ASRUtils::TYPE(expected_array);
                         }
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
@@ -10528,8 +10537,10 @@ public:
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
-                    // Validate trim character intrinsics with unlimited polymorphic arguments
-                    if (var_name == "trim")  {
+                    // Validate character intrinsics with unlimited polymorphic arguments
+                    // They should be only accessed inside select block
+                    if ((var_name == "trim") || (var_name == "len_trim") ||
+                        (var_name == "adjustl") || (var_name == "adjustr"))  {
                         // Check if any argument is unlimited polymorphic
                         bool has_polymorphic_arg = false;
                         for (size_t i = 0; i < args.size(); i++) {

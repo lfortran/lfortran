@@ -257,6 +257,24 @@ semantic error: Character intrinsic 'trim' with class(*) argument must be inside
 106 |         print *, trim(generic)
     |                  ^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
 
+semantic error: Character intrinsic 'adjustl' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:107:18
+    |
+107 |         print *, adjustl(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'adjustr' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:108:18
+    |
+108 |         print *, adjustr(generic)
+    |                  ^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Character intrinsic 'len_trim' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:109:18
+    |
+109 |         print *, len_trim(generic)
+    |                  ^^^^^^^^^^^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:179:14
     |

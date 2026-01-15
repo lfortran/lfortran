@@ -215,26 +215,12 @@ then28:                                           ; preds = %ifcont27
 ifcont29:                                         ; preds = %ifcont27
   %49 = load %complex_4*, %complex_4** %c, align 8
   %50 = load %complex_4, %complex_4* %49, align 1
-  %51 = alloca %complex_4, align 8
-  store %complex_4 %50, %complex_4* %51, align 1
-  %52 = getelementptr %complex_4, %complex_4* %51, i32 0, i32 0
-  %53 = load float, float* %52, align 4
-  %54 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, %complex_4* %54, align 1
-  %55 = getelementptr %complex_4, %complex_4* %54, i32 0, i32 0
-  %56 = load float, float* %55, align 4
-  %57 = alloca %complex_4, align 8
-  store %complex_4 %50, %complex_4* %57, align 1
-  %58 = getelementptr %complex_4, %complex_4* %57, i32 0, i32 1
-  %59 = load float, float* %58, align 4
-  %60 = alloca %complex_4, align 8
-  store %complex_4 <{ float 1.000000e+00, float 2.000000e+00 }>, %complex_4* %60, align 1
-  %61 = getelementptr %complex_4, %complex_4* %60, i32 0, i32 1
-  %62 = load float, float* %61, align 4
-  %63 = fcmp one float %53, %56
-  %64 = fcmp one float %59, %62
-  %65 = or i1 %63, %64
-  br i1 %65, label %then30, label %else31
+  %51 = extractvalue %complex_4 %50, 0
+  %52 = extractvalue %complex_4 %50, 1
+  %53 = fcmp one float %51, 1.000000e+00
+  %54 = fcmp one float %52, 2.000000e+00
+  %55 = or i1 %53, %54
+  br i1 %55, label %then30, label %else31
 
 then30:                                           ; preds = %ifcont29
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
@@ -245,10 +231,10 @@ else31:                                           ; preds = %ifcont29
   br label %ifcont32
 
 ifcont32:                                         ; preds = %else31, %then30
-  %66 = load i1*, i1** %l, align 8
-  %67 = ptrtoint i1* %66 to i64
-  %68 = icmp eq i64 %67, 0
-  br i1 %68, label %then33, label %ifcont34
+  %56 = load i1*, i1** %l, align 8
+  %57 = ptrtoint i1* %56 to i64
+  %58 = icmp eq i64 %57, 0
+  br i1 %58, label %then33, label %ifcont34
 
 then33:                                           ; preds = %ifcont32
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([48 x i8], [48 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
@@ -256,11 +242,11 @@ then33:                                           ; preds = %ifcont32
   unreachable
 
 ifcont34:                                         ; preds = %ifcont32
-  %69 = load i1*, i1** %l, align 8
-  %70 = load i1, i1* %69, align 1
-  %71 = icmp eq i1 %70, false
-  %72 = xor i1 %70, true
-  br i1 %72, label %then35, label %else36
+  %59 = load i1*, i1** %l, align 8
+  %60 = load i1, i1* %59, align 1
+  %61 = icmp eq i1 %60, false
+  %62 = xor i1 %60, true
+  br i1 %62, label %then35, label %else36
 
 then35:                                           ; preds = %ifcont34
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
@@ -271,17 +257,17 @@ else36:                                           ; preds = %ifcont34
   br label %ifcont37
 
 ifcont37:                                         ; preds = %else36, %then35
-  %73 = load i32*, i32** %i, align 8
-  %74 = ptrtoint i32* %73 to i64
-  %75 = icmp ne i64 %74, 0
-  br i1 %75, label %then38, label %else39
+  %63 = load i32*, i32** %i, align 8
+  %64 = ptrtoint i32* %63 to i64
+  %65 = icmp ne i64 %64, 0
+  br i1 %65, label %then38, label %else39
 
 then38:                                           ; preds = %ifcont37
-  %76 = alloca i8*, align 8
-  %77 = bitcast i32* %73 to i8*
-  store i8* %77, i8** %76, align 8
-  %78 = load i8*, i8** %76, align 8
-  call void @_lfortran_free(i8* %78)
+  %66 = alloca i8*, align 8
+  %67 = bitcast i32* %63 to i8*
+  store i8* %67, i8** %66, align 8
+  %68 = load i8*, i8** %66, align 8
+  call void @_lfortran_free(i8* %68)
   store i32* null, i32** %i, align 8
   br label %ifcont40
 
@@ -289,17 +275,17 @@ else39:                                           ; preds = %ifcont37
   br label %ifcont40
 
 ifcont40:                                         ; preds = %else39, %then38
-  %79 = load float*, float** %r, align 8
-  %80 = ptrtoint float* %79 to i64
-  %81 = icmp ne i64 %80, 0
-  br i1 %81, label %then41, label %else42
+  %69 = load float*, float** %r, align 8
+  %70 = ptrtoint float* %69 to i64
+  %71 = icmp ne i64 %70, 0
+  br i1 %71, label %then41, label %else42
 
 then41:                                           ; preds = %ifcont40
-  %82 = alloca i8*, align 8
-  %83 = bitcast float* %79 to i8*
-  store i8* %83, i8** %82, align 8
-  %84 = load i8*, i8** %82, align 8
-  call void @_lfortran_free(i8* %84)
+  %72 = alloca i8*, align 8
+  %73 = bitcast float* %69 to i8*
+  store i8* %73, i8** %72, align 8
+  %74 = load i8*, i8** %72, align 8
+  call void @_lfortran_free(i8* %74)
   store float* null, float** %r, align 8
   br label %ifcont43
 
@@ -307,17 +293,17 @@ else42:                                           ; preds = %ifcont40
   br label %ifcont43
 
 ifcont43:                                         ; preds = %else42, %then41
-  %85 = load %complex_4*, %complex_4** %c, align 8
-  %86 = ptrtoint %complex_4* %85 to i64
-  %87 = icmp ne i64 %86, 0
-  br i1 %87, label %then44, label %else45
+  %75 = load %complex_4*, %complex_4** %c, align 8
+  %76 = ptrtoint %complex_4* %75 to i64
+  %77 = icmp ne i64 %76, 0
+  br i1 %77, label %then44, label %else45
 
 then44:                                           ; preds = %ifcont43
-  %88 = alloca i8*, align 8
-  %89 = bitcast %complex_4* %85 to i8*
-  store i8* %89, i8** %88, align 8
-  %90 = load i8*, i8** %88, align 8
-  call void @_lfortran_free(i8* %90)
+  %78 = alloca i8*, align 8
+  %79 = bitcast %complex_4* %75 to i8*
+  store i8* %79, i8** %78, align 8
+  %80 = load i8*, i8** %78, align 8
+  call void @_lfortran_free(i8* %80)
   store %complex_4* null, %complex_4** %c, align 8
   br label %ifcont46
 
@@ -325,17 +311,17 @@ else45:                                           ; preds = %ifcont43
   br label %ifcont46
 
 ifcont46:                                         ; preds = %else45, %then44
-  %91 = load i1*, i1** %l, align 8
-  %92 = ptrtoint i1* %91 to i64
-  %93 = icmp ne i64 %92, 0
-  br i1 %93, label %then47, label %else48
+  %81 = load i1*, i1** %l, align 8
+  %82 = ptrtoint i1* %81 to i64
+  %83 = icmp ne i64 %82, 0
+  br i1 %83, label %then47, label %else48
 
 then47:                                           ; preds = %ifcont46
-  %94 = alloca i8*, align 8
-  %95 = bitcast i1* %91 to i8*
-  store i8* %95, i8** %94, align 8
-  %96 = load i8*, i8** %94, align 8
-  call void @_lfortran_free(i8* %96)
+  %84 = alloca i8*, align 8
+  %85 = bitcast i1* %81 to i8*
+  store i8* %85, i8** %84, align 8
+  %86 = load i8*, i8** %84, align 8
+  call void @_lfortran_free(i8* %86)
   store i1* null, i1** %l, align 8
   br label %ifcont49
 
@@ -353,52 +339,52 @@ FINALIZE_SYMTABLE_automatic_allocation_02:        ; preds = %return
   br label %Finalize_Variable_c
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_automatic_allocation_02
-  %97 = load %complex_4*, %complex_4** %c, align 8
-  %98 = icmp eq %complex_4* %97, null
-  br i1 %98, label %free_done, label %free_nonnull
+  %87 = load %complex_4*, %complex_4** %c, align 8
+  %88 = icmp eq %complex_4* %87, null
+  br i1 %88, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_c
-  %99 = bitcast %complex_4* %97 to i8*
-  call void @_lfortran_free(i8* %99)
+  %89 = bitcast %complex_4* %87 to i8*
+  call void @_lfortran_free(i8* %89)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_c
   br label %Finalize_Variable_i
 
 Finalize_Variable_i:                              ; preds = %free_done
-  %100 = load i32*, i32** %i, align 8
-  %101 = icmp eq i32* %100, null
-  br i1 %101, label %free_done51, label %free_nonnull50
+  %90 = load i32*, i32** %i, align 8
+  %91 = icmp eq i32* %90, null
+  br i1 %91, label %free_done51, label %free_nonnull50
 
 free_nonnull50:                                   ; preds = %Finalize_Variable_i
-  %102 = bitcast i32* %100 to i8*
-  call void @_lfortran_free(i8* %102)
+  %92 = bitcast i32* %90 to i8*
+  call void @_lfortran_free(i8* %92)
   br label %free_done51
 
 free_done51:                                      ; preds = %free_nonnull50, %Finalize_Variable_i
   br label %Finalize_Variable_l
 
 Finalize_Variable_l:                              ; preds = %free_done51
-  %103 = load i1*, i1** %l, align 8
-  %104 = icmp eq i1* %103, null
-  br i1 %104, label %free_done53, label %free_nonnull52
+  %93 = load i1*, i1** %l, align 8
+  %94 = icmp eq i1* %93, null
+  br i1 %94, label %free_done53, label %free_nonnull52
 
 free_nonnull52:                                   ; preds = %Finalize_Variable_l
-  %105 = bitcast i1* %103 to i8*
-  call void @_lfortran_free(i8* %105)
+  %95 = bitcast i1* %93 to i8*
+  call void @_lfortran_free(i8* %95)
   br label %free_done53
 
 free_done53:                                      ; preds = %free_nonnull52, %Finalize_Variable_l
   br label %Finalize_Variable_r
 
 Finalize_Variable_r:                              ; preds = %free_done53
-  %106 = load float*, float** %r, align 8
-  %107 = icmp eq float* %106, null
-  br i1 %107, label %free_done55, label %free_nonnull54
+  %96 = load float*, float** %r, align 8
+  %97 = icmp eq float* %96, null
+  br i1 %97, label %free_done55, label %free_nonnull54
 
 free_nonnull54:                                   ; preds = %Finalize_Variable_r
-  %108 = bitcast float* %106 to i8*
-  call void @_lfortran_free(i8* %108)
+  %98 = bitcast float* %96 to i8*
+  call void @_lfortran_free(i8* %98)
   br label %free_done55
 
 free_done55:                                      ; preds = %free_nonnull54, %Finalize_Variable_r

@@ -68,6 +68,71 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+// Helper functions for LLVM function name mangling
+namespace {
+
+/**
+ * Check if a function is an external interface function.
+ * External interface functions are functions with:
+ * - Interface deftype
+ * - Not intrinsic ABI
+ * - Not in a module
+ */
+static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
+    return ftype->m_deftype == ASR::deftypeType::Interface &&
+           ftype->m_abi != ASR::abiType::Intrinsic &&
+           !ftype->m_module;
+}
+
+/**
+ * Compute the final mangled LLVM function name.
+ *
+ * This function encapsulates all mangling logic in one place:
+ * 1. Determines base name (BindC, external interface, or prefixed)
+ * 2. Adds parent function prefix if applicable
+ *
+ * @param sym_name Original symbol name from ASR
+ * @param ftype Function type information
+ * @param compiler_options Compiler options including mangling flags
+ * @param mangle_prefix Prefix to add (typically "_lfortran_")
+ * @param parent_function Parent function if this is a nested function
+ * @return Final mangled name to use in LLVM
+ */
+static std::string compute_llvm_function_name(
+    const std::string& sym_name,
+    ASR::FunctionType_t* ftype,
+    const CompilerOptions& compiler_options,
+    const std::string& mangle_prefix,
+    const ASR::Function_t* parent_function
+) {
+    (void)compiler_options;
+    bool is_external_interface = is_external_interface_function(ftype);
+    bool is_bindc = (ftype->m_abi == ASR::abiType::BindC);
+
+    std::string fn_name;
+
+    // Determine base name based on function type
+    if (is_bindc) {
+        fn_name = ftype->m_bindc_name ? ftype->m_bindc_name : sym_name;
+    } else if (is_external_interface) {
+        fn_name = sym_name;
+    } else {
+        fn_name = mangle_prefix + sym_name;
+    }
+
+    // Add parent function prefix for nested functions
+    if (parent_function != nullptr &&
+        !is_external_interface &&
+        ftype->m_abi != ASR::abiType::Intrinsic &&
+        !is_bindc) {
+        fn_name = std::string(parent_function->m_name) + "." + fn_name;
+    }
+
+    return fn_name;
+}
+
+} // anonymous namespace
+
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
@@ -890,15 +955,17 @@ public:
     // on non-macOS ARM platforms, but we use struct types internally.
     llvm::Value* convert_complex_vector_to_struct(llvm::Value* val, llvm::Type* complex_type) {
         llvm::Type* val_type = val->getType();
-        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
-            // val is a vector type like <2 x float> or <2 x double>
-            // Convert to struct type like {float, float} or {double, double}
-            llvm::AllocaInst *p_vec = llvm_utils->CreateAlloca(*builder, val_type);
-            builder->CreateStore(val, p_vec);
-            llvm::Value* p_struct = builder->CreateBitCast(p_vec, complex_type->getPointerTo());
-            return llvm_utils->CreateLoad2(complex_type, p_struct);
+        if (!llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            return val;
         }
-        return val;
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        llvm::Value* idx0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        llvm::Value* idx1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
+        llvm::Value* re = builder->CreateExtractElement(val, idx0);
+        llvm::Value* im = builder->CreateExtractElement(val, idx1);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value* lfortran_complex_bin_op(llvm::Value* left_arg, llvm::Value* right_arg,
@@ -1283,37 +1350,36 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        if( c->getType()->isPointerTy() ) {
-            c = llvm_utils->CreateLoad2(complex_type, c);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            return builder->CreateExtractElement(val, idx0);
         }
+        return builder->CreateExtractValue(val, {0});
     }
 
     llvm::Value *complex_im(llvm::Value *c, llvm::Type* complex_type=nullptr) {
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pc = llvm_utils->CreateAlloca(*builder, complex_type);
-        builder->CreateStore(c, pc);
-        std::vector<llvm::Value *> idx = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
-        if (complex_type == complex_type_4) {
-            return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
-        } else {
-            return llvm_utils->CreateLoad2(llvm::Type::getDoubleTy(context), pim);
+        llvm::Value *val = c;
+        llvm::Type *val_type = c->getType();
+        if (val_type->isPointerTy()) {
+            val = llvm_utils->CreateLoad2(complex_type, c);
+            val_type = complex_type;
         }
+        if (llvm::isa<FIXED_VECTOR_TYPE>(val_type)) {
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            return builder->CreateExtractElement(val, idx1);
+        }
+        return builder->CreateExtractValue(val, {1});
     }
 
     llvm::Value *complex_from_floats(llvm::Value *re, llvm::Value *im,
@@ -1321,18 +1387,20 @@ public:
         if( complex_type == nullptr ) {
             complex_type = complex_type_4;
         }
-        llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, complex_type);
-        std::vector<llvm::Value *> idx1 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        std::vector<llvm::Value *> idx2 = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pre = llvm_utils->CreateGEP2(complex_type, pres, idx1);
-        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pres, idx2);
-        builder->CreateStore(re, pre);
-        builder->CreateStore(im, pim);
-        return llvm_utils->CreateLoad2(complex_type, pres);
+        if (llvm::isa<FIXED_VECTOR_TYPE>(complex_type)) {
+            llvm::Value* result = llvm::UndefValue::get(complex_type);
+            llvm::Value* idx0 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 0);
+            llvm::Value* idx1 = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), 1);
+            result = builder->CreateInsertElement(result, re, idx0);
+            result = builder->CreateInsertElement(result, im, idx1);
+            return result;
+        }
+        llvm::Value* result = llvm::UndefValue::get(complex_type);
+        result = builder->CreateInsertValue(result, re, {0});
+        result = builder->CreateInsertValue(result, im, {1});
+        return result;
     }
 
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
@@ -6010,27 +6078,11 @@ public:
                     }
                 }
             }
-            std::string fn_name;
-            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                if (ASRUtils::get_FunctionType(x)->m_bindc_name) {
-                    fn_name = ASRUtils::get_FunctionType(x)->m_bindc_name;
-                } else {
-                    fn_name = sym_name;
-                }
-            } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
-                ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
-                fn_name = sym_name;
-            } else {
-                fn_name = mangle_prefix + sym_name;
-            }
-            if ( parent_function != nullptr &&
-                 ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface &&
-                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic &&
-                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
-                ) {
-                std::string parent_function_name = std::string(parent_function->m_name);
-                fn_name = parent_function_name+ "." + fn_name;
-            }
+            // Compute the mangled function name using centralized logic
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+            std::string fn_name = compute_llvm_function_name(
+                sym_name, ftype, compiler_options, mangle_prefix, parent_function
+            );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
@@ -9830,7 +9882,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        tmp = get_string_length(x.m_arg); // `int64` value.
+        // Handle polymorphic string inside select type block
+        if (current_select_type_block_type_asr &&
+            ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
+            this->visit_expr_wrapper(x.m_arg, true);
+            llvm::Value *str_val = tmp;
+            load_unlimited_polymorpic_value(x.m_arg, str_val);
+            tmp = builder->CreateExtractValue(str_val, 1);
+        } else {
+            tmp = get_string_length(x.m_arg); // `int64` value.
+        }
         tmp = llvm_utils->convert_kind(tmp,
             llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
     }
@@ -12609,6 +12670,7 @@ public:
         llvm::Value *readwrite{}, *readwrite_len{};
         llvm::Value *access_val{}, *access_len{};
         llvm::Value *name_val{}, *name_len{};
+        llvm::Value *blank_val{}, *blank_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -12722,6 +12784,17 @@ public:
             name_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_blank) {
+            this->visit_expr_load_wrapper(x.m_blank, 0);
+            std::tie(blank_val, blank_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_blank),
+                    tmp);
+        } else {
+            blank_val = llvm::Constant::getNullValue(character_type);
+            blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -12737,7 +12810,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context), // read_data, read_len
                         character_type, llvm::Type::getInt64Ty(context), // readwrite_data, readwrite_len
                         character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
-                        character_type, llvm::Type::getInt64Ty(context)  // name_data, name_len
+                        character_type, llvm::Type::getInt64Ty(context),  // name_data, name_len
+                        character_type, llvm::Type::getInt64Ty(context)  // blank_data, blank_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -12750,7 +12824,8 @@ public:
             read, read_len,
             readwrite, readwrite_len,
             access_val, access_len,
-            name_val, name_len});
+            name_val, name_len,
+            blank_val, blank_len});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {

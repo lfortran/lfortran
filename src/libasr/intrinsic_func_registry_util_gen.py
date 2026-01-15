@@ -273,13 +273,15 @@ intrinsic_funcs_args = {
     "Adjustl": [
         {
             "args": [("char",)],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "allow_polymorphic_arg": [0]
         }
     ],
     "Adjustr": [
         {
             "args": [("char",)],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "allow_polymorphic_arg": [0]
         }
     ],
     "Aint": [
@@ -868,7 +870,8 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return": "int32",
-            "kind_arg": True
+            "kind_arg": True,
+            "allow_polymorphic_arg": [0]
         }
     ],
     "StringTrim": [

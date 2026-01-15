@@ -48,14 +48,15 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool bindc_mangling = false;
     bool fortran_mangling;
     bool c_mangling;
+    bool mangle_underscore_external;
     bool should_mangle = false;
     std::vector<std::string> parent_function_name;
     std::string module_name = "";
     SymbolTable* current_scope = nullptr;
 
-    SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm) :
+    SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm, bool mue) :
     intrinsic_module_name_mangling(imm), module_name_mangling(mm), global_symbols_mangling(gm), intrinsic_symbols_mangling(im),
-    all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm) {}
+    all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm), mangle_underscore_external(mue) {}
 
 
     const std::unordered_set<std::string> reserved_keywords_c = {
@@ -183,6 +184,21 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if (intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             sym_to_renamed[sym] = update_name(x.m_name);
+        }
+        if (mangle_underscore_external) {
+            bool is_external_interface = (f_type->m_deftype == ASR::deftypeType::Interface &&
+                                          f_type->m_abi != ASR::abiType::Intrinsic &&
+                                          !f_type->m_module);
+            if (is_external_interface) {
+                std::string name = x.m_name;
+                bool has_reserved_prefix = (startswith(name, "_lfortran") ||
+                                            startswith(name, "_lpython") ||
+                                            startswith(name, "_lcompilers"));
+                if (!has_reserved_prefix && !name.empty() && name.back() != '_') {
+                    ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
+                    sym_to_renamed[sym] = name + "_";
+                }
+            }
         }
         for (auto &a : x.m_symtab->get_scope()) {
             bool nested_function = is_nested_function(a.second);
@@ -543,12 +559,14 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
      */
     bool any_present = (pass_options.intrinsic_module_name_mangling || pass_options.module_name_mangling || pass_options.global_symbols_mangling ||
                     pass_options.intrinsic_symbols_mangling || pass_options.all_symbols_mangling ||
-                    pass_options.bindc_mangling || pass_options.fortran_mangling);
+                    pass_options.bindc_mangling || pass_options.fortran_mangling ||
+                    pass_options.mangle_underscore_external);
     if (pass_options.mangle_underscore) {
         lcompilers_unique_ID_separate_compilation = "";
     }
     if ((!any_present || (!(pass_options.mangle_underscore ||
-            pass_options.fortran_mangling) && lcompilers_unique_ID_separate_compilation.empty())) &&
+            pass_options.fortran_mangling || pass_options.mangle_underscore_external) &&
+            lcompilers_unique_ID_separate_compilation.empty())) &&
                 !pass_options.c_mangling) {
         // `--mangle-underscore` doesn't require `lcompilers_unique_ID_separate_compilation`
         // `lcompilers_unique_ID_separate_compilation` is not mandatory for `--apply-fortran-mangling`
@@ -561,7 +579,8 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
                 pass_options.all_symbols_mangling,
                 pass_options.bindc_mangling,
                 pass_options.fortran_mangling,
-                pass_options.c_mangling);
+                pass_options.c_mangling,
+                pass_options.mangle_underscore_external);
     v.visit_TranslationUnit(unit);
     UniqueSymbolVisitor u(al, v.sym_to_renamed);
     u.visit_TranslationUnit(unit);

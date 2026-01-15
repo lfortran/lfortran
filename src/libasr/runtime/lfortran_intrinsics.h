@@ -248,7 +248,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
                                     char *access, int64_t access_len,
-                                    char *name, int64_t name_len);
+                                    char *name, int64_t name_len,
+                                    char *blank, int64_t blank_len);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
