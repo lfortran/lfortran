@@ -6639,20 +6639,84 @@ void lfortran_error(const char *message) {
 // TODO: add support for reading comma separated string, into `_arr` functions
 // by accepting array size as an argument as well
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr) {
-    printf("\nHERE--------------->%s\n", format);
-    lfortran_error("Reading into an array of int32_t is not supported.");
+    (void)format; // currently unused
+    const char *pos = str;
+    const char *end = str + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end) {
+        // Skip whitespace and common separators
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        errno = 0;
+        long value = strtol(pos, &next, 10);
+        if (next == pos) break;
+        if ((const char *)next > end) break;
+        arr[count++] = (int32_t)value;
+        pos = next;
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr) {
-    lfortran_error("Reading into an array of int64_t is not supported.");
+    (void)format; 
+    const char *pos = str;
+    const char *end = str + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        errno = 0;
+        long long value = strtoll(pos, &next, 10);
+        if (next == pos) break;
+        if ((const char *)next > end) break;
+        arr[count++] = (int64_t)value;
+        pos = next;
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr) {
-    lfortran_error("Reading into an array of float is not supported.");
+    (void)format; 
+    const char *pos = str;
+    const char *end = str + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        errno = 0;
+        float value = strtof(pos, &next);
+        if (next == pos) break;
+        if ((const char *)next > end) break;
+        arr[count++] = value;
+        pos = next;
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr) {
-    lfortran_error("Reading into an array of double is not supported.");
+    (void)format; 
+    const char *pos = str;
+    const char *end = str + len;
+    char *next = NULL;
+    int64_t count = 0;
+    while (pos < end) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        errno = 0;
+        double value = strtod(pos, &next);
+        if (next == pos) break;
+        if ((const char *)next > end) break;
+        arr[count++] = value;
+        pos = next;
+    }
 }
 
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
