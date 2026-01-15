@@ -4821,7 +4821,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 
     if (unit_file_bin) {
-        if (access_id != 1) {
+        if (access_id == 0) {
             int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
@@ -4871,7 +4871,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        if (access_id != 1) {
+        if (access_id == 0) {
             int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
@@ -4921,7 +4921,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        if (access_id != 1) {
+        if (access_id == 0) {
             int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
@@ -4971,7 +4971,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        if (access_id != 1) {
+        if (access_id == 0) {
             int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
@@ -5025,7 +5025,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
     if (unit_file_bin) {
         int32_t data_length = 0;
 
-        if (access_id != 1 && ftell(filep) == 0) {
+        if (access_id == 0 && ftell(filep) == 0) {
             if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 printf("Error reading data length from file.\n");
@@ -5038,7 +5038,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         long end_pos = ftell(filep);
         fseek(filep, current_pos, SEEK_SET);
 
-        if (access_id != 1) {
+        if (access_id == 0) {
             data_length = (int32_t)(end_pos - current_pos - 4);
         } else {
             data_length = (int32_t)(end_pos - current_pos);
@@ -6424,15 +6424,18 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
         // Write record marker
         int32_t record_marker = (int32_t)total_size;
-        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        if (access_id == 0) {
+            fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        }        
         size_t written = 0;
         // Write all data chunks
         for (int i = 0; i < count; i++) {
             written += fwrite(data[i].ptr, 1, data[i].len, filep);
         }
         // Write record marker again
-        if (access_id != 1) fwrite(&record_marker, sizeof(record_marker), 1, filep);
-
+        if (access_id == 0) {
+            fwrite(&record_marker, sizeof(record_marker), 1, filep);
+        }
         if (written != total_size) {
             printf("Error writing data to file.\n");
             // TODO: not sure what is the right value of "iostat" in this case
