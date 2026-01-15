@@ -7371,7 +7371,7 @@ public:
                         if ( ASRUtils::expr_value(array_index.m_right) ) {
                             array_index.m_right = ASRUtils::expr_value(array_index.m_right);
                         }
-                        array_index.m_step = b.i32(1);
+                        array_index.m_step = b.i32( i + 1 );
                     }
                     array_indices.push_back(al, array_index);
                 }
@@ -7477,7 +7477,7 @@ public:
                                     if ( ASRUtils::expr_value(array_index.m_right) ) {
                                         array_index.m_right = ASRUtils::expr_value(array_index.m_right);
                                     }
-                                    array_index.m_step = b.i32(1);
+                                    array_index.m_step = b.i32( j + 1 );
                                 }
                                 array_indices.push_back(al, array_index);
                             }
