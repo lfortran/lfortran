@@ -7801,9 +7801,18 @@ public:
                                 elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
                                 expected_phys_type);
                         } else {
-                            section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                            );
+                            int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                            int actual_n_dims = static_cast<int>(array_indices.size());
+                            if (expected_n_dims_cast != actual_n_dims) {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, ASRUtils::expr_type(array_expr),
+                                    ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            } else {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            }
                             cast_target_type = ASRUtils::TYPE(expected_array);
                         }
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
