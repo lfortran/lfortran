@@ -23,6 +23,44 @@
 #  include <unistd.h>
 #endif
 
+static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
+    if (!lineptr || !n || !stream) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (*lineptr == NULL || *n == 0) {
+        *n = 128;
+        *lineptr = (char *)malloc(*n);
+        if (!*lineptr) {
+            errno = ENOMEM;
+            return -1;
+        }
+    }
+    size_t pos = 0;
+    int c = 0;
+    while ((c = fgetc(stream)) != EOF) {
+        if (pos + 1 >= *n) {
+            size_t new_n = (*n) * 2;
+            char *new_ptr = (char *)realloc(*lineptr, new_n);
+            if (!new_ptr) {
+                errno = ENOMEM;
+                return -1;
+            }
+            *lineptr = new_ptr;
+            *n = new_n;
+        }
+        (*lineptr)[pos++] = (char)c;
+        if (c == '\n') {
+            break;
+        }
+    }
+    if (pos == 0 && c == EOF) {
+        return -1;
+    }
+    (*lineptr)[pos] = '\0';
+    return (int64_t)pos;
+}
+
 #if defined(__APPLE__)
 #  include <sys/time.h>
 #endif
@@ -2320,7 +2358,7 @@ static char* runtime_read_line(const char *filename, unsigned int line_no) {
     char *line = NULL;
     size_t cap = 0;
     unsigned int current = 1;
-    while (getline(&line, &cap, file) != -1) {
+    while (lfortran_getline(&line, &cap, file) != -1) {
         if (current == line_no) {
             fclose(file);
             runtime_sanitize_line(line);
@@ -7365,9 +7403,9 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
 
     char *line = NULL;
     size_t cap = 0;
-    ssize_t read_len = -1;
+    int64_t read_len = -1;
     uint32_t n = 0;
-    while (n < line_number && (read_len = getline(&line, &cap, fp)) != -1) n++;
+    while (n < line_number && (read_len = lfortran_getline(&line, &cap, fp)) != -1) n++;
     fclose(fp);
 
     if (read_len == -1) {
