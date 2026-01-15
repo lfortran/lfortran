@@ -60,6 +60,14 @@ module lfortran_intrinsic_ieee_arithmetic
         module procedure spieee_rem, dpieee_rem
     end interface
 
+    interface ieee_support_inf
+        module procedure spieee_support_inf, dpieee_support_inf
+    end interface
+
+    interface ieee_support_nan
+        module procedure spieee_support_nan, dpieee_support_nan
+    end interface
+
     contains
 
     elemental function spieee_class(x) result(y)
@@ -224,6 +232,34 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x, y
         real(real64) :: r
         r = modulo(x, y)
+    end function
+
+    elemental function spieee_support_inf(x) result(r)
+        use iso_fortran_env, only: real32
+        real(real32), intent(in) :: x
+        logical :: r
+        r = .true.
+    end function
+
+    elemental function dpieee_support_inf(x) result(r)
+        use iso_fortran_env, only: real64
+        real(real64), intent(in) :: x
+        logical :: r
+        r = .true.
+    end function
+
+    elemental function spieee_support_nan(x) result(r)
+        use iso_fortran_env, only: real32
+        real(real32), intent(in) :: x
+        logical :: r
+        r = .true.
+    end function
+
+    elemental function dpieee_support_nan(x) result(r)
+        use iso_fortran_env, only: real64
+        real(real64), intent(in) :: x
+        logical :: r
+        r = .true.
     end function
 
 end module
