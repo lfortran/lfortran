@@ -3672,6 +3672,10 @@ filename = "../integration_tests/statement1.f90"
 asr = true
 
 [[test]]
+filename = "errors/statement_func.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "no_prescan_include1.f90"
 interactive = true
 ast = true
