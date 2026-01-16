@@ -78,7 +78,7 @@ static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
 #endif
 
 // Global flag to control runtime error colors
-static int _lfortran_use_runtime_colors = 1;  // enabled by default
+static int _lfortran_use_runtime_colors = 0;  // disabled by default
 
 #ifdef HAVE_RUNTIME_STACKTRACE
 

@@ -4909,8 +4909,8 @@ public:
             }
             builder->CreateCall(fn, args);
         }
-        // Set runtime color preference based on compiler option (only when disabled)
-        if (!compiler_options.use_runtime_colors) {
+        // Set runtime color preference based on compiler option (only when enabled)
+        if (compiler_options.use_runtime_colors) {
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
             llvm::Function *fn = module->getFunction("_lfortran_set_use_runtime_colors");
             if(!fn) {
@@ -4922,7 +4922,7 @@ public:
                     llvm::Function::ExternalLinkage, "_lfortran_set_use_runtime_colors", module.get());
             }
             llvm::Value *use_colors = llvm::ConstantInt::get(context,
-                llvm::APInt(32, 0));
+                llvm::APInt(32, 1));
             builder->CreateCall(fn, {use_colors});
         }
         for(to_be_allocated_array array : allocatable_array_details){
