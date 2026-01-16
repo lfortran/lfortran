@@ -2438,6 +2438,19 @@ static int runtime_try_render_error(const char *formatted) {
         free(filename);
         return 0;
     }
+
+    // Handle the case where line/column is 0 (no specific location)
+    if (line == 0) {
+        const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
+        const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
+        const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, message, color_reset);
+        fflush(stderr);
+        free(filename);
+        return 1;
+    }
+
     char *line_text = runtime_read_line(filename, (unsigned int)line);
     if (!line_text) {
         free(filename);
@@ -2498,7 +2511,12 @@ LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
     vsnprintf(formatted, (size_t)needed + 1, format, args);
     va_end(args);
     if (!runtime_try_render_error(formatted)) {
-        fputs(formatted, stderr);
+        // If we couldn't render the fancy error, add the "runtime error:" prefix
+        const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
+        const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
+        const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
         fflush(stderr);
     }
     free(formatted);
