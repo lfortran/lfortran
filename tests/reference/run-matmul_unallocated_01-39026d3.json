@@ -1,0 +1,13 @@
+{
+    "basename": "run-matmul_unallocated_01-39026d3",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/matmul_unallocated_01.f90",
+    "infile_hash": "69fa6b271c924d4944c45f3f5d8f6a569ff838a441c57aa9cbb649e0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-matmul_unallocated_01-39026d3.stderr",
+    "stderr_hash": "cfaa40d6351a85e4399f5367726d080eb4c4a30049c1435aff00cd6d",
+    "returncode": 1
+}

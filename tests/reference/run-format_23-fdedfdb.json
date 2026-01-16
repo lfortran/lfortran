@@ -1,0 +1,13 @@
+{
+    "basename": "run-format_23-fdedfdb",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/format_23.f90",
+    "infile_hash": "ed10c322714afdc86cceeb03cfb60fce8c15d3b5e9c03df061e2ca56",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-format_23-fdedfdb.stdout",
+    "stdout_hash": "4a8f73290e4f60373242bec2b4360d8b5406de116f313eae712b6a57",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

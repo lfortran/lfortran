@@ -1,0 +1,13 @@
+{
+    "basename": "run-write_02-795afbb",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/write_02.f90",
+    "infile_hash": "7c59eecee1e7e7127571ea73b91b4e0e10077295f6dbb75f94aef687",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-write_02-795afbb.stderr",
+    "stderr_hash": "b65bc0d80ed3f38265702bfd48f891f579ea1c8ec54cef7c4f9f59ed",
+    "returncode": 1
+}
