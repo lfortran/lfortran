@@ -37,8 +37,6 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value31 = alloca i32, align 4
-  %call_arg_value21 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
   %i = alloca i32, align 4
   %j = alloca i32, align 4
@@ -174,100 +172,100 @@ else19:                                           ; preds = %ifcont17
   br label %ifcont20
 
 ifcont20:                                         ; preds = %else19, %then18
-  store i32 3, i32* %call_arg_value21, align 4
-  call void @f(i32* %call_arg_value21, i32* %j2)
+  store i32 3, i32* %call_arg_value, align 4
+  call void @f(i32* %call_arg_value, i32* %j2)
   %36 = alloca i64, align 8
   %37 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %36, i32 0, i32 0, i32* %j2)
   %38 = load i64, i64* %36, align 4
-  %stringFormat_desc22 = alloca %string_descriptor, align 8
-  %39 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc22, i32 0, i32 0
+  %stringFormat_desc21 = alloca %string_descriptor, align 8
+  %39 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc21, i32 0, i32 0
   store i8* %37, i8** %39, align 8
-  %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc22, i32 0, i32 1
+  %40 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc21, i32 0, i32 1
   store i64 %38, i64* %40, align 4
-  %41 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc22, i32 0, i32 0
+  %41 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc21, i32 0, i32 0
   %42 = load i8*, i8** %41, align 8
-  %43 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc22, i32 0, i32 1
+  %43 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc21, i32 0, i32 1
   %44 = load i64, i64* %43, align 4
   %45 = trunc i64 %44 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %42, i32 %45, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i32 1)
   %46 = icmp eq i8* %37, null
-  br i1 %46, label %free_done24, label %free_nonnull23
+  br i1 %46, label %free_done23, label %free_nonnull22
 
-free_nonnull23:                                   ; preds = %ifcont20
+free_nonnull22:                                   ; preds = %ifcont20
   call void @_lfortran_free(i8* %37)
-  br label %free_done24
+  br label %free_done23
 
-free_done24:                                      ; preds = %free_nonnull23, %ifcont20
+free_done23:                                      ; preds = %free_nonnull22, %ifcont20
   %47 = load i32, i32* %j2, align 4
   %48 = icmp ne i32 %47, 4
-  br i1 %48, label %then25, label %else26
+  br i1 %48, label %then24, label %else25
 
-then25:                                           ; preds = %free_done24
+then24:                                           ; preds = %free_done23
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont27
+  br label %ifcont26
 
-else26:                                           ; preds = %free_done24
-  br label %ifcont27
+else25:                                           ; preds = %free_done23
+  br label %ifcont26
 
-ifcont27:                                         ; preds = %else26, %then25
+ifcont26:                                         ; preds = %else25, %then24
   store i32 1, i32* %j2, align 4
   %49 = load i32, i32* %j2, align 4
   %50 = icmp ne i32 %49, 1
-  br i1 %50, label %then28, label %else29
+  br i1 %50, label %then27, label %else28
 
-then28:                                           ; preds = %ifcont27
+then27:                                           ; preds = %ifcont26
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont30
+  br label %ifcont29
 
-else29:                                           ; preds = %ifcont27
-  br label %ifcont30
+else28:                                           ; preds = %ifcont26
+  br label %ifcont29
 
-ifcont30:                                         ; preds = %else29, %then28
+ifcont29:                                         ; preds = %else28, %then27
   %51 = load i32, i32* %i1, align 4
   %52 = add i32 %51, 2
-  store i32 %52, i32* %call_arg_value31, align 4
-  call void @f(i32* %call_arg_value31, i32* %j2)
+  store i32 %52, i32* %call_arg_value, align 4
+  call void @f(i32* %call_arg_value, i32* %j2)
   %53 = alloca i64, align 8
   %54 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %53, i32 0, i32 0, i32* %j2)
   %55 = load i64, i64* %53, align 4
-  %stringFormat_desc32 = alloca %string_descriptor, align 8
-  %56 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc32, i32 0, i32 0
+  %stringFormat_desc30 = alloca %string_descriptor, align 8
+  %56 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc30, i32 0, i32 0
   store i8* %54, i8** %56, align 8
-  %57 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc32, i32 0, i32 1
+  %57 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc30, i32 0, i32 1
   store i64 %55, i64* %57, align 4
-  %58 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc32, i32 0, i32 0
+  %58 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc30, i32 0, i32 0
   %59 = load i8*, i8** %58, align 8
-  %60 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc32, i32 0, i32 1
+  %60 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc30, i32 0, i32 1
   %61 = load i64, i64* %60, align 4
   %62 = trunc i64 %61 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* %59, i32 %62, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1)
   %63 = icmp eq i8* %54, null
-  br i1 %63, label %free_done34, label %free_nonnull33
+  br i1 %63, label %free_done32, label %free_nonnull31
 
-free_nonnull33:                                   ; preds = %ifcont30
+free_nonnull31:                                   ; preds = %ifcont29
   call void @_lfortran_free(i8* %54)
-  br label %free_done34
+  br label %free_done32
 
-free_done34:                                      ; preds = %free_nonnull33, %ifcont30
+free_done32:                                      ; preds = %free_nonnull31, %ifcont29
   %64 = load i32, i32* %j2, align 4
   %65 = icmp ne i32 %64, 4
-  br i1 %65, label %then35, label %else36
+  br i1 %65, label %then33, label %else34
 
-then35:                                           ; preds = %free_done34
+then33:                                           ; preds = %free_done32
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont37
+  br label %ifcont35
 
-else36:                                           ; preds = %free_done34
-  br label %ifcont37
+else34:                                           ; preds = %free_done32
+  br label %ifcont35
 
-ifcont37:                                         ; preds = %else36, %then35
+ifcont35:                                         ; preds = %else34, %then33
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont37
+return:                                           ; preds = %ifcont35
   br label %FINALIZE_SYMTABLE_subroutines_01
 
 FINALIZE_SYMTABLE_subroutines_01:                 ; preds = %return

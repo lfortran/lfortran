@@ -279,6 +279,39 @@ public:
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
     };
     std::vector<variable_inital_value> variable_inital_value_vec; /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
+
+    // Pool of allocas for call arguments, keyed by LLVM type.
+    // This avoids creating a new alloca for every expression argument at every
+    // call site, which caused excessive stack usage (e.g., 217x more than
+    // GFortran for LAPACK's ctfsm function). Instead, we reuse allocas of the
+    // same type across different calls.
+    std::map<llvm::Type*, std::vector<llvm::AllocaInst*>> call_arg_alloca_pool;
+    std::map<llvm::Type*, size_t> call_arg_alloca_idx;
+    int convert_call_args_depth = 0;
+
+    // Get or create an alloca for a call argument of the given type.
+    // Reuses allocas from the pool when possible.
+    llvm::AllocaInst* get_call_arg_alloca(llvm::Type* type) {
+        size_t& idx = call_arg_alloca_idx[type];
+        std::vector<llvm::AllocaInst*>& pool = call_arg_alloca_pool[type];
+        if (idx < pool.size()) {
+            return pool[idx++];
+        }
+        // Need to create a new alloca
+        llvm::AllocaInst* alloca = llvm_utils->CreateAlloca(type, nullptr, "call_arg_value");
+        pool.push_back(alloca);
+        idx++;
+        return alloca;
+    }
+
+    // Reset alloca pool indices at the start of processing call arguments.
+    // This allows reuse of allocas across different call sites.
+    void reset_call_arg_alloca_pool() {
+        for (auto& kv : call_arg_alloca_idx) {
+            kv.second = 0;
+        }
+    }
+
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics, LocationManager &lm) :
     diag{diagnostics},
@@ -4784,6 +4817,9 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -4844,6 +4880,10 @@ public:
         llvm_goto_targets.clear();
 
         builder->SetInsertPoint(BB);
+        // Clear alloca pool after nested functions are processed, before main body
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         if (compiler_options.emit_debug_info) {
             debug_current_scope = SP;
             builder->SetCurrentDebugLocation(nullptr);
@@ -6007,6 +6047,9 @@ public:
         loop_head_names.clear();
         loop_or_block_end.clear();
         loop_or_block_end_names.clear();
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -6176,6 +6219,10 @@ public:
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
         llvm_goto_targets.clear();
+        // Clear alloca pool for each new function to avoid cross-function references
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
             debug_emit_function(x, SP);
@@ -13621,6 +13668,12 @@ public:
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool is_method) {
         std::vector<llvm::Value *> args;
+        convert_call_args_depth++;
+        // Only reset alloca pool indices at outermost call to avoid
+        // nested calls (in argument expressions) clobbering allocas
+        if (convert_call_args_depth == 1) {
+            reset_call_arg_alloca_pool();
+        }
         for (size_t i=0; i<x.n_args; i++) {
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
             ASR::abiType x_abi = (ASR::abiType) 0;
@@ -13747,12 +13800,7 @@ public:
                                 }
                                 if (!orig_arg->m_value_attr && arg->m_value_attr) {
                                     llvm::Type *target_type = tmp->getType();
-                                    // Create alloca to get a pointer, but do it
-                                    // at the beginning of the function to avoid
-                                    // using alloca inside a loop, which would
-                                    // run out of stack
-                                    llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                                        target_type, nullptr, "call_arg_value_ptr");
+                                    llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
@@ -13842,10 +13890,10 @@ public:
                             this->visit_expr_wrapper(arg->m_value, true);
                             if( x_abi != ASR::abiType::BindC &&
                                 !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
-                                llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                                    al, arg->base.base.loc, &arg->base)), arg->m_type, module.get()),
-                                    nullptr, "call_arg_value");
+                                llvm::Type* alloca_type = llvm_utils->get_type_from_ttype_t_util(
+                                    ASRUtils::EXPR(ASR::make_Var_t(
+                                    al, arg->base.base.loc, &arg->base)), arg->m_type, module.get());
+                                llvm::AllocaInst *target = get_call_arg_alloca(alloca_type);
                                 builder->CreateStore(tmp, target);
                                 tmp = target;
                             }
@@ -14098,8 +14146,7 @@ public:
                             LLVM::is_llvm_pointer(*arg_type)) &&
                             !ASRUtils::is_character(*arg_type) &&
                             (!ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) || ASRUtils::is_value_constant(x.m_args[i].m_value)) ) {
-                            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                                target_type, nullptr, "call_arg_value");
+                            llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                             if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
                                 ASR::is_a<ASR::List_t>(*arg_type) ) {
                                     llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
@@ -14200,6 +14247,7 @@ public:
 
             args.push_back(tmp);
         }
+        convert_call_args_depth--;
         return args;
     }
 
