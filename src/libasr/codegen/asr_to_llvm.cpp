@@ -13862,6 +13862,10 @@ public:
                             ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
                             orig_arg_intent != ASR::intentType::InOut &&
                             orig_arg_intent != ASR::intentType::Out) {
+                        // Workaround for implicit interfaces where the actual function signature
+                        // differs from the declared signature.
+                        // The proper fix is to insert explicit cast nodes in ASR during semantic
+                        // analysis rather than patching types here in codegen.
                         llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                             orig_arg->m_type, module.get());
