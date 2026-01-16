@@ -38,6 +38,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
+        bool arg_no_runtime_color = false;
         bool arg_no_indent = false;
         bool arg_no_prescan = false;
         bool show_llvm = false;

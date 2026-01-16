@@ -108,6 +108,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
+        app.add_flag("--no-runtime-color", opts.arg_no_runtime_color, "Turn off colored runtime errors")->group(group_output_debugging_options);
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
@@ -313,6 +314,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         compiler_options.use_colors = !opts.arg_no_color;
+        compiler_options.use_runtime_colors = !opts.arg_no_runtime_color;
         compiler_options.indent = !opts.arg_no_indent;
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options

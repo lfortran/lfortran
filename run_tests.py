@@ -736,7 +736,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         if no_llvm:
             log.info(f"{filename} * obj    SKIPPED as requested")
         else:
-            run_test(filename, "run", "lfortran --no-color {infile}",
+            run_test(filename, "run", "lfortran --no-color --no-runtime-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,

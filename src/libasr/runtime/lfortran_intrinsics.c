@@ -77,6 +77,9 @@ static int64_t lfortran_getline(char **lineptr, size_t *n, FILE *stream) {
     #define lfortran_assert(cond, msg) ((void)0);
 #endif
 
+// Global flag to control runtime error colors
+static int _lfortran_use_runtime_colors = 1;  // enabled by default
+
 #ifdef HAVE_RUNTIME_STACKTRACE
 
 #ifdef COMPILE_TO_WASM
@@ -2483,10 +2486,10 @@ static int runtime_try_render_error(const char *formatted) {
         return 0;
     }
 
-    const char *color_reset = "\033[0;0m";
-    const char *color_bold = "\033[0;1m";
-    const char *color_bold_red = "\033[0;31;1m";
-    const char *color_bold_blue = "\033[0;34;1m";
+    const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
+    const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
+    const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
+    const char *color_bold_blue = _lfortran_use_runtime_colors ? "\033[0;34;1m" : "";
     int width = runtime_line_num_width((unsigned int)line);
     size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
 
@@ -7073,6 +7076,10 @@ LFORTRAN_API void _lpython_free_argv() {
         free(_argv);
         _argv = NULL;
     }
+}
+
+LFORTRAN_API void _lfortran_set_use_runtime_colors(int use_colors) {
+    _lfortran_use_runtime_colors = use_colors;
 }
 
 LFORTRAN_API int32_t _lpython_get_argc() {
