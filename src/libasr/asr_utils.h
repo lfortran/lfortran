@@ -245,6 +245,9 @@ static inline const ASR::symbol_t *symbol_get_past_external(const ASR::symbol_t 
 
 static inline ASR::ttype_t *type_get_past_pointer(ASR::ttype_t *f)
 {
+    if (!f) {
+        return nullptr;
+    }
     if (ASR::is_a<ASR::Pointer_t>(*f)) {
         ASR::Pointer_t *e = ASR::down_cast<ASR::Pointer_t>(f);
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::Pointer_t>(*e->m_type));
