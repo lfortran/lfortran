@@ -2400,91 +2400,122 @@ static size_t runtime_squiggle_len(const char *line, unsigned int column) {
 }
 
 
-static int runtime_try_render_error(const char *formatted) {
-    const char *prefix = "At ";
-    const char *file_marker = " of file ";
-    if (strncmp(formatted, prefix, strlen(prefix)) != 0) {
-        return 0;
-    }
-    const char *p = formatted + strlen(prefix);
-    char *endptr = NULL;
-    unsigned long line = strtoul(p, &endptr, 10);
-    if (!endptr || *endptr != ':') {
-        return 0;
-    }
-    p = endptr + 1;
-    unsigned long column = strtoul(p, &endptr, 10);
-    if (!endptr) {
-        return 0;
-    }
-    const char *file_pos = strstr(endptr, file_marker);
-    if (!file_pos) {
-        return 0;
-    }
-    const char *filename_start = file_pos + strlen(file_marker);
-    const char *filename_end = strchr(filename_start, '\n');
-    if (!filename_end) {
-        return 0;
-    }
-    size_t filename_len = (size_t)(filename_end - filename_start);
-    char *filename = (char*)malloc(filename_len + 1);
-    if (!filename) {
-        return 0;
-    }
-    memcpy(filename, filename_start, filename_len);
-    filename[filename_len] = '\0';
-    const char *message = filename_end + 1;
-    if (*message == '\0') {
-        free(filename);
-        return 0;
-    }
-
-    // Handle the case where line/column is 0 (no specific location)
-    if (line == 0) {
-        const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
-        const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
-        const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, message, color_reset);
-        fflush(stderr);
-        free(filename);
-        return 1;
-    }
-
-    char *line_text = runtime_read_line(filename, (unsigned int)line);
-    if (!line_text) {
-        free(filename);
-        return 0;
-    }
-
+static void runtime_render_error(const char *formatted) {
     const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
     const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
     const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
     const char *color_bold_blue = _lfortran_use_runtime_colors ? "\033[0;34;1m" : "";
-    int width = runtime_line_num_width((unsigned int)line);
-    size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
 
+    // Try to parse "At line:col of file filename\nmessage" format
+    const char *prefix = "At ";
+    const char *file_marker = " of file ";
+
+    // If the message doesn't have location info, just print it with the runtime error prefix
+    if (strncmp(formatted, prefix, strlen(prefix)) != 0) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+
+    // Parse line number
+    const char *p = formatted + strlen(prefix);
+    char *endptr = NULL;
+    unsigned long line = strtoul(p, &endptr, 10);
+    if (!endptr || *endptr != ':') {
+        // Parsing failed, just print the message
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+
+    // Parse column number
+    p = endptr + 1;
+    unsigned long column = strtoul(p, &endptr, 10);
+    if (!endptr) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+
+    // Parse filename
+    const char *file_pos = strstr(endptr, file_marker);
+    if (!file_pos) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+
+    const char *filename_start = file_pos + strlen(file_marker);
+    const char *filename_end = strchr(filename_start, '\n');
+    if (!filename_end) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+
+    size_t filename_len = (size_t)(filename_end - filename_start);
+    char *filename = (char*)malloc(filename_len + 1);
+    if (!filename) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, formatted, color_reset);
+        fflush(stderr);
+        return;
+    }
+    memcpy(filename, filename_start, filename_len);
+    filename[filename_len] = '\0';
+
+    const char *message = filename_end + 1;
+    if (*message == '\0') {
+        message = "Unknown error";
+    }
+
+    // Always print the error message
     fprintf(stderr, "%sruntime error%s%s: %s%s\n",
             color_bold_red, color_reset, color_bold, message, color_reset);
+
+    // If line is 0, we don't have a specific location - just show the message
+    if (line == 0) {
+        free(filename);
+        fflush(stderr);
+        return;
+    }
+
+    // Try to read the source line - if it fails, still show location without source
+    char *line_text = runtime_read_line(filename, (unsigned int)line);
+
+    int width = runtime_line_num_width((unsigned int)line);
+
+    // Show location info
     fprintf(stderr, "%*s%s-->%s %s:%lu:%lu\n",
             width, "", color_bold_blue, color_reset, filename, line, column);
-    fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
-    fprintf(stderr, "%s%*lu |%s %s\n",
-            color_bold_blue, width, line, color_reset, line_text);
-    fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
-    if (column > 1) {
-        fprintf(stderr, "%*s", (int)(column - 1), "");
-    }
-    fprintf(stderr, "%s", color_bold_red);
-    for (size_t i = 0; i < squiggle_len; i++) {
-        fputc('^', stderr);
-    }
-    fprintf(stderr, " %s\n", color_reset);
-    fflush(stderr);
 
+    // If we have the source line, show it with the squiggle
+    if (line_text) {
+        size_t squiggle_len = runtime_squiggle_len(line_text, (unsigned int)column);
+
+        fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
+        fprintf(stderr, "%s%*lu |%s %s\n",
+                color_bold_blue, width, line, color_reset, line_text);
+        fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
+        if (column > 1) {
+            fprintf(stderr, "%*s", (int)(column - 1), "");
+        }
+        fprintf(stderr, "%s", color_bold_red);
+        for (size_t i = 0; i < squiggle_len; i++) {
+            fputc('^', stderr);
+        }
+        fprintf(stderr, " %s\n", color_reset);
+
+        free(line_text);
+    }
+
+    fflush(stderr);
     free(filename);
-    free(line_text);
-    return 1;
 }
 
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
@@ -2510,15 +2541,7 @@ LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
     }
     vsnprintf(formatted, (size_t)needed + 1, format, args);
     va_end(args);
-    if (!runtime_try_render_error(formatted)) {
-        // If we couldn't render the fancy error, add the "runtime error:" prefix
-        const char *color_reset = _lfortran_use_runtime_colors ? "\033[0;0m" : "";
-        const char *color_bold = _lfortran_use_runtime_colors ? "\033[0;1m" : "";
-        const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, formatted, color_reset);
-        fflush(stderr);
-    }
+    runtime_render_error(formatted);
     free(formatted);
 }
 
