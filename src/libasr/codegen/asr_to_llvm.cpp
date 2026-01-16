@@ -12843,6 +12843,70 @@ public:
             blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.n_iolength_vars > 0 && x.m_iolength) {
+            // INQUIRE(IOLENGTH=iol) var_list
+            // Computes the number of file storage units (bytes) required to store
+            // the output list using unformatted sequential I/O
+            llvm::Value* total_size = llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(context), 0);
+            
+            for (size_t i = 0; i < x.n_iolength_vars; i++) {
+                ASR::expr_t* var_expr = x.m_iolength_vars[i];
+                ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+                ASR::ttype_t* var_type_base = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var_type)));
+                
+                // Get the kind (size in bytes for basic types)
+                int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
+                
+                // For complex types, size is 2 * kind
+                if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {
+                    kind *= 2;
+                }
+                
+                llvm::Value* element_size = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), kind);
+                llvm::Value* var_size = nullptr;
+                
+                if (ASRUtils::is_array(var_type)) {
+                    // For arrays, multiply element size by number of elements
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
+                    llvm::Value* num_elements = builder->CreateZExtOrTrunc(
+                        tmp, llvm::Type::getInt64Ty(context));
+                    var_size = builder->CreateMul(element_size, num_elements);
+                } else if (ASR::is_a<ASR::String_t>(*var_type_base)) {
+                    // For characters, get the string length
+                    this->visit_expr_wrapper(var_expr, true);
+                    llvm::Value* str_len = llvm_utils->get_string_length(
+                        ASRUtils::get_string_type(var_type), tmp);
+                    var_size = builder->CreateZExtOrTrunc(
+                        str_len, llvm::Type::getInt64Ty(context));
+                } else {
+                    // For scalars, size is just the kind
+                    var_size = element_size;
+                }
+                
+                total_size = builder->CreateAdd(total_size, var_size);
+            }
+            
+            // Store the result in the iolength variable
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iolength, false);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* iolength_ptr = tmp;
+            ASR::ttype_t* iolength_type = ASRUtils::expr_type(x.m_iolength);
+            int iolength_kind = ASRUtils::extract_kind_from_ttype_t(iolength_type);
+            llvm::Type* iolength_llvm_type = llvm::Type::getIntNTy(
+                context, iolength_kind * 8);
+            llvm::Value* result = builder->CreateTrunc(total_size, iolength_llvm_type);
+            builder->CreateStore(result, iolength_ptr);
+            return;
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
