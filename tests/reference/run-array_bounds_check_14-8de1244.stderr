@@ -1,5 +1,0 @@
-[0;31;1mruntime error[0;0m[0;1m: Argument 1 of subroutine f_integer____0 is unallocated.[0;0m
-  [0;34;1m-->[0;0m tests/errors/array_bounds_check_14.f90:16:12
-   [0;34;1m|[0;0m
-[0;34;1m16 |[0;0m     call f(x)
-   [0;34;1m|[0;0m            [0;31;1m^^ [0;0m

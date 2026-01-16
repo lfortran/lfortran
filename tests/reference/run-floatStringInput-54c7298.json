@@ -1,0 +1,13 @@
+{
+    "basename": "run-floatStringInput-54c7298",
+    "cmd": "lfortran --no-color --no-runtime-color {infile}",
+    "infile": "tests/errors/floatStringInput.f90",
+    "infile_hash": "4db92554a429fc93f7f3eb205946ec7b7539f4f4b3cf7674cb9e3434",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-floatStringInput-54c7298.stderr",
+    "stderr_hash": "50500727736157906e3452986874952b0eb79fa95622309fae659c69",
+    "returncode": 1
+}

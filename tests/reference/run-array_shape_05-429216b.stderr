@@ -1,5 +1,0 @@
-[0;31;1mruntime error[0;0m[0;1m: Runtime Error: Array shape mismatch in assignment to 'a' Tried to match size 2 of dimension 1 of LHS with size 1 of dimension 1 of RHS.[0;0m
-  [0;34;1m-->[0;0m tests/errors/array_shape_05.f90:10:5
-   [0;34;1m|[0;0m
-[0;34;1m10 |[0;0m     a = temp(i:j)
-   [0;34;1m|[0;0m     [0;31;1m^ [0;0m

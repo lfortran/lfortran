@@ -1,0 +1,5 @@
+runtime error: Array shape mismatch in subroutine 'f_integer____0' Tried to match size 3 of dimension 1 of argument number 3, but expected size is 2
+ --> tests/errors/array_bounds_check_12.f90:8:5
+  |
+8 |     e = f(a)
+  |     ^ 

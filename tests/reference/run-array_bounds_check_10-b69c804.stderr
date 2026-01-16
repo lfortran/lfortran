@@ -1,5 +1,0 @@
-[0;31;1mruntime error[0;0m[0;1m: Runtime Error: Array shape mismatch in binary operation with operands 'a' and 'b' Tried to match size 2 of dimension 2 of 'a' with size 3 of dimension 2 of 'b'.[0;0m
- [0;34;1m-->[0;0m tests/errors/array_bounds_check_10.f90:9:9
-  [0;34;1m|[0;0m
-[0;34;1m9 |[0;0m     e = a + b
-  [0;34;1m|[0;0m         [0;31;1m^ [0;0m

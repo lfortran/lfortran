@@ -1,0 +1,13 @@
+{
+    "basename": "run-format_40-0cf5ac7",
+    "cmd": "lfortran --no-color --no-runtime-color {infile}",
+    "infile": "tests/../integration_tests/format_40.f90",
+    "infile_hash": "f9b072b2e5d881b866bc93f150f89a0e537fc8cb5b7efe6bd3519a9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-format_40-0cf5ac7.stdout",
+    "stdout_hash": "d2b1f734863fed5c473c2fc70a409e7f4744908c27934abff1b94ebb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

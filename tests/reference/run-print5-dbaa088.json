@@ -1,0 +1,13 @@
+{
+    "basename": "run-print5-dbaa088",
+    "cmd": "lfortran --no-color --no-runtime-color {infile}",
+    "infile": "tests/print5.f90",
+    "infile_hash": "c7ecd7e820fbd2c3b434da8df807991ee8fea817267da5645ec00ade",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print5-dbaa088.stdout",
+    "stdout_hash": "adc8db165d335320aa3947351bd6577e658800b43f152e3aaaa5e376",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

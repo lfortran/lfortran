@@ -1,0 +1,5 @@
+runtime error: Runtime Error: Array shape mismatch in assignment to 'x' Tried to match size 3 of dimension 1 of LHS with size 4 of dimension 1 of RHS.
+  --> tests/errors/array_bounds_check_06.f90:10:5
+   |
+10 |     x = y
+   |     ^ 

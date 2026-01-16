@@ -1,0 +1,13 @@
+{
+    "basename": "run-read2-db0018f",
+    "cmd": "lfortran --no-color --no-runtime-color {infile}",
+    "infile": "tests/read2.f90",
+    "infile_hash": "1d82aaea9497b527bc71286e7053079e21db7085521af2c81a4e6b6e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-read2-db0018f.stdout",
+    "stdout_hash": "801003729b11ec29f80a99e157a4a2f617230b77221f49ca8fb4bc6c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

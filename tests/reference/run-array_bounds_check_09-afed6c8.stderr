@@ -1,5 +1,0 @@
-[0;31;1mruntime error[0;0m[0;1m: Runtime Error: Array shape mismatch in binary operation with operands '__libasr_created__integer_binop_' and '__libasr_created_integer_binop_right_' Tried to match size 3 of dimension 1 of '__libasr_created__integer_binop_' with size 2 of dimension 1 of '__libasr_created_integer_binop_right_'.[0;0m
-  [0;34;1m-->[0;0m tests/errors/array_bounds_check_09.f90:12:9
-   [0;34;1m|[0;0m
-[0;34;1m12 |[0;0m     e = a + b + f(a)
-   [0;34;1m|[0;0m         [0;31;1m^ [0;0m

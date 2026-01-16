@@ -1,5 +1,0 @@
-[0;31;1mruntime error[0;0m[0;1m: Array shape mismatch in subroutine 'ff' Tried to match size 5 of dimension 1 of argument number 1, but expected size is 100000[0;0m
- [0;34;1m-->[0;0m tests/errors/array_bounds_check_08.f90:4:3
-  [0;34;1m|[0;0m
-[0;34;1m4 |[0;0m   arr = ff()
-  [0;34;1m|[0;0m   [0;31;1m^^^ [0;0m

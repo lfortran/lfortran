@@ -1,0 +1,13 @@
+{
+    "basename": "run-write_12-4b27a7e",
+    "cmd": "lfortran --no-color --no-runtime-color {infile}",
+    "infile": "tests/../integration_tests/write_12.f90",
+    "infile_hash": "42394d54c876f13509a1b5262f4795cab9e6250def7e7a2ff587ae06",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-write_12-4b27a7e.stdout",
+    "stdout_hash": "fe139915db32be5a897a8db16036fbc9bddccb6ce448c78ea2562a0f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
