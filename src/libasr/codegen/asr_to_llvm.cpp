@@ -16134,7 +16134,7 @@ public:
                     int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
                     if (a_kind == 8) {
                         if (compiler_options.platform == Platform::Windows) {
-                            tmp = llvm_utils->CreateAlloca(*builder, complex_type_8);
+                            tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
                             builder->CreateCall(fn, args);
                             // Convert {double,double}* to {double,double}
@@ -16175,7 +16175,7 @@ public:
                         // i64
                         llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
                         // Convert i64 to i64*
-                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(*builder, type_fx2);
+                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
                         builder->CreateStore(tmp, p_fx2);
                         // Convert i64* to {float,float}* using bitcast
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
@@ -16191,7 +16191,7 @@ public:
                             // <2 x float>
                             llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
                             // Convert <2 x float> to <2 x float>*
-                            llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(*builder, type_fx2);
+                            llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
                             builder->CreateStore(tmp, p_fx2);
                             // Convert <2 x float>* to {float,float}* using bitcast
                             tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
