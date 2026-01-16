@@ -3409,6 +3409,25 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+            if (sym_ && ASR::is_a<ASR::Variable_t>(*sym_)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym_);
+                // For dummy arguments (non-Local intent), keep as Variable with FunctionType
+                // This preserves the return type from the original declaration
+                if (var->m_intent != ASR::intentType::Local) {
+                    ASR::ttype_t* return_type = nullptr;
+                    if (var->m_type && !ASR::is_a<ASR::FunctionType_t>(*var->m_type)) {
+                        return_type = var->m_type;
+                    }
+                    ASR::ttype_t* proc_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                        al, loc, nullptr, 0, return_type, ASR::abiType::Source,
+                        ASR::deftypeType::Interface, nullptr, false, false,
+                        false, false, false, nullptr, 0, false));
+                    var->m_type = proc_type;
+                    // Don't create implicit interface here - let call-site create it
+                    // with proper args when the procedure is called
+                    return;
+                }
+            }
             assgnd_access[sym] = ASR::accessType::Public;
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3935,9 +3954,73 @@ public:
                                     if (!sym_) {
                                         assgnd_presence[sym] = ASR::presenceType::Optional;
                                     } else {
-                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                                            ASRUtils::symbol_get_past_external(sym_));
-                                        v->m_presence = ASR::presenceType::Optional;
+                                        Location& attr_loc = x.m_syms[i].loc;
+                                        ASR::symbol_t* sym_past_external =
+                                            ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                                sym_past_external);
+                                            v->m_presence = ASR::presenceType::Optional;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_past_external)) {
+                                            ASR::Function_t* func =
+                                                ASR::down_cast<ASR::Function_t>(sym_past_external);
+                                            ASR::ttype_t* proc_type = func->m_function_signature;
+                                            SetChar variable_dependencies_vec;
+                                            variable_dependencies_vec.reserve(al, 1);
+                                            ASRUtils::collect_variable_dependencies(
+                                                al, variable_dependencies_vec, proc_type);
+                                            SymbolTable* parent_scope = current_scope->parent;
+                                            LCOMPILERS_ASSERT(parent_scope != nullptr);
+                                            std::string iface_name = "~proc_" + sym + "_" +
+                                                current_scope->get_counter();
+                                            SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+                                            ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+                                                ASR::make_Function_t(
+                                                    al, attr_loc, fn_scope, s2c(al, iface_name),
+                                                    proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
+                                                    nullptr, ASR::accessType::Public, false, false,
+                                                    nullptr, nullptr, nullptr));
+                                            parent_scope->add_symbol(iface_name, iface);
+                                            ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
+                                                al, attr_loc, current_scope,
+                                                s2c(al, sym),
+                                                variable_dependencies_vec.p,
+                                                variable_dependencies_vec.size(),
+                                                ASRUtils::intent_unspecified, nullptr,
+                                                nullptr, ASR::storage_typeType::Default,
+                                                proc_type, iface,
+                                                ASR::abiType::Source,
+                                                ASR::accessType::Public,
+                                                ASR::presenceType::Optional, false);
+                                            ASR::symbol_t* proc_var_sym =
+                                                ASR::down_cast<ASR::symbol_t>(proc_var);
+                                            current_scope->add_or_overwrite_symbol(sym, proc_var_sym);
+                                            if (current_scope->asr_owner &&
+                                                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                                                ASR::symbol_t* asr_owner_sym =
+                                                    ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                                                if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                                                    ASR::Function_t* current_function =
+                                                        ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                                                    for (size_t j = 0; j < current_function->n_args; j++) {
+                                                        if (ASR::is_a<ASR::Var_t>(*current_function->m_args[j])) {
+                                                            ASR::Var_t* var =
+                                                                ASR::down_cast<ASR::Var_t>(current_function->m_args[j]);
+                                                            if (std::string(ASRUtils::symbol_name(var->m_v)) == sym) {
+                                                                var->m_v = proc_var_sym;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            diag.add(Diagnostic(
+                                                "Optional attribute can only be applied to variables",
+                                                Level::Error, Stage::Semantic, {
+                                                    Label("", {attr_loc})
+                                                }));
+                                            throw SemanticAbort();
+                                        }
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
@@ -7801,9 +7884,18 @@ public:
                                 elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
                                 expected_phys_type);
                         } else {
-                            section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                            );
+                            int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                            int actual_n_dims = static_cast<int>(array_indices.size());
+                            if (expected_n_dims_cast != actual_n_dims) {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, ASRUtils::expr_type(array_expr),
+                                    ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            } else {
+                                section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                    al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                                );
+                            }
                             cast_target_type = ASRUtils::TYPE(expected_array);
                         }
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
@@ -10528,8 +10620,10 @@ public:
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
-                    // Validate trim character intrinsics with unlimited polymorphic arguments
-                    if (var_name == "trim")  {
+                    // Validate character intrinsics with unlimited polymorphic arguments
+                    // They should be only accessed inside select block
+                    if ((var_name == "trim") || (var_name == "len_trim") ||
+                        (var_name == "adjustl") || (var_name == "adjustr"))  {
                         // Check if any argument is unlimited polymorphic
                         bool has_polymorphic_arg = false;
                         for (size_t i = 0; i < args.size(); i++) {
@@ -10904,11 +10998,60 @@ public:
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
+                ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(var_expr);
+                // For FunctionType arguments, create an interface function as type_declaration
+                if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(var_type))) {
+                    ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(
+                        ASRUtils::type_get_past_array(var_type));
+                    // Check if passed arg is a Function or procedure variable with type_declaration
+                    if (ASR::is_a<ASR::Var_t>(*var_expr)) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
+                        if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                            // Passed argument is an actual Function - use it as type_decl
+                            type_decl = passed_sym;
+                        } else if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                            ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+                            if (passed_var->m_type_declaration != nullptr) {
+                                type_decl = passed_var->m_type_declaration;
+                            }
+                        }
+                    }
+                    // If still no type_decl, create an interface function
+                    if (type_decl == nullptr) {
+                        SymbolTable* iface_scope = al.make_new<SymbolTable>(parent_scope);
+                        std::string iface_name = "~implicit_interface_" + arg_name + "_" +
+                            iface_scope->get_counter();
+                        Vec<ASR::expr_t*> iface_args;
+                        iface_args.reserve(al, ft->n_arg_types);
+                        ASR::expr_t* iface_return = nullptr;
+                        if (ft->m_return_var_type) {
+                            std::string ret_name = iface_name + "_return_var";
+                            SetChar ret_deps;
+                            ret_deps.reserve(al, 1);
+                            ASR::asr_t* ret_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+                                iface_scope, s2c(al, ret_name), ret_deps.p, ret_deps.size(),
+                                ASRUtils::intent_return_var, nullptr, nullptr,
+                                ASR::storage_typeType::Default, ft->m_return_var_type, nullptr,
+                                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false);
+                            iface_scope->add_symbol(ret_name, ASR::down_cast<ASR::symbol_t>(ret_var));
+                            iface_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                                ASR::down_cast<ASR::symbol_t>(ret_var)));
+                        }
+                        ASR::asr_t* iface_func = ASRUtils::make_Function_t_util(al, x.base.base.loc,
+                            iface_scope, s2c(al, iface_name), nullptr, 0,
+                            iface_args.p, iface_args.size(), nullptr, 0, iface_return,
+                            ASR::abiType::BindC, ASR::accessType::Public,
+                            ASR::deftypeType::Interface, nullptr, false, false,
+                            false, false, false, nullptr, 0, false, false, false);
+                        parent_scope->add_symbol(iface_name, ASR::down_cast<ASR::symbol_t>(iface_func));
+                        type_decl = ASR::down_cast<ASR::symbol_t>(iface_func);
+                    }
+                }
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
-                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(var_expr),
+                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, type_decl,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_or_overwrite_symbol(arg_name, v);
@@ -11432,7 +11575,7 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function && ( !v || (v && is_external_procedure))) {
+            if (compiler_options.implicit_interface && is_function && ( !v || (v && is_external_procedure && !ASRUtils::is_symbol_procedure_variable(v)))) {
                 // Function Call is not defined in this case.
                 // We need to create an interface and add the Function into
                 // the symbol table.
@@ -11457,6 +11600,106 @@ public:
                     erase_from_external_mapping(var_name);
                 }
                 ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
+            } else if (compiler_options.implicit_interface && is_function && v && ASRUtils::is_symbol_procedure_variable(v)) {
+                // Procedure variable being called - create/update its interface
+                ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(v);
+                // Create interface if none exists, or update if existing has no args but call has args
+                bool needs_interface = proc_var->m_type_declaration == nullptr;
+                if (!needs_interface && x.n_args > 0 && proc_var->m_type_declaration != nullptr) {
+                    // Follow ExternalSymbol to get actual Function
+                    ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(
+                        proc_var->m_type_declaration);
+                    if (ASR::is_a<ASR::Function_t>(*actual_decl)) {
+                        ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
+                            ASR::down_cast<ASR::Function_t>(actual_decl)->m_function_signature);
+                        if (existing_ft->n_arg_types == 0) {
+                            needs_interface = true;
+                        }
+                    }
+                }
+                if (needs_interface) {
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(proc_var->m_type);
+                ASR::ttype_t* return_type = func_type->m_return_var_type;
+                if (!return_type) {
+                    return_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                }
+                SymbolTable* parent_scope = current_scope->parent ? current_scope->parent : current_scope;
+                // Use existing interface name if updating, otherwise create new name
+                std::string iface_name;
+                if (proc_var->m_type_declaration != nullptr &&
+                        ASR::is_a<ASR::Function_t>(*proc_var->m_type_declaration)) {
+                    iface_name = ASR::down_cast<ASR::Function_t>(
+                        proc_var->m_type_declaration)->m_name;
+                } else {
+                    SymbolTable* new_scope = al.make_new<SymbolTable>(parent_scope);
+                    iface_name = "~implicit_interface_" + var_name + "_" +
+                        new_scope->get_counter();
+                }
+                SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, x.n_args);
+                Vec<ASR::ttype_t*> arg_types;
+                arg_types.reserve(al, x.n_args);
+                for (size_t i = 0; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i].m_end);
+                    ASR::expr_t* arg_expr = ASRUtils::EXPR(tmp);
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
+                    std::string arg_name = iface_name + "_arg_" + std::to_string(i);
+                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Variable_t(al, x.base.base.loc, fn_scope, s2c(al, arg_name),
+                            nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
+                            ASR::storage_typeType::Default, arg_type, nullptr,
+                            ASR::abiType::BindC, ASR::accessType::Public,
+                            ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                    fn_scope->add_symbol(arg_name, arg_sym);
+                    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg_sym)));
+                    arg_types.push_back(al, arg_type);
+                }
+                // Create return var
+                std::string return_var_name = iface_name + "_return_var";
+                ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc, fn_scope, s2c(al, return_var_name),
+                        nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                        ASR::storage_typeType::Default, return_type, nullptr,
+                        ASR::abiType::BindC, ASR::accessType::Public,
+                        ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                fn_scope->add_symbol(return_var_name, return_sym);
+                ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                // Create interface FunctionType with args
+                ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, x.base.base.loc, arg_types.p, arg_types.size(), return_type,
+                    ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+                    false, false, false, false, false, nullptr, 0, false));
+                ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Function_t(
+                        al, x.base.base.loc, fn_scope, s2c(al, iface_name),
+                        iface_type, nullptr, 0, args.p, args.size(), nullptr, 0,
+                        return_var, ASR::accessType::Public, false, false,
+                        nullptr, nullptr, nullptr));
+                parent_scope->add_or_overwrite_symbol(iface_name, iface);
+                // Update the procedure variable's type and type_declaration
+                proc_var->m_type = iface_type;
+                proc_var->m_type_declaration = iface;
+                // Also update the arg type in the containing function's signature
+                if (current_scope->asr_owner &&
+                        ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                        ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                    ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(
+                        ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                    ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                        owner_func->m_function_signature);
+                    for (size_t i = 0; i < owner_func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                                owner_func->m_args[i])->m_v;
+                            if (arg_sym == v) {
+                                owner_ft->m_arg_types[i] = iface_type;
+                                break;
+                            }
+                        }
+                    }
+                }
+                }
             }
         }
         // if v is a function which has null pointer return type, give error
@@ -13013,6 +13256,88 @@ public:
             asr_list.push_back(al, expr);
         }
         return asr_list;
+    }
+
+    // Create an interface for a procedure variable that is passed as an argument
+    // without being called directly. This ensures m_type_declaration is not null.
+    // If expected_type is provided, use it for the interface signature instead of
+    // the procedure variable's own FunctionType (which may have incomplete info).
+    void create_interface_for_procedure_variable(ASR::Variable_t* proc_var,
+            const Location& loc, ASR::FunctionType_t* expected_type = nullptr) {
+        ASR::FunctionType_t* func_type = expected_type ? expected_type :
+            ASR::down_cast<ASR::FunctionType_t>(proc_var->m_type);
+        ASR::ttype_t* return_type = func_type->m_return_var_type;
+        if (!return_type) {
+            return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+        }
+        std::string var_name = proc_var->m_name;
+        std::string iface_name = "~implicit_interface_" + var_name + "_" +
+            current_scope->get_counter();
+        SymbolTable* parent_scope = current_scope->parent ? current_scope->parent : current_scope;
+        SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, func_type->n_arg_types);
+        Vec<ASR::ttype_t*> arg_types;
+        arg_types.reserve(al, func_type->n_arg_types);
+        // Use arg types from the FunctionType
+        for (size_t i = 0; i < func_type->n_arg_types; i++) {
+            ASR::ttype_t* arg_type = func_type->m_arg_types[i];
+            std::string arg_name = iface_name + "_arg_" + std::to_string(i);
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Variable_t(al, loc, fn_scope, s2c(al, arg_name),
+                    nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
+                    ASR::storage_typeType::Default, arg_type, nullptr,
+                    ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false, false, false, nullptr, false, false));
+            fn_scope->add_symbol(arg_name, arg_sym);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym)));
+            arg_types.push_back(al, arg_type);
+        }
+        // Create return var
+        std::string return_var_name = iface_name + "_return_var";
+        ASR::symbol_t* return_sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Variable_t(al, loc, fn_scope, s2c(al, return_var_name),
+                nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                ASR::storage_typeType::Default, return_type, nullptr,
+                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+        fn_scope->add_symbol(return_var_name, return_sym);
+        ASR::expr_t* return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
+        // Create interface FunctionType
+        ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+            al, loc, arg_types.p, arg_types.size(), return_type,
+            ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+            false, false, false, false, false, nullptr, 0, false));
+        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Function_t(
+                al, loc, fn_scope, s2c(al, iface_name),
+                iface_type, nullptr, 0, args.p, args.size(), nullptr, 0,
+                return_var, ASR::accessType::Public, false, false,
+                nullptr, nullptr, nullptr));
+        parent_scope->add_symbol(iface_name, iface);
+        // Update the procedure variable's type and type_declaration
+        proc_var->m_type = iface_type;
+        proc_var->m_type_declaration = iface;
+        // Also update the arg type in the containing function's signature
+        ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_var->m_name);
+        if (proc_sym && current_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(
+                ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+            ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                owner_func->m_function_signature);
+            for (size_t i = 0; i < owner_func->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
+                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                        owner_func->m_args[i])->m_v;
+                    if (arg_sym == proc_sym) {
+                        owner_ft->m_arg_types[i] = iface_type;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {

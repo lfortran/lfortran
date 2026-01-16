@@ -217,8 +217,11 @@ static inline ASR::Function_t* get_function(ASR::symbol_t* x)
     if (ASR::is_a<ASR::Function_t>(*a_name)) {
         return ASR::down_cast<ASR::Function_t>(a_name);
     } else if (ASR::is_a<ASR::Variable_t>(*a_name)) {
-        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration));
+        ASR::symbol_t* type_decl = ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration;
+        if (type_decl == nullptr) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
     } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name)) {
         return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name)->m_proc));
@@ -5813,6 +5816,16 @@ static inline bool is_unlimited_polymorphic_type(ASR::symbol_t* sym)
             == std::string("~unlimited_polymorphic_type"));
 }
 
+inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t){
+    if(!ASR::is_a<ASR::StructType_t>(*extract_type(t))) return false;
+
+    return ASR::down_cast<ASR::StructType_t>(extract_type(t))->m_is_unlimited_polymorphic;
+}
+/// Check if type is a class + not unlimited-polymorphic one
+inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
+    return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
+}
+
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
         SymbolTable *scope) {
     int8_t IntegerConsecutiveFromZero = 1;
@@ -6753,6 +6766,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         is_method = false;
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
+    // Skip arg processing for implicit interfaces (no declared parameter types)
+    if (func_type->n_arg_types == 0) {
+        return;
+    }
     ASR::Function_t* func = ASRUtils::get_function(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {

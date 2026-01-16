@@ -19,7 +19,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 0, i32* %z1, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %loop.body, %.entry
+loop.head:                                        ; preds = %free_done, %.entry
   %3 = load i32, i32* %z1, align 4
   %4 = add i32 %3, 1
   %5 = icmp sle i32 %4, 10
@@ -49,14 +49,21 @@ loop.body:                                        ; preds = %loop.head
   %19 = load i64, i64* %18, align 4
   %20 = trunc i64 %19 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %21 = icmp eq i8* %12, null
+  br i1 %21, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %loop.body
   call void @_lfortran_free(i8* %12)
-  %21 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %21, i32* %z1, align 4
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %loop.body
+  %22 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %22, i32* %z1, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %22 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %22, i32* %z1, align 4
+  %23 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest____lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %23, i32* %z1, align 4
   call void @_lpython_free_argv()
   br label %return
 

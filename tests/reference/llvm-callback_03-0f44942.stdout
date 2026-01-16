@@ -52,10 +52,17 @@ define void @__module_callback_03_foo1(float* %c, float* %d) {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %12 = icmp eq i8* %3, null
+  br i1 %12, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
   call void @_lfortran_free(i8* %3)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_foo1
 
 FINALIZE_SYMTABLE_foo1:                           ; preds = %return
@@ -97,10 +104,17 @@ define void @__module_callback_03_foo2(float* %c, float* %d) {
   %10 = load i64, i64* %9, align 4
   %11 = trunc i64 %10 to i32
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  %12 = icmp eq i8* %3, null
+  br i1 %12, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %.entry
   call void @_lfortran_free(i8* %3)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %.entry
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_foo2
 
 FINALIZE_SYMTABLE_foo2:                           ; preds = %return
@@ -131,17 +145,15 @@ declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value3 = alloca float, align 4
-  %call_arg_value2 = alloca float, align 4
   %call_arg_value1 = alloca float, align 4
   %call_arg_value = alloca float, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store float 1.500000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
   call void @__module_callback_03_foo1(float* %call_arg_value, float* %call_arg_value1)
-  store float 1.500000e+00, float* %call_arg_value2, align 4
-  store float 2.000000e+00, float* %call_arg_value3, align 4
-  call void @__module_callback_03_foo2(float* %call_arg_value2, float* %call_arg_value3)
+  store float 1.500000e+00, float* %call_arg_value, align 4
+  store float 2.000000e+00, float* %call_arg_value1, align 4
+  call void @__module_callback_03_foo2(float* %call_arg_value, float* %call_arg_value1)
   call void @_lpython_free_argv()
   br label %return
 
