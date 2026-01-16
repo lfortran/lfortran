@@ -7898,6 +7898,20 @@ public:
                             }
                             cast_target_type = ASRUtils::TYPE(expected_array);
                         }
+
+                        // For external/implicit-interface calls (ABI expects raw pointers), avoid
+                        // materializing a temporary ArraySection descriptor. Passing the address
+                        // of the first element directly is sufficient for sequence association and
+                        // prevents stack growth from dimension-descriptor allocas.
+                        if (callee_is_external_symbol &&
+                            expected_phys_type == ASR::array_physical_typeType::PointerArray &&
+                            !ASRUtils::is_character(*ASRUtils::type_get_past_array(expected_arg_type))) {
+                            arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
+                                al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
+                            args_with_array_section.push_back(al, arg);
+                            continue;
+                        }
+
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     section_type, nullptr));
