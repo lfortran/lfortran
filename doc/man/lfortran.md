@@ -59,7 +59,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--static`: Create a static executable
 - `--no-warnings`: Turn off all warnings
 - `--no-error-banner`: Turn off error banner
-- `--continue-compilation`: Continue compilation after the first semantic error is found
+- `--continue-compilation`: Collect error messages and continue compilation after encountering semantic errors
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
 - `--openmp`: Enable OpenMP
