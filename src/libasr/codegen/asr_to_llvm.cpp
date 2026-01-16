@@ -287,6 +287,7 @@ public:
     // same type across different calls.
     std::map<llvm::Type*, std::vector<llvm::AllocaInst*>> call_arg_alloca_pool;
     std::map<llvm::Type*, size_t> call_arg_alloca_idx;
+    int convert_call_args_depth = 0;
 
     // Get or create an alloca for a call argument of the given type.
     // Reuses allocas from the pool when possible.
@@ -4818,6 +4819,7 @@ public:
         loop_or_block_end_names.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -4878,6 +4880,10 @@ public:
         llvm_goto_targets.clear();
 
         builder->SetInsertPoint(BB);
+        // Clear alloca pool after nested functions are processed, before main body
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         if (compiler_options.emit_debug_info) {
             debug_current_scope = SP;
             builder->SetCurrentDebugLocation(nullptr);
@@ -6043,6 +6049,7 @@ public:
         loop_or_block_end_names.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -6212,6 +6219,10 @@ public:
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
         llvm_goto_targets.clear();
+        // Clear alloca pool for each new function to avoid cross-function references
+        call_arg_alloca_pool.clear();
+        call_arg_alloca_idx.clear();
+        convert_call_args_depth = 0;
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
             debug_emit_function(x, SP);
@@ -13657,7 +13668,12 @@ public:
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool is_method) {
         std::vector<llvm::Value *> args;
-        reset_call_arg_alloca_pool();
+        convert_call_args_depth++;
+        // Only reset alloca pool indices at outermost call to avoid
+        // nested calls (in argument expressions) clobbering allocas
+        if (convert_call_args_depth == 1) {
+            reset_call_arg_alloca_pool();
+        }
         for (size_t i=0; i<x.n_args; i++) {
             ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
             ASR::abiType x_abi = (ASR::abiType) 0;
@@ -14231,6 +14247,7 @@ public:
 
             args.push_back(tmp);
         }
+        convert_call_args_depth--;
         return args;
     }
 
