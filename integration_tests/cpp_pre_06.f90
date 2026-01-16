@@ -35,11 +35,11 @@ implicit none
 #endif
 
 #if FLAG1
-  #if FLAG2
-    #define FLAG5 1
-  #else
-    #define FLAG5 0
-  #endif
+#if FLAG2
+#define FLAG5 1
+#else
+#define FLAG5 0
+#endif
 #endif
 
 integer :: x
