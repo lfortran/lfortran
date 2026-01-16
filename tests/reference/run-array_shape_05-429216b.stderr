@@ -1,4 +1,4 @@
-runtime error: Runtime Error: Array shape mismatch in assignment to 'a' Tried to match size 2 of dimension 1 of LHS with size 1 of dimension 1 of RHS.
+runtime error: Array shape mismatch in assignment to 'a'. Tried to match size 2 of dimension 1 of LHS with size 1 of dimension 1 of RHS.
   --> tests/errors/array_shape_05.f90:10:5
    |
 10 |     a = temp(i:j)

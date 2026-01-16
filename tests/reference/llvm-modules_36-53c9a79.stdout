@@ -8,7 +8,7 @@ source_filename = "LFortran"
 %fpm_build_settings_class = type <{ i32 (...)**, %fpm_build_settings* }>
 
 @0 = private unnamed_addr constant [47 x i8] c"__libasr_created__intrinsic_array_function_Any\00", align 1
-@1 = private unnamed_addr constant [202 x i8] c"At 24:14 of file tests/../integration_tests/modules_36.f90\0ARuntime Error: Array shape mismatch in assignment to '%s'\0A\0ATried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\0A\00", align 1
+@1 = private unnamed_addr constant [186 x i8] c"At 24:14 of file tests/../integration_tests/modules_36.f90\0AArray shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\00", align 1
 @2 = private unnamed_addr constant [47 x i8] c"__libasr_created__intrinsic_array_function_Any\00", align 1
 @3 = private unnamed_addr constant [179 x i8] c"At 24:14 of file tests/../integration_tests/modules_36.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @4 = private unnamed_addr constant [6 x i8] c"found\00", align 1
@@ -125,7 +125,7 @@ ifcont4:                                          ; preds = %else3, %then2
   br i1 %2, label %then5, label %ifcont6
 
 then5:                                            ; preds = %ifcont4
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([202 x i8], [202 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([47 x i8], [47 x i8]* @0, i32 0, i32 0), i32 %0, i32 1, i32 %1, i32 1)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([186 x i8], [186 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([47 x i8], [47 x i8]* @0, i32 0, i32 0), i32 %0, i32 1, i32 %1, i32 1)
   call void @exit(i32 1)
   unreachable
 

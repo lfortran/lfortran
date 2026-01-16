@@ -7,7 +7,7 @@ source_filename = "LFortran"
 %array.0 = type { float*, i32, %dimension_descriptor*, i1, i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
-@1 = private unnamed_addr constant [109 x i8] c"At 15:9 of file tests/finalize_01.f90\0ARuntime Error: Attempting to allocate already allocated variable '%s'\0A\00", align 1
+@1 = private unnamed_addr constant [94 x i8] c"At 15:9 of file tests/finalize_01.f90\0AAttempting to allocate already allocated variable '%s'\0A\00", align 1
 @__Wrong_allocation = private unnamed_addr constant [67 x i8] c"runtime error: Attempting to allocate already allocated variable!\0A\00", align 1
 
 define void @__module_finalize_01_mod_ss() {
@@ -47,7 +47,7 @@ merge_allocated:                                  ; preds = %check_data, %.entry
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([109 x i8], [109 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([94 x i8], [94 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 

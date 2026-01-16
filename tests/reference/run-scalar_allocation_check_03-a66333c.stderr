@@ -1,4 +1,5 @@
-runtime error: Tried to access member of unallocated variable 'var'
+runtime error: Runtime error: Tried to access member of unallocated variable 'var'
+
   --> tests/errors/scalar_allocation_check_03.f90:10:14
    |
 10 |     print *, var%x
