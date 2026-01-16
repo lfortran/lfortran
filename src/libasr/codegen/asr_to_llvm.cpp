@@ -1911,7 +1911,7 @@ public:
                         var_name = ASRUtils::symbol_name(sym);
                     }
                     llvm_utils->generate_runtime_error(is_allocated,
-                        "Attempting to allocate already allocated variable '%s'\n",
+                        "Attempting to allocate already allocated variable '%s'",
                         infile,
                         x.base.base.loc,
                         location_manager,

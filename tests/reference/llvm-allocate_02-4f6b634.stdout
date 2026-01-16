@@ -5,9 +5,9 @@ source_filename = "LFortran"
 %dimension_descriptor = type { i32, i32, i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
-@1 = private unnamed_addr constant [93 x i8] c"At 5:5 of file tests/allocate_02.f90\0AAttempting to allocate already allocated variable '%s'\0A\00", align 1
+@1 = private unnamed_addr constant [92 x i8] c"At 5:5 of file tests/allocate_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
 @2 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
-@3 = private unnamed_addr constant [93 x i8] c"At 8:9 of file tests/allocate_02.f90\0AAttempting to allocate already allocated variable '%s'\0A\00", align 1
+@3 = private unnamed_addr constant [92 x i8] c"At 8:9 of file tests/allocate_02.f90\0AAttempting to allocate already allocated variable '%s'\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -49,7 +49,7 @@ merge_allocated:                                  ; preds = %check_data, %.entry
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([93 x i8], [93 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([92 x i8], [92 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
@@ -129,7 +129,7 @@ merge_allocated8:                                 ; preds = %check_data7, %ifcon
   br i1 %is_allocated9, label %then10, label %ifcont11
 
 then10:                                           ; preds = %merge_allocated8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([93 x i8], [93 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([92 x i8], [92 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
