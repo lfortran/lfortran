@@ -275,6 +275,9 @@ class ASRToLLVMVisitor;
                 llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
                 bool is_llvm_ptr=false);
 
+            /// Check llvm SSA is matching some type.
+            void validate_llvm_SSA([[maybe_unused]] llvm::Type* type_to_check_against, [[maybe_unused]] llvm::Value* llvm_SSA);
+
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
             llvm::Function* _Deallocate();
 
@@ -551,6 +554,14 @@ class ASRToLLVMVisitor;
             llvm::Value* is_ineq_by_value(llvm::Value* left, llvm::Value* right,
                                           llvm::Module* module, ASR::ttype_t* asr_type,
                                           int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
+            /**
+             * @brief Gets array element if array of classes
+             * @param class_symbol   Symbol of the class. Used to create another class type (llvm) that holds the element + VTable.
+             * @param struct_type    Used to do checks, and guarantee proper usage.
+             * @param array_data_ptr Plain pointer to array.
+            */
+            llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
+            
 
             void set_module(llvm::Module* module_);
 
@@ -1064,7 +1075,8 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         /**
          * @brief Handles the process of freeing each and every struct in an array.
          * @details Create a loop on `array_size` to fetch each struct, then call finalize_struct on it.
-
+         *          It also handles the special memory allocation of Class type.
+         *
          * @param data_ptr   should be a pointer to array's data (e.g. `{i32, i64}*`)
          * @param struct_t   should be the underlying ASR struct type of the array.
          * @param struct_sym current struct_sym if the array is of struct type.
@@ -1089,8 +1101,16 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 auto const struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 finalize_struct(struct_element, &struct_t->base, struct_sym);
             };
-
+            
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
+
+            // Free consecutive structs inserted into array's single class structure `{VTable*, underlying_struct*}
+            if(ASRUtils::non_unlimited_polymorphic_class(&struct_t->base)){
+                auto const struct_type_llvm = llvm_utils_->getClassType(struct_sym);
+                auto const allocated_cosecutive_structs = builder_->CreateLoad(struct_type_llvm->getPointerTo(),
+                                                             llvm_utils_->CreateGEP2(struct_type_llvm, data_ptr, 1));
+                llvm_utils_->lfortran_free(allocated_cosecutive_structs);
+            }
         }
             
         /**
@@ -1132,7 +1152,15 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
                 // Array of strings are special handled. 
                 // it's always stack allocated. (e.g. StringDescriptor -> {i8*, i64})
                 return;
+            } else if (ASRUtils::non_unlimited_polymorphic_class(t)){
+                // Class => {VTable* , underlying_struct*}
+                // Array of non polymorphic classes is speical handled.
+                // Array doesn't allocate consecutive classes, It allocates only one (on stack)
+                // and inserts consecutive structs (heap).
+                // `free_array_data` handles that clean up.
+                return;
             }
+            
             llvm_utils_->lfortran_free(ptr);
         }
 
@@ -1531,6 +1559,7 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
+            void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
 
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
@@ -1562,6 +1591,24 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module);
+            
+            /**
+             * Class => `{VTable*, struct_t*}`
+             *@brief Creates a class structure based on passed ASR node `class_symbol`,
+             *       to act as non-owner viewer variable.
+             * Note : Corresponding VTable inserted.
+             */
+            llvm::Value* create_class_view(ASR::Struct_t* class_symbol, llvm::Value* viewed_struct);
+            
+            /**
+             * Class Structure => `{VTable*, struct_t*}`
+             * @brief Allocates memory for array of classes.
+             *        Don't allocate consecutive class structures, instead allocate 1 class structure
+             *        and insert consecutive allocated structs into the class structure along with single vtable.
+             */
+            void allocate_array_of_classes(ASR::Struct_t* class_symbol, 
+                [[maybe_unused]] ASR::StructType_t* struct_type, llvm::Value* array_data_ptr,
+                llvm::Value* size, bool realloc = false);
     };
 
     class LLVMTuple {

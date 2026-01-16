@@ -354,7 +354,7 @@ namespace LCompilers {
         void SimpleCMODescriptor::fill_malloc_array_details(
             llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
-            llvm::Module* module, bool realloc) {
+            ASR::symbol_t* const variable_declaration, llvm::Module* module, bool realloc) {
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
@@ -384,6 +384,12 @@ namespace LCompilers {
                     string_len,
                     prod,
                     realloc);
+            } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
+                llvm_utils->struct_api->allocate_array_of_classes(
+                    ASR::down_cast<ASR::Struct_t>(variable_declaration)
+                    , ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type))
+                    , ptr2firstptr
+                    , prod);
             } else {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 llvm::Type* ptr_type = llvm_data_type->getPointerTo();
@@ -805,7 +811,8 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
+            ASR::symbol_t* const variable_type_decl, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name, std::string infile) {
             llvm::Value* tmp = nullptr;
@@ -815,6 +822,9 @@ namespace LCompilers {
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
+                } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
+                    tmp = llvm_utils->get_class_element_from_array(ASR::down_cast<ASR::Struct_t>(variable_type_decl),
+                        ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else {
                     if( is_fixed_size ) {
                         tmp = llvm_utils->create_gep2(type, array, idx);
@@ -829,6 +839,12 @@ namespace LCompilers {
                 llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
+                } else if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::extract_type(asr_type))){
+                    tmp = llvm_utils->get_class_element_from_array(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_type_decl)),
+                        ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type)),
+                        full_array,
+                        idx);
                 } else {
                     if( polymorphic ) {
                         full_array = llvm_utils->create_gep2(type, full_array, 1);
@@ -844,7 +860,6 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
-            llvm::PointerType* memory_holder_type;
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
             // Check if array descriptor pointer is NULL
             // Example :: For allocatable members in derived types
@@ -861,12 +876,21 @@ namespace LCompilers {
             builder->CreateCondBr(is_desc_null, mergeBB, checkDataBB);
             // Check data pointer block
             builder->SetInsertPoint(checkDataBB);
-            // Handle an array of strings
-            memory_holder_type = ASRUtils::is_character(*array_type) ?
-                llvm_utils->character_type
-                : llvm_utils->get_type_from_ttype_t_util(
-                    array_exp,
-                    ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
+
+            llvm::PointerType* const memory_holder_type = [&](){
+                if(ASRUtils::is_character(*array_type)) {
+                    return llvm_utils->character_type;
+                } else if(ASRUtils::non_unlimited_polymorphic_class(array_type)){
+                    ASR::Struct_t* const struct_sym = ASR::down_cast<ASR::Struct_t>(
+                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
+                    return llvm_utils->getStructType(struct_sym, llvm_utils->module)->getPointerTo();
+                } else {
+                    return llvm_utils->get_type_from_ttype_t_util(
+                                    array_exp,
+                                    ASRUtils::extract_type(array_type),
+                                    llvm_utils->module)->getPointerTo();
+                } 
+            }();
 
             if(ASRUtils::is_character(*array_type)){
                 llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(
@@ -877,6 +901,12 @@ namespace LCompilers {
                 memory_holder = llvm_utils->get_string_data(
                         str,
                         builder->CreateLoad(load_type, get_pointer_to_data(array_exp, array_type, array, llvm_utils->module)), true);
+            } else if(ASRUtils::non_unlimited_polymorphic_class(array_type)){
+                auto const struct_sym = ASR::down_cast<ASR::Struct_t>( ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
+                llvm::Type* const class_type = llvm_utils->getClassType(struct_sym);
+                llvm::Value* const array_data =  builder->CreateLoad(class_type->getPointerTo(), get_pointer_to_data(array_exp, array_type, array, llvm_utils->module));
+                llvm::Value* const underlying_struct_ptr = llvm_utils->CreateGEP2(class_type, array_data, 1);
+                memory_holder = underlying_struct_ptr;
             } else {
                 memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);
             }
