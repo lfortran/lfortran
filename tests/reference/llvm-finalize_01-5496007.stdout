@@ -8,7 +8,7 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [4 x i8] c"arr\00", align 1
 @1 = private unnamed_addr constant [94 x i8] c"At 15:9 of file tests/finalize_01.f90\0AAttempting to allocate already allocated variable '%s'\0A\00", align 1
-@__Wrong_allocation = private unnamed_addr constant [67 x i8] c"runtime error: Attempting to allocate already allocated variable!\0A\00", align 1
+@__Wrong_allocation = private unnamed_addr constant [51 x i8] c"Attempting to allocate already allocated variable!\00", align 1
 
 define void @__module_finalize_01_mod_ss() {
 .entry:
@@ -144,7 +144,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 %12, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([67 x i8], [67 x i8]* @__Wrong_allocation, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @__Wrong_allocation, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 

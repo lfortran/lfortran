@@ -9,7 +9,7 @@ source_filename = "LFortran"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data, i32 0, i32 0), i64 4 }>
 @serialization_info = private unnamed_addr constant [3 x i8] c"R8\00", align 1
 @2 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
-@__Wrong_allocation = private unnamed_addr constant [67 x i8] c"runtime error: Attempting to allocate already allocated variable!\0A\00", align 1
+@__Wrong_allocation = private unnamed_addr constant [51 x i8] c"Attempting to allocate already allocated variable!\00", align 1
 @string_const_data.1 = private constant [1 x i8] c" "
 @string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([1 x i8], [1 x i8]* @string_const_data.1, i32 0, i32 0), i64 1 }>
 @3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -195,7 +195,7 @@ free_done:                                        ; preds = %free_nonnull, %ifco
   br i1 %31, label %then1, label %else2
 
 then1:                                            ; preds = %free_done
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([67 x i8], [67 x i8]* @__Wrong_allocation, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([51 x i8], [51 x i8]* @__Wrong_allocation, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont3
 

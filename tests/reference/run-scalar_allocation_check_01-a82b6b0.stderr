@@ -1,1 +1,1 @@
-Variable 'x' is not allocated.
+runtime error: Variable 'x' is not allocated.

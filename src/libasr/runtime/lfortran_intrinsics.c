@@ -2406,6 +2406,13 @@ static void runtime_render_error(const char *formatted) {
     const char *color_bold_red = _lfortran_use_runtime_colors ? "\033[0;31;1m" : "";
     const char *color_bold_blue = _lfortran_use_runtime_colors ? "\033[0;34;1m" : "";
 
+    // Check if this is a STOP statement (not an error)
+    if (strncmp(formatted, "STOP", 4) == 0 || strncmp(formatted, "ERROR STOP", 10) == 0) {
+        fprintf(stderr, "%s", formatted);
+        fflush(stderr);
+        return;
+    }
+
     // Try to parse "At line:col of file filename\nmessage" format
     const char *prefix = "At ";
     const char *file_marker = " of file ";
