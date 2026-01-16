@@ -917,11 +917,6 @@ namespace LCompilers {
                         ASRUtils::symbol_get_past_external(type_declaration));
                     type = get_function_type(*fn, module)->getPointerTo();
                 } else {
-                    // TODO (#9532): No type declaration available (e.g., procedure
-                    // parameter of implicit interface that is never called).
-                    // The proper fix is to ensure semantics always creates
-                    // type_declaration symbols for procedure variables.
-                    // For now, create function type directly from FunctionType.
                     ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(asr_type);
                     llvm::Type* return_type;
                     if (ft->m_return_var_type != nullptr) {

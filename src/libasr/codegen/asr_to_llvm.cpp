@@ -13858,12 +13858,6 @@ public:
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
-                    // TODO (#9532): Bitcast procedure pointer if types don't match.
-                    // This is a workaround for implicit interfaces where the actual
-                    // function signature differs from the declared signature. The proper
-                    // fix is to insert explicit cast nodes in ASR during semantic analysis
-                    // rather than patching types here in codegen.
-                    // Only for procedure values passed by value (not intent inout/out)
                     if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
                             ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
                             orig_arg_intent != ASR::intentType::InOut &&
