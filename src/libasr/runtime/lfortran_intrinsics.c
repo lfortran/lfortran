@@ -2399,35 +2399,6 @@ static size_t runtime_squiggle_len(const char *line, unsigned int column) {
     return i - start;
 }
 
-static char* runtime_compact_message(const char *message) {
-    size_t len = strlen(message);
-    char *out = (char*)malloc(len + 1);
-    if (!out) {
-        return NULL;
-    }
-    size_t w = 0;
-    int in_space = 1;
-    for (size_t i = 0; i < len; i++) {
-        char c = message[i];
-        if (c == '\n' || c == '\r' || c == '\t') {
-            c = ' ';
-        }
-        if (c == ' ') {
-            if (in_space) {
-                continue;
-            }
-            in_space = 1;
-        } else {
-            in_space = 0;
-        }
-        out[w++] = c;
-    }
-    while (w > 0 && out[w - 1] == ' ') {
-        w--;
-    }
-    out[w] = '\0';
-    return out;
-}
 
 static int runtime_try_render_error(const char *formatted) {
     const char *prefix = "At ";
@@ -2462,27 +2433,14 @@ static int runtime_try_render_error(const char *formatted) {
     }
     memcpy(filename, filename_start, filename_len);
     filename[filename_len] = '\0';
-    const char *message_start = filename_end + 1;
-    if (*message_start == '\0') {
-        free(filename);
-        return 0;
-    }
-    const char *runtime_prefix = "Runtime error:";
-    if (strncmp(message_start, runtime_prefix, strlen(runtime_prefix)) == 0) {
-        message_start += strlen(runtime_prefix);
-        while (*message_start == ' ') {
-            message_start++;
-        }
-    }
-    char *message = runtime_compact_message(message_start);
-    if (!message) {
+    const char *message = filename_end + 1;
+    if (*message == '\0') {
         free(filename);
         return 0;
     }
     char *line_text = runtime_read_line(filename, (unsigned int)line);
     if (!line_text) {
         free(filename);
-        free(message);
         return 0;
     }
 
@@ -2512,7 +2470,6 @@ static int runtime_try_render_error(const char *formatted) {
     fflush(stderr);
 
     free(filename);
-    free(message);
     free(line_text);
     return 1;
 }

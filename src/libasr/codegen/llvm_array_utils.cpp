@@ -745,8 +745,7 @@ namespace LCompilers {
                     llvm_utils->generate_runtime_error(builder->CreateOr(
                                                             lbound_check,
                                                             ubound_check),
-                                                "Runtime error: Array '%s' index out of bounds.\n\n"
-                                                     "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
                                                      infile,
                                                      loc,
                                                      lm,
