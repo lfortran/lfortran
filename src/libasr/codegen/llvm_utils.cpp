@@ -8476,7 +8476,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         /// Allocate consecutive-struct-structures and insert into class structure -- HEAP
         /// (Store struct*, struct**) 
         const int64_t underlying_struct_alloc_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_underlying_struct_type);
-        llvm::Value* const total_bytes_to_alloc = builder->CreateMul(size, 
+        llvm::Value* const total_bytes_to_alloc = builder->CreateMul(
+                                                llvm_utils->convert_kind(size, llvm::Type::getInt64Ty(context)), 
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, underlying_struct_alloc_size))); 
         llvm::Value* const plain_mem_allocated /* i8* */= realloc ? 
                                                       LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, builder->CreateLoad(llvm_class_type->getPointerTo(), array_data_ptr), total_bytes_to_alloc)
