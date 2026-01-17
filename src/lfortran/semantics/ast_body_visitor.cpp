@@ -5556,6 +5556,10 @@ public:
                                     passed_func->m_args = new_args.p;
                                     passed_func->n_args = new_args.size();
                                 }
+                            } else if (passed_ft && passed_ft->n_arg_types == 0 && param_ft->n_arg_types == 0) {
+                                // Both have no arg_types - may need post-processing
+                                // if callee's param gets types after we visit callee's body
+                                needs_implicit_interface_postprocessing = true;
                             }
                         }
                     }
