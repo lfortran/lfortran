@@ -2035,8 +2035,7 @@ namespace LCompilers {
         llvm::Value* string_len = get_string_length(str_type, data);
         llvm::Value* string_data = get_string_data(str_type, data);
         llvm::Value* actual_idx = builder->CreateMul(convert_kind(arr_idx, llvm::Type::getInt64Ty(context)), string_len);
-        llvm::Value* desired_element = create_ptr_gep2(
-            llvm::Type::getInt8Ty(context), string_data, actual_idx);
+        llvm::Value* desired_element =  builder->CreateGEP(llvm::Type::getInt8Ty(context), string_data, actual_idx);
         return desired_element;
     }
 
@@ -2673,10 +2672,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then");
                     llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
 
-                    llvm::Value* l_char = builder->CreateLoad(i8_t,
-                        create_ptr_gep2(i8_t, l_str_data, builder->CreateLoad(i64_t, i)));
-                    llvm::Value* r_char = builder->CreateLoad(i8_t,
-                        create_ptr_gep2(i8_t, r_str_data, builder->CreateLoad(i64_t, i)));
+                    llvm::Value* l_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, l_str_data, builder->CreateLoad(i64_t, i)));
+                    llvm::Value* r_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, r_str_data, builder->CreateLoad(i64_t, i)));
 
                     llvm::Value* cond = builder->CreateICmpNE(l_char, r_char);
 
@@ -5930,8 +5927,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* newly_allocated_capacity_whole_size = builder->CreateMul(type_size_, newly_allocated_capacity);
             llvm::Value* old_capacity_whole_size = builder->CreateMul(type_size_, capacity);
             llvm::Type* const realloc_ret_type = llvm::Type::getInt8Ty(context);
-            llvm::Value* unset_new_memory = llvm_utils->create_ptr_gep2(
-                realloc_ret_type, copy_data, old_capacity_whole_size);
+            llvm::Value* unset_new_memory = builder->CreateGEP(realloc_ret_type, copy_data, old_capacity_whole_size);
             builder->CreateMemSet(unset_new_memory, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), newly_allocated_capacity_whole_size, llvm::MaybeAlign());
         }
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
@@ -9017,8 +9013,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // body
             llvm_utils->start_new_block(loopBody);
             i_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), i);
-            llvm::Value* src_elem_ptr  = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, i_val);
-            llvm::Value* dest_elem_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, i_val);
+            llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
+            llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
 
             // For unlimited polymorphic, handle specially
             if (is_unlimited_polymorphic) {
@@ -9351,7 +9347,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                            llvm::Value* src_member_char = llvm_utils->CreateGEP2(mem_type, src_member, idx_vec);
+                            llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
                             src_member_char = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
                             is_allocated = builder->CreateICmpNE(
