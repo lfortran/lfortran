@@ -13859,6 +13859,7 @@ public:
                             }
                             // If both are struct arrays and types don't match, bitcast to orig_arg_type
                             if (ASRUtils::is_array(orig_arg->m_type) && ASRUtils::is_array(arg->m_type) &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg->m_type))) {
                                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -14536,8 +14537,63 @@ public:
             } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                 if (ASRUtils::is_array(arg_type) && 
                     ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
-                    // TODO: Convert Descriptor arrays here
-                    return dt;
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))) {
+                        return dt;
+                    }
+                    // For struct array arguments: wrap each struct* in a class wrapper (vptr + struct*)
+                    // The class wrapper array has class_elem_type = {vptr, struct*}
+                    llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        s_m_args0, s_m_args0_type, module.get());
+                    llvm::Type* target_array_data_type = llvm_utils->get_el_type(
+                        s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
+                    llvm::Type* actual_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, arg_type, module.get());
+                    llvm::Type* actual_array_data_type = llvm_utils->get_el_type(
+                        arg_expr, ASRUtils::extract_type(arg_type), module.get());
+                    ASR::symbol_t* target_struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(s_m_args0));
+                    llvm::Type* target_struct_type = llvm_utils->getStructType(
+                        ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
+
+                    // Allocate the target class array descriptor
+                    llvm::Value* class_array = llvm_utils->CreateAlloca(*builder, target_array_type);
+                    
+                    // Allocate buffer for class wrapper array (vptr + struct_ptr per element)
+                    llvm::Value* class_array_data = llvm_utils->CreateAlloca(*builder,
+                        target_array_data_type);
+                    builder->CreateStore(class_array_data,
+                        arr_descr->get_pointer_to_data(target_array_type, class_array));
+
+                    // Copy dimension descriptors from source to target
+                    llvm::Value* actual_dim_des = 
+                        arr_descr->get_pointer_to_dimension_descriptor_array(actual_array_type, dt);
+                    llvm::Value* target_dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(target_array_type, class_array, false);
+                    builder->CreateStore(actual_dim_des, target_dim_des_ptr);
+                    
+                    // Copy rank and offset
+                    llvm::Value* actual_offset = arr_descr->get_offset(actual_array_type, dt, true);
+                    builder->CreateStore(actual_offset,
+                        arr_descr->get_offset(target_array_type, class_array, false));
+                    
+                    llvm::Value* actual_rank = arr_descr->get_rank(actual_array_type, dt, false);
+                    arr_descr->set_rank(target_array_type, class_array, actual_rank);
+
+                    // Get source struct array data
+                    llvm::Value* actual_array_data = llvm_utils->CreateLoad2(
+                        actual_array_data_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(actual_array_type, dt));
+                    builder->CreateStore(builder->CreateBitCast(
+                        actual_array_data, target_struct_type->getPointerTo()),
+                        llvm_utils->create_gep2(target_array_data_type, class_array_data, 1));
+                    
+                    // Get vptr for the struct type
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+                    llvm::Value* vptr_val = struct_api->get_pointer_to_method(struct_sym, module.get());
+                    builder->CreateStore(vptr_val,
+                        llvm_utils->create_gep2(target_array_data_type, class_array_data, 0));
+
+                    return class_array;
                 }
 
                 // Create Class wrapper
