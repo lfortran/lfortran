@@ -623,12 +623,12 @@ namespace LCompilers {
                     }
                     case ASR::array_physical_typeType::PointerArray: {
                         llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        type = ASRUtils::is_character(*v_type->m_type) ? el_type : el_type->getPointerTo();
+                        type = el_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::UnboundedPointerArray: {
                         llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        type = ASRUtils::is_character(*v_type->m_type) ? el_type : el_type->getPointerTo();
+                        type = el_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
@@ -2015,7 +2015,6 @@ namespace LCompilers {
     // TODO : Refactor names of the following two functions.
 
     llvm::Value* LLVMUtils::get_string_element_in_array_(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
-
         llvm::Value* string_len = get_string_length(str_type, data);
         llvm::Value* string_data = get_string_data(str_type, data);
         llvm::Value* actual_idx = builder->CreateMul(convert_kind(arr_idx, llvm::Type::getInt64Ty(context)), string_len);
@@ -2024,6 +2023,20 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::get_string_element_in_array(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
+#if LLVM_VERSION_MAJOR < 15
+        if (!is_proper_string_llvm_variable(str_type, data)) {
+            llvm::Type* str_llvm_type = get_StringType((ASR::ttype_t*)str_type);
+            if (data->getType() == str_llvm_type) {
+                llvm::Value* tmp = CreateAlloca(*builder, str_llvm_type);
+                builder->CreateStore(data, tmp);
+                data = tmp;
+            } else if (data->getType()->isPointerTy() &&
+                       data->getType()->getPointerElementType() == str_llvm_type->getPointerTo()) {
+                data = CreateLoad2(str_llvm_type->getPointerTo(), data);
+            }
+        }
+        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, data))
+#endif
         llvm::Value* desired_ptr = get_string_element_in_array_(str_type, data, arr_idx);
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
     }
