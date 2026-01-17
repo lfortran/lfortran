@@ -1622,7 +1622,7 @@ public:
                             var_name = ASRUtils::symbol_name(sym);
                         }
                         llvm_utils->generate_runtime_error(is_allocated,
-                            "Runtime Error: Attempting to allocate already allocated variable '%s'\n",
+                            "Attempting to allocate already allocated variable '%s'",
                             infile,
                             x.base.base.loc,
                             location_manager,
@@ -1911,7 +1911,7 @@ public:
                         var_name = ASRUtils::symbol_name(sym);
                     }
                     llvm_utils->generate_runtime_error(is_allocated,
-                        "Runtime Error: Attempting to allocate already allocated variable '%s'\n",
+                        "Attempting to allocate already allocated variable '%s'",
                         infile,
                         x.base.base.loc,
                         location_manager,
@@ -3454,7 +3454,7 @@ public:
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
-                    "Runtime Error: Array '%s' is indexed but not allocated.\n",
+                    "Array '%s' is indexed but not allocated.",
                     infile,
                     x.m_v->base.loc,
                     location_manager,
@@ -3871,7 +3871,7 @@ public:
                             builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
                                 llvm::Type::getInt64Ty(context)));
                         llvm_utils->generate_runtime_error(cond,
-                                "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                                "Tried to access member of unallocated variable '%s'",
                                 infile,
                                 x.m_v->base.loc,
                                 location_manager,
@@ -3906,7 +3906,7 @@ public:
                             builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
                                 llvm::Type::getInt64Ty(context)));
                         llvm_utils->generate_runtime_error(cond,
-                                "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                                "Tried to access member of unallocated variable '%s'",
                                 infile,
                                 x.m_v->base.loc,
                                 location_manager,
@@ -4908,6 +4908,22 @@ public:
                 args.push_back(&llvm_arg);
             }
             builder->CreateCall(fn, args);
+        }
+        // Set runtime color preference based on compiler option (only when enabled)
+        if (compiler_options.use_runtime_colors) {
+            if (compiler_options.emit_debug_info) debug_emit_loc(x);
+            llvm::Function *fn = module->getFunction("_lfortran_set_use_runtime_colors");
+            if(!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+                fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "_lfortran_set_use_runtime_colors", module.get());
+            }
+            llvm::Value *use_colors = llvm::ConstantInt::get(context,
+                llvm::APInt(32, 1));
+            builder->CreateCall(fn, {use_colors});
         }
         for(to_be_allocated_array array : allocatable_array_details){
             fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
@@ -8369,8 +8385,7 @@ public:
                 llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
                 llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Runtime Error: Array shape mismatch in binary operation with operands '%s' and '%s'\n\n"
-                                                    "Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.\n",
+                                                    "Array shape mismatch in binary operation with operands '%s' and '%s'. Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.",
                                                     infile,
                                                     left->base.loc,
                                                     location_manager,
@@ -8384,8 +8399,7 @@ public:
                                                     right_name);
             } else {
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Runtime Error: Array shape mismatch in binary operation\n\n"
-                                                    "Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.\n",
+                                                    "Array shape mismatch in binary operation. Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.",
                                                     infile,
                                                     left->base.loc,
                                                     location_manager,
@@ -8441,8 +8455,7 @@ public:
                         if (!x.m_move_allocation) {
                             llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                             llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Runtime Error: Array '%s' is not allocated.\n\n"
-                                    "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                "Array '%s' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
                                     infile,
                                     x.m_target->base.loc,
                                     location_manager,
@@ -8458,9 +8471,7 @@ public:
                         builder->CreateCondBr(is_allocated, thenBB, mergeBB);
                         builder->SetInsertPoint(thenBB); {
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                                "Runtime Error: Array shape mismatch in assignment to '%s'\n\n"
-                                                                "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n\n"
-                                                                "Use '--realloc-lhs-arrays' option to reallocate LHS automatically.\n",
+                                                                "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
                                                                 infile,
                                                             x.m_target->base.loc,
                                                             location_manager,
@@ -8475,8 +8486,7 @@ public:
                         start_new_block(mergeBB);
                     } else {
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                            "Runtime Error: Array shape mismatch in assignment to '%s'\n\n"
-                                                            "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n",
+                                                            "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                             infile,
                                                         x.m_target->base.loc,
                                                         location_manager,
@@ -8488,8 +8498,7 @@ public:
                     }
                 } else {
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
-                                                        "Runtime Error: Array shape mismatch in assignment\n\n"
-                                                        "Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.\n",
+                                                        "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                         infile,
                                                         x.m_target->base.loc,
                                                         location_manager,
@@ -10947,7 +10956,7 @@ public:
                                         llvm::Type::getInt64Ty(context)));
                                 // TODO: Set location here
                                 llvm_utils->generate_runtime_error(cond,
-                                    "Runtime Error: Variable '%s' is not allocated.\n",
+                                    "Variable '%s' is not allocated.",
                                     infile,
                                     {0, 0},
                                     location_manager,
@@ -12843,6 +12852,70 @@ public:
             blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.n_iolength_vars > 0 && x.m_iolength) {
+            // INQUIRE(IOLENGTH=iol) var_list
+            // Computes the number of file storage units (bytes) required to store
+            // the output list using unformatted sequential I/O
+            llvm::Value* total_size = llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(context), 0);
+            
+            for (size_t i = 0; i < x.n_iolength_vars; i++) {
+                ASR::expr_t* var_expr = x.m_iolength_vars[i];
+                ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+                ASR::ttype_t* var_type_base = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var_type)));
+                
+                // Get the kind (size in bytes for basic types)
+                int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
+                
+                // For complex types, size is 2 * kind
+                if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {
+                    kind *= 2;
+                }
+                
+                llvm::Value* element_size = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), kind);
+                llvm::Value* var_size = nullptr;
+                
+                if (ASRUtils::is_array(var_type)) {
+                    // For arrays, multiply element size by number of elements
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
+                    llvm::Value* num_elements = builder->CreateZExtOrTrunc(
+                        tmp, llvm::Type::getInt64Ty(context));
+                    var_size = builder->CreateMul(element_size, num_elements);
+                } else if (ASR::is_a<ASR::String_t>(*var_type_base)) {
+                    // For characters, get the string length
+                    this->visit_expr_wrapper(var_expr, true);
+                    llvm::Value* str_len = llvm_utils->get_string_length(
+                        ASRUtils::get_string_type(var_type), tmp);
+                    var_size = builder->CreateZExtOrTrunc(
+                        str_len, llvm::Type::getInt64Ty(context));
+                } else {
+                    // For scalars, size is just the kind
+                    var_size = element_size;
+                }
+                
+                total_size = builder->CreateAdd(total_size, var_size);
+            }
+            
+            // Store the result in the iolength variable
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iolength, false);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* iolength_ptr = tmp;
+            ASR::ttype_t* iolength_type = ASRUtils::expr_type(x.m_iolength);
+            int iolength_kind = ASRUtils::extract_kind_from_ttype_t(iolength_type);
+            llvm::Type* iolength_llvm_type = llvm::Type::getIntNTy(
+                context, iolength_kind * 8);
+            llvm::Value* result = builder->CreateTrunc(total_size, iolength_llvm_type);
+            builder->CreateStore(result, iolength_ptr);
+            return;
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -13859,6 +13932,7 @@ public:
                             }
                             // If both are struct arrays and types don't match, bitcast to orig_arg_type
                             if (ASRUtils::is_array(orig_arg->m_type) && ASRUtils::is_array(arg->m_type) &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg->m_type))) {
                                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -14536,8 +14610,63 @@ public:
             } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                 if (ASRUtils::is_array(arg_type) && 
                     ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
-                    // TODO: Convert Descriptor arrays here
-                    return dt;
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))) {
+                        return dt;
+                    }
+                    // For struct array arguments: wrap each struct* in a class wrapper (vptr + struct*)
+                    // The class wrapper array has class_elem_type = {vptr, struct*}
+                    llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        s_m_args0, s_m_args0_type, module.get());
+                    llvm::Type* target_array_data_type = llvm_utils->get_el_type(
+                        s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
+                    llvm::Type* actual_array_type = llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, arg_type, module.get());
+                    llvm::Type* actual_array_data_type = llvm_utils->get_el_type(
+                        arg_expr, ASRUtils::extract_type(arg_type), module.get());
+                    ASR::symbol_t* target_struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(s_m_args0));
+                    llvm::Type* target_struct_type = llvm_utils->getStructType(
+                        ASR::down_cast<ASR::Struct_t>(target_struct_sym), module.get());
+
+                    // Allocate the target class array descriptor
+                    llvm::Value* class_array = llvm_utils->CreateAlloca(*builder, target_array_type);
+                    
+                    // Allocate buffer for class wrapper array (vptr + struct_ptr per element)
+                    llvm::Value* class_array_data = llvm_utils->CreateAlloca(*builder,
+                        target_array_data_type);
+                    builder->CreateStore(class_array_data,
+                        arr_descr->get_pointer_to_data(target_array_type, class_array));
+
+                    // Copy dimension descriptors from source to target
+                    llvm::Value* actual_dim_des = 
+                        arr_descr->get_pointer_to_dimension_descriptor_array(actual_array_type, dt);
+                    llvm::Value* target_dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(target_array_type, class_array, false);
+                    builder->CreateStore(actual_dim_des, target_dim_des_ptr);
+                    
+                    // Copy rank and offset
+                    llvm::Value* actual_offset = arr_descr->get_offset(actual_array_type, dt, true);
+                    builder->CreateStore(actual_offset,
+                        arr_descr->get_offset(target_array_type, class_array, false));
+                    
+                    llvm::Value* actual_rank = arr_descr->get_rank(actual_array_type, dt, false);
+                    arr_descr->set_rank(target_array_type, class_array, actual_rank);
+
+                    // Get source struct array data
+                    llvm::Value* actual_array_data = llvm_utils->CreateLoad2(
+                        actual_array_data_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(actual_array_type, dt));
+                    builder->CreateStore(builder->CreateBitCast(
+                        actual_array_data, target_struct_type->getPointerTo()),
+                        llvm_utils->create_gep2(target_array_data_type, class_array_data, 1));
+                    
+                    // Get vptr for the struct type
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+                    llvm::Value* vptr_val = struct_api->get_pointer_to_method(struct_sym, module.get());
+                    builder->CreateStore(vptr_val,
+                        llvm_utils->create_gep2(target_array_data_type, class_array_data, 0));
+
+                    return class_array;
                 }
 
                 // Create Class wrapper
@@ -14875,7 +15004,7 @@ public:
                     // Throw error if descriptor array is not allocated
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
                     llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
-                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                            "Argument %d of subroutine %s is unallocated.",
                             infile,
                             arg_expr->base.loc,
                             location_manager,
@@ -14910,8 +15039,7 @@ public:
                                 cond = builder->CreateICmpSLT(descriptor_length, pointer_length);
                             }
                             llvm_utils->generate_runtime_error(cond,
-                                    "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
-                                    "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                    "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
                                     infile,
                                     arg_expr->base.loc,
                                     location_manager,
@@ -14936,8 +15064,7 @@ public:
                         cond = builder->CreateICmpSLT(desc_size, pointer_size);
                     }
                     llvm_utils->generate_runtime_error(cond,
-                            "Runtime error: Array size mismatch in subroutine '%s'\n\n"
-                            "Tried to match size %d of argument number %d, but expected size is %d\n",
+                            "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
                             infile,
                             arg_expr->base.loc,
                             location_manager,
@@ -15014,7 +15141,7 @@ public:
                 if (!ASRUtils::is_allocatable(ft->m_arg_types[i + is_method]) &&
                     ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
                     llvm_utils->generate_runtime_error(expr_is_unallocated(arg_expr),
-                            "Runtime error: Argument %d of subroutine %s is unallocated.\n",
+                            "Argument %d of subroutine %s is unallocated.",
                             infile,
                             arg_expr->base.loc,
                             location_manager,
@@ -16477,7 +16604,7 @@ public:
                     ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
                     if (ASRUtils::is_allocatable(arg_expr_type)) {
                         llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
-                                "Runtime error: Argument %d is unallocated.\n",
+                                "Argument %d is unallocated.",
                                 infile,
                                 x.m_args[i]->base.loc,
                                 location_manager,

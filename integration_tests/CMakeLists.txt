@@ -1782,6 +1782,9 @@ RUN(NAME derived_types_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_92 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_96 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_97 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+        EXTRAFILES derived_types_97_mod1.f90 derived_types_97_mod2.f90)
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -2084,6 +2087,7 @@ RUN(NAME file_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2193,6 +2197,7 @@ RUN(NAME class_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME class_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_92 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_93 LABELS gfortran llvm)
+RUN(NAME class_94 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2724,6 +2729,9 @@ RUN(NAME legacy_array_sections_11 LABELS gfortran llvm
 RUN(NAME legacy_array_sections_12 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME legacy_array_sections_13 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_14 LABELS gfortran llvm
+    EXTRAFILES legacy_array_sections_14_foo.f90
+    EXTRA_ARGS --legacy-array-sections --implicit-interface --separate-compilation)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2744,6 +2752,10 @@ RUN(NAME equivalence_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME equivalence_12 LABELS gfortran)
+RUN(NAME equivalence_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME equivalence_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME equivalence_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3054,6 +3066,7 @@ RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 
 #test for forward declaration of derived type
 RUN(NAME issue_9063 LABELS gfortran llvm)
+RUN(NAME issue_4901 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)

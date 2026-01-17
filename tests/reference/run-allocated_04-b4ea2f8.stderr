@@ -1,2 +1,5 @@
-At 6:5 of file tests/errors/allocated_04.f90
-Runtime Error: Attempting to allocate already allocated variable 'x'
+runtime error: Attempting to allocate already allocated variable 'x'
+ --> tests/errors/allocated_04.f90:6:5
+  |
+6 |     allocate(x)  ! Error: double allocation of scalar
+  |     ^^^^^^^^^^^ 

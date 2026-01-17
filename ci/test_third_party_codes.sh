@@ -157,9 +157,9 @@ time_section "🧪 Testing M_CLI2" '
   git clone https://github.com/jinangshah21/M_CLI2.git
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-8
+  git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 28c5718bc8b5066e023c628ac88f29bc4f10a0a9
+  git checkout 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -263,9 +263,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-17
+  git checkout lf-18
   micromamba install -c conda-forge fpm
-  git checkout 0321239b19291cbbf2c4e6597a2aa118b2cc6a4a
+  git checkout e9b9e6236ca159918a7aab693801b1d30f9a1b2c
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   print_success "Done with FPM"

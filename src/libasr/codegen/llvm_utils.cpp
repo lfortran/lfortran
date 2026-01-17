@@ -2057,7 +2057,7 @@ namespace LCompilers {
             {
                 static const std::string GLOBAL_ERROR_ID = "__Wrong_allocation";
                 fmt_ptr = module->getNamedGlobal(GLOBAL_ERROR_ID);
-                if(!fmt_ptr){fmt_ptr = builder->CreateGlobalString("runtime error: Attempting to allocate already allocated variable!\n", GLOBAL_ERROR_ID);}
+                if(!fmt_ptr){fmt_ptr = builder->CreateGlobalString("Attempting to allocate already allocated variable!", GLOBAL_ERROR_ID);}
                 fmt_ptr = builder->CreateBitCast(fmt_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
             }
             print_error(context, *module, *builder, {fmt_ptr});
