@@ -7,9 +7,9 @@ module class_80_mod
   end type
 contains 
   subroutine cast_to_keyval(ptr, val)
-   class(class_value), intent(in) :: ptr(:)
-   type(temp_type), intent(in), optional :: val(:)
-!    val(1)%value = ptr(1)%value   ! TODO 
+   class(class_value), intent(inout) :: ptr(:)
+   type(temp_type), intent(inout), optional :: val(:)
+   val(1)%value = ptr(1)%value
 end subroutine cast_to_keyval 
 end module
 
@@ -21,5 +21,5 @@ program class_80
   allocate(y(1))
   y(1)%value = "Hello World"
   call cast_to_keyval(y, x)
-!   if (x(1)%value /= "Hello World") error stop  ! TODO
+  if (x(1)%value /= "Hello World") error stop
 end program class_80

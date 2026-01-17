@@ -1673,6 +1673,7 @@ public:
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"iolength", 31}};
         std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
         fill_args_for_rewind_inquire_flush(x, 31, args, 32, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
@@ -1695,6 +1696,23 @@ public:
             }
         }
 
+        if (x.n_values > 0) {
+            if (!is_iolength_present) {
+                diag.add(Diagnostic(
+                    "iolength must be present when positional arguments are used.",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            iolength_args.reserve(al, x.n_values);
+            for (size_t i = 0; i < x.n_values; i++) {
+                this->visit_expr(*x.m_values[i]);
+                ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+                iolength_args.push_back(al, expr);
+            }
+        }
+
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,
@@ -1703,7 +1721,7 @@ public:
                                   nextrec, blank, position, action,
                                   read, write, readwrite, delim,
                                   pad, flen, blocksize, convert,
-                                  carriagecontrol, size, pos, iolength);
+                                  carriagecontrol, size, pos, iolength, iolength_args.p, iolength_args.n);
     }
 
     void visit_Flush(const AST::Flush_t& x) {
