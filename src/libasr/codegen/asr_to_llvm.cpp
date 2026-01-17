@@ -3529,7 +3529,13 @@ public:
             bool is_polymorphic = (current_select_type_block_type != nullptr) && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                     (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(x_mv_type);
+                llvm::Type* type = nullptr;
+                if (ASRUtils::is_logical(*elem_type)) {
+                    type = llvm_utils->get_el_type(x.m_v, elem_type, module.get());
+                } else {
+                    type = llvm_utils->get_type_from_ttype_t_util(x.m_v, elem_type, module.get());
+                }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
                                                     true,
@@ -3548,7 +3554,12 @@ public:
                 if (is_fixed_size) {
                     type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
                 } else {
-                    type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(x_mv_type);
+                    if (ASRUtils::is_logical(*elem_type)) {
+                        type = llvm_utils->get_el_type(x.m_v, elem_type, module.get());
+                    } else {
+                        type = llvm_utils->get_type_from_ttype_t_util(x.m_v, elem_type, module.get());
+                    }
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
@@ -8343,8 +8354,30 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
+                    ASRUtils::is_logical(*asr_target_type)) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
+                ASR::ttype_t* array_type_past = ASRUtils::type_get_past_allocatable_pointer(array_type);
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type_past);
+                llvm::Type* storage_type = llvm_utils->get_el_type(array_item->m_v, arr->m_type, module.get());
+                if (!storage_type->isIntegerTy(1)) {
+                    value = builder->CreateZExtOrTrunc(value, storage_type);
+                }
+            }
             builder->CreateStore(value, target);
         } else {
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
+                    ASRUtils::is_logical(*asr_target_type)) {
+                ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
+                ASR::ttype_t* array_type_past = ASRUtils::type_get_past_allocatable_pointer(array_type);
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type_past);
+                llvm::Type* storage_type = llvm_utils->get_el_type(array_item->m_v, arr->m_type, module.get());
+                if (!storage_type->isIntegerTy(1)) {
+                    value = builder->CreateZExtOrTrunc(value, storage_type);
+                }
+            }
             builder->CreateStore(value, target);
         }
     }
@@ -8914,6 +8947,19 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
+                if (x->type == ASR::exprType::ArrayItem &&
+                        ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
+                    ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x);
+                    ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
+                    ASR::ttype_t* array_type_past = ASRUtils::type_get_past_allocatable_pointer(array_type);
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type_past);
+                    llvm::Type* storage_type = llvm_utils->get_el_type(array_item->m_v, arr->m_type, module.get());
+                    if (!storage_type->isIntegerTy(1)) {
+                        llvm::Value* loaded = llvm_utils->CreateLoad2(storage_type, tmp, is_volatile);
+                        tmp = builder->CreateICmpNE(loaded, llvm::ConstantInt::get(storage_type, 0));
+                        return;
+                    }
+                }
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
                 tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
@@ -10603,7 +10649,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm_utils->getIntType(ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -10630,6 +10676,10 @@ public:
             ptr_loads = 2;
             this->visit_expr_wrapper(el, true);
             ptr_loads = ptr_loads_copy;
+            if (ASRUtils::is_logical(*x_m_type) && tmp->getType()->isIntegerTy(1) &&
+                !el_type->isIntegerTy(1)) {
+                tmp = builder->CreateZExtOrTrunc(tmp, el_type);
+            }
             builder->CreateStore(tmp, llvm_el);
         }
         // Return the vector as float* type:
@@ -10651,7 +10701,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm_utils->getIntType(ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
