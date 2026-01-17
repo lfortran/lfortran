@@ -5307,6 +5307,22 @@ public:
                                     if (!has_type_decl || (!has_arg_info && expected_ft->n_arg_types > 0)) {
                                         create_interface_for_procedure_variable(
                                             proc_var, passed_arg->base.loc, expected_ft);
+                                    } else if (has_arg_info && expected_ft->n_arg_types == 0) {
+                                        // Reverse: passed has arg_types but param doesn't.
+                                        // Update the parameter's type to match what we're passing.
+                                        ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(
+                                            proc_var->m_type_declaration);
+                                        ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                            ASR::down_cast<ASR::Function_t>(actual_decl)->m_function_signature);
+                                        // Update the parameter's FunctionType
+                                        ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                            ASRUtils::type_get_past_array(v->m_type));
+                                        param_ft->m_arg_types = passed_ft->m_arg_types;
+                                        param_ft->n_arg_types = passed_ft->n_arg_types;
+                                        // Also update the callee's function signature
+                                        ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                            f->m_function_signature);
+                                        callee_ft->m_arg_types[i + offset] = v->m_type;
                                     }
                                 } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(sym))) {
                                     // Passed argument is a Function (not a procedure variable).
@@ -6962,6 +6978,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                 if (passed_ft->n_arg_types > 0) continue;
 
                                 if (i >= callee->n_args) continue;
+                                if (callee->m_args[i] == nullptr) continue;
                                 if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
                                 ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v;
                                 ASR::FunctionType_t* param_ft = nullptr;
