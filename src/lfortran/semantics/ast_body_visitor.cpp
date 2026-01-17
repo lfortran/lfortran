@@ -5398,6 +5398,31 @@ public:
                                                 f->m_function_signature);
                                             callee_ft->m_arg_types[i + offset] = iface_type;
                                         }
+                                    } else if (passed_ft->n_arg_types == 0 && param_ft->n_arg_types > 0) {
+                                        // Reverse propagation: parameter has type info (from being called
+                                        // in the callee) but passed function doesn't (not called in caller).
+                                        // Update the passed Function's interface with the parameter's arg types.
+                                        passed_ft->m_arg_types = param_ft->m_arg_types;
+                                        passed_ft->n_arg_types = param_ft->n_arg_types;
+
+                                        // Create matching argument variables in the passed Function's symtab
+                                        Vec<ASR::expr_t*> new_args;
+                                        new_args.reserve(al, param_ft->n_arg_types);
+                                        for (size_t j = 0; j < param_ft->n_arg_types; j++) {
+                                            ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
+                                            std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
+                                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                                                ASR::make_Variable_t(al, passed_arg->base.loc, passed_func->m_symtab,
+                                                    s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
+                                                    nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                                                    nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                                                    ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                                            passed_func->m_symtab->add_symbol(arg_name, arg_sym);
+                                            new_args.push_back(al, ASRUtils::EXPR(
+                                                ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
+                                        }
+                                        passed_func->m_args = new_args.p;
+                                        passed_func->n_args = new_args.size();
                                     }
                                 }
                             }
@@ -5483,6 +5508,33 @@ public:
                                 ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                     f->m_function_signature);
                                 callee_ft->m_arg_types[i + offset] = param_func->m_function_signature;
+                            } else if (passed_ft && passed_ft->n_arg_types == 0 && param_ft->n_arg_types > 0) {
+                                // Reverse propagation: parameter has type info but passed doesn't.
+                                // Only handle when passed_sym is a Function_t.
+                                if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    passed_ft->m_arg_types = param_ft->m_arg_types;
+                                    passed_ft->n_arg_types = param_ft->n_arg_types;
+
+                                    // Create matching argument variables in the passed Function's symtab
+                                    Vec<ASR::expr_t*> new_args;
+                                    new_args.reserve(al, param_ft->n_arg_types);
+                                    for (size_t j = 0; j < param_ft->n_arg_types; j++) {
+                                        ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
+                                        std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
+                                        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                                            ASR::make_Variable_t(al, passed_arg->base.loc, passed_func->m_symtab,
+                                                s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
+                                                nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                                                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                                                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                                        passed_func->m_symtab->add_symbol(arg_name, arg_sym);
+                                        new_args.push_back(al, ASRUtils::EXPR(
+                                            ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
+                                    }
+                                    passed_func->m_args = new_args.p;
+                                    passed_func->n_args = new_args.size();
+                                }
                             }
                         }
                     }
@@ -6881,6 +6933,89 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+
+    // Post-processing: propagate procedure types for implicit interfaces.
+    // This handles the case where callee body is visited after caller body,
+    // so the callee's parameter types weren't available during caller visit.
+    if (compiler_options.implicit_interface) {
+        for (auto& item : tu->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
+                for (size_t si = 0; si < func->n_body; si++) {
+                    if (ASR::is_a<ASR::SubroutineCall_t>(*func->m_body[si])) {
+                        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(func->m_body[si]);
+                        ASR::symbol_t* callee_sym = ASRUtils::symbol_get_past_external(call->m_name);
+                        if (!ASR::is_a<ASR::Function_t>(*callee_sym)) continue;
+                        ASR::Function_t* callee = ASR::down_cast<ASR::Function_t>(callee_sym);
+
+                        for (size_t i = 0; i < call->n_args; i++) {
+                            if (call->m_args[i].m_value == nullptr) continue;
+                            if (!ASR::is_a<ASR::Var_t>(*call->m_args[i].m_value)) continue;
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(call->m_args[i].m_value);
+                            ASR::symbol_t* passed_sym = ASRUtils::symbol_get_past_external(var->m_v);
+
+                            // Handle passed Function with no arg_types
+                            if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                                ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                    passed_func->m_function_signature);
+                                if (passed_ft->n_arg_types > 0) continue;
+
+                                if (i >= callee->n_args) continue;
+                                if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
+                                ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v;
+                                ASR::FunctionType_t* param_ft = nullptr;
+
+                                // Handle Variable_t parameter with FunctionType
+                                if (ASR::is_a<ASR::Variable_t>(*param_sym)) {
+                                    ASR::Variable_t* param = ASR::down_cast<ASR::Variable_t>(param_sym);
+                                    ASR::ttype_t* param_type = ASRUtils::type_get_past_array(param->m_type);
+                                    if (ASR::is_a<ASR::FunctionType_t>(*param_type)) {
+                                        param_ft = ASR::down_cast<ASR::FunctionType_t>(param_type);
+                                    }
+                                }
+                                // Handle Function_t parameter (interface)
+                                else if (ASR::is_a<ASR::Function_t>(*param_sym)) {
+                                    ASR::Function_t* param_func = ASR::down_cast<ASR::Function_t>(param_sym);
+                                    param_ft = ASR::down_cast<ASR::FunctionType_t>(param_func->m_function_signature);
+                                }
+
+                                if (param_ft == nullptr || param_ft->n_arg_types == 0) continue;
+
+                                // Reverse propagation: param has type info, passed doesn't
+                                passed_ft->m_arg_types = param_ft->m_arg_types;
+                                passed_ft->n_arg_types = param_ft->n_arg_types;
+
+                                // Create argument variables in passed Function's symtab
+                                Vec<ASR::expr_t*> new_args;
+                                new_args.reserve(al, param_ft->n_arg_types);
+                                for (size_t j = 0; j < param_ft->n_arg_types; j++) {
+                                    ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
+                                    std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
+                                    if (passed_func->m_symtab->get_symbol(arg_name) == nullptr) {
+                                        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                                            ASR::make_Variable_t(al, call->base.base.loc, passed_func->m_symtab,
+                                                s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
+                                                nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                                                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                                                ASR::presenceType::Required, false, false, false, nullptr, false, false));
+                                        passed_func->m_symtab->add_symbol(arg_name, arg_sym);
+                                        new_args.push_back(al, ASRUtils::EXPR(
+                                            ASR::make_Var_t(al, call->base.base.loc, arg_sym)));
+                                    }
+                                }
+                                if (passed_func->n_args == 0 && new_args.size() > 0) {
+                                    passed_func->m_args = new_args.p;
+                                    passed_func->n_args = new_args.size();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return tu;
 }
 
