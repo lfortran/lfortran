@@ -4132,7 +4132,6 @@ public:
                                         ASRUtils::symbol_get_past_external(sym_));
                                     v->m_storage = ASR::storage_typeType::Parameter;
                                 }
-
                             }
                         }
                     }
