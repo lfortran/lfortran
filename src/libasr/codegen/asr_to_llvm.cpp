@@ -2299,11 +2299,16 @@ public:
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
                     module.get(), abt);
-                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type))),
-                        module.get(), abt);
+                    ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)));
+                    llvm::Type* llvm_data_type = nullptr;
+                    if (ASRUtils::is_logical(*asr_data_type)) {
+                        llvm_data_type = llvm_utils->get_el_type(tmp_expr, asr_data_type, module.get());
+                    } else {
+                        llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                            tmp_expr, asr_data_type, module.get(), abt);
+                    }
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
@@ -5024,7 +5029,12 @@ public:
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, asr_data_type, module.get());
+        llvm::Type* llvm_data_type = nullptr;
+        if (ASRUtils::is_logical(*asr_data_type)) {
+            llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
+        } else {
+            llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, asr_data_type, module.get());
+        }
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
@@ -7313,7 +7323,12 @@ public:
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, m_dims);
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
-                            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, data_type, module.get());
+                            llvm::Type* llvm_data_type = nullptr;
+                            if (ASRUtils::is_logical(*data_type)) {
+                                llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
+                            } else {
+                                llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, data_type, module.get());
+                            }
                             fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_));
                             llvm_value = llvm_target_;
@@ -8664,8 +8679,13 @@ public:
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(m_type);
+        llvm::Type* llvm_data_type = nullptr;
+        if (ASRUtils::is_logical(*elem_type)) {
+            llvm_data_type = llvm_utils->get_el_type(expr, elem_type, module.get());
+        } else {
+            llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, elem_type, module.get());
+        }
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
         fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
@@ -8687,7 +8707,13 @@ public:
             return ;
         }
 
-        llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
+        llvm::Type *data_type = nullptr;
+        if (ASRUtils::is_logical(*elem_type)) {
+            data_type = llvm_utils->get_el_type(m_arg, elem_type, module.get());
+        } else {
+            data_type = llvm_utils->get_type_from_ttype_t_util(m_arg, elem_type, module.get());
+        }
         llvm::Type *arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
