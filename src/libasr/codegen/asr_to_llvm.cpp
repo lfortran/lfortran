@@ -7207,7 +7207,8 @@ public:
                                     // EXTRACT CONCRETE DATA POINTER FROM POLYMORPHIC ARRAY
                                     // The polymorphic array (generic) has structure:
                                     // { %polymorphic_wrapper*, offset, dims*, is_allocated, rank }
-                                    // where polymorphic_wrapper is { i64 type_id, i8* data }
+                                    // where polymorphic_wrapper is the class wrapper type
+                                    // (e.g. { vptr, i8* data } for class(*))
 
                                     // Get the source polymorphic array descriptor type
                                     llvm::Type* const src_array_desc_type = llvm_utils->arr_api->
