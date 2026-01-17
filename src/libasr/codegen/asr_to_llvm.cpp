@@ -1886,7 +1886,12 @@ public:
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());
+                llvm::Type* llvm_data_type = nullptr;
+                if (ASRUtils::is_logical(*asr_data_type)) {
+                    llvm_data_type = llvm_utils->get_el_type(curr_arg.m_a, asr_data_type, module.get());
+                } else {
+                    llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());
+                }
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
