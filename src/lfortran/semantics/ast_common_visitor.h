@@ -12127,12 +12127,12 @@ public:
                     }
                     if( !function_found ) {
                         // First check if default structConstructor is there
-                        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
-                            current_scope->resolve_symbol(var_name));
+                        ASR::symbol_t* local_sym = current_scope->resolve_symbol(var_name);
+                        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(local_sym);
                         if (struct_sym &&
                                 ASR::is_a<ASR::Struct_t>(*struct_sym)) {
                             tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
-                                                    x.m_keywords, x.n_keywords, struct_sym);
+                                                    x.m_keywords, x.n_keywords, local_sym);
                             return;
                         }
                         bool is_function = true;
