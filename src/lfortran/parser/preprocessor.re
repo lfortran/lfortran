@@ -468,8 +468,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 loc.last = loc.first;
                 if_directive.loc = loc;
                 if (if_directive.active) {
-                    unsigned char *expr_cur = t1;
-                    bool test_true = parse_bexpr(string_start, expr_cur, macro_definitions) > 0;
+                    std::string expr = token(t1, t2);
+                    strip_cpp_comments(expr);
+                    unsigned char *expr_cur = (unsigned char *)&expr[0];
+                    bool test_true = parse_bexpr((unsigned char *)&expr[0], expr_cur, macro_definitions) > 0;
                     if (test_true) {
                         if_directive.branch_enabled = true;
                         if_directive.enabled_branch_executed = true;
@@ -520,8 +522,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ConditionalDirective ifdef = ConditionalDirective_stack[ConditionalDirective_stack.size()-1];
                 if (ifdef.active) {
                     if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
-                        unsigned char *expr_cur = t1;
-                        bool test_true = parse_bexpr(string_start, expr_cur, macro_definitions) > 0;
+                        std::string expr = token(t1, t2);
+                        strip_cpp_comments(expr);
+                        unsigned char *expr_cur = (unsigned char *)&expr[0];
+                        bool test_true = parse_bexpr((unsigned char *)&expr[0], expr_cur, macro_definitions) > 0;
                         if (test_true) {
                             ifdef.branch_enabled = true;
                             ifdef.enabled_branch_executed = true;

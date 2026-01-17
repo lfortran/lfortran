@@ -1,5 +1,5 @@
-C preprocessor error: function-like macro invocation must have argument list
-  --> tests/preprocessor10.f90:55:14
-   |
-55 |     defined(Y) || defined(Z)
-   |              ^ 
+C preprocessor error: Unknown token '\'
+ --> tests/preprocessor10.f90:1:18
+  |
+1 | program preprocessor10
+  |                  ^ 
