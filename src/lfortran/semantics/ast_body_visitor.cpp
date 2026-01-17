@@ -25,6 +25,7 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
+    bool needs_implicit_interface_postprocessing = false;
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     int loop_nesting = 0;
@@ -5439,6 +5440,10 @@ public:
                                         }
                                         passed_func->m_args = new_args.p;
                                         passed_func->n_args = new_args.size();
+                                    } else if (passed_ft->n_arg_types == 0 && param_ft->n_arg_types == 0) {
+                                        // Both have no arg_types - may need post-processing
+                                        // if callee's param gets types after we visit callee's body
+                                        needs_implicit_interface_postprocessing = true;
                                     }
                                 }
                             }
@@ -6953,7 +6958,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     // Post-processing: propagate procedure types for implicit interfaces.
     // This handles the case where callee body is visited after caller body,
     // so the callee's parameter types weren't available during caller visit.
-    if (compiler_options.implicit_interface) {
+    // Only run if we encountered cases that might need deferred propagation.
+    if (compiler_options.implicit_interface && b.needs_implicit_interface_postprocessing) {
         for (auto& item : tu->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
