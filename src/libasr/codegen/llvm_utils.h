@@ -414,7 +414,7 @@ class ASRToLLVMVisitor;
             */
 
             llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
-
+            llvm::Value* ensure_descriptor_value(llvm::Value* v);
             /**
              * Gets string's length
              * @param str_type ASR string type node of the string you're operating on.
