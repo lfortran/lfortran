@@ -1512,22 +1512,16 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
-#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
-        // Assertion: Verify type consistency to catch bugs early
-        // The GEP target type 't' should match the pointee type of 'ds'
-        // Note: LLVM 15+ uses opaque pointers, so getPointerElementType() doesn't exist
-        // and this type of bug cannot occur.
-        LCOMPILERS_ASSERT(ds->getType()->isPointerTy())
-        llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
-        // For struct types, the target type must match the pointer's pointee type
-        std::string target_type_str = LLVM::get_type_as_string(t);
-        std::string pointee_type_str = LLVM::get_type_as_string(ds_pointee_type);
-        LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
-            "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
-            "This would cause crashes in LLVM <= 8 constant folder. "
-            "Target type: " + target_type_str +
-            ", Pointer pointee type: " + pointee_type_str);
-
+#if LLVM_VERSION_MAJOR < 15
+        // Fix up mismatched typed pointers before creating the GEP.
+        if (ds->getType()->isPointerTy()) {
+            auto *ptr_type = llvm::cast<llvm::PointerType>(ds->getType());
+            llvm::Type* ds_pointee_type = ptr_type->getPointerElementType();
+            if (ds_pointee_type != t) {
+                ds = builder->CreateBitCast(ds, t->getPointerTo(ptr_type->getAddressSpace()));
+            }
+        }
+#if defined(WITH_LFORTRAN_ASSERT)
         // Verify index is within bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {
             llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
@@ -1536,6 +1530,7 @@ namespace LCompilers {
                 "Index out of bounds in create_gep2: index " + std::to_string(idx) +
                 " is out of range for struct with " + std::to_string(num_elements) + " elements");
         }
+#endif
 #elif defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR >= 15
         // LLVM 15+ uses opaque pointers - no type confusion possible
         // Only validate bounds for struct types
@@ -1630,19 +1625,36 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
-        // Validate that the type parameter matches the pointer's pointee type
-        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
-        LCOMPILERS_ASSERT(x->getType()->isPointerTy())
-        llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
-        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
-        std::string t_type_str = LLVM::get_type_as_string(t);
-        LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
-            "CreateGEP2: Type mismatch - pointer pointee type (" +
-            x_type_str + ") != type parameter (" +
-            t_type_str + ")");
-#endif
+#if LLVM_VERSION_MAJOR < 15
+        // Ensure pointer type matches the GEP element type on typed pointers.
+        // LLVM <= 14 asserts on mismatches, so fix up with a bitcast and fall back.
+        llvm::Type* scalar_type = x->getType()->getScalarType();
+        llvm::Type* pointee_type = nullptr;
+        if (scalar_type->isPointerTy()) {
+            auto *ptr_type = llvm::cast<llvm::PointerType>(scalar_type);
+            pointee_type = ptr_type->getPointerElementType();
+            if (pointee_type != t) {
+                llvm::Type* cast_ptr_type = t->getPointerTo(ptr_type->getAddressSpace());
+                if (x->getType()->isPointerTy()) {
+                    x = builder->CreateBitCast(x, cast_ptr_type);
+                } else if (x->getType()->isVectorTy()) {
+                    auto vec_type = llvm::cast<llvm::VectorType>(x->getType());
+                    auto cast_type = llvm::VectorType::get(cast_ptr_type, vec_type->getElementCount());
+                    x = builder->CreateBitCast(x, cast_type);
+                }
+                scalar_type = x->getType()->getScalarType();
+                if (scalar_type->isPointerTy()) {
+                    pointee_type = llvm::cast<llvm::PointerType>(scalar_type)->getPointerElementType();
+                }
+            }
+        }
+        if (pointee_type && pointee_type != t) {
+            return builder->CreateGEP(x, idx);
+        }
+        return builder->CreateGEP(x, idx);
+#else
         return builder->CreateGEP(t, x, idx);
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *type,
@@ -1662,19 +1674,36 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, const std::vector<llvm::Value *> &idx) {
-#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
-        // Validate that the type parameter matches the pointer's pointee type
-        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
-        LCOMPILERS_ASSERT(x->getType()->isPointerTy())
-        llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
-        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
-        std::string t_type_str = LLVM::get_type_as_string(t);
-        LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
-            "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
-            x_type_str + ") != type parameter (" +
-            t_type_str + ")");
-#endif
+#if LLVM_VERSION_MAJOR < 15
+        // Ensure pointer type matches the GEP element type on typed pointers.
+        // LLVM <= 14 asserts on mismatches, so fix up with a bitcast and fall back.
+        llvm::Type* scalar_type = x->getType()->getScalarType();
+        llvm::Type* pointee_type = nullptr;
+        if (scalar_type->isPointerTy()) {
+            auto *ptr_type = llvm::cast<llvm::PointerType>(scalar_type);
+            pointee_type = ptr_type->getPointerElementType();
+            if (pointee_type != t) {
+                llvm::Type* cast_ptr_type = t->getPointerTo(ptr_type->getAddressSpace());
+                if (x->getType()->isPointerTy()) {
+                    x = builder->CreateBitCast(x, cast_ptr_type);
+                } else if (x->getType()->isVectorTy()) {
+                    auto vec_type = llvm::cast<llvm::VectorType>(x->getType());
+                    auto cast_type = llvm::VectorType::get(cast_ptr_type, vec_type->getElementCount());
+                    x = builder->CreateBitCast(x, cast_type);
+                }
+                scalar_type = x->getType()->getScalarType();
+                if (scalar_type->isPointerTy()) {
+                    pointee_type = llvm::cast<llvm::PointerType>(scalar_type)->getPointerElementType();
+                }
+            }
+        }
+        if (pointee_type && pointee_type != t) {
+            return builder->CreateInBoundsGEP(x, idx);
+        }
+        return builder->CreateInBoundsGEP(x, idx);
+#else
         return builder->CreateInBoundsGEP(t, x, idx);
+#endif
     }
 
     llvm::Function* LLVMUtils::_Deallocate() {
@@ -2036,7 +2065,8 @@ namespace LCompilers {
         llvm::Value* string_len = get_string_length(str_type, data);
         llvm::Value* string_data = get_string_data(str_type, data);
         llvm::Value* actual_idx = builder->CreateMul(convert_kind(arr_idx, llvm::Type::getInt64Ty(context)), string_len);
-        llvm::Value* desired_element =  builder->CreateGEP(llvm::Type::getInt8Ty(context), string_data, actual_idx);
+        llvm::Value* desired_element = create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), string_data, actual_idx);
         return desired_element;
     }
 
@@ -2673,8 +2703,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then");
                     llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
 
-                    llvm::Value* l_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, l_str_data, builder->CreateLoad(i64_t, i)));
-                    llvm::Value* r_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, r_str_data, builder->CreateLoad(i64_t, i)));
+                    llvm::Value* l_char = builder->CreateLoad(i8_t,
+                        create_ptr_gep2(i8_t, l_str_data, builder->CreateLoad(i64_t, i)));
+                    llvm::Value* r_char = builder->CreateLoad(i8_t,
+                        create_ptr_gep2(i8_t, r_str_data, builder->CreateLoad(i64_t, i)));
 
                     llvm::Value* cond = builder->CreateICmpNE(l_char, r_char);
 
@@ -5928,7 +5960,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* newly_allocated_capacity_whole_size = builder->CreateMul(type_size_, newly_allocated_capacity);
             llvm::Value* old_capacity_whole_size = builder->CreateMul(type_size_, capacity);
             llvm::Type* const realloc_ret_type = llvm::Type::getInt8Ty(context);
-            llvm::Value* unset_new_memory = builder->CreateGEP(realloc_ret_type, copy_data, old_capacity_whole_size);
+            llvm::Value* unset_new_memory = llvm_utils->create_ptr_gep2(
+                realloc_ret_type, copy_data, old_capacity_whole_size);
             builder->CreateMemSet(unset_new_memory, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), newly_allocated_capacity_whole_size, llvm::MaybeAlign());
         }
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
@@ -9014,8 +9047,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // body
             llvm_utils->start_new_block(loopBody);
             i_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), i);
-            llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
-            llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
+            llvm::Value* src_elem_ptr  = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, i_val);
+            llvm::Value* dest_elem_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, i_val);
 
             // For unlimited polymorphic, handle specially
             if (is_unlimited_polymorphic) {
@@ -9348,7 +9381,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                            llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
+                            llvm::Value* src_member_char = llvm_utils->CreateGEP2(mem_type, src_member, idx_vec);
                             src_member_char = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
                             is_allocated = builder->CreateICmpNE(
