@@ -1251,9 +1251,11 @@ namespace LCompilers {
                     llvm::Value* base_offset = get_offset(source_llvm_type, source_desc);
                     linear_offset = builder->CreateAdd(linear_offset, base_offset);
                     // Copy element
-                    llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
+                    llvm::Value* src_elem_ptr = llvm_utils->create_ptr_gep2(
+                        elem_type, src_data, linear_offset);
                     llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
-                    llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
+                    llvm::Value* dest_ptr = llvm_utils->create_ptr_gep2(
+                        elem_type, data_buffer, iter);
                     builder->CreateStore(elem_val, dest_ptr);
                     // Increment iterator
                     llvm::Value* new_iter = builder->CreateAdd(iter,
