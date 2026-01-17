@@ -202,22 +202,22 @@ free_nonnull5:                                    ; preds = %free_done3
 free_done6:                                       ; preds = %free_nonnull5, %free_done3
   %106 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
   %107 = load i8*, i8** %106, align 8
-  %108 = getelementptr inbounds i8, i8* %107, i64 0
+  %StrSliceGEP = getelementptr i8, i8* %107, i64 0
   %StrSlice_StrView = alloca %string_descriptor, align 8
-  %109 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  store i8* %108, i8** %109, align 8
-  %110 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  store i64 3, i64* %110, align 4
-  %111 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  %112 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  %113 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.30, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy(i8** %111, i64* %112, i8 0, i8 0, i8* %113, i64 3)
-  %114 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
-  %115 = load i8*, i8** %114, align 8
-  %116 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.32, i32 0, i32 0), align 8
-  %117 = call i32 @str_compare(i8* %115, i64 3, i8* %116, i64 3)
-  %118 = icmp ne i32 %117, 0
-  br i1 %118, label %then, label %else
+  %108 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %108, align 8
+  %109 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 3, i64* %109, align 4
+  %110 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %111 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %112 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.30, i32 0, i32 0), align 8
+  call void @_lfortran_strcpy(i8** %110, i64* %111, i8 0, i8 0, i8* %112, i64 3)
+  %113 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
+  %114 = load i8*, i8** %113, align 8
+  %115 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.32, i32 0, i32 0), align 8
+  %116 = call i32 @str_compare(i8* %114, i64 3, i8* %115, i64 3)
+  %117 = icmp ne i32 %116, 0
+  br i1 %117, label %then, label %else
 
 then:                                             ; preds = %free_done6
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
@@ -238,13 +238,13 @@ FINALIZE_SYMTABLE_string_10:                      ; preds = %return
   br label %Finalize_Variable_num
 
 Finalize_Variable_num:                            ; preds = %FINALIZE_SYMTABLE_string_10
-  %119 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
-  %120 = load i8*, i8** %119, align 8
-  %121 = icmp eq i8* %120, null
-  br i1 %121, label %free_done8, label %free_nonnull7
+  %118 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
+  %119 = load i8*, i8** %118, align 8
+  %120 = icmp eq i8* %119, null
+  br i1 %120, label %free_done8, label %free_nonnull7
 
 free_nonnull7:                                    ; preds = %Finalize_Variable_num
-  call void @_lfortran_free(i8* %120)
+  call void @_lfortran_free(i8* %119)
   br label %free_done8
 
 free_done8:                                       ; preds = %free_nonnull7, %Finalize_Variable_num
