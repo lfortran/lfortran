@@ -4285,6 +4285,155 @@ public:
                                         ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
                                         data_structure[current_scope->counter].push_back(stmt);
                                     }
+                                } else if (!AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
+                                    ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
+                                    
+                                    if (ASR::is_a<ASR::Var_t>(*asr_eq1) && ASR::is_a<ASR::Array_t>(*arg_type1)) {
+                                        ASR::Array_t* array1 = ASR::down_cast<ASR::Array_t>(arg_type1);
+                                        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                            al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                            al, asr_eq1->base.loc, 1, int_type));
+                                        
+                                        Vec<ASR::array_index_t> args1;
+                                        args1.reserve(al, array1->n_dims);
+                                        for (size_t j = 0; j < array1->n_dims; j++) {
+                                            ASR::array_index_t ai;
+                                            ai.loc = asr_eq1->base.loc;
+                                            ai.m_left = nullptr;
+                                            ai.m_right = one;
+                                            ai.m_step = nullptr;
+                                            args1.push_back(al, ai);
+                                        }
+                                        
+                                        ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+                                        ASR::ttype_t* pointer_type_2 = ASRUtils::TYPE(ASR::make_Pointer_t(
+                                            al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
+                                        ASR::asr_t* get_pointer2 = ASR::make_GetPointer_t(
+                                            al, asr_eq2->base.loc, asr_eq2, pointer_type_2, nullptr);
+                                        ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
+                                        ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(
+                                            al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer2), cptr, nullptr);
+
+                                        Vec<ASR::dimension_t> dim;
+                                        dim.reserve(al, 1);
+                                        ASR::dimension_t dim_;
+                                        dim_.m_length = nullptr;
+                                        dim_.m_start = nullptr;
+                                        dim_.m_start = one;
+                                        dim_.m_length = one;
+                                        dim_.loc = asr_eq1->base.loc;
+                                        dim.push_back(al, dim_);
+
+                                        ASR::Var_t* var1 = ASR::down_cast<ASR::Var_t>(asr_eq1);
+                                        ASR::Variable_t *var1__ = ASR::down_cast<ASR::Variable_t>(var1->m_v);
+                                        ASR::ttype_t* type1 = nullptr;
+
+                                        Vec<ASR::dimension_t> dim1;
+                                        dim1.reserve(al, array1->n_dims);
+                                        for (size_t j = 0; j < array1->n_dims; j++) {
+                                            ASR::dimension_t dim1_;
+                                            dim1_.m_start = nullptr;
+                                            dim1_.m_length = nullptr;
+                                            dim1_.loc = asr_eq1->base.loc;
+                                            dim1.push_back(al, dim1_);
+                                        }
+
+                                        if (ASR::is_a<ASR::Integer_t>(*array1->m_type)) {
+                                            type1 = ASRUtils::TYPE(ASR::make_Integer_t(
+                                                al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                        } else if (ASR::is_a<ASR::Real_t>(*array1->m_type)) {
+                                            int kind = ASR::down_cast<ASR::Real_t>(array1->m_type)->m_kind;
+                                            type1 = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::Complex_t>(*array1->m_type)) {
+                                            int kind = ASR::down_cast<ASR::Complex_t>(array1->m_type)->m_kind;
+                                            type1 = ASRUtils::TYPE(ASR::make_Complex_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::Logical_t>(*array1->m_type)) {
+                                            int kind = ASR::down_cast<ASR::Logical_t>(array1->m_type)->m_kind;
+                                            type1 = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
+                                        } else {
+                                            diag.semantic_warning_label(
+                                                "This equivalence statement is not implemented yet, for now we will ignore it",
+                                                {x.base.base.loc},
+                                                "ignored for now"
+                                            );
+                                        }
+                                        
+                                        if (type1 != nullptr) {
+                                            type1 = ASRUtils::make_Array_t_util(
+                                                al, asr_eq1->base.loc, type1, dim1.p, dim1.size(),
+                                                ASR::abiType::Source, false,
+                                                ASR::array_physical_typeType::DescriptorArray, false, false);
+                                            ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type1));
+                                            var1__->m_type = ptr;
+
+                                            Vec<ASR::expr_t*> args_shape;
+                                            args_shape.reserve(al, array1->n_dims);
+                                            for (size_t j = 0; j < array1->n_dims; j++) {
+                                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[j].m_length);
+                                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                    al, asr_eq1->base.loc, ic->m_n, int_type));
+                                                args_shape.push_back(al, size);
+                                            }
+
+                                            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                                                al, asr_eq1->base.loc, int_type, dim.p, dim.size(),
+                                                ASR::array_physical_typeType::PointerArray));
+                                            ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(
+                                                al, asr_eq1->base.loc, args_shape.p, args_shape.size(),
+                                                array_type, ASR::arraystorageType::ColMajor);
+                                            ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(
+                                                al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),
+                                                asr_eq1, ASRUtils::EXPR(array_constant), nullptr);
+
+                                            ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                            data_structure[current_scope->counter].push_back(stmt);
+                                        }
+                                    } else {
+                                        ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+                                        ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
+                                            al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
+                                        ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
+                                        ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
+                                        ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(
+                                            al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
+                                        ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                        ASR::ttype_t* type = nullptr;
+                                        if (ASR::is_a<ASR::Real_t>(*arg_type1)) {
+                                            int kind = ASR::down_cast<ASR::Real_t>(arg_type1)->m_kind;
+                                            type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
+                                            type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                                al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                        } else if (ASR::is_a<ASR::Logical_t>(*arg_type1)) {
+                                            int kind = ASR::down_cast<ASR::Logical_t>(arg_type1)->m_kind;
+                                            type = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::Complex_t>(*arg_type1)) {
+                                            int kind = ASR::down_cast<ASR::Complex_t>(arg_type1)->m_kind;
+                                            type = ASRUtils::TYPE(ASR::make_Complex_t(al, asr_eq1->base.loc, kind));
+                                        } else if (ASR::is_a<ASR::String_t>(*arg_type1)) {
+                                            type = arg_type1;
+                                        } else {
+                                            diag.semantic_warning_label(
+                                                "This equivalence statement is not implemented yet, for now we will ignore it",
+                                                {x.base.base.loc},
+                                                "ignored for now"
+                                            );
+                                        }
+                                        if (type != nullptr) {
+                                            ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type));
+                                            var__->m_type = ptr;
+
+                                            ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(
+                                                al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr), asr_eq1, nullptr, nullptr);
+                                            ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                            data_structure[current_scope->counter].push_back(stmt);
+                                        }
+                                    }
                                 } else if (AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
                                     ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
