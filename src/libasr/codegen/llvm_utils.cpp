@@ -1512,16 +1512,22 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
-#if LLVM_VERSION_MAJOR < 15
-        // Fix up mismatched typed pointers before creating the GEP.
-        if (ds->getType()->isPointerTy()) {
-            auto *ptr_type = llvm::cast<llvm::PointerType>(ds->getType());
-            llvm::Type* ds_pointee_type = ptr_type->getPointerElementType();
-            if (ds_pointee_type != t) {
-                ds = builder->CreateBitCast(ds, t->getPointerTo(ptr_type->getAddressSpace()));
-            }
-        }
-#if defined(WITH_LFORTRAN_ASSERT)
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
+        // Assertion: Verify type consistency to catch bugs early
+        // The GEP target type 't' should match the pointee type of 'ds'
+        // Note: LLVM 15+ uses opaque pointers, so getPointerElementType() doesn't exist
+        // and this type of bug cannot occur.
+        LCOMPILERS_ASSERT(ds->getType()->isPointerTy())
+        llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
+        // For struct types, the target type must match the pointer's pointee type
+        std::string target_type_str = LLVM::get_type_as_string(t);
+        std::string pointee_type_str = LLVM::get_type_as_string(ds_pointee_type);
+        LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
+            "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
+            "This would cause crashes in LLVM <= 8 constant folder. "
+            "Target type: " + target_type_str +
+            ", Pointer pointee type: " + pointee_type_str);
+
         // Verify index is within bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {
             llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
@@ -1530,7 +1536,6 @@ namespace LCompilers {
                 "Index out of bounds in create_gep2: index " + std::to_string(idx) +
                 " is out of range for struct with " + std::to_string(num_elements) + " elements");
         }
-#endif
 #elif defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR >= 15
         // LLVM 15+ uses opaque pointers - no type confusion possible
         // Only validate bounds for struct types
@@ -1625,36 +1630,19 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR < 15
-        // Ensure pointer type matches the GEP element type on typed pointers.
-        // LLVM <= 14 asserts on mismatches, so fix up with a bitcast and fall back.
-        llvm::Type* scalar_type = x->getType()->getScalarType();
-        llvm::Type* pointee_type = nullptr;
-        if (scalar_type->isPointerTy()) {
-            auto *ptr_type = llvm::cast<llvm::PointerType>(scalar_type);
-            pointee_type = ptr_type->getPointerElementType();
-            if (pointee_type != t) {
-                llvm::Type* cast_ptr_type = t->getPointerTo(ptr_type->getAddressSpace());
-                if (x->getType()->isPointerTy()) {
-                    x = builder->CreateBitCast(x, cast_ptr_type);
-                } else if (x->getType()->isVectorTy()) {
-                    auto vec_type = llvm::cast<llvm::VectorType>(x->getType());
-                    auto cast_type = llvm::VectorType::get(cast_ptr_type, vec_type->getElementCount());
-                    x = builder->CreateBitCast(x, cast_type);
-                }
-                scalar_type = x->getType()->getScalarType();
-                if (scalar_type->isPointerTy()) {
-                    pointee_type = llvm::cast<llvm::PointerType>(scalar_type)->getPointerElementType();
-                }
-            }
-        }
-        if (pointee_type && pointee_type != t) {
-            return builder->CreateGEP(x, idx);
-        }
-        return builder->CreateGEP(x, idx);
-#else
-        return builder->CreateGEP(t, x, idx);
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
+        // Validate that the type parameter matches the pointer's pointee type
+        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
+        LCOMPILERS_ASSERT(x->getType()->isPointerTy())
+        llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
+        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
+        std::string t_type_str = LLVM::get_type_as_string(t);
+        LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
+            "CreateGEP2: Type mismatch - pointer pointee type (" +
+            x_type_str + ") != type parameter (" +
+            t_type_str + ")");
 #endif
+        return builder->CreateGEP(t, x, idx);
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *type,
@@ -1674,36 +1662,19 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, const std::vector<llvm::Value *> &idx) {
-#if LLVM_VERSION_MAJOR < 15
-        // Ensure pointer type matches the GEP element type on typed pointers.
-        // LLVM <= 14 asserts on mismatches, so fix up with a bitcast and fall back.
-        llvm::Type* scalar_type = x->getType()->getScalarType();
-        llvm::Type* pointee_type = nullptr;
-        if (scalar_type->isPointerTy()) {
-            auto *ptr_type = llvm::cast<llvm::PointerType>(scalar_type);
-            pointee_type = ptr_type->getPointerElementType();
-            if (pointee_type != t) {
-                llvm::Type* cast_ptr_type = t->getPointerTo(ptr_type->getAddressSpace());
-                if (x->getType()->isPointerTy()) {
-                    x = builder->CreateBitCast(x, cast_ptr_type);
-                } else if (x->getType()->isVectorTy()) {
-                    auto vec_type = llvm::cast<llvm::VectorType>(x->getType());
-                    auto cast_type = llvm::VectorType::get(cast_ptr_type, vec_type->getElementCount());
-                    x = builder->CreateBitCast(x, cast_type);
-                }
-                scalar_type = x->getType()->getScalarType();
-                if (scalar_type->isPointerTy()) {
-                    pointee_type = llvm::cast<llvm::PointerType>(scalar_type)->getPointerElementType();
-                }
-            }
-        }
-        if (pointee_type && pointee_type != t) {
-            return builder->CreateInBoundsGEP(x, idx);
-        }
-        return builder->CreateInBoundsGEP(x, idx);
-#else
-        return builder->CreateInBoundsGEP(t, x, idx);
+#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
+        // Validate that the type parameter matches the pointer's pointee type
+        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
+        LCOMPILERS_ASSERT(x->getType()->isPointerTy())
+        llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
+        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
+        std::string t_type_str = LLVM::get_type_as_string(t);
+        LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
+            "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
+            x_type_str + ") != type parameter (" +
+            t_type_str + ")");
 #endif
+        return builder->CreateInBoundsGEP(t, x, idx);
     }
 
     llvm::Function* LLVMUtils::_Deallocate() {
