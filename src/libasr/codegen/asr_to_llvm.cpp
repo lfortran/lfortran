@@ -2188,7 +2188,7 @@ public:
                     dt = alloca_tmp;
                 }
                 LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
-                llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
+                llvm::Value* dt_1 = llvm_utils->CreateGEP2(name2dertype[curr_struct], dt, idx_vars);
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
@@ -7429,7 +7429,7 @@ public:
                     llvm::Value* idx = tmp;
                     idx = builder->CreateZExtOrTrunc(idx, llvm::Type::getInt64Ty(context));
                     llvm::Value* zero_based = builder->CreateSub(idx, llvm::ConstantInt::get(idx->getType(), 1));
-                    llvm::Value* src_byte_ptr = builder->CreateGEP(
+                    llvm::Value* src_byte_ptr = llvm_utils->create_ptr_gep2(
                         llvm::Type::getInt8Ty(context), src_data, zero_based);
                     llvm::Value* byte_val = llvm_utils->CreateLoad2(
                         llvm::Type::getInt8Ty(context), src_byte_ptr);
@@ -9996,7 +9996,7 @@ public:
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
-            str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, idx);
+            str_item = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_data, idx);
         }
 
         /* Create StringView */
@@ -10092,7 +10092,7 @@ public:
             llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
-            str_data = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data_orig, start, "StrSliceGEP");
+            str_data = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_data_orig, start);
         }
 
         /* Create StringView */
@@ -10709,8 +10709,10 @@ public:
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);
         llvm::GlobalVariable *global_var = new llvm::GlobalVariable(*module, arr_type, true,
             llvm::GlobalValue::PrivateLinkage, ConstArray, "global_array_" + std::to_string(global_array_count++));
-        tmp = builder->CreateGEP(
-            arr_type, global_var, {llvm::ConstantInt::get(Int32Ty, 0), llvm::ConstantInt::get(Int32Ty, 0)});
+        std::vector<llvm::Value*> idx_vec = {
+            llvm::ConstantInt::get(Int32Ty, 0),
+            llvm::ConstantInt::get(Int32Ty, 0)};
+        tmp = llvm_utils->CreateGEP2(arr_type, global_var, idx_vec);
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
@@ -12121,8 +12123,11 @@ public:
                                     llvm::Value* start_idx = tmp;
                                     llvm::Value* offset = builder->CreateSub(start_idx,
                                         llvm::ConstantInt::get(start_idx->getType(), 1));
-                                    llvm::Value* section_ptr = builder->CreateGEP(llvm_arr_type, arr_ptr,
-                                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), offset});
+                                    std::vector<llvm::Value*> idx_vec = {
+                                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                        offset};
+                                    llvm::Value* section_ptr = llvm_utils->CreateGEP2(
+                                        llvm_arr_type, arr_ptr, idx_vec);
 
                                     // Compute size: (end - start) / inc + 1
                                     this->visit_expr_wrapper(idl->m_end, true);
@@ -13584,7 +13589,7 @@ public:
         llvm::Value* bitcast_descriptor;
         with_value_semantics([&]() { visit_expr_wrapper(x.m_value, true); bitcast_descriptor = tmp; });
         llvm::Value* byte_offset = builder->CreateMul(zero_based_idx, element_length_val);
-        llvm::Value* byte_ptr = builder->CreateGEP(llvm::Type::getInt8Ty(context),
+        llvm::Value* byte_ptr = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context),
             llvm_utils->get_string_data(src_str_type, bitcast_descriptor), byte_offset);
         
         // Get destination string descriptor pointers and copy element_length bytes
