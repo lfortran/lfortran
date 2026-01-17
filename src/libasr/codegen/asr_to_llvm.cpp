@@ -8178,8 +8178,20 @@ public:
             bool is_target_simd_array = (target_ptype == ASR::array_physical_typeType::SIMDArray);
             bool is_target_descriptor_based_array = (target_ptype == ASR::array_physical_typeType::DescriptorArray);
             bool is_value_descriptor_based_array = (value_ptype == ASR::array_physical_typeType::DescriptorArray);
-            llvm::Type* target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::extract_type(target_type), module.get());
-            llvm::Type* value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, ASRUtils::extract_type(value_type), module.get());
+            ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_type);
+            llvm::Type* target_el_type = nullptr;
+            if (ASRUtils::is_logical(*target_elem_type)) {
+                target_el_type = llvm_utils->get_el_type(x.m_target, target_elem_type, module.get());
+            } else {
+                target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_elem_type, module.get());
+            }
+            ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+            llvm::Type* value_el_type = nullptr;
+            if (ASRUtils::is_logical(*value_elem_type)) {
+                value_el_type = llvm_utils->get_el_type(x.m_value, value_elem_type, module.get());
+            } else {
+                value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_elem_type, module.get());
+            }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
@@ -14196,9 +14208,11 @@ public:
                         target_type = llvm_utils->get_StringType(arg_type_);
                         break;
                     }
-                    case (ASR::ttypeType::Logical) :
-                        target_type = llvm::Type::getInt1Ty(context);
+                    case (ASR::ttypeType::Logical) : {
+                        int a_kind = down_cast<ASR::Logical_t>(arg_type_)->m_kind;
+                        target_type = llvm_utils->getIntType(a_kind);
                         break;
+                    }
                     case (ASR::ttypeType::EnumType) :
                         target_type = llvm::Type::getInt32Ty(context);
                         break;
