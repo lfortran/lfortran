@@ -1,2 +1,5 @@
-At 6:14 of file tests/errors/array_bounds_check_15.f90
-Runtime error: Argument 1 is unallocated.
+runtime error: Argument 1 is unallocated.
+ --> tests/errors/array_bounds_check_15.f90:6:14
+  |
+6 |     print *, x
+  |              ^ 

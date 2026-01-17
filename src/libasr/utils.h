@@ -88,6 +88,7 @@ struct CompilerOptions {
     bool symtab_only = false;
     bool show_stacktrace = false;
     bool use_colors = true;
+    bool use_runtime_colors = false;
     bool indent = true;
     bool json = false;
     bool tree = false;
