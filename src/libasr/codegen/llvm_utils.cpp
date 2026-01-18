@@ -1976,8 +1976,9 @@ namespace LCompilers {
                 break;
             }
             case ASR::CChar:{
-                llvm::Value* char_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context));
-                ptr_to_data = builder->CreateStore(str, char_ptr);
+                llvm::Value* char_ptr = CreateAlloca(llvm::Type::getInt8Ty(context), nullptr, "cchar_ptr");
+                builder->CreateStore(str, char_ptr);
+                ptr_to_data = char_ptr;
                 break;
             }
             default:
