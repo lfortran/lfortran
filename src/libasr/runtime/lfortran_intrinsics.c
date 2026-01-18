@@ -6077,7 +6077,7 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
-        void* real_ptr, int32_t type_code)
+        void* real_ptr, int32_t type_code, int scale_factor)
 {
     // Handle integer types (type_code 2 = int32, type_code 3 = int64)
     if (type_code == 2 || type_code == 3) {
@@ -6098,12 +6098,21 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         }
         return;
     }
-    // Replace D/d with E for parsing
+    // Replace D/d with E for parsing, check for exponent
+    bool has_exponent = false;
     for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') buffer[i] = 'E';
+        if (buffer[i] == 'D' || buffer[i] == 'd') {
+            buffer[i] = 'E';
+            has_exponent = true;
+        } else if (buffer[i] == 'E' || buffer[i] == 'e') {
+            has_exponent = true;
+        }
     }
 
     double v = strtod(buffer, NULL);
+    if (!has_exponent) {
+        v = v / pow(10.0, scale_factor);
+    }
     if (type_code == 4) {
         *((float*)real_ptr) = (float)v;
     } else {
@@ -6317,7 +6326,7 @@ static void parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
 
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
         const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode)
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, int *arg_idx, int blank_mode, int scale_factor)
 {
     int32_t type_code = va_arg(*args, int32_t);
     void* real_ptr = va_arg(*args, void*);
@@ -6354,7 +6363,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         }
     }
 
-    parse_real_from_buffer(buffer, field_len, real_ptr, type_code);
+    parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor);
 
     free(buffer);
     return true;
@@ -6479,6 +6488,7 @@ static void common_formatted_read(InputSource *inputSource,
         blank_mode = 1;
     }
     
+    int scale_factor = 0;
     while (fmt_pos < fmt_len && arg_idx < no_of_args) {
         while (fmt_pos < fmt_len && (fmt[fmt_pos] == ' ' || fmt[fmt_pos] == ',')) {
             fmt_pos++;
@@ -6492,7 +6502,10 @@ static void common_formatted_read(InputSource *inputSource,
         }
         if (repeat_count == 0) repeat_count = 1;
         char spec = toupper(fmt[fmt_pos++]);
-
+        if (spec == 'P') {
+            scale_factor = repeat_count;
+            repeat_count = 1;
+        }
         int width = 0;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
             width = width * 10 + (fmt[fmt_pos] - '0');
@@ -6537,7 +6550,7 @@ static void common_formatted_read(InputSource *inputSource,
             case 'G':
                 if (!handle_read_real(inputSource, args, width, advance_no,
                         fmt, fmt_len, &fmt_pos, iostat, chunk,
-                        &consumed_newline, &arg_idx, blank_mode)) {
+                        &consumed_newline, &arg_idx, blank_mode, scale_factor)) {
                     return;
                 }
                 break;

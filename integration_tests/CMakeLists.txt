@@ -1572,6 +1572,8 @@ RUN(NAME implicit_interface_21 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_24 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_26 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
@@ -2089,6 +2091,7 @@ RUN(NAME file_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3069,6 +3072,7 @@ RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 RUN(NAME issue_9063 LABELS gfortran llvm)
 RUN(NAME issue_4901 LABELS gfortran llvm)
 RUN(NAME issue_7357 LABELS gfortran llvm)
+RUN(NAME issue_8324 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
