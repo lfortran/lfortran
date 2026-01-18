@@ -6841,7 +6841,7 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
-        llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
+        llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
         ptr_loads = 0;
         visit_expr(*x.m_target);
