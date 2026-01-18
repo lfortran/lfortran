@@ -1,0 +1,5 @@
+C preprocessor error: Unknown token '\'
+ --> tests/preprocessor10.f90:1:18
+  |
+1 | program preprocessor10
+  |                  ^ 
