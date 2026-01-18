@@ -6652,8 +6652,9 @@ public:
             arr_descr->set_rank(llvm_fptr_type, fptr_array, llvm_rank);
             builder->CreateStore(fptr_array, llvm_fptr);
             llvm_fptr = fptr_array;
-            ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);
-            llvm::Type* llvm_fptr_data_type = llvm_utils->get_type_from_ttype_t_util(fptr, fptr_data_type, module.get());
+            // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+            llvm::Type* llvm_fptr_data_type = llvm_utils->get_el_type(
+                fptr, ASRUtils::extract_type(fptr_type), module.get());
             llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr_type, llvm_fptr);
             llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, llvm_fptr);
             llvm::Value* shape_data = llvm_shape;
@@ -8649,11 +8650,25 @@ public:
                 ASRUtils::type_get_past_pointer(m_type)), module.get());
         llvm::AllocaInst *target = llvm_utils->CreateAlloca(
             target_type, nullptr, "array_descriptor");
-        builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
+        ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(m_type));
+        llvm::Type* llvm_data_type = llvm_utils->get_el_type(
+            expr, ASRUtils::extract_type(array_ttype), module.get());
+        llvm::Type* expected_data_ptr_type = llvm_data_type->getPointerTo();
+        if (llvm::StructType* desc_struct = llvm::dyn_cast<llvm::StructType>(target_type)) {
+            if (desc_struct->getNumElements() > 0 &&
+                desc_struct->getElementType(0)->isPointerTy()) {
+                expected_data_ptr_type = desc_struct->getElementType(0);
+            }
+        }
+        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(target_type, target);
+        llvm::Value* tmp_cast = tmp;
+        if (tmp_cast->getType() != expected_data_ptr_type) {
+            tmp_cast = builder->CreateBitCast(tmp_cast, expected_data_ptr_type);
+        }
+        builder->CreateStore(tmp_cast, data_ptr);
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
         fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
