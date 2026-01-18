@@ -93,7 +93,8 @@ private :
 
 
     /// Inserts Allocate Statement for `var_to_allocate` based on the information from `funcCall_ret_type`
-    void insert_allocate_stmt(ASR::Var_t* var_to_allocate, ASR::ttype_t* funcCall_ret_type){
+    void insert_allocate_stmt(ASR::Var_t* var_to_allocate, ASR::ttype_t* funcCall_ret_type,
+            bool use_realloc){
         /* Assertions */
         LCOMPILERS_ASSERT_MSG(   ASRUtils::is_array(funcCall_ret_type) 
                                 || ASRUtils::is_string_only(funcCall_ret_type),
@@ -116,9 +117,25 @@ private :
         }
 
         /* Create Statement + Push it*/
-        ASR::stmt_t* allocate_stmt =  ASRUtils::ASRBuilder(al_, f_call_->base.base.loc).
-                                        Allocate(&var_to_allocate->base, array_m_dims, array_n_dims, allocate_len_expr);
-        pass_result_.push_back(al_, allocate_stmt);
+        if (!use_realloc) {
+            ASR::stmt_t* allocate_stmt = ASRUtils::ASRBuilder(al_, f_call_->base.base.loc).
+                Allocate(&var_to_allocate->base, array_m_dims, array_n_dims, allocate_len_expr);
+            pass_result_.push_back(al_, allocate_stmt);
+        } else {
+            Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al_, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = f_call_->base.base.loc;
+            alloc_arg.m_a = ASRUtils::EXPR((ASR::asr_t*)var_to_allocate);
+            alloc_arg.m_dims = array_m_dims;
+            alloc_arg.n_dims = array_n_dims;
+            alloc_arg.m_len_expr = allocate_len_expr;
+            alloc_arg.m_type = nullptr;
+            alloc_arg.m_sym_subclass = nullptr;
+            alloc_args.push_back(al_, alloc_arg);
+            pass_result_.push_back(al_, ASRUtils::STMT(
+                ASR::make_ReAlloc_t(al_, f_call_->base.base.loc,
+                    alloc_args.p, alloc_args.size())));
+        }
     }
 
     /**
@@ -198,7 +215,8 @@ public :
     static void 
     Allocate( Allocator& al, ASR::FunctionCall_t* f_call, 
     ASR::Var_t* var_to_allocate, SymbolTable* current_scope, Vec<ASR::stmt_t*> &pass_result,
-    ASR::ttype_t* func_ret_type = nullptr /*Pass In case Function was modified to subroutine*/) {
+    ASR::ttype_t* func_ret_type = nullptr /*Pass In case Function was modified to subroutine*/,
+    bool use_realloc = false) {
 
         /* Assertions */
         LCOMPILERS_ASSERT(f_call && var_to_allocate && current_scope)
@@ -227,7 +245,7 @@ public :
         instance.replace_ttype(return_t);
 
         /* Insert ALLOCATE Statment */
-        instance.insert_allocate_stmt(var_to_allocate, return_t);
+        instance.insert_allocate_stmt(var_to_allocate, return_t, use_realloc);
     }
 };
 
@@ -388,6 +406,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         Allocator& al;
         Vec<ASR::stmt_t*> pass_result;
         ReplaceFunctionCallWithSubroutineCall replacer;
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
 
@@ -427,7 +446,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCallVisitor(
             Allocator& al_,
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP)
-            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP)
+            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP),
+             Function__TO__ReturnType_MAP_(Function__TO__ReturnType_MAP)
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
@@ -544,8 +564,6 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
 
-                // It doesn't (and shouldn't) insert anything if result_var isn't array or allocatable
-                insert_allocate_stmt_for_array(al, result_var, value, &pass_result);
                 target = result_var;
             }
 
@@ -568,6 +586,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 pass_result.push_back(al, ASRUtils::STMT(
                     ASR::make_ImplicitDeallocate_t(al, target->base.loc,
                     to_be_deallocated.p, to_be_deallocated.size())));
+            }
+            if (ASRUtils::is_allocatable(target) &&
+                ASRUtils::is_array(ASRUtils::expr_type(target)) &&
+                ASR::is_a<ASR::Var_t>(*target)) {
+                ASR::Function_t* func = ASRUtils::get_function(fc->m_name);
+                ASR::ttype_t* func_return_type = nullptr;
+                if (!func->m_return_var) {
+                    auto it = Function__TO__ReturnType_MAP_.find(func);
+                    if (it != Function__TO__ReturnType_MAP_.end()) {
+                        func_return_type = it->second;
+                    }
+                }
+                AllocateVarBasedOnFuncCall::Allocate(
+                    al, fc, ASR::down_cast<ASR::Var_t>(target),
+                    current_scope, pass_result, func_return_type, true);
             }
             ASR::call_arg_t result_arg;
             result_arg.loc = target->base.loc;
