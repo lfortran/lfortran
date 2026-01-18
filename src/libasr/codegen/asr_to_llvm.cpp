@@ -14987,6 +14987,9 @@ public:
             ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i].m_value);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+                // Use strict bounds checking if SubroutineCall was a FunctionCall before getting converted by subroutine_from_function
+                // Last argument of converted subroutine is the return value of the FunctionCall
+                // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
                 bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
 
                 llvm::Value* is_present_flag = nullptr;
