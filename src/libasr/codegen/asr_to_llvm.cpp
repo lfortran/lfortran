@@ -1886,7 +1886,8 @@ public:
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());
+                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                llvm::Type* llvm_data_type = llvm_utils->get_el_type(curr_arg.m_a, asr_data_type, module.get());
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
@@ -2299,11 +2300,11 @@ public:
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
                     module.get(), abt);
-                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type))),
-                        module.get(), abt);
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)));
+                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                    llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
@@ -3625,7 +3626,8 @@ public:
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     ASRUtils::get_contained_type(x_m_array_type), x_m_array_type->base.loc);
                 ASR::ttype_t* asr_shape_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_shape));
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, asr_data_type, module.get());
+                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, asr_data_type, module.get());
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
                     ASRUtils::type_get_past_allocatable_pointer(x_m_array_type), module.get());
                 llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
@@ -3641,8 +3643,10 @@ public:
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_array, ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
+                ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type)));
+                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, element_type, module.get());
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                 llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
@@ -5015,7 +5019,8 @@ public:
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, asr_data_type, module.get());
+        // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+        llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
@@ -5192,9 +5197,12 @@ public:
 
                             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)),
                                 arr_descr->get_rank(type_, arr, true));
-                            llvm::Type* data_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_allocatable_pointer(v->m_type));
+                            // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                            llvm::Type* data_type = llvm_utils->get_el_type(
                                 ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
-                                ASRUtils::extract_type(v->m_type),  module.get());
+                                element_type, module.get());
                             if(ASRUtils::is_character(*v->m_type)){
                                 llvm::Value* str_desc = create_and_setup_string_for_array(v->m_type, nullptr, false, "arr_desc_str_desc");
                                 builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
@@ -7302,7 +7310,8 @@ public:
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, m_dims);
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
-                            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, data_type, module.get());
+                            // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                            llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
                             fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
                             builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_));
                             llvm_value = llvm_target_;
