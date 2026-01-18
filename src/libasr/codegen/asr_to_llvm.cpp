@@ -14188,6 +14188,19 @@ public:
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
                 ASR::ttype_t* arg_type_ = ASRUtils::type_get_past_array(arg_type);
+                // Check if this is a presence flag argument (is_*_present_) for optional arguments
+                // These are created by the transform_optional_argument_functions ASR pass as Logical(4),
+                // but should be i1 (boolean) in LLVM
+                bool is_presence_flag = false;
+                if (orig_arg) {
+                    std::string orig_arg_name = orig_arg->m_name;
+                    if (orig_arg_name.find("is_") == 0 && orig_arg_name.find("_present_") != std::string::npos &&
+                        ASR::is_a<ASR::Logical_t>(*arg_type_)) {
+                        target_type = llvm::Type::getInt1Ty(context);
+                        is_presence_flag = true;
+                    }
+                }
+                if (!is_presence_flag) {
                 switch (arg_type_->type) {
                     case (ASR::ttypeType::Integer) : {
                         int a_kind = down_cast<ASR::Integer_t>(arg_type_)->m_kind;
@@ -14248,6 +14261,7 @@ public:
                     default :
                         throw CodeGenError("Type " + ASRUtils::type_to_str_fortran_expr(arg_type, x.m_args[i].m_value) + " not implemented yet.");
                 }
+                }  // end of if (!is_presence_flag)
                 if( ASR::is_a<ASR::EnumValue_t>(*x.m_args[i].m_value) ) {
                     target_type = llvm::Type::getInt32Ty(context);
                 }
