@@ -495,7 +495,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                el_type = llvm::Type::getInt1Ty(context);
+                el_type = getIntType(a_kind, is_pointer);
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -622,29 +622,13 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::PointerArray: {
-                        type = nullptr;
-                        if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
-                            ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
-                            type = getComplexType(complex_t->m_kind, true);
-                        }
-
-
-                        if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
-                        }
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
+                        type = el_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::UnboundedPointerArray: {
-                        type = nullptr;
-                        if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
-                            ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
-                            type = getComplexType(complex_t->m_kind, true);
-                        }
-
-
-                        if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
-                        }
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
+                        type = el_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
@@ -1562,12 +1546,22 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
+#if LLVM_VERSION_MAJOR < 15
+        if (ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType() != type) {
+            ptr = builder->CreateBitCast(ptr, type->getPointerTo());
+        }
+#endif
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx) {
+#if LLVM_VERSION_MAJOR < 15
+        if (ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType() != type) {
+            ptr = builder->CreateBitCast(ptr, type->getPointerTo());
+        }
+#endif
         std::vector<llvm::Value*> idx_vec = {idx};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
@@ -2032,7 +2026,6 @@ namespace LCompilers {
     // TODO : Refactor names of the following two functions.
 
     llvm::Value* LLVMUtils::get_string_element_in_array_(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
-
         llvm::Value* string_len = get_string_length(str_type, data);
         llvm::Value* string_data = get_string_data(str_type, data);
         llvm::Value* actual_idx = builder->CreateMul(convert_kind(arr_idx, llvm::Type::getInt64Ty(context)), string_len);
@@ -2041,6 +2034,20 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::get_string_element_in_array(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
+#if LLVM_VERSION_MAJOR < 15
+        if (!is_proper_string_llvm_variable(str_type, data)) {
+            llvm::Type* str_llvm_type = get_StringType((ASR::ttype_t*)str_type);
+            if (data->getType() == str_llvm_type) {
+                llvm::Value* tmp = CreateAlloca(*builder, str_llvm_type);
+                builder->CreateStore(data, tmp);
+                data = tmp;
+            } else if (data->getType()->isPointerTy() &&
+                       data->getType()->getPointerElementType() == str_llvm_type->getPointerTo()) {
+                data = CreateLoad2(str_llvm_type->getPointerTo(), data);
+            }
+        }
+        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, data))
+#endif
         llvm::Value* desired_ptr = get_string_element_in_array_(str_type, data, arr_idx);
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
     }

@@ -5056,8 +5056,7 @@ namespace Pack {
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
             ret_type = ASRUtils::duplicate_type_with_empty_dims(
-                al, ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(return_type)),
+                al, ASRUtils::type_get_past_pointer(return_type),
                 ASR::array_physical_typeType::DescriptorArray, true);
         }
         ASR::expr_t *result;
@@ -5067,6 +5066,42 @@ namespace Pack {
             result = declare("result", ret_type, Out);
         }
         args.push_back(al, result);
+        if (overload_id == 2) {
+            diag::Diagnostics diag;
+            ASR::expr_t* count = nullptr;
+            if (ASRUtils::extract_n_dims_from_ttype(arg_types[1]) == 0) {
+                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                ASR::expr_t* tsource = PassUtils::create_array_size_pack(
+                    al, loc, args[0], ASRUtils::extract_n_dims_from_ttype(arg_types[0]));
+                ASR::expr_t* fsource = b.i32(0);
+                merge_args.push_back(al, tsource);
+                merge_args.push_back(al, fsource);
+                merge_args.push_back(al, args[1]);
+                count = ASRUtils::EXPR(Merge::create_Merge(al, loc, merge_args, diag));
+            } else {
+                Vec<ASR::ttype_t*> count_arg_types; count_arg_types.reserve(al, 1);
+                count_arg_types.push_back(al, ASRUtils::expr_type(args[1]));
+                Vec<ASR::call_arg_t> count_m_args; count_m_args.reserve(al, 1);
+                count_m_args.push_back(al, {args[1]->base.loc, args[1]});
+                count = Count::instantiate_Count(
+                    al, loc, scope, count_arg_types, int32, count_m_args, 0);
+            }
+            Vec<ASR::dimension_t> realloc_dims;
+            realloc_dims.reserve(al, 1);
+            realloc_dims.push_back(al, b.set_dim(b.i32(1), count));
+            Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = loc;
+            alloc_arg.m_a = result;
+            alloc_arg.m_dims = realloc_dims.p;
+            alloc_arg.n_dims = realloc_dims.size();
+            alloc_arg.m_len_expr = nullptr;
+            alloc_arg.m_type = nullptr;
+            alloc_arg.m_sym_subclass = nullptr;
+            alloc_args.push_back(al, alloc_arg);
+            body.push_back(al, ASRUtils::STMT(
+                ASR::make_ReAlloc_t(al, loc, alloc_args.p, alloc_args.size())));
+        }
         /*
             For array of rank 2, the following code is generated:
             k = lbound(vector, 1)
