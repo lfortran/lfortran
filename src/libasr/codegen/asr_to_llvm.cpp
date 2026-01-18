@@ -7251,9 +7251,17 @@ public:
                                     llvm::Value* concrete_data_ptr = builder->CreateBitCast(
                                         void_data_ptr, concrete_element_type->getPointerTo());
 
-                                    // SETUP TARGET ARRAY DESCRIPTOR WITH CONCRETE DATA POINTER
-                                    llvm::Value* target_data_ptr = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 0);
-                                    builder->CreateStore(concrete_data_ptr, target_data_ptr);
+	                                    // SETUP TARGET ARRAY DESCRIPTOR WITH CONCRETE DATA POINTER
+	                                    llvm::Value* target_data_ptr = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 0);
+	                                    // Typed-pointer LLVM (<15) requires the stored pointer element type to
+	                                    // exactly match the destination field type.
+	                                    if (concrete_data_ptr->getType() != target_data_ptr->getType()->getPointerElementType()) {
+	                                        LCOMPILERS_ASSERT(concrete_data_ptr->getType()->isPointerTy());
+	                                        LCOMPILERS_ASSERT(target_data_ptr->getType()->getPointerElementType()->isPointerTy());
+	                                        concrete_data_ptr = builder->CreateBitCast(
+	                                            concrete_data_ptr, target_data_ptr->getType()->getPointerElementType());
+	                                    }
+	                                    builder->CreateStore(concrete_data_ptr, target_data_ptr);
 
                                     // COPY DIMENSION DESCRIPTORS FROM SOURCE TO TARGET
                                     llvm::Value* src_dim_ptr = builder->CreateLoad(dim_desc_type->getPointerTo(),
@@ -7308,19 +7316,28 @@ public:
                                     value_type, module.get());
                                 llvm_value = llvm_utils->create_gep2(llvm_type, llvm_value, 0);
                             }
-                            llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type_, module.get());
-                            llvm::Value* llvm_target_ = llvm_utils->CreateAlloca(*builder, llvm_target_type);
+	                            llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type_, module.get());
+	                            llvm::Value* llvm_target_ = llvm_utils->CreateAlloca(*builder, llvm_target_type);
                             ASR::dimension_t* m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, m_dims);
                             ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
                                                         al, target_type_, target_type_->base.loc);
-                            // Use the array element *storage* type (e.g. logical arrays are i8-backed).
-                            llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
-                            fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
-                            builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_));
-                            llvm_value = llvm_target_;
-                            break;
-                        }
+	                            // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+	                            llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_target, data_type, module.get());
+	                            fill_array_details(llvm_target_type, llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
+	                            llvm::Value* target_data_ptr = arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_);
+	                            // Typed-pointer LLVM (<15) requires the stored pointer element type to
+	                            // exactly match the destination field type.
+	                            if (llvm_value->getType() != target_data_ptr->getType()->getPointerElementType()) {
+	                                LCOMPILERS_ASSERT(llvm_value->getType()->isPointerTy());
+	                                LCOMPILERS_ASSERT(target_data_ptr->getType()->getPointerElementType()->isPointerTy());
+	                                llvm_value = builder->CreateBitCast(
+	                                    llvm_value, target_data_ptr->getType()->getPointerElementType());
+	                            }
+	                            builder->CreateStore(llvm_value, target_data_ptr);
+	                            llvm_value = llvm_target_;
+	                            break;
+	                        }
                         case ASR::array_physical_typeType::FixedSizeArray: {
                             llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,value_type, module.get());
                             llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);
