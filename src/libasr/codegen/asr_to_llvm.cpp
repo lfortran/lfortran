@@ -7207,7 +7207,8 @@ public:
                                     // EXTRACT CONCRETE DATA POINTER FROM POLYMORPHIC ARRAY
                                     // The polymorphic array (generic) has structure:
                                     // { %polymorphic_wrapper*, offset, dims*, is_allocated, rank }
-                                    // where polymorphic_wrapper is { i64 type_id, void* data }
+                                    // where polymorphic_wrapper is the class wrapper type
+                                    // (e.g. { vptr, i8* data } for class(*))
 
                                     // Get the source polymorphic array descriptor type
                                     llvm::Type* const src_array_desc_type = llvm_utils->arr_api->
@@ -7217,23 +7218,20 @@ public:
                                     // Get pointer to polymorphic wrapper array
                                     llvm::Value* poly_wrapper_array_ptr = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 0);
 
-                                    // Define polymorphic wrapper structure: { i64 type_id, void* data_ptr }
-                                    std::vector<llvm::Type*> poly_wrapper_fields = {
-                                        llvm::Type::getInt64Ty(context),                    // type_id field
-                                        llvm::Type::getVoidTy(context)->getPointerTo()     // data_ptr field
-                                    };
-                                    llvm::Type* poly_wrapper_type = llvm::StructType::get(context, poly_wrapper_fields, false);
+                                    // Use the actual polymorphic element type for the wrapper
+                                    llvm::Type* poly_wrapper_type = llvm_utils->get_el_type(
+                                        x.m_value, ASRUtils::extract_type(value_type), module.get());
 
                                     // Load the first polymorphic wrapper element
                                     llvm::Value* first_poly_wrapper = llvm_utils->CreateLoad2(
                                         poly_wrapper_type->getPointerTo(), poly_wrapper_array_ptr);
 
-                                    // Extract the void* data pointer from the polymorphic wrapper
+                                    // Extract the i8* data pointer from the polymorphic wrapper
                                     llvm::Value* void_data_ptr_field = llvm_utils->create_gep2(poly_wrapper_type, first_poly_wrapper, 1);
                                     llvm::Value* void_data_ptr = llvm_utils->CreateLoad2(
-                                        llvm::Type::getVoidTy(context)->getPointerTo(), void_data_ptr_field);
+                                        llvm_utils->i8_ptr, void_data_ptr_field);
 
-                                    // Cast void* to concrete element type pointer
+                                    // Cast i8* to concrete element type pointer
                                     llvm::Type* concrete_element_type = llvm_utils->get_el_type(
                                         x.m_target, ASRUtils::extract_type(target_type_), module.get());
                                     llvm::Value* concrete_data_ptr = builder->CreateBitCast(
