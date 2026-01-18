@@ -495,7 +495,10 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                el_type = getIntType(a_kind);
+                el_type = llvm::Type::getInt1Ty(context);
+                if( is_pointer ) {
+                    el_type = el_type->getPointerTo();
+                }
                 break;
             }
             case ASR::ttypeType::CPtr: {
