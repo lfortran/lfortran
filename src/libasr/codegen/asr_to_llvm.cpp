@@ -14214,8 +14214,7 @@ public:
                         break;
                     }
                     case (ASR::ttypeType::Logical) : {
-                        int a_kind = down_cast<ASR::Logical_t>(arg_type_)->m_kind;
-                        target_type = llvm_utils->getIntType(a_kind);
+                        target_type = llvm::Type::getInt1Ty(context);
                         break;
                     }
                     case (ASR::ttypeType::EnumType) :
