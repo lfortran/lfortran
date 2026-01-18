@@ -411,8 +411,12 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 }
                 if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
-                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
-                        ASRUtils::type_get_past_allocatable(var_type)));
+                    if (is_allocatable) {
+                        var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                    } else {
+                        var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
+                            ASRUtils::type_get_past_allocatable(var_type)));
+                    }
                 }
                 // Create proper string type (a pointer deferred-length string)
                 if(ASRUtils::is_string_only(var_type)){ // Any non-allocatable string variable .
@@ -812,16 +816,31 @@ public:
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
-                            ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                                        target, val));
-                            body.push_back(al, associate);
-                            // TODO : Remove the following if block (See integration test `arrays_87.f90`)
-                            if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
-                                is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
-                                && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
-                                associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                    val, target));
-                                assigns_at_end.push_back(associate);
+                            if( ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) && ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
+                                // For allocatable arrays, use Assignment instead of Associate
+                                // to properly handle reallocation in nested functions
+                                ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                                            target, val, nullptr, true, true));
+                                // First push allocate stmt for LHS
+                                body.push_back(al, assignment);
+                                if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                    assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                        val, target, nullptr, true, true));
+                                    // Now push the assignment from LHS to RHS at end of function
+                                    assigns_at_end.push_back(assignment);
+                                }
+                            } else {
+                                ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
+                                                            target, val));
+                                body.push_back(al, associate);
+                                // TODO : Remove the following if block (See integration test `arrays_87.f90`)
+                                if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                                    is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                                    && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                    associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
+                                        val, target));
+                                    assigns_at_end.push_back(associate);
+                                }
                             }
                         } else if (is_procedure_variable) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
