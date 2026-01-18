@@ -15157,8 +15157,7 @@ public:
                                 pointer_size);
                     }
                 }
-                
-                // Close the optional presence check block if we created one
+
                 if (optional_check_mergeBB != nullptr) {
                     builder->CreateBr(optional_check_mergeBB);
                     start_new_block(optional_check_mergeBB);
