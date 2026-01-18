@@ -7209,10 +7209,11 @@ public:
                                     // SPECIAL HANDLING FOR POLYMORPHIC ARRAY POINTER ASSOCIATION
                                     // This handles: xx => generic (where generic is class(*) array)
 
-                                    // Get the concrete target type (what xx should be)
-                                    llvm::Type* const target_array_desc_type = llvm_utils->arr_api->
-                                        get_array_type(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type_),
-                                            llvm_utils->get_el_type(x.m_target, ASRUtils::extract_type(target_type_), module.get()), false);
+	                                    // Get the concrete target type (what xx should be)
+	                                    ASR::ttype_t* target_elem_asr_type = ASRUtils::type_get_past_array(target_type_);
+	                                    llvm::Type* const target_array_desc_type = llvm_utils->arr_api->
+	                                        get_array_type(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type_),
+	                                            llvm_utils->get_el_type(x.m_target, target_elem_asr_type, module.get()), false);
 
                                     llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
                                     llvm::Value* llvm_target_ = builder->CreateLoad(target_array_desc_type->getPointerTo(), llvm_target);
@@ -7244,9 +7245,9 @@ public:
                                     llvm::Value* void_data_ptr = llvm_utils->CreateLoad2(
                                         llvm_utils->i8_ptr, void_data_ptr_field);
 
-                                    // Cast i8* to concrete element type pointer
-                                    llvm::Type* concrete_element_type = llvm_utils->get_el_type(
-                                        x.m_target, ASRUtils::extract_type(target_type_), module.get());
+	                                    // Cast i8* to concrete element type pointer
+	                                    llvm::Type* concrete_element_type = llvm_utils->get_el_type(
+	                                        x.m_target, target_elem_asr_type, module.get());
                                     llvm::Value* concrete_data_ptr = builder->CreateBitCast(
                                         void_data_ptr, concrete_element_type->getPointerTo());
 
@@ -14610,7 +14611,8 @@ public:
                 if (ASRUtils::is_array(arg_type)) {
                     llvm::Type* actual_array_type = llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, arg_type, module.get());
-                    llvm::Type* actual_array_data_type = llvm_utils->get_type_from_ttype_t_util(
+                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                    llvm::Type* actual_array_data_type = llvm_utils->get_el_type(
                         arg_expr, ASRUtils::extract_type(arg_type), module.get());
                     llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                         s_m_args0, s_m_args0_type, module.get());
