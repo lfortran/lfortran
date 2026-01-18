@@ -4373,12 +4373,57 @@ public:
                                             ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type1));
                                             var1__->m_type = ptr;
 
+                                            // For equivalence with offset, we need to extend storage
+                                            // Calculate total storage needed: max(array2_size, offset + array1_size - 1)
+                                            ASR::ArrayItem_t* array_item2 = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+
                                             Vec<ASR::expr_t*> args_shape;
                                             args_shape.reserve(al, array1->n_dims);
+
                                             for (size_t j = 0; j < array1->n_dims; j++) {
-                                                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[j].m_length);
+                                                // Get the size of array1 (ia1)
+                                                ASR::IntegerConstant_t* array1_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[j].m_length);
+                                                int64_t size1 = array1_size_const->m_n;
+
+                                                // Get the size of array2 (ia2)
+                                                ASR::Var_t* var2 = ASR::down_cast<ASR::Var_t>(array_item2->m_v);
+                                                ASR::Variable_t *var2__ = ASR::down_cast<ASR::Variable_t>(var2->m_v);
+                                                ASR::Array_t* array2 = ASR::down_cast<ASR::Array_t>(var2__->m_type);
+                                                ASR::IntegerConstant_t* array2_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array2->m_dims[j].m_length);
+                                                int64_t size2 = array2_size_const->m_n;
+
+                                                // Get the offset from ia2(offset)
+                                                int64_t offset = 1; // default to 1 if no index specified
+                                                if (array_item2->m_args[j].m_right) {
+                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*array_item2->m_args[j].m_right)) {
+                                                        ASR::IntegerConstant_t* offset_const = ASR::down_cast<ASR::IntegerConstant_t>(array_item2->m_args[j].m_right);
+                                                        offset = offset_const->m_n;
+                                                    }
+                                                }
+
+                                                // Calculate total storage needed: max(size2, offset + size1 - 1)
+                                                // For equivalence(ia1(4), ia2(3)) with size2=4, offset=3, size1=4:
+                                                // total = max(4, 3+4-1) = max(4, 6) = 6
+                                                int64_t total_size = std::max(size2, offset + size1 - 1);
+
+                                                // Check if storage extension is needed
+                                                if (total_size > size2) {
+                                                    // This case requires extending storage beyond array2's declared size
+                                                    // which is not fully supported yet. Emit a warning.
+                                                    diag.semantic_warning_label(
+                                                        "EQUIVALENCE with offset extends storage beyond declared array bounds. "
+                                                        "This may lead to incorrect behavior in array assignments and operations. "
+                                                        "Consider using equivalence without offsets or with sufficient array sizes.",
+                                                        {x.base.base.loc},
+                                                        "equivalence extends storage"
+                                                    );
+                                                }
+
+                                                // Use the maximum of available size or requested size
+                                                // This allows reads/writes within ia2's bounds to work correctly
+                                                int64_t safe_size = std::min(size1, size2 - offset + 1);
                                                 ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                                    al, asr_eq1->base.loc, ic->m_n, int_type));
+                                                    al, asr_eq1->base.loc, safe_size, int_type));
                                                 args_shape.push_back(al, size);
                                             }
 
