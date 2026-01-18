@@ -6,7 +6,7 @@ module stdlib_hashmaps
     end type open_map_entry_ptr
 
     type :: open_hashmap_type
-        type(open_map_entry_ptr), allocatable  :: inverse(:)
+        type(open_map_entry_ptr), allocatable :: inverse(:)
     end type open_hashmap_type
 end module stdlib_hashmaps
 
