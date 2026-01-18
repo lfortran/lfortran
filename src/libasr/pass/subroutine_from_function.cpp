@@ -106,9 +106,15 @@ private :
 
         /* Set `m_dims` + `n_dims`` (if found) */
         if(ASRUtils::is_array(funcCall_ret_type)){
-            ASR::Array_t* array_type = down_cast<ASR::Array_t>(ASRUtils::extract_type(funcCall_ret_type));
+            ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(funcCall_ret_type);
+            ASR::Array_t* array_type = down_cast<ASR::Array_t>(base_type);
             array_n_dims = array_type->n_dims;
             array_m_dims = array_type->m_dims;
+            for (size_t i = 0; i < array_n_dims; i++) {
+                if (!array_m_dims[i].m_length) {
+                    return;
+                }
+            }
         }
 
         /* Set `len_expr` (if found)*/
