@@ -14552,7 +14552,7 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
             bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
-            // Handle arrays
+	            // Handle arrays
 	            if (ASRUtils::is_array(arg_type) &&
 	                    ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
 	                // For descriptor arrays, we need to create a new array descriptor
@@ -14584,9 +14584,10 @@ public:
 	                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
 	                        ASRUtils::get_struct_sym_from_struct_expr(arg))), module.get());
 	                    src_data_ptr = llvm_utils->CreateLoad2(
-	                        src_elem_struct_type->getPointerTo(), llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
+	                        src_elem_struct_type->getPointerTo(),
+	                        llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
 	                }
-	                
+
 	                // Cast to destination element *storage* pointer type and store in new descriptor.
 	                // (LLVM < 15 uses typed pointers and requires an exact match; logical arrays are i8-backed.)
 	                llvm::Type* dest_data_type = llvm_utils->get_el_type(
