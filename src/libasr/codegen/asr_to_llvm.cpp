@@ -12617,6 +12617,7 @@ public:
         llvm::Value *delim{}, *delim_len{};
         llvm::Value *position{}, *position_len{};
         llvm::Value *blank{}, *blank_len{};
+        llvm::Value *recl{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -12680,6 +12681,18 @@ public:
             blank = llvm::Constant::getNullValue(character_type);
             blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        recl = llvm::ConstantPointerNull::get(
+            llvm::Type::getInt32Ty(context)->getPointerTo());
+
+        if (x.m_recl) {                                      
+            this->visit_expr_wrapper(x.m_recl, true);       
+            llvm::Value *recl_val = llvm_utils->convert_kind(
+                tmp, llvm::Type::getInt32Ty(context));
+            llvm::AllocaInst *alloc =                        
+                builder->CreateAlloca(llvm::Type::getInt32Ty(context));
+            builder->CreateStore(recl_val, alloc);            
+            recl = alloc;                                  
+        }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -12697,7 +12710,8 @@ public:
                         character_type, i64, // action, action_len
                         character_type, i64, // delim, delim_len
                         character_type, i64, // position, position_len
-                        character_type, i64  // blank, blank_len
+                        character_type, i64,  // blank, blank_len
+                        llvm::Type::getInt32Ty(context)->getPointerTo() // recl 
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -12712,7 +12726,8 @@ public:
             action, action_len,
             delim, delim_len,
             position, position_len,
-            blank, blank_len
+            blank, blank_len,
+            recl
         });
     }
 
