@@ -14553,18 +14553,16 @@ public:
         if (compiler_options.new_classes) {
             bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
             // Handle arrays
-            if (ASRUtils::is_array(arg_type) &&
-                    ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
-                // For descriptor arrays, we need to create a new array descriptor
-                // with the correct element type and copy the data pointer from the polymorphic wrapper
-                llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    dest_arg, dest_type, module.get());
-                llvm::Type* dest_elem_type = llvm_utils->get_type_from_ttype_t_util(
-                    dest_arg, ASRUtils::extract_type(dest_type), module.get());
-                llvm::Type* src_arr_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, arg_type, module.get());
-                llvm::Type* src_elem_type = llvm_utils->get_type_from_ttype_t_util(
-                    arg, ASRUtils::extract_type(arg_type), module.get());
+	            if (ASRUtils::is_array(arg_type) &&
+	                    ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
+	                // For descriptor arrays, we need to create a new array descriptor
+	                // with the correct element type and copy the data pointer from the polymorphic wrapper
+	                llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+	                    dest_arg, dest_type, module.get());
+	                llvm::Type* src_arr_type = llvm_utils->get_type_from_ttype_t_util(
+	                    arg, arg_type, module.get());
+	                llvm::Type* src_elem_type = llvm_utils->get_type_from_ttype_t_util(
+	                    arg, ASRUtils::extract_type(arg_type), module.get());
                 
                 // Create new array descriptor
                 llvm::Value* new_descriptor = llvm_utils->CreateAlloca(*builder, dest_llvm_type, nullptr, "array_descriptor");
@@ -14578,21 +14576,25 @@ public:
                 llvm::Value* src_offset = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), src_offset_ptr);
                                 
                 // Extract data pointer from the polymorphic wrapper (field at index 1)
-                if (is_unlimited_polymorphic) {
-                    src_data_ptr = llvm_utils->CreateLoad2(
-                        llvm_utils->i8_ptr, llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
-                } else {
-                    llvm::Type* src_elem_struct_type = llvm_utils->getStructType(
-                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                        ASRUtils::get_struct_sym_from_struct_expr(arg))), module.get());
-                    src_data_ptr = llvm_utils->CreateLoad2(
-                        src_elem_struct_type, llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
-                }
-                
-                // Cast to destination element pointer type and store in new descriptor
-                llvm::Value* dest_data_ptr = builder->CreateBitCast(src_data_ptr, dest_elem_type->getPointerTo());
-                llvm::Value* new_data_ptr_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 0);
-                builder->CreateStore(dest_data_ptr, new_data_ptr_ptr);
+	                if (is_unlimited_polymorphic) {
+	                    src_data_ptr = llvm_utils->CreateLoad2(
+	                        llvm_utils->i8_ptr, llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
+	                } else {
+	                    llvm::Type* src_elem_struct_type = llvm_utils->getStructType(
+	                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+	                        ASRUtils::get_struct_sym_from_struct_expr(arg))), module.get());
+	                    src_data_ptr = llvm_utils->CreateLoad2(
+	                        src_elem_struct_type->getPointerTo(), llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
+	                }
+	                
+	                // Cast to destination descriptor data-pointer type and store in new descriptor.
+	                llvm::Value* new_data_ptr_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 0);
+	                llvm::Type* expected_data_ptr_type = new_data_ptr_ptr->getType()->getPointerElementType();
+	                llvm::Value* dest_data_ptr = src_data_ptr;
+	                if (dest_data_ptr->getType() != expected_data_ptr_type) {
+	                    dest_data_ptr = builder->CreateBitCast(dest_data_ptr, expected_data_ptr_type);
+	                }
+	                builder->CreateStore(dest_data_ptr, new_data_ptr_ptr);
                 
                 // Copy offset (set to 0 since we're starting fresh)
                 llvm::Value* new_offset_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 1);
