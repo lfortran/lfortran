@@ -4366,79 +4366,177 @@ public:
                                         }
                                         
                                         if (type1 != nullptr) {
-                                            type1 = ASRUtils::make_Array_t_util(
-                                                al, asr_eq1->base.loc, type1, dim1.p, dim1.size(),
-                                                ASR::abiType::Source, false,
-                                                ASR::array_physical_typeType::DescriptorArray, false, false);
-                                            ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type1));
-                                            var1__->m_type = ptr;
-
-                                            // For equivalence with offset, we need to extend storage
-                                            // Calculate total storage needed: max(array2_size, offset + array1_size - 1)
+                                            // Get array2 info
                                             ASR::ArrayItem_t* array_item2 = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+                                            ASR::Var_t* var2 = ASR::down_cast<ASR::Var_t>(array_item2->m_v);
+                                            ASR::Variable_t *var2__ = ASR::down_cast<ASR::Variable_t>(var2->m_v);
+                                            ASR::Array_t* array2 = ASR::down_cast<ASR::Array_t>(var2__->m_type);
 
-                                            Vec<ASR::expr_t*> args_shape;
-                                            args_shape.reserve(al, array1->n_dims);
+                                            // Calculate offset and total storage needed
+                                            LCOMPILERS_ASSERT(array1->n_dims == 1); // Only 1D arrays for now
+                                            ASR::IntegerConstant_t* array1_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[0].m_length);
+                                            int64_t size1 = array1_size_const->m_n;
+                                            ASR::IntegerConstant_t* array2_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array2->m_dims[0].m_length);
+                                            int64_t size2 = array2_size_const->m_n;
 
-                                            for (size_t j = 0; j < array1->n_dims; j++) {
-                                                // Get the size of array1 (ia1)
-                                                ASR::IntegerConstant_t* array1_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[j].m_length);
-                                                int64_t size1 = array1_size_const->m_n;
-
-                                                // Get the size of array2 (ia2)
-                                                ASR::Var_t* var2 = ASR::down_cast<ASR::Var_t>(array_item2->m_v);
-                                                ASR::Variable_t *var2__ = ASR::down_cast<ASR::Variable_t>(var2->m_v);
-                                                ASR::Array_t* array2 = ASR::down_cast<ASR::Array_t>(var2__->m_type);
-                                                ASR::IntegerConstant_t* array2_size_const = ASR::down_cast<ASR::IntegerConstant_t>(array2->m_dims[j].m_length);
-                                                int64_t size2 = array2_size_const->m_n;
-
-                                                // Get the offset from ia2(offset)
-                                                int64_t offset = 1; // default to 1 if no index specified
-                                                if (array_item2->m_args[j].m_right) {
-                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*array_item2->m_args[j].m_right)) {
-                                                        ASR::IntegerConstant_t* offset_const = ASR::down_cast<ASR::IntegerConstant_t>(array_item2->m_args[j].m_right);
-                                                        offset = offset_const->m_n;
-                                                    }
+                                            int64_t offset = 1;
+                                            if (array_item2->m_args[0].m_right) {
+                                                if (ASR::is_a<ASR::IntegerConstant_t>(*array_item2->m_args[0].m_right)) {
+                                                    ASR::IntegerConstant_t* offset_const = ASR::down_cast<ASR::IntegerConstant_t>(array_item2->m_args[0].m_right);
+                                                    offset = offset_const->m_n;
                                                 }
-
-                                                // Calculate total storage needed: max(size2, offset + size1 - 1)
-                                                // For equivalence(ia1(4), ia2(3)) with size2=4, offset=3, size1=4:
-                                                // total = max(4, 3+4-1) = max(4, 6) = 6
-                                                int64_t total_size = std::max(size2, offset + size1 - 1);
-
-                                                // Check if storage extension is needed
-                                                if (total_size > size2) {
-                                                    // This case requires extending storage beyond array2's declared size
-                                                    // which is not fully supported yet. Emit a warning.
-                                                    diag.semantic_warning_label(
-                                                        "EQUIVALENCE with offset extends storage beyond declared array bounds. "
-                                                        "This may lead to incorrect behavior in array assignments and operations. "
-                                                        "Consider using equivalence without offsets or with sufficient array sizes.",
-                                                        {x.base.base.loc},
-                                                        "equivalence extends storage"
-                                                    );
-                                                }
-
-                                                // Use the maximum of available size or requested size
-                                                // This allows reads/writes within ia2's bounds to work correctly
-                                                int64_t safe_size = std::min(size1, size2 - offset + 1);
-                                                ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                                    al, asr_eq1->base.loc, safe_size, int_type));
-                                                args_shape.push_back(al, size);
                                             }
 
-                                            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
-                                                al, asr_eq1->base.loc, int_type, dim.p, dim.size(),
-                                                ASR::array_physical_typeType::PointerArray));
-                                            ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(
-                                                al, asr_eq1->base.loc, args_shape.p, args_shape.size(),
-                                                array_type, ASR::arraystorageType::ColMajor);
-                                            ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(
-                                                al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),
-                                                asr_eq1, ASRUtils::EXPR(array_constant), nullptr);
+                                            // Calculate total storage: max(size2, offset + size1 - 1)
+                                            int64_t total_size = std::max(size2, offset + size1 - 1);
 
-                                            ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                                            data_structure[current_scope->counter].push_back(stmt);
+                                            // Create shared storage variable only if extension is needed
+                                            if (total_size > size2) {
+                                                // Create shared storage array
+                                                std::string storage_name = "__equiv_storage_" + std::to_string(current_scope->counter) + "_" + std::to_string(i);
+                                                Vec<ASR::dimension_t> storage_dims;
+                                                storage_dims.reserve(al, 1);
+                                                ASR::dimension_t storage_dim;
+                                                storage_dim.loc = asr_eq1->base.loc;
+                                                storage_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int_type));
+                                                storage_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, total_size, int_type));
+                                                storage_dims.push_back(al, storage_dim);
+
+                                                ASR::ttype_t* storage_array_type = ASRUtils::make_Array_t_util(
+                                                    al, asr_eq1->base.loc, type1, storage_dims.p, storage_dims.size(),
+                                                    ASR::abiType::Source, false, ASR::array_physical_typeType::FixedSizeArray, false, false);
+
+                                                ASR::asr_t* storage_var = ASR::make_Variable_t(al, asr_eq1->base.loc,
+                                                    current_scope, s2c(al, storage_name), nullptr, 0, ASR::intentType::Local,
+                                                    nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
+                                                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                                                    false, false, false, nullptr, false, false);
+
+                                                current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
+
+                                                // Create array references for storage(1) and storage(offset)
+                                                ASR::expr_t* storage_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, asr_eq1->base.loc,
+                                                    ASR::down_cast<ASR::symbol_t>(storage_var)));
+
+                                                // For ia2: point to storage(1)
+                                                Vec<ASR::array_index_t> args2_idx;
+                                                args2_idx.reserve(al, 1);
+                                                ASR::array_index_t ai2;
+                                                ai2.loc = asr_eq2->base.loc;
+                                                ai2.m_left = nullptr;
+                                                ai2.m_right = one;
+                                                ai2.m_step = nullptr;
+                                                args2_idx.push_back(al, ai2);
+
+                                                ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(storage_array_type);
+                                                ASR::expr_t* storage_at_1 = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                                    al, asr_eq2->base.loc, storage_var_ref, args2_idx.p, args2_idx.size(),
+                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+
+                                                // Setup ia2 as pointer to storage(1)
+                                                ASR::ttype_t* type2 = var2__->m_type; // Keep original type
+                                                ASR::ttype_t* pointer_type2_inner = ASRUtils::type_get_past_array(type2);
+                                                Vec<ASR::dimension_t> dim2;
+                                                dim2.reserve(al, 1);
+                                                ASR::dimension_t dim2_;
+                                                dim2_.m_start = nullptr;
+                                                dim2_.m_length = nullptr;
+                                                dim2_.loc = asr_eq2->base.loc;
+                                                dim2.push_back(al, dim2_);
+                                                ASR::ttype_t* array_type2 = ASRUtils::make_Array_t_util(
+                                                    al, asr_eq2->base.loc, pointer_type2_inner, dim2.p, dim2.size(),
+                                                    ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                                ASR::ttype_t* ptr2 = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, array_type2));
+                                                var2__->m_type = ptr2;
+
+                                                ASR::ttype_t* pointer_type_storage = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, elem_type));
+                                                ASR::asr_t* get_pointer_storage = ASR::make_GetPointer_t(al, asr_eq2->base.loc, storage_at_1, pointer_type_storage, nullptr);
+                                                ASR::ttype_t *cptr2 = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
+                                                ASR::asr_t* pointer_to_cptr2 = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer_storage), cptr2, nullptr);
+
+                                                Vec<ASR::expr_t*> args_shape2;
+                                                args_shape2.reserve(al, 1);
+                                                args_shape2.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq2->base.loc, size2, int_type)));
+
+                                                ASR::ttype_t* array_type_shape2 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq2->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::asr_t* array_constant2 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq2->base.loc, args_shape2.p, args_shape2.size(), array_type_shape2, ASR::arraystorageType::ColMajor);
+                                                // Create var reference for ia2 (var2__ is already Variable_t*, cast to symbol_t*)
+                                                ASR::expr_t* var2_ref = ASRUtils::EXPR(ASR::make_Var_t(al, asr_eq2->base.loc, (ASR::symbol_t*)var2__));
+                                                ASR::asr_t* c_f_pointer2 = ASR::make_CPtrToPointer_t(al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr2), var2_ref, ASRUtils::EXPR(array_constant2), nullptr);
+                                                ASR::stmt_t *stmt2 = ASRUtils::STMT(c_f_pointer2);
+                                                data_structure[current_scope->counter].push_back(stmt2);
+
+                                                // For ia1: point to storage(offset)
+                                                Vec<ASR::array_index_t> args1_idx;
+                                                args1_idx.reserve(al, 1);
+                                                ASR::array_index_t ai1;
+                                                ai1.loc = asr_eq1->base.loc;
+                                                ai1.m_left = nullptr;
+                                                ai1.m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, offset, int_type));
+                                                ai1.m_step = nullptr;
+                                                args1_idx.push_back(al, ai1);
+
+                                                ASR::expr_t* storage_at_offset = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                                    al, asr_eq1->base.loc, storage_var_ref, args1_idx.p, args1_idx.size(),
+                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+
+                                                // Setup ia1 as pointer to storage(offset)
+                                                type1 = ASRUtils::make_Array_t_util(
+                                                    al, asr_eq1->base.loc, type1, dim1.p, dim1.size(),
+                                                    ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                                ASR::ttype_t* ptr1 = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type1));
+                                                var1__->m_type = ptr1;
+
+                                                ASR::asr_t* get_pointer_storage1 = ASR::make_GetPointer_t(al, asr_eq1->base.loc, storage_at_offset, pointer_type_storage, nullptr);
+                                                ASR::ttype_t *cptr1 = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
+                                                ASR::asr_t* pointer_to_cptr1 = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer_storage1), cptr1, nullptr);
+
+                                                Vec<ASR::expr_t*> args_shape1;
+                                                args_shape1.reserve(al, 1);
+                                                args_shape1.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, size1, int_type)));
+
+                                                ASR::ttype_t* array_type_shape1 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::asr_t* array_constant1 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args_shape1.p, args_shape1.size(), array_type_shape1, ASR::arraystorageType::ColMajor);
+                                                ASR::asr_t* c_f_pointer1 = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr1), asr_eq1, ASRUtils::EXPR(array_constant1), nullptr);
+                                                ASR::stmt_t *stmt1 = ASRUtils::STMT(c_f_pointer1);
+                                                data_structure[current_scope->counter].push_back(stmt1);
+                                            } else {
+                                                // No extension needed, use original approach
+                                                type1 = ASRUtils::make_Array_t_util(
+                                                    al, asr_eq1->base.loc, type1, dim1.p, dim1.size(),
+                                                    ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
+                                                ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type1));
+                                                var1__->m_type = ptr;
+
+                                                Vec<ASR::expr_t*> args_shape;
+                                                args_shape.reserve(al, array1->n_dims);
+                                                for (size_t j = 0; j < array1->n_dims; j++) {
+                                                    ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(array1->m_dims[j].m_length);
+                                                    ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                        al, asr_eq1->base.loc, ic->m_n, int_type));
+                                                    args_shape.push_back(al, size);
+                                                }
+
+                                                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                                                    al, asr_eq1->base.loc, int_type, dim.p, dim.size(),
+                                                    ASR::array_physical_typeType::PointerArray));
+                                                ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(
+                                                    al, asr_eq1->base.loc, args_shape.p, args_shape.size(),
+                                                    array_type, ASR::arraystorageType::ColMajor);
+                                                ASR::ttype_t* pointer_type_2 = ASRUtils::TYPE(ASR::make_Pointer_t(
+                                                    al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
+                                                ASR::asr_t* get_pointer2 = ASR::make_GetPointer_t(
+                                                    al, asr_eq2->base.loc, asr_eq2, pointer_type_2, nullptr);
+                                                ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
+                                                ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(
+                                                    al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer2), cptr, nullptr);
+                                                ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(
+                                                    al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),
+                                                    asr_eq1, ASRUtils::EXPR(array_constant), nullptr);
+
+                                                ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                                data_structure[current_scope->counter].push_back(stmt);
+                                            }
                                         }
                                     } else {
                                         ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
