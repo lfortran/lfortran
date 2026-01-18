@@ -14214,9 +14214,8 @@ public:
                         break;
                     }
                     case (ASR::ttypeType::Logical) : {
-                        // For scalar logical values in function calls, use i1 (boolean type)
-                        // Note: logical array elements use i32 (handled separately in array allocation)
-                        target_type = llvm::Type::getInt1Ty(context);
+                        int a_kind = down_cast<ASR::Logical_t>(arg_type_)->m_kind;
+                        target_type = llvm_utils->getIntType(a_kind);
                         break;
                     }
                     case (ASR::ttypeType::EnumType) :

@@ -1028,19 +1028,6 @@ namespace LCompilers {
                 throw CodeGenError("Argument type not implemented");
             }
         }
-        // Check if any arguments need special handling for optional argument presence flags
-        // The ASR pass transform_optional_argument_functions adds synthetic arguments
-        // named "is_*_present_" with Logical type, but these should be i1* in LLVM
-        for (size_t i = 0; i < args.size(); i++) {
-            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-            std::string arg_name = arg->m_name;
-            // Check if this is a presence flag argument (pattern: is_*_present_)
-            if (arg_name.find("is_") == 0 && arg_name.find("_present_") != std::string::npos &&
-                ASR::is_a<ASR::Logical_t>(*arg->m_type)) {
-                // Replace i32* with i1* for presence flags
-                args[i] = llvm::Type::getInt1Ty(context)->getPointerTo();
-            }
-        }
         return args;
     }
 
