@@ -5637,6 +5637,23 @@ public:
                     al, v->base.base.loc, &v->base)),
                 ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(v->m_type)), module.get(), v->m_abi);
+            if (ASRUtils::is_array(v->m_type) &&
+                ASRUtils::is_logical(*ASRUtils::extract_type(v->m_type))) {
+                auto fix_logical_fixed_array = [&](llvm::Type*& t) {
+                    if (!t || !t->isArrayTy()) {
+                        return;
+                    }
+                    llvm::ArrayType* arr_t = llvm::cast<llvm::ArrayType>(t);
+                    if (!arr_t->getElementType()->isIntegerTy(1)) {
+                        return;
+                    }
+                    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(v->m_type));
+                    llvm::Type* logical_storage = llvm_utils->getIntType(kind);
+                    t = llvm::ArrayType::get(logical_storage, arr_t->getNumElements());
+                };
+                fix_logical_fixed_array(type);
+                fix_logical_fixed_array(type_);
+            }
 
             /*
             * The following if block is used for converting any
@@ -5674,11 +5691,16 @@ public:
                 ASRUtils::extract_physical_type(v->m_type) ==
                 ASR::array_physical_typeType::PointerArray &&
                 !LLVM::is_llvm_pointer(*v->m_type) ) {
+                ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(v->m_type);
                 type = llvm_utils->get_type_from_ttype_t(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)),
-                        ASRUtils::type_get_past_array(v->m_type),
+                        elem_type,
                         v->m_type_declaration, v->m_storage, is_array_type,
                         is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
+                if (ASRUtils::is_logical(*elem_type)) {
+                    type = llvm_utils->get_el_type(ASRUtils::EXPR(ASR::make_Var_t(
+                        al, v->base.base.loc, &v->base)), elem_type, module.get());
+                }
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
                 array_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
@@ -10692,7 +10714,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm_utils->getIntType(ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -10744,7 +10766,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm_utils->getIntType(ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {

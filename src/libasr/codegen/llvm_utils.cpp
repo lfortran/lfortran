@@ -495,10 +495,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                el_type = llvm::Type::getInt1Ty(context);
-                if( is_pointer ) {
-                    el_type = el_type->getPointerTo();
-                }
+                el_type = getIntType(a_kind, is_pointer);
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -1549,12 +1546,22 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
+#if LLVM_VERSION_MAJOR < 15
+        if (ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType() != type) {
+            ptr = builder->CreateBitCast(ptr, type->getPointerTo());
+        }
+#endif
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx) {
+#if LLVM_VERSION_MAJOR < 15
+        if (ptr->getType()->isPointerTy() && ptr->getType()->getPointerElementType() != type) {
+            ptr = builder->CreateBitCast(ptr, type->getPointerTo());
+        }
+#endif
         std::vector<llvm::Value*> idx_vec = {idx};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }

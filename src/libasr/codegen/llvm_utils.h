@@ -962,8 +962,16 @@ class ASRToLLVMVisitor;
                     auto const llvm_type_verify_against = ASRUtils::is_array_of_strings(&arr_t->base) ? 
                                                           get_llvm_type(&arr_t->base, struct_sym)->getPointerTo() :
                                                           get_llvm_type(&arr_t->base, struct_sym);
-                    verify(arr, llvm_type_verify_against);
-                    auto const data = arr;
+                    llvm::Value* arr_casted = arr;
+                    if (ASRUtils::is_logical(*arr_t->m_type) &&
+                        arr->getType()->isPointerTy() &&
+                        arr->getType()->getPointerElementType()->isIntegerTy(1) &&
+                        llvm_type_verify_against->isPointerTy() &&
+                        llvm_type_verify_against->getPointerElementType()->isIntegerTy(32)) {
+                        arr_casted = builder_->CreateBitCast(arr, llvm_type_verify_against);
+                    }
+                    verify(arr_casted, llvm_type_verify_against);
+                    auto const data = arr_casted;
                     free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     break;
@@ -1126,7 +1134,10 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         template<typename LazyEval>
         void free_array_data(llvm::Value* const data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
-            verify(data_ptr, get_llvm_type(data_type, struct_sym)->getPointerTo());
+            if (!ASRUtils::is_logical(*data_type)) {
+                llvm::Type* expected_data_type = get_llvm_type(data_type, struct_sym);
+                verify(data_ptr, expected_data_type->getPointerTo());
+            }
             switch(data_type->type){
                 case ASR::StructType : // Loop and free
                     free_array_structs(data_ptr, ASR::down_cast<ASR::StructType_t>(data_type), struct_sym, array_size());
