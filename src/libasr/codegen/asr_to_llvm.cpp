@@ -14575,7 +14575,7 @@ public:
                 llvm::Value* src_offset_ptr = llvm_utils->create_gep2(src_arr_type, class_value, 1);
                 llvm::Value* src_offset = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), src_offset_ptr);
                                 
-                // Extract data pointer from the polymorphic wrapper (field at index 1)
+	                // Extract data pointer from the polymorphic wrapper (field at index 1)
 	                if (is_unlimited_polymorphic) {
 	                    src_data_ptr = llvm_utils->CreateLoad2(
 	                        llvm_utils->i8_ptr, llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
@@ -14587,13 +14587,16 @@ public:
 	                        src_elem_struct_type->getPointerTo(), llvm_utils->create_gep2(src_elem_type, src_data_ptr, 1));
 	                }
 	                
-	                // Cast to destination descriptor data-pointer type and store in new descriptor.
-	                llvm::Value* new_data_ptr_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 0);
-	                llvm::Type* expected_data_ptr_type = new_data_ptr_ptr->getType()->getPointerElementType();
+	                // Cast to destination element *storage* pointer type and store in new descriptor.
+	                // (LLVM < 15 uses typed pointers and requires an exact match; logical arrays are i8-backed.)
+	                llvm::Type* dest_data_type = llvm_utils->get_el_type(
+	                    dest_arg, ASRUtils::extract_type(dest_type), module.get());
 	                llvm::Value* dest_data_ptr = src_data_ptr;
+	                llvm::Type* expected_data_ptr_type = dest_data_type->getPointerTo();
 	                if (dest_data_ptr->getType() != expected_data_ptr_type) {
 	                    dest_data_ptr = builder->CreateBitCast(dest_data_ptr, expected_data_ptr_type);
 	                }
+	                llvm::Value* new_data_ptr_ptr = llvm_utils->create_gep2(dest_llvm_type, new_descriptor, 0);
 	                builder->CreateStore(dest_data_ptr, new_data_ptr_ptr);
                 
                 // Copy offset (set to 0 since we're starting fresh)
