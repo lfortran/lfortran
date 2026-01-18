@@ -14214,6 +14214,21 @@ public:
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
                         use_value = true;
                     }
+                    if (use_value) {
+                        // Logical arrays use i8 storage, but scalar logical arguments
+                        // are passed as i1*. If an array element is passed as an
+                        // actual argument, bitcast its pointer to the expected type.
+                        if (ASRUtils::is_logical(*arg_type_) && value->getType()->isPointerTy()) {
+                            llvm::Type* expected_ptr_type = llvm::Type::getInt1Ty(context)->getPointerTo();
+                            if (value->getType() != expected_ptr_type) {
+                                tmp = builder->CreateBitCast(value, expected_ptr_type);
+                            } else {
+                                tmp = value;
+                            }
+                        } else {
+                            tmp = value;
+                        }
+                    }
                     if (!use_value && orig_arg != nullptr) {
                         // Create alloca to get a pointer, but do it
                         // at the beginning of the function to avoid
