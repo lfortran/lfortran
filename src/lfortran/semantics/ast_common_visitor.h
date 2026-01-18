@@ -4127,6 +4127,11 @@ public:
                                         sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])], value);
                                     }
                                 }
+                                if (sym_ && sa->m_attr == AST::simple_attributeType::AttrParameter) {
+                                    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(sym_));
+                                    v->m_storage = ASR::storage_typeType::Parameter;
+                                }
                             }
                         }
                     }
