@@ -340,6 +340,69 @@
                                     (SymbolTable
                                         6
                                         {
+                                            __libasr_is_present_a3:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_a4:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a4
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            __libasr_is_present_a5:
+                                                (Variable
+                                                    6
+                                                    __libasr_is_present_a5
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
                                             a1:
                                                 (Variable
                                                     6
@@ -445,69 +508,6 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            is_a3_present_:
-                                                (Variable
-                                                    6
-                                                    is_a3_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_a4_present_:
-                                                (Variable
-                                                    6
-                                                    is_a4_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            is_a5_present_:
-                                                (Variable
-                                                    6
-                                                    is_a5_present_
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
                                             path:
                                                 (Variable
                                                     6
@@ -560,11 +560,11 @@
                                     [(Var 6 a1)
                                     (Var 6 a2)
                                     (Var 6 a3)
-                                    (Var 6 is_a3_present_)
+                                    (Var 6 __libasr_is_present_a3)
                                     (Var 6 a4)
-                                    (Var 6 is_a4_present_)
+                                    (Var 6 __libasr_is_present_a4)
                                     (Var 6 a5)
-                                    (Var 6 is_a5_present_)]
+                                    (Var 6 __libasr_is_present_a5)]
                                     []
                                     (Var 6 path)
                                     Public

@@ -399,10 +399,10 @@
                                     (SymbolTable
                                         4
                                         {
-                                            is_x_present_:
+                                            __libasr_is_present_x:
                                                 (Variable
                                                     4
-                                                    is_x_present_
+                                                    __libasr_is_present_x
                                                     []
                                                     In
                                                     ()
@@ -485,7 +485,7 @@
                                     )
                                     []
                                     [(Var 4 x)
-                                    (Var 4 is_x_present_)]
+                                    (Var 4 __libasr_is_present_x)]
                                     [(Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
