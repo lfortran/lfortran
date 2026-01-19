@@ -6351,6 +6351,15 @@ public:
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             free_heap_fixed_size_arrays();
+            // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI
+            // (return value is written into a hidden first argument and the
+            // function return type is void). In that case we must return void
+            // even though ASR still has a return variable.
+            llvm::Function* fn = builder->GetInsertBlock()->getParent();
+            if (fn->getReturnType()->isVoidTy()) {
+                builder->CreateRetVoid();
+                return;
+            }
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
