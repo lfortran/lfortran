@@ -3017,6 +3017,7 @@ RUN(NAME logical_testing LABELS gfortran llvm)
 
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
 
+RUN(NAME format_before_read_01 LABELS gfortran llvm)
 
 
 # LFortran extensions (lists, dicts, etc.)

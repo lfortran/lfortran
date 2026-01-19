@@ -1533,6 +1533,18 @@ public:
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nullptr);
         } else if( _type == AST::stmtType::Read ) {
+            if (formatted && a_fmt_constant) {
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::TYPE(ASR::make_String_t(
+                        al, loc, 1, nullptr,
+                        ASR::string_length_kindType::DeferredLength,
+                        ASR::string_physical_typeType::DescriptorString))));
+                ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
+                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
+                    type, nullptr));
+                a_values_vec.reserve(al, 1);
+                a_values_vec.push_back(al, string_format);
+            }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr);
         }
