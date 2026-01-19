@@ -14044,6 +14044,8 @@ public:
             }
 
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
+            make_ArrayItem_from_struct_m_args(
+                x_m_member[x_n_member].m_args, x_m_member[x_n_member].n_args, ASRUtils::EXPR(tmp), tmp, loc);
         }
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;
