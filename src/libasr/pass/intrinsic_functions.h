@@ -905,14 +905,56 @@ namespace Abs {
                 }));
             }
         } else {
-            // Complex type: r = sqrt(real(x)**2 + aimag(x)**2)
+            // Complex type: use numerically stable algorithm to avoid overflow
+            // if |re| >= |im|: result = |re| * sqrt(1 + (im/re)^2)
+            // else:            result = |im| * sqrt((re/im)^2 + 1)
             ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
                                         ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
             ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
-            body.push_back(al, b.Assignment(result,
-                b.Pow(b.Add(b.Pow(EXPR(ASR::make_ComplexRe_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type)), b.Pow(EXPR(ASR::make_ComplexIm_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type))), b.f_t(0.5, real_type))));
+
+            // Local variables for re, im, abs_re, abs_im
+            auto re = declare("_lcompilers_abs_re", real_type, Local);
+            auto im = declare("_lcompilers_abs_im", real_type, Local);
+            auto abs_re = declare("_lcompilers_abs_re_val", real_type, Local);
+            auto abs_im = declare("_lcompilers_abs_im_val", real_type, Local);
+
+            // re = real(x), im = aimag(x)
+            body.push_back(al, b.Assignment(re, EXPR(ASR::make_ComplexRe_t(al, loc,
+                args[0], real_type, nullptr))));
+            body.push_back(al, b.Assignment(im, EXPR(ASR::make_ComplexIm_t(al, loc,
+                args[0], real_type, nullptr))));
+
+            // abs_re = abs(re), abs_im = abs(im) using conditional
+            body.push_back(al, b.If(b.GtE(re, b.f_t(0, real_type)), {
+                b.Assignment(abs_re, re)
+            }, {
+                b.Assignment(abs_re, b.f_neg(re, real_type))
+            }));
+            body.push_back(al, b.If(b.GtE(im, b.f_t(0, real_type)), {
+                b.Assignment(abs_im, im)
+            }, {
+                b.Assignment(abs_im, b.f_neg(im, real_type))
+            }));
+
+            // if abs_re >= abs_im: result = abs_re * sqrt(1 + (im/re)^2)
+            // else:                result = abs_im * sqrt((re/im)^2 + 1)
+            // Special case: if both are zero, result = 0
+            body.push_back(al, b.If(b.And(b.Eq(abs_re, b.f_t(0, real_type)),
+                                          b.Eq(abs_im, b.f_t(0, real_type))), {
+                b.Assignment(result, b.f_t(0, real_type))
+            }, {
+                b.If(b.GtE(abs_re, abs_im), {
+                    b.Assignment(result, b.Mul(abs_re,
+                        b.Pow(b.Add(b.f_t(1, real_type),
+                              b.Pow(b.Div(im, re), b.f_t(2, real_type))),
+                              b.f_t(0.5, real_type))))
+                }, {
+                    b.Assignment(result, b.Mul(abs_im,
+                        b.Pow(b.Add(b.Pow(b.Div(re, im), b.f_t(2, real_type)),
+                              b.f_t(1, real_type)),
+                              b.f_t(0.5, real_type))))
+                })
+            }));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
