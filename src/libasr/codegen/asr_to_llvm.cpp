@@ -14981,9 +14981,6 @@ public:
         bool is_method = x.m_dt && !is_nopass;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
-            if (arg_expr == nullptr) {
-                continue;
-            }
             ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i].m_value);
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
                 ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
@@ -15000,8 +14997,9 @@ public:
                         ASR::Variable_t* next_var = ASRUtils::EXPR2VAR(next_arg);
                         std::string var_name = std::string(next_var->m_name);
                         ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(next_var->m_type);
-                        if (var_name.size() > 9 && 
-                            var_name.substr(var_name.size() - 9) == "_present_" &&
+                        std::string prefix = "__libasr_is_present_";
+                        if (var_name.size() > prefix.size() && 
+                            var_name.substr(0, prefix.size()) == prefix &&
                             ASR::is_a<ASR::Logical_t>(*var_type)) {
                           
                             this->visit_expr_wrapper(next_arg, true);
