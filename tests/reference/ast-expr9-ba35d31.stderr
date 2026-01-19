@@ -1,0 +1,5 @@
+syntax error: Token '(' is unexpected here
+ --> tests/expr9.f90:3:11
+  |
+3 | .INVERSE. (A + B)
+  |           ^ 

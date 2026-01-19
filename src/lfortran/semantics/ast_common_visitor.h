@@ -13070,8 +13070,28 @@ public:
                 ASR::ttype_t* type = ASRUtils::expr_type(func->m_return_var);
                 return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
             }
+            std::string func_name = to_lower(func->m_name);
+            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
 
-            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, proc, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
+            if (call_sym == nullptr) {
+                ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(proc);
+                std::string module_name = proc_owner ? ASRUtils::symbol_name(proc_owner) : "";
+
+                call_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(
+                        al, proc->base.loc, current_scope, s2c(al, func_name), proc,
+                        s2c(al, module_name), nullptr, 0, s2c(al, func->m_name),
+                        ASR::accessType::Public));
+                current_scope->add_symbol(func_name, call_sym);
+            }
+
+            if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
+                    != current_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES_WITH_NAME(
+                    current_scope, call_sym, current_function_dependencies, s2c(al, func_name)
+                );
+            }
+            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, call_sym, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
             matched = true;
             break;
