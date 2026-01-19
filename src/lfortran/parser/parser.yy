@@ -387,6 +387,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> designator
 %type <ast> signed_numeric_constant
 %type <ast> expr
+%type <ast> def_unary_operand
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
 %type <ast> id
@@ -2427,6 +2428,16 @@ designator
     | struct_member_star id "(" fnarray_arg_list_opt ")" "[" coarray_arg_list "]" {
             $$ = COARRAY4($1, $2, $4, $7, @$); }
     ;
+def_unary_operand
+    : designator
+    | TK_INTEGER        { $$ = INTEGER($1, @$); }
+    | TK_REAL           { $$ = REAL($1, @$); }
+    | TK_STRING         { $$ = STRING($1, @$); }
+    | TK_BOZ_CONSTANT   { $$ = BOZ($1, @$); }
+    | ".true."          { $$ = TRUE(@$); }
+    | ".false."         { $$ = FALSE(@$); }
+    | "(" expr ")"      { $$ = PAREN($2, @$); }
+    ;
 
 expr
 // ### primary
@@ -2456,7 +2467,7 @@ expr
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
 
 // ### level-1
-    | TK_DEF_OP designator { $$ = UNARY_DEFOP($1, $2, @$); }
+    | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }
 
 // ### level-2
     | expr "+" expr { $$ = ADD($1, $3, @$); }
