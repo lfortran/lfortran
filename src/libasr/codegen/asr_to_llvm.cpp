@@ -116,10 +116,9 @@ private:
     }
     void SafeStore(llvm::IRBuilder<> *B, llvm::Value *V, llvm::Value *P, int line) {
         if (!P->getType()->isPointerTy()) {
-            llvm::errs() << "\n!!! CRITICAL FAILURE AT LINE " << line << " !!!\n";
-            llvm::errs() << "Destination is NOT a pointer. Destination type: ";
-            P->getType()->print(llvm::errs());
-            llvm::errs() << "\nValue being stored: "; V->dump();
+            llvm::errs() << "\n[POWERVERIFY] Store Error at C++ Line: " << line << "\n";
+            llvm::errs() << "Trying to store into: "; P->getType()->print(llvm::errs());
+            llvm::errs() << "\n";
             abort(); // Stop everything immediately
         }
         B->CreateStore(V, P);
@@ -130,6 +129,17 @@ private:
             llvm::errs() << "Value Type: "; V->getType()->print(llvm::errs());
             llvm::errs() << "\nPointer Type: "; P->getType()->print(llvm::errs());
             llvm::errs() << "\n";
+            abort();
+        }
+    }
+    void PowerVerify(llvm::Value *P, int line, std::string msg) {
+        if (!P) return;
+        if (!P->getType()->isPointerTy()) {
+            llvm::errs() << "\n*******************************************";
+            llvm::errs() << "\n[CATCHER] " << msg << " triggered!";
+            llvm::errs() << "\n[CATCHER] C++ Source Line: " << line;
+            llvm::errs() << "\n[CATCHER] Offending IR Type: "; P->getType()->print(llvm::errs());
+            llvm::errs() << "\n*******************************************\n";
             abort();
         }
     }
@@ -662,6 +672,7 @@ public:
                             temp);*/
                         llvm::Value* desc = temp;
                         if (desc->getType()->isPointerTy()) {
+                            LCOMPILERS_ASSERT(desc->getType()->isPointerTy());
                             desc = builder->CreateLoad(string_descriptor, desc);
                         }
                         return builder->CreateExtractValue(desc, {1});
@@ -775,6 +786,7 @@ public:
                 ptr_loads = ptr_load_cpy;
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
                 llvm::Value* len_ptr = llvm_utils->get_string_length(str_type, str, true);
+                PowerVerify(len_ptr, __LINE__, "SAFESTORE_LEN_FAIL");
                 SafeStore(builder.get(), tmp, len_ptr, __LINE__);
                 tmp = nullptr;
                 break;
@@ -801,6 +813,7 @@ public:
     */
     void setup_string(llvm::Value* str, ASR::ttype_t* type){
         if(ASRUtils::is_descriptorString(type)){
+            PowerVerify(str, __LINE__, "SETUP_STRING_FAIL");
             builder->CreateStore(llvm::Constant::getNullValue(string_descriptor), str);
             ASR::String_t *t = down_cast<ASR::String_t>(ASRUtils::extract_type(type));
             setup_string_length(str, t, t->m_len);
@@ -6301,6 +6314,7 @@ public:
             if (ASRUtils::is_string_only(fptr_type)) {
                 llvm::Value* const cptr_to_charPTR = builder->CreateBitCast(llvm_cptr, llvm_utils->character_type);
                 llvm::Value* const charPTR_ref = llvm_utils->get_string_data(ASRUtils::get_string_type(fptr_type), llvm_fptr, true);
+                PowerVerify(charPTR_ref, __LINE__, "CHAR_PTR_STORE_FAIL");
                 builder->CreateStore(cptr_to_charPTR, charPTR_ref);
             } else {
                 llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
@@ -6588,6 +6602,7 @@ public:
                     ASRUtils::get_string_type(target_type), llvm_target, true); //i8**
                 llvm::Value* value_ptr = llvm_utils->get_string_data(
                     ASRUtils::get_string_type(target_type), llvm_value); // i8*
+                PowerVerify(target_ptr, __LINE__, "STRING_DATA_STORE_FAIL");
                 builder->CreateStore(value_ptr, target_ptr);
                 switch (ASRUtils::get_string_type(target_type)->m_physical_type)
                 {
@@ -6596,6 +6611,7 @@ public:
                             ASRUtils::get_string_type(target_type), llvm_target, true);
                         llvm::Value* value_length_val = llvm_utils->get_string_length(
                             ASRUtils::get_string_type(value_type), llvm_value, false);
+                        PowerVerify(target_length_ptr, __LINE__, "GAMMA_STORE_FAIL");
                         builder->CreateStore(value_length_val, target_length_ptr)->setName("GAMMA_STORE");
                         break;
                     }
@@ -9056,7 +9072,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                     );
                 }
                 else if (ASRUtils::is_character(*left_ttype)) {
-                    this->visit_expr_wrapper(x.m_left, true);
+                    this->visit_expr_wrapper(x.m_left, false);
                     llvm::Value *str_desc = llvm_utils->ensure_descriptor_value(tmp);
                     left     = builder->CreateExtractValue(str_desc, {0});
                     left_len = builder->CreateExtractValue(str_desc, {1});
@@ -9071,7 +9087,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                     ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_right));
 
                 if (ASR::is_a<ASR::StringConstant_t>(*x.m_right)) {
-                    this->visit_expr_wrapper(x.m_right, true);
+                    this->visit_expr_wrapper(x.m_right, false);
                     right = tmp;
                     right_len = llvm::ConstantInt::get(
                         llvm::Type::getInt64Ty(context),

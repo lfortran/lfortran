@@ -1601,6 +1601,9 @@ namespace LCompilers {
 
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
+        if (x->getType() == t) {
+            return x;
+        }
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
@@ -1991,23 +1994,17 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
-        llvm::Value* ptr_to_data {};
         switch (str_type->m_physical_type)
         {
             case ASR::DescriptorString:{
-                llvm::Value *desc = ensure_descriptor_value(str);
-                llvm::Value *data_val = builder->CreateExtractValue(desc, {0});
                 if (get_pointer_to_data) {
-                    if (str->getType() != string_descriptor) {
-                        return builder->CreateStructGEP(string_descriptor, str, 0);
-                    } else {
-                        llvm::Value* temp = builder->CreateAlloca(string_descriptor);
-                        builder->CreateStore(desc, temp);
-                        return builder->CreateStructGEP(string_descriptor, temp, 0);
-                    }
+                    return builder->CreateStructGEP(string_descriptor, str, 0);
                 }
-                return data_val;
+                llvm::Value *desc = ensure_descriptor_value(str);
+                return builder->CreateExtractValue(desc, {0});
             }
+            default:
+                throw LCompilersException("Unhandled string physical type");
         }
     }
     // >>>>>>>>>>>>>> Refactor this
@@ -2021,11 +2018,16 @@ namespace LCompilers {
         switch (str_type->m_physical_type) {
             case ASR::DescriptorString: {
                 llvm::Value *desc = str;
-                if (str->getType()->isPointerTy()) {
+                if (str->getType()->isPointerTy() && str->getType() != string_descriptor) {
                     desc = builder->CreateLoad(string_descriptor, str, "BETA_LOAD");
                 }
                 if (get_pointer_to_len) {
                     if (str->getType()->isPointerTy()) {
+                        if (str->getType() == string_descriptor) {
+                            llvm::Value *tmp = builder->CreateAlloca(string_descriptor);
+                            builder->CreateStore(str, tmp);
+                            return builder->CreateStructGEP(string_descriptor, tmp, 1);
+                        }
                         return builder->CreateStructGEP(string_descriptor, str, 1);
                     } else {
                         llvm::Value *tmp = builder->CreateAlloca(string_descriptor);
@@ -2102,7 +2104,7 @@ namespace LCompilers {
             case ASR::DeferredLength:{
                 LCOMPILERS_ASSERT(amount_to_allocate)
                 set_string_memory_on_heap(str_type->m_physical_type, str, amount_to_allocate);
-                llvm::Value* str_len = get_string_length(str_type, str, false);// Pointer to it (e.g `i64*`)
+                llvm::Value* str_len = get_string_length(str_type, str, true);
                 builder->CreateStore(
                     convert_kind(amount_to_allocate, llvm::Type::getInt64Ty(context)),
                     str_len);
