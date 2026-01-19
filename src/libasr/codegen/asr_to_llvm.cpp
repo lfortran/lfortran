@@ -8362,10 +8362,16 @@ public:
                     builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
                 } else {
                     llvm::Value* store_value = value;
+                    bool store_logical_as_i8 = false;
+#if LLVM_VERSION_MAJOR < 15
+                    if (target->getType()->isPointerTy()) {
+                        llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
+                        store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
+                    }
+#endif
                     if ((compiler_options.fast || compiler_options.po.fast) &&
                         store_value->getType()->isIntegerTy(1) &&
-                        target->getType()->isPointerTy() &&
-                        target->getType()->getPointerElementType()->isIntegerTy(8)) {
+                        store_logical_as_i8) {
                         store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
                     }
                     builder->CreateStore(store_value, target);
@@ -8422,19 +8428,31 @@ public:
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
             llvm::Value* store_value = value;
+            bool store_logical_as_i8 = false;
+#if LLVM_VERSION_MAJOR < 15
+            if (target->getType()->isPointerTy()) {
+                llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
+                store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
+            }
+#endif
             if ((compiler_options.fast || compiler_options.po.fast) &&
                 store_value->getType()->isIntegerTy(1) &&
-                target->getType()->isPointerTy() &&
-                target->getType()->getPointerElementType()->isIntegerTy(8)) {
+                store_logical_as_i8) {
                 store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
             }
             builder->CreateStore(store_value, target);
         } else {
             llvm::Value* store_value = value;
+            bool store_logical_as_i8 = false;
+#if LLVM_VERSION_MAJOR < 15
+            if (target->getType()->isPointerTy()) {
+                llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
+                store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
+            }
+#endif
             if ((compiler_options.fast || compiler_options.po.fast) &&
                 store_value->getType()->isIntegerTy(1) &&
-                target->getType()->isPointerTy() &&
-                target->getType()->getPointerElementType()->isIntegerTy(8)) {
+                store_logical_as_i8) {
                 store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
             }
             builder->CreateStore(store_value, target);
@@ -8916,17 +8934,66 @@ public:
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
             
-            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+            llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                m_arg,
                 ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(m_type)), module.get());
-            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
-                target_type, nullptr, "array_descriptor");
-            builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
-                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
-                arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target_type, target));
+                    ASRUtils::type_get_past_pointer(m_type)),
+                module.get());
+            llvm::AllocaInst *target_desc = llvm_utils->CreateAlloca(
+                target_desc_type, nullptr, "array_descriptor");
+
+            llvm::Value* source_desc = arg;
+            // `reset_array_details()` expects `source_arr` to be indexed using the same
+            // descriptor type as the target. The only difference between the source and
+            // destination descriptor types here is the element pointer type, so a bitcast
+            // is safe for copying descriptor metadata (dims/offset/rank).
+            llvm::Value* source_desc_as_target = builder->CreateBitCast(
+                source_desc, target_desc_type->getPointerTo());
+
+            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(m_arg);
+            ASR::ttype_t* dst_asr_type = m_type;
+            ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type);
+            ASR::ttype_t* dst_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(dst_asr_type);
+
+            llvm::Type* src_el_type = llvm_utils->get_el_type(
+                m_arg, ASRUtils::extract_type(src_arr_asr_type), module.get());
+            llvm::Type* dst_el_type = llvm_utils->get_el_type(
+                m_arg, ASRUtils::extract_type(dst_arr_asr_type), module.get());
+
+            llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(
+                src_el_type->getPointerTo(),
+                arr_descr->get_pointer_to_data(m_arg, src_asr_type, source_desc, module.get()));
+            llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
+            llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
+
+            llvm::Value* dst_first_el_ptr = nullptr;
+            // When casting from `class(*)` arrays, the descriptor's data pointer points to an array
+            // of boxed values (`~unlimited_polymorphic_type`). For a typed view (e.g., `type is (integer)`),
+            // we must use the boxed element's `.data` pointer as the base of the contiguous array view.
+            if (ASRUtils::is_unlimited_polymorphic_type(src_asr_type) &&
+                !ASRUtils::is_unlimited_polymorphic_type(dst_asr_type) &&
+                llvm::isa<llvm::StructType>(src_el_type)) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+                llvm::Value* boxed_data_ptr_ptr = llvm_utils->create_gep2(src_el_type, src_first_el_ptr, 1);
+                llvm::Value* boxed_data_ptr = llvm_utils->CreateLoad2(i8_ptr, boxed_data_ptr_ptr);
+                dst_first_el_ptr = builder->CreateBitCast(boxed_data_ptr, dst_el_type->getPointerTo());
+            } else {
+                dst_first_el_ptr = builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
+            }
+
+            builder->CreateStore(dst_first_el_ptr,
+                arr_descr->get_pointer_to_data(target_desc_type, target_desc));
+
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
-            tmp = target;
+            arr_descr->reset_array_details(target_desc_type, target_desc, source_desc_as_target, n_dims);
+            if( LLVM::is_llvm_pointer(*m_type) ) {
+                llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
+                    target_desc_type->getPointerTo(), nullptr, "array_descriptor_ptr");
+                builder->CreateStore(target_desc, target_ptr);
+                tmp = target_ptr;
+            } else {
+                tmp = target_desc;
+            }
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
@@ -9049,10 +9116,16 @@ public:
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
                 // Under `--fast`, LOGICAL array elements are stored as bytes (`i8`) in memory.
                 // Convert loaded bytes to boolean (`i1`) semantics by checking for non-zero.
+                bool load_logical_from_i8 = false;
+#if LLVM_VERSION_MAJOR < 15
+                if (tmp->getType()->isPointerTy()) {
+                    llvm::PointerType* pt = llvm::cast<llvm::PointerType>(tmp->getType());
+                    load_logical_from_i8 = pt->getElementType()->isIntegerTy(8);
+                }
+#endif
                 if ((compiler_options.fast || compiler_options.po.fast) &&
                     x_llvm_type->isIntegerTy(1) &&
-                    tmp->getType()->isPointerTy() &&
-                    tmp->getType()->getPointerElementType()->isIntegerTy(8)) {
+                    load_logical_from_i8) {
                     llvm::Type* i8 = llvm::Type::getInt8Ty(context);
                     llvm::Value* loaded = llvm_utils->CreateLoad2(i8, tmp, is_volatile);
                     tmp = builder->CreateICmpNE(loaded, llvm::ConstantInt::get(i8, 0));
