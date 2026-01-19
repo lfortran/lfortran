@@ -13076,10 +13076,12 @@ public:
             if (call_sym == nullptr) {
                 ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(proc);
                 std::string module_name = proc_owner ? ASRUtils::symbol_name(proc_owner) : "";
-
+                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
+                module_name = owner ? ASRUtils::symbol_name(owner) : "";
                 call_sym = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_ExternalSymbol_t(
-                        al, proc->base.loc, current_scope, s2c(al, func_name), proc,
+                        al, proc->base.loc, current_scope, s2c(al, func_name), real_proc,
                         s2c(al, module_name), nullptr, 0, s2c(al, func->m_name),
                         ASR::accessType::Public));
                 current_scope->add_symbol(func_name, call_sym);
