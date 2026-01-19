@@ -6378,7 +6378,7 @@ public:
                             // Convert {float,float}* to i64* using bitcast
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert i64* -> i64
-                            tmp = llvm_utils->CreateLoad2(type_fx2p, tmp);
+                            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), tmp);
                         } else if (compiler_options.platform == Platform::macOS_ARM) {
                             // Pass by value
 
