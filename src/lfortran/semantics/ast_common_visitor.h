@@ -4313,14 +4313,6 @@ public:
                                         
                                         ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
-                                        ASR::ttype_t* pointer_type_2 = ASRUtils::TYPE(ASR::make_Pointer_t(
-                                            al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
-                                        ASR::asr_t* get_pointer2 = ASR::make_GetPointer_t(
-                                            al, asr_eq2->base.loc, asr_eq2, pointer_type_2, nullptr);
-                                        ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
-                                        ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(
-                                            al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer2), cptr, nullptr);
-
                                         Vec<ASR::dimension_t> dim;
                                         dim.reserve(al, 1);
                                         ASR::dimension_t dim_;
