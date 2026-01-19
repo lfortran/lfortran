@@ -14560,17 +14560,19 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         if (compiler_options.new_classes) {
             bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
-	            // Handle arrays
-	            if (ASRUtils::is_array(arg_type) &&
-	                    ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
-	                // For descriptor arrays, we need to create a new array descriptor
-	                // with the correct element type and copy the data pointer from the polymorphic wrapper
-	                llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-	                    dest_arg, dest_type, module.get());
-	                llvm::Type* src_arr_type = llvm_utils->get_type_from_ttype_t_util(
-	                    arg, arg_type, module.get());
-	                llvm::Type* src_elem_type = llvm_utils->get_type_from_ttype_t_util(
-	                    arg, ASRUtils::extract_type(arg_type), module.get());
+            // Handle arrays
+            if (ASRUtils::is_array(arg_type) &&
+                    ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
+                // For descriptor arrays, we need to create a new array descriptor
+                // with the correct element type and copy the data pointer from the polymorphic wrapper
+                ASR::ttype_t *dest_arr_type = ASRUtils::type_get_past_allocatable_pointer(dest_type);
+                ASR::ttype_t *src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+                llvm::Type *dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    dest_arg, dest_arr_type, module.get());
+                llvm::Type *src_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                    arg, src_arr_asr_type, module.get());
+                llvm::Type *src_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    arg, ASRUtils::extract_type(arg_type), module.get());
                 
                 // Create new array descriptor
                 llvm::Value* new_descriptor = llvm_utils->CreateAlloca(*builder, dest_llvm_type, nullptr, "array_descriptor");
