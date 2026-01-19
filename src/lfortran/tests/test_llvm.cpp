@@ -389,6 +389,7 @@ end function)";
     co.platform = LCompilers::get_platform();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+            e.get_jit_data_layout(),
             lpm, co, "f", "", "", lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
@@ -427,6 +428,7 @@ end function)";
     lpm.use_default_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+            e.get_jit_data_layout(),
             lpm, compiler_options, "f", "", "", lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
