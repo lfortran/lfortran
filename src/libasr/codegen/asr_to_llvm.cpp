@@ -250,6 +250,7 @@ public:
     ASR::ttype_t* current_select_type_block_type_asr;
     std::string current_select_type_block_der_type;
     std::string current_selector_var_name;
+    ASR::symbol_t* current_selector_type_decl;
 
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
@@ -329,6 +330,7 @@ public:
     location_manager{lm},
     current_select_type_block_type(nullptr),
     current_select_type_block_type_asr(nullptr),
+    current_selector_type_decl(nullptr),
     current_scope(nullptr),
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
@@ -3524,12 +3526,18 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            bool is_polymorphic = (current_select_type_block_type != nullptr) && ASR::is_a<ASR::Var_t>(*x.m_v) &&
-                    (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name);
+            bool is_polymorphic = (current_select_type_block_type != nullptr) &&
+                    ASR::is_a<ASR::Var_t>(*x.m_v) &&
+                    (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name) &&
+                    ASRUtils::is_unlimited_polymorphic_type(x.m_v);
+            ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
+            if (is_polymorphic && selector_type_decl == nullptr) {
+                selector_type_decl = current_selector_type_decl;
+            }
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
                 llvm::Type* type = llvm_utils->get_el_type(x.m_v, array_t->m_type, module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
-                                                    ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
+                                                    selector_type_decl,
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
@@ -3549,7 +3557,7 @@ public:
                     type = llvm_utils->get_el_type(x.m_v, array_t->m_type, module.get());
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
-                                                    ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
+                                                    selector_type_decl,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
@@ -9253,6 +9261,7 @@ public:
         } else {
             current_selector_var_name = selector_var_name;
         }
+        current_selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_selector);
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         if (selector_var) {
@@ -9563,6 +9572,7 @@ public:
         }
         start_new_block(mergeBB);
         current_selector_var_name.clear();
+        current_selector_type_decl = nullptr;
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
