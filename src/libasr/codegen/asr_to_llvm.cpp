@@ -1886,7 +1886,8 @@ public:
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());
+                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                llvm::Type* llvm_data_type = llvm_utils->get_el_type(curr_arg.m_a, asr_data_type, module.get());
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
@@ -3529,7 +3530,8 @@ public:
             bool is_polymorphic = (current_select_type_block_type != nullptr) && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                     (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                llvm::Type* type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
                                                     true,
@@ -3548,7 +3550,8 @@ public:
                 if (is_fixed_size) {
                     type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
                 } else {
-                    type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                    type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
@@ -8115,6 +8118,14 @@ public:
         }
         load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
+        // Logical arrays use byte-backed storage (i8) in memory; convert scalar i1 values
+        // to i8 before storing into an array element.
+        if (x.m_target->type == ASR::exprType::ArrayItem &&
+            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_target)) &&
+            value->getType()->isIntegerTy(1)) {
+            value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
+        }
+
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
                 llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
@@ -8912,8 +8923,16 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
+                // Logical arrays are stored as byte-backed (i8) in memory; load as i8 and
+                // convert to scalar i1 for expression semantics.
+                if (x->type == ASR::exprType::ArrayItem &&
+                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
+                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp, is_volatile);
+                    tmp = builder->CreateICmpNE(v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
+                } else {
+                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
+                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
+                }
             }
         }
     }
@@ -10601,7 +10620,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -10628,6 +10647,9 @@ public:
             ptr_loads = 2;
             this->visit_expr_wrapper(el, true);
             ptr_loads = ptr_loads_copy;
+            if (ASRUtils::is_logical(*x_m_type) && tmp->getType()->isIntegerTy(1)) {
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
+            }
             builder->CreateStore(tmp, llvm_el);
         }
         // Return the vector as float* type:
@@ -10649,7 +10671,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            el_type = llvm::Type::getInt1Ty(context);
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
