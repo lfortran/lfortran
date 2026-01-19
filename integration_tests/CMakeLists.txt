@@ -2106,6 +2106,7 @@ RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME inquire_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
@@ -3072,6 +3073,7 @@ RUN(NAME defined_op_match_01 LABELS gfortran llvm)
 #test for forward declaration of derived type
 RUN(NAME issue_9063 LABELS gfortran llvm)
 RUN(NAME issue_4901 LABELS gfortran llvm)
+RUN(NAME issue_7357 LABELS gfortran llvm)
 RUN(NAME issue_8324 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
