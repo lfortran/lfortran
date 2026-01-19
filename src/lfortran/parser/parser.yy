@@ -2456,7 +2456,7 @@ expr
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
 
 // ### level-1
-    | TK_DEF_OP expr { $$ = UNARY_DEFOP($1, $2, @$); }
+    | TK_DEF_OP designator { $$ = UNARY_DEFOP($1, $2, @$); }
 
 // ### level-2
     | expr "+" expr { $$ = ADD($1, $3, @$); }
