@@ -4372,7 +4372,7 @@ _lfortran_open(int32_t unit_num,
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -4603,7 +4603,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *readwrite, int64_t readwrite_len,
                                     char *access, int64_t access_len,
                                     char *name, int64_t name_len,
-                                    char *blank, int64_t blank_len) {
+                                    char *blank, int64_t blank_len,
+                                    int32_t *recl) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -4631,7 +4632,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         bool write_access;
         int delim;
         bool blank_zero;
-        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, NULL);
+        int32_t unit_recl = 0;
+        FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl);
         if (write != NULL) {
             if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
@@ -4690,6 +4692,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             fseek(fp, 0, SEEK_END);
             *size = ftell(fp);
             fseek(fp, current_pos, SEEK_SET);
+        }
+        if (recl != NULL && access_id == 2) {
+            *recl = unit_recl;
         }
     }
 }

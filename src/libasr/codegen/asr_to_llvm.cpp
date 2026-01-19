@@ -12692,6 +12692,9 @@ public:
                 builder->CreateAlloca(llvm::Type::getInt32Ty(context));
             builder->CreateStore(recl_val, alloc);            
             recl = alloc;                                  
+        } else {
+            recl = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
         }
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -12741,6 +12744,7 @@ public:
         llvm::Value *access_val{}, *access_len{};
         llvm::Value *name_val{}, *name_len{};
         llvm::Value *blank_val{}, *blank_len{};
+        llvm::Value *recl{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -12864,6 +12868,17 @@ public:
             blank_val = llvm::Constant::getNullValue(character_type);
             blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        if (x.m_recl) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_recl, false);
+            recl = tmp;
+
+            ptr_loads = ptr_loads_copy;
+        } else {
+            recl = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
 
         if (x.n_iolength_vars > 0 && x.m_iolength) {
             // INQUIRE(IOLENGTH=iol) var_list
@@ -12945,7 +12960,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context), // readwrite_data, readwrite_len
                         character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
                         character_type, llvm::Type::getInt64Ty(context),  // name_data, name_len
-                        character_type, llvm::Type::getInt64Ty(context)  // blank_data, blank_len
+                        character_type, llvm::Type::getInt64Ty(context),  // blank_data, blank_len
+                        llvm::Type::getInt32Ty(context)->getPointerTo() // recl
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -12959,7 +12975,8 @@ public:
             readwrite, readwrite_len,
             access_val, access_len,
             name_val, name_len,
-            blank_val, blank_len});
+            blank_val, blank_len,
+            recl});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
