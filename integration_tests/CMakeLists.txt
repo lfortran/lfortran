@@ -1498,6 +1498,8 @@ RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_18 LABELS gfortran llvm)
+RUN(NAME select_type_19 LABELS gfortran llvm)
 
 RUN(NAME program_02 LABELS gfortran llvm)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
