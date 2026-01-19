@@ -114,6 +114,25 @@ private:
         v->print(os);
         std::cout << os.str() << endline;
     }
+    void SafeStore(llvm::IRBuilder<> *B, llvm::Value *V, llvm::Value *P, int line) {
+        if (!P->getType()->isPointerTy()) {
+            llvm::errs() << "\n!!! CRITICAL FAILURE AT LINE " << line << " !!!\n";
+            llvm::errs() << "Destination is NOT a pointer. Destination type: ";
+            P->getType()->print(llvm::errs());
+            llvm::errs() << "\nValue being stored: "; V->dump();
+            abort(); // Stop everything immediately
+        }
+        B->CreateStore(V, P);
+    }
+    void VerifyStore(llvm::Value *V, llvm::Value *P) {
+        if (!P->getType()->isPointerTy()) {
+            llvm::errs() << "\nFATAL: Illegal Store Detected!\n";
+            llvm::errs() << "Value Type: "; V->getType()->print(llvm::errs());
+            llvm::errs() << "\nPointer Type: "; P->getType()->print(llvm::errs());
+            llvm::errs() << "\n";
+            abort();
+        }
+    }
 
 public:
     diag::Diagnostics &diag;
@@ -611,7 +630,8 @@ public:
             case ASR::CChar:{
 
                 llvm::Value* char_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context));
-                data_and_length.first = builder->CreateStore(tmp, char_ptr);
+                builder->CreateStore(tmp, char_ptr);
+                data_and_length.first = char_ptr; 
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                 break;
             }
@@ -640,12 +660,19 @@ public:
                         /*temp = builder->CreateLoad(
                             llvm_utils->get_el_type(expr, ASRUtils::extract_type(expr_type(expr)), module.get())->getPointerTo(),
                             temp);*/
-                        LCOMPILERS_ASSERT(!temp->getType()->isPointerTy());
-                        return builder->CreateExtractValue(temp, {1});
+                        llvm::Value* desc = temp;
+                        if (desc->getType()->isPointerTy()) {
+                            desc = builder->CreateLoad(string_descriptor, desc);
+                        }
+                        return builder->CreateExtractValue(desc, {1});
+                        }
+                    case ASR::CChar: {
+                        return llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                     }
                     default:
                         throw LCompilersException("Unhandled string physicalType");
                 }
+                break;
             }
             case ASR::PointerArray:{
                 switch(str_type->m_physical_type){
@@ -653,9 +680,13 @@ public:
                         LCOMPILERS_ASSERT(!str->getType()->isPointerTy());
                         return builder->CreateExtractValue(str, {1});
                     }
+                    case ASR::CChar: {
+                        return llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                    }
                     default:
                         throw LCompilersException("Unhandled string physicalType");
                 }
+                break;
             }
         default:
            throw LCompilersException("Unhandled Array Physical type");
@@ -743,8 +774,8 @@ public:
                 visit_expr(*len);
                 ptr_loads = ptr_load_cpy;
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
-                llvm::Value* len_ptr = llvm_utils->get_string_length(str_type, str, false);
-                builder->CreateStore(tmp, len_ptr);
+                llvm::Value* len_ptr = llvm_utils->get_string_length(str_type, str, true);
+                SafeStore(builder.get(), tmp, len_ptr, __LINE__);
                 tmp = nullptr;
                 break;
             }
@@ -4680,7 +4711,7 @@ public:
                     llvm::Value* hash_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 0);
                     builder->CreateStore(struct_hash, hash_ptr);
                     llvm::Value* struct_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 1);
-                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr);
+                        builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr);
                 }
             } else {
                 builder->CreateStore(null_value, ptr);
@@ -6561,11 +6592,11 @@ public:
                 switch (ASRUtils::get_string_type(target_type)->m_physical_type)
                 {
                     case ASR::DescriptorString:{
-                        llvm::Value* target_length = llvm_utils->get_string_length(
-                            ASRUtils::get_string_type(target_type), llvm_target, true); // i64*
-                        llvm::Value* value_length = llvm_utils->get_string_length(
-                            ASRUtils::get_string_type(value_type), llvm_value); // i64
-                        builder->CreateStore(value_length, target_length);
+                        llvm::Value* target_length_ptr = llvm_utils->get_string_length(
+                            ASRUtils::get_string_type(target_type), llvm_target, true);
+                        llvm::Value* value_length_val = llvm_utils->get_string_length(
+                            ASRUtils::get_string_type(value_type), llvm_value, false);
+                        builder->CreateStore(value_length_val, target_length_ptr)->setName("GAMMA_STORE");
                         break;
                     }
                     default:
@@ -7783,7 +7814,12 @@ public:
             }
             builder->CreateStore(value, target);
         } else {
-            builder->CreateStore(value, target);
+            llvm::Value* target_ptr = target;
+            if (!target_ptr->getType()->isPointerTy()) {
+                this->visit_expr(*x.m_target);
+                target_ptr = tmp;
+            }
+            builder->CreateStore(value, target_ptr);
         }
     }
 
@@ -10479,10 +10515,12 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                 } else if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
                     tmp = llvm_symtab_fn[h];
                     // Extract data pointer (field 0)
+                    /*
                     llvm::Value *data = builder->CreateExtractValue(tmp, {0});
 
                     // Extract length (field 1)
                     llvm::Value *len  = builder->CreateExtractValue(tmp, {1});
+                    */
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }

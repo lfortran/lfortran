@@ -17,7 +17,17 @@
         } \
     } while (0)
 
-
+#define ASSERT_STORE_PTR(v)                                   \
+    do {                                                      \
+        if (!(v)->getType()->isPointerTy()) {                \
+            llvm::errs() << "\nINVALID STORE TARGET:\n";     \
+            (v)->print(llvm::errs());                        \
+            llvm::errs() << "\nTYPE: ";                      \
+            (v)->getType()->print(llvm::errs());             \
+            llvm::errs() << "\n";                            \
+            abort();                                         \
+        }                                                     \
+    } while (0)
 // ============================================================
 
 namespace LCompilers {
@@ -1906,13 +1916,18 @@ namespace LCompilers {
         }
         builder->CreateStore(data, CreateGEP2(string_descriptor, str_desc, 0));
         llvm::Value *len_ptr = CreateGEP2(string_descriptor, str_desc_ptr, 1);
+        ASSERT_STORE_PTR(len_ptr);
         builder->CreateStore(len, len_ptr);
         return str_desc;
     }
 
     llvm::Value* LLVMUtils::ensure_descriptor_value(llvm::Value* v) {
+        if (!v) return nullptr;
+        if (v->getType() == string_descriptor) {
+            return v;
+        }
         if (v->getType()->isPointerTy()) {
-            return builder->CreateLoad(string_descriptor, v);
+            return builder->CreateLoad(string_descriptor, v, "ALPHA_LOAD");
         }
         return v;
     }
@@ -1922,7 +1937,16 @@ namespace LCompilers {
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(string_type, src));
         llvm::Value* const src_len = get_string_length(string_type, src, false);
         llvm::Value* const dest_len_ptr = get_string_length(string_type, dest, true);
-
+        if (!dest_len_ptr->getType()->isPointerTy()) {
+            llvm::errs() << "\nBUG HIT IN clone_string_state\n";
+            llvm::errs() << "dest_len_ptr is NOT a pointer\n";
+            dest_len_ptr->print(llvm::errs());
+            llvm::errs() << "\nTYPE: ";
+            dest_len_ptr->getType()->print(llvm::errs());
+            llvm::errs() << "\n";
+            abort();
+        }
+        ASSERT_STORE_PTR(dest_len_ptr);
         builder->CreateStore(src_len, dest_len_ptr);
         set_string_memory_on_heap(string_type->m_physical_type, dest, src_len);
     }
@@ -1954,6 +1978,7 @@ namespace LCompilers {
         /* Store Length */
         if(is_string_length_setable(string_t)){
             llvm::Value *len_ptr = CreateGEP2(string_descriptor, string, 1);
+            ASSERT_STORE_PTR(len_ptr);
             builder->CreateStore(len, len_ptr);
         }
 
@@ -1986,36 +2011,39 @@ namespace LCompilers {
         }
     }
     // >>>>>>>>>>>>>> Refactor this
-
-    llvm::Value* LLVMUtils::get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len){
-        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
-        if(!get_pointer_to_len && str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)){ // CompileTime-Constant Length
-            int64_t len; ASRUtils::extract_value(str_type->m_len, len);
-            llvm::Value* len_tmp = llvm::ConstantInt::get(context, llvm::APInt(64, len));
-                return len_tmp;
-        } else {
-            switch (str_type->m_physical_type)
-            {
-                case ASR::DescriptorString:{
-                    llvm::Value *desc = str;
-                    if (str->getType()->isPointerTy()) {
-                        desc = builder->CreateLoad(string_descriptor, str);
-                    }
-                    LCOMPILERS_ASSERT(desc->getType()->isAggregateType());
-                    llvm::Value *len_val = builder->CreateExtractValue(desc, {1});
-                    if (get_pointer_to_len) {
-                        if (str->getType() != string_descriptor) {
-                            return builder->CreateStructGEP(string_descriptor, str, 1);
-                        } else {
-                            llvm::Value *tmp = builder->CreateAlloca(string_descriptor);
-                            builder->CreateStore(desc, tmp);
-                            return builder->CreateStructGEP(string_descriptor, tmp, 1);
-                        }
-                    }
-                    return len_val;
+    llvm::Value* LLVMUtils::get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len) {
+        LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str));
+        if (!get_pointer_to_len && str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)) {
+            int64_t len;
+            ASRUtils::extract_value(str_type->m_len, len);
+            return llvm::ConstantInt::get(context, llvm::APInt(64, len));
+        }
+        switch (str_type->m_physical_type) {
+            case ASR::DescriptorString: {
+                llvm::Value *desc = str;
+                if (str->getType()->isPointerTy()) {
+                    desc = builder->CreateLoad(string_descriptor, str, "BETA_LOAD");
                 }
+                if (get_pointer_to_len) {
+                    if (str->getType()->isPointerTy()) {
+                        return builder->CreateStructGEP(string_descriptor, str, 1);
+                    } else {
+                        llvm::Value *tmp = builder->CreateAlloca(string_descriptor);
+                        builder->CreateStore(desc, tmp);
+                        return builder->CreateStructGEP(string_descriptor, tmp, 1);
+                    }
+                }
+                LCOMPILERS_ASSERT(desc->getType()->isAggregateType());
+                llvm::Value *len_val = builder->CreateExtractValue(desc, {1});
+                if (len_val->getType()->isPointerTy()) {
+                    llvm::errs() << "\nBUG: get_string_length returned POINTER\n";
+                    abort();
+                }
+                return len_val;
             }
         }
+        LCOMPILERS_ASSERT(false && "Unhandled string physical type in get_string_length");
+        return nullptr;
     }
     std::pair<llvm::Value*, llvm::Value*> LLVMUtils::get_string_length_data(ASR::String_t* str_type, llvm::Value* str,
         bool get_pointer_to_data, bool get_pointer_to_len){
@@ -2023,8 +2051,6 @@ namespace LCompilers {
         llvm::Value* len = get_string_length(str_type, str, get_pointer_to_len);
         return std::make_pair(data, len);
     }
-
-
 
     // TODO : Refactor names of the following two functions.
 
@@ -2114,6 +2140,7 @@ namespace LCompilers {
                     array_size_to_allocte,
                     realloc);
                 llvm::Value *len_ptr = CreateGEP2(string_descriptor, str, 1);
+                ASSERT_STORE_PTR(len_ptr);
                 builder->CreateStore(string_length_to_allocate, len_ptr);
                 break;
             }
@@ -2241,6 +2268,7 @@ namespace LCompilers {
         std::tie(str_data, str_len) = get_string_length_data(ASRUtils::get_string_type(type), str, true, true);
         builder->CreateCall(_Deallocate(),{builder->CreateLoad(character_type, str_data)});
         builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
+        ASSERT_STORE_PTR(str_len);
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
     }
 
@@ -2260,7 +2288,7 @@ namespace LCompilers {
         
         // 2. Get RHS: Data is a pointer (true), Length MUST BE A VALUE (false)
         //    The copy function just needs to know the source length as a number.
-        std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src, true, false);
+        std::tie(rhs_data, rhs_len) = get_string_length_data(src_str_type, src, true, true);
         // --- FIX ENDS HERE ---
 
         return lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len,
