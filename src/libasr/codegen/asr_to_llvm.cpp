@@ -15561,6 +15561,20 @@ public:
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
                                 ASR::ttype_t* asr_return_type) {
+        if (fnty->getReturnType()->isVoidTy()) {
+            // Windows complex(kind=8) uses a hidden first argument (sret-style):
+            // the function returns `void` and writes the result into the first
+            // argument. The ASR still models it as a function with a return
+            // variable, so we materialize the return value here.
+            if (ASR::is_a<ASR::Complex_t>(*asr_return_type) &&
+                ASRUtils::extract_kind_from_ttype_t(asr_return_type) == 8 &&
+                compiler_options.platform == Platform::Windows) {
+                llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
+                args.insert(args.begin(), sret_tmp);
+                builder->CreateCall(fn, args);
+                return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
+            }
+        }
         llvm::Value* return_value = builder->CreateCall(fn, args);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
