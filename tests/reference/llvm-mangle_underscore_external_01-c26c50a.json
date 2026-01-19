@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-mangle_underscore_external_01-c26c50a.stdout",
-    "stdout_hash": "bc7e64c877e47b652fc26825d85ff0a2617247b6b2ef83211b1a737b",
+    "stdout_hash": "809afbfd7f43e04fdb1891b44724cf0db3a36e1c9a20c64c8998ca9e",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
