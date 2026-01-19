@@ -6361,8 +6361,8 @@ public:
                     al, asr_retval->base.base.loc, &asr_retval->base)), asr_retval->m_type, module.get());
                 ret_val2 = llvm_utils->CreateLoad2(asr_retval_llvm_type, ret_val);
             }
-            // Handle Complex type return value for BindC:
-            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+            // Handle Complex type return value - convert to platform ABI:
+            {
                 ASR::ttype_t* arg_type = asr_retval->m_type;
                 llvm::Value *tmp = ret_val;
                 if (is_a<ASR::Complex_t>(*arg_type)) {
@@ -16227,7 +16227,8 @@ public:
                 tmp = string_ptr;
             }
         }
-        if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+        // Convert complex return value from platform ABI to internal representation
+        {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (is_a<ASR::Complex_t>(*return_var_type0)) {
                 int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
@@ -16245,22 +16246,18 @@ public:
                         // Convert {float,float}* to {float,float}
                         tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
                     } else if (compiler_options.platform == Platform::macOS_ARM) {
-                        // pass
+                        // pass - already {float, float}
                     } else {
-                        // tmp should be <2 x float>, have to convert to {float, float}
-                        // But only if tmp is actually a vector type - if the function was
-                        // defined internally (not truly external), it may return struct directly
-                        if (llvm::isa<FIXED_VECTOR_TYPE>(tmp->getType())) {
-                            // <2 x float>
-                            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                            // Convert <2 x float> to <2 x float>*
-                            llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
-                            builder->CreateStore(tmp, p_fx2);
-                            // Convert <2 x float>* to {float,float}* using bitcast
-                            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
-                            // Convert {float,float}* to {float,float}
-                            tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
-                        }
+                        // tmp is <2 x float>, convert to {float, float}
+                        // <2 x float>
+                        llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                        // Convert <2 x float> to <2 x float>*
+                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+                        builder->CreateStore(tmp, p_fx2);
+                        // Convert <2 x float>* to {float,float}* using bitcast
+                        tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+                        // Convert {float,float}* to {float,float}
+                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
                     }
                 }
             }
