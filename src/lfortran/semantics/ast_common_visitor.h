@@ -11115,9 +11115,13 @@ public:
         args.reserve(al, x.n_args);
         std::string sym_name = to_lower(func_name);
 
-        // For implicit argument casting, look up the Implementation to get correct param types
+        // Look up the Implementation to get correct param types and ABI.
+        // If the callee is an internal LFortran-compiled function, we should use
+        // its ABI (typically Source) instead of BindC to avoid return type mismatch
+        // for complex functions. If not found, assume BindC for external linkage.
         ASR::Function_t* impl_func = nullptr;
-        if (compiler_options.implicit_argument_casting) {
+        ASR::abiType impl_abi = ASR::abiType::BindC;
+        {
             SymbolTable* global_scope = parent_scope;
             while (global_scope->parent != nullptr) {
                 global_scope = global_scope->parent;
@@ -11128,6 +11132,7 @@ public:
                 ASR::FunctionType_t* candidate_type = ASRUtils::get_FunctionType(candidate);
                 if (candidate_type->m_deftype == ASR::deftypeType::Implementation) {
                     impl_func = candidate;
+                    impl_abi = candidate_type->m_abi;
                 }
             }
         }
@@ -11259,7 +11264,7 @@ public:
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                impl_abi, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -11276,7 +11281,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            impl_abi, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
