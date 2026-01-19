@@ -4100,6 +4100,29 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
             case (ASR::ttypeType::StructType) : {
+                // `types_equal()` is sometimes called without providing expressions. In that
+                // case, fall back to a structural comparison to avoid ICE/segfault.
+                if (a_expr == nullptr || b_expr == nullptr) {
+                    ASR::StructType_t* a2 = ASR::down_cast<ASR::StructType_t>(a);
+                    ASR::StructType_t* b2 = ASR::down_cast<ASR::StructType_t>(b);
+                    if (a2->m_is_cstruct != b2->m_is_cstruct) return false;
+                    if (a2->m_is_unlimited_polymorphic != b2->m_is_unlimited_polymorphic) return false;
+                    if (a2->n_data_member_types != b2->n_data_member_types) return false;
+                    for (size_t i = 0; i < a2->n_data_member_types; i++) {
+                        if (!types_equal(a2->m_data_member_types[i], b2->m_data_member_types[i],
+                                         nullptr, nullptr, check_for_dimensions)) {
+                            return false;
+                        }
+                    }
+                    if (a2->n_member_function_types != b2->n_member_function_types) return false;
+                    for (size_t i = 0; i < a2->n_member_function_types; i++) {
+                        if (!types_equal(a2->m_member_function_types[i], b2->m_member_function_types[i],
+                                         nullptr, nullptr, check_for_dimensions)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
                 ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
                 ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
@@ -4112,6 +4135,18 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
+                if (a_expr == nullptr || b_expr == nullptr) {
+                    ASR::UnionType_t* a2 = ASR::down_cast<ASR::UnionType_t>(a);
+                    ASR::UnionType_t* b2 = ASR::down_cast<ASR::UnionType_t>(b);
+                    if (a2->n_data_member_types != b2->n_data_member_types) return false;
+                    for (size_t i = 0; i < a2->n_data_member_types; i++) {
+                        if (!types_equal(a2->m_data_member_types[i], b2->m_data_member_types[i],
+                                         nullptr, nullptr, check_for_dimensions)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
                 ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_union_sym_from_union_expr(a_expr)));
                 ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
@@ -4124,6 +4159,23 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+
+                if (a_expr == nullptr || b_expr == nullptr) {
+                    if( a2->n_arg_types != b2->n_arg_types ||
+                        (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
+                        (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < a2->n_arg_types; i++) {
+                        if (!types_equal(a2->m_arg_types[i], b2->m_arg_types[i], nullptr, nullptr, true)) {
+                            return false;
+                        }
+                    }
+                    if (!types_equal(a2->m_return_var_type, b2->m_return_var_type, nullptr, nullptr, true)) {
+                        return false;
+                    }
+                    return true;
+                }
 
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
@@ -4363,6 +4415,10 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
     } else if (ASR::is_a<ASR::FunctionType_t>(*x) && ASR::is_a<ASR::FunctionType_t>(*y)) {
         ASR::FunctionType_t* left_ft = ASR::down_cast<ASR::FunctionType_t>(x);
         ASR::FunctionType_t* right_ft = ASR::down_cast<ASR::FunctionType_t>(y);
+
+        if (x_expr == nullptr || y_expr == nullptr) {
+            return types_equal(x, y, nullptr, nullptr, true);
+        }
 
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
@@ -6148,11 +6204,22 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) == a_old);
     // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
     // later on
-    if( (a_old == a_new && a_old != ASR::array_physical_typeType::DescriptorArray) ||
-        (a_old == a_new && a_old == ASR::array_physical_typeType::DescriptorArray &&
-         (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(a_arg)) ||
-         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(a_arg)))) ) {
+    if( a_old == a_new ) {
+        if( a_old != ASR::array_physical_typeType::DescriptorArray ) {
             return (ASR::asr_t*) a_arg;
+        }
+        if( (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(a_arg)) ||
+             ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(a_arg))) &&
+            ASRUtils::check_equal_type(ASRUtils::expr_type(a_arg), a_type, nullptr, nullptr) ) {
+            // `check_equal_type()` treats `class(*)` as compatible with any type. For view casts
+            // (e.g., `select type` on array selectors), we must not drop the cast when the target
+            // type is more specific than an unlimited polymorphic one.
+            bool arg_is_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(a_arg));
+            bool type_is_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(a_type);
+            if( arg_is_unlimited_poly == type_is_unlimited_poly ) {
+                return (ASR::asr_t*) a_arg;
+            }
+        }
     }
 
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
