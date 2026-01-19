@@ -250,6 +250,7 @@ public:
     ASR::ttype_t* current_select_type_block_type_asr;
     std::string current_select_type_block_der_type;
     std::string current_selector_var_name;
+    llvm::Value* current_sret_arg;
 
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
@@ -329,6 +330,7 @@ public:
     location_manager{lm},
     current_select_type_block_type(nullptr),
     current_select_type_block_type_asr(nullptr),
+    current_sret_arg(nullptr),
     current_scope(nullptr),
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
@@ -6009,10 +6011,29 @@ public:
     //     * Function (callback) Variable (`procedure(fn) :: x`)
     //     * Function (`fn`)
     void declare_args(const ASR::Function_t &x, llvm::Function &F) {
-        size_t i = 0;
-        for (llvm::Argument &llvm_arg : F.args()) {
+        size_t asr_arg_idx = 0;
+        auto arg_it = F.arg_begin();
+
+        // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
+        // the LLVM function has an extra hidden first argument to store the
+        // return value, while ASR still models it as a function with a return var.
+        if (compiler_options.platform == Platform::Windows &&
+            x.m_return_var != nullptr &&
+            ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x.m_return_var)) &&
+            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_return_var)) == 8 &&
+            F.getReturnType()->isVoidTy() &&
+            F.arg_size() == x.n_args + 1) {
+            llvm::Argument* sret = &*arg_it;
+            sret->setName("_sret");
+            current_sret_arg = sret;
+            ++arg_it;
+        }
+
+        for (; arg_it != F.arg_end(); ++arg_it) {
+            LCOMPILERS_ASSERT(asr_arg_idx < x.n_args);
+            llvm::Argument &llvm_arg = *arg_it;
             ASR::symbol_t *s = symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+                    ASR::down_cast<ASR::Var_t>(x.m_args[asr_arg_idx])->m_v);
             ASR::symbol_t* arg_sym = s;
             if (is_a<ASR::Variable_t>(*s)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
@@ -6021,7 +6042,7 @@ public:
                     s = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                 } else {
                     // * Variable (`integer :: x`)
-                    ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
+                    ASR::Variable_t *arg = EXPR2VAR(x.m_args[asr_arg_idx]);
                     LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
 
                     llvm::Value* llvm_sym = &llvm_arg;
@@ -6048,7 +6069,7 @@ public:
                     llvm_symtab_fn[h] = fn;
                 }
             }
-            i++;
+            asr_arg_idx++;
         }
     }
 
@@ -6235,6 +6256,7 @@ public:
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
         llvm_goto_targets.clear();
+        current_sret_arg = nullptr;
         // Clear alloca pool for each new function to avoid cross-function references
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
@@ -6351,12 +6373,21 @@ public:
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             free_heap_fixed_size_arrays();
-            // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI
-            // (return value is written into a hidden first argument and the
-            // function return type is void). In that case we must return void
-            // even though ASR still has a return variable.
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
             if (fn->getReturnType()->isVoidTy()) {
+                // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI:
+                // write the return value into the hidden first argument.
+                ASR::ttype_t* ret_type = ASRUtils::expr_type(x.m_return_var);
+                if (compiler_options.platform == Platform::Windows &&
+                    ASR::is_a<ASR::Complex_t>(*ret_type) &&
+                    ASRUtils::extract_kind_from_ttype_t(ret_type) == 8) {
+                    LCOMPILERS_ASSERT(current_sret_arg != nullptr);
+                    ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
+                    uint32_t h = get_hash((ASR::asr_t*)asr_retval);
+                    llvm::Value *ret_val_ptr = llvm_symtab[h];
+                    llvm::Value *ret_val = llvm_utils->CreateLoad2(complex_type_8, ret_val_ptr);
+                    builder->CreateStore(ret_val, current_sret_arg);
+                }
                 builder->CreateRetVoid();
                 return;
             }
