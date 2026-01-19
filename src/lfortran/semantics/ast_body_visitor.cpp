@@ -2582,9 +2582,29 @@ public:
 	                // itself is not a pointer, to avoid eager descriptor initialization.
 	                if (!is_alloc) is_ptr = true;
 	                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
-	                result = ASRUtils::make_Array_t_util(
-	                    al, loc, guard_type, arr->m_dims, arr->n_dims,
-	                    ASR::abiType::Source, false, arr->m_physical_type, true);
+	                if (arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                        // Assumed-rank arrays have `n_dims == 0`, so `make_Array_t_util()` would
+                        // drop the array wrapper. Inside `select rank`, the rank is known and
+                        // recorded in `assumed_rank_arrays`.
+                        int rank = -1;
+                        if (selector_variable) {
+                            auto it = assumed_rank_arrays.find(selector_variable->m_name);
+                            if (it != assumed_rank_arrays.end()) {
+                                rank = it->second;
+                            }
+                        }
+                        if (rank > 0) {
+                            result = ASRUtils::create_array_type_with_empty_dims(al, rank, guard_type);
+                        } else {
+                            result = ASRUtils::TYPE(ASR::make_Array_t(
+                                al, loc, guard_type, arr->m_dims, arr->n_dims,
+                                ASR::array_physical_typeType::AssumedRankArray));
+                        }
+	                } else {
+	                    result = ASRUtils::make_Array_t_util(
+	                        al, loc, guard_type, arr->m_dims, arr->n_dims,
+	                        ASR::abiType::Source, false, arr->m_physical_type, true);
+	                }
 	            }
             if (is_ptr) result = ASRUtils::make_Pointer_t_util(al, loc, result);
             if (is_alloc) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
@@ -2800,7 +2820,8 @@ public:
                             ASR::ttype_t* assoc_base = ASRUtils::type_get_past_allocatable(
                                 ASRUtils::type_get_past_pointer(assoc_variable->m_type));
                             ASR::ttype_t* cast_type = assoc_variable->m_type;
-                            if (ASR::is_a<ASR::Array_t>(*assoc_base)) {
+                            if (ASR::is_a<ASR::Array_t>(*assoc_base) &&
+                                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(m_selector))) {
                                 ASR::Array_t* assoc_arr = ASR::down_cast<ASR::Array_t>(assoc_base);
                                 Vec<ASR::dimension_t> dims;
                                 dims.reserve(al, assoc_arr->n_dims);

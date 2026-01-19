@@ -925,11 +925,10 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array,
             llvm::Type* llvm_data_type) {
-            (void) llvm_data_type;
             llvm::Value* ptr_to_data = get_pointer_to_data(typ_tmp, array);
-            llvm::Type* data_ptr_type = ptr_to_data->getType()->getPointerElementType();
+            llvm::PointerType* data_ptr_type = llvm::cast<llvm::PointerType>(llvm_data_type->getPointerTo());
             builder->CreateStore(
-                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_ptr_type)),
+                llvm::ConstantPointerNull::get(data_ptr_type),
                 ptr_to_data
             );
         }
