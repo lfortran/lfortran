@@ -905,14 +905,20 @@ namespace Abs {
                 }));
             }
         } else {
-            // Complex type: use numerically stable algorithm to avoid overflow
-            // if |re| >= |im|: result = |re| * sqrt(1 + (im/re)^2)
-            // else:            result = |im| * sqrt((re/im)^2 + 1)
+            // Complex type: use hybrid algorithm
+            // - For normal values: sqrt(re^2 + im^2) (accurate)
+            // - For large values that might overflow: scaled algorithm
+            // Threshold: sqrt(HUGE/2) to prevent re^2 + im^2 from overflowing
             ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
                                         ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
             ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
 
-            // Local variables for re, im, abs_re, abs_im
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+            // Threshold below which naive formula is safe (sqrt(HUGE/2))
+            // kind=4: ~1.3e19, kind=8: ~9.5e153
+            double threshold = (kind == 4) ? 1.3e19 : 9.5e153;
+
+            // Local variables
             auto re = declare("_lcompilers_abs_re", real_type, Local);
             auto im = declare("_lcompilers_abs_im", real_type, Local);
             auto abs_re = declare("_lcompilers_abs_re_val", real_type, Local);
@@ -924,7 +930,7 @@ namespace Abs {
             body.push_back(al, b.Assignment(im, EXPR(ASR::make_ComplexIm_t(al, loc,
                 args[0], real_type, nullptr))));
 
-            // abs_re = abs(re), abs_im = abs(im) using conditional
+            // abs_re = abs(re), abs_im = abs(im)
             body.push_back(al, b.If(b.GtE(re, b.f_t(0, real_type)), {
                 b.Assignment(abs_re, re)
             }, {
@@ -936,13 +942,12 @@ namespace Abs {
                 b.Assignment(abs_im, b.f_neg(im, real_type))
             }));
 
-            // if abs_re >= abs_im: result = abs_re * sqrt(1 + (im/re)^2)
-            // else:                result = abs_im * sqrt((re/im)^2 + 1)
-            // Special case: if both are zero, result = 0
-            body.push_back(al, b.If(b.And(b.Eq(abs_re, b.f_t(0, real_type)),
-                                          b.Eq(abs_im, b.f_t(0, real_type))), {
-                b.Assignment(result, b.f_t(0, real_type))
-            }, {
+            // Check if values are large enough to potentially overflow
+            body.push_back(al, b.If(b.Or(b.Gt(abs_re, b.f_t(threshold, real_type)),
+                                         b.Gt(abs_im, b.f_t(threshold, real_type))), {
+                // Large values: use scaled algorithm to avoid overflow
+                // if abs_re >= abs_im: result = abs_re * sqrt(1 + (im/re)^2)
+                // else:                result = abs_im * sqrt((re/im)^2 + 1)
                 b.If(b.GtE(abs_re, abs_im), {
                     b.Assignment(result, b.Mul(abs_re,
                         b.Pow(b.Add(b.f_t(1, real_type),
@@ -954,6 +959,12 @@ namespace Abs {
                               b.f_t(1, real_type)),
                               b.f_t(0.5, real_type))))
                 })
+            }, {
+                // Normal values: use naive formula (more accurate)
+                b.Assignment(result,
+                    b.Pow(b.Add(b.Pow(re, b.f_t(2, real_type)),
+                                b.Pow(im, b.f_t(2, real_type))),
+                          b.f_t(0.5, real_type)))
             }));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
