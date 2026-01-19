@@ -2545,7 +2545,7 @@ public:
         select_type_body.reserve(al, x.n_body);
         ASR::Variable_t* selector_variable = nullptr;
         ASR::ttype_t* selector_variable_type = nullptr;
-        ASR::symbol_t* select_variable_m_type_declaration = nullptr;
+        ASR::symbol_t* selector_variable_type_declaration = nullptr;
         char** selector_variable_dependencies = nullptr;
         size_t selector_variable_n_dependencies = 0;
         if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
@@ -2553,7 +2553,7 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
             selector_variable_type = selector_variable->m_type;
-            select_variable_m_type_declaration = selector_variable->m_type_declaration;
+            selector_variable_type_declaration = selector_variable->m_type_declaration;
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
         } else if( ASR::is_a<ASR::StructInstanceMember_t>(*m_selector) ) {
@@ -2563,24 +2563,95 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_ext));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_ext);
             selector_variable_type = selector_variable->m_type;
-            select_variable_m_type_declaration = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
+            selector_variable_type_declaration = selector_variable->m_type_declaration;
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
         }
-        for( size_t i = 0; i < x.n_body; i++ ) {
-            SymbolTable* parent_scope = current_scope;
-            current_scope = al.make_new<SymbolTable>(parent_scope);
-            ASR::Variable_t* assoc_variable = nullptr;
-            ASR::symbol_t* assoc_sym = nullptr;
-            if( x.m_assoc_name ) {
-                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-                    al, x.base.base.loc, current_scope, x.m_assoc_name,
-                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
+
+	        auto make_typed_selector_view_type = [&](const Location& loc,
+	                ASR::ttype_t* selector_ttype, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
+	            bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_ttype);
+	            bool is_alloc = ASR::is_a<ASR::Allocatable_t>(*selector_ttype);
+	            ASR::ttype_t* base = ASRUtils::type_get_past_allocatable(
+	                ASRUtils::type_get_past_pointer(selector_ttype));
+
+	            ASR::ttype_t* result = guard_type;
+	            if (ASR::is_a<ASR::Array_t>(*base)) {
+	                // The select-type associate entity is an alias/view. For array selectors
+	                // this is best represented as a pointer-to-descriptor, even if the selector
+	                // itself is not a pointer, to avoid eager descriptor initialization.
+	                if (!is_alloc) is_ptr = true;
+	                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
+	                result = ASRUtils::make_Array_t_util(
+	                    al, loc, guard_type, arr->m_dims, arr->n_dims,
+	                    ASR::abiType::Source, false, arr->m_physical_type, true);
+	            }
+            if (is_ptr) result = ASRUtils::make_Pointer_t_util(al, loc, result);
+            if (is_alloc) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
+            return result;
+        };
+
+        auto array_view_needs_cast = [&](ASR::ttype_t* from_type, ASR::ttype_t* to_type) -> bool {
+            ASR::ttype_t* from_el = ASRUtils::extract_type(from_type);
+            ASR::ttype_t* to_el = ASRUtils::extract_type(to_type);
+            if (from_el->type != to_el->type) return true;
+            switch (from_el->type) {
+                case ASR::ttypeType::Integer: {
+                    return ASR::down_cast<ASR::Integer_t>(from_el)->m_kind !=
+                           ASR::down_cast<ASR::Integer_t>(to_el)->m_kind;
+                }
+                case ASR::ttypeType::UnsignedInteger: {
+                    return ASR::down_cast<ASR::UnsignedInteger_t>(from_el)->m_kind !=
+                           ASR::down_cast<ASR::UnsignedInteger_t>(to_el)->m_kind;
+                }
+                case ASR::ttypeType::Real: {
+                    return ASR::down_cast<ASR::Real_t>(from_el)->m_kind !=
+                           ASR::down_cast<ASR::Real_t>(to_el)->m_kind;
+                }
+                case ASR::ttypeType::Complex: {
+                    return ASR::down_cast<ASR::Complex_t>(from_el)->m_kind !=
+                           ASR::down_cast<ASR::Complex_t>(to_el)->m_kind;
+                }
+                case ASR::ttypeType::Logical: {
+                    return ASR::down_cast<ASR::Logical_t>(from_el)->m_kind !=
+                           ASR::down_cast<ASR::Logical_t>(to_el)->m_kind;
+                }
+                case ASR::ttypeType::StructType: {
+                    ASR::StructType_t* from_st = ASR::down_cast<ASR::StructType_t>(from_el);
+                    ASR::StructType_t* to_st = ASR::down_cast<ASR::StructType_t>(to_el);
+                    return from_st->m_is_unlimited_polymorphic != to_st->m_is_unlimited_polymorphic;
+                }
+                default: {
+                    return false;
+                }
+            }
+        };
+
+	        for( size_t i = 0; i < x.n_body; i++ ) {
+	            SymbolTable* parent_scope = current_scope;
+	            current_scope = al.make_new<SymbolTable>(parent_scope);
+	            ASR::Variable_t* assoc_variable = nullptr;
+	            ASR::symbol_t* assoc_sym = nullptr;
+	            bool need_shadow_assoc = (x.m_assoc_name != nullptr);
+	            if (!need_shadow_assoc && selector_variable) {
+	                ASR::ttype_t* sel_base = ASRUtils::type_get_past_allocatable(
+	                    ASRUtils::type_get_past_pointer(selector_variable->m_type));
+	                need_shadow_assoc = ASR::is_a<ASR::Array_t>(*sel_base);
+	            }
+	            char* assoc_name = nullptr;
+	            if (need_shadow_assoc) {
+	                assoc_name = x.m_assoc_name ? x.m_assoc_name :
+	                    (selector_variable ? selector_variable->m_name : nullptr);
+	            }
+	            if (assoc_name) {
+	                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+	                    al, x.base.base.loc, current_scope, assoc_name,
+	                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+	                    ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
-                current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
+                current_scope->add_symbol(std::string(assoc_name), assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
-            } else if( selector_variable ) {
+            } else if (selector_variable) {
                 assoc_variable = selector_variable;
             }
             switch( x.m_body[i]->type ) {
@@ -2633,10 +2704,6 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_ClassStmt_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
-                    if (!compiler_options.new_classes || x.m_assoc_name == nullptr) {
-                        assoc_variable->m_type = selector_variable_type;
-                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
-                    }
                     break;
                 }
                 case AST::type_stmtType::TypeStmtName: {
@@ -2688,16 +2755,12 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
-                    if (!compiler_options.new_classes || x.m_assoc_name == nullptr) {
-                        assoc_variable->m_type = selector_variable_type;
-                        assoc_variable->m_type_declaration = select_variable_m_type_declaration;
-                    }
                     break;
                 }
                 case AST::type_stmtType::TypeStmtType: {
                     AST::TypeStmtType_t* type_stmt_type = AST::down_cast<AST::TypeStmtType_t>(x.m_body[i]);
                     ASR::ttype_t* selector_type = nullptr;
-                    ASR::ttype_t* selector_variable_type = nullptr;
+                    ASR::ttype_t* selector_ttype = nullptr;
                     if( assoc_variable ) {
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
@@ -2708,20 +2771,64 @@ public:
                                                        type_stmt_type->m_vartype, false, false, m_dims,
                                                        nullptr,
                                                        type_declaration, ASR::abiType::Source);
+                        selector_ttype = selector_variable ? selector_variable->m_type : nullptr;
+                        if (selector_ttype) {
+                            ASR::ttype_t* view_type = make_typed_selector_view_type(
+                                type_stmt_type->base.base.loc, selector_ttype, selector_type);
+                            assoc_variable->m_type = view_type;
+                        } else {
+                            assoc_variable->m_type = selector_type;
+                        }
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, assoc_variable_name);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, assoc_variable->m_type, nullptr, nullptr, assoc_variable_name);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
                         assoc_variable->m_type_declaration = type_declaration;
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
                     if( assoc_sym ) {
+                        ASR::expr_t* assoc_value = m_selector;
+                        if (selector_variable && selector_ttype &&
+                            ASRUtils::is_array(ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(selector_ttype))) &&
+                            array_view_needs_cast(ASRUtils::expr_type(m_selector), assoc_variable->m_type)) {
+                            // For view casts on assumed-shape arrays, ensure the cast result type
+                            // has explicit bounds (required by ASR verify when the cast is not
+                            // inside a call).
+                            ASR::ttype_t* assoc_base = ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(assoc_variable->m_type));
+                            ASR::ttype_t* cast_type = assoc_variable->m_type;
+                            if (ASR::is_a<ASR::Array_t>(*assoc_base)) {
+                                ASR::Array_t* assoc_arr = ASR::down_cast<ASR::Array_t>(assoc_base);
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, assoc_arr->n_dims);
+                                for (size_t d = 0; d < assoc_arr->n_dims; d++) {
+                                    ASR::dimension_t dim;
+                                    dim.loc = type_stmt_type->base.base.loc;
+                                    dim.m_start = ASRUtils::get_bound<SemanticAbort>(
+                                        m_selector, (int)d + 1, "lbound", al, diag);
+                                    dim.m_length = ASRUtils::get_size(
+                                        m_selector, (int)d + 1, al);
+                                    dims.push_back(al, dim);
+                                }
+                                cast_type = ASRUtils::make_Array_t_util(
+                                    al, type_stmt_type->base.base.loc,
+                                    assoc_arr->m_type, dims.p, dims.size(),
+                                    ASR::abiType::Source, false, assoc_arr->m_physical_type, true);
+                            }
+                            ASR::array_physical_typeType old_ptype =
+                                ASRUtils::extract_physical_type(ASRUtils::expr_type(m_selector));
+                            ASR::array_physical_typeType new_ptype =
+                                ASRUtils::extract_physical_type(assoc_variable->m_type);
+                            assoc_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                                al, type_stmt_type->base.base.loc, m_selector,
+                                old_ptype, new_ptype, cast_type, nullptr));
+                        }
                         type_stmt_type_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
-                            type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
+                            type_stmt_type->base.base.loc, assoc_sym)), assoc_value)) );
                     }
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -2742,8 +2849,6 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_type->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtType_t(al,
                         type_stmt_type->base.base.loc, selector_type, block_call_stmt.p, block_call_stmt.size())));
-                    assoc_variable->m_type = selector_variable_type;
-                    assoc_variable->m_type_declaration = select_variable_m_type_declaration;
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
@@ -2766,9 +2871,12 @@ public:
             current_scope = parent_scope;
         }
 
-        selector_variable->m_type = selector_variable_type;
-        selector_variable->m_dependencies = selector_variable_dependencies;
-        selector_variable->n_dependencies = selector_variable_n_dependencies;
+        if (selector_variable) {
+            selector_variable->m_type = selector_variable_type;
+            selector_variable->m_type_declaration = selector_variable_type_declaration;
+            selector_variable->m_dependencies = selector_variable_dependencies;
+            selector_variable->n_dependencies = selector_variable_n_dependencies;
+        }
 
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),

@@ -884,10 +884,10 @@ namespace LCompilers {
                          ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
                     return llvm_utils->getStructType(struct_sym, llvm_utils->module)->getPointerTo();
                 } else {
-                    return llvm_utils->get_type_from_ttype_t_util(
-                                    array_exp,
-                                    ASRUtils::extract_type(array_type),
-                                    llvm_utils->module)->getPointerTo();
+                    return llvm_utils->get_el_type(
+                        array_exp,
+                        ASRUtils::extract_type(array_type),
+                        llvm_utils->module)->getPointerTo();
                 } 
             }();
 
@@ -925,9 +925,12 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Type* typ_tmp, llvm::Value* array,
             llvm::Type* llvm_data_type) {
+            (void) llvm_data_type;
+            llvm::Value* ptr_to_data = get_pointer_to_data(typ_tmp, array);
+            llvm::Type* data_ptr_type = ptr_to_data->getType()->getPointerElementType();
             builder->CreateStore(
-                llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
-                get_pointer_to_data(typ_tmp, array)
+                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_ptr_type)),
+                ptr_to_data
             );
         }
 
