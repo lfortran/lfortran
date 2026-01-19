@@ -11565,9 +11565,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                         llvm::Type::getInt32Ty(context));
         }
         if (is_string) {
-            std::tie(unit_val, read_size) = llvm_utils->get_string_length_data(
-                ASR::down_cast<ASR::String_t>(unit_ttype),
-                unit_val, true, true);
+            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
         }
         else {
             read_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
@@ -11597,21 +11595,60 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             args.push_back(llvm::ConstantPointerNull::get(character_type));
             args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
         }
+    // 1. Re-order check: Ensure n_values is pushed BEFORE the descriptors
+    int actual_count = x.n_values;
+    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), actual_count));
 
-    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
+    if (is_string) {
+        this->visit_expr_wrapper(x.m_unit, false, true);
+        llvm::Value* src_ptr = this->tmp;
+        // Check if LLVM loaded the struct. If it did, it's not a PointerTy.
+        if (!src_ptr->getType()->isPointerTy()) {
+            // This creates a temporary stack allocation and passes the address
+            llvm::Value* temp_alloca = builder->CreateAlloca(src_ptr->getType());
+            builder->CreateStore(src_ptr, temp_alloca);
+            args.push_back(temp_alloca);
+        } else {
+            args.push_back(src_ptr);
+        }
+    }
 
+    for (size_t i = 0; i < x.n_values; i++) {
+        ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
+        
+        if (ASRUtils::is_character(*val_ttype)) {
+            // 1. Get the descriptor pointer
+            this->visit_expr_wrapper(x.m_values[i], false, true);
+            llvm::Value* desc_ptr = this->tmp;
+
+            // 2. Ensure we have a pointer to the descriptor
+            if (!desc_ptr->getType()->isPointerTy()) {
+                llvm::Value* temp_alloca = builder->CreateAlloca(desc_ptr->getType());
+                builder->CreateStore(desc_ptr, temp_alloca);
+                desc_ptr = temp_alloca;
+            }
+
+            // 3. PUSH THE PAIR: Data pointer (char*) and Length (int64_t)
+            // This is what _lfortran_formatted_read's va_arg is looking for!
+            args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(val_ttype), desc_ptr));
+            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(val_ttype), desc_ptr));
+            
+        } else {
+            // For non-character types (like Integer)
+            this->visit_expr_load_wrapper(x.m_values[i], 0);
+            args.push_back(this->tmp); // The value/pointer
+            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0)); // Padding/Extra info
+        }
+    }
     // Formatted Read Branch
     if (x.m_fmt) {
         for (size_t i = 0; i < x.n_values; i++) {
-            this->visit_expr_load_wrapper(x.m_values[i], 0);
             ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
             if (ASRUtils::is_character(*val_ttype)) {
-                llvm::Value *str_data, *str_len;
-                std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
-                    ASRUtils::get_string_type(val_ttype), tmp, true, true);
-                args.push_back(str_data);
-                args.push_back(str_len);
+                this->visit_expr_wrapper(x.m_values[i], false, true);
+                args.push_back(tmp);
             } else {
+                this->visit_expr_load_wrapper(x.m_values[i], 0);
                 args.push_back(tmp);
                 args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
             }
