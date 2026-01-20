@@ -495,10 +495,9 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                // `--fast` enables more aggressive LLVM optimizations; keeping LOGICAL arrays
-                // in memory as bit-packed `i1` can be fragile under those transforms.
-                // Use byte-backed storage for LOGICAL elements in arrays when `--fast` is enabled,
-                // while preserving scalar/logical expression semantics elsewhere.
+                // Under `--fast`, LOGICAL arrays are stored as bytes (`i8`) in memory to
+                // avoid fragile bit-packed `i1` memory behavior under some LLVM optimizations.
+                // Expression-level LOGICAL values remain `i1` and are converted on load/store.
                 if (compiler_options.fast || compiler_options.po.fast) {
                     el_type = llvm::Type::getInt8Ty(context);
                 } else {
@@ -636,15 +635,13 @@ namespace LCompilers {
                             type = getComplexType(complex_t->m_kind, true);
                         }
 
-                        if( type == nullptr &&
-                            (compiler_options.fast || compiler_options.po.fast) &&
-                            ASR::is_a<ASR::Logical_t>(*v_type->m_type) ) {
-                            type = llvm::Type::getInt8Ty(context)->getPointerTo();
-                            break;
-                        }
-
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            llvm::Type* el_type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi);
+                            if ((compiler_options.fast || compiler_options.po.fast) &&
+                                ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(v_type->m_type))) {
+                                el_type = llvm::Type::getInt8Ty(context);
+                            }
+                            type = el_type->getPointerTo();
                         }
                         break;
                     }
@@ -655,15 +652,13 @@ namespace LCompilers {
                             type = getComplexType(complex_t->m_kind, true);
                         }
 
-                        if( type == nullptr &&
-                            (compiler_options.fast || compiler_options.po.fast) &&
-                            ASR::is_a<ASR::Logical_t>(*v_type->m_type) ) {
-                            type = llvm::Type::getInt8Ty(context)->getPointerTo();
-                            break;
-                        }
-
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            llvm::Type* el_type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi);
+                            if ((compiler_options.fast || compiler_options.po.fast) &&
+                                ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(v_type->m_type))) {
+                                el_type = llvm::Type::getInt8Ty(context);
+                            }
+                            type = el_type->getPointerTo();
                         }
                         break;
                     }
