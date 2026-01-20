@@ -781,6 +781,14 @@ namespace Atan2 {
     }
 }
 
+namespace Hypot {
+
+    static inline ASR::expr_t* instantiate_Hypot(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/);
+
+} // namespace Hypot
+
 namespace Abs {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -905,14 +913,22 @@ namespace Abs {
                 }));
             }
         } else {
-            // Complex type: r = sqrt(real(x)**2 + aimag(x)**2)
+            // Complex type: abs(x) = hypot(real(x), aimag(x))
             ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, loc,
                                         ASRUtils::extract_kind_from_ttype_t(arg_types[0])));
             ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(result)->m_v)->m_type = return_type = real_type;
+
+            auto re = declare("_lcompilers_abs_re", real_type, Local);
+            auto im = declare("_lcompilers_abs_im", real_type, Local);
+
+            // re = real(x), im = aimag(x)
+            body.push_back(al, b.Assignment(re, EXPR(ASR::make_ComplexRe_t(al, loc,
+                args[0], real_type, nullptr))));
+            body.push_back(al, b.Assignment(im, EXPR(ASR::make_ComplexIm_t(al, loc,
+                args[0], real_type, nullptr))));
             body.push_back(al, b.Assignment(result,
-                b.Pow(b.Add(b.Pow(EXPR(ASR::make_ComplexRe_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type)), b.Pow(EXPR(ASR::make_ComplexIm_t(al, loc,
-                args[0], real_type, nullptr)), b.f_t(2.0, real_type))), b.f_t(0.5, real_type))));
+                b.CallIntrinsic(scope, { real_type, real_type }, { re, im },
+                    real_type, 0, Hypot::instantiate_Hypot)));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(func_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4621,17 +4637,52 @@ namespace Hypot {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
-        /*
-            real function hypot_(x,y) result(hypot)
-            real :: x,y
-            hypot = sqrt(x*x + y*y)
-            end function
-        */
-        body.push_back(al, b.Assignment(result, b.CallIntrinsic(scope, {
-            ASRUtils::expr_type(b.Add(b.Mul(args[0], args[0]), b.Mul(args[1], args[1])))
+        // Hybrid algorithm:
+        // - Normal values: pow(x**2 + y**2, 0.5) (matches existing `abs(complex)` lowering behavior)
+        // - Large values that might overflow: scaled algorithm
+        ASR::ttype_t* real_type = arg_types[0];
+        int kind = ASRUtils::extract_kind_from_ttype_t(real_type);
+        // Threshold below which naive formula is safe (sqrt(HUGE/2))
+        // kind=4: ~1.3e19, kind=8: ~9.5e153
+        double threshold = (kind == 4) ? 1.3e19 : 9.5e153;
+
+        auto abs_x = declare("_lcompilers_hypot_abs_x", real_type, Local);
+        auto abs_y = declare("_lcompilers_hypot_abs_y", real_type, Local);
+
+        body.push_back(al, b.If(b.GtE(args[0], b.f_t(0, real_type)), {
+            b.Assignment(abs_x, args[0])
         }, {
-            b.Add(b.Mul(args[0], args[0]), b.Mul(args[1], args[1]))
-        }, return_type, 0, Sqrt::instantiate_Sqrt)));
+            b.Assignment(abs_x, b.f_neg(args[0], real_type))
+        }));
+        body.push_back(al, b.If(b.GtE(args[1], b.f_t(0, real_type)), {
+            b.Assignment(abs_y, args[1])
+        }, {
+            b.Assignment(abs_y, b.f_neg(args[1], real_type))
+        }));
+
+        body.push_back(al, b.If(
+            b.Or(b.Gt(abs_x, b.f_t(threshold, real_type)),
+                 b.Gt(abs_y, b.f_t(threshold, real_type))), {
+                // Large values: scaled algorithm to avoid overflow
+                // if abs(x) >= abs(y): result = abs(x) * sqrt(1 + (y/x)^2)
+                // else:               result = abs(y) * sqrt((x/y)^2 + 1)
+                b.If(b.GtE(abs_x, abs_y), {
+                    b.Assignment(result, b.Mul(abs_x,
+                        b.Pow(b.Add(b.f_t(1, real_type),
+                              b.Pow(b.Div(args[1], args[0]), b.f_t(2, real_type))),
+                              b.f_t(0.5, real_type))))
+                }, {
+                    b.Assignment(result, b.Mul(abs_y,
+                        b.Pow(b.Add(b.Pow(b.Div(args[0], args[1]), b.f_t(2, real_type)),
+                              b.f_t(1, real_type)),
+                              b.f_t(0.5, real_type))))
+                })
+            }, {
+                b.Assignment(result,
+                    b.Pow(b.Add(b.Pow(args[0], b.f_t(2, real_type)),
+                                b.Pow(args[1], b.f_t(2, real_type))),
+                          b.f_t(0.5, real_type)))
+            }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
