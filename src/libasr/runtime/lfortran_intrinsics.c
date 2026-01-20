@@ -5047,7 +5047,8 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t advance_length, char* fmt, int64_t fmt_len, char* str_data, int64_t str_len, int32_t no_of_args, ...)
 {
     int width = -1;
-    // Parse format string: supports (a) and (aw)
+
+    // 1. Parse format string
     if (is_streql_NCS((char*)fmt, fmt_len, "(a)", 3)) {
         width = -1;
     } else if ((fmt_len > 2) && is_streql_NCS((char*)fmt, 2, "(a", 2)) {
@@ -5058,133 +5059,81 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             memcpy(width_str, fmt + 2, i - 2);
             width_str[i - 2] = '\0';
             width = atoi(width_str);
-            if (width <= 0) {
-                printf("Invalid format width in '%.*s'\n", (int)fmt_len, fmt);
-                exit(1);
-            }
-        } else {
-            printf("Only (a) and (aw) are supported.\n");
-            exit(1);
         }
-    } else {
-        printf("Only (a) and (aw) are supported.\n");
-        exit(1);
     }
 
-    // Get string pointer and length from varargs
     va_list args;
     va_start(args, no_of_args);
-    //char *str_data = va_arg(args, char*);
-    //int64_t str_len = va_arg(args, int64_t);
 
-    // If internal file, recalculate str_len safely from the pointer
-    if (unit_num == -1 && str_data != NULL) {
-        str_len = (int64_t)strlen(str_data);
+    // 2. Determine Width
+    if (width == -1) {
+        width = (unit_num == -1) ? (int)str_len : 1024;
     }
 
-    if (width == -1) width = (int)str_len;
-    if (unit_num == -1 && str_data != NULL) {
-        str_len = (int64_t)strlen(str_data);
-        width = (int)str_len;
-    }
-
-    char *buffer = (char*)malloc((width + 2) * sizeof(char));
-    if (!buffer) {
-        printf("Runtime Error: Memory allocation failed for width %d\n", width);
-        exit(1);
-    }
+    char *buffer = (char*)calloc(width + 1, sizeof(char));
+    if (!buffer) { va_end(args); return; }
 
     FILE *filep = NULL;
     bool unit_file_bin;
-    if (unit_num != -1) {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
-        if (!filep) {
-            printf("No file found with given unit\n");
-            free(buffer);
-            va_end(args);
-            exit(1);
-        }
-    }
 
+    // 3. Fill the Buffer
     if (unit_num == -1) {
         if (str_data == NULL) {
             if (iostat) *iostat = -1;
-            free(buffer);
-            va_end(args);
-            return;
+            free(buffer); va_end(args); return;
         }
-        char *real_str_ptr = *(char**)str_data; 
+
+        // LFortran passes descriptors. str_data is the address of the pointer.
+        char *actual_string_content = *(char**)str_data;
         
-        size_t actual_len = strlen(real_str_ptr);
-        size_t to_copy = (actual_len < (size_t)width) ? actual_len : (size_t)width;
-        strncpy(buffer, real_str_ptr, to_copy);
-        buffer[to_copy] = '\0';
+        if (actual_string_content) {
+            // Copy the raw data
+            size_t to_copy = (str_len < (int64_t)width) ? (size_t)str_len : (size_t)width;
+            memcpy(buffer, actual_string_content, to_copy);
+            buffer[to_copy] = '\0';
+
+            // --- SAFETY TRUNCATION ---
+            // If the string "bleeds" (contains '(a)'), we cut it at the first null 
+            // or we only take the actual non-space characters if needed.
+            for(size_t j = 0; j < to_copy; j++) {
+                if (buffer[j] == '(' || buffer[j] == '\0') {
+                    buffer[j] = '\0';
+                    break;
+                }
+            }
+        }
     } else {
-        if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {
-            if (iostat) *iostat = -1;
-            if (chunk) *((int32_t*)chunk) = 0;
-            free(buffer);
-            va_end(args);
-            return;
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
+        if (filep == NULL || fgets(buffer, width + 1, filep) == NULL) {
+             if (iostat) *iostat = -1;
+             free(buffer); va_end(args); return;
         }
     }
 
-    // Handle newline trimming
+    // 4. Clean and Distribute
     buffer[strcspn(buffer, "\n")] = '\0';
     size_t input_length = strlen(buffer);
-    if (chunk != NULL) {
-        *((int32_t*)chunk) = (int32_t)input_length;
-    }
 
-    // Determine iostat
-    if (streql(buffer, "\n") ||
-        (is_streql_NCS((char*)advance, advance_length, "no", 2) 
-        &&
-        strcspn(buffer, "\n") != (size_t) str_len)) {
-        *iostat = -2;
-    } else {
-        *iostat = 0;
-    }
-
-    // Fill output with spaces
-    pad_with_spaces(str_data, 0, str_len);
-
-    // Copy and pad appropriately
-    if (width > (int)str_len) {
-        // Copy rightmost str_len chars if width > str_len
-        if (input_length >= (size_t)width) {
-            memcpy(str_data, buffer + (width - str_len), str_len);
-        } else if (input_length >= (size_t)str_len) {
-            memcpy(str_data, buffer + (input_length - str_len), str_len);
-        } else {
-            memcpy(str_data, buffer, input_length);
-        }
-    } else {
-        // width <= str_len
-        memcpy(str_data, buffer, (input_length < (size_t)width) ? input_length : (size_t)width);
-    }
     for (int i = 0; i < no_of_args; i++) {
+        // In LLVM, variadic args for strings are passed as (char*, int64_t)
         char* dest_ptr = va_arg(args, char*);
         int64_t dest_len = va_arg(args, int64_t);
 
-        if (dest_ptr && buffer) {
-            size_t buf_len = strlen(buffer);
-            size_t to_copy = (buf_len < (size_t)dest_len) ? buf_len : (size_t)dest_len;
+        if (dest_ptr) {
+            // Important: Clear the destination variable first
+            memset(dest_ptr, ' ', (size_t)dest_len);
             
-            // 1. Copy text from the internal buffer to the destination
+            size_t to_copy = (input_length < (size_t)dest_len) ? input_length : (size_t)dest_len;
             memcpy(dest_ptr, buffer, to_copy);
             
-            // 2. Pad the rest of the Fortran string with spaces
-            if ((int64_t)to_copy < dest_len) {
-                memset(dest_ptr + to_copy, ' ', (size_t)(dest_len - to_copy));
-            }
-            
-            printf("RUNTIME: Successfully copied '%.*s' to Fortran variable\n", (int)to_copy, dest_ptr);
+            printf("RUNTIME: Successfully copied '%.*s'\n", (int)to_copy, dest_ptr);
             fflush(stdout);
         }
     }
-    va_end(args);
+
+    if (iostat) *iostat = 0;
     free(buffer);
+    va_end(args);
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
