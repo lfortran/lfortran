@@ -5044,7 +5044,7 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t advance_length, char* fmt, int64_t fmt_len, char* str_data, int64_t str_len, int32_t no_of_args, ...)
 {
     int width = -1;
     // Parse format string: supports (a) and (aw)
@@ -5074,8 +5074,8 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     // Get string pointer and length from varargs
     va_list args;
     va_start(args, no_of_args);
-    char *str_data = va_arg(args, char*);
-    int64_t str_len = va_arg(args, int64_t);
+    //char *str_data = va_arg(args, char*);
+    //int64_t str_len = va_arg(args, int64_t);
 
     // If internal file, recalculate str_len safely from the pointer
     if (unit_num == -1 && str_data != NULL) {
@@ -5113,8 +5113,11 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             va_end(args);
             return;
         }
-        size_t to_copy = (strlen(str_data) < (size_t)width) ? strlen(str_data) : (size_t)width;
-        strncpy(buffer, str_data, to_copy);
+        char *real_str_ptr = *(char**)str_data; 
+        
+        size_t actual_len = strlen(real_str_ptr);
+        size_t to_copy = (actual_len < (size_t)width) ? actual_len : (size_t)width;
+        strncpy(buffer, real_str_ptr, to_copy);
         buffer[to_copy] = '\0';
     } else {
         if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {

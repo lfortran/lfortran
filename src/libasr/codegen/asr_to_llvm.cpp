@@ -11609,20 +11609,20 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
     }
 
-    // 8. Number of variables to read (Push ONCE)
-    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
-
-    // 9. THE SOURCE STRING (This part you correctly identified as not needing touching)
+    // --- MOVE SOURCE STRING HERE (New Args 8 & 9) ---
     if (is_string) {
         this->visit_expr_wrapper(x.m_unit, false, true);
         llvm::Value* desc_ptr = this->tmp;
-        llvm::Value* raw_data_ptr = llvm_utils->get_string_data(
-            ASRUtils::get_string_type(unit_ttype), desc_ptr);
-        args.push_back(raw_data_ptr);
-        args.push_back(builder->CreateIntCast(
-            llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), desc_ptr),
-            llvm::Type::getInt64Ty(context), true));
-        } 
+        args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(unit_ttype), desc_ptr));
+        args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), desc_ptr));
+    } else {
+        // Push nulls if not an internal string so the argument count stays consistent
+        args.push_back(llvm::ConstantPointerNull::get(character_type));
+        args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+    }
+
+    // --- NOW Push Number of variables (Now Arg 10) ---
+    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
 
     for (size_t i = 0; i < x.n_values; i++) {
         ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
@@ -11663,17 +11663,19 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),                 // Unit
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                    character_type,                                  // advance
-                    llvm::Type::getInt64Ty(context),                 // advance_length
-                    character_type,                                  // fmt
-                    llvm::Type::getInt64Ty(context),                 // fmt_len
-                    llvm::Type::getInt32Ty(context)                  // no_of_args
+                    llvm::Type::getInt32Ty(context),                // 1. Unit
+                    llvm::Type::getInt32Ty(context)->getPointerTo(),// 2. Iostat
+                    llvm::Type::getInt32Ty(context)->getPointerTo(),// 3. Chunk
+                    character_type,                                 // 4. advance
+                    llvm::Type::getInt64Ty(context),                // 5. advance_length
+                    character_type,                                 // 6. fmt
+                    llvm::Type::getInt64Ty(context),                // 7. fmt_len
+                    character_type,                                 // 8. str_data (NEW)
+                    llvm::Type::getInt64Ty(context),                // 9. str_len (NEW)
+                    llvm::Type::getInt32Ty(context)                 // 10. no_of_args
                 }, true); // Variadic is TRUE
             fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
 
         // Final Verification: Ensure we have at least the 8 fixed arguments
