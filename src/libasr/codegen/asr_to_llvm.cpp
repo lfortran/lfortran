@@ -12076,9 +12076,21 @@ public:
             read_size = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt32Ty(context));
         }
+        llvm::Value *rec_val = nullptr;
+        if (x.m_rec) {
+            this->visit_expr_wrapper(x.m_rec, true);
+            rec_val = tmp;
+            if (rec_val->getType() != llvm::Type::getInt64Ty(context)) {
+                rec_val = builder->CreateSExt(
+                    rec_val, llvm::Type::getInt64Ty(context));
+            }
+        } else {
+            rec_val = llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(context), 0);
+        }
 
         if (x.m_fmt) {
-            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
+            emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string, rec_val);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
             for (size_t i=0; i<x.n_values; i++) {
@@ -12435,10 +12447,12 @@ public:
             std::string runtime_func_name = "_lfortran_empty_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
+                // Add Int64 for 'rec' to the function type signature
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                            llvm::Type::getInt32Ty(context),            // unit
+                            llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                            llvm::Type::getInt64Ty(context)             // rec
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
@@ -12453,17 +12467,19 @@ public:
                 llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
                     iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
                 llvm_utils->create_if_else(iostat_is_zero, [&]() {
-                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                    // Pass rec_val here
+                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read, rec_val});
                 }, [](){});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                // Pass rec_val here
+                builder->CreateCall(fn, {unit_val, iostat_for_empty_read, rec_val});
             }
         }
     }
 
     void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
             llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
-            llvm::Value *advance_length, bool is_string) {
+            llvm::Value *advance_length, bool is_string, llvm::Value *rec_val) { // <--- Added rec_val arg
         ASR::expr_t* fmt_expr = x.m_fmt;
         ASR::expr_t** values = x.m_values;
         size_t n_values = x.n_values;
@@ -12477,7 +12493,7 @@ public:
         }
 
         std::vector<llvm::Value*> args;
-        args.reserve(8 + 3 * n_values);
+        args.reserve(9 + 3 * n_values); // Adjusted reserve count
         // For internal string reads, we need to pass string data and length instead of unit
         if (is_string) {
             llvm::Value *src_data, *src_len;
@@ -12498,6 +12514,13 @@ public:
         std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
         args.push_back(fmt_data);
         args.push_back(fmt_len);
+        
+        if (!is_string) {
+            if (!rec_val) {
+                rec_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+            }
+            args.push_back(rec_val);
+        }
 
         args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, n_values)));
 
@@ -12595,6 +12618,7 @@ public:
                             llvm::Type::getInt64Ty(context),                 // advance_length
                             character_type,                                  // fmt
                             llvm::Type::getInt64Ty(context),                 // fmt_len
+                            llvm::Type::getInt64Ty(context),                 // rec 
                             llvm::Type::getInt32Ty(context)                  // no_of_args
                         }, true);
                 fn = llvm::Function::Create(function_type,
@@ -13126,6 +13150,7 @@ public:
             args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); //iostat
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); //format_data
             args_type.push_back(llvm::Type::getInt64Ty(context));//format_len
+            args_type.push_back(llvm::Type::getInt64Ty(context));//rec
 
         } else {
             throw CodeGenError("Unsupported type for `unit` in write(..)");
@@ -13250,6 +13275,16 @@ public:
         llvm::Value *fmt_data = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
         llvm::Value *fmt_len = llvm::ConstantInt::get(context, llvm::APInt(64, fmt_str.length()));
 
+        llvm::Value *rec_val;
+        if (x.m_rec) {
+            this->visit_expr_wrapper(x.m_rec, true);
+            rec_val = tmp;
+            if (rec_val->getType() != llvm::Type::getInt64Ty(context)) {
+                rec_val = builder->CreateSExt(rec_val, llvm::Type::getInt64Ty(context));
+            }
+        } else {
+            rec_val = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
 
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(unit);
@@ -13265,6 +13300,7 @@ public:
         printf_args.push_back(iostat);
         printf_args.push_back(fmt_data);
         printf_args.push_back(fmt_len);
+        printf_args.push_back(rec_val); 
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {

@@ -173,7 +173,7 @@ ifcont:                                           ; preds = %else, %then
   %21 = load i8*, i8** %20, align 8
   %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %23 = load i64, i64* %22, align 4
-  call void (i8**, i8, i8, i64*, i32*, i8*, i64, ...) @_lfortran_string_write(i8** %10, i8 0, i8 0, i64* %11, i32* %13, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i64 2, i8* %21, i64 %23)
+  call void (i8**, i8, i8, i64*, i32*, i8*, i64, ...) @_lfortran_string_write(i8** %10, i8 0, i8 0, i64* %11, i32* %13, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i64 2, i64 0, i8* %21, i64 %23)
   %24 = icmp eq i8* %16, null
   br i1 %24, label %free_done, label %free_nonnull
 

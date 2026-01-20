@@ -252,7 +252,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *name, int64_t name_len,
                                     char *blank, int64_t blank_len,
                                     int32_t *recl);
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int64_t rec,int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
@@ -275,7 +275,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, 
         int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);
-LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...);
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, int64_t rec, ...);
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i);
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr);
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i);
@@ -287,7 +287,7 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len);
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr);
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i);
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int64_t rec);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);

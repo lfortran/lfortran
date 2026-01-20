@@ -21,7 +21,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i32* null, i32** %3, align 8
   %4 = load i32*, i32** %3, align 8
   %5 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %2, i32* %4, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %5, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
+  call void (i32, i32*, i8*, i64, i64, ...) @_lfortran_file_write(i32 %2, i32* %4, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i64 0, i8* %5, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -34,6 +34,6 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lfortran_file_write(i32, i32*, i8*, i64, ...)
+declare void @_lfortran_file_write(i32, i32*, i8*, i64, i64, ...)
 
 declare void @_lpython_free_argv()

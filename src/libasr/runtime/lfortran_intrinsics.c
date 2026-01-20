@@ -6453,18 +6453,36 @@ LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
     fchar* fmt, int64_t fmt_len,
-    int32_t no_of_args, ...)
+    int64_t rec,int32_t no_of_args, ...) 
 {
     InputSource inputSource;
     bool unit_file_bin, blank_zero;
+    int32_t record_length = 0;
+    int access_id; 
 
     if (unit_num != -1) {
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-            NULL, NULL, NULL, NULL, &blank_zero, NULL);
+            &access_id, NULL, NULL, NULL, &blank_zero, &record_length);
+            
         if (!inputSource.file) {
-            printf("No file found with given unit\n");
+            printf("Runtime Error: No file found with unit %d\n", unit_num);
             exit(1);
+        }
+        if (rec > 0) {
+            if (access_id != 2) {
+                 fprintf(stderr, "Runtime Error: REC= specified but file not opened for DIRECT access.\n");
+                 exit(1);
+            }
+            if (record_length <= 0) {
+                 fprintf(stderr, "Runtime Error: Invalid record length for direct access.\n");
+                 exit(1);
+            }
+            int64_t offset = (rec - 1) * (int64_t)record_length;
+            if (fseek(inputSource.file, offset, SEEK_SET) != 0) {
+                 fprintf(stderr, "Runtime Error: Seek failed for REC=%ld\n", (long)rec);
+                 exit(1);
+            }
         }
     } else {
         inputSource.inputMethod = INPUT_FILE;
@@ -6591,7 +6609,7 @@ static void common_formatted_read(InputSource *inputSource,
 
 }
 
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int64_t rec) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         // Read from stdin
@@ -6599,10 +6617,47 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 
     bool unit_file_bin;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    int32_t record_length = 0;
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, &record_length);
     if (!fp) {
-        fprintf(stderr, "No file found with given unit\n");
+        if (iostat) {
+            *iostat = -1;  // Unit not connected
+            return;
+        }
+        fprintf(stderr, "Runtime Error: No file found with unit %d\n", unit_num);
         exit(1);
+    }
+
+    // Handle direct access with REC= specifier
+    if (rec > 0) {
+        if (access_id != 2) {  // 2 is DIRECT access
+            if (iostat) {
+                *iostat = 5004;  // REC specified but not direct access
+                return;
+            }
+            fprintf(stderr, "Runtime Error: REC= specified but file not opened for DIRECT access.\n");
+            exit(1);
+        }
+        
+        if (record_length <= 0) {
+            if (iostat) {
+                *iostat = 5005;  // Invalid record length
+                return;
+            }
+            fprintf(stderr, "Runtime Error: Invalid record length for direct access.\n");
+            exit(1);
+        }
+        
+        int64_t offset = (rec - 1) * (int64_t)record_length;
+        if (fseek(fp, offset, SEEK_SET) != 0) {
+            if (iostat) {
+                *iostat = 5006;  // Seek error
+                return;
+            }
+            fprintf(stderr, "Runtime Error: Seek failed for REC=%ld\n", (long)rec);
+            exit(1);
+        }
     }
 
     if (!unit_file_bin) {
@@ -6646,13 +6701,14 @@ bool is_write_and_open_format_match(bool unit_file_bin, const char* format_data)
     return is_openFile_formatted == is_fileWrite_formatted;
 }
 
-LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, int64_t rec, ...)
 {
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
     int delim;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, NULL);
+    int32_t record_length;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, &record_length);
 
     // Check if write is allowed (action='read' sets write_access=false)
     // Only check if unit was found in table (filep != NULL); unconnected units fall through to stdout
@@ -6681,10 +6737,47 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (!filep) {
         filep = stdout;
     }
+    if (rec > 0) {        
+        if (access_id != 2) {  // 2 is DIRECT access
+            printf("DEBUG: ERROR: rec specified but access_id=%d (not direct)\n", access_id);
+            if (iostat) {
+                *iostat = 5004;  // rec specified but not direct access
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: REC= specified but file was not opened with ACCESS='DIRECT' on unit %d.\n", unit_num);
+                exit(1);
+            }
+        }
+        
+        // Calculate position
+        if (record_length <= 0) {
+            printf("DEBUG: ERROR: Invalid record_length=%d\n", record_length);
+            if (iostat) {
+                *iostat = 5005;  // Invalid record length
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Invalid record length for direct access on unit %d.\n", unit_num);
+                exit(1);
+            }
+        }
+        
+        int64_t offset = (rec - 1) * record_length;
+        if (fseek(filep, offset, SEEK_SET) != 0) {
+            long pos = ftell(filep);
+            if (iostat) {
+                *iostat = 5006;  // Seek error
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Cannot seek to record %lld on unit %d.\n", (long long)rec, unit_num);
+                exit(1);
+            }
+        }
+    }
+    
     if (unit_file_bin) { // Unformatted
         fseek(filep, 0, SEEK_END);
         va_list args;
-        va_start(args, format_len);
+        va_start(args, rec);
         size_t total_size = 0;
         struct {
             void *ptr;
@@ -6737,7 +6830,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     } else { // Formatted
         va_list args;
-        va_start(args, format_len);
+        va_start(args, rec);
         char* str = va_arg(args, char*);
         int64_t str_len = va_arg(args, int64_t);
 
