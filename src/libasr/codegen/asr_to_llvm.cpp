@@ -456,6 +456,11 @@ public:
         // head
         start_new_block(loophead); {
             llvm::Value* cond = condition();
+            // If condition is i8 (Logical), convert to i1 by comparing != 0
+            if (cond->getType()->isIntegerTy(8)) {
+                cond = builder->CreateICmpNE(cond,
+                    llvm::ConstantInt::get(cond->getType(), 0));
+            }
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
@@ -1977,7 +1982,9 @@ public:
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
         handle_allocated(x.m_args[0].m_a);
-        llvm::Value* is_allocated = tmp;
+        // Convert i8 logical to i1 for boolean operations
+        llvm::Value* is_allocated = builder->CreateICmpNE(tmp,
+            llvm::ConstantInt::get(tmp->getType(), 0));
         llvm::Value* size = llvm::ConstantInt::get(
             llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
         int64_t ptr_loads_copy = ptr_loads;
@@ -2662,29 +2669,32 @@ public:
 
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
 
+        llvm::Value* result_i1 = nullptr;
         if(x.m_op == ASR::cmpopType::Eq || x.m_op == ASR::cmpopType::NotEq) {
-            tmp = llvm_utils->is_equal_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_equal_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left));
             if (x.m_op == ASR::cmpopType::NotEq) {
-                tmp = builder->CreateNot(tmp);
+                result_i1 = builder->CreateNot(result_i1);
             }
         }
         else if(x.m_op == ASR::cmpopType::Lt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 0, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::LtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 1, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::Gt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 2, int32_type);
         }
         else if(x.m_op == ASR::cmpopType::GtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3, int32_type);
         }
+        // LOGICAL values are stored as bytes (i8)
+        tmp = builder->CreateZExt(result_i1, llvm::Type::getInt8Ty(context));
     }
 
     void visit_DictLen(const ASR::DictLen_t& x) {
@@ -3294,29 +3304,32 @@ public:
         this->visit_expr(*x.m_right);
         llvm::Value* right = tmp;
         ptr_loads = ptr_loads_copy;
+        llvm::Value* result_i1 = nullptr;
         if(x.m_op == ASR::cmpopType::Eq || x.m_op == ASR::cmpopType::NotEq) {
-            tmp = llvm_utils->is_equal_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_equal_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left));
             if (x.m_op == ASR::cmpopType::NotEq) {
-                tmp = builder->CreateNot(tmp);
+                result_i1 = builder->CreateNot(result_i1);
             }
         }
         else if(x.m_op == ASR::cmpopType::Lt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 0);
         }
         else if(x.m_op == ASR::cmpopType::LtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 1);
         }
         else if(x.m_op == ASR::cmpopType::Gt) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 2);
         }
         else if(x.m_op == ASR::cmpopType::GtE) {
-            tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
+            result_i1 = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3);
         }
+        // LOGICAL values are stored as bytes (i8)
+        tmp = builder->CreateZExt(result_i1, llvm::Type::getInt8Ty(context));
     }
 
     void visit_TupleLen(const ASR::TupleLen_t& x) {
@@ -3727,16 +3740,20 @@ public:
                 }
                 // Unallocated array is contiguous
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, x.m_array);
-                tmp = builder->CreateOr(is_contiguous, builder->CreateNot(is_allocated));
+                llvm::Value* result_i1 = builder->CreateOr(is_contiguous, builder->CreateNot(is_allocated));
+                // LOGICAL values are stored as bytes (i8)
+                tmp = builder->CreateZExt(result_i1, llvm::Type::getInt8Ty(context));
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:
             case ASR::array_physical_typeType::SIMDArray:
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+                // LOGICAL values are stored as bytes (i8)
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(8, 1));
                 break;
             case ASR::array_physical_typeType::PointerArray:
             case ASR::array_physical_typeType::StringArraySinglePointer:
-                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                // LOGICAL values are stored as bytes (i8)
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(8, 0));
                 break;
             default:
                 LCOMPILERS_ASSERT(false);
@@ -4122,8 +4139,9 @@ public:
                 }
             } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
+                // LOGICAL values are stored as bytes (i8) in memory.
                 arr_elements.push_back(llvm::ConstantInt::get(
-                    context, llvm::APInt(1, logical_const->m_value)));
+                    context, llvm::APInt(8, logical_const->m_value)));
             }
         }
         llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
@@ -4305,7 +4323,7 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
             llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                llvm::Type::getInt1Ty(context));
+                llvm::Type::getInt8Ty(context));
             if (!external) {
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
@@ -4313,7 +4331,7 @@ public:
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
-                                llvm::APInt(1, 0)));
+                                llvm::APInt(8, 0)));
                     set_global_variable_linkage_as_common(ptr, x.m_abi);
                 }
             }
@@ -6731,8 +6749,9 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        // ASSOCIATED returns a Fortran Logical, which is stored as i8
         llvm::AllocaInst *res = llvm_utils->CreateAlloca(
-            llvm::Type::getInt1Ty(context), nullptr, "is_associated");
+            llvm::Type::getInt8Ty(context), nullptr, "is_associated");
         ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
         llvm::Value *ptr, *nptr;
         int64_t ptr_loads_copy = ptr_loads;
@@ -6769,9 +6788,11 @@ public:
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_tgt, true);
             ptr_loads = ptr_loads_copy;
-            tmp = builder->CreateICmpEQ(
+            // ASSOCIATED returns Fortran Logical (i8)
+            tmp = builder->CreateZExt(builder->CreateICmpEQ(
                 builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false)),
-                builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false)));
+                builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false))),
+                llvm::Type::getInt8Ty(context));
             return ;
         }
         llvm_utils->create_if_else(builder->CreateICmpEQ(
@@ -6779,7 +6800,7 @@ public:
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0))),
         [&]() {
             builder->CreateStore(
-                llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), llvm::APInt(1, 0)),
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
                 res);
         },
         [&]() {
@@ -6810,16 +6831,20 @@ public:
                 }
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
                 ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
-                builder->CreateStore(builder->CreateICmpEQ(ptr, nptr), res);
+                // Store i8: zext i1 comparison result to i8
+                builder->CreateStore(builder->CreateZExt(
+                    builder->CreateICmpEQ(ptr, nptr), llvm::Type::getInt8Ty(context)), res);
             } else {
                 llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
                 nptr = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
                 ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
-                builder->CreateStore(builder->CreateICmpNE(ptr, nptr), res);
+                // Store i8: zext i1 comparison result to i8
+                builder->CreateStore(builder->CreateZExt(
+                    builder->CreateICmpNE(ptr, nptr), llvm::Type::getInt8Ty(context)), res);
             }
         });
-        tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
+        tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), res);
     }
 
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
@@ -9101,19 +9126,10 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                if (x->type == ASR::exprType::ArrayItem &&
-                    (compiler_options.fast || compiler_options.po.fast) &&
-                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
-                    // Under `--fast`, LOGICAL arrays are byte-backed (i8) in memory.
-                    // Convert i8 -> i1 on loads to preserve expression semantics.
-                    llvm::Value* v_i8 = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt8Ty(context), tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(
-                        v_i8, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0));
-                } else {
-                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                // LOGICAL arrays are byte-backed (i8) in memory. The type
+                // function returns i8 for Logical, so no special handling needed.
+                llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
+                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
         }
     }
@@ -9596,6 +9612,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
@@ -9639,6 +9657,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
@@ -9682,6 +9702,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -9725,6 +9747,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
@@ -9759,6 +9783,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
@@ -9843,6 +9869,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
@@ -9854,7 +9882,7 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        // i1 -> i32
+        // i8 -> i32 for comparison (Logical values are now stored as i8)
         left = builder->CreateZExt(left, llvm::Type::getInt32Ty(context));
         right = builder->CreateZExt(right, llvm::Type::getInt32Ty(context));
         switch (x.m_op) {
@@ -9887,6 +9915,8 @@ public:
                         x.base.base.loc);
             }
         }
+        // Comparison results are i1, but Fortran Logical is stored as i8.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {
@@ -10074,8 +10104,9 @@ public:
                 comp_res,
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
         } else if (ASRUtils::is_logical(*x.m_type)) {
+            // LOGICAL values are stored as bytes (i8) in memory.
             zero = llvm::ConstantInt::get(context,
-                            llvm::APInt(1, 0));
+                            llvm::APInt(8, 0));
             cond = builder->CreateICmpEQ(left_val, zero);
         } else {
             throw CodeGenError("Only Integer, Real, Strings and Logical types are supported "
@@ -10099,8 +10130,10 @@ public:
                 break;
             };
             case ASR::logicalbinopType::Eqv: {
+                // XNOR: x .eqv. y = NOT(x XOR y)
+                // For i8 logical values, XOR with 1 for logical NOT (not bitwise NOT)
                 tmp = builder->CreateXor(left_val, right_val);
-                tmp = builder->CreateNot(tmp);
+                tmp = builder->CreateXor(tmp, llvm::ConstantInt::get(tmp->getType(), 1));
             };
         }
     }
@@ -10803,11 +10836,8 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            if (compiler_options.fast || compiler_options.po.fast) {
-                el_type = llvm::Type::getInt8Ty(context);
-            } else {
-                el_type = llvm::Type::getInt1Ty(context);
-            }
+            // LOGICAL values are stored as bytes (i8) in memory.
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -10859,11 +10889,8 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            if (compiler_options.fast || compiler_options.po.fast) {
-                el_type = llvm::Type::getInt8Ty(context);
-            } else {
-                el_type = llvm::Type::getInt1Ty(context);
-            }
+            // LOGICAL values are stored as bytes (i8) in memory.
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -11046,7 +11073,8 @@ public:
         } else {
             val = 0;
         }
-        tmp = llvm::ConstantInt::get(context, llvm::APInt(1, val));
+        // LOGICAL values are stored as bytes (i8) in memory.
+        tmp = llvm::ConstantInt::get(context, llvm::APInt(8, val));
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t &x) {
@@ -11056,7 +11084,8 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *arg = tmp;
-        tmp = builder->CreateNot(arg);
+        // LOGICAL values are stored as i8. XOR with 1 to negate: 0->1, 1->0.
+        tmp = builder->CreateXor(arg, llvm::ConstantInt::get(arg->getType(), 1));
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -11598,6 +11627,8 @@ public:
                         tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
                         break;
                 }
+                // Logical values are stored as i8
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
@@ -11611,10 +11642,14 @@ public:
                     zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
                 }
                 tmp = builder->CreateFCmpUNE(tmp, zero);
+                // Logical values are stored as i8
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
                 break;
             }
             case (ASR::cast_kindType::StringToLogical) : {
                 tmp = builder->CreateICmpNE(get_string_length(x.m_arg), builder->getInt32(0));
+                // Logical values are stored as i8
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
                 break;
             }
             case (ASR::cast_kindType::StringToInteger) : {
@@ -11640,6 +11675,8 @@ public:
                 llvm::Value *imag_check = builder->CreateFCmpUEQ(c_imag, zero);
                 tmp = builder->CreateAnd(real_check, imag_check);
                 tmp = builder->CreateNot(tmp);
+                // Logical values are stored as i8
+                tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
@@ -12079,7 +12116,8 @@ public:
 
                 if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_logical";
-                    type_arg = llvm::Type::getInt1Ty(context);
+                    // LOGICAL values are stored as bytes (i8) in memory.
+                    type_arg = llvm::Type::getInt8Ty(context);
                 } else {
                     throw CodeGenError("Read Logical function not implemented for kind: " + std::to_string(a_kind));
                 }
@@ -12955,7 +12993,7 @@ public:
             ptr_loads = ptr_loads_copy;
         } else {
             exist_val = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt1Ty(context));
+                            llvm::Type::getInt8Ty(context));  // Logical dummy
         }
 
         if (x.m_unit) {
@@ -12973,7 +13011,7 @@ public:
             ptr_loads = ptr_loads_copy;
         } else {
             opened_val = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt1Ty(context));
+                            llvm::Type::getInt8Ty(context));  // Logical dummy
         }
 
         if (x.m_size) {
@@ -13134,9 +13172,9 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type, llvm::Type::getInt64Ty(context),
-                        llvm::Type::getInt1Ty(context)->getPointerTo(),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),  // exist (Logical)
                         llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt1Ty(context)->getPointerTo(),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),  // opened (Logical)
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         character_type, llvm::Type::getInt64Ty(context), // write_data, write_len
@@ -14333,7 +14371,8 @@ public:
                         break;
                     }
                     case (ASR::ttypeType::Logical) :
-                        target_type = llvm::Type::getInt1Ty(context);
+                        // LOGICAL values are stored as bytes (i8) in memory.
+                        target_type = llvm::Type::getInt8Ty(context);
                         break;
                     case (ASR::ttypeType::EnumType) :
                         target_type = llvm::Type::getInt32Ty(context);
@@ -14492,7 +14531,7 @@ public:
                     llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(dim_des_type)),
                     dim_des_ptr);
                 llvm::Value* is_allocated_ptr = llvm_utils->create_gep2(descriptor_type, descriptor, 3);
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_allocated_ptr);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(8, 1)), is_allocated_ptr);
                 arr_descr->set_rank(descriptor_type, descriptor, llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
                 tmp = descriptor;
             }
@@ -15682,6 +15721,8 @@ public:
                 builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)) );
         }
+        // LOGICAL values are stored as i8 in memory.
+        tmp = builder->CreateZExt(tmp, llvm::Type::getInt8Ty(context));
     }
 
     llvm::Value* CreatePointerToStructTypeReturnValue(llvm::FunctionType* fnty,

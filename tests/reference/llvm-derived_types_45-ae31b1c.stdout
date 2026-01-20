@@ -63,7 +63,9 @@ ifcont5:                                          ; preds = %ifcont3
   %17 = getelementptr %myint, %myint* %14, i32 0, i32 0
   %18 = load i32, i32* %17, align 4
   %19 = icmp ne i32 %18, 44
-  br i1 %19, label %then6, label %else7
+  %20 = zext i1 %19 to i8
+  %21 = icmp ne i8 %20, 0
+  br i1 %21, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
@@ -84,18 +86,18 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
   br label %Finalize_Variable_ins
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
-  %20 = load %myint*, %myint** %ins, align 8
-  %21 = icmp ne %myint* %20, null
-  br i1 %21, label %is_allocated.then, label %is_allocated.else
+  %22 = load %myint*, %myint** %ins, align 8
+  %23 = icmp ne %myint* %22, null
+  br i1 %23, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %Finalize_Variable_ins
-  %22 = getelementptr %myint, %myint* %20, i32 0, i32 0
-  %23 = icmp eq %myint* %20, null
-  br i1 %23, label %free_done, label %free_nonnull
+  %24 = getelementptr %myint, %myint* %22, i32 0, i32 0
+  %25 = icmp eq %myint* %22, null
+  br i1 %25, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %is_allocated.then
-  %24 = bitcast %myint* %20 to i8*
-  call void @_lfortran_free(i8* %24)
+  %26 = bitcast %myint* %22 to i8*
+  call void @_lfortran_free(i8* %26)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %is_allocated.then

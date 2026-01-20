@@ -1,12 +1,12 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%array = type { %tt*, i32, %dimension_descriptor*, i1, i32 }
+%array = type { %tt*, i32, %dimension_descriptor*, i8, i32 }
 %tt = type { float, %t }
 %t = type { i32 }
 %dimension_descriptor = type { i32, i32, i32 }
-%array.0 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
-%array.1 = type { %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }
+%array.0 = type { i32*, i32, %dimension_descriptor*, i8, i32 }
+%array.1 = type { %string_descriptor*, i32, %dimension_descriptor*, i8, i32 }
 %string_descriptor = type <{ i8*, i64 }>
 
 @deep_0 = internal global i32 0

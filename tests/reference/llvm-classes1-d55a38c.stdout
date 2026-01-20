@@ -72,7 +72,9 @@ free_done:                                        ; preds = %free_nonnull, %.ent
   %21 = getelementptr %base, %base* %b, i32 0, i32 0
   %22 = load i32, i32* %21, align 4
   %23 = icmp ne i32 %22, 12
-  br i1 %23, label %then, label %else
+  %24 = zext i1 %23 to i8
+  %25 = icmp ne i8 %24, 0
+  br i1 %25, label %then, label %else
 
 then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))

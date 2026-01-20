@@ -495,14 +495,9 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                // Under `--fast`, LOGICAL arrays are stored as bytes (`i8`) in memory to
-                // avoid fragile bit-packed `i1` memory behavior under some LLVM optimizations.
-                // Expression-level LOGICAL values remain `i1` and are converted on load/store.
-                if (compiler_options.fast || compiler_options.po.fast) {
-                    el_type = llvm::Type::getInt8Ty(context);
-                } else {
-                    el_type = llvm::Type::getInt1Ty(context);
-                }
+                // LOGICAL values are stored as bytes (`i8`) in memory.
+                // LLVM comparisons produce `i1`, which is converted on store.
+                el_type = llvm::Type::getInt8Ty(context);
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -809,11 +804,12 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
+                // LOGICAL values are stored as bytes (i8) in memory.
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
-                    type = llvm::Type::getInt1Ty(context);
+                    type = llvm::Type::getInt8Ty(context);
                 } else {
-                    type = llvm::Type::getInt1Ty(context)->getPointerTo();
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();
                 }
                 break;
             }
@@ -1124,7 +1120,8 @@ namespace LCompilers {
                     return_type = get_StringType(return_var_type0);
                     break;
                 case (ASR::ttypeType::Logical) :
-                    return_type = llvm::Type::getInt1Ty(context);
+                    // LOGICAL values are stored as bytes (i8) in memory.
+                    return_type = llvm::Type::getInt8Ty(context);
                     break;
                 case (ASR::ttypeType::CPtr) :
                     return_type = llvm::Type::getVoidTy(context)->getPointerTo();
@@ -1364,7 +1361,8 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
-                llvm_type = llvm::Type::getInt1Ty(context);
+                // LOGICAL values are stored as bytes (`i8`) in memory.
+                llvm_type = llvm::Type::getInt8Ty(context);
                 break;
             }
             case (ASR::ttypeType::StructType) : {

@@ -43,7 +43,9 @@ define i32 @b.__module_many_returns_d(i32* %i) {
   %d = alloca i32, align 4
   %0 = load i32, i32* %i, align 4
   %1 = icmp eq i32 %0, 1
-  br i1 %1, label %then, label %else
+  %2 = zext i1 %1 to i8
+  %3 = icmp ne i8 %2, 0
+  br i1 %3, label %then, label %else
 
 then:                                             ; preds = %.entry
   store i32 1, i32* %d, align 4
@@ -56,9 +58,11 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %unreachable_after_return
-  %2 = load i32, i32* %i, align 4
-  %3 = icmp eq i32 %2, 2
-  br i1 %3, label %then1, label %else3
+  %4 = load i32, i32* %i, align 4
+  %5 = icmp eq i32 %4, 2
+  %6 = zext i1 %5 to i8
+  %7 = icmp ne i8 %6, 0
+  br i1 %7, label %then1, label %else3
 
 then1:                                            ; preds = %ifcont
   store i32 2, i32* %d, align 4
@@ -71,9 +75,11 @@ else3:                                            ; preds = %ifcont
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else3, %unreachable_after_return2
-  %4 = load i32, i32* %i, align 4
-  %5 = icmp eq i32 %4, 3
-  br i1 %5, label %then5, label %else7
+  %8 = load i32, i32* %i, align 4
+  %9 = icmp eq i32 %8, 3
+  %10 = zext i1 %9 to i8
+  %11 = icmp ne i8 %10, 0
+  br i1 %11, label %then5, label %else7
 
 then5:                                            ; preds = %ifcont4
   store i32 3, i32* %d, align 4
@@ -93,8 +99,8 @@ return:                                           ; preds = %ifcont8, %then5, %t
   br label %FINALIZE_SYMTABLE_d
 
 FINALIZE_SYMTABLE_d:                              ; preds = %return
-  %6 = load i32, i32* %d, align 4
-  ret i32 %6
+  %12 = load i32, i32* %d, align 4
+  ret i32 %12
 }
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)

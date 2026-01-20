@@ -52,7 +52,9 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = fadd float %2, 0x3FEFE8D5A0000000
   %4 = call float @llvm.fabs.f32(float %3)
   %5 = fcmp ogt float %4, 0x3E7AD7F2A0000000
-  br i1 %5, label %then, label %else
+  %6 = zext i1 %5 to i8
+  %7 = icmp ne i8 %6, 0
+  br i1 %7, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
@@ -63,11 +65,13 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %6 = call double @_lcompilers_cos_f64(double* %a)
-  %7 = fadd double %6, 0x3FDF606EE0000000
-  %8 = call double @llvm.fabs.f64(double %7)
-  %9 = fcmp ogt double %8, 0x3E7AD7F2A0000000
-  br i1 %9, label %then1, label %else2
+  %8 = call double @_lcompilers_cos_f64(double* %a)
+  %9 = fadd double %8, 0x3FDF606EE0000000
+  %10 = call double @llvm.fabs.f64(double %9)
+  %11 = fcmp ogt double %10, 0x3E7AD7F2A0000000
+  %12 = zext i1 %11 to i8
+  %13 = icmp ne i8 %12, 0
+  br i1 %13, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
@@ -78,18 +82,20 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %10 = load double, double* %a, align 8
-  %11 = call double @_lcompilers_cos_f64(double* %a)
-  %12 = fadd double %10, %11
-  store double %12, double* %call_arg_value, align 8
-  %13 = call double @_lcompilers_cos_f64(double* %call_arg_value)
-  %14 = fadd double 0x3FB21BD54FC5F9A7, %13
-  store double %14, double* %call_arg_value4, align 8
-  %15 = call double @_lcompilers_cos_f64(double* %call_arg_value4)
-  %16 = fsub double %15, 0x3FE6ECC720000000
-  %17 = call double @llvm.fabs.f64(double %16)
-  %18 = fcmp ogt double %17, 0x3E7AD7F2A0000000
-  br i1 %18, label %then5, label %else6
+  %14 = load double, double* %a, align 8
+  %15 = call double @_lcompilers_cos_f64(double* %a)
+  %16 = fadd double %14, %15
+  store double %16, double* %call_arg_value, align 8
+  %17 = call double @_lcompilers_cos_f64(double* %call_arg_value)
+  %18 = fadd double 0x3FB21BD54FC5F9A7, %17
+  store double %18, double* %call_arg_value4, align 8
+  %19 = call double @_lcompilers_cos_f64(double* %call_arg_value4)
+  %20 = fsub double %19, 0x3FE6ECC720000000
+  %21 = call double @llvm.fabs.f64(double %20)
+  %22 = fcmp ogt double %21, 0x3E7AD7F2A0000000
+  %23 = zext i1 %22 to i8
+  %24 = icmp ne i8 %23, 0
+  br i1 %24, label %then5, label %else6
 
 then5:                                            ; preds = %ifcont3
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
@@ -100,15 +106,17 @@ else6:                                            ; preds = %ifcont3
   br label %ifcont7
 
 ifcont7:                                          ; preds = %else6, %then5
-  %19 = call double @_lcompilers_cos_f64(double* %a)
-  store double %19, double* %r1, align 8
+  %25 = call double @_lcompilers_cos_f64(double* %a)
+  store double %25, double* %r1, align 8
   store double 0xBFDF606EEC8AC71E, double* %r2, align 8
-  %20 = load double, double* %r1, align 8
-  %21 = load double, double* %r2, align 8
-  %22 = fsub double %20, %21
-  %23 = call double @llvm.fabs.f64(double %22)
-  %24 = fcmp ogt double %23, 1.000000e-15
-  br i1 %24, label %then8, label %else9
+  %26 = load double, double* %r1, align 8
+  %27 = load double, double* %r2, align 8
+  %28 = fsub double %26, %27
+  %29 = call double @llvm.fabs.f64(double %28)
+  %30 = fcmp ogt double %29, 1.000000e-15
+  %31 = zext i1 %30 to i8
+  %32 = icmp ne i8 %31, 0
+  br i1 %32, label %then8, label %else9
 
 then8:                                            ; preds = %ifcont7
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
@@ -119,40 +127,42 @@ else9:                                            ; preds = %ifcont7
   br label %ifcont10
 
 ifcont10:                                         ; preds = %else9, %then8
-  %25 = alloca i64, align 8
-  %26 = load i32, i32* @intrinsics_03.i, align 4
-  %27 = sub i32 0, %26
-  %28 = icmp sge i32 %26, 0
-  %29 = select i1 %28, i32 %26, i32 %27
-  %30 = alloca i32, align 4
-  store i32 %29, i32* %30, align 4
-  %31 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %25, i32 0, i32 0, i32* %30)
-  %32 = load i64, i64* %25, align 4
+  %33 = alloca i64, align 8
+  %34 = load i32, i32* @intrinsics_03.i, align 4
+  %35 = sub i32 0, %34
+  %36 = icmp sge i32 %34, 0
+  %37 = select i1 %36, i32 %34, i32 %35
+  %38 = alloca i32, align 4
+  store i32 %37, i32* %38, align 4
+  %39 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %33, i32 0, i32 0, i32* %38)
+  %40 = load i64, i64* %33, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %33 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %31, i8** %33, align 8
-  %34 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %32, i64* %34, align 4
-  %35 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %36 = load i8*, i8** %35, align 8
-  %37 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %38 = load i64, i64* %37, align 4
-  %39 = trunc i64 %38 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %36, i32 %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
-  %40 = icmp eq i8* %31, null
-  br i1 %40, label %free_done, label %free_nonnull
+  %41 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %39, i8** %41, align 8
+  %42 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %40, i64* %42, align 4
+  %43 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %44 = load i8*, i8** %43, align 8
+  %45 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %46 = load i64, i64* %45, align 4
+  %47 = trunc i64 %46 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %44, i32 %47, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  %48 = icmp eq i8* %39, null
+  br i1 %48, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %ifcont10
-  call void @_lfortran_free(i8* %31)
+  call void @_lfortran_free(i8* %39)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %ifcont10
-  %41 = load i32, i32* @intrinsics_03.i, align 4
-  %42 = sub i32 0, %41
-  %43 = icmp sge i32 %41, 0
-  %44 = select i1 %43, i32 %41, i32 %42
-  %45 = icmp ne i32 %44, 12
-  br i1 %45, label %then11, label %else12
+  %49 = load i32, i32* @intrinsics_03.i, align 4
+  %50 = sub i32 0, %49
+  %51 = icmp sge i32 %49, 0
+  %52 = select i1 %51, i32 %49, i32 %50
+  %53 = icmp ne i32 %52, 12
+  %54 = zext i1 %53 to i8
+  %55 = icmp ne i8 %54, 0
+  br i1 %55, label %then11, label %else12
 
 then11:                                           ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))

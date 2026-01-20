@@ -205,7 +205,7 @@ namespace LCompilers {
             array_type_vec = {  el_type->getPointerTo(),
                                 llvm::Type::getInt32Ty(context),
                                 dim_des_array,
-                                llvm::Type::getInt1Ty(context),
+                                llvm::Type::getInt8Ty(context),  // is_allocated flag (i8 for Logical consistency)
                                 llvm::Type::getInt32Ty(context)  };
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);

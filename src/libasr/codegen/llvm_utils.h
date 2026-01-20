@@ -662,6 +662,11 @@ class ASRToLLVMVisitor;
                     mergeBB = llvm::BasicBlock::Create(context, "ifcont");
                 }
 
+                // If condition is i8 (Logical), convert to i1 by comparing != 0
+                if (cond->getType()->isIntegerTy(8)) {
+                    cond = builder->CreateICmpNE(cond,
+                        llvm::ConstantInt::get(cond->getType(), 0));
+                }
                 builder->CreateCondBr(cond, thenBB, elseBB);
                 builder->SetInsertPoint(thenBB); {
                     if_block();
@@ -702,6 +707,11 @@ class ASRToLLVMVisitor;
                 // head
                 start_new_block(loophead); {
                     llvm::Value* cond = condition();
+                    // If condition is i8 (Logical), convert to i1 by comparing != 0
+                    if (cond->getType()->isIntegerTy(8)) {
+                        cond = builder->CreateICmpNE(cond,
+                            llvm::ConstantInt::get(cond->getType(), 0));
+                    }
                     builder->CreateCondBr(cond, loopbody, loopend);
                 }
 
