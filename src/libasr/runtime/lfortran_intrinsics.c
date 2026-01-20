@@ -8026,10 +8026,23 @@ static int parse_array_subscript(const char *name_with_idx, char *base_name,
 }
 
 // Helper to calculate linear offset from multi-dimensional indices
+// Returns -1 if indices are out of bounds
 static int64_t calculate_array_offset(const int *indices, int n_indices,
                                        const lfortran_nml_item_t *item) {
     if (n_indices == 0 || item->rank == 0) {
         return 0;
+    }
+
+    // Validate number of indices matches rank
+    if (n_indices != item->rank) {
+        return -1;
+    }
+
+    // Validate each index is within bounds
+    for (int i = 0; i < n_indices; i++) {
+        if (indices[i] < 1 || indices[i] > item->shape[i]) {
+            return -1;  // Out of bounds
+        }
     }
 
     // Convert Fortran 1-based indices to 0-based offsets
@@ -8194,6 +8207,17 @@ LFORTRAN_API void _lfortran_namelist_read(
         int64_t value_idx = 0;
         if (n_indices > 0) {
             value_idx = calculate_array_offset(indices, n_indices, item);
+            if (value_idx < 0) {
+                // Array index out of bounds
+                free(line_buf);
+                if (iostat) {
+                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                    return;
+                } else {
+                    fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
+                    exit(1);
+                }
+            }
             total_size = value_idx + 1;  // Only set one element
         }
 
@@ -8229,6 +8253,30 @@ LFORTRAN_API void _lfortran_namelist_read(
             char value_str[256];
             int repeat_count = 1;
             if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
+                // Validate repeat count
+                if (repeat_count <= 0) {
+                    free(token);
+                    free(line_buf);
+                    if (iostat) {
+                        *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
+                        return;
+                    } else {
+                        fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
+                        exit(1);
+                    }
+                }
+                // Check that repeat count doesn't overflow array bounds
+                if (value_idx + repeat_count > total_size) {
+                    free(token);
+                    free(line_buf);
+                    if (iostat) {
+                        *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                        return;
+                    } else {
+                        fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n", repeat_count);
+                        exit(1);
+                    }
+                }
                 // Repeat count found - assign same value multiple times
                 for (int r = 0; r < repeat_count && value_idx < total_size; r++) {
                     parse_nml_value(value_str, item, value_idx * elem_size);

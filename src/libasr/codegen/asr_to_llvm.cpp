@@ -11805,6 +11805,8 @@ public:
 
     // Helper to build namelist descriptor and call runtime function
     llvm::Value* build_namelist_descriptor(ASR::symbol_t* nml_sym) {
+        // Unwrap external symbol if needed
+        nml_sym = ASRUtils::symbol_get_past_external(nml_sym);
         ASR::Namelist_t* nml = ASR::down_cast<ASR::Namelist_t>(nml_sym);
 
         // Get group name (lowercase)
