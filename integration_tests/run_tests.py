@@ -26,7 +26,7 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def run_test(backend, std):
+def run_test(backend, std, test_pattern=None):
     run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
     if std == "f23":
         std_string = "-DSTD_F23=yes"
@@ -55,17 +55,51 @@ def run_test(backend, std):
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests} "
                 f"-DLLVM_GOC={separate_compilation} {std_string} -DNOFAST_LLVM16={nofast_llvm16} " + common,
                 cwd=cwd)
-    run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
-    run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
+
+    # If a test pattern is provided, find matching tests and build only those
+    if test_pattern:
+        # Query ctest to find which tests match the pattern
+        result = sp.run(f"ctest -N -R {test_pattern}", shell=True, cwd=cwd,
+                       stdout=sp.PIPE, stderr=sp.PIPE, text=True)
+        if result.returncode != 0:
+            print("Failed to query tests with ctest")
+            exit(1)
+
+        # Parse the output to extract test names
+        # Output format: "  Test #123: test_name"
+        import re
+        test_names = []
+        for line in result.stdout.split('\n'):
+            match = re.match(r'\s+Test\s+#\d+:\s+(\S+)', line)
+            if match:
+                test_names.append(match.group(1))
+
+        if not test_names:
+            print(f"No tests match pattern: {test_pattern}")
+            exit(1)
+
+        print(f"Building {len(test_names)} test(s): {', '.join(test_names)}")
+        # Build only the matching test targets
+        for test_name in test_names:
+            run_cmd(f"make -j{NO_OF_THREADS} {test_name}", cwd=cwd)
+    else:
+        # Build all tests
+        run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
+
+    # Build ctest command with optional test pattern filter
+    ctest_cmd = f"ctest -j{NO_OF_THREADS} --output-on-failure"
+    if test_pattern:
+        ctest_cmd += f" -R {test_pattern}"
+    run_cmd(ctest_cmd, cwd=cwd)
 
 
-def test_backend(backend, std):
+def test_backend(backend, std, test_pattern=None):
     if backend not in SUPPORTED_BACKENDS:
         raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
         raise Exception(f"Unsupported Backend: {std}\n")
 
-    run_test(backend, std)
+    run_test(backend, std, test_pattern)
 
 def check_module_names():
     from glob import glob
@@ -104,6 +138,8 @@ def get_args():
                 help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
                 help="Don't run unsupported tests with --fast when LLVM < 17")
+    parser.add_argument("-t", "--test", type=str,
+                help="Run specific tests matching pattern (regex)")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     return parser.parse_args()
@@ -128,8 +164,9 @@ def main():
     fast_tests = "yes" if args.fast else "no"
     nofast_llvm16 = "yes" if args.no_fast_till_llvm16 else "no"
     separate_compilation = "yes" if args.separate_compilation else "no"
+    test_pattern = args.test
     for backend in args.backends:
-        test_backend(backend, args.std)
+        test_backend(backend, args.std, test_pattern)
 
 if __name__ == "__main__":
     main()
