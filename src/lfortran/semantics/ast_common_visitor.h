@@ -13106,7 +13106,7 @@ public:
             throw SemanticAbort();
         }
 
-        if (ASR::is_a<ASR::Function_t>(*operator_sym)) {
+        if (!is_binary && ASR::is_a<ASR::Function_t>(*operator_sym)) {
             ASR::Function_t* single_func = ASR::down_cast<ASR::Function_t>(operator_sym);
             if (is_binary || single_func->n_args != 1) {
                 diag.add(Diagnostic(
@@ -13157,6 +13157,71 @@ public:
             return;
         }
 
+        if (is_binary && ASR::is_a<ASR::Function_t>(*operator_sym)) {
+            ASR::Function_t* func =
+                ASR::down_cast<ASR::Function_t>(operator_sym);
+
+            if (func->n_args != 2) {
+                diag.add(Diagnostic(
+                    "Defined binary operator `" + op + "` must have exactly two arguments",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}
+                ));
+                throw SemanticAbort();
+            }
+
+            Vec<ASR::call_arg_t> a_args;
+            a_args.reserve(al, 2);
+            a_args.push_back(al, { first_operand->base.loc, first_operand });
+            a_args.push_back(al, { second_operand->base.loc, second_operand });
+
+            ASR::expr_t* first_array_arg =
+                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+
+            ASR::ttype_t* return_type = nullptr;
+            if (first_array_arg) {
+                ASR::dimension_t* dims;
+                size_t n_dims =
+                    ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(first_array_arg), dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, dims, n_dims);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
+            } else {
+                return_type = ASRUtils::duplicate_type_without_dims(
+                    al, ASRUtils::expr_type(func->m_return_var), loc);
+            }
+
+            std::string func_name = to_lower(func->m_name);
+            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
+
+            if (!call_sym) {
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(operator_sym);
+                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
+                call_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, func_name),
+                        operator_sym, s2c(al, module_name),
+                        nullptr, 0, s2c(al, func->m_name),
+                        ASR::accessType::Public));
+                current_scope->add_symbol(func_name, call_sym);
+            }
+
+            tmp = ASRUtils::make_FunctionCall_t_util(
+                al, loc, call_sym, nullptr,
+                a_args.p, a_args.size(), return_type,
+                nullptr, nullptr, current_scope,
+                current_function_dependencies,
+                compiler_options.implicit_argument_casting);
+            return;
+        }
+        if (!ASR::is_a<ASR::CustomOperator_t>(*operator_sym)) {
+            diag.add(Diagnostic(
+                "`" + op + "` is not a valid defined operator",
+                Level::Error, Stage::Semantic, {Label("", {loc})}
+            ));
+            throw SemanticAbort();
+        }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(operator_sym);
         ASR::ttype_t* left_type = ASRUtils::expr_type(first_operand);
         ASR::ttype_t* right_type = nullptr;
