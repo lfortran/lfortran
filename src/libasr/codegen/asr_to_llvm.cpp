@@ -15022,6 +15022,32 @@ public:
                 // Last argument of converted subroutine is the return value of the FunctionCall
                 // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
                 bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
+
+                llvm::Value* is_present_flag = nullptr;
+                llvm::BasicBlock *optional_check_mergeBB = nullptr;
+                if (i + 1 < x.n_args && x.m_args[i + 1].m_value != nullptr) {
+                    ASR::expr_t* next_arg = x.m_args[i + 1].m_value;
+                    if (ASR::is_a<ASR::Var_t>(*next_arg)) {
+                        ASR::Variable_t* next_var = ASRUtils::EXPR2VAR(next_arg);
+                        std::string var_name = std::string(next_var->m_name);
+                        ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(next_var->m_type);
+                        std::string prefix = "__libasr_is_present_";
+                        if (var_name.size() > prefix.size() && 
+                            var_name.substr(0, prefix.size()) == prefix &&
+                            ASR::is_a<ASR::Logical_t>(*var_type)) {
+                          
+                            this->visit_expr_wrapper(next_arg, true);
+                            is_present_flag = tmp; 
+                            
+                            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                            llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
+                            optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
+                            builder->CreateCondBr(is_present_flag, present_checkBB, optional_check_mergeBB);
+                            builder->SetInsertPoint(present_checkBB);
+                        }
+                    }
+                }
+
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
@@ -15165,6 +15191,11 @@ public:
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
                     }
+                }
+
+                if (optional_check_mergeBB != nullptr) {
+                    builder->CreateBr(optional_check_mergeBB);
+                    start_new_block(optional_check_mergeBB);
                 }
             } else if (ASRUtils::is_allocatable(arg_expr_type)) {
                 ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
