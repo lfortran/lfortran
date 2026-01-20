@@ -15037,12 +15037,15 @@ public:
                             ASR::is_a<ASR::Logical_t>(*var_type)) {
                           
                             this->visit_expr_wrapper(next_arg, true);
-                            is_present_flag = tmp; 
-                            
+                            is_present_flag = tmp;
+
                             llvm::Function *fn = builder->GetInsertBlock()->getParent();
                             llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
                             optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
-                            builder->CreateCondBr(is_present_flag, present_checkBB, optional_check_mergeBB);
+                            // Convert logical (i8/i32) to i1 for branch condition
+                            llvm::Value* is_present_i1 = builder->CreateICmpNE(
+                                is_present_flag, llvm::ConstantInt::get(is_present_flag->getType(), 0));
+                            builder->CreateCondBr(is_present_i1, present_checkBB, optional_check_mergeBB);
                             builder->SetInsertPoint(present_checkBB);
                         }
                     }
