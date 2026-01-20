@@ -1407,7 +1407,9 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-                if (!ASR::is_a<ASR::Namelist_t>(*a_nml)) {
+                // Unwrap external symbol to get the actual namelist
+                ASR::symbol_t* nml_sym = ASRUtils::symbol_get_past_external(a_nml);
+                if (!ASR::is_a<ASR::Namelist_t>(*nml_sym)) {
                     diag.add(Diagnostic(
                         "'" + nml_name + "' is not a namelist group",
                         Level::Error, Stage::Semantic, {
