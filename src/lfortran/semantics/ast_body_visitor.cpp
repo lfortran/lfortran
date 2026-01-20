@@ -1080,8 +1080,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
@@ -1415,6 +1415,26 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == "pos") {
+                if (a_pos != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `pos` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_pos = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_pos_type = ASRUtils::expr_type(a_pos);
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_pos_type))) {
+                    diag.add(Diagnostic(
+                        "`pos` must be of type Integer",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         if( a_fmt == nullptr && a_end != nullptr ) {
@@ -1525,6 +1545,8 @@ public:
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(),
                         nullptr, formatted, a_nml);
+                        a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(),
+                        nullptr, formatted, nullptr);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
                 if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
@@ -1584,6 +1606,7 @@ public:
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml);
+               a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr);
         }
 
         tmp_vec.push_back(tmp);
@@ -1603,6 +1626,8 @@ public:
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
                         a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml)));
+                        a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -1613,6 +1638,8 @@ public:
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
                         a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml)));
+                        a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                         body.p, body.size(), nullptr, 0));
                 }
