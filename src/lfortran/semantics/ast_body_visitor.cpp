@@ -598,7 +598,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            else if (m_arg_str == std::string("encoding")) {//jainam
+            else if (m_arg_str == std::string("encoding")) {
                 if (a_encoding != nullptr) {
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `encoding` found)""",
