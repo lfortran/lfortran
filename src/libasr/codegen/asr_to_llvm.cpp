@@ -12509,6 +12509,8 @@ public:
         constexpr int32_t kInt64 = 3;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
+        constexpr int32_t kComplex4 = 6;
+        constexpr int32_t kComplex8 = 7;
 
         for (size_t i = 0; i < n_values; i++) {
             ASR::expr_t* val_expr = values[i];
@@ -12552,6 +12554,14 @@ public:
             if (ASR::is_a<ASR::Real_t>(*val_type)) {
                 ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
                 int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+                args.push_back(var_ptr);
+                continue;
+            }
+
+            if (ASR::is_a<ASR::Complex_t>(*val_type)) {
+                ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
+                int32_t type_code = (complex_type->m_kind == 4) ? kComplex4 : kComplex8;
                 args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
                 args.push_back(var_ptr);
                 continue;
