@@ -6344,6 +6344,9 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     int32_t type_code = va_arg(*args, int32_t);
     void* real_ptr = va_arg(*args, void*);
     (*arg_idx)++;
+    bool is_complex = (type_code == 6 || type_code == 7);
+    if (type_code == 6) type_code = 4;
+    if (type_code == 7) type_code = 5;
 
     parse_decimals(fmt, fmt_len, fmt_pos);
 
@@ -6379,6 +6382,35 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     parse_real_from_buffer(buffer, field_len, real_ptr, type_code, scale_factor);
 
     free(buffer);
+    if (is_complex) {
+        void* imag_ptr = (type_code == 4) ? (void*)((float*)real_ptr + 1) : (void*)((double*)real_ptr + 1);
+        parse_decimals(fmt, fmt_len, fmt_pos);
+        buffer = NULL;
+        field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                consumed_newline, &buffer, &field_len)) {
+            return false;
+        }
+        if (blank_mode == 0) {
+            int write_idx = 0;
+            for (int read_idx = 0; read_idx < field_len; read_idx++) {
+                if (buffer[read_idx] != ' ') {
+                    buffer[write_idx++] = buffer[read_idx];
+                }
+            }
+            buffer[write_idx] = '\0';
+            field_len = write_idx;
+        } else if (blank_mode == 1) {
+            for (int i = 0; i < field_len; i++) {
+                if (buffer[i] == ' ') {
+                    buffer[i] = '0';
+                }
+            }
+        }
+        parse_real_from_buffer(buffer, field_len, imag_ptr, type_code, scale_factor);
+        free(buffer);
+    }
+    
     return true;
 }
 
