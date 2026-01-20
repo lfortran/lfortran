@@ -6587,7 +6587,7 @@ public:
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
-        } else if(ASRUtils::is_string_only(expr_type(x.m_arg))){ // Targetted physicalType is `char*`
+        } else if(ASRUtils::is_character(*expr_type(x.m_arg))){ // Targetted physicalType is `char*`
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
         }
         tmp = builder->CreateBitCast(tmp,
@@ -6627,19 +6627,13 @@ public:
             ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
             llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
                 ASRUtils::get_contained_type(fptr_type), module.get());
-            llvm::Value* fptr_array = llvm_utils->CreateAlloca(*builder, llvm_fptr_type);
+            llvm_fptr = llvm_utils->CreateLoad2(llvm_fptr_type->getPointerTo(), llvm_fptr);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                arr_descr->get_offset(llvm_fptr_type, fptr_array, false));
+                arr_descr->get_offset(llvm_fptr_type, llvm_fptr, false));
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(fptr),
                                 fptr_dims);
-            llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
-            llvm::Value* dim_des = llvm_utils->CreateAlloca(*builder, arr_descr->get_dimension_descriptor_type(), llvm_rank);
-            builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, fptr_array, false));
-            arr_descr->set_rank(llvm_fptr_type, fptr_array, llvm_rank);
-            builder->CreateStore(fptr_array, llvm_fptr);
-            llvm_fptr = fptr_array;
             ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);
             llvm::Type* llvm_fptr_data_type = llvm_utils->get_type_from_ttype_t_util(fptr, fptr_data_type, module.get());
             llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr_type, llvm_fptr);
@@ -6653,8 +6647,16 @@ public:
                     nullptr, ASRUtils::expr_type(shape), module.get());
                 shape_data = llvm_utils->CreateLoad2(shape_elem_llvm_type, arr_descr->get_pointer_to_data(shape_llvm_type, llvm_shape));
             }
-            llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_data_type->getPointerTo());
+
+            if (ASRUtils::is_descriptorString(fptr_data_type)) {
+                fptr_data = llvm_utils->CreateLoad2(llvm_fptr_data_type->getPointerTo(), fptr_data);
+                fptr_data = llvm_utils->create_gep2(llvm_fptr_data_type, fptr_data, 0);
+                llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_utils->i8_ptr);
+            } else {
+                llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_data_type->getPointerTo());
+            }
             builder->CreateStore(llvm_cptr, fptr_data);
+
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int i = 0; i < fptr_rank; i++ ) {
                 llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
@@ -15020,6 +15022,32 @@ public:
                 // Last argument of converted subroutine is the return value of the FunctionCall
                 // This argument should be checked strictly. It's size must be exactly equal to the expected size, it cannot be larger
                 bool is_return_value = subroutinecall_was_functioncall && i == (x.n_args - 1);
+
+                llvm::Value* is_present_flag = nullptr;
+                llvm::BasicBlock *optional_check_mergeBB = nullptr;
+                if (i + 1 < x.n_args && x.m_args[i + 1].m_value != nullptr) {
+                    ASR::expr_t* next_arg = x.m_args[i + 1].m_value;
+                    if (ASR::is_a<ASR::Var_t>(*next_arg)) {
+                        ASR::Variable_t* next_var = ASRUtils::EXPR2VAR(next_arg);
+                        std::string var_name = std::string(next_var->m_name);
+                        ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(next_var->m_type);
+                        std::string prefix = "__libasr_is_present_";
+                        if (var_name.size() > prefix.size() && 
+                            var_name.substr(0, prefix.size()) == prefix &&
+                            ASR::is_a<ASR::Logical_t>(*var_type)) {
+                          
+                            this->visit_expr_wrapper(next_arg, true);
+                            is_present_flag = tmp; 
+                            
+                            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                            llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
+                            optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
+                            builder->CreateCondBr(is_present_flag, present_checkBB, optional_check_mergeBB);
+                            builder->SetInsertPoint(present_checkBB);
+                        }
+                    }
+                }
+
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
@@ -15163,6 +15191,11 @@ public:
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
                     }
+                }
+
+                if (optional_check_mergeBB != nullptr) {
+                    builder->CreateBr(optional_check_mergeBB);
+                    start_new_block(optional_check_mergeBB);
                 }
             } else if (ASRUtils::is_allocatable(arg_expr_type)) {
                 ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
