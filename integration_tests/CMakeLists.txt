@@ -1336,6 +1336,7 @@ RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_406 LABELS gfortran llvm) # iachar with array arguments
+RUN(NAME intrinsics_407 LABELS gfortran llvm) # complex abs() overflow
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2108,6 +2109,7 @@ RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME inquire_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 
@@ -2432,6 +2434,7 @@ RUN(NAME read_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME read_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME read_27 LABELS gfortran llvm)
 RUN(NAME read_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME read_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2648,6 +2651,7 @@ RUN(NAME c_ptr_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME c_ptr_07 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_indices_array_item LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -2699,6 +2703,7 @@ RUN(NAME optional_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
 RUN(NAME optional_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME optional_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3019,6 +3024,7 @@ RUN(NAME logical_testing LABELS gfortran llvm)
 
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
 
+RUN(NAME format_before_read_01 LABELS gfortran llvm)
 
 
 # LFortran extensions (lists, dicts, etc.)
