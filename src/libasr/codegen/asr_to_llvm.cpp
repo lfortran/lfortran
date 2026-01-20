@@ -374,7 +374,8 @@ public:
     } \
 
     #define load_unlimited_polymorpic_value(expr, llvm_value) if(current_select_type_block_type_asr &&              \
-        ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_unlimited_polymorphic_type(expr)) {                            \
+        ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_unlimited_polymorphic_type(expr) &&                            \
+        !ASRUtils::is_array(ASRUtils::expr_type(expr))) {                                                           \
         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);             \
         if (ASR::is_a<ASR::Variable_t>(*sym) && (ASRUtils::symbol_name(sym) == current_selector_var_name)) {        \
             llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                                    \
@@ -11780,10 +11781,25 @@ public:
             break;
             case ASR::UnboundedPointerArray:
             case ASR::PointerArray:
-                LCOMPILERS_ASSERT(ASRUtils::is_character_phsyical_types_matched(
-                          ASRUtils::extract_type(expr_type(cast->m_arg))
-                        , ASRUtils::extract_type(cast->m_type)))
-                tmp = string_llvm;
+                if (!ASRUtils::is_unlimited_polymorphic_type(cast->m_arg)) {
+                    LCOMPILERS_ASSERT(ASRUtils::is_character_phsyical_types_matched(
+                              ASRUtils::extract_type(expr_type(cast->m_arg))
+                            , ASRUtils::extract_type(cast->m_type)))
+                    tmp = string_llvm;
+                } else if (current_select_type_block_type_asr && compiler_options.new_classes) {
+                    llvm::Type* polymorphic_array_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        cast->m_arg, ASRUtils::expr_type(cast->m_arg), module.get());
+                    llvm::Value* polymorphic_data_ptr = arr_descr->get_pointer_to_data(
+                        polymorphic_array_desc_type, string_llvm);
+                    llvm::Type* polymorphic_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        cast->m_arg, ASRUtils::extract_type(ASRUtils::expr_type(cast->m_arg)), module.get());
+                    polymorphic_data_ptr = llvm_utils->CreateLoad2(polymorphic_elem_type->getPointerTo(), polymorphic_data_ptr);
+                    llvm::Value* actual_data = llvm_utils->create_gep2(polymorphic_elem_type, polymorphic_data_ptr, 1);
+                    actual_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, actual_data);
+                    tmp = builder->CreateBitCast(actual_data, array_llvm_ty->getPointerTo());
+                } else {
+                    tmp = string_llvm;
+                }
             break;
             case ASR::DescriptorArray:{
                 llvm::Value* const array_llvm = builder->CreateAlloca(array_llvm_ty);
