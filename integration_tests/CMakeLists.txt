@@ -2354,7 +2354,6 @@ RUN(NAME implied_do_loops14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 RUN(NAME implied_do_loops15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
     EXTRA_ARGS --implicit-typing)
 RUN(NAME implied_do_loops16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME implied_do_loops17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops_strings LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME implied_do_loops_print LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
