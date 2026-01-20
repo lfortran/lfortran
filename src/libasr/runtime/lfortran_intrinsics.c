@@ -7808,7 +7808,7 @@ LFORTRAN_API void _lfortran_namelist_write(
 
 // Helper to skip whitespace and comments
 static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
-                            size_t *line_len, ssize_t *read_len) {
+                            size_t *line_len, int64_t *read_len) {
     while (1) {
         // Skip spaces in current line
         while (*line_ptr && **line_ptr && isspace(**line_ptr)) {
@@ -7823,7 +7823,7 @@ static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
 
         // If we need a new line, read it
         if (!*line_ptr || !**line_ptr) {
-            *read_len = getline(line_buf, line_len, fp);
+            *read_len = lfortran_getline(line_buf, line_len, fp);
             if (*read_len == -1) {
                 *line_ptr = NULL;
                 return;
@@ -7838,7 +7838,7 @@ static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
 
 // Helper to read a token (word or operator)
 static char* read_token(FILE *fp, char **line_buf, char **line_ptr,
-                        size_t *line_len, ssize_t *read_len) {
+                        size_t *line_len, int64_t *read_len) {
     skip_whitespace(fp, line_buf, line_ptr, line_len, read_len);
     if (!*line_ptr || !**line_ptr) return NULL;
 
@@ -7984,12 +7984,12 @@ LFORTRAN_API void _lfortran_namelist_read(
     char *line_buf = NULL;
     char *line_ptr = NULL;
     size_t line_len = 0;
-    ssize_t read_len;
+    int64_t read_len;
 
     // Read and find group start
     char *token;
     bool found_group = false;
-    while ((read_len = getline(&line_buf, &line_len, filep)) != -1) {
+    while ((read_len = lfortran_getline(&line_buf, &line_len, filep)) != -1) {
         line_ptr = line_buf;
         token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
         if (!token) continue;
