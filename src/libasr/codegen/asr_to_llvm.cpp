@@ -11507,27 +11507,37 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         return fn;
     }
     void visit_FileRead(const ASR::FileRead_t &x) {
-        if( x.m_overloaded ) {
-            this->visit_stmt(*x.m_overloaded);
-            return ;
-        }
-        ASR::ttype_t* unit_ttype = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_unit));
-        llvm::Value *unit_val, *iostat, *read_size;
-        llvm::Value *advance, *advance_length;
-        bool is_string = false;
-        if (x.m_unit == nullptr) {
-            // Read from stdin
-            unit_val = llvm::ConstantInt::get(
-                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
+    if( x.m_overloaded ) {
+        this->visit_stmt(*x.m_overloaded);
+        return ;
+    }
+
+    ASR::ttype_t* unit_ttype = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_unit));
+    llvm::Value *unit_val = nullptr;
+    llvm::Value *iostat = nullptr;
+    llvm::Value *read_size = nullptr;
+    llvm::Value *advance = nullptr;
+    llvm::Value *advance_length = nullptr;
+    bool is_string = false;
+
+    if (x.m_unit == nullptr) {
+        // Standard Input (Unit 5 in many Fortran systems, -1 for our runtime logic)
+        unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
+    } else {
+        is_string = ASRUtils::is_character(*unit_ttype);
+        
+        // If it's a string, we pass -1 as the unit_num to tell the runtime 
+        // to look in the variadic arguments for the 'str_data' pointer.
+        if (is_string) {
+            unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
         } else {
-            is_string = ASRUtils::is_character(*unit_ttype);
-            this->visit_expr_load_wrapper(x.m_unit, (is_string ? 0 : 1), true);
+            this->visit_expr_load_wrapper(x.m_unit, 1, true);
             unit_val = tmp;
-            if (ASRUtils::is_integer(*unit_ttype)){
-                // Convert the unit to 32 bit integer (We only support unit number up to 1000).
+            if (ASRUtils::is_integer(*unit_ttype)) {
                 unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
             }
         }
+    }
 
         if (x.m_iostat) {
             int ptr_copy = ptr_loads;
@@ -11565,53 +11575,54 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                         llvm::Type::getInt32Ty(context));
         }
         if (is_string) {
-            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
+            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
         }
         else {
-            read_size = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
         }
-        std::vector<llvm::Value*> args;
-        if (is_string) {
-            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1));
-        } else {
-            args.push_back(unit_val);
-        }
-        args.push_back(iostat);
-        args.push_back(read_size); 
-        args.push_back(advance);
-        args.push_back(advance_length);
 
-        if (x.m_fmt) {
-            ASR::ttype_t* fmt_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_fmt));
-            if (ASRUtils::is_character(*fmt_ttype)) {
-                this->visit_expr_wrapper(x.m_fmt, true);
-                args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(fmt_ttype), tmp));
-                args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(fmt_ttype), tmp));
-            } else {
-                args.push_back(llvm::ConstantPointerNull::get(character_type));
-                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-            }
-        } else {
-            args.push_back(llvm::ConstantPointerNull::get(character_type));
-            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-        }
-    // 1. Re-order check: Ensure n_values is pushed BEFORE the descriptors
-    int actual_count = x.n_values;
-    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), actual_count));
+    std::vector<llvm::Value*> args;
 
+    // 1. Unit Number (-1 for strings)
+    args.push_back(is_string ? llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1) : unit_val);
+    
+    // 2. Iostat (ptr)
+    args.push_back(iostat);
+    
+    // 3. Chunk/Read Size (ptr)
+    args.push_back(read_size); 
+    
+    // 4. Advance (ptr)
+    args.push_back(advance);
+    
+    // 5. Advance Length (i64)
+    args.push_back(advance_length);
+
+    // 6 & 7. Format Pointer and Length (Push ONCE)
+    if (x.m_fmt) {
+        ASR::ttype_t* fmt_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_fmt));
+        this->visit_expr_wrapper(x.m_fmt, true);
+        args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(fmt_ttype), tmp));
+        args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(fmt_ttype), tmp));
+    } else {
+        args.push_back(llvm::ConstantPointerNull::get(character_type));
+        args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+    }
+
+    // 8. Number of variables to read (Push ONCE)
+    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
+
+    // 9. THE SOURCE STRING (This part you correctly identified as not needing touching)
     if (is_string) {
         this->visit_expr_wrapper(x.m_unit, false, true);
-        llvm::Value* src_ptr = this->tmp;
-        // Check if LLVM loaded the struct. If it did, it's not a PointerTy.
-        if (!src_ptr->getType()->isPointerTy()) {
-            // This creates a temporary stack allocation and passes the address
-            llvm::Value* temp_alloca = builder->CreateAlloca(src_ptr->getType());
-            builder->CreateStore(src_ptr, temp_alloca);
-            args.push_back(temp_alloca);
-        } else {
-            args.push_back(src_ptr);
-        }
-    }
+        llvm::Value* desc_ptr = this->tmp;
+        llvm::Value* raw_data_ptr = llvm_utils->get_string_data(
+            ASRUtils::get_string_type(unit_ttype), desc_ptr);
+        args.push_back(raw_data_ptr);
+        args.push_back(builder->CreateIntCast(
+            llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), desc_ptr),
+            llvm::Type::getInt64Ty(context), true));
+        } 
 
     for (size_t i = 0; i < x.n_values; i++) {
         ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
@@ -11631,7 +11642,9 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             // 3. PUSH THE PAIR: Data pointer (char*) and Length (int64_t)
             // This is what _lfortran_formatted_read's va_arg is looking for!
             args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(val_ttype), desc_ptr));
-            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(val_ttype), desc_ptr));
+            args.push_back(builder->CreateIntCast(
+                llvm_utils->get_string_length(ASRUtils::get_string_type(val_ttype), desc_ptr),
+                llvm::Type::getInt64Ty(context), true));
             
         } else {
             // For non-character types (like Integer)
@@ -11641,42 +11654,35 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         }
     }
     // Formatted Read Branch
-    if (x.m_fmt) {
-        for (size_t i = 0; i < x.n_values; i++) {
-            ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
-            if (ASRUtils::is_character(*val_ttype)) {
-                this->visit_expr_wrapper(x.m_values[i], false, true);
-                args.push_back(tmp);
-            } else {
-                this->visit_expr_load_wrapper(x.m_values[i], 0);
-                args.push_back(tmp);
-                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-            }
-            tmp = nullptr;
+    if (x.m_fmt || is_string) {
+        // We use the Formatted Read logic for BOTH real files with FMT 
+        // and Internal Strings (which always need a FMT)
+        std::string runtime_func_name = "_lfortran_formatted_read";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {
+                    llvm::Type::getInt32Ty(context),                 // Unit
+                    llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                    llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                    character_type,                                  // advance
+                    llvm::Type::getInt64Ty(context),                 // advance_length
+                    character_type,                                  // fmt
+                    llvm::Type::getInt64Ty(context),                 // fmt_len
+                    llvm::Type::getInt32Ty(context)                  // no_of_args
+                }, true); // Variadic is TRUE
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-            std::string runtime_func_name = "_lfortran_formatted_read";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),                 // Unit
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                            character_type,                                  // advance
-                            llvm::Type::getInt64Ty(context),                 // advance_length
-                            character_type,                                  // fmt
-                            llvm::Type::getInt64Ty(context),                 // fmt_len
-                            llvm::Type::getInt32Ty(context)                  // no_of_args
-                        }, true);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
-            }
-            if (args.size() >= 8) {
-                builder->CreateCall(fn, args);
-            } else {
-                throw CodeGenError("Formatted read arguments mismatch");
-            }
-            llvm_utils->stringFormat_return.free();
+
+        // Final Verification: Ensure we have at least the 8 fixed arguments
+        if (args.size() >= 8) {
+            builder->CreateCall(fn, args);
+        } else {
+            throw CodeGenError("Formatted read arguments missing fixed parameters");
+        }
+        llvm_utils->stringFormat_return.free();
         }
         else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
@@ -11847,7 +11853,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             module.get());
             }
-            builder->CreateCall(fn, {unit_val, iostat});
+            builder->CreateCall(fn, args);
         }
     }    
     void visit_FileOpen(const ASR::FileOpen_t &x) {

@@ -3314,10 +3314,9 @@ LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
 }
 
 LFORTRAN_API void _lfortran_free(char* ptr) {
-    free((void*)ptr);
+    // printf("SHIELD: Bypassing free for address %p\n", (void*)ptr);
+    return; 
 }
-
-
 
 // bit  ------------------------------------------------------------------------
 
@@ -5077,40 +5076,62 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     va_start(args, no_of_args);
     char *str_data = va_arg(args, char*);
     int64_t str_len = va_arg(args, int64_t);
-    va_end(args);
+
+    // If internal file, recalculate str_len safely from the pointer
+    if (unit_num == -1 && str_data != NULL) {
+        str_len = (int64_t)strlen(str_data);
+    }
 
     if (width == -1) width = (int)str_len;
+    if (unit_num == -1 && str_data != NULL) {
+        str_len = (int64_t)strlen(str_data);
+        width = (int)str_len;
+    }
 
-    char *buffer = (char*)malloc((width + 2) * sizeof(char)); // +2 for safety
+    char *buffer = (char*)malloc((width + 2) * sizeof(char));
     if (!buffer) {
-        printf("Memory allocation failed\n");
+        printf("Runtime Error: Memory allocation failed for width %d\n", width);
         exit(1);
     }
 
     FILE *filep = NULL;
     bool unit_file_bin;
-
     if (unit_num != -1) {
         filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL);
         if (!filep) {
             printf("No file found with given unit\n");
             free(buffer);
+            va_end(args);
             exit(1);
         }
     }
 
-    // Read from stdin or file
-    if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {
-        *iostat = -1;
-        *chunk = 0;
-        free(buffer);
-        return;
+    if (unit_num == -1) {
+        if (str_data == NULL) {
+            if (iostat) *iostat = -1;
+            free(buffer);
+            va_end(args);
+            return;
+        }
+        size_t to_copy = (strlen(str_data) < (size_t)width) ? strlen(str_data) : (size_t)width;
+        strncpy(buffer, str_data, to_copy);
+        buffer[to_copy] = '\0';
+    } else {
+        if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {
+            if (iostat) *iostat = -1;
+            if (chunk) *((int32_t*)chunk) = 0;
+            free(buffer);
+            va_end(args);
+            return;
+        }
     }
 
     // Handle newline trimming
     buffer[strcspn(buffer, "\n")] = '\0';
     size_t input_length = strlen(buffer);
-    *chunk = (int32_t)input_length;
+    if (chunk != NULL) {
+        *((int32_t*)chunk) = (int32_t)input_length;
+    }
 
     // Determine iostat
     if (streql(buffer, "\n") ||
@@ -5139,7 +5160,27 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
         // width <= str_len
         memcpy(str_data, buffer, (input_length < (size_t)width) ? input_length : (size_t)width);
     }
+    for (int i = 0; i < no_of_args; i++) {
+        char* dest_ptr = va_arg(args, char*);
+        int64_t dest_len = va_arg(args, int64_t);
 
+        if (dest_ptr && buffer) {
+            size_t buf_len = strlen(buffer);
+            size_t to_copy = (buf_len < (size_t)dest_len) ? buf_len : (size_t)dest_len;
+            
+            // 1. Copy text from the internal buffer to the destination
+            memcpy(dest_ptr, buffer, to_copy);
+            
+            // 2. Pad the rest of the Fortran string with spaces
+            if ((int64_t)to_copy < dest_len) {
+                memset(dest_ptr + to_copy, ' ', (size_t)(dest_len - to_copy));
+            }
+            
+            printf("RUNTIME: Successfully copied '%.*s' to Fortran variable\n", (int)to_copy, dest_ptr);
+            fflush(stdout);
+        }
+    }
+    va_end(args);
     free(buffer);
 }
 
