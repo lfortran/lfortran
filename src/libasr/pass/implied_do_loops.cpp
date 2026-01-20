@@ -904,13 +904,47 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        void visit_FileRead(const ASR::FileRead_t &x) {
-            if (x.m_overloaded) {
-                this->visit_stmt(*x.m_overloaded);
-                remove_original_statement = false;
-                return;
+void visit_FileRead(const ASR::FileRead_t &x) {
+    if (x.m_overloaded) {
+        this->visit_stmt(*x.m_overloaded);
+        remove_original_statement = false;
+        return;
+    }
+
+    ASR::FileRead_t* read_stmt = const_cast<ASR::FileRead_t*>(&x);
+
+    for (size_t i = 0; i < x.n_values; i++) {
+        ASR::expr_t* value = x.m_values[i];
+
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+            ASR::asr_t* array_constant = create_array_constant(x, value);
+
+            read_stmt->m_values[i] = ASRUtils::EXPR(array_constant);
+
+            replacer.result_var = value;
+            resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
+
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(read_stmt->m_values[i]);
+            call_replacer();
+            current_expr = current_expr_copy;
+
+            if (!remove_original_statement) {
+                this->visit_expr(*read_stmt->m_values[i]);
+            }
+        } else {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(read_stmt->m_values[i]);
+            call_replacer();
+            current_expr = current_expr_copy;
+
+            if (!remove_original_statement) {
+                this->visit_expr(*read_stmt->m_values[i]);
             }
         }
+    }
+}
+
 
         void visit_FileWrite(const ASR::FileWrite_t &x) {
             file_write = true;
