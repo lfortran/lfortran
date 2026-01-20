@@ -11,6 +11,14 @@ namespace LCompilers {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+            if (x->getType()->isPointerTy()) {
+                llvm::Align align = builder.GetInsertBlock()->getModule()
+                    ->getDataLayout().getPointerABIAlignment(
+                        x->getType()->getPointerAddressSpace());
+                auto *store = new llvm::StoreInst(x, y, false, align);
+                builder.Insert(store);
+                return store;
+            }
             return builder.CreateStore(x, y);
         }
 
@@ -254,6 +262,10 @@ namespace LCompilers {
             }
             case ASR::ttypeType::CPtr: {
                 llvm_mem_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                break;
+            }
+            case ASR::ttypeType::FunctionType: {
+                llvm_mem_type = get_type_from_ttype_t_util(mem_type, member->m_type_declaration, module);
                 break;
             }
             default:
@@ -1118,6 +1130,15 @@ namespace LCompilers {
                     return_type = get_type_from_ttype_t_util(x.m_return_var, ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
                     break;
                 }
+                case (ASR::ttypeType::FunctionType) : {
+                    ASR::symbol_t* type_decl = nullptr;
+                    if (x.m_return_var) {
+                        ASR::Variable_t* ret_var = ASRUtils::EXPR2VAR(x.m_return_var);
+                        type_decl = ret_var->m_type_declaration;
+                    }
+                    return_type = get_type_from_ttype_t_util(return_var_type0, type_decl, module);
+                    break;
+                }
                 case (ASR::ttypeType::Allocatable) : {
                     return_type = get_type_from_ttype_t_util(x.m_return_var, ASRUtils::get_contained_type(return_var_type0), module);
                     return_type = ASRUtils::is_string_only(return_var_type0) ? return_type : return_type->getPointerTo();
@@ -1589,6 +1610,34 @@ namespace LCompilers {
 #else
         llvm::Type *type_ = type;
 #endif
+#if LLVM_VERSION_MAJOR < 15
+        if (type_->isPointerTy() && type_->getPointerElementType()->isFunctionTy()) {
+            unsigned addr_space = module->getDataLayout().getAllocaAddrSpace();
+            llvm::Align align = module->getDataLayout().getPointerABIAlignment(
+                type_->getPointerAddressSpace());
+            alloca = new llvm::AllocaInst(type_, addr_space, size, align, Name);
+            builder0.Insert(alloca);
+            return alloca;
+        }
+        if (type_->isStructTy()) {
+            auto *struct_type = llvm::cast<llvm::StructType>(type_);
+            bool has_fn_ptr = false;
+            for (unsigned i = 0; i < struct_type->getNumElements(); ++i) {
+                llvm::Type* el_type = struct_type->getElementType(i);
+                if (el_type->isPointerTy() && el_type->getPointerElementType()->isFunctionTy()) {
+                    has_fn_ptr = true;
+                    break;
+                }
+            }
+            if (has_fn_ptr) {
+                unsigned addr_space = module->getDataLayout().getAllocaAddrSpace();
+                llvm::Align align = module->getDataLayout().getPointerABIAlignment(0);
+                alloca = new llvm::AllocaInst(type_, addr_space, size, align, Name);
+                builder0.Insert(alloca);
+                return alloca;
+            }
+        }
+#endif
         if (Name != "") {
             alloca = builder0.CreateAlloca(type_, size, Name);
         } else {
@@ -1611,6 +1660,34 @@ namespace LCompilers {
 #else
         llvm::Type *type_ = type;
 #endif
+#if LLVM_VERSION_MAJOR < 15
+        if (type_->isPointerTy() && type_->getPointerElementType()->isFunctionTy()) {
+            unsigned addr_space = module->getDataLayout().getAllocaAddrSpace();
+            llvm::Align align = module->getDataLayout().getPointerABIAlignment(
+                type_->getPointerAddressSpace());
+            alloca = new llvm::AllocaInst(type_, addr_space, size, align, Name);
+            builder.Insert(alloca);
+            return alloca;
+        }
+        if (type_->isStructTy()) {
+            auto *struct_type = llvm::cast<llvm::StructType>(type_);
+            bool has_fn_ptr = false;
+            for (unsigned i = 0; i < struct_type->getNumElements(); ++i) {
+                llvm::Type* el_type = struct_type->getElementType(i);
+                if (el_type->isPointerTy() && el_type->getPointerElementType()->isFunctionTy()) {
+                    has_fn_ptr = true;
+                    break;
+                }
+            }
+            if (has_fn_ptr) {
+                unsigned addr_space = module->getDataLayout().getAllocaAddrSpace();
+                llvm::Align align = module->getDataLayout().getPointerABIAlignment(0);
+                alloca = new llvm::AllocaInst(type_, addr_space, size, align, Name);
+                builder.Insert(alloca);
+                return alloca;
+            }
+        }
+#endif
         if (Name != "") {
             alloca = builder.CreateAlloca(type_, size, Name);
         } else {
@@ -1622,6 +1699,15 @@ namespace LCompilers {
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
+#if LLVM_VERSION_MAJOR < 15
+        if (t->isPointerTy()) {
+            llvm::Align align = module->getDataLayout().getPointerABIAlignment(
+                t->getPointerAddressSpace());
+            auto *load = new llvm::LoadInst(t, x, "", is_volatile, align);
+            builder->Insert(load);
+            return load;
+        }
+#endif
         return builder->CreateLoad(t, x, is_volatile);
 #else
         return builder->CreateLoad(x, is_volatile);

@@ -184,8 +184,12 @@ namespace LCompilers {
         }
 
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
-            return  is_aggregate_or_array_type(var) || 
-                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+            ASR::ttype_t* type = ASRUtils::expr_type(var);
+            if (ASRUtils::is_pointer(type)) {
+                return false;
+            }
+            return is_aggregate_or_array_type(var) ||
+                   is_non_primitive_return_type(type);
         }
 
 
