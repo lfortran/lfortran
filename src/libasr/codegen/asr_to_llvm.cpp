@@ -212,6 +212,8 @@ public:
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
+    // Track ASR return types for functions (needed for evaluator to distinguish logical from integer)
+    std::map<std::string, std::string> asr_return_types;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
@@ -4304,8 +4306,10 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
-            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                llvm::Type::getInt1Ty(context));
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            int init_value_bits = 8*a_kind;
+            llvm::Type *type = llvm_utils->getIntType(a_kind);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
@@ -4313,7 +4317,7 @@ public:
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
-                                llvm::APInt(1, 0)));
+                                llvm::APInt(init_value_bits, 0)));
                     set_global_variable_linkage_as_common(ptr, x.m_abi);
                 }
             }
@@ -6153,6 +6157,13 @@ public:
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
+                // Track ASR return type for evaluator (needed to distinguish logical from integer)
+                if (x.m_return_var) {
+                    ASR::ttype_t* ret_type = ASRUtils::expr_type(x.m_return_var);
+                    if (ASR::is_a<ASR::Logical_t>(*ret_type)) {
+                        asr_return_types[fn_name] = "logical";
+                    }
+                }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
@@ -17021,6 +17032,8 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     };
 
     std::unique_ptr<LLVMModule> res = std::make_unique<LLVMModule>(std::move(v.module));
+    // Copy ASR return types to module for evaluator (to distinguish logical from integer)
+    res->m_asr_return_types = std::move(v.asr_return_types);
     t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {

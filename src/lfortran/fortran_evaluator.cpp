@@ -156,9 +156,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        bool r = e->execfn<bool>(run_fn);
+        // Logical uses byte-backed storage (i32 for KIND=4)
+        int32_t r = e->execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
-        result.b = r;
+        result.b = (r != 0);
     } else if (return_type == "void") {
         e->execfn<void>(run_fn);
         result.type = EvalResult::statement;

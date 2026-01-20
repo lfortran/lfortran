@@ -3,6 +3,7 @@
 
 #include <complex>
 #include <iostream>
+#include <map>
 #include <memory>
 
 #include <libasr/alloc.h>
@@ -37,11 +38,15 @@ class LLVMModule
 {
 public:
     std::unique_ptr<llvm::Module> m_m;
+    // Map function names to their ASR return type strings (e.g., "logical", "integer4")
+    std::map<std::string, std::string> m_asr_return_types;
     LLVMModule(std::unique_ptr<llvm::Module> m);
     ~LLVMModule();
     std::string str();
-    // Return a function return type as a string (real / integer)
+    // Return a function return type as a string (real / integer / logical)
     std::string get_return_type(const std::string &fn_name);
+    // Set the ASR return type for a function (used by codegen)
+    void set_return_type(const std::string &fn_name, const std::string &type);
     llvm::Function *get_function(const std::string &fn_name);
     llvm::GlobalVariable *get_global(const std::string &global_name);
 };
