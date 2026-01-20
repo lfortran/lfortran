@@ -4356,7 +4356,7 @@ _lfortran_open(int32_t unit_num,
         blank_len = 4;
         ini_blank = false;
     }
-    bool file_exists[1] = { false };
+    int32_t file_exists[1] = { 0 };
     FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     trim_trailing_spaces(&f_name, &f_name_len, ini_file);
@@ -4600,8 +4600,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
-                                    bool *opened, int32_t *size, int32_t *pos,
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, int32_t *exists, int32_t unit_num,
+                                    int32_t *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
@@ -4619,7 +4619,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         free(c_f_name_data);
 
         if (fp != NULL) {
-            *exists = true;
+            *exists = 1;
             if (size != NULL) {
                 fseek(fp, 0, SEEK_END);
                 *size = ftell(fp);
@@ -4627,7 +4627,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             fclose(fp); // close the file
             return;
         }
-        *exists = false;
+        *exists = 0;
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -4685,7 +4685,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (opened != NULL) {
-            *opened = (fp != NULL);
+            *opened = (fp != NULL) ? 1 : 0;
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
@@ -4994,7 +4994,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
 }
 
 // Logical read API
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
+LFORTRAN_API void _lfortran_read_logical(int32_t *p, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
@@ -5015,10 +5015,10 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
         if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 ||
             strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) {
-            *p = true;
+            *p = 1;
         } else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 ||
                    strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) {
-            *p = false;
+            *p = 0;
         } else {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
@@ -5061,10 +5061,10 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
         if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 ||
             strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) {
-            *p = true;
+            *p = 1;
         } else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 ||
                    strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) {
-            *p = false;
+            *p = 0;
         } else {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
