@@ -11854,7 +11854,7 @@ public:
                 if (kind == 4) type_code = 4; // LFORTRAN_NML_REAL4
                 else if (kind == 8) type_code = 5; // LFORTRAN_NML_REAL8
             } else if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
-                // For logicals, we'll determine the type code after getting the LLVM type
+                // For logicals, we'll determine the type code from the LLVM type
                 type_code = -2; // Marker to set it later
             } else if (ASR::is_a<ASR::Complex_t>(*elem_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -11888,11 +11888,28 @@ public:
                             this->visit_expr(*dims[d].m_length);
                             llvm::Value* dim_len = tmp;
                             if (llvm::isa<llvm::Constant>(dim_len)) {
-                                // Convert to i64 if necessary
                                 llvm::Constant* dim_len_const = llvm::cast<llvm::Constant>(dim_len);
-                                if (dim_len_const->getType() != llvm::Type::getInt64Ty(context)) {
-                                    dim_len_const = llvm::ConstantExpr::getSExtOrBitCast(
-                                        dim_len_const, llvm::Type::getInt64Ty(context));
+                                // For integer constants, extract the value and create a new i64 constant
+                                // This avoids ConstantExpr issues in LLVM > 15
+                                if (llvm::isa<llvm::ConstantInt>(dim_len_const)) {
+                                    llvm::ConstantInt* ci = llvm::cast<llvm::ConstantInt>(dim_len_const);
+                                    int64_t val = ci->getSExtValue();
+                                    dim_len_const = llvm::ConstantInt::get(context, llvm::APInt(64, val, true));
+                                } else if (dim_len_const->getType() != llvm::Type::getInt64Ty(context)) {
+                                    if (!llvm::isa<llvm::IntegerType>(dim_len_const->getType())) {
+                                        throw CodeGenError("Namelist array dimension must be an integer constant");
+                                    }
+                                    llvm::IntegerType* src_ty = llvm::cast<llvm::IntegerType>(dim_len_const->getType());
+                                    unsigned src_bits = src_ty->getBitWidth();
+                                    if (src_bits < 64) {
+                                        dim_len_const = llvm::ConstantExpr::getCast(
+                                            llvm::Instruction::SExt, dim_len_const,
+                                            llvm::Type::getInt64Ty(context));
+                                    } else if (src_bits > 64) {
+                                        dim_len_const = llvm::ConstantExpr::getCast(
+                                            llvm::Instruction::Trunc, dim_len_const,
+                                            llvm::Type::getInt64Ty(context));
+                                    }
                                 }
                                 shape_vals.push_back(dim_len_const);
                             } else {
@@ -11920,9 +11937,9 @@ public:
                 throw CodeGenError("Variable " + var_name + " not found in symbol table");
             }
 
-            // For logicals, determine type code from actual LLVM type size
+            // For logicals, determine type code from the LLVM type derived from ASR
             if (type_code == -2) {
-                llvm::Type* llvm_type = data_ptr->getType()->getPointerElementType();
+                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, elem_type, module.get());
                 if (llvm::isa<llvm::IntegerType>(llvm_type)) {
                     unsigned bit_width = llvm::cast<llvm::IntegerType>(llvm_type)->getBitWidth();
                     unsigned byte_size = (bit_width + 7) / 8; // Round up to nearest byte
@@ -11930,12 +11947,14 @@ public:
                     else if (byte_size == 2) type_code = 7; // LFORTRAN_NML_LOGICAL2
                     else if (byte_size == 4) type_code = 8; // LFORTRAN_NML_LOGICAL4
                     else if (byte_size == 8) type_code = 9; // LFORTRAN_NML_LOGICAL8
+                } else {
+                    throw CodeGenError("Unsupported logical LLVM type for namelist");
                 }
             }
 
             // For strings, we need to extract the data pointer from the descriptor
             if (ASR::is_a<ASR::String_t>(*var_type)) {
-                llvm::Type* string_desc_type = data_ptr->getType()->getPointerElementType();
+                llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(nullptr, var_type, module.get());
                 llvm::Value* str_data_ptr_ptr = llvm_utils->create_gep2(string_desc_type, data_ptr, 0);
                 data_ptr = llvm_utils->CreateLoad2(character_type, str_data_ptr_ptr);
             }
@@ -11947,12 +11966,12 @@ public:
                     ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(past_alloc);
                     if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                         // Get data pointer from array descriptor
-                        llvm::Type* arr_type = data_ptr->getType()->getPointerElementType();
+                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
                         data_ptr = arr_descr->get_pointer_to_data(arr_type, data_ptr);
                     } else if (arr_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
                         // For FixedSizeArray, data_ptr points to [N x Type]*, we need Type*
                         // Use GEP with indices [0, 0] to get pointer to first element
-                        llvm::Type* arr_type = data_ptr->getType()->getPointerElementType();
+                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
                         data_ptr = builder->CreateConstGEP2_32(arr_type, data_ptr, 0, 0);
                     }
                 }
