@@ -279,6 +279,15 @@ class ASRToLLVMVisitor;
             void validate_llvm_SSA([[maybe_unused]] llvm::Type* type_to_check_against, [[maybe_unused]] llvm::Value* llvm_SSA);
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
+
+            // Convert any integer type to i1 for use as a branch condition
+            llvm::Value* to_i1(llvm::Value* val) {
+                if (val->getType() == llvm::Type::getInt1Ty(context)) {
+                    return val;
+                }
+                return builder->CreateICmpNE(val, llvm::ConstantInt::get(val->getType(), 0));
+            }
+
             llvm::Function* _Deallocate();
 
             void start_new_block(llvm::BasicBlock *bb);
@@ -662,7 +671,7 @@ class ASRToLLVMVisitor;
                     mergeBB = llvm::BasicBlock::Create(context, "ifcont");
                 }
 
-                builder->CreateCondBr(cond, thenBB, elseBB);
+                builder->CreateCondBr(to_i1(cond), thenBB, elseBB);
                 builder->SetInsertPoint(thenBB); {
                     if_block();
                 }
@@ -702,7 +711,7 @@ class ASRToLLVMVisitor;
                 // head
                 start_new_block(loophead); {
                     llvm::Value* cond = condition();
-                    builder->CreateCondBr(cond, loopbody, loopend);
+                    builder->CreateCondBr(to_i1(cond), loopbody, loopend);
                 }
 
                 // body

@@ -7,13 +7,13 @@ define i32 @main(i32 %0, i8** %1) {
   %a = alloca [5 x float], align 4
   %b = alloca [5 x float], align 4
   %c = alloca [3 x i32], align 4
-  %d = alloca [2 x i1], align 1
+  %d = alloca [2 x i32], align 4
   %e = alloca [6 x float], align 4
   %f = alloca [12 x i32], align 4
-  %g = alloca [10 x i1], align 1
+  %g = alloca [10 x i32], align 4
   %h = alloca [24 x float], align 4
   %i = alloca [36 x i32], align 4
-  %j = alloca [20 x i1], align 1
+  %j = alloca [20 x i32], align 4
   call void @_lpython_free_argv()
   br label %return
 

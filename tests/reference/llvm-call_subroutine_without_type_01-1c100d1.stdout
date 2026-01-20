@@ -70,7 +70,9 @@ free_done:                                        ; preds = %free_nonnull, %.ent
   %20 = getelementptr %mytype, %mytype* %19, i32 0, i32 0
   %21 = load float, float* %20, align 4
   %22 = fcmp une float %21, 1.000000e+00
-  br i1 %22, label %then, label %else
+  %23 = zext i1 %22 to i32
+  %24 = icmp ne i32 %23, 0
+  br i1 %24, label %then, label %else
 
 then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))

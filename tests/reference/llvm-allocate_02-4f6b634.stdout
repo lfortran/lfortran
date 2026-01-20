@@ -77,55 +77,57 @@ loop.head:                                        ; preds = %ifcont11, %ifcont
   %28 = load i32, i32* %i1, align 4
   %29 = add i32 %28, 1
   %30 = icmp sle i32 %29, 1000000
-  br i1 %30, label %loop.body, label %loop.end
+  %31 = zext i1 %30 to i32
+  %32 = icmp ne i32 %31, 0
+  br i1 %32, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %31 = load i32, i32* %i1, align 4
-  %32 = add i32 %31, 1
-  store i32 %32, i32* %i1, align 4
-  %33 = load %array*, %array** %arr, align 8
-  %34 = ptrtoint %array* %33 to i64
-  %35 = icmp eq i64 %34, 0
-  br i1 %35, label %merge_allocated3, label %check_data2
+  %33 = load i32, i32* %i1, align 4
+  %34 = add i32 %33, 1
+  store i32 %34, i32* %i1, align 4
+  %35 = load %array*, %array** %arr, align 8
+  %36 = ptrtoint %array* %35 to i64
+  %37 = icmp eq i64 %36, 0
+  br i1 %37, label %merge_allocated3, label %check_data2
 
 check_data2:                                      ; preds = %loop.body
-  %36 = getelementptr %array, %array* %33, i32 0, i32 0
-  %37 = load i32*, i32** %36, align 8
-  %38 = ptrtoint i32* %37 to i64
-  %39 = icmp ne i64 %38, 0
+  %38 = getelementptr %array, %array* %35, i32 0, i32 0
+  %39 = load i32*, i32** %38, align 8
+  %40 = ptrtoint i32* %39 to i64
+  %41 = icmp ne i64 %40, 0
   br label %merge_allocated3
 
 merge_allocated3:                                 ; preds = %check_data2, %loop.body
-  %is_allocated4 = phi i1 [ false, %loop.body ], [ %39, %check_data2 ]
+  %is_allocated4 = phi i1 [ false, %loop.body ], [ %41, %check_data2 ]
   br i1 %is_allocated4, label %then5, label %else
 
 then5:                                            ; preds = %merge_allocated3
-  %40 = getelementptr %array, %array* %33, i32 0, i32 0
-  %41 = load i32*, i32** %40, align 8
-  %42 = bitcast i32* %41 to i8*
-  call void @_lfortran_free(i8* %42)
-  %43 = getelementptr %array, %array* %33, i32 0, i32 0
-  store i32* null, i32** %43, align 8
+  %42 = getelementptr %array, %array* %35, i32 0, i32 0
+  %43 = load i32*, i32** %42, align 8
+  %44 = bitcast i32* %43 to i8*
+  call void @_lfortran_free(i8* %44)
+  %45 = getelementptr %array, %array* %35, i32 0, i32 0
+  store i32* null, i32** %45, align 8
   br label %ifcont6
 
 else:                                             ; preds = %merge_allocated3
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else, %then5
-  %44 = load %array*, %array** %arr, align 8
-  %45 = ptrtoint %array* %44 to i64
-  %46 = icmp eq i64 %45, 0
-  br i1 %46, label %merge_allocated8, label %check_data7
+  %46 = load %array*, %array** %arr, align 8
+  %47 = ptrtoint %array* %46 to i64
+  %48 = icmp eq i64 %47, 0
+  br i1 %48, label %merge_allocated8, label %check_data7
 
 check_data7:                                      ; preds = %ifcont6
-  %47 = getelementptr %array, %array* %44, i32 0, i32 0
-  %48 = load i32*, i32** %47, align 8
-  %49 = ptrtoint i32* %48 to i64
-  %50 = icmp ne i64 %49, 0
+  %49 = getelementptr %array, %array* %46, i32 0, i32 0
+  %50 = load i32*, i32** %49, align 8
+  %51 = ptrtoint i32* %50 to i64
+  %52 = icmp ne i64 %51, 0
   br label %merge_allocated8
 
 merge_allocated8:                                 ; preds = %check_data7, %ifcont6
-  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %50, %check_data7 ]
+  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %52, %check_data7 ]
   br i1 %is_allocated9, label %then10, label %ifcont11
 
 then10:                                           ; preds = %merge_allocated8
@@ -134,22 +136,22 @@ then10:                                           ; preds = %merge_allocated8
   unreachable
 
 ifcont11:                                         ; preds = %merge_allocated8
-  %51 = load %array*, %array** %arr, align 8
-  %52 = getelementptr %array, %array* %51, i32 0, i32 1
-  store i32 0, i32* %52, align 4
-  %53 = getelementptr %array, %array* %51, i32 0, i32 2
-  %54 = load %dimension_descriptor*, %dimension_descriptor** %53, align 8
-  %55 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %54, i32 0
-  %56 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 0
-  %57 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 1
-  %58 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 2
-  store i32 1, i32* %56, align 4
-  store i32 1, i32* %57, align 4
+  %53 = load %array*, %array** %arr, align 8
+  %54 = getelementptr %array, %array* %53, i32 0, i32 1
+  store i32 0, i32* %54, align 4
+  %55 = getelementptr %array, %array* %53, i32 0, i32 2
+  %56 = load %dimension_descriptor*, %dimension_descriptor** %55, align 8
+  %57 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %56, i32 0
+  %58 = getelementptr %dimension_descriptor, %dimension_descriptor* %57, i32 0, i32 0
+  %59 = getelementptr %dimension_descriptor, %dimension_descriptor* %57, i32 0, i32 1
+  %60 = getelementptr %dimension_descriptor, %dimension_descriptor* %57, i32 0, i32 2
   store i32 1, i32* %58, align 4
-  %59 = getelementptr %array, %array* %51, i32 0, i32 0
-  %60 = call i8* @_lfortran_malloc(i64 4)
-  %61 = bitcast i8* %60 to i32*
-  store i32* %61, i32** %59, align 8
+  store i32 1, i32* %59, align 4
+  store i32 1, i32* %60, align 4
+  %61 = getelementptr %array, %array* %53, i32 0, i32 0
+  %62 = call i8* @_lfortran_malloc(i64 4)
+  %63 = bitcast i8* %62 to i32*
+  store i32* %63, i32** %61, align 8
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
@@ -163,15 +165,15 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
-  %62 = load %array*, %array** %arr, align 8
-  %63 = getelementptr %array, %array* %62, i32 0, i32 0
-  %64 = load i32*, i32** %63, align 8
-  %65 = icmp eq i32* %64, null
-  br i1 %65, label %free_done, label %free_nonnull
+  %64 = load %array*, %array** %arr, align 8
+  %65 = getelementptr %array, %array* %64, i32 0, i32 0
+  %66 = load i32*, i32** %65, align 8
+  %67 = icmp eq i32* %66, null
+  br i1 %67, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %Finalize_Variable_arr
-  %66 = bitcast i32* %64 to i8*
-  call void @_lfortran_free(i8* %66)
+  %68 = bitcast i32* %66 to i8*
+  call void @_lfortran_free(i8* %68)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %Finalize_Variable_arr
