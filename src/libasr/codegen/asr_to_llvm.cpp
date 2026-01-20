@@ -6639,19 +6639,13 @@ public:
             ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
             llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(fptr,
                 ASRUtils::get_contained_type(fptr_type), module.get());
-            llvm::Value* fptr_array = llvm_utils->CreateAlloca(*builder, llvm_fptr_type);
+            llvm_fptr = llvm_utils->CreateLoad2(llvm_fptr_type->getPointerTo(), llvm_fptr);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                arr_descr->get_offset(llvm_fptr_type, fptr_array, false));
+                arr_descr->get_offset(llvm_fptr_type, llvm_fptr, false));
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(fptr),
                                 fptr_dims);
-            llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
-            llvm::Value* dim_des = llvm_utils->CreateAlloca(*builder, arr_descr->get_dimension_descriptor_type(), llvm_rank);
-            builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, fptr_array, false));
-            arr_descr->set_rank(llvm_fptr_type, fptr_array, llvm_rank);
-            builder->CreateStore(fptr_array, llvm_fptr);
-            llvm_fptr = fptr_array;
             ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);
             llvm::Type* llvm_fptr_data_type = nullptr;
             if (ASRUtils::is_descriptorString(fptr_data_type)) {
