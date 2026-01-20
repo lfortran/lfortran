@@ -954,11 +954,26 @@ public:
                 for (size_t j = 0; j < if_stmt->n_body; j++) {
                     new_body.push_back(al, if_stmt->m_body[j]);
                 }
-
                 if_stmt->m_body = new_body.p;
                 if_stmt->n_body = new_body.size();
+
+                // Also handle reassingment in else block if cond is false
+                Vec<ASR::stmt_t*> else_new_body;
+                else_new_body.reserve(al, if_stmt->n_orelse + assigns_at_end.size());
+                for (auto &stm: assigns_at_end) {
+                    else_new_body.push_back(al, stm);
+                }
+                // Original else body
+                for (size_t j = 0; j < if_stmt->n_orelse; j++) {
+                    else_new_body.push_back(al, if_stmt->m_orelse[j]);
+                }
+                if_stmt->m_orelse = else_new_body.p;
+                if_stmt->n_orelse = else_new_body.size();
+
                 new_body.n = 0;
                 new_body.p = nullptr;
+                else_new_body.n = 0;
+                else_new_body.p = nullptr;
                 body.push_back(al, m_body[i]);
                 calls_in_loop_condition = false;  // Reset flag
             } else {
@@ -974,6 +989,8 @@ public:
                     calls_in_loop_condition = false;  // Reset flag
                 }
             }
+            calls_in_loop_condition = false;  // Reset flag
+            calls_present = false;
         }
         m_body = body.p;
         n_body = body.size();
