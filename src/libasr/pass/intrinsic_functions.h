@@ -4639,19 +4639,15 @@ namespace Hypot {
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         // Hybrid algorithm:
         // - Normal values: pow(x**2 + y**2, 0.5) (matches existing `abs(complex)` lowering behavior)
-        // - Extreme values: scaled algorithm to avoid overflow/underflow
+        // - Large values that might overflow: scaled algorithm
         ASR::ttype_t* real_type = arg_types[0];
         int kind = ASRUtils::extract_kind_from_ttype_t(real_type);
-        // Threshold above which naive formula might overflow (sqrt(HUGE/2))
+        // Threshold below which naive formula is safe (sqrt(HUGE/2))
         // kind=4: ~1.3e19, kind=8: ~9.5e153
-        double threshold_high = (kind == 4) ? 1.3e19 : 9.5e153;
-        // Threshold below which naive formula might underflow (sqrt(TINY))
-        // kind=4: ~1.1e-19, kind=8: ~1.5e-154
-        double threshold_low = (kind == 4) ? 1.1e-19 : 1.5e-154;
+        double threshold = (kind == 4) ? 1.3e19 : 9.5e153;
 
         auto abs_x = declare("_lcompilers_hypot_abs_x", real_type, Local);
         auto abs_y = declare("_lcompilers_hypot_abs_y", real_type, Local);
-        auto scale = declare("_lcompilers_hypot_scale", real_type, Local);
 
         body.push_back(al, b.If(b.GtE(args[0], b.f_t(0, real_type)), {
             b.Assignment(abs_x, args[0])
@@ -4664,30 +4660,29 @@ namespace Hypot {
             b.Assignment(abs_y, b.f_neg(args[1], real_type))
         }));
 
-        body.push_back(al, b.If(b.GtE(abs_x, abs_y), {
-            b.Assignment(scale, abs_x)
-        }, {
-            b.Assignment(scale, abs_y)
-        }));
-
-        body.push_back(al, b.If(b.Eq(scale, b.f_t(0, real_type)), {
-            b.Assignment(result, b.f_t(0, real_type))
-        }, {
-            b.If(
-                b.Or(b.Gt(scale, b.f_t(threshold_high, real_type)),
-                     b.Lt(scale, b.f_t(threshold_low, real_type))), {
-                    // Scaled algorithm: result = scale * sqrt( (x/scale)^2 + (y/scale)^2 )
-                    b.Assignment(result, b.Mul(scale,
-                        b.Pow(b.Add(b.Pow(b.Div(abs_x, scale), b.f_t(2, real_type)),
-                                    b.Pow(b.Div(abs_y, scale), b.f_t(2, real_type))),
+        body.push_back(al, b.If(
+            b.Or(b.Gt(abs_x, b.f_t(threshold, real_type)),
+                 b.Gt(abs_y, b.f_t(threshold, real_type))), {
+                // Large values: scaled algorithm to avoid overflow
+                // if abs(x) >= abs(y): result = abs(x) * sqrt(1 + (y/x)^2)
+                // else:               result = abs(y) * sqrt((x/y)^2 + 1)
+                b.If(b.GtE(abs_x, abs_y), {
+                    b.Assignment(result, b.Mul(abs_x,
+                        b.Pow(b.Add(b.f_t(1, real_type),
+                              b.Pow(b.Div(args[1], args[0]), b.f_t(2, real_type))),
                               b.f_t(0.5, real_type))))
                 }, {
-                    b.Assignment(result,
-                        b.Pow(b.Add(b.Pow(args[0], b.f_t(2, real_type)),
-                                    b.Pow(args[1], b.f_t(2, real_type))),
-                              b.f_t(0.5, real_type)))
+                    b.Assignment(result, b.Mul(abs_y,
+                        b.Pow(b.Add(b.Pow(b.Div(args[0], args[1]), b.f_t(2, real_type)),
+                              b.f_t(1, real_type)),
+                              b.f_t(0.5, real_type))))
                 })
-        }));
+            }, {
+                b.Assignment(result,
+                    b.Pow(b.Add(b.Pow(args[0], b.f_t(2, real_type)),
+                                b.Pow(args[1], b.f_t(2, real_type))),
+                          b.f_t(0.5, real_type)))
+            }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
