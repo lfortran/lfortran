@@ -1388,6 +1388,35 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+                if (kwarg.m_value == nullptr || kwarg.m_value->type != AST::exprType::Name) {
+                    diag.add(Diagnostic(
+                        "`nml` must be a namelist group name",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(kwarg.m_value);
+                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                a_nml = current_scope->resolve_symbol(nml_name);
+                if (!a_nml) {
+                    diag.add(Diagnostic(
+                        "Namelist group '" + nml_name + "' not found",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                // Unwrap external symbol to get the actual namelist
+                ASR::symbol_t* nml_sym = ASRUtils::symbol_get_past_external(a_nml);
+                if (!ASR::is_a<ASR::Namelist_t>(*nml_sym)) {
+                    diag.add(Diagnostic(
+                      "'" + nml_name + "' is not a namelist group",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if (m_arg_str == std::string("rec")) {
                 if (a_rec != nullptr) {
                     diag.add(Diagnostic(
