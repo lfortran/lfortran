@@ -6689,7 +6689,7 @@ public:
                     }
                 } else {
                     // LCOMPILERS_ASSERT(ASRUtils::is_array(root_v_type))
-                    m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "ubound", al, diag);
+                    m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "ubound", al, diag, compiler_options.po.default_integer_kind);
                 }
             }
             if (m_args[i].m_step != nullptr) {
@@ -7047,7 +7047,7 @@ public:
             for( size_t i = 0; i < n_args; i++ ) {
                 if( args.p[i].m_step != nullptr &&
                     args.p[i].m_left == nullptr ) {
-                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
+                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag, compiler_options.po.default_integer_kind);
                 }
                 if (args.p[i].m_step != nullptr
                     || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
@@ -7734,23 +7734,25 @@ public:
         }
     }
 
-    void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections, SymbolTable* current_scope) {
+    void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections,
+            SymbolTable* current_scope, int default_integer_kind) {
 
     class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
         private:
             Allocator& al;
+            int default_integer_kind;
         public:
             ASR::expr_t** current_expr;
 
-            ReplaceArrayItemWithArraySection(Allocator& al_) :
-                al(al_), current_expr(nullptr) {}
+            ReplaceArrayItemWithArraySection(Allocator& al_, int default_integer_kind_) :
+                al(al_), default_integer_kind(default_integer_kind_), current_expr(nullptr) {}
 
             void replace_ArrayItem(ASR::ArrayItem_t* x) {
                 ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
                 ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(array_type);
                 bool is_unbounded = (phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                 Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
-                ASRUtils::ASRBuilder b(al, x->base.base.loc);
+                ASRUtils::ASRBuilder b(al, x->base.base.loc, default_integer_kind);
 
                 for ( size_t i = 0; i < x->n_args; i++ ) {
                     ASR::array_index_t array_index;
@@ -7758,13 +7760,13 @@ public:
                     array_index.m_left = x->m_args[i].m_right;
                     if (is_unbounded && i == x->n_args - 1) {
                         array_index.m_right = array_index.m_left;
-                        array_index.m_step = b.i32(1);
+                        array_index.m_step = b.i_default(1);
                     } else {
                         array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
                         if ( ASRUtils::expr_value(array_index.m_right) ) {
                             array_index.m_right = ASRUtils::expr_value(array_index.m_right);
                         }
-                        array_index.m_step = b.i32( i + 1 );
+                        array_index.m_step = b.i_default(i + 1);
                     }
                     array_indices.push_back(al, array_index);
                 }
@@ -7781,11 +7783,13 @@ public:
     class LegacyArraySectionsVisitor : public ASR::CallReplacerOnExpressionsVisitor<LegacyArraySectionsVisitor> {
         private:
             Allocator& al;
+            int default_integer_kind;
             ReplaceArrayItemWithArraySection replacer;
         public:
             ASR::expr_t** current_expr;
-            LegacyArraySectionsVisitor(Allocator& al_) :
-                al(al_), replacer(al_), current_expr(nullptr) {}
+            LegacyArraySectionsVisitor(Allocator& al_, int default_integer_kind_) :
+                al(al_), default_integer_kind(default_integer_kind_),
+                replacer(al_, default_integer_kind_), current_expr(nullptr) {}
 
             void call_replacer_() {
                 replacer.current_expr = current_expr;
@@ -7856,7 +7860,7 @@ public:
                                 (actual_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                             Vec<ASR::array_index_t> array_indices;
                             array_indices.reserve(al, array_item->n_args);
-                            ASRUtils::ASRBuilder b(al, array_item->base.base.loc);
+                            ASRUtils::ASRBuilder b(al, array_item->base.base.loc, default_integer_kind);
 
                             for ( size_t j = 0; j < array_item->n_args; j++ ) {
                                 ASR::array_index_t array_index;
@@ -7864,13 +7868,13 @@ public:
                                 array_index.m_left = array_item->m_args[j].m_right;
                                 if (unbounded_tail && j == array_item->n_args - 1) {
                                     array_index.m_right = array_index.m_left;
-                                    array_index.m_step = b.i32(1);
+                                    array_index.m_step = b.i_default(1);
                                 } else {
                                     array_index.m_right = b.ArrayUBound(array_item->m_v, j + 1);
                                     if ( ASRUtils::expr_value(array_index.m_right) ) {
                                         array_index.m_right = ASRUtils::expr_value(array_index.m_right);
                                     }
-                                    array_index.m_step = b.i32( j + 1 );
+                                    array_index.m_step = b.i_default(j + 1);
                                 }
                                 array_indices.push_back(al, array_index);
                             }
@@ -7893,11 +7897,11 @@ public:
                                         // size = right - left + 1
                                         dim_size = b.Add(b.Sub(array_indices.p[j].m_right,
                                                                array_indices.p[j].m_left),
-                                                        b.i32(1));
+                                                        b.i_default(1));
                                     } else if (array_indices.p[j].m_right) {
                                         dim_size = array_indices.p[j].m_right;
                                     } else {
-                                        dim_size = b.i32(1);
+                                        dim_size = b.i_default(1);
                                     }
                                     if (total_size == nullptr) {
                                         total_size = dim_size;
@@ -7910,7 +7914,7 @@ public:
                                 dims.reserve(al, 1);
                                 ASR::dimension_t dim;
                                 dim.loc = array_item->base.base.loc;
-                                dim.m_start = b.i32(1);
+                                dim.m_start = b.i_default(1);
                                 dim.m_length = total_size;
                                 dims.push_back(al, dim);
                                 ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(section_type);
@@ -7931,7 +7935,7 @@ public:
     };
 
         if ( legacy_array_sections ) {
-            LegacyArraySectionsVisitor v(al);
+            LegacyArraySectionsVisitor v(al, default_integer_kind);
             ASR::asr_t* asr_owner = current_scope->asr_owner;
             if ( ASR::is_a<ASR::symbol_t>(*asr_owner) ) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
@@ -8124,13 +8128,13 @@ public:
                         array_indices.reserve(al, array_item->n_args);
 
                         ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
-                        ASRUtils::ASRBuilder builder(al, loc);
-                        ASR::expr_t* one = builder.i32(1);
+                        ASRUtils::ASRBuilder builder(al, loc, compiler_options.po.default_integer_kind);
+                        ASR::expr_t* one = builder.i_default(1);
                         for (size_t dim_i = 0; dim_i < array_item->n_args; dim_i++) {
                             ASR::array_index_t array_idx;
                             array_idx.loc = array_item->m_args[dim_i].loc;
                             array_idx.m_left = array_item->m_args[dim_i].m_right;
-                            array_idx.m_right = ASRUtils::get_bound<SemanticAbort>(array_expr, dim_i + 1, "ubound", al, diag);
+                            array_idx.m_right = ASRUtils::get_bound<SemanticAbort>(array_expr, dim_i + 1, "ubound", al, diag, compiler_options.po.default_integer_kind);
                             array_idx.m_step = one;
                             array_indices.push_back(al, array_idx);
                         }
@@ -8500,13 +8504,13 @@ public:
                     this->visit_expr(*struct_m_args[j].m_start);
                     index.m_left = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_left = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "lbound", al, diag);
+                    index.m_left = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "lbound", al, diag, compiler_options.po.default_integer_kind);
                 }
                 if( struct_m_args[j].m_end ) {
                     this->visit_expr(*struct_m_args[j].m_end);
                     index.m_right = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_right = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "ubound", al, diag);
+                    index.m_right = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "ubound", al, diag, compiler_options.po.default_integer_kind);
                 }
                 this->visit_expr(*struct_m_args[j].m_step);
                 index.m_step = ASRUtils::EXPR(tmp);
@@ -9129,7 +9133,7 @@ public:
                 ASR::array_index_t index;
                 index.loc = loc;
                 index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag);
+                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag, compiler_options.po.default_integer_kind);
                 index.m_step = nullptr;
                 lbs.push_back(al, index);
             }

@@ -14,10 +14,12 @@ class ASRBuilder {
     Allocator& al;
     // TODO: use the location to point C++ code in `intrinsic_function_registry`
     const Location &loc;
+    int default_int_kind;
 
     public:
 
-    ASRBuilder(Allocator& al_, const Location& loc_): al(al_), loc(loc_) {}
+    ASRBuilder(Allocator& al_, const Location& loc_, int default_int_kind_ = 4)
+        : al(al_), loc(loc_), default_int_kind(default_int_kind_) {}
 
     #define make_ConstantWithKind(Constructor, TypeConstructor, value, kind, loc) ASRUtils::EXPR( \
         ASR::Constructor( al, loc, value, \
@@ -218,11 +220,11 @@ class ASRBuilder {
                     if( !ASRUtils::extract_value(length, const_length) ) {
                         LCOMPILERS_ASSERT(false);
                     }
-                    value = i32(const_lbound + const_length - 1);
+                    value = i_default(const_lbound + const_length - 1);
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_default(dim), intDefault(), ASR::arrayboundType::UBound, value));
     }
 
     ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim) {
@@ -240,11 +242,11 @@ class ASRBuilder {
                     if( !ASRUtils::extract_value(start, const_lbound) ) {
                         LCOMPILERS_ASSERT(false);
                     }
-                    value = i32(const_lbound);
+                    value = i_default(const_lbound);
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_default(dim), intDefault(), ASR::arrayboundType::LBound, value));
     }
 
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
@@ -265,6 +267,14 @@ class ASRBuilder {
 
     inline ASR::expr_t* i64(int64_t x) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64));
+    }
+
+    inline ASR::ttype_t* intDefault() {
+        return TYPE(ASR::make_Integer_t(al, loc, default_int_kind));
+    }
+
+    inline ASR::expr_t* i_default(int64_t x) {
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, intDefault()));
     }
 
     inline ASR::expr_t* i_neg(ASR::expr_t* x, ASR::ttype_t* t) {

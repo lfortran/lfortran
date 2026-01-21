@@ -2407,6 +2407,10 @@ RUN(NAME array_section_09 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME array_section_10 LABELS gfortran llvm)
+RUN(NAME array_section_11 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-interface --legacy-array-sections -fdefault-integer-8
+    GFORTRAN_ARGS -fdefault-integer-8
+    EXTRAFILES array_section_11b.f90)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
