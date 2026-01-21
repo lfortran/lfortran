@@ -14822,6 +14822,26 @@ public:
                 }
             }
 
+            // Handle byte-backed logical array elements passed to scalar logical parameters.
+            // Logical arrays are stored as i8 (byte-backed), but scalar logical parameters
+            // expect i1*. We need to load the i8 value, truncate to i1, store in a temp i1
+            // alloca, and pass its address.
+            if (orig_arg && ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
+                    ASRUtils::expr_type(x.m_args[i].m_value))) &&
+                !ASRUtils::is_array(orig_arg->m_type) &&
+                ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(orig_arg->m_type)))) {
+                // tmp is i8* (byte-backed logical array element)
+                // orig_arg expects i1* (scalar logical by reference)
+                // Load i8, truncate to i1, store in i1 alloca
+                llvm::Value* i8_val = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
+                llvm::Value* i1_val = builder->CreateTrunc(i8_val, llvm::Type::getInt1Ty(context));
+                llvm::AllocaInst* i1_tmp = get_call_arg_alloca(llvm::Type::getInt1Ty(context));
+                builder->CreateStore(i1_val, i1_tmp);
+                tmp = i1_tmp;
+            }
+
             args.push_back(tmp);
         }
         convert_call_args_depth--;
