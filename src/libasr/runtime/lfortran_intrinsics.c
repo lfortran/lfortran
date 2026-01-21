@@ -1436,9 +1436,9 @@ bool array_of_string_special_case(Serialization_Info* s_info){ // {string_descri
 // Moves a containing pointer (struct, array) to the next the element
 void move_containing_ptr_next(Serialization_Info* s_info){
     // Ordering of types is crucial (Matched with enum `Primitive_Types`)
-    static const int primitive_type_sizes[] =
+    static const int primitive_type_sizes[] = 
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
-        sizeof(int8_t) , sizeof(double), sizeof(float),
+        sizeof(int8_t) , sizeof(double), sizeof(float), 
         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/,
         sizeof(char*) + sizeof(int64_t)/*String Descriptor*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
@@ -2029,7 +2029,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         char_val = *(char**)s_info.current_arg_info.current_arg;
                         break;
                     case LOGICAL_TYPE:
-                        bool_val = (*(bool*)s_info.current_arg_info.current_arg) != 0;
+                        bool_val = *(bool*)s_info.current_arg_info.current_arg;
                         break;
                     default:
                         break;
@@ -2038,7 +2038,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     // Handle if argument is actually logical (allowed in Fortran).
                     if(s_info.current_element_type==LOGICAL_TYPE){
                         char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                        handle_logical("l",(*(bool*)s_info.current_arg_info.current_arg) != 0, &temp_buf);
+                        handle_logical("l",*(bool*)s_info.current_arg_info.current_arg, &temp_buf);
                         int64_t temp_len = strlen(temp_buf);
                         result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
                         result_len += temp_len;

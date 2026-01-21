@@ -2687,7 +2687,6 @@ public:
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3, int32_type);
         }
-        // Keep comparisons as i1 (matches LLVM branch condition type).
     }
 
     void visit_DictLen(const ASR::DictLen_t& x) {
@@ -3320,7 +3319,6 @@ public:
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3);
         }
-        // Keep logical comparisons as i1 (scalars); logical arrays use i8 storage.
     }
 
     void visit_TupleLen(const ASR::TupleLen_t& x) {
@@ -4302,9 +4300,8 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
-            int init_value_bits = 1;
-            llvm::Type *type = llvm::Type::getInt1Ty(context);
-            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
+            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
+                llvm::Type::getInt1Ty(context));
             if (!external) {
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
@@ -4312,7 +4309,7 @@ public:
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantInt::get(context,
-                                llvm::APInt(init_value_bits, 0)));
+                                llvm::APInt(1, 0)));
                     set_global_variable_linkage_as_common(ptr, x.m_abi);
                 }
             }
@@ -9430,30 +9427,29 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                cmp_result = builder->CreateICmpEQ(left, right);
+                tmp = builder->CreateICmpEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                cmp_result = builder->CreateICmpSGT(left, right);
+                tmp = builder->CreateICmpSGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                cmp_result = builder->CreateICmpSGE(left, right);
+                tmp = builder->CreateICmpSGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                cmp_result = builder->CreateICmpSLT(left, right);
+                tmp = builder->CreateICmpSLT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                cmp_result = builder->CreateICmpSLE(left, right);
+                tmp = builder->CreateICmpSLE(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                cmp_result = builder->CreateICmpNE(left, right);
+                tmp = builder->CreateICmpNE(left, right);
                 break;
             }
             default : {
@@ -9461,7 +9457,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
@@ -9717,7 +9712,6 @@ public:
                         x.base.base.loc);
             }
         }
-        // Keep comparisons as i1 (scalars); logical arrays use i8 storage.
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
