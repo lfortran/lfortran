@@ -4864,19 +4864,8 @@ public:
             builder->SetCurrentDebugLocation(nullptr);
             debug_emit_loc(x);
         }
-        // there maybe a possibility that nested function has an array variable
-        // whose dimension depends on variable present in this program / function
-        // thereby visit all integer variables and declare those:
-        for(auto &item: x.m_symtab->get_scope()) {
-            ASR::symbol_t* sym = item.second;
-            if ( is_a<ASR::Variable_t>(*sym) ) {
-                ASR::Variable_t* v = down_cast<ASR::Variable_t>(sym);
-                uint32_t debug_arg_count = 0;
-                if ( ASR::is_a<ASR::Integer_t>(*v->m_type) ) {
-                    process_Variable(sym, x, debug_arg_count);
-                }
-            }
-        }
+        // Declare variables before nested procedures to make host symbols available.
+        declare_vars(x);
 
         // Generate code for nested subroutines and functions first:
         for (auto &item : x.m_symtab->get_scope()) {
@@ -4943,7 +4932,6 @@ public:
             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
                 st.second, ASRUtils::symbol_type(st.first), false, false);
         }
-        declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
         }
@@ -12333,10 +12321,17 @@ public:
 
         for (size_t i = 0; i < nml->n_var_list; i++) {
             ASR::symbol_t* var_sym = nml->m_var_list[i];
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+            ASR::symbol_t* var_sym_past = ASRUtils::symbol_get_past_external(var_sym);
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym_past);
 
             // Get variable name (lowercase)
             std::string var_name = std::string(var->m_name);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*var_sym)) {
+                ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(var_sym);
+                if (ext->m_original_name) {
+                    var_name = ext->m_original_name;
+                }
+            }
             std::transform(var_name.begin(), var_name.end(), var_name.begin(), ::tolower);
 
             uint32_t var_hash = get_hash((ASR::asr_t*)var);
