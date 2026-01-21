@@ -8369,20 +8369,7 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                     builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
                 } else {
-                    llvm::Value* store_value = value;
-                    bool store_logical_as_i8 = false;
-#if LLVM_VERSION_MAJOR < 15
-                    if (target->getType()->isPointerTy()) {
-                        llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
-                        store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
-                    }
-#endif
-                    if ((compiler_options.fast || compiler_options.po.fast) &&
-                        store_value->getType()->isIntegerTy(1) &&
-                        store_logical_as_i8) {
-                        store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
-                    }
-                    builder->CreateStore(store_value, target);
+                    builder->CreateStore(value, target);
                 }
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
@@ -8435,35 +8422,9 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
-            llvm::Value* store_value = value;
-            bool store_logical_as_i8 = false;
-#if LLVM_VERSION_MAJOR < 15
-            if (target->getType()->isPointerTy()) {
-                llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
-                store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
-            }
-#endif
-            if ((compiler_options.fast || compiler_options.po.fast) &&
-                store_value->getType()->isIntegerTy(1) &&
-                store_logical_as_i8) {
-                store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
-            }
-            builder->CreateStore(store_value, target);
+            builder->CreateStore(value, target);
         } else {
-            llvm::Value* store_value = value;
-            bool store_logical_as_i8 = false;
-#if LLVM_VERSION_MAJOR < 15
-            if (target->getType()->isPointerTy()) {
-                llvm::PointerType* pt = llvm::cast<llvm::PointerType>(target->getType());
-                store_logical_as_i8 = pt->getElementType()->isIntegerTy(8);
-            }
-#endif
-            if ((compiler_options.fast || compiler_options.po.fast) &&
-                store_value->getType()->isIntegerTy(1) &&
-                store_logical_as_i8) {
-                store_value = builder->CreateZExt(store_value, llvm::Type::getInt8Ty(context));
-            }
-            builder->CreateStore(store_value, target);
+            builder->CreateStore(value, target);
         }
     }
 
@@ -9122,24 +9083,7 @@ public:
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                // Under `--fast`, LOGICAL array elements are stored as bytes (`i8`) in memory.
-                // Convert loaded bytes to boolean (`i1`) semantics by checking for non-zero.
-                bool load_logical_from_i8 = false;
-#if LLVM_VERSION_MAJOR < 15
-                if (tmp->getType()->isPointerTy()) {
-                    llvm::PointerType* pt = llvm::cast<llvm::PointerType>(tmp->getType());
-                    load_logical_from_i8 = pt->getElementType()->isIntegerTy(8);
-                }
-#endif
-                if ((compiler_options.fast || compiler_options.po.fast) &&
-                    x_llvm_type->isIntegerTy(1) &&
-                    load_logical_from_i8) {
-                    llvm::Type* i8 = llvm::Type::getInt8Ty(context);
-                    llvm::Value* loaded = llvm_utils->CreateLoad2(i8, tmp, is_volatile);
-                    tmp = builder->CreateICmpNE(loaded, llvm::ConstantInt::get(i8, 0));
-                } else {
-                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
-                }
+                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
         }
     }
