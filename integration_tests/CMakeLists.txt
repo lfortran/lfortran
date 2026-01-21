@@ -866,6 +866,7 @@ RUN(NAME namelist_15 LABELS gfortran llvm)
 RUN(NAME namelist_16 LABELS gfortran llvm)
 RUN(NAME namelist_17 LABELS gfortran llvm)
 RUN(NAME namelist_18 LABELS gfortran llvm)
+RUN(NAME namelist_19 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)

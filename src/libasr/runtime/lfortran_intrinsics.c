@@ -7864,6 +7864,124 @@ static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
     }
 }
 
+// Helper to read a line from a buffer (internal file)
+static int64_t nml_getline_from_buffer(char **line_buf, size_t *line_len,
+                                       const char *src, int64_t src_len,
+                                       int64_t *offset) {
+    if (*offset >= src_len) return -1;
+
+    int64_t start = *offset;
+    int64_t end = start;
+    while (end < src_len && src[end] != '\n') end++;
+
+    int64_t len = end - start;
+    if ((size_t)(len + 2) > *line_len) {
+        *line_len = (size_t)(len + 2);
+        *line_buf = (char*)realloc(*line_buf, *line_len);
+    }
+
+    memcpy(*line_buf, src + start, (size_t)len);
+    (*line_buf)[len] = '\0';
+
+    if (end < src_len && src[end] == '\n') end++;
+    *offset = end;
+    return len;
+}
+
+// Helper to skip whitespace and comments (internal file)
+static void skip_whitespace_buffer(const char *src, int64_t src_len, int64_t *offset,
+                                   char **line_buf, char **line_ptr,
+                                   size_t *line_len, int64_t *read_len) {
+    while (1) {
+        while (*line_ptr && **line_ptr && isspace(**line_ptr)) {
+            (*line_ptr)++;
+        }
+
+        if (*line_ptr && **line_ptr == '!') {
+            *line_ptr = NULL;
+        }
+
+        if (!*line_ptr || !**line_ptr) {
+            *read_len = nml_getline_from_buffer(line_buf, line_len, src, src_len, offset);
+            if (*read_len == -1) {
+                *line_ptr = NULL;
+                return;
+            }
+            *line_ptr = *line_buf;
+            continue;
+        }
+
+        break;
+    }
+}
+
+// Helper to read a token from a buffer (internal file)
+static char* read_token_buffer(const char *src, int64_t src_len, int64_t *offset,
+                               char **line_buf, char **line_ptr,
+                               size_t *line_len, int64_t *read_len) {
+    skip_whitespace_buffer(src, src_len, offset, line_buf, line_ptr, line_len, read_len);
+    if (!*line_ptr || !**line_ptr) return NULL;
+
+    char *token = (char*)malloc(256);
+    int pos = 0;
+
+    if (**line_ptr == '&' || **line_ptr == '$' || **line_ptr == '/' ||
+        **line_ptr == '=' || **line_ptr == ',') {
+        token[pos++] = **line_ptr;
+        (*line_ptr)++;
+        token[pos] = '\0';
+        return token;
+    }
+
+    if (**line_ptr == '\'' || **line_ptr == '"') {
+        char quote = **line_ptr;
+        (*line_ptr)++;
+        while (**line_ptr && **line_ptr != quote) {
+            token[pos++] = **line_ptr;
+            (*line_ptr)++;
+            if (pos >= 255) break;
+        }
+        if (**line_ptr == quote) (*line_ptr)++;
+        token[pos] = '\0';
+        return token;
+    }
+
+    if (**line_ptr == '(') {
+        int paren_depth = 0;
+        do {
+            if (**line_ptr == '(') paren_depth++;
+            if (**line_ptr == ')') paren_depth--;
+            token[pos++] = **line_ptr;
+            (*line_ptr)++;
+            if (pos >= 255) break;
+        } while (**line_ptr && paren_depth > 0);
+        token[pos] = '\0';
+        return token;
+    }
+
+    while (**line_ptr && (isalnum(**line_ptr) || **line_ptr == '_' ||
+           **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' ||
+           **line_ptr == '*' || **line_ptr == '%')) {
+        token[pos++] = **line_ptr;
+        (*line_ptr)++;
+        if (pos >= 255) break;
+    }
+
+    if (**line_ptr == '(') {
+        int paren_depth = 0;
+        do {
+            if (**line_ptr == '(') paren_depth++;
+            if (**line_ptr == ')') paren_depth--;
+            token[pos++] = **line_ptr;
+            (*line_ptr)++;
+            if (pos >= 255) break;
+        } while (**line_ptr && paren_depth > 0);
+    }
+
+    token[pos] = '\0';
+    return token;
+}
+
 // Helper to read a token (word or operator)
 static char* read_token(FILE *fp, char **line_buf, char **line_ptr,
                         size_t *line_len, int64_t *read_len) {
@@ -8321,6 +8439,204 @@ LFORTRAN_API void _lfortran_namelist_read(
 
             // Check for comma or end
             skip_whitespace(filep, &line_buf, &line_ptr, &line_len, &read_len);
+            if (line_ptr && *line_ptr == ',') {
+                line_ptr++;
+            } else if (line_ptr && (*line_ptr == '/' || *line_ptr == '&')) {
+                break;
+            }
+        }
+    }
+
+    free(line_buf);
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_namelist_read_str(
+    const char *data,
+    int64_t data_len,
+    int32_t *iostat,
+    lfortran_nml_group_t *group)
+{
+    char *line_buf = NULL;
+    char *line_ptr = NULL;
+    size_t line_len = 0;
+    int64_t read_len;
+    int64_t offset = 0;
+
+    char *token;
+    bool found_group = false;
+    while ((read_len = nml_getline_from_buffer(&line_buf, &line_len, data, data_len, &offset)) != -1) {
+        line_ptr = line_buf;
+        token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token) continue;
+
+        if (strcmp(token, "&") == 0 || strcmp(token, "$") == 0) {
+            free(token);
+            token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
+            if (token) {
+                to_lowercase(token);
+                if (strcmp(token, group->group_name) == 0) {
+                    found_group = true;
+                    free(token);
+                    break;
+                }
+                free(token);
+            }
+        } else {
+            free(token);
+        }
+    }
+
+    if (!found_group) {
+        free(line_buf);
+        if (iostat) {
+            *iostat = 5010;
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Namelist group '%s' not found\n", group->group_name);
+            exit(1);
+        }
+    }
+
+    while (1) {
+        token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token) {
+            free(line_buf);
+            if (iostat) *iostat = 5011;
+            else {
+                fprintf(stderr, "Runtime Error: Unexpected end of namelist\n");
+                exit(1);
+            }
+            return;
+        }
+
+        if (strcmp(token, "/") == 0 ||
+            (strcmp(token, "&") == 0 && (token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len)) &&
+             strcmp(token, "end") == 0)) {
+            free(token);
+            break;
+        }
+
+        to_lowercase(token);
+        char *name = token;
+
+        char base_name[256];
+        int indices[16];
+        int n_indices = parse_array_subscript(name, base_name, indices, 16);
+
+        lfortran_nml_item_t *item = NULL;
+        for (int32_t i = 0; i < group->n_items; i++) {
+            if (strcmp(base_name, group->items[i].name) == 0) {
+                item = &group->items[i];
+                break;
+            }
+        }
+
+        if (!item) {
+            free(name);
+            free(line_buf);
+            if (iostat) {
+                *iostat = 5012;
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Unknown variable '%s' in namelist\n", base_name);
+                exit(1);
+            }
+        }
+        free(name);
+
+        token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token || strcmp(token, "=") != 0) {
+            free(token);
+            free(line_buf);
+            if (iostat) *iostat = 5013;
+            else {
+                fprintf(stderr, "Runtime Error: Expected '=' in namelist\n");
+                exit(1);
+            }
+            return;
+        }
+        free(token);
+
+        int64_t elem_size = get_element_size(item);
+        int64_t total_size = compute_array_size(item);
+
+        int64_t value_idx = 0;
+        if (n_indices > 0) {
+            value_idx = calculate_array_offset(indices, n_indices, item);
+            if (value_idx < 0) {
+                free(line_buf);
+                if (iostat) {
+                    *iostat = 5015;
+                    return;
+                } else {
+                    fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
+                    exit(1);
+                }
+            }
+            total_size = value_idx + 1;
+        }
+
+        char *peek = line_ptr;
+        while (peek && *peek && (*peek == ' ' || *peek == '\t')) {
+            peek++;
+        }
+        bool is_null_value = (!peek || !*peek || *peek == '\n' || *peek == '\r' ||
+                              *peek == '\0' || *peek == '/' || *peek == '&' || *peek == ',');
+
+        if (is_null_value) {
+            continue;
+        }
+
+        while (value_idx < total_size) {
+            token = read_token_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
+
+            if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
+                if (token) free(token);
+                break;
+            }
+            if (strcmp(token, ",") == 0) {
+                free(token);
+                continue;
+            }
+
+            char value_str[256];
+            int repeat_count = 1;
+            if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
+                if (repeat_count <= 0) {
+                    free(token);
+                    free(line_buf);
+                    if (iostat) {
+                        *iostat = 5014;
+                        return;
+                    } else {
+                        fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
+                        exit(1);
+                    }
+                }
+                if (value_idx + repeat_count > total_size) {
+                    free(token);
+                    free(line_buf);
+                    if (iostat) {
+                        *iostat = 5015;
+                        return;
+                    } else {
+                        fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n", repeat_count);
+                        exit(1);
+                    }
+                }
+                for (int r = 0; r < repeat_count && value_idx < total_size; r++) {
+                    parse_nml_value(value_str, item, value_idx * elem_size);
+                    value_idx++;
+                }
+            } else {
+                parse_nml_value(token, item, value_idx * elem_size);
+                value_idx++;
+            }
+
+            free(token);
+
+            skip_whitespace_buffer(data, data_len, &offset, &line_buf, &line_ptr, &line_len, &read_len);
             if (line_ptr && *line_ptr == ',') {
                 line_ptr++;
             } else if (line_ptr && (*line_ptr == '/' || *line_ptr == '&')) {

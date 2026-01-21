@@ -12599,12 +12599,19 @@ public:
         // Handle namelist read
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
+            bool is_string = false;
 
             if (x.m_unit == nullptr) {
                 unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
             } else {
-                this->visit_expr_wrapper(x.m_unit, true);
-                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+                is_string = ASRUtils::is_character(*expr_type(x.m_unit));
+                if (is_string) {
+                    this->visit_expr_load_wrapper(x.m_unit, 0, true);
+                    unit_val = tmp;
+                } else {
+                    this->visit_expr_wrapper(x.m_unit, true);
+                    unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+                }
             }
 
             if (x.m_iostat) {
@@ -12621,7 +12628,7 @@ public:
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
 
             // Get or create _lfortran_namelist_read function
-            std::string func_name = "_lfortran_namelist_read";
+            std::string func_name = is_string ? "_lfortran_namelist_read_str" : "_lfortran_namelist_read";
             llvm::Function* fn = module->getFunction(func_name);
             if (!fn) {
                 // Define item struct type (must match build_namelist_descriptor)
@@ -12638,18 +12645,35 @@ public:
                     llvm::Type::getInt32Ty(context),
                     item_type->getPointerTo()
                 );
-                std::vector<llvm::Type*> args{
-                    llvm::Type::getInt32Ty(context),         // unit_num
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
-                    group_type->getPointerTo()              // group
-                };
+                std::vector<llvm::Type*> args;
+                if (is_string) {
+                    args = {
+                        character_type,                         // data
+                        llvm::Type::getInt64Ty(context),        // data_len
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                        group_type->getPointerTo()              // group
+                    };
+                } else {
+                    args = {
+                        llvm::Type::getInt32Ty(context),         // unit_num
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                        group_type->getPointerTo()              // group
+                    };
+                }
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), args, false);
                 fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, func_name, module.get());
             }
 
-            builder->CreateCall(fn, {unit_val, iostat, nml_group});
+            if (is_string) {
+                llvm::Value *data_ptr, *data_len;
+                std::tie(data_ptr, data_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), unit_val);
+                builder->CreateCall(fn, {data_ptr, data_len, iostat, nml_group});
+            } else {
+                builder->CreateCall(fn, {unit_val, iostat, nml_group});
+            }
             return;
         }
 
@@ -13699,6 +13723,17 @@ public:
         llvm::Value *unit_val;
         llvm::Value *status, *status_len;
         llvm::Value *iostat;
+        if (ASRUtils::is_character(*expr_type(x.m_unit))) {
+            if (x.m_iostat) {
+                int ptr_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr_wrapper(x.m_iostat, false);
+                ptr_loads = ptr_copy;
+                iostat = tmp;
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), iostat);
+            }
+            return;
+        }
         this->visit_expr_wrapper(x.m_unit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
         if (x.m_status) {
