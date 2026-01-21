@@ -6324,8 +6324,10 @@ public:
                 uint32_t h = get_hash((ASR::asr_t*)sym.second);
                 LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                 llvm::Value* arg_array_desc = llvm_symtab[h];
-                llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, sym.second),
-                    ASRUtils::extract_type(symbol_type), module.get());
+                llvm::Type *data_type = llvm_utils->get_el_type(
+                    ASRUtils::get_expr_from_sym(al, sym.second),
+                    ASRUtils::extract_type(symbol_type),
+                    module.get());
                 builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
                 llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(desc_array_type, arg_array_desc)),
                     arr_descr->get_offset(desc_array_type, arg_array_desc)), arr_descr->get_pointer_to_data(desc_array_type, array_desc));
