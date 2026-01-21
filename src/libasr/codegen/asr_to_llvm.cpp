@@ -12823,7 +12823,20 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
+                        // Handle scalar logical reads: runtime expects i32*, but scalar
+                        // logicals are stored as i1. Use i32 temp, then truncate to i1.
+                        if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_allocatable_pointer(type))) {
+                            llvm::AllocaInst* i32_tmp = builder->CreateAlloca(
+                                llvm::Type::getInt32Ty(context), nullptr, "read_logical_tmp");
+                            builder->CreateCall(fn, {i32_tmp, unit_val, iostat});
+                            llvm::Value* i32_val = builder->CreateLoad(
+                                llvm::Type::getInt32Ty(context), i32_tmp);
+                            llvm::Value* i1_val = builder->CreateTrunc(
+                                i32_val, llvm::Type::getInt1Ty(context));
+                            builder->CreateStore(i1_val, var_to_read_into);
+                        } else {
+                            builder->CreateCall(fn, {var_to_read_into, unit_val, iostat});
+                        }
                     }
                 }
             }
