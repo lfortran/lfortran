@@ -11512,24 +11512,28 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             return;
         }
 
-        // --- 1. SETUP BASE PROPERTIES ---
+        // --- 1. SETUP SHARED TYPES AND POINTERS (DECLARE ONCE) ---
+        auto i32 = llvm::Type::getInt32Ty(context);
+        auto i64 = llvm::Type::getInt64Ty(context);
+        auto i8 = llvm::Type::getInt8Ty(context);
+        llvm::PointerType* i8_ptr = llvm::PointerType::get(i8, 0);
+        llvm::PointerType* i32_ptr_ty = llvm::PointerType::get(i32, 0);
+
         ASR::ttype_t* unit_ttype = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_unit));
         bool is_string = ASRUtils::is_character(*unit_ttype);
         
         llvm::Value *unit_num_val = nullptr;
         llvm::Value *iostat_ptr = nullptr;
         llvm::Value *chunk_ptr = nullptr;
+        llvm::Value *src_ptr = nullptr;      
+        llvm::Value *src_len_val = nullptr;
 
-        // --- 2. HANDLE ARG 1 (UNIT) - MUST BE i32 ---
-        if (is_string) {
-            // Signal internal read with -1
-            unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
-        } else if (x.m_unit == nullptr) {
-            unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
+        // --- 2. HANDLE ARG 1 (UNIT) ---
+        if (is_string || x.m_unit == nullptr) {
+            unit_num_val = llvm::ConstantInt::get(i32, -1, true);
         } else {
             this->visit_expr_load_wrapper(x.m_unit, 1, true);
-            // Crucial: Cast to i32 to satisfy the LLVM verifier
-            unit_num_val = builder->CreateIntCast(tmp, llvm::Type::getInt32Ty(context), true);
+            unit_num_val = builder->CreateIntCast(tmp, i32, true);
         }
 
         // --- 3. HANDLE ARG 2 (IOSTAT) ---
@@ -11537,7 +11541,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             this->visit_expr_wrapper(x.m_iostat, false, true);
             iostat_ptr = tmp;
         } else {
-            iostat_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
+            iostat_ptr = llvm_utils->CreateAlloca(*builder, i32);
         }
 
         // --- 4. HANDLE ARG 3 (CHUNK/SIZE) ---
@@ -11545,7 +11549,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             this->visit_expr_wrapper(x.m_size, false, true);
             chunk_ptr = tmp;
         } else {
-            chunk_ptr = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
+            chunk_ptr = llvm::ConstantPointerNull::get(i32_ptr_ty);
         }
 
         // --- 5. ARGS 4 & 5 (ADVANCE) ---
@@ -11557,7 +11561,7 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         } else {
             std::string yes("yes");
             adv_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, yes);
-            adv_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), yes.size());
+            adv_len = llvm::ConstantInt::get(i64, yes.size());
         }
 
         // --- 6. ARGS 6 & 7 (FORMAT) ---
@@ -11567,125 +11571,89 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
             f_ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_fmt)), tmp);
             f_len = llvm_utils->get_string_length(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_fmt)), tmp);
         } else {
-            f_ptr = llvm::ConstantPointerNull::get(character_type);
-            f_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+            // FIX: Use i8_ptr instead of ptr_ty
+            f_ptr = llvm::ConstantPointerNull::get(i8_ptr);
+            f_len = llvm::ConstantInt::get(i64, 0);
         }
 
         // --- 7. ARGS 8 & 9 (INTERNAL SOURCE STRING) ---
-        // Fix: Use get_string_data to pass the actual buffer, not the descriptor
-        llvm::Value *src_ptr, *src_len;
         if (is_string) {
             this->visit_expr_wrapper(x.m_unit, false, true);
             llvm::Value* unit_desc = tmp;
             
-            // DEREFERENCE: Treat descriptor as char** and load the char*
-            llvm::Value* src_ptr_ptr = builder->CreateBitCast(unit_desc, character_type->getPointerTo());
-            src_ptr = builder->CreateLoad(character_type, src_ptr_ptr);
+            // Extract raw data pointer (char*)
+            src_ptr = llvm_utils->get_string_data(
+                ASRUtils::get_string_type(unit_ttype), unit_desc, false);
             
-            src_len = llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), unit_desc);
+            src_len_val = llvm_utils->get_string_length(
+                ASRUtils::get_string_type(unit_ttype), unit_desc);
         } else {
-            src_ptr = llvm::ConstantPointerNull::get(character_type);
-            src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+            // FIX: Use i8_ptr instead of ptr_ty
+            src_ptr = llvm::ConstantPointerNull::get(i8_ptr);
+            src_len_val = llvm::ConstantInt::get(i64, 0);
         }
 
-        // --- 8. PREPARE FIXED ARGUMENTS VECTOR ---
-        std::vector<llvm::Value*> args;
-        // Force specific LLVM types to ensure 64-bit alignment on the stack
-        auto i32 = llvm::Type::getInt32Ty(context);
-        auto i64 = llvm::Type::getInt64Ty(context);
-
-        args.push_back(builder->CreateIntCast(unit_num_val, i32, true)); // 1. unit
-        args.push_back(iostat_ptr);                                     // 2. iostat ptr
-        args.push_back(chunk_ptr);                                      // 3. chunk ptr
-        args.push_back(adv_ptr);                                        // 4. advance ptr
-        args.push_back(builder->CreateIntCast(adv_len, i64, false));    // 5. adv_len (i64)
-        args.push_back(f_ptr);                                          // 6. fmt ptr
-        args.push_back(builder->CreateIntCast(f_len, i64, false));      // 7. fmt_len (i64)
-        args.push_back(builder->CreateLoad(character_type, src_ptr));   // 8. str_data ptr
-        args.push_back(builder->CreateIntCast(src_len, i64, false));    // 9. str_len (i64)
-        args.push_back(llvm::ConstantInt::get(i32, x.n_values));        // 10. n_values (i32)
-
-        // --- 9. VARIADIC ARGS (DESTINATIONS) ---
+        // --- 8. PREPARE VARIADIC ARGUMENTS (FORTRAN DESTINATIONS) ---
+        std::vector<llvm::Value*> var_args; 
         for (size_t i = 0; i < x.n_values; i++) {
             this->visit_expr_wrapper(x.m_values[i], false, true);
-            llvm::Value* var_desc = tmp;
+            llvm::Value* var_desc = tmp; 
             ASR::ttype_t* var_type = expr_type(x.m_values[i]);
 
             if (ASRUtils::is_character(*var_type)) {
-                llvm::Value* dest_ptr_ptr = builder->CreateBitCast(var_desc, 
-                        character_type->getPointerTo());
-
-                llvm::Value* actual_buffer = builder->CreateLoad(character_type, dest_ptr_ptr);
+                // We pass the descriptor pointer to the runtime (Fix 1)
+                // The runtime will cast this to (lfortran_string_desc*)
+                llvm::Value* raw_len = llvm_utils->get_string_length(
+                    ASRUtils::get_string_type(var_type), var_desc);
                 
-                args.push_back(actual_buffer); 
-                args.push_back(llvm_utils->get_string_length(
-                    ASRUtils::get_string_type(var_type), var_desc));
+                var_args.push_back(var_desc); 
+                var_args.push_back(builder->CreateIntCast(raw_len, i64, false));
             } else {
-                args.push_back(var_desc);
-                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                // FIX: Use i8_ptr instead of ptr_ty
+                var_args.push_back(builder->CreateBitCast(var_desc, i8_ptr));
+                var_args.push_back(llvm::ConstantInt::get(i64, 0));
             }
         }
 
-        // --- 1. Prepare Types and Function Name ---
-        llvm::Type* i32_ptr = i32->getPointerTo();
-        std::string runtime_func_name = "_lfortran_formatted_read";
-
-        // --- 2. Define Exactly 8 Fixed Argument Types ---
-        // This is the static 'handshake' the ABI needs to calculate va_start.
+        // --- 9. DEFINE RUNTIME FUNCTION DECLARATION ---
         std::vector<llvm::Type*> args_type = {
-            i32,            // 1. unit_num
-            i32_ptr,        // 2. iostat
-            i32_ptr,        // 3. chunk
-            character_type, // 4. advance
-            i64,            // 5. advance_length
-            character_type, // 6. fmt
-            i64,            // 7. fmt_len
-            i32             // 8. no_of_args
+            i32, i32_ptr_ty, i32_ptr_ty, i8_ptr, i64, 
+            i8_ptr, i64, i32, i8_ptr, i64
         };
 
-        // --- 3. Create or Retrieve Function Declaration ---
-        llvm::Function *fn = module->getFunction(runtime_func_name);
+        llvm::Function *fn = module->getFunction("_lfortran_formatted_read");
         if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), args_type, true); // true = variadic
-            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, 
-                                        runtime_func_name, module.get());
+            llvm::FunctionType *ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), args_type, true);
+            fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, "_lfortran_formatted_read", module.get());
         }
 
-        // --- 4. Build the Argument Vector ---
-        std::vector<llvm::Value*> printf_args;
-        
-        // A. Fixed Arguments (Must match args_type count and order)
-        printf_args.push_back(builder->CreateIntCast(unit_num_val, i32, true));
-        printf_args.push_back(iostat_ptr);
-        printf_args.push_back(chunk_ptr);
-        printf_args.push_back(adv_ptr);
-        printf_args.push_back(builder->CreateIntCast(adv_len, i64, false));
-        printf_args.push_back(f_ptr);
-        printf_args.push_back(builder->CreateIntCast(f_len, i64, false));
-        printf_args.push_back(builder->CreateIntCast(llvm::ConstantInt::get(i32, x.n_values), i32, false));
+        // 3. Build the call argument list
+        std::vector<llvm::Value*> final_call_args = {
+            builder->CreateIntCast(unit_num_val, i32, true),
+            iostat_ptr,
+            chunk_ptr,
+            adv_ptr,
+            builder->CreateIntCast(adv_len, i64, false),
+            f_ptr,
+            builder->CreateIntCast(f_len, i64, false),
+            builder->getInt32(x.n_values),                  // no_of_args
+            src_ptr,                                        // Fixed arg 9
+            builder->CreateIntCast(src_len_val, i64, false) // Fixed arg 10
+        };
 
-        // B. Variadic Argument: Internal Source String
-        // Pushed immediately after the fixed args so va_arg(args, char*) finds it.
-        printf_args.push_back(src_ptr); 
-        printf_args.push_back(builder->CreateIntCast(src_len, i64, false));
+        // 4. Append only the destinations to the variadic portion
+        final_call_args.insert(final_call_args.end(), var_args.begin(), var_args.end());
 
-        // C. Variadic Argument: Fortran Variables
-        // Collected from your earlier 'args' vector.
-        printf_args.insert(printf_args.end(), args.begin(), args.end());
+        builder->CreateCall(fn, final_call_args);
 
-        // --- 5. Execute the Call ---
-        builder->CreateCall(fn, printf_args);
-
-        // --- 5. Empty Read logic ---
+        // --- 12. EMPTY READ FALLBACK ---
         if (!x.m_fmt && !is_string) {
             std::string empty_read_fn = "_lfortran_empty_read";
             llvm::Function *efn = module->getFunction(empty_read_fn);
             if (!efn) {
                 llvm::FunctionType *eft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {i32, i32_ptr}, false);
-                efn = llvm::Function::Create(eft, llvm::Function::ExternalLinkage, 
-                                            empty_read_fn, module.get());
+                    llvm::Type::getVoidTy(context), {i32, i32_ptr_ty}, false);
+                efn = llvm::Function::Create(eft, llvm::Function::ExternalLinkage, empty_read_fn, module.get());
             }
             builder->CreateCall(efn, {unit_num_val, iostat_ptr});
         }
