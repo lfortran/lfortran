@@ -70,6 +70,7 @@ define void @ss(i32* %nang) {
   %arr_03 = alloca i32*, align 8
   store i32* null, i32** %arr_03, align 8
   %arr_04 = alloca %array.1*, align 8
+  store %array.1* null, %array.1** %arr_04, align 8
   %arr_desc2 = alloca %array.1, align 8
   %arr_desc_str_desc = alloca %string_descriptor, align 8
   %18 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
@@ -122,6 +123,7 @@ define void @ss(i32* %nang) {
   %arr_07 = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
   %arr_08 = alloca %array.1*, align 8
+  store %array.1* null, %array.1** %arr_08, align 8
   %arr_desc4 = alloca %array.1, align 8
   %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %41 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
