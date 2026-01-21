@@ -11507,357 +11507,189 @@ std::cerr << "CORE-DEBUG: Inside visit_expr_wrapper, ptr_loads is " << ptr_loads
         return fn;
     }
     void visit_FileRead(const ASR::FileRead_t &x) {
-    if( x.m_overloaded ) {
-        this->visit_stmt(*x.m_overloaded);
-        return ;
-    }
+        if (x.m_overloaded) {
+            this->visit_stmt(*x.m_overloaded);
+            return;
+        }
 
-    ASR::ttype_t* unit_ttype = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_unit));
-    llvm::Value *unit_val = nullptr;
-    llvm::Value *iostat = nullptr;
-    llvm::Value *read_size = nullptr;
-    llvm::Value *advance = nullptr;
-    llvm::Value *advance_length = nullptr;
-    bool is_string = false;
-
-    if (x.m_unit == nullptr) {
-        // Standard Input (Unit 5 in many Fortran systems, -1 for our runtime logic)
-        unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
-    } else {
-        is_string = ASRUtils::is_character(*unit_ttype);
+        // --- 1. SETUP BASE PROPERTIES ---
+        ASR::ttype_t* unit_ttype = ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_unit));
+        bool is_string = ASRUtils::is_character(*unit_ttype);
         
-        // If it's a string, we pass -1 as the unit_num to tell the runtime 
-        // to look in the variadic arguments for the 'str_data' pointer.
+        llvm::Value *unit_num_val = nullptr;
+        llvm::Value *iostat_ptr = nullptr;
+        llvm::Value *chunk_ptr = nullptr;
+
+        // --- 2. HANDLE ARG 1 (UNIT) - MUST BE i32 ---
         if (is_string) {
-            unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
+            // Signal internal read with -1
+            unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
+        } else if (x.m_unit == nullptr) {
+            unit_num_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1, true);
         } else {
             this->visit_expr_load_wrapper(x.m_unit, 1, true);
-            unit_val = tmp;
-            if (ASRUtils::is_integer(*unit_ttype)) {
-                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
-            }
+            // Crucial: Cast to i32 to satisfy the LLVM verifier
+            unit_num_val = builder->CreateIntCast(tmp, llvm::Type::getInt32Ty(context), true);
         }
-    }
 
+        // --- 3. HANDLE ARG 2 (IOSTAT) ---
         if (x.m_iostat) {
-            int ptr_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr_wrapper(x.m_iostat, false);
-            ptr_loads = ptr_copy;
-            iostat = tmp;
+            this->visit_expr_wrapper(x.m_iostat, false, true);
+            iostat_ptr = tmp;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
-                        llvm::Type::getInt32Ty(context));
+            iostat_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
         }
 
-        if (x.m_advance) {
-            this->visit_expr_load_wrapper(x.m_advance, 0, true);
-            ASR::ttype_t* adv_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_advance));
-            LCOMPILERS_ASSERT(ASRUtils::is_character(*adv_ttype));
-            std::tie(advance, advance_length) = llvm_utils->get_string_length_data(
-                ASRUtils::get_string_type(adv_ttype), tmp);
-        }
-
-        else {
-            std::string yes("yes");
-            advance = LCompilers::create_global_string_ptr(context, *module, *builder, yes);
-            advance_length = llvm::ConstantInt::get(context, llvm::APInt(64, yes.size()));
-        }
-
+        // --- 4. HANDLE ARG 3 (CHUNK/SIZE) ---
         if (x.m_size) {
-            int ptr_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr_wrapper(x.m_size, false);
-            ptr_loads = ptr_copy;
-            read_size = tmp;
+            this->visit_expr_wrapper(x.m_size, false, true);
+            chunk_ptr = tmp;
         } else {
-            read_size = llvm_utils->CreateAlloca(*builder,
-                        llvm::Type::getInt32Ty(context));
+            chunk_ptr = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
         }
+
+        // --- 5. ARGS 4 & 5 (ADVANCE) ---
+        llvm::Value *adv_ptr, *adv_len;
+        if (x.m_advance) {
+            this->visit_expr_wrapper(x.m_advance, false, true);
+            adv_ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_advance)), tmp);
+            adv_len = llvm_utils->get_string_length(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_advance)), tmp);
+        } else {
+            std::string yes("yes");
+            adv_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, yes);
+            adv_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), yes.size());
+        }
+
+        // --- 6. ARGS 6 & 7 (FORMAT) ---
+        llvm::Value *f_ptr, *f_len;
+        if (x.m_fmt) {
+            this->visit_expr_wrapper(x.m_fmt, false, true);
+            f_ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_fmt)), tmp);
+            f_len = llvm_utils->get_string_length(ASRUtils::get_string_type(ASRUtils::expr_type(x.m_fmt)), tmp);
+        } else {
+            f_ptr = llvm::ConstantPointerNull::get(character_type);
+            f_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
+
+        // --- 7. ARGS 8 & 9 (INTERNAL SOURCE STRING) ---
+        // Fix: Use get_string_data to pass the actual buffer, not the descriptor
+        llvm::Value *src_ptr, *src_len;
         if (is_string) {
-            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
-        }
-        else {
-            read_size = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
-        }
-
-    std::vector<llvm::Value*> args;
-
-    // 1. Unit Number (-1 for strings)
-    args.push_back(is_string ? llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), -1) : unit_val);
-    
-    // 2. Iostat (ptr)
-    args.push_back(iostat);
-    
-    // 3. Chunk/Read Size (ptr)
-    args.push_back(read_size); 
-    
-    // 4. Advance (ptr)
-    args.push_back(advance);
-    
-    // 5. Advance Length (i64)
-    args.push_back(advance_length);
-
-    // 6 & 7. Format Pointer and Length (Push ONCE)
-    if (x.m_fmt) {
-        ASR::ttype_t* fmt_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_fmt));
-        this->visit_expr_wrapper(x.m_fmt, true);
-        args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(fmt_ttype), tmp));
-        args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(fmt_ttype), tmp));
-    } else {
-        args.push_back(llvm::ConstantPointerNull::get(character_type));
-        args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-    }
-
-    // --- MOVE SOURCE STRING HERE (New Args 8 & 9) ---
-    if (is_string) {
-        this->visit_expr_wrapper(x.m_unit, false, true);
-        llvm::Value* desc_ptr = this->tmp;
-        args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(unit_ttype), desc_ptr));
-        args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), desc_ptr));
-    } else {
-        // Push nulls if not an internal string so the argument count stays consistent
-        args.push_back(llvm::ConstantPointerNull::get(character_type));
-        args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-    }
-
-    // --- NOW Push Number of variables (Now Arg 10) ---
-    args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), x.n_values));
-
-    for (size_t i = 0; i < x.n_values; i++) {
-        ASR::ttype_t* val_ttype = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_values[i]));
-        
-        if (ASRUtils::is_character(*val_ttype)) {
-            // 1. Get the descriptor pointer
-            this->visit_expr_wrapper(x.m_values[i], false, true);
-            llvm::Value* desc_ptr = this->tmp;
-
-            // 2. Ensure we have a pointer to the descriptor
-            if (!desc_ptr->getType()->isPointerTy()) {
-                llvm::Value* temp_alloca = builder->CreateAlloca(desc_ptr->getType());
-                builder->CreateStore(desc_ptr, temp_alloca);
-                desc_ptr = temp_alloca;
-            }
-
-            // 3. PUSH THE PAIR: Data pointer (char*) and Length (int64_t)
-            // This is what _lfortran_formatted_read's va_arg is looking for!
-            args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(val_ttype), desc_ptr));
-            args.push_back(builder->CreateIntCast(
-                llvm_utils->get_string_length(ASRUtils::get_string_type(val_ttype), desc_ptr),
-                llvm::Type::getInt64Ty(context), true));
+            this->visit_expr_wrapper(x.m_unit, false, true);
+            llvm::Value* unit_desc = tmp;
             
+            // DEREFERENCE: Treat descriptor as char** and load the char*
+            llvm::Value* src_ptr_ptr = builder->CreateBitCast(unit_desc, character_type->getPointerTo());
+            src_ptr = builder->CreateLoad(character_type, src_ptr_ptr);
+            
+            src_len = llvm_utils->get_string_length(ASRUtils::get_string_type(unit_ttype), unit_desc);
         } else {
-            // For non-character types (like Integer)
-            this->visit_expr_load_wrapper(x.m_values[i], 0);
-            args.push_back(this->tmp); // The value/pointer
-            args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0)); // Padding/Extra info
+            src_ptr = llvm::ConstantPointerNull::get(character_type);
+            src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
-    }
-    // Formatted Read Branch
-    if (x.m_fmt || is_string) {
-        // We use the Formatted Read logic for BOTH real files with FMT 
-        // and Internal Strings (which always need a FMT)
+
+        // --- 8. PREPARE FIXED ARGUMENTS VECTOR ---
+        std::vector<llvm::Value*> args;
+        // Force specific LLVM types to ensure 64-bit alignment on the stack
+        auto i32 = llvm::Type::getInt32Ty(context);
+        auto i64 = llvm::Type::getInt64Ty(context);
+
+        args.push_back(builder->CreateIntCast(unit_num_val, i32, true)); // 1. unit
+        args.push_back(iostat_ptr);                                     // 2. iostat ptr
+        args.push_back(chunk_ptr);                                      // 3. chunk ptr
+        args.push_back(adv_ptr);                                        // 4. advance ptr
+        args.push_back(builder->CreateIntCast(adv_len, i64, false));    // 5. adv_len (i64)
+        args.push_back(f_ptr);                                          // 6. fmt ptr
+        args.push_back(builder->CreateIntCast(f_len, i64, false));      // 7. fmt_len (i64)
+        args.push_back(builder->CreateLoad(character_type, src_ptr));   // 8. str_data ptr
+        args.push_back(builder->CreateIntCast(src_len, i64, false));    // 9. str_len (i64)
+        args.push_back(llvm::ConstantInt::get(i32, x.n_values));        // 10. n_values (i32)
+
+        // --- 9. VARIADIC ARGS (DESTINATIONS) ---
+        for (size_t i = 0; i < x.n_values; i++) {
+            this->visit_expr_wrapper(x.m_values[i], false, true);
+            llvm::Value* var_desc = tmp;
+            ASR::ttype_t* var_type = expr_type(x.m_values[i]);
+
+            if (ASRUtils::is_character(*var_type)) {
+                llvm::Value* dest_ptr_ptr = builder->CreateBitCast(var_desc, 
+                        character_type->getPointerTo());
+
+                llvm::Value* actual_buffer = builder->CreateLoad(character_type, dest_ptr_ptr);
+                
+                args.push_back(actual_buffer); 
+                args.push_back(llvm_utils->get_string_length(
+                    ASRUtils::get_string_type(var_type), var_desc));
+            } else {
+                args.push_back(var_desc);
+                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            }
+        }
+
+        // --- 1. Prepare Types and Function Name ---
+        llvm::Type* i32_ptr = i32->getPointerTo();
         std::string runtime_func_name = "_lfortran_formatted_read";
+
+        // --- 2. Define Exactly 8 Fixed Argument Types ---
+        // This is the static 'handshake' the ABI needs to calculate va_start.
+        std::vector<llvm::Type*> args_type = {
+            i32,            // 1. unit_num
+            i32_ptr,        // 2. iostat
+            i32_ptr,        // 3. chunk
+            character_type, // 4. advance
+            i64,            // 5. advance_length
+            character_type, // 6. fmt
+            i64,            // 7. fmt_len
+            i32             // 8. no_of_args
+        };
+
+        // --- 3. Create or Retrieve Function Declaration ---
         llvm::Function *fn = module->getFunction(runtime_func_name);
-        
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),                // 1. Unit
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),// 2. Iostat
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),// 3. Chunk
-                    character_type,                                 // 4. advance
-                    llvm::Type::getInt64Ty(context),                // 5. advance_length
-                    character_type,                                 // 6. fmt
-                    llvm::Type::getInt64Ty(context),                // 7. fmt_len
-                    character_type,                                 // 8. str_data (NEW)
-                    llvm::Type::getInt64Ty(context),                // 9. str_len (NEW)
-                    llvm::Type::getInt32Ty(context)                 // 10. no_of_args
-                }, true); // Variadic is TRUE
-            fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+                llvm::Type::getVoidTy(context), args_type, true); // true = variadic
+            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, 
+                                        runtime_func_name, module.get());
         }
 
-        // Final Verification: Ensure we have at least the 8 fixed arguments
-        if (args.size() >= 8) {
-            builder->CreateCall(fn, args);
-        } else {
-            throw CodeGenError("Formatted read arguments missing fixed parameters");
-        }
-        llvm_utils->stringFormat_return.free();
-        }
-        else {
-            llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
-            for (size_t i=0; i<x.n_values; i++) {
-                int ptr_loads_copy = ptr_loads;
-                ptr_loads = 0;
-                this->visit_expr(*x.m_values[i]);
-                var_to_read_into = tmp; tmp =nullptr;
-                ptr_loads = ptr_loads_copy;
-                ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
-                llvm::Function *fn;
-                if (ASR::is_a<ASR::Var_t>(*x.m_values[i]) &&
-                    ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(x.m_values[i])->m_v)) {
-                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_values[i]);
-                    uint32_t h = get_hash((ASR::asr_t*)asr_target);
-                    var_to_read_into = llvm_symtab[h];
-                }
-                if (is_string) {
-                    // TODO: Support multiple arguments and fmt
-                    std::string runtime_func_name = "_lfortran_string_read_" +
-                                            ASRUtils::type_to_str_python_expr(ASRUtils::extract_type(type), x.m_values[i]);
-                    if (ASRUtils::is_array(type)) {
-                        runtime_func_name += "_array";
-                    }
-                    llvm::Function* fn = module->getFunction(runtime_func_name);
-                    if (!fn) {
-                        llvm::FunctionType *function_type;
-                        if(ASRUtils::is_string_only(type)){
-                            function_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {
-                                    character_type /*src_data*/,
-                                    llvm::Type::getInt64Ty(context) /*src_length*/,
-                                    character_type /*dest_data*/,
-                                    llvm::Type::getInt64Ty(context) /*dest_length*/
-                                },
-                                false);
-                        } else {
-                            function_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {   character_type /*src_data*/,
-                                    llvm::Type::getInt64Ty(context)/*src_length*/,
-                                    character_type,
-                                    llvm_utils->get_type_from_ttype_t_util(
-                                        x.m_values[i], type, module.get()
-                                    )->getPointerTo()
-                                },
-                                false);
-                        }
-                        fn = llvm::Function::Create(function_type,
-                                llvm::Function::ExternalLinkage, runtime_func_name, module.get());
-                    }
-                    llvm::Value *fmt = nullptr;
-                    if (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
-                                ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = int_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, "%d")
-                                                    : LCompilers::create_global_string_ptr(context, *module, *builder, "%ld");
-                    } else if (ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
-                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(ASRUtils::type_get_past_array(
-                                ASRUtils::type_get_past_allocatable_pointer(type)));
-                        fmt = real_type->m_kind == 4 ? LCompilers::create_global_string_ptr(context, *module, *builder, "%f")
-                                                     : LCompilers::create_global_string_ptr(context, *module, *builder, "%lf");
-                    } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(
-                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = LCompilers::create_global_string_ptr(context, *module, *builder, "%s");
-                    } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
-                                   ASRUtils::type_get_past_allocatable_pointer(type)))) {
-                        fmt = LCompilers::create_global_string_ptr(context, *module, *builder, "%d");
-                    }
-                    llvm::Value *src_data, *src_len;
-                    std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
-                        ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))
-                            ? ASRUtils::get_string_type(x.m_unit)
-                            : nullptr,
-                        unit_val);
+        // --- 4. Build the Argument Vector ---
+        std::vector<llvm::Value*> printf_args;
+        
+        // A. Fixed Arguments (Must match args_type count and order)
+        printf_args.push_back(builder->CreateIntCast(unit_num_val, i32, true));
+        printf_args.push_back(iostat_ptr);
+        printf_args.push_back(chunk_ptr);
+        printf_args.push_back(adv_ptr);
+        printf_args.push_back(builder->CreateIntCast(adv_len, i64, false));
+        printf_args.push_back(f_ptr);
+        printf_args.push_back(builder->CreateIntCast(f_len, i64, false));
+        printf_args.push_back(builder->CreateIntCast(llvm::ConstantInt::get(i32, x.n_values), i32, false));
 
-                    if(ASRUtils::is_string_only(type)){
-                        llvm::Value* dest_data, *dest_len;
-                        std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
-                            ASRUtils::get_string_type(x.m_values[i]), var_to_read_into);
-                        builder->CreateCall(fn, { src_data, src_len, dest_data, dest_len });
-                    } else {
-                        builder->CreateCall(fn, { src_data, src_len, fmt, var_to_read_into });
-                    }
-                    builder->CreateStore(
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
-                        iostat);
-                    return;
-                } else {
-                    fn = get_read_function(type);
-                }
-                if (ASRUtils::is_array(type)) {
-                    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::extract_type(type), module.get());
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)
-                        || ASR::is_a<ASR::Pointer_t>(*type)) {
-                        llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_values[i],
-                            ASRUtils::type_get_past_allocatable_pointer(type),
-                            module.get())->getPointerTo();
-                        var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
-                    }
-                    llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
-                    ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable_pointer(type));
-                    if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
-                        var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
-                    }
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)
-                        || ASR::is_a<ASR::Pointer_t>(*type)) {
-                        var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
-                    }
-                    llvm::Value *arr = var_to_read_into;
-                    ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, x.base.base.loc,
-                        x.m_values[i], nullptr, type32, nullptr));
-                    visit_ArraySize(*array_size);
-                    if(ASRUtils::is_array_of_strings(type)){
-                        builder->CreateCall(fn, {
-                            llvm_utils->get_stringArray_data(type, original_array_representation),
-                            llvm_utils->get_stringArray_length(type, original_array_representation),
-                            tmp, unit_val});
-                        tmp = nullptr;
-                    } else {
-                        builder->CreateCall(fn, {arr, tmp, unit_val}); tmp = nullptr;
-                    }
-                } else {
-                    if(ASRUtils::is_string_only(type)){
-                        llvm::Value* str_data, *str_len;
-                        if (ASRUtils::is_character(*type)) {
-                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(type), var_to_read_into, true);
-                    } else {
-                        str_data = var_to_read_into;
-                    }
-                        builder->CreateCall(fn, {str_data, str_len, unit_val});
-                    } else {
-                        if (ASR::is_a<ASR::Allocatable_t>(*type)
-                            || ASR::is_a<ASR::Pointer_t>(*type)) {
-                            llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
-                                x.m_values[i],
-                                ASRUtils::type_get_past_allocatable_pointer(type),
-                                module.get())->getPointerTo();
-                            var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
-                        }
-                        builder->CreateCall(fn, {var_to_read_into, unit_val});
-                    }
-                }
+        // B. Variadic Argument: Internal Source String
+        // Pushed immediately after the fixed args so va_arg(args, char*) finds it.
+        printf_args.push_back(src_ptr); 
+        printf_args.push_back(builder->CreateIntCast(src_len, i64, false));
+
+        // C. Variadic Argument: Fortran Variables
+        // Collected from your earlier 'args' vector.
+        printf_args.insert(printf_args.end(), args.begin(), args.end());
+
+        // --- 5. Execute the Call ---
+        builder->CreateCall(fn, printf_args);
+
+        // --- 5. Empty Read logic ---
+        if (!x.m_fmt && !is_string) {
+            std::string empty_read_fn = "_lfortran_empty_read";
+            llvm::Function *efn = module->getFunction(empty_read_fn);
+            if (!efn) {
+                llvm::FunctionType *eft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {i32, i32_ptr}, false);
+                efn = llvm::Function::Create(eft, llvm::Function::ExternalLinkage, 
+                                            empty_read_fn, module.get());
             }
-
-            // In Fortran, read(u, *) is used to read the entire line. The
-            // next read(u, *) function is intended to read the next entire
-            // line. Let's take an example: `read(u, *) n`, where n is an
-            // integer. The first occurance of the integer value will be
-            // read, and anything after that will be skipped.
-            // Here, we can use `_lfortran_empty_read` function to move to the
-            // pointer to the next line.
-            std::string runtime_func_name = "_lfortran_empty_read";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo()
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name,
-                            module.get());
-            }
-            builder->CreateCall(fn, args);
+            builder->CreateCall(efn, {unit_num_val, iostat_ptr});
         }
-    }    
+    }   
     void visit_FileOpen(const ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr;
         llvm::Value* f_name_data{}, *f_name_len{};
