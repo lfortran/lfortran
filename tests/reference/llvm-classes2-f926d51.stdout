@@ -89,9 +89,7 @@ ifcont:                                           ; preds = %else, %then
   store float %20, float* %res, align 4
   %21 = load float, float* %res, align 4
   %22 = fcmp une float %21, 5.000000e+00
-  %23 = zext i1 %22 to i32
-  %24 = icmp ne i32 %23, 0
-  br i1 %24, label %then1, label %else2
+  br i1 %22, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))

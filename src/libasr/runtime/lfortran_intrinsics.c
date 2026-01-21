@@ -1436,11 +1436,10 @@ bool array_of_string_special_case(Serialization_Info* s_info){ // {string_descri
 // Moves a containing pointer (struct, array) to the next the element
 void move_containing_ptr_next(Serialization_Info* s_info){
     // Ordering of types is crucial (Matched with enum `Primitive_Types`)
-    // Note: LOGICAL is byte-backed with KIND=4 as default, using int32_t (4 bytes)
     static const int primitive_type_sizes[] =
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float),
-        sizeof(char*), sizeof(int32_t)/*LOGICAL KIND=4*/, sizeof(void*), 0 /*Important to be zero*/,
+        sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/,
         sizeof(char*) + sizeof(int64_t)/*String Descriptor*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
@@ -1685,8 +1684,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             }
             break;
         case LOGICAL_TYPE:
-            // LOGICAL is byte-backed: KIND=4 uses int32_t (4 bytes)
-            sprintf(result, "%c", (*(int32_t*)arg)? 'T' : 'F');
+            sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
             break;
         case CHAR_PTR_TYPE:
         case STRING_DESCRIPTOR_TYPE:{
@@ -2031,8 +2029,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                         char_val = *(char**)s_info.current_arg_info.current_arg;
                         break;
                     case LOGICAL_TYPE:
-                        // LOGICAL is byte-backed: KIND=4 uses int32_t (4 bytes)
-                        bool_val = (*(int32_t*)s_info.current_arg_info.current_arg) != 0;
+                        bool_val = (*(bool*)s_info.current_arg_info.current_arg) != 0;
                         break;
                     default:
                         break;
@@ -2041,8 +2038,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
                     // Handle if argument is actually logical (allowed in Fortran).
                     if(s_info.current_element_type==LOGICAL_TYPE){
                         char* temp_buf = (char*)malloc(1); temp_buf[0] = '\0';
-                        // LOGICAL is byte-backed: KIND=4 uses int32_t (4 bytes)
-                        handle_logical("l",(*(int32_t*)s_info.current_arg_info.current_arg) != 0, &temp_buf);
+                        handle_logical("l",(*(bool*)s_info.current_arg_info.current_arg) != 0, &temp_buf);
                         int64_t temp_len = strlen(temp_buf);
                         result = append_to_string_NTI(result, result_len, temp_buf, temp_len);
                         result_len += temp_len;
@@ -4356,7 +4352,7 @@ _lfortran_open(int32_t unit_num,
         blank_len = 4;
         ini_blank = false;
     }
-    int32_t file_exists[1] = { 0 };
+    bool file_exists[1] = { false };
     FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     trim_trailing_spaces(&f_name, &f_name_len, ini_file);
@@ -4600,8 +4596,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, int32_t *exists, int32_t unit_num,
-                                    int32_t *opened, int32_t *size, int32_t *pos,
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
+                                    bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
@@ -4619,7 +4615,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         free(c_f_name_data);
 
         if (fp != NULL) {
-            *exists = 1;
+            *exists = true;
             if (size != NULL) {
                 fseek(fp, 0, SEEK_END);
                 *size = ftell(fp);
@@ -4627,7 +4623,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             fclose(fp); // close the file
             return;
         }
-        *exists = 0;
+        *exists = false;
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -4685,7 +4681,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (opened != NULL) {
-            *opened = (fp != NULL) ? 1 : 0;
+            *opened = (fp != NULL);
         }
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
@@ -4994,7 +4990,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
 }
 
 // Logical read API
-LFORTRAN_API void _lfortran_read_logical(int32_t *p, int32_t unit_num, int32_t *iostat)
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
 {
     if (iostat) *iostat = 0;
 
@@ -5015,10 +5011,10 @@ LFORTRAN_API void _lfortran_read_logical(int32_t *p, int32_t unit_num, int32_t *
 
         if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 ||
             strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) {
-            *p = 1;
+            *p = true;
         } else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 ||
                    strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) {
-            *p = 0;
+            *p = false;
         } else {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
@@ -5061,10 +5057,10 @@ LFORTRAN_API void _lfortran_read_logical(int32_t *p, int32_t unit_num, int32_t *
 
         if (strcmp(token, "t") == 0 || strcmp(token, "true") == 0 ||
             strcmp(token, ".true.") == 0 || strcmp(token, ".true") == 0) {
-            *p = 1;
+            *p = true;
         } else if (strcmp(token, "f") == 0 || strcmp(token, "false") == 0 ||
                    strcmp(token, ".false.") == 0 || strcmp(token, ".false") == 0) {
-            *p = 0;
+            *p = false;
         } else {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);

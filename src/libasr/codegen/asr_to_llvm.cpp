@@ -212,8 +212,6 @@ public:
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
-    // Track ASR return types for functions (needed for evaluator to distinguish logical from integer)
-    std::map<std::string, std::string> asr_return_types;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
@@ -456,7 +454,7 @@ public:
         // head
         start_new_block(loophead); {
             llvm::Value* cond = condition();
-            builder->CreateCondBr(llvm_utils->to_i1(cond), loopbody, loopend);
+            builder->CreateCondBr(cond, loopbody, loopend);
         }
 
         // body
@@ -2687,8 +2685,7 @@ public:
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3, int32_type);
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(a_kind));
+        // Keep comparisons as i1 (matches LLVM branch condition type).
     }
 
     void visit_DictLen(const ASR::DictLen_t& x) {
@@ -3321,8 +3318,7 @@ public:
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3);
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(a_kind));
+        // Keep logical comparisons as i1 (scalars); logical arrays use i8 storage.
     }
 
     void visit_TupleLen(const ASR::TupleLen_t& x) {
@@ -3535,7 +3531,7 @@ public:
             bool is_polymorphic = (current_select_type_block_type != nullptr) && ASR::is_a<ASR::Var_t>(*x.m_v) &&
                     (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                llvm::Type* type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
                                                     true,
@@ -3554,7 +3550,7 @@ public:
                 if (is_fixed_size) {
                     type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
                 } else {
-                    type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                    type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
                                                     ASRUtils::get_struct_sym_from_struct_expr(x.m_v),
@@ -3741,8 +3737,6 @@ public:
             default:
                 LCOMPILERS_ASSERT(false);
         }
-        // Convert i1 result to default LOGICAL type (i32, KIND=4)
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(4));
     }
 
     void lookup_EnumValue(const ASR::EnumValue_t& x) {
@@ -4306,9 +4300,8 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
-            int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-            int init_value_bits = 8*a_kind;
-            llvm::Type *type = llvm_utils->getIntType(a_kind);
+            int init_value_bits = 1;
+            llvm::Type *type = llvm::Type::getInt1Ty(context);
             llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
                 if (init_value) {
@@ -5023,7 +5016,7 @@ public:
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, asr_data_type, module.get());
+        llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = llvm_utils->CreateAlloca(*builder, type_, nullptr, "arr_desc");
@@ -6157,13 +6150,6 @@ public:
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
-                // Track ASR return type for evaluator (needed to distinguish logical from integer)
-                if (x.m_return_var) {
-                    ASR::ttype_t* ret_type = ASRUtils::expr_type(x.m_return_var);
-                    if (ASR::is_a<ASR::Logical_t>(*ret_type)) {
-                        asr_return_types[fn_name] = "logical";
-                    }
-                }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
@@ -6553,7 +6539,7 @@ public:
         if( ASRUtils::is_array(asr_type) &&
             !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_type);
-            llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(asr_expr, ASRUtils::extract_type(asr_type), module.get());
+            llvm::Type *el_type = llvm_utils->get_el_type(asr_expr, ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
                 case ASR::array_physical_typeType::DescriptorArray: {
                     llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(asr_expr, asr_type, module.get()), llvm_tmp));
@@ -6783,8 +6769,6 @@ public:
             tmp = builder->CreateICmpEQ(
                 builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false)),
                 builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false)));
-            // Convert i1 result to default LOGICAL type (i32, KIND=4)
-            tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(4));
             return ;
         }
         llvm_utils->create_if_else(builder->CreateICmpEQ(
@@ -6833,8 +6817,6 @@ public:
             }
         });
         tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
-        // Convert i1 result to default LOGICAL type (i32, KIND=4)
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(4));
     }
 
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
@@ -8082,7 +8064,8 @@ public:
                     llvm::Value* array_data = nullptr;
                     if( ASRUtils::extract_physical_type(asr_target_type) ==
                         ASR::array_physical_typeType::DescriptorArray ) {
-                        llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::get_contained_type(asr_target_type), module.get());
+                        llvm::Type* elem_type = llvm_utils->get_el_type(x.m_target,
+                            ASRUtils::extract_type(ASRUtils::get_contained_type(asr_target_type)), module.get());
                         llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
                         array_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
                             arr_descr->get_pointer_to_data(desc_type->getPointerTo(), llvm_utils->CreateLoad2(desc_type->getPointerTo(), target)));
@@ -8095,7 +8078,7 @@ public:
                     }
                     llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
                     llvm::Value* size = list_api->len_using_type(list_llvm_type, plist);
-                    llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                    llvm::Type* el_type = llvm_utils->get_el_type(x.m_value,
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_value)), module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size_ = data_layout.getTypeAllocSize(el_type);
@@ -8173,8 +8156,8 @@ public:
             bool is_target_simd_array = (target_ptype == ASR::array_physical_typeType::SIMDArray);
             bool is_target_descriptor_based_array = (target_ptype == ASR::array_physical_typeType::DescriptorArray);
             bool is_value_descriptor_based_array = (value_ptype == ASR::array_physical_typeType::DescriptorArray);
-            llvm::Type* target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::extract_type(target_type), module.get());
-            llvm::Type* value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, ASRUtils::extract_type(value_type), module.get());
+            llvm::Type* target_el_type = llvm_utils->get_el_type(x.m_target, ASRUtils::extract_type(target_type), module.get());
+            llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get());
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
@@ -8366,6 +8349,12 @@ public:
             }
             builder->CreateStore(value, target);
         } else {
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                ASR::ttype_t* target_type_ = ASRUtils::type_get_past_allocatable_pointer(target_type);
+                if (ASR::is_a<ASR::Logical_t>(*target_type_) && value->getType()->isIntegerTy(1)) {
+                    value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
+                }
+            }
             builder->CreateStore(value, target);
         }
     }
@@ -8652,8 +8641,8 @@ public:
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(target_type, target));
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
-        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr,
-            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(m_type)), module.get());
+        llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr,
+            ASRUtils::extract_type(m_type), module.get());
         llvm::Type* llvm_typ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(m_type), module.get());
         fill_array_details(llvm_typ, target, llvm_data_type, m_dims, n_dims, false, false);
@@ -8675,7 +8664,7 @@ public:
             return ;
         }
 
-        llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
+        llvm::Type *data_type = llvm_utils->get_el_type(m_arg, ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
         llvm::Type *arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
@@ -8935,8 +8924,22 @@ public:
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
-                llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
-                tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
+                if (x->type == ASR::exprType::ArrayItem &&
+                    ASRUtils::is_logical(*ASRUtils::expr_type(x))) {
+                    llvm::Type* storage_type = llvm_utils->get_el_type(
+                        x, ASRUtils::expr_type(x), module.get());
+                    llvm::Value* loaded = llvm_utils->CreateLoad2(storage_type, tmp, is_volatile);
+                    if (loaded->getType()->isIntegerTy(1)) {
+                        tmp = loaded;
+                    } else {
+                        tmp = builder->CreateICmpNE(
+                            loaded, llvm::ConstantInt::get(loaded->getType(), 0));
+                    }
+                } else {
+                    llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x, ASRUtils::expr_type(x), module.get());
+                    tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
+                }
             }
         }
     }
@@ -9307,7 +9310,7 @@ public:
                                 ASRUtils::extract_kind_from_ttype_t(type_stmt_type), true));
                         llvm::Value* _type_id = nullptr;
                         if( ASRUtils::is_array(selector_var_type) ) {
-                            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::extract_type(selector_var_type), module.get());
+                            llvm::Type* el_type = llvm_utils->get_el_type(x.m_selector, ASRUtils::extract_type(selector_var_type), module.get());
                             llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector_type_, llvm_selector));
                             _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(el_type, data_ptr, 0));
                         } else {
@@ -9418,9 +9421,7 @@ public:
                         x.base.base.loc);
             }
         }
-        // Convert i1 comparison result to LOGICAL type
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(a_kind));
+        tmp = cmp_result;
     }
 
     void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
@@ -9465,8 +9466,7 @@ public:
                         x.base.base.loc);
             }
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(a_kind));
+        tmp = cmp_result;
     }
 
     void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
@@ -9511,8 +9511,7 @@ public:
                         x.base.base.loc);
             }
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(a_kind));
+        tmp = cmp_result;
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -9557,8 +9556,7 @@ public:
                         x.base.base.loc);
             }
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(a_kind));
+        tmp = cmp_result;
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
@@ -9594,8 +9592,7 @@ public:
                         x.base.base.loc);
             }
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(a_kind));
+        tmp = cmp_result;
     }
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
@@ -9680,8 +9677,7 @@ public:
                         x.base.base.loc);
             }
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(a_kind));
+        // Keep comparisons as i1 (scalars); logical arrays use i8 storage.
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
@@ -9693,11 +9689,6 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        // Convert to consistent type for comparison
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        llvm::Type* logical_type = llvm_utils->getIntType(a_kind);
-        left = builder->CreateZExt(left, logical_type);
-        right = builder->CreateZExt(right, logical_type);
         llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
@@ -9729,8 +9720,7 @@ public:
                         x.base.base.loc);
             }
         }
-        // Convert i1 comparison result to LOGICAL type
-        tmp = builder->CreateZExt(cmp_result, logical_type);
+        tmp = cmp_result;
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {
@@ -9918,8 +9908,13 @@ public:
                 comp_res,
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
         } else if (ASRUtils::is_logical(*x.m_type)) {
-            int a_kind = ASR::down_cast<ASR::Logical_t>(x.m_type)->m_kind;
-            zero = llvm::ConstantInt::get(llvm_utils->getIntType(a_kind), 0);
+            if (!left_val->getType()->isIntegerTy(1)) {
+                left_val = builder->CreateICmpNE(left_val, llvm::ConstantInt::get(left_val->getType(), 0));
+            }
+            if (!right_val->getType()->isIntegerTy(1)) {
+                right_val = builder->CreateICmpNE(right_val, llvm::ConstantInt::get(right_val->getType(), 0));
+            }
+            zero = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
             cond = builder->CreateICmpEQ(left_val, zero);
         } else {
             throw CodeGenError("Only Integer, Real, Strings and Logical types are supported "
@@ -9936,21 +9931,12 @@ public:
             };
             case ASR::logicalbinopType::Xor:
             case ASR::logicalbinopType::NEqv: {
-                // For byte-backed LOGICAL, convert to i1 for proper boolean XOR
-                llvm::Value* left_i1 = llvm_utils->to_i1(left_val);
-                llvm::Value* right_i1 = llvm_utils->to_i1(right_val);
-                tmp = builder->CreateXor(left_i1, right_i1);
-                // Convert back to LOGICAL type (i32)
-                tmp = builder->CreateZExt(tmp, left_val->getType());
+                tmp = builder->CreateXor(left_val, right_val);
                 break;
             };
             case ASR::logicalbinopType::Eqv: {
-                // For byte-backed LOGICAL, use equality comparison
-                llvm::Value* left_i1 = llvm_utils->to_i1(left_val);
-                llvm::Value* right_i1 = llvm_utils->to_i1(right_val);
-                tmp = builder->CreateICmpEQ(left_i1, right_i1);
-                // Convert back to LOGICAL type (i32)
-                tmp = builder->CreateZExt(tmp, left_val->getType());
+                tmp = builder->CreateXor(left_val, right_val);
+                tmp = builder->CreateNot(tmp);
                 break;
             };
         }
@@ -10887,8 +10873,7 @@ public:
         } else {
             val = 0;
         }
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        tmp = llvm::ConstantInt::get(llvm_utils->getIntType(a_kind), val);
+        tmp = llvm::ConstantInt::get(context, llvm::APInt(1, val));
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t &x) {
@@ -10898,9 +10883,7 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *arg = tmp;
-        // For byte-backed LOGICAL, boolean NOT: (arg == 0) gives true, else false
-        tmp = builder->CreateICmpEQ(arg, llvm::ConstantInt::get(arg->getType(), 0));
-        tmp = builder->CreateZExt(tmp, arg->getType());
+        tmp = builder->CreateNot(arg);
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -11428,24 +11411,20 @@ public:
                 ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(curr_type != nullptr)
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                llvm::Value* cmp_result = nullptr;
                 switch (a_kind) {
                     case 1:
-                        cmp_result = builder->CreateICmpNE(tmp, builder->getInt8(0));
+                        tmp = builder->CreateICmpNE(tmp, builder->getInt8(0));
                         break;
                     case 2:
-                        cmp_result = builder->CreateICmpNE(tmp, builder->getInt16(0));
+                        tmp = builder->CreateICmpNE(tmp, builder->getInt16(0));
                         break;
                     case 4:
-                        cmp_result = builder->CreateICmpNE(tmp, builder->getInt32(0));
+                        tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
                         break;
                     case 8:
-                        cmp_result = builder->CreateICmpNE(tmp, builder->getInt64(0));
+                        tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
                         break;
                 }
-                // Convert i1 comparison result to target LOGICAL type
-                int target_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(target_kind));
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
@@ -11458,17 +11437,11 @@ public:
                 } else {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
                 }
-                llvm::Value* cmp_result = builder->CreateFCmpUNE(tmp, zero);
-                // Convert i1 comparison result to target LOGICAL type
-                int target_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(target_kind));
+                tmp = builder->CreateFCmpUNE(tmp, zero);
                 break;
             }
             case (ASR::cast_kindType::StringToLogical) : {
-                llvm::Value* cmp_result = builder->CreateICmpNE(get_string_length(x.m_arg), builder->getInt32(0));
-                // Convert i1 comparison result to target LOGICAL type
-                int target_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(target_kind));
+                tmp = builder->CreateICmpNE(get_string_length(x.m_arg), builder->getInt32(0));
                 break;
             }
             case (ASR::cast_kindType::StringToInteger) : {
@@ -11492,23 +11465,13 @@ public:
                 llvm::Value *real_check = builder->CreateFCmpUEQ(c_real, zero);
                 llvm::Value *c_imag = complex_im(tmp, tmp->getType());
                 llvm::Value *imag_check = builder->CreateFCmpUEQ(c_imag, zero);
-                llvm::Value* cmp_result = builder->CreateAnd(real_check, imag_check);
-                cmp_result = builder->CreateNot(cmp_result);
-                // Convert i1 comparison result to target LOGICAL type
-                int target_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                tmp = builder->CreateZExt(cmp_result, llvm_utils->getIntType(target_kind));
+                tmp = builder->CreateAnd(real_check, imag_check);
+                tmp = builder->CreateNot(tmp);
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
-                int target_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                llvm::Type* target_type = llvm_utils->getIntType(target_kind);
-                if (tmp->getType() == target_type) {
-                    // No conversion needed
-                } else if (tmp->getType()->getIntegerBitWidth() < target_type->getIntegerBitWidth()) {
-                    tmp = builder->CreateZExt(tmp, target_type);
-                } else {
-                    tmp = builder->CreateTrunc(tmp, target_type);
-                }
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(a_kind));
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -12451,7 +12414,7 @@ public:
                     fn = get_read_function(type);
                 }
                 if (ASRUtils::is_array(type)) {
-                    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::extract_type(type), module.get());
+                    llvm::Type *el_type = llvm_utils->get_el_type(x.m_values[i], ASRUtils::extract_type(type), module.get());
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
@@ -12839,7 +12802,7 @@ public:
             ptr_loads = ptr_loads_copy;
         } else {
             exist_val = llvm_utils->CreateAlloca(*builder,
-                            llvm_utils->getIntType(4));
+                            llvm::Type::getInt1Ty(context));
         }
 
         if (x.m_unit) {
@@ -12857,7 +12820,7 @@ public:
             ptr_loads = ptr_loads_copy;
         } else {
             opened_val = llvm_utils->CreateAlloca(*builder,
-                            llvm_utils->getIntType(4));
+                            llvm::Type::getInt1Ty(context));
         }
 
         if (x.m_size) {
@@ -13029,9 +12992,9 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type, llvm::Type::getInt64Ty(context),
-                        llvm_utils->getIntType(4)->getPointerTo(),
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
-                        llvm_utils->getIntType(4)->getPointerTo(),
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         character_type, llvm::Type::getInt64Ty(context), // write_data, write_len
@@ -14073,9 +14036,11 @@ public:
                             this->visit_expr_wrapper(arg->m_value, true);
                             if( x_abi != ASR::abiType::BindC &&
                                 !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
+                                ASR::Variable_t* alloca_var = orig_arg ? orig_arg : arg;
                                 llvm::Type* alloca_type = llvm_utils->get_type_from_ttype_t_util(
                                     ASRUtils::EXPR(ASR::make_Var_t(
-                                    al, arg->base.base.loc, &arg->base)), arg->m_type, module.get());
+                                    al, alloca_var->base.base.loc, &alloca_var->base)),
+                                    alloca_var->m_type, module.get());
                                 llvm::AllocaInst *target = get_call_arg_alloca(alloca_type);
                                 builder->CreateStore(tmp, target);
                                 tmp = target;
@@ -14230,8 +14195,7 @@ public:
                         break;
                     }
                     case (ASR::ttypeType::Logical) : {
-                        int a_kind = down_cast<ASR::Logical_t>(arg_type_)->m_kind;
-                        target_type = llvm_utils->getIntType(a_kind);
+                        target_type = llvm::Type::getInt1Ty(context);
                         break;
                     }
                     case (ASR::ttypeType::EnumType) :
@@ -15121,7 +15085,13 @@ public:
                             llvm::Function *fn = builder->GetInsertBlock()->getParent();
                             llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
                             optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
-                            builder->CreateCondBr(llvm_utils->to_i1(is_present_flag), present_checkBB, optional_check_mergeBB);
+                            if (!is_present_flag->getType()->isIntegerTy(1)) {
+                                LCOMPILERS_ASSERT(is_present_flag->getType()->isIntegerTy());
+                                is_present_flag = builder->CreateICmpNE(
+                                    is_present_flag,
+                                    llvm::ConstantInt::get(is_present_flag->getType(), 0));
+                            }
+                            builder->CreateCondBr(is_present_flag, present_checkBB, optional_check_mergeBB);
                             builder->SetInsertPoint(present_checkBB);
                         }
                     }
@@ -15612,8 +15582,6 @@ public:
                 builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)) );
         }
-        // Convert i1 result to default LOGICAL type (i32, KIND=4)
-        tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(4));
     }
 
     llvm::Value* CreatePointerToStructTypeReturnValue(llvm::FunctionType* fnty,
@@ -17032,8 +17000,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     };
 
     std::unique_ptr<LLVMModule> res = std::make_unique<LLVMModule>(std::move(v.module));
-    // Copy ASR return types to module for evaluator (to distinguish logical from integer)
-    res->m_asr_return_types = std::move(v.asr_return_types);
     t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {

@@ -114,18 +114,8 @@ llvm::GlobalVariable *LLVMModule::get_global(const std::string &global_name) {
     return m->getNamedGlobal(global_name);
 }
 
-void LLVMModule::set_return_type(const std::string &fn_name, const std::string &type)
-{
-    m_asr_return_types[fn_name] = type;
-}
-
 std::string LLVMModule::get_return_type(const std::string &fn_name)
 {
-    // Check if ASR return type was explicitly set (needed for logical which uses i32)
-    auto it = m_asr_return_types.find(fn_name);
-    if (it != m_asr_return_types.end()) {
-        return it->second;
-    }
     llvm::Module *m = m_m.get();
     llvm::Function *fn = m->getFunction(fn_name);
     if (!fn) {

@@ -495,7 +495,10 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                el_type = getIntType(a_kind, is_pointer);
+                el_type = llvm::Type::getInt8Ty(context);
+                if (is_pointer) {
+                    el_type = el_type->getPointerTo();
+                }
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -630,7 +633,11 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            if (ASR::is_a<ASR::Logical_t>(*v_type->m_type)) {
+                                type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
+                            } else {
+                                type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            }
                         }
                         break;
                     }
@@ -643,7 +650,11 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            if (ASR::is_a<ASR::Logical_t>(*v_type->m_type)) {
+                                type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
+                            } else {
+                                type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            }
                         }
                         break;
                     }
@@ -796,9 +807,9 @@ namespace LCompilers {
                 a_kind = v_type->m_kind;
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
-                    type = getIntType(a_kind);
+                    type = llvm::Type::getInt1Ty(context);
                 } else {
-                    type = getIntType(a_kind)->getPointerTo();
+                    type = llvm::Type::getInt1Ty(context)->getPointerTo();
                 }
                 break;
             }
@@ -1109,8 +1120,7 @@ namespace LCompilers {
                     return_type = get_StringType(return_var_type0);
                     break;
                 case (ASR::ttypeType::Logical) : {
-                    int a_kind = ASR::down_cast<ASR::Logical_t>(return_var_type0)->m_kind;
-                    return_type = getIntType(a_kind);
+                    return_type = llvm::Type::getInt1Ty(context);
                     break;
                 }
                 case (ASR::ttypeType::CPtr) :
@@ -1351,7 +1361,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
-                llvm_type = getIntType(a_kind);
+                llvm_type = llvm::Type::getInt1Ty(context);
                 break;
             }
             case (ASR::ttypeType::StructType) : {

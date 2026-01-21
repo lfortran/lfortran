@@ -16,17 +16,15 @@ loop.head:                                        ; preds = %loop.body, %.entry
   %2 = load i32, i32* %i2, align 4
   %3 = add i32 %2, 1
   %4 = icmp sle i32 %3, 10
-  %5 = zext i1 %4 to i32
-  %6 = icmp ne i32 %5, 0
-  br i1 %6, label %loop.body, label %loop.end
+  br i1 %4, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %7 = load i32, i32* %i2, align 4
-  %8 = add i32 %7, 1
-  store i32 %8, i32* %i2, align 4
+  %5 = load i32, i32* %i2, align 4
+  %6 = add i32 %5, 1
+  store i32 %6, i32* %i2, align 4
   store i32 5, i32* %call_arg_value, align 4
-  %9 = call i32 @f(i32* %call_arg_value)
-  store i32 %9, i32* %a1, align 4
+  %7 = call i32 @f(i32* %call_arg_value)
+  store i32 %7, i32* %a1, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
