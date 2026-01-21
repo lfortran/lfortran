@@ -672,7 +672,15 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+        // Compute exponent based on decimal (stripped zeros) or integer_length
+        // This is more accurate than log10 for values near powers of 10
+        // For val >= 1: exponent = integer_length - scale
+        // For val < 1:  exponent = decimal - scale
+        if (fabs(val) >= 1.0) {
+            exponent_value = integer_length - scale;
+        } else {
+            exponent_value = decimal - scale;
+        }
     }
 
     // For ES format with 0 decimal places, we need to round properly
