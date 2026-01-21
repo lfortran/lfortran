@@ -4866,6 +4866,7 @@ public:
         }
         // Declare variables before nested procedures to make host symbols available.
         declare_vars(x);
+        llvm::BasicBlock *bb_after_decls = builder->GetInsertBlock();
 
         // Generate code for nested subroutines and functions first:
         for (auto &item : x.m_symtab->get_scope()) {
@@ -4878,7 +4879,7 @@ public:
         visit_procedures(x);
         llvm_goto_targets.clear();
 
-        builder->SetInsertPoint(BB);
+        builder->SetInsertPoint(bb_after_decls);
         // Clear alloca pool after nested functions are processed, before main body
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
