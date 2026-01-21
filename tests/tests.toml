@@ -4938,6 +4938,10 @@ filename = "implied_do_loop2.f90"
 run = true
 
 [[test]]
+filename = "implied_do_loop3.f90"
+run = true
+
+[[test]]
 filename = "errors/submodule_01.f90"
 asr = true
 
