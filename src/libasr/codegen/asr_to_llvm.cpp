@@ -12414,6 +12414,29 @@ public:
                         llvm::Type::getInt32Ty(context));
         }
 
+        // Handle pos= specifier: seek to the specified position before reading
+        if (x.m_pos && !is_string) {
+            this->visit_expr_wrapper(x.m_pos, true);
+            llvm::Value* pos_val = tmp;
+            // Convert to i64 for file position
+            pos_val = builder->CreateIntCast(pos_val, llvm::Type::getInt64Ty(context), true);
+
+            std::string runtime_func_name = "_lfortran_file_seek";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context),  // unit
+                            llvm::Type::getInt64Ty(context),  // pos
+                            llvm::Type::getInt32Ty(context)->getPointerTo()  // iostat
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name,
+                            module.get());
+            }
+            builder->CreateCall(fn, {unit_val, pos_val, iostat});
+        }
+
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {

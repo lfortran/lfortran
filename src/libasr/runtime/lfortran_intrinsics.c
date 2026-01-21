@@ -6657,6 +6657,29 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     }
 }
 
+LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat) {
+    if (iostat) *iostat = 0;
+    if (unit_num == -1) {
+        // Cannot seek on stdin
+        if (iostat) *iostat = 1;
+        return;
+    }
+
+    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (!fp) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "No file found with given unit number %d.\n", unit_num);
+        exit(1);
+    }
+
+    // pos is 1-based in Fortran, convert to 0-based for fseek
+    if (fseek(fp, pos - 1, SEEK_SET) != 0) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error seeking to position %ld in file.\n", (long)pos);
+        exit(1);
+    }
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
