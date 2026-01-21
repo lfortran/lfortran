@@ -6677,6 +6677,14 @@ public:
                                 fptr_dims);
             ASR::ttype_t* fptr_data_type = ASRUtils::duplicate_type_without_dims(al, ASRUtils::get_contained_type(fptr_type), fptr_type->base.loc);
             llvm::Type* llvm_fptr_data_type = llvm_utils->get_type_from_ttype_t_util(fptr, fptr_data_type, module.get());
+            // Logical arrays use byte-backed storage (i8), so use i8 for the data pointer type
+            // even though scalar logicals are i1. This applies to DescriptorArray and PointerArray.
+            ASR::array_physical_typeType fptr_physical = ASRUtils::extract_physical_type(ASRUtils::get_contained_type(fptr_type));
+            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(fptr_data_type)) &&
+                (fptr_physical == ASR::array_physical_typeType::DescriptorArray ||
+                 fptr_physical == ASR::array_physical_typeType::PointerArray)) {
+                llvm_fptr_data_type = llvm::Type::getInt8Ty(context);
+            }
             llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr_type, llvm_fptr);
             llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr_type, llvm_fptr);
             llvm::Value* shape_data = llvm_shape;
