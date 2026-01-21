@@ -12658,6 +12658,47 @@ public:
             builder->CreateCall(fn, {unit_val, pos_val, iostat});
         }
 
+        if (x.m_rec) {
+            int ptr_copy_rec = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_rec, true);
+            ptr_loads = ptr_copy_rec;
+
+            // Get the REC expression type and convert if necessary
+            llvm::Type *i32_type = llvm::Type::getInt32Ty(context);
+            llvm::Value *rec_val = tmp;
+            if (rec_val->getType()->isPointerTy()) {
+                rec_val = llvm_utils->CreateLoad2(i32_type, rec_val);
+            } else if (rec_val->getType()->isIntegerTy()) {
+                if (rec_val->getType()->getIntegerBitWidth() != 32) {
+                    if (rec_val->getType()->getIntegerBitWidth() < 32) {
+                        rec_val = builder->CreateZExt(rec_val, i32_type);
+                    } else {
+                        rec_val = builder->CreateTrunc(rec_val, i32_type);
+                    }
+                }
+            }
+
+            // Ensure unit_val is i32
+            llvm::Value *unit_i32 = unit_val;
+            if (unit_i32->getType()->isPointerTy()) {
+                unit_i32 = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit_i32);
+            } else if (unit_i32->getType()->isIntegerTy() && unit_i32->getType()->getIntegerBitWidth() > 32) {
+                unit_i32 = builder->CreateTrunc(unit_i32, llvm::Type::getInt32Ty(context));
+            }
+
+            std::string seek_name = "_lfortran_seek_record";
+            llvm::Function *seek_fn = module->getFunction(seek_name);
+            if (!seek_fn) {
+                llvm::FunctionType *seek_ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context),
+                    { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context)->getPointerTo() },
+                    false);
+                seek_fn = llvm::Function::Create(seek_ft, llvm::Function::ExternalLinkage, seek_name, module.get());
+            }
+            builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
+        }
+
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
@@ -13818,6 +13859,49 @@ public:
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
             iostat = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context)->getPointerTo(), iostat);
+        }
+        
+        if (x.m_rec) {
+            int ptr_copy_rec = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_rec, true);
+            ptr_loads = ptr_copy_rec;
+
+            // Get the REC expression type and convert if necessary
+            llvm::Type *i32_type = llvm::Type::getInt32Ty(context);
+            llvm::Value *rec_val = tmp;
+            if (rec_val->getType()->isPointerTy()) {
+                rec_val = llvm_utils->CreateLoad2(i32_type, rec_val);
+            } else if (rec_val->getType()->isIntegerTy()) {
+                if (rec_val->getType()->getIntegerBitWidth() != 32) {
+                    if (rec_val->getType()->getIntegerBitWidth() < 32) {
+                        rec_val = builder->CreateZExt(rec_val, i32_type);
+                    } else {
+                        rec_val = builder->CreateTrunc(rec_val, i32_type);
+                    }
+                }
+            }
+
+            // Only meaningful for integer unit handles
+            if (!is_string) {
+                llvm::Value *unit_i32 = unit;
+                if (unit_i32->getType()->isPointerTy()) {
+                    unit_i32 = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit_i32);
+                } else if (unit_i32->getType()->isIntegerTy() && unit_i32->getType()->getIntegerBitWidth() > 32) {
+                    unit_i32 = builder->CreateTrunc(unit_i32, llvm::Type::getInt32Ty(context));
+                }
+
+                std::string seek_name = "_lfortran_seek_record";
+                llvm::Function *seek_fn = module->getFunction(seek_name);
+                if (!seek_fn) {
+                    llvm::FunctionType *seek_ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context)->getPointerTo() },
+                        false);
+                    seek_fn = llvm::Function::Create(seek_ft, llvm::Function::ExternalLinkage, seek_name, module.get());
+                }
+                builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
+            }
         }
 
         if (x.m_separator) {

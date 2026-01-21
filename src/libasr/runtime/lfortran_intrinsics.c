@@ -4746,6 +4746,97 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
     rewind(fd);
 }
 
+LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat)
+{
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+
+    bool unit_file_bin;
+    int access_id = -1;
+    bool read_access = false, write_access = false;
+    int delim = 0;
+    bool blank_zero = false;
+    int32_t unit_recl = 0;
+
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, 
+                                          &read_access, &write_access, &delim, 
+                                          &blank_zero, &unit_recl);
+    if (fp == NULL) {
+        if (iostat != NULL) {
+            *iostat = 5001; // unit not connected
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Specified UNIT %d is not created or connected.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (access_id != 2) {  // 2 = DIRECT access
+        if (iostat != NULL) {
+            *iostat = 5002; // not a direct access file
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: REC= specified for non-direct access UNIT %d.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (unit_recl <= 0) {
+        if (iostat != NULL) {
+            *iostat = 5003; // RECL not set or invalid
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: RECL not set or invalid for UNIT %d.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (rec <= 0) {
+        if (iostat != NULL) {
+            *iostat = 5004; // invalid record number
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Invalid REC value %lld for UNIT %d (must be > 0).\n", 
+                    (long long)rec, unit_num);
+            exit(1);
+        }
+    }
+    long long offset_ll = (long long)(rec - 1) * (long long)unit_recl;
+
+
+    // Seek to the record position
+#if defined(_WIN32)
+    int seek_result = fseek(fp, (long)offset_ll, SEEK_SET);
+#else
+    int seek_result = fseeko(fp, (off_t)offset_ll, SEEK_SET);
+#endif
+
+    if (seek_result != 0) {
+        if (iostat != NULL) {
+            if (ferror(fp)) {
+                *iostat = 5005; // seek error
+            } else if (feof(fp)) {
+                *iostat = 0;
+                return;
+            } else {
+                *iostat = 5006; // unknown seek error
+            }
+            return;
+        } else {
+            int err = errno;
+            if (err != 0) {
+                fprintf(stderr, "Runtime Error: Cannot seek to record %lld on UNIT %d: %s\n",
+                        (long long)rec, unit_num, strerror(err));
+            } else {
+                fprintf(stderr, "Runtime Error: Cannot seek to record %lld on UNIT %d.\n",
+                        (long long)rec, unit_num);
+            }
+            exit(1);
+        }
+    }
+}
+
 static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t *iostat)
 {
     while (true) {
@@ -6742,7 +6833,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) { // Unformatted
-        fseek(filep, 0, SEEK_END);
+        if (access_id != 2) {  // 2 = DIRECT access
+            fseek(filep, 0, SEEK_END);
+        }
         va_list args;
         va_start(args, format_len);
         size_t total_size = 0;
