@@ -355,6 +355,7 @@ RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 
 
 RUN(NAME internal_subr_host_vars_01 LABELS gfortran llvm)
 
+RUN(NAME abort_01 LABELS gfortran llvm)
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm llvm2 fortran)
 RUN(NAME error_stop_02 FAIL LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm2 fortran)
 RUN(NAME error_stop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -846,7 +847,9 @@ RUN(NAME reserved_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME reserved_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME reserved_03 LABELS gfortran llvm)
 
-RUN(NAME namelist_01 LABELS gfortran)
+RUN(NAME namelist_01 LABELS gfortran llvm)
+RUN(NAME namelist_02 LABELS gfortran llvm)
+RUN(NAME namelist_03 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
@@ -1577,6 +1580,7 @@ RUN(NAME implicit_interface_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_24 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_26 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_27 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_27b.f90)
 
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
@@ -2021,6 +2025,8 @@ RUN(NAME nested_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME nested_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME nested_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
@@ -2204,8 +2210,9 @@ RUN(NAME class_89 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_STD_F23)
 RUN(NAME class_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_92 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_93 LABELS gfortran llvm)
-RUN(NAME class_94 LABELS gfortran llvm)
+RUN(NAME class_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_95 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2434,6 +2441,7 @@ RUN(NAME read_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME read_27 LABELS gfortran llvm)
 RUN(NAME read_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME read_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
