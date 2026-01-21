@@ -963,25 +963,13 @@ class ASRToLLVMVisitor;
                 break;
                 }
                 case ASR::PointerArray :{
-                    auto const llvm_type_verify_against = ASRUtils::is_array_of_strings(&arr_t->base) ? 
-                                                          get_llvm_type(&arr_t->base, struct_sym)->getPointerTo() :
-                                                          get_llvm_type(&arr_t->base, struct_sym);
+                    llvm::Type* llvm_type_verify_against = ASRUtils::is_array_of_strings(&arr_t->base) ?
+                        get_llvm_type(&arr_t->base, struct_sym)->getPointerTo() :
+                        get_llvm_type(&arr_t->base, struct_sym);
                     if (ASRUtils::is_logical(*arr_t->m_type)) {
-#if LLVM_VERSION_MAJOR < 15
-                        // Some temporary LOGICAL mask arrays can still be lowered as i1*
-                        // even though LOGICAL array element storage is byte-backed (i8).
-                        // Treat i1* and i8* as compatible for finalization/free.
-                        llvm::Type* i1_ptr = llvm::Type::getInt1Ty(builder_->getContext())->getPointerTo();
-                        llvm::Type* i8_ptr = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
-                        if (!(arr->getType() == i1_ptr && llvm_type_verify_against == i8_ptr)) {
-                            verify(arr, llvm_type_verify_against);
-                        }
-#else
-                        verify(arr, llvm_type_verify_against);
-#endif
-                    } else {
-                        verify(arr, llvm_type_verify_against);
+                        llvm_type_verify_against = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
                     }
+                    verify(arr, llvm_type_verify_against);
                     auto const data = arr;
                     free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
@@ -1145,17 +1133,18 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         template<typename LazyEval>
         void free_array_data(llvm::Value* const data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
+            llvm::Type* llvm_type_verify_against = get_llvm_type(data_type, struct_sym)->getPointerTo();
+            if (ASRUtils::is_logical(*data_type)) {
+                llvm_type_verify_against = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
+            }
+            verify(data_ptr, llvm_type_verify_against);
             switch(data_type->type){
-                case ASR::StructType : { // Loop and free
-                    verify(data_ptr, get_llvm_type(data_type, struct_sym)->getPointerTo());
+                case ASR::StructType : // Loop and free
                     free_array_structs(data_ptr, ASR::down_cast<ASR::StructType_t>(data_type), struct_sym, array_size());
-                    break;
-                }
-                case ASR::String : { // Force string finalization on this single string. -- Don't loop, One string holds all.
-                    verify(data_ptr, get_llvm_type(data_type, struct_sym)->getPointerTo());
+                break;
+                case ASR::String : // Force string finalization on this single string. -- Don't loop, One string holds all.
                     finalize_string(data_ptr, data_type); 
-                    break;
-                }
+                break; 
                 case ASR::Integer :
                 case ASR::Real :
                 case ASR::Complex :
