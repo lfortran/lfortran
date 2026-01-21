@@ -1105,8 +1105,34 @@ public:
                 }));
             throw SemanticAbort();
         }
+        bool nml_in_positional_args = false;
+        if (n_args == 2 && m_args[1].m_value &&
+                AST::is_a<AST::Name_t>(*m_args[1].m_value)) {
+            AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_args[1].m_value);
+            std::string nml_name = to_lower(std::string(name_expr->m_id));
+            ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
+            if (nml_sym) {
+                ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
+                if (ASR::is_a<ASR::Namelist_t>(*nml_sym_past)) {
+                    if (n_values != 0) {
+                        diag.add(Diagnostic(
+                            "Namelist group cannot be combined with an I/O list",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_args[1].m_value->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    a_nml = nml_sym;
+                    formatted = false;
+                    nml_in_positional_args = true;
+                }
+            }
+        }
         std::vector<ASR::expr_t**> args = {&a_unit, &a_fmt};
         for( std::uint32_t i = 0; i < n_args; i++ ) {
+            if (i == 1 && nml_in_positional_args) {
+                continue;
+            }
             if( m_args[i].m_value != nullptr ) {
                 this->visit_expr(*m_args[i].m_value);
                 *args[i] = ASRUtils::EXPR(tmp);
@@ -1461,6 +1487,34 @@ public:
             a_fmt_constant = a_fmt;
         }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
+            if (AST::is_a<AST::Name_t>(*m_values[i])) {
+                AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_values[i]);
+                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
+                if (nml_sym) {
+                    ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
+                    if (ASR::is_a<ASR::Namelist_t>(*nml_sym_past)) {
+                        if (a_nml != nullptr) {
+                            diag.add(Diagnostic(
+                                "Namelist group already specified",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {m_values[i]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        if (n_values != 1) {
+                            diag.add(Diagnostic(
+                                "Namelist group must be the only item in the I/O list",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {m_values[i]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        a_nml = nml_sym;
+                        continue;
+                    }
+                }
+            }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             // For READ: expand implied-do loops to individual elements or array section
