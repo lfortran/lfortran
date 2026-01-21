@@ -5649,11 +5649,10 @@ public:
                 ASRUtils::extract_physical_type(v->m_type) ==
                 ASR::array_physical_typeType::PointerArray &&
                 !LLVM::is_llvm_pointer(*v->m_type) ) {
-                type = llvm_utils->get_type_from_ttype_t(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, v->base.base.loc, &v->base)),
-                        ASRUtils::type_get_past_array(v->m_type),
-                        v->m_type_declaration, v->m_storage, is_array_type,
-                        is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
+                type = llvm_utils->get_el_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                    ASRUtils::type_get_past_array(v->m_type),
+                    module.get());
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
                 array_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));

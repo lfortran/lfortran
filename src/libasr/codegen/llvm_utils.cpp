@@ -1667,17 +1667,29 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, const std::vector<llvm::Value *> &idx) {
-#if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
-        // Validate that the type parameter matches the pointer's pointee type
-        // Note: LLVM 15+ uses opaque pointers, so this check is not possible/needed
+#if LLVM_VERSION_MAJOR < 15
         LCOMPILERS_ASSERT(x->getType()->isPointerTy())
         llvm::Type* x_pointee_type = x->getType()->getPointerElementType();
-        std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
-        std::string t_type_str = LLVM::get_type_as_string(t);
-        LCOMPILERS_ASSERT_MSG(x_pointee_type == t,
-            "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
-            x_type_str + ") != type parameter (" +
-            t_type_str + ")");
+        if (x_pointee_type != t) {
+            // LOGICAL arrays are byte-backed (i8), but some intermediate code paths
+            // can still produce i1* temporaries for masks. Treat i1* and i8* as
+            // layout-compatible for GEP address calculation.
+            bool allow_i1_i8_mismatch =
+                (x_pointee_type->isIntegerTy(1) && t->isIntegerTy(8)) ||
+                (x_pointee_type->isIntegerTy(8) && t->isIntegerTy(1));
+            if (allow_i1_i8_mismatch) {
+                x = builder->CreateBitCast(x, t->getPointerTo());
+            } else {
+#if defined(WITH_LFORTRAN_ASSERT)
+                std::string x_type_str = LLVM::get_type_as_string(x_pointee_type);
+                std::string t_type_str = LLVM::get_type_as_string(t);
+                LCOMPILERS_ASSERT_MSG(false,
+                    "CreateInBoundsGEP2: Type mismatch - pointer pointee type (" +
+                    x_type_str + ") != type parameter (" +
+                    t_type_str + ")");
+#endif
+            }
+        }
 #endif
         return builder->CreateInBoundsGEP(t, x, idx);
     }
