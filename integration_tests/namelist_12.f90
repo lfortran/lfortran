@@ -49,12 +49,16 @@ program test_iostat
     read(20, nml=test, iostat=iostat_val)
     close(20)
 
+#ifdef __LFORTRAN__
     if (iostat_val /= 5015) then
+#else
+    if (iostat_val == 0) then
+#endif
         print *, "Error: Expected iostat=5015 for bounds error, got", iostat_val
         error stop "Test 2 failed"
     end if
 
-    print *, "Test 2 passed: Bounds error detected with iostat=5015"
+    print *, "Test 2 passed: Bounds error detected with iostat=5015, got", iostat_val
 
     ! Test 3: Repeat count overflow (iostat = 5015)
     arr = -999
@@ -70,12 +74,16 @@ program test_iostat
     read(30, nml=test, iostat=iostat_val)
     close(30)
 
+#ifdef __LFORTRAN__
     if (iostat_val /= 5015) then
+#else
+    if (iostat_val == 0) then
+#endif
         print *, "Error: Expected iostat=5015 for repeat overflow, got", iostat_val
         error stop "Test 3 failed"
     end if
 
-    print *, "Test 3 passed: Repeat count overflow detected with iostat=5015"
+    print *, "Test 3 passed: Repeat count overflow detected with iostat=5015, got", iostat_val
 
     ! Test 4: Unknown variable (iostat = 5012)
     arr = -999
@@ -91,12 +99,16 @@ program test_iostat
     read(40, nml=test, iostat=iostat_val)
     close(40)
 
+#ifdef __LFORTRAN__
     if (iostat_val /= 5012) then
+#else
+    if (iostat_val == 0) then
+#endif
         print *, "Error: Expected iostat=5012 for unknown variable, got", iostat_val
         error stop "Test 4 failed"
     end if
 
-    print *, "Test 4 passed: Unknown variable detected with iostat=5012"
+    print *, "Test 4 passed: Unknown variable detected with iostat=5012, got", iostat_val
 
     ! Test 5: Group not found (iostat = 5010)
     arr = -999
@@ -112,12 +124,16 @@ program test_iostat
     read(50, nml=test, iostat=iostat_val)
     close(50)
 
+#ifdef __LFORTRAN__
     if (iostat_val /= 5010) then
+#else
+    if (iostat_val == 0) then
+#endif
         print *, "Error: Expected iostat=5010 for group not found, got", iostat_val
         error stop "Test 5 failed"
     end if
 
-    print *, "Test 5 passed: Group not found detected with iostat=5010"
+    print *, "Test 5 passed: Group not found detected with iostat=5010, got", iostat_val
 
     print *, "All IOSTAT error handling tests passed!"
 
