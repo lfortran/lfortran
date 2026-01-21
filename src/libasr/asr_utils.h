@@ -851,6 +851,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_name;
         }
+        case ASR::symbolType::Namelist: {
+            return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1199,7 +1202,10 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab->parent;
         }
-        default : throw LCompilersException("Not implemented for type " + 
+        case ASR::symbolType::Namelist: {
+            return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
+        }
+        default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
 }
