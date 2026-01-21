@@ -1902,6 +1902,23 @@ public:
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
+        if (x.m_vartype == nullptr && x.n_attributes == 1 && 
+            AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
+            
+            AST::AttrNamelist_t* attr = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
+            std::string group_name = to_lower(std::string(attr->m_name));
+
+            if (current_scope->get_symbol(group_name) == nullptr) {
+                ASR::symbol_t* namelist_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Namelist_t(al, x.base.base.loc, 
+                                        current_scope, 
+                                        s2c(al, group_name), 
+                                        nullptr, 0)
+                );
+                current_scope->add_symbol(group_name, namelist_sym);
+            }
+            return;
+        }
         visit_DeclarationUtil(x);
     }
 
