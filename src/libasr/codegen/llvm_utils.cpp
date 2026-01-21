@@ -495,10 +495,10 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
+                // Use byte-backed storage for logical arrays to avoid bit-packed `i1` memory,
+                // which is fragile under some LLVM optimizations (e.g. `--fast` / O3).
+                // Scalar logical values are still represented as `i1` at the expression level.
                 el_type = llvm::Type::getInt8Ty(context);
-                if (is_pointer) {
-                    el_type = el_type->getPointerTo();
-                }
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -633,11 +633,9 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            if (ASR::is_a<ASR::Logical_t>(*v_type->m_type)) {
-                                type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
-                            } else {
-                                type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
-                            }
+                            // Use the array element storage type for data pointers.
+                            // In particular, logical arrays are byte-backed (i8) in memory.
+                            type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
                         }
                         break;
                     }
@@ -650,11 +648,9 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            if (ASR::is_a<ASR::Logical_t>(*v_type->m_type)) {
-                                type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
-                            } else {
-                                type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
-                            }
+                            // Use the array element storage type for data pointers.
+                            // In particular, logical arrays are byte-backed (i8) in memory.
+                            type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
                         }
                         break;
                     }

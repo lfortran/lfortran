@@ -884,10 +884,11 @@ namespace LCompilers {
                          ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
                     return llvm_utils->getStructType(struct_sym, llvm_utils->module)->getPointerTo();
                 } else {
+                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                     return llvm_utils->get_el_type(
-                        array_exp,
-                        ASRUtils::extract_type(array_type),
-                        llvm_utils->module)->getPointerTo();
+                                    array_exp,
+                                    ASRUtils::extract_type(array_type),
+                                    llvm_utils->module)->getPointerTo();
                 } 
             }();
 

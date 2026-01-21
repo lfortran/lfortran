@@ -930,10 +930,11 @@ class ASRToLLVMVisitor;
         void finalize_array(llvm::Value* const arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
-            llvm::Type* arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
-            if (ASR::is_a<ASR::Logical_t>(*arr_t->m_type)) {
-                // LOGICAL array elements are byte-backed (i8) in memory.
-                arrayType_llvm_t = llvm::Type::getInt8Ty(builder_->getContext());
+            auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+            llvm::Type* array_data_ptr_type = arrayType_llvm_t->getPointerTo();
+            if (arr_t->m_type->type == ASR::ttypeType::Logical) {
+                // Logical arrays are stored as byte-backed `i8` in memory.
+                array_data_ptr_type = llvm_utils_->i8_ptr;
             }
             auto  const array_size_lazy  = [&]() { 
                 insert_BB_for_readability("Calculate_arraySize");
@@ -943,7 +944,7 @@ class ASRToLLVMVisitor;
             switch(arr_t->m_physical_type){
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
-                    auto const data = builder_->CreateLoad(arrayType_llvm_t->getPointerTo(), 
+                    auto const data = builder_->CreateLoad(array_data_ptr_type, 
                                                             llvm_utils_->create_gep2(arr_llvm_t, arr, 0));
                     if(arr_t->m_type->type == ASR::StructType){
                         check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym,[&](){
@@ -978,7 +979,7 @@ class ASRToLLVMVisitor;
                 case ASR::SIMDArray :
                 case ASR::FixedSizeArray :{
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
-                    auto const data = builder_->CreateBitCast(arr, arrayType_llvm_t->getPointerTo());
+                    auto const data = builder_->CreateBitCast(arr, array_data_ptr_type);
                     free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                 }
                 break;
@@ -1133,11 +1134,12 @@ if(get_struct_sym(member_variable) == struct_sym /*recursive declaration*/){cont
         template<typename LazyEval>
         void free_array_data(llvm::Value* const data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
-            llvm::Type* llvm_type_verify_against = get_llvm_type(data_type, struct_sym)->getPointerTo();
-            if (ASRUtils::is_logical(*data_type)) {
-                llvm_type_verify_against = llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo();
+            llvm::Type* expected_data_ptr_type = get_llvm_type(data_type, struct_sym)->getPointerTo();
+            if (data_type->type == ASR::ttypeType::Logical) {
+                // Logical arrays are stored as byte-backed `i8` in memory.
+                expected_data_ptr_type = llvm_utils_->i8_ptr;
             }
-            verify(data_ptr, llvm_type_verify_against);
+            verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType : // Loop and free
                     free_array_structs(data_ptr, ASR::down_cast<ASR::StructType_t>(data_type), struct_sym, array_size());

@@ -352,6 +352,20 @@ LFORTRAN_API void _lfortran_namelist_read(
     lfortran_nml_group_t *group
 );
 
+// IOSTAT error codes for namelist operations
+#define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
+#define LFORTRAN_IOSTAT_NML_READ_NOT_ALLOWED        5002  // Read access not allowed
+#define LFORTRAN_IOSTAT_NML_WRITE_NOT_ALLOWED       5003  // Write access not allowed
+#define LFORTRAN_IOSTAT_NML_GROUP_NOT_FOUND         5010  // Namelist group not found
+#define LFORTRAN_IOSTAT_NML_UNEXPECTED_END          5011  // Unexpected end of namelist
+#define LFORTRAN_IOSTAT_NML_UNKNOWN_VARIABLE        5012  // Unknown variable in namelist
+#define LFORTRAN_IOSTAT_NML_EXPECTED_EQUALS         5013  // Expected '=' after variable name
+#define LFORTRAN_IOSTAT_NML_INVALID_REPEAT          5014  // Invalid repeat count
+#define LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS     5015  // Array index out of bounds
+#define LFORTRAN_IOSTAT_NML_TYPE_MISMATCH           5016  // Type mismatch during read
+#define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
+#define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
+
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);
 
