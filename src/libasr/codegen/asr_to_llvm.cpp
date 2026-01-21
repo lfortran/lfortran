@@ -7402,53 +7402,6 @@ public:
                                 // Check if this is polymorphic array pointer association in select type
                                 if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) && current_select_type_block_type_asr != nullptr) {
 
-	                                    llvm::Type* value_array_desc_type = llvm_utils->get_type_from_ttype_t_util(
-	                                        x.m_value, value_type, module.get());
-	                                    llvm::Value* source_desc_as_target = builder->CreateBitCast(
-	                                        llvm_value, target_array_desc_type->getPointerTo());
-
-	                                    int n_dims = ASRUtils::extract_n_dims_from_ttype(target_type_);
-	                                    arr_descr->reset_array_details(
-	                                        target_array_desc_type, target_desc, source_desc_as_target, n_dims);
-
-	                                    ASR::ttype_t* value_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(value_type);
-	                                    llvm::Type* value_el_type = llvm_utils->get_el_type(
-	                                        x.m_value, ASRUtils::extract_type(value_arr_asr_type), module.get());
-	                                    llvm::Value* value_data_ptr = llvm_utils->CreateLoad2(
-	                                        value_el_type->getPointerTo(),
-	                                        arr_descr->get_pointer_to_data(x.m_value, value_type, llvm_value, module.get()));
-	                                    llvm::Value* value_offset = arr_descr->get_offset(value_array_desc_type, llvm_value);
-	                                    llvm::Value* value_first_el_ptr = llvm_utils->create_ptr_gep2(
-	                                        value_el_type, value_data_ptr, value_offset);
-
-	                                    llvm::Type* poly_wrapper_type = llvm_utils->get_el_type(
-	                                        x.m_target, ASRUtils::extract_type(target_type_), module.get());
-	                                    llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_wrapper_type);
-
-	                                    ASR::ttype_t* value_element_asr_type = ASRUtils::extract_type(value_type);
-	                                    if (ASR::is_a<ASR::StructType_t>(*value_element_asr_type)) {
-	                                        struct_api->store_class_vptr(
-	                                            ASRUtils::get_struct_sym_from_struct_expr(x.m_value),
-	                                            poly_wrapper, module.get());
-	                                    } else {
-	                                        struct_api->store_intrinsic_type_vptr(
-	                                            value_element_asr_type,
-	                                            ASRUtils::extract_kind_from_ttype_t(value_element_asr_type),
-	                                            poly_wrapper, module.get());
-	                                    }
-	                                    llvm::Value* poly_data_ptr_ptr = llvm_utils->create_gep2(poly_wrapper_type, poly_wrapper, 1);
-	                                    builder->CreateStore(builder->CreateBitCast(value_first_el_ptr, llvm_utils->i8_ptr),
-	                                                         poly_data_ptr_ptr);
-
-	                                    builder->CreateStore(
-	                                        poly_wrapper,
-	                                        arr_descr->get_pointer_to_data(target_array_desc_type, target_desc));
-	                                    return;
-	                                }
-
-	                                // Check if this is polymorphic array pointer association in select type
-	                                if (ASRUtils::is_unlimited_polymorphic_type(x.m_value) && current_select_type_block_type_asr != nullptr) {
-
 	                                    // SPECIAL HANDLING FOR POLYMORPHIC ARRAY POINTER ASSOCIATION
 	                                    // This handles: xx => generic (where generic is class(*) array)
 
