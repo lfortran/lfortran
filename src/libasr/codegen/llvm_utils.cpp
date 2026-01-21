@@ -495,7 +495,10 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Logical: {
-                el_type = llvm::Type::getInt1Ty(context);
+                // Use byte-backed storage for logical arrays to avoid bit-packed `i1` memory,
+                // which is fragile under some LLVM optimizations (e.g. `--fast` / O3).
+                // Scalar logical values are still represented as `i1` at the expression level.
+                el_type = llvm::Type::getInt8Ty(context);
                 break;
             }
             case ASR::ttypeType::CPtr: {
@@ -630,7 +633,9 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            // Use the array element storage type for data pointers.
+                            // In particular, logical arrays are byte-backed (i8) in memory.
+                            type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
                         }
                         break;
                     }
@@ -643,7 +648,9 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            // Use the array element storage type for data pointers.
+                            // In particular, logical arrays are byte-backed (i8) in memory.
+                            type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
                         }
                         break;
                     }
@@ -1070,35 +1077,29 @@ namespace LCompilers {
                 }
                 case (ASR::ttypeType::Complex) : {
                     int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+                    // Use platform-specific return type for both BindC and Source ABI
+                    // to ensure ABI compatibility when calling via implicit interfaces
                     if (a_kind == 4) {
-                        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                            if (compiler_options.platform == Platform::Windows) {
-                                // i64
-                                return_type = llvm::Type::getInt64Ty(context);
-                            } else if (compiler_options.platform == Platform::macOS_ARM) {
-                                // {float, float}
-                                return_type = getComplexType(a_kind);
-                            } else {
-                                // <2 x float>
-                                return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                            }
-                        } else {
+                        if (compiler_options.platform == Platform::Windows) {
+                            // i64
+                            return_type = llvm::Type::getInt64Ty(context);
+                        } else if (compiler_options.platform == Platform::macOS_ARM) {
+                            // {float, float}
                             return_type = getComplexType(a_kind);
+                        } else {
+                            // <2 x float>
+                            return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
                         }
                     } else {
                         LCOMPILERS_ASSERT(a_kind == 8)
-                        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                            if (compiler_options.platform == Platform::Windows) {
-                                // pass as subroutine
-                                return_type = getComplexType(a_kind, true);
-                                std::vector<llvm::Type*> args = convert_args(x, module);
-                                args.insert(args.begin(), return_type);
-                                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                        llvm::Type::getVoidTy(context), args, false);
-                                return function_type;
-                            } else {
-                                return_type = getComplexType(a_kind);
-                            }
+                        if (compiler_options.platform == Platform::Windows) {
+                            // pass as subroutine
+                            return_type = getComplexType(a_kind, true);
+                            std::vector<llvm::Type*> args = convert_args(x, module);
+                            args.insert(args.begin(), return_type);
+                            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                    llvm::Type::getVoidTy(context), args, false);
+                            return function_type;
                         } else {
                             return_type = getComplexType(a_kind);
                         }

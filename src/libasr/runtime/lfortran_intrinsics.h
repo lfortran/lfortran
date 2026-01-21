@@ -243,6 +243,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* blank, int64_t blank_len,
     int32_t *recl);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
+LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
@@ -288,6 +289,7 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr);
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
+LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);
@@ -305,6 +307,64 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int3
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
+
+// Namelist I/O support
+typedef enum {
+    LFORTRAN_NML_INT1,
+    LFORTRAN_NML_INT2,
+    LFORTRAN_NML_INT4,
+    LFORTRAN_NML_INT8,
+    LFORTRAN_NML_REAL4,
+    LFORTRAN_NML_REAL8,
+    LFORTRAN_NML_LOGICAL1,
+    LFORTRAN_NML_LOGICAL2,
+    LFORTRAN_NML_LOGICAL4,
+    LFORTRAN_NML_LOGICAL8,
+    LFORTRAN_NML_COMPLEX4,
+    LFORTRAN_NML_COMPLEX8,
+    LFORTRAN_NML_CHAR
+} lfortran_nml_type_t;
+
+typedef struct {
+    const char *name;          // lower-case, null-terminated
+    lfortran_nml_type_t type;
+    int32_t rank;              // 0 for scalar
+    int64_t elem_len;          // for character (len), else 0
+    void *data;                // scalar ptr or base address of array
+    const int64_t *shape;      // rank-sized array of extents (Fortran order)
+} lfortran_nml_item_t;
+
+typedef struct {
+    const char *group_name;    // lower-case, null-terminated
+    int32_t n_items;
+    lfortran_nml_item_t *items;
+} lfortran_nml_group_t;
+
+LFORTRAN_API void _lfortran_namelist_write(
+    int32_t unit_num,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group
+);
+
+LFORTRAN_API void _lfortran_namelist_read(
+    int32_t unit_num,
+    int32_t *iostat,
+    lfortran_nml_group_t *group
+);
+
+// IOSTAT error codes for namelist operations
+#define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
+#define LFORTRAN_IOSTAT_NML_READ_NOT_ALLOWED        5002  // Read access not allowed
+#define LFORTRAN_IOSTAT_NML_WRITE_NOT_ALLOWED       5003  // Write access not allowed
+#define LFORTRAN_IOSTAT_NML_GROUP_NOT_FOUND         5010  // Namelist group not found
+#define LFORTRAN_IOSTAT_NML_UNEXPECTED_END          5011  // Unexpected end of namelist
+#define LFORTRAN_IOSTAT_NML_UNKNOWN_VARIABLE        5012  // Unknown variable in namelist
+#define LFORTRAN_IOSTAT_NML_EXPECTED_EQUALS         5013  // Expected '=' after variable name
+#define LFORTRAN_IOSTAT_NML_INVALID_REPEAT          5014  // Invalid repeat count
+#define LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS     5015  // Array index out of bounds
+#define LFORTRAN_IOSTAT_NML_TYPE_MISMATCH           5016  // Type mismatch during read
+#define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
+#define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);

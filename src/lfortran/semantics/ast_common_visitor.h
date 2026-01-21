@@ -1362,6 +1362,7 @@ public:
         {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
         {"random_init", IntrinsicSignature({"repeatable", "image"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
+        {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
@@ -8475,6 +8476,9 @@ public:
         }
     }
 
+    // Creates an ArrayItem or ArraySection ASR node from fnarg info
+    // Notice :: if no fnarg provided -- Creates nothing
+    // Notice return is stored in `tmp` variable
     void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
         if (struct_n_args == 0) {
             return;
@@ -11871,6 +11875,7 @@ public:
                 }
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(tmp));
             } else {
+                // To use the following function, Don't use last member and use it as id instead.
                 visit_NameUtil(x.m_member, x.n_member - 1,
                     x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             }
@@ -14159,6 +14164,11 @@ public:
             }
 
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
+            if(x_n_member != x_member_count){ // From `funCallOrArray` -- id is a member [x_n_member] --Last item could be an arrayItem
+                LCOMPILERS_ASSERT(x_member_count == x_n_member + 1)
+                make_ArrayItem_from_struct_m_args(
+                    x_m_member[x_n_member].m_args, x_m_member[x_n_member].n_args, ASRUtils::EXPR(tmp), tmp, loc);
+            }
         }
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;
