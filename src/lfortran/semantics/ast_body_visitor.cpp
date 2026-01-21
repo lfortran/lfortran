@@ -1083,6 +1083,7 @@ public:
         ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance;
         a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
+        ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
         bool formatted = (n_args == 2);
         Vec<ASR::expr_t*> a_values_vec;
@@ -1363,7 +1364,7 @@ public:
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_FileWrite_t(al, loc, 0, a_unit,
                         nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted, nullptr)));
+                        nullptr, 0, nullptr, newline, nullptr, formatted, a_nml)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
                     newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
@@ -1377,6 +1378,42 @@ public:
             } else if (m_arg_str == "err") {
                 if (!parse_read_label_kwarg("err", err_label, _type, kwarg, loc)) {
                     continue;
+                }
+            } else if (m_arg_str == "nml") {
+                if (a_nml != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `nml` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (kwarg.m_value == nullptr || kwarg.m_value->type != AST::exprType::Name) {
+                    diag.add(Diagnostic(
+                        "`nml` must be a namelist group name",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(kwarg.m_value);
+                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                a_nml = current_scope->resolve_symbol(nml_name);
+                if (!a_nml) {
+                    diag.add(Diagnostic(
+                        "Namelist group '" + nml_name + "' not found",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASR::is_a<ASR::Namelist_t>(*a_nml)) {
+                    diag.add(Diagnostic(
+                        "'" + nml_name + "' is not a namelist group",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{loc})
+                        }));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -1482,12 +1519,12 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if (_type == AST::stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, nullptr);
+                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml);
                     print_statements[tmp] = std::make_pair(&w->base, label);
                 } else if (_type == AST::stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(),
-                        nullptr, formatted, nullptr);
+                        nullptr, formatted, a_nml);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
                 if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
@@ -1515,7 +1552,7 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nullptr);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -1531,7 +1568,7 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, nullptr);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml);
         } else if( _type == AST::stmtType::Read ) {
             if (formatted && a_fmt_constant) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -1546,7 +1583,7 @@ public:
                 a_values_vec.push_back(al, string_format);
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
-               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr);
+               a_iostat, a_advance, a_size, a_id, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml);
         }
 
         tmp_vec.push_back(tmp);
@@ -1565,7 +1602,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -1575,7 +1612,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, nullptr)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                         body.p, body.size(), nullptr, 0));
                 }

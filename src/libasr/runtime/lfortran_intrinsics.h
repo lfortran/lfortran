@@ -306,6 +306,50 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
 
+// Namelist I/O support
+typedef enum {
+    LFORTRAN_NML_INT1,
+    LFORTRAN_NML_INT2,
+    LFORTRAN_NML_INT4,
+    LFORTRAN_NML_INT8,
+    LFORTRAN_NML_REAL4,
+    LFORTRAN_NML_REAL8,
+    LFORTRAN_NML_LOGICAL1,
+    LFORTRAN_NML_LOGICAL2,
+    LFORTRAN_NML_LOGICAL4,
+    LFORTRAN_NML_LOGICAL8,
+    LFORTRAN_NML_COMPLEX4,
+    LFORTRAN_NML_COMPLEX8,
+    LFORTRAN_NML_CHAR
+} lfortran_nml_type_t;
+
+typedef struct {
+    const char *name;          // lower-case, null-terminated
+    lfortran_nml_type_t type;
+    int32_t rank;              // 0 for scalar
+    int64_t elem_len;          // for character (len), else 0
+    void *data;                // scalar ptr or base address of array
+    const int64_t *shape;      // rank-sized array of extents (Fortran order)
+} lfortran_nml_item_t;
+
+typedef struct {
+    const char *group_name;    // lower-case, null-terminated
+    int32_t n_items;
+    lfortran_nml_item_t *items;
+} lfortran_nml_group_t;
+
+LFORTRAN_API void _lfortran_namelist_write(
+    int32_t unit_num,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group
+);
+
+LFORTRAN_API void _lfortran_namelist_read(
+    int32_t unit_num,
+    int32_t *iostat,
+    lfortran_nml_group_t *group
+);
+
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);
 
