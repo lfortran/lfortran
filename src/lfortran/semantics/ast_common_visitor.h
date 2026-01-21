@@ -13105,6 +13105,16 @@ public:
             ));
             throw SemanticAbort();
         }
+        if (!ASR::is_a<ASR::CustomOperator_t>(*operator_sym)
+            && !ASR::is_a<ASR::Function_t>(*operator_sym)) {
+            diag.add(Diagnostic(
+                "User operator procedure must be a FUNCTION",
+                Level::Error,
+                Stage::Semantic,
+                { Label("", { loc }) }
+            ));
+            throw SemanticAbort();
+        }
 
         if (!is_binary && ASR::is_a<ASR::Function_t>(*operator_sym)) {
             ASR::Function_t* single_func = ASR::down_cast<ASR::Function_t>(operator_sym);
@@ -13193,22 +13203,35 @@ public:
             }
 
             std::string func_name = to_lower(func->m_name);
-            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
+            ASR::symbol_t* a_name = current_scope->resolve_symbol(func_name);
 
-            if (!call_sym) {
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(operator_sym);
+            if (!a_name) {
+                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
                 std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                call_sym = ASR::down_cast<ASR::symbol_t>(
+
+                a_name = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_ExternalSymbol_t(
-                        al, loc, current_scope, s2c(al, func_name),
-                        operator_sym, s2c(al, module_name),
+                        al, real_proc->base.loc, current_scope,
+                        s2c(al, func_name), real_proc, s2c(al, module_name),
                         nullptr, 0, s2c(al, func->m_name),
                         ASR::accessType::Public));
-                current_scope->add_symbol(func_name, call_sym);
+                current_scope->add_symbol(func_name, a_name);
             }
 
+            if (!a_name) {
+                diag.add(Diagnostic(
+                    "Unable to resolve matched function: " + func_name
+                    + " for defined binary operation",
+                    Level::Error,
+                    Stage::Semantic,
+                    { Label("", { loc }) }));
+                throw SemanticAbort();
+            }
+
+
             tmp = ASRUtils::make_FunctionCall_t_util(
-                al, loc, call_sym, nullptr,
+                al, loc, a_name, nullptr,
                 a_args.p, a_args.size(), return_type,
                 nullptr, nullptr, current_scope,
                 current_function_dependencies,
@@ -13217,7 +13240,7 @@ public:
         }
         if (!ASR::is_a<ASR::CustomOperator_t>(*operator_sym)) {
             diag.add(Diagnostic(
-                "`" + op + "` is not a valid defined operator",
+                "" + op + " is not a valid defined operator",
                 Level::Error, Stage::Semantic, {Label("", {loc})}
             ));
             throw SemanticAbort();
@@ -13236,6 +13259,13 @@ public:
                 proc = gen_proc->m_procs[i];
             }
 
+            if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(proc))) {
+                diag.add(Diagnostic("User operator procedure must be a FUNCTION",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { loc }) }));
+                throw SemanticAbort();
+            }
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc));
             if ((is_binary && func->n_args != 2) || (!is_binary && func->n_args != 1))
                 continue;
