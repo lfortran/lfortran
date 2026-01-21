@@ -10159,7 +10159,10 @@ public:
                 tmp = builder->CreateSelect(cond, right_val, left_val);
                 break;
             };
-            case ASR::logicalbinopType::Xor:
+            case ASR::logicalbinopType::Xor: {
+                tmp = builder->CreateXor(left_val, right_val);
+                break;
+            };
             case ASR::logicalbinopType::NEqv: {
                 tmp = builder->CreateXor(left_val, right_val);
                 break;
@@ -10167,7 +10170,6 @@ public:
             case ASR::logicalbinopType::Eqv: {
                 tmp = builder->CreateXor(left_val, right_val);
                 tmp = builder->CreateNot(tmp);
-                break;
             };
         }
     }
@@ -14840,10 +14842,9 @@ public:
                         target_type = llvm_utils->get_StringType(arg_type_);
                         break;
                     }
-                    case (ASR::ttypeType::Logical) : {
+                    case (ASR::ttypeType::Logical) :
                         target_type = llvm::Type::getInt1Ty(context);
                         break;
-                    }
                     case (ASR::ttypeType::EnumType) :
                         target_type = llvm::Type::getInt32Ty(context);
                         break;
