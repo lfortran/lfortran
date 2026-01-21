@@ -4661,20 +4661,50 @@ public:
                     }
                 } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
                     // namelist /EXAMPLE/ foo, bar
+                    // Multiple namelist declarations with the same name should be merged
                     AST::AttrNamelist_t* attr_namelist = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
-                    Vec<ASR::symbol_t*> var_list; var_list.reserve(al, x.n_syms);
-                    for (size_t i = 0; i < x.n_syms; i++) {
-                        var_list.push_back(al,
-                                           current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                    std::string namelist_name = to_lower(attr_namelist->m_name);
+                    ASR::symbol_t* existing_sym = current_scope->get_symbol(namelist_name);
+
+                    Vec<ASR::symbol_t*> var_list;
+
+                    // If namelist already exists, merge the variable lists
+                    if (existing_sym && ASR::is_a<ASR::Namelist_t>(*existing_sym)) {
+                        ASR::Namelist_t* existing_namelist = ASR::down_cast<ASR::Namelist_t>(existing_sym);
+                        // Reserve space for existing + new variables
+                        var_list.reserve(al, existing_namelist->n_var_list + x.n_syms);
+                        // Copy existing variables
+                        for (size_t i = 0; i < existing_namelist->n_var_list; i++) {
+                            var_list.push_back(al, existing_namelist->m_var_list[i]);
+                        }
+                        // Add new variables
+                        for (size_t i = 0; i < x.n_syms; i++) {
+                            var_list.push_back(al,
+                                               current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                        }
+                    } else {
+                        // New namelist, just add the variables
+                        var_list.reserve(al, x.n_syms);
+                        for (size_t i = 0; i < x.n_syms; i++) {
+                            var_list.push_back(al,
+                                               current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
+                        }
                     }
+
                     ASR::asr_t* namelist = ASR::make_Namelist_t(al,
                                                attr_namelist->base.base.loc,
                                                current_scope,
-                                               s2c(al, to_lower(attr_namelist->m_name)),
+                                               s2c(al, namelist_name),
                                                var_list.p,
                                                var_list.n);
-                    current_scope->add_symbol(s2c(al, to_lower(attr_namelist->m_name)),
-                                              ASR::down_cast<ASR::symbol_t>(namelist));
+
+                    if (existing_sym && ASR::is_a<ASR::Namelist_t>(*existing_sym)) {
+                        current_scope->overwrite_symbol(s2c(al, namelist_name),
+                                                        ASR::down_cast<ASR::symbol_t>(namelist));
+                    } else {
+                        current_scope->add_symbol(s2c(al, namelist_name),
+                                                  ASR::down_cast<ASR::symbol_t>(namelist));
+                    }
                 } else {
                     diag.add(Diagnostic(
                         "Attribute declaration not supported",
