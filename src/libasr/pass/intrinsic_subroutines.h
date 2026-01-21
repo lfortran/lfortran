@@ -33,6 +33,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     DateAndTime,
     MoveAlloc,
     Mvbits,
+    Abort,
     // ...
 };
 
@@ -1458,6 +1459,65 @@ namespace Mvbits {
     }
 
 } // namespace Mvbits
+
+namespace Abort {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0, "Unexpected number of args, abort takes 0 arguments, found ", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Abort(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`abort` is an LFortran extension", { loc }, "Use `error stop` instead");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Abort), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Abort(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& /*arg_types*/,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        const std::string c_func_name = "_lfortran_abort";
+        const std::string new_name = "_lcompilers_abort_";
+        declare_basic_variables(new_name);
+        SymbolTable *c_symtab = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> c_args;
+        c_args.reserve(al, 0);
+        Vec<ASR::stmt_t*> c_body;
+        c_body.reserve(al, 0);
+        SetChar c_dep;
+        c_dep.reserve(al, 0);
+        ASR::symbol_t *c_sym = make_ASR_Function_t(
+            s2c(al, c_func_name),
+            c_symtab,
+            c_dep,
+            c_args,
+            c_body,
+            nullptr,
+            ASR::abiType::BindC,
+            ASR::deftypeType::Interface,
+            s2c(al, c_func_name)
+        );
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 0);
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+} // namespace Abort
 
 } // namespace LCompilers::ASRUtils
 

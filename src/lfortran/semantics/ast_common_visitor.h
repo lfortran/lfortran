@@ -1362,6 +1362,7 @@ public:
         {"dshiftr", IntrinsicSignature({"i", "j", "shift"}, 3, 3)},
         {"random_init", IntrinsicSignature({"repeatable", "image"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
+        {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
