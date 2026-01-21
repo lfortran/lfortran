@@ -1888,7 +1888,7 @@ public:
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
-                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, asr_data_type, module.get());
+                llvm::Type* llvm_data_type = llvm_utils->get_el_type(curr_arg.m_a, asr_data_type, module.get());
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(tmp_expr))), module.get());
@@ -2301,11 +2301,10 @@ public:
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)),
                     module.get(), abt);
-                    llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type))),
-                        module.get(), abt);
+                    ASR::ttype_t* el_asr_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)));
+                    llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, el_asr_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
@@ -6872,8 +6871,15 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
-        llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
-              ASRUtils::extract_type(value_array_type), module.get());
+        ASR::ttype_t* value_asr_el_type = ASRUtils::extract_type(value_array_type);
+        llvm::Type *value_el_type = nullptr;
+        if (ASRUtils::is_logical(*value_asr_el_type)) {
+            value_el_type = llvm_utils->get_el_type(array_section->m_v,
+                value_asr_el_type, module.get());
+        } else {
+            value_el_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
+                value_asr_el_type, module.get());
+        }
         ptr_loads = 0;
         visit_expr(*x.m_target);
         llvm::Value* target_desc = tmp;
@@ -10674,8 +10680,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            int a_kind = ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind;
-            el_type = llvm_utils->getIntType(a_kind);
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
@@ -10702,7 +10707,11 @@ public:
             ptr_loads = 2;
             this->visit_expr_wrapper(el, true);
             ptr_loads = ptr_loads_copy;
-            builder->CreateStore(tmp, llvm_el);
+            llvm::Value* value = tmp;
+            if (ASR::is_a<ASR::Logical_t>(*x_m_type) && value->getType()->isIntegerTy(1)) {
+                value = builder->CreateZExt(value, llvm::Type::getInt8Ty(context));
+            }
+            builder->CreateStore(value, llvm_el);
         }
         // Return the vector as float* type:
         tmp = llvm_utils->create_gep2(type_fxn ,p_fxn, 0);
@@ -10723,8 +10732,7 @@ public:
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
-            int a_kind = ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind;
-            el_type = llvm_utils->getIntType(a_kind);
+            el_type = llvm::Type::getInt8Ty(context);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {

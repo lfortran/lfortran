@@ -1113,10 +1113,9 @@ namespace LCompilers {
                 case (ASR::ttypeType::String) :
                     return_type = get_StringType(return_var_type0);
                     break;
-                case (ASR::ttypeType::Logical) : {
+                case (ASR::ttypeType::Logical) :
                     return_type = llvm::Type::getInt1Ty(context);
                     break;
-                }
                 case (ASR::ttypeType::CPtr) :
                     return_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     break;
