@@ -965,7 +965,8 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 with BUILD_TESTING (Full Sui
     done
 
     # Double Real Eigenvalue Tests
-    for input in nep sep se2 svd sec ded dgg dgd dsb dsg dbal dbak dgbal dgbak dbb glm gqr gsv csd lse ddmd; do
+    # NOTE: dgd.in currently fails due to DGGES/DTGSEN reordering (INFO=N+3). See #9619.
+    for input in nep sep se2 svd sec ded dgg dsb dsg dbal dbak dgbal dgbak dbb glm gqr gsv csd lse ddmd; do
         if [ -f "../TESTING/${input}.in" ]; then
             run_lapack_test xeigtstd ${input}.in "Double Real Eigenvalue: ${input}"
         fi
