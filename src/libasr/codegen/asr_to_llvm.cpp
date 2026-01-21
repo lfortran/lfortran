@@ -11861,6 +11861,8 @@ public:
 
     // Helper to build namelist descriptor and call runtime function
     llvm::Value* build_namelist_descriptor(ASR::symbol_t* nml_sym) {
+        // Unwrap external symbol if needed
+        nml_sym = ASRUtils::symbol_get_past_external(nml_sym);
         ASR::Namelist_t* nml = ASR::down_cast<ASR::Namelist_t>(nml_sym);
 
         // Get group name (lowercase)
@@ -12020,7 +12022,13 @@ public:
                 ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
                 if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
                     ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(past_alloc);
-                    if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+
+                    // For string arrays, extract data pointer from string descriptor first
+                    if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                        llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(nullptr, var_type, module.get());
+                        llvm::Value* str_data_ptr_ptr = llvm_utils->create_gep2(string_desc_type, data_ptr, 0);
+                        data_ptr = llvm_utils->CreateLoad2(character_type, str_data_ptr_ptr);
+                    } else if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                         // Get data pointer from array descriptor
                         llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
                         data_ptr = arr_descr->get_pointer_to_data(arr_type, data_ptr);
