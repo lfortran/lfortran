@@ -290,6 +290,47 @@ public:
     std::map<llvm::Type*, size_t> call_arg_alloca_idx;
     int convert_call_args_depth = 0;
 
+    struct LogicalArrayElemCopyback {
+        llvm::Value* dst_i8_elem_ptr;
+        llvm::AllocaInst* src_i1_tmp;
+    };
+
+    std::vector<std::vector<LogicalArrayElemCopyback>> logical_array_elem_copyback_frames;
+
+    void apply_logical_array_elem_copybacks() {
+        if (logical_array_elem_copyback_frames.empty()) return;
+        auto &frame = logical_array_elem_copyback_frames.back();
+        if (frame.empty()) return;
+
+        llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
+        llvm::Type* i8_type = llvm::Type::getInt8Ty(context);
+        llvm::Type* i8_ptr_type = i8_type->getPointerTo();
+
+        for (const auto &cb : frame) {
+            llvm::Value* i1_val = llvm_utils->CreateLoad2(i1_type, cb.src_i1_tmp);
+            llvm::Value* i8_val = builder->CreateZExt(i1_val, i8_type);
+            llvm::Value* dst_ptr = cb.dst_i8_elem_ptr;
+            if (dst_ptr->getType() != i8_ptr_type) {
+                dst_ptr = builder->CreateBitCast(dst_ptr, i8_ptr_type);
+            }
+            builder->CreateStore(i8_val, dst_ptr);
+        }
+        frame.clear();
+    }
+
+    struct CallArgCopybackFrame {
+        ASRToLLVMVisitor &v;
+        explicit CallArgCopybackFrame(ASRToLLVMVisitor &v) : v(v) {
+            v.logical_array_elem_copyback_frames.emplace_back();
+        }
+        void apply() {
+            v.apply_logical_array_elem_copybacks();
+        }
+        ~CallArgCopybackFrame() {
+            v.logical_array_elem_copyback_frames.pop_back();
+        }
+    };
+
     // Get or create an alloca for a call argument of the given type.
     // Reuses allocas from the pool when possible.
     llvm::AllocaInst* get_call_arg_alloca(llvm::Type* type) {
@@ -15066,14 +15107,27 @@ public:
                 !ASRUtils::is_array(orig_arg->m_type) &&
                 ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(orig_arg->m_type)))) {
-                // tmp is i8* (byte-backed logical array element)
-                // orig_arg expects i1* (scalar logical by reference)
-                // Load i8, truncate to i1, store in i1 alloca
-                llvm::Value* i8_val = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
-                llvm::Value* i1_val = builder->CreateTrunc(i8_val, llvm::Type::getInt1Ty(context));
-                llvm::AllocaInst* i1_tmp = get_call_arg_alloca(llvm::Type::getInt1Ty(context));
-                builder->CreateStore(i1_val, i1_tmp);
+                llvm::Value* i8_elem_ptr = tmp;
+                llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
+                llvm::Type* i8_type = llvm::Type::getInt8Ty(context);
+
+                llvm::AllocaInst* i1_tmp = get_call_arg_alloca(i1_type);
+                if (orig_arg_intent == ASRUtils::intent_out) {
+                    // intent(out): do not read the incoming value
+                    builder->CreateStore(llvm::ConstantInt::getFalse(context), i1_tmp);
+                } else {
+                    llvm::Value* i8_val = llvm_utils->CreateLoad2(i8_type, i8_elem_ptr);
+                    llvm::Value* i1_val = builder->CreateICmpNE(
+                        i8_val, llvm::ConstantInt::get(i8_type, 0));
+                    builder->CreateStore(i1_val, i1_tmp);
+                }
                 tmp = i1_tmp;
+
+                if (orig_arg_intent == ASRUtils::intent_out ||
+                    orig_arg_intent == ASRUtils::intent_inout) {
+                    LCOMPILERS_ASSERT(!logical_array_elem_copyback_frames.empty());
+                    logical_array_elem_copyback_frames.back().push_back({i8_elem_ptr, i1_tmp});
+                }
             }
 
             args.push_back(tmp);
@@ -15981,6 +16035,7 @@ public:
             llvm::Type* func_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_dt, ASRUtils::symbol_type(x.m_name), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, false);
             ASR::Function_t* func = nullptr;
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
@@ -15994,6 +16049,7 @@ public:
             }
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            copyback_frame.apply();
             return ;
         }
 
@@ -16116,12 +16172,14 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lpython_get_argv", module.get());
                 }
+                CallArgCopybackFrame copyback_frame(*this);
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad2(
                     llvm::Type::getInt32Ty(context), args[0])});
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
+                copyback_frame.apply();
                 return;
             } else if (sub_name == "get_environment_variable") {
                 llvm::Function *fn = module->getFunction("_lfortran_get_env_variable");
@@ -16133,11 +16191,13 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lfortran_get_env_variable", module.get());
                 }
+                CallArgCopybackFrame copyback_frame(*this);
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
+                copyback_frame.apply();
                 return;
             } else if (sub_name == "_lcompilers_execute_command_line_") {
                 llvm::Function *fn = module->getFunction("_lfortran_exec_command");
@@ -16149,9 +16209,11 @@ public:
                     fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, "_lfortran_exec_command", module.get());
                 }
+                CallArgCopybackFrame copyback_frame(*this);
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
                 tmp = builder->CreateCall(fn, { llvm_utils->CreateLoad2(character_type, args[0]) });
+                copyback_frame.apply();
                 return;
             }
             h = get_hash((ASR::asr_t*)proc_sym);
@@ -16170,8 +16232,10 @@ public:
                     al, x_m_original_name->base.base.loc, &x_m_original_name->base)), x_m_original_name->m_type, module.get()), fn);
                 }
             }
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+            copyback_frame.apply();
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -16183,8 +16247,10 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+            copyback_frame.apply();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -16192,6 +16258,7 @@ public:
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = ASRUtils::symbol_name(x.m_name);
+            CallArgCopybackFrame copyback_frame(*this);
             std::vector<llvm::Value *> args2 = convert_call_args(x, is_method);
             args.insert(args.end(), args2.begin(), args2.end());
             // check if type of each arg is same as type of each arg in subrout_called
@@ -16228,6 +16295,7 @@ public:
                 args.push_back(pass_arg);
             }
             builder->CreateCall(fn, args);
+            copyback_frame.apply();
         }
     }
 
@@ -16366,6 +16434,7 @@ public:
                 llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
                 args.push_back(llvm_dt);
             }
+            CallArgCopybackFrame copyback_frame(*this);
             std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
             args.insert(args.end(), args2.begin(), args2.end());
 
@@ -16392,6 +16461,7 @@ public:
                 vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             builder->CreateCall(fnTy, fn, args);
+            copyback_frame.apply();
             return;
         }
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
@@ -16522,9 +16592,11 @@ public:
                 ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                 uint32_t h = get_hash((ASR::asr_t*) s_proc);
                 llvm::Function* fn = llvm_symtab_fn[h];
+                CallArgCopybackFrame copyback_frame(*this);
                 std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
                 args.insert(args.end(), args2.begin(), args2.end());
                 builder->CreateCall(fn, args);
+                copyback_frame.apply();
             }
             builder->CreateBr(mergeBB);
 
@@ -16597,6 +16669,7 @@ public:
                     args.push_back(llvm_dt);
                 }
             }
+            CallArgCopybackFrame copyback_frame(*this);
             std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
             args.insert(args.end(), args2.begin(), args2.end());
 
@@ -16626,6 +16699,7 @@ public:
                 vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
             tmp = builder->CreateCall(fnTy, fn, args);
+            copyback_frame.apply();
             return;
         }
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
@@ -16712,10 +16786,12 @@ public:
                     llvm::Function* fn = llvm_symtab_fn[h];
                     ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(s_proc);
                     LCOMPILERS_ASSERT(s != nullptr);
+                    CallArgCopybackFrame copyback_frame(*this);
                     std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
                     args.insert(args.end(), args2.begin(), args2.end());
                     ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
                     builder->CreateStore(CreateCallUtil(fn, args, return_var_type0), tmp);
+                    copyback_frame.apply();
                 }
                 builder->CreateBr(mergeBB);
 
@@ -16760,10 +16836,12 @@ public:
                 x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
             llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
 
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *ASRUtils::get_function(x.m_name), module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            copyback_frame.apply();
             return ;
         }
 
@@ -16922,8 +17000,10 @@ public:
             }
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+            copyback_frame.apply();
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -16932,14 +17012,17 @@ public:
                 s->m_function_signature, module.get());
             llvm::Value* fn = llvm_symtab[h];
             fn = llvm_utils->CreateLoad2(fn_type, fn);
+            CallArgCopybackFrame copyback_frame(*this);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+            copyback_frame.apply();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
+            CallArgCopybackFrame copyback_frame(*this);
             std::vector<llvm::Value *> args2 = convert_call_args(x, is_method);
             args.insert(args.end(), args2.begin(), args2.end());
             if (pass_arg) {
@@ -16954,19 +17037,24 @@ public:
                             tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
                             builder->CreateCall(fn, args);
+                            copyback_frame.apply();
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
                             tmp = builder->CreateCall(fn, args);
+                            copyback_frame.apply();
                         }
                     } else {
                         tmp = builder->CreateCall(fn, args);
+                        copyback_frame.apply();
                     }
                 } else {
                     tmp = builder->CreateCall(fn, args);
+                    copyback_frame.apply();
                 }
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
+                copyback_frame.apply();
             }
             // The convention we use is that any strings is a pointer to the underlying physicalType
             // Example of StringPhysicalTypes -> `string_descriptor*`, `i8*`

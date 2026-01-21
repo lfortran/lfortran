@@ -6,7 +6,7 @@ program logical_array_elem_arg_01
     a = [.true., .false., .true.]
 
     call flip(a(2))
-    if (a(2)) error stop
+    if (.not. a(2)) error stop
 
     call set_true(a(2))
     if (.not. a(2)) error stop
