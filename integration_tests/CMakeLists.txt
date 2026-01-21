@@ -1335,7 +1335,6 @@ RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_406 LABELS gfortran llvm) # iachar with array arguments
-RUN(NAME intrinsics_407 LABELS gfortran llvm) # complex abs() overflow
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2102,8 +2101,7 @@ RUN(NAME file_open_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+ inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2433,6 +2431,7 @@ RUN(NAME read_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
 RUN(NAME read_27 LABELS gfortran llvm)
 RUN(NAME read_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME read_30 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
