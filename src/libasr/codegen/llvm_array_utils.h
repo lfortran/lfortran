@@ -341,6 +341,12 @@ namespace LCompilers {
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                /*
+                * Returns the index type used by this descriptor (i32 or i64)
+                */
+                virtual
+                llvm::Type* get_index_type() const = 0;
+
         };
 
         class SimpleCMODescriptor: public Descriptor {
@@ -374,7 +380,7 @@ namespace LCompilers {
                     llvm::Type* _index_type = nullptr);
 
                 // Get the index type used by this descriptor (i32 or i64)
-                llvm::Type* get_index_type() const { return index_type; }
+                llvm::Type* get_index_type() const override { return index_type; }
 
                 virtual
                 bool is_array(ASR::ttype_t* asr_type);
