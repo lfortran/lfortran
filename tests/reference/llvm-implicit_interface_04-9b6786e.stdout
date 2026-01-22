@@ -38,8 +38,8 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %__1_k = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %__1_k = alloca i32, align 4
   store i32 1, i32* %__1_k, align 4
   %2 = load i32, i32* %__1_k, align 4
   %3 = sub i32 %2, 1
@@ -114,6 +114,8 @@ return:                                           ; preds = %ifcont6
 FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
+
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
 .entry:
@@ -298,7 +300,5 @@ declare void @_lfortran_free(i8*)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lpython_free_argv()

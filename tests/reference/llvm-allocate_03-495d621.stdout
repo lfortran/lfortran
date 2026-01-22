@@ -133,6 +133,7 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %c = alloca %array*, align 8
   store %array* null, %array** %c, align 8
   %arr_desc = alloca %array, align 8
@@ -153,7 +154,6 @@ define i32 @main(i32 %0, i8** %1) {
   store %array* %arr_desc, %array** %c, align 8
   %r = alloca i32, align 4
   %stat = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 1, i32* %stat, align 4
   %10 = load %array*, %array** %c, align 8
   %11 = ptrtoint %array* %10 to i64
@@ -616,6 +616,8 @@ free_nonnull45:                                   ; preds = %Finalize_Variable_c
 free_done46:                                      ; preds = %free_nonnull45, %Finalize_Variable_c
   ret i32 0
 }
+
+declare void @_lpython_call_initial_functions(i32, i8**)
 
 define void @f(%array** %c) {
 .entry:
@@ -1925,7 +1927,5 @@ declare i8* @_lfortran_malloc(i64)
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
-
-declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lpython_free_argv()

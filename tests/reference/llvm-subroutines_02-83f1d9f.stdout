@@ -28,9 +28,9 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %i = alloca i32, align 4
   %j = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 1, i32* %i, align 4
   store i32 1, i32* %j, align 4
   call void @f(i32* %i, i32* %j)
@@ -190,6 +190,8 @@ FINALIZE_SYMTABLE_subroutines_02:                 ; preds = %return
   ret i32 0
 }
 
+declare void @_lpython_call_initial_functions(i32, i8**)
+
 define void @f(i32* %a, i32* %b) {
 .entry:
   %0 = load i32, i32* %a, align 4
@@ -229,8 +231,6 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_h:                              ; preds = %return
   ret void
 }
-
-declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i64*, i32, i32, ...)
 

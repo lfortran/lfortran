@@ -13,10 +13,10 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = alloca %complex_4, align 8
   %3 = alloca %complex_4, align 8
   %4 = alloca %complex_4, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %x = alloca %complex_4, align 8
   %y = alloca %complex_4, align 8
   %z = alloca %complex_4, align 8
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store %complex_4 <{ float 3.000000e+00, float 4.000000e+00 }>, %complex_4* %x, align 1
   store %complex_4 <{ float 3.000000e+00, float 2.000000e+00 }>, %complex_4* %y, align 1
   %5 = load %complex_4, %complex_4* %x, align 1

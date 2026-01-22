@@ -11,11 +11,11 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %u = alloca %complex_8, align 8
   %v = alloca %complex_8, align 8
   %x = alloca %complex_4, align 8
   %zero = alloca %complex_4, align 8
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store %complex_4 <{ float 0x3FC24924A0000000, float 0.000000e+00 }>, %complex_4* %zero, align 1
   store %complex_8 <{ double 0x3FC2492492492492, double 0.000000e+00 }>, %complex_8* %u, align 1
   store %complex_8 <{ double 0x3FC2492492492492, double 0.000000e+00 }>, %complex_8* %v, align 1

@@ -81,9 +81,9 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %array_bound1 = alloca i32, align 4
   %array_bound = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__libasr_index_0_ = alloca i32, align 4
   %w = alloca [5 x double], align 8
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry

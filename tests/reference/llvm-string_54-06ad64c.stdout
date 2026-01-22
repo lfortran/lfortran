@@ -32,6 +32,7 @@ FINALIZE_SYMTABLE_foo_sub:                        ; preds = %return
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %char = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %char, align 1
   %2 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 1
@@ -40,7 +41,6 @@ define i32 @main(i32 %0, i8** %1) {
   %4 = call i8* @_lfortran_malloc(i64 10)
   store i8* %4, i8** %3, align 8
   %x = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 10, i32* %x, align 4
   call void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char)
   call void @_lpython_free_argv()
@@ -66,9 +66,9 @@ free_done:                                        ; preds = %free_nonnull, %Fina
   ret i32 0
 }
 
-declare i8* @_lfortran_malloc(i64)
-
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i64)
 
 declare void @_lpython_free_argv()
 

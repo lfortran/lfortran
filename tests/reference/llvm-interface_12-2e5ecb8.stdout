@@ -28,6 +28,8 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
+declare void @_lpython_call_initial_functions(i32, i8**)
+
 define void @expression([1 x float]* %y) {
 .entry:
   br label %return
@@ -38,7 +40,5 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_expression:                     ; preds = %return
   ret void
 }
-
-declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lpython_free_argv()
