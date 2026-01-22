@@ -357,6 +357,13 @@ LFORTRAN_API void _lfortran_namelist_read(
     lfortran_nml_group_t *group
 );
 
+LFORTRAN_API void _lfortran_namelist_read_str(
+    const char *data,
+    int64_t data_len,
+    int32_t *iostat,
+    lfortran_nml_group_t *group
+);
+
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
 #define LFORTRAN_IOSTAT_NML_READ_NOT_ALLOWED        5002  // Read access not allowed
