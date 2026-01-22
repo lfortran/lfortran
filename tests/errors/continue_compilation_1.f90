@@ -2,6 +2,7 @@
 ! number of lines below the module to keep the rest of the lines in this file
 ! intact.
 module continue_compilation_1_mod
+    use, intrinsic :: ieee_arithmetic, only: ieee_class, ieee_quiet_nan, ieee_class_type
     type :: MyClass
         integer :: value
     contains
@@ -22,7 +23,6 @@ module continue_compilation_1_mod
     end type
 
     procedure(missing_global_interface), pointer :: p => null()
-
 
 
 
@@ -193,7 +193,7 @@ program continue_compilation_1
     type(MyClass) :: err_obj3 = non_parameter_var
     type(MyClass) :: err_obj4 = myclass_array
     type(MyClass) :: err_obj5 = uninitialized_param_local
-
+    type(ieee_class_type) :: ieee_cls
 
 
 

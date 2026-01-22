@@ -53,15 +53,15 @@ semantic error: Dummy argument 'a' not defined
    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Interface 'f_missing' is referenced but not defined
-  --> tests/errors/continue_compilation_1.f90:21:9
+  --> tests/errors/continue_compilation_1.f90:22:9
    |
-21 |         procedure(f_missing), pointer, nopass :: fn => null()
+22 |         procedure(f_missing), pointer, nopass :: fn => null()
    |         ^^^^^^^^^^^^^^^^^^^^ Referenced here
 
 semantic error: Interface 'missing_global_interface' is referenced but not defined
-  --> tests/errors/continue_compilation_1.f90:24:5
+  --> tests/errors/continue_compilation_1.f90:25:5
    |
-24 |     procedure(missing_global_interface), pointer :: p => null()
+25 |     procedure(missing_global_interface), pointer :: p => null()
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
