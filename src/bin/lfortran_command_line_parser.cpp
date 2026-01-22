@@ -328,6 +328,7 @@ namespace LCompilers::CommandLineInterface {
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;
                 compiler_options.descriptor_index_64 = true;
+                compiler_options.po.descriptor_index_64 = true;
             } else {
                 throw lc::LCompilersException(
                     "The flag `-f" + f_flag + "` is not supported"
@@ -388,6 +389,11 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.c_preprocessor = true;
         } else {
             compiler_options.c_preprocessor = false;
+        }
+
+        // Propagate descriptor_index_64 to PassOptions
+        if (compiler_options.descriptor_index_64) {
+            compiler_options.po.descriptor_index_64 = true;
         }
     }
 

@@ -110,9 +110,25 @@ public:
     int is_current_body_set = 0;
     Vec<ASR::stmt_t*>* current_body;
     Vec<ASR::stmt_t*>* body_after_curr_stmt;
+    const LCompilers::PassOptions& pass_options;
 
-    CallVisitor(Allocator &al_) : al(al_) {}
+    CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
 
+    int get_index_kind() const {
+        return pass_options.descriptor_index_64 ? 8 : 4;
+    }
+
+    ASR::ttype_t* get_index_type(const Location& loc) {
+        return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, get_index_kind()));
+    }
+
+    ASR::expr_t* get_index_one(const Location& loc) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, get_index_type(loc)));
+    }
+
+    ASR::expr_t* get_index_constant(const Location& loc, int64_t value) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value, get_index_type(loc)));
+    }
 
     bool is_descriptor_array_casted_to_pointer_to_data( ASR::expr_t* expr ) {
         if ( ASRUtils::is_array(ASRUtils::expr_type(expr) ) &&
@@ -167,20 +183,19 @@ public:
         T* elemental_function,
         Vec<ASR::dimension_t>& allocate_dims
     ) {
-        ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        ASR::ttype_t* index_type = get_index_type(loc);
+        ASR::expr_t* index_one = get_index_one(loc);
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(elemental_function->m_type);
         allocate_dims.reserve(al, n_dims);
         ASR::expr_t* first_array_arg = get_first_array_function_args(elemental_function);
         for( size_t i = 0; i < n_dims; i++ ) {
             ASR::dimension_t allocate_dim;
             allocate_dim.loc = loc;
-            allocate_dim.m_start = int32_one;
+            allocate_dim.m_start = index_one;
             ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
                 al, loc, ASRUtils::get_past_array_physical_cast(first_array_arg),
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                ASRUtils::expr_type(int32_one), nullptr));
+                get_index_constant(loc, i + 1),
+                index_type, nullptr));
             allocate_dim.m_length = size_i_1;
             allocate_dims.push_back(al, allocate_dim);
         }
@@ -289,8 +304,8 @@ public:
         }
 
         const Location& loc = value->base.loc;
-        ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        ASR::ttype_t* index_type = get_index_type(loc);
+        ASR::expr_t* index_one = get_index_one(loc);
         
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
             ASR::dimension_t* m_dims = nullptr;
@@ -300,7 +315,7 @@ public:
             for( size_t i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = value->base.loc;
-                allocate_dim.m_start = int32_one;
+                allocate_dim.m_start = index_one;
                 allocate_dim.m_length = m_dims[i].m_length;
                 allocate_dims.push_back(al, allocate_dim);
             }
@@ -308,9 +323,9 @@ public:
         }
         if(ASRUtils::is_character(*ASRUtils::expr_type(value))){
             bool is_const_len = ASRUtils::is_value_constant(ASRUtils::get_string_type(value)->m_len);
-            len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, 
-                value->base.loc, value, 
-                ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4)),
+            len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al,
+                value->base.loc, value,
+                index_type,
                 is_const_len ? ASRUtils::get_string_type(value)->m_len : nullptr));
         }
         switch( value->type ) {
@@ -381,16 +396,14 @@ public:
                 allocate_dims.reserve(al, target_n_dims);
                 for( size_t i = 0; i < target_n_dims; i++ ) {
                     ASR::dimension_t allocate_dim;
-                    Location loc; loc.first = 1, loc.last = 1;
-                    allocate_dim.loc = loc;
+                    Location loc_inner; loc_inner.first = 1, loc_inner.last = 1;
+                    allocate_dim.loc = loc_inner;
                     // Assume 1 for Fortran.
-                    allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                    ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    allocate_dim.m_start = get_index_one(loc_inner);
+                    ASR::expr_t* dim = get_index_constant(loc_inner, i + 1);
                     allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                        al, loc, ASRUtils::get_past_array_physical_cast(selected_array),
-                        dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                        al, loc_inner, ASRUtils::get_past_array_physical_cast(selected_array),
+                        dim, index_type, nullptr));
                     allocate_dims.push_back(al, allocate_dim);
                 }
                 break;
@@ -406,13 +419,11 @@ public:
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         // Assume 1 for Fortran.
-                        allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                        ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                        allocate_dim.m_start = index_one;
+                        ASR::expr_t* dim = get_index_constant(loc, i + 1);
                         allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                             al, loc, ASRUtils::get_past_array_physical_cast(selected_array),
-                            dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                            dim, index_type, nullptr));
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 }
@@ -429,13 +440,11 @@ public:
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         // Assume 1 for Fortran.
-                        allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                        ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                        allocate_dim.m_start = index_one;
+                        ASR::expr_t* dim = get_index_constant(loc, i + 1);
                         allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                             al, loc, ASRUtils::get_past_array_physical_cast(selected_array),
-                            dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                            dim, index_type, nullptr));
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 }
@@ -450,22 +459,22 @@ public:
                     ASR::expr_t* step = array_section_t->m_args[i].m_step;
                     ASR::dimension_t allocate_dim;
                     allocate_dim.loc = loc;
-                    allocate_dim.m_start = int32_one;
+                    allocate_dim.m_start = index_one;
                     if( start == nullptr && step == nullptr && end != nullptr ) {
                         if( ASRUtils::is_array(ASRUtils::expr_type(end)) ) {
                             allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                                al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
+                                al, loc, end, nullptr, index_type, nullptr, false));
                             allocate_dims.push_back(al, allocate_dim);
                         }
                     } else {
                         bool is_any_kind_8 = false;
-                        ASR::expr_t * int_one = int32_one; 
-                        if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8 || 
-                            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)) == 8 || 
+                        ASR::expr_t * int_one = index_one;
+                        if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) == 8 ||
+                            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)) == 8 ||
                             ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(step)) == 8 ) {
                                 is_any_kind_8 = true;
                         }
-                        if( is_any_kind_8 ) {
+                        if( is_any_kind_8 || pass_options.descriptor_index_64 ) {
                             int_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
                         }
@@ -497,9 +506,9 @@ public:
                     }
                     ASR::dimension_t allocate_dim;
                     allocate_dim.loc = loc;
-                    allocate_dim.m_start = int32_one;
+                    allocate_dim.m_start = index_one;
                     allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                        al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
+                        al, loc, end, nullptr, index_type, nullptr, false));
                     allocate_dims.push_back(al, allocate_dim);
                 }
                 break;
@@ -528,27 +537,24 @@ public:
                         for( size_t i = 0; i < n_dims; i++ ) {
                             ASR::dimension_t allocate_dim;
                             allocate_dim.loc = loc;
-                            allocate_dim.m_start = int32_one;
+                            allocate_dim.m_start = index_one;
                             ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                 al, loc, ASRUtils::get_past_array_physical_cast(intrinsic_array_function->m_args[0]),
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                                ASRUtils::expr_type(int32_one), nullptr));
+                                get_index_constant(loc, i + 1),
+                                index_type, nullptr));
                             ASR::expr_t* size_i_2 = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                 al, loc, ASRUtils::get_past_array_physical_cast(intrinsic_array_function->m_args[0]),
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, loc, i + 2, ASRUtils::expr_type(int32_one))),
-                                ASRUtils::expr_type(int32_one), nullptr));
+                                get_index_constant(loc, i + 2),
+                                index_type, nullptr));
                             Vec<ASR::expr_t*> merge_i_args; merge_i_args.reserve(al, 3);
                             merge_i_args.push_back(al, size_i_1); merge_i_args.push_back(al, size_i_2);
                             merge_i_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, loc, i + 1, ASRUtils::expr_type(int32_one))), ASR::cmpopType::Lt,
+                                get_index_constant(loc, i + 1), ASR::cmpopType::Lt,
                                     intrinsic_array_function->m_args[1],
                                     ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
                             ASR::expr_t* merge_i = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
                                 al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
-                                merge_i_args.p, merge_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                                merge_i_args.p, merge_i_args.size(), 0, index_type, nullptr));
                             allocate_dim.m_length = merge_i;
                             allocate_dims.push_back(al, allocate_dim);
                         }
@@ -561,20 +567,19 @@ public:
                         for ( size_t i = 0; i < n_dims; i++ ) {
                             ASR::dimension_t allocate_dim;
                             allocate_dim.loc = loc;
-                            allocate_dim.m_start = int32_one;
+                            allocate_dim.m_start = index_one;
                             ASR::expr_t* size_i_1 = nullptr;
                             if (intrinsic_array_function->n_args == 3) {
                                 size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                     al, loc, ASRUtils::get_past_array_physical_cast(intrinsic_array_function->m_args[2]),
-                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                        al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                                    ASRUtils::expr_type(int32_one), nullptr));
+                                    get_index_constant(loc, i + 1),
+                                    index_type, nullptr));
                             } else {
                                 Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
                                 count_i_args.push_back(al, intrinsic_array_function->m_args[1]);
                                 size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
                                     al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
-                                    count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                                    count_i_args.p, count_i_args.size(), 0, index_type, nullptr));
                             }
                             allocate_dim.m_length = size_i_1;
                             allocate_dims.push_back(al, allocate_dim);
@@ -588,8 +593,8 @@ public:
                         for( size_t i = 0; i < n_dims; i++ ) {
                             ASR::dimension_t allocate_dim;
                             allocate_dim.loc = loc;
-                            allocate_dim.m_start = int32_one;
-                            allocate_dim.m_length = int32_one;
+                            allocate_dim.m_start = index_one;
+                            allocate_dim.m_length = index_one;
                             allocate_dims.push_back(al, allocate_dim);
                         }
                         break;
@@ -602,13 +607,12 @@ public:
                         for (size_t i = 0; i < n_dims; i++) {
                             ASR::dimension_t allocate_dim;
                             allocate_dim.loc = loc;
-                            allocate_dim.m_start = int32_one;
+                            allocate_dim.m_start = index_one;
                             ASR::expr_t* size_i = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                 al, loc, intrinsic_array_function->m_args[0],
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, loc, n_dims - i, ASRUtils::expr_type(int32_one))),
-                                ASRUtils::expr_type(int32_one), nullptr));
-    
+                                get_index_constant(loc, n_dims - i),
+                                index_type, nullptr));
+
                             allocate_dim.m_length = size_i;
                             allocate_dims.push_back(al, allocate_dim);
                         }
@@ -620,14 +624,13 @@ public:
                         for (size_t i = 0; i < n_dims; i++) {
                             ASR::dimension_t allocate_dim;
                             allocate_dim.loc = loc;
-                            allocate_dim.m_start = int32_one;
-    
+                            allocate_dim.m_start = index_one;
+
                             ASR::expr_t* size_i = ASRUtils::EXPR(ASR::make_ArraySize_t(
                                 al, loc, intrinsic_array_function->m_args[0],
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                    al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                                ASRUtils::expr_type(int32_one), nullptr));
-    
+                                get_index_constant(loc, i + 1),
+                                index_type, nullptr));
+
                             allocate_dim.m_length = size_i;
                             allocate_dims.push_back(al, allocate_dim);
                         }
@@ -647,13 +650,13 @@ public:
                             for (size_t i = 0; i < n_dims; i++) {
                                 ASR::dimension_t allocate_dim;
                                 allocate_dim.loc = loc;
-                                allocate_dim.m_start = int32_one;
+                                allocate_dim.m_start = index_one;
                                 if ( i == dim_index - 1 ) {
                                     allocate_dim.m_length = ncopies;
                                     ncopies_inserted = 1;
                                 } else {
                                     allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0],
-                                            b.i32(i + 1 - ncopies_inserted), ASRUtils::expr_type(int32_one));
+                                            get_index_constant(loc, i + 1 - ncopies_inserted), index_type);
                                 }
                                 allocate_dims.push_back(al, allocate_dim);
                             }
@@ -689,13 +692,12 @@ public:
                 for( size_t i = 0; i < n_dims; i++ ) {
                     ASR::dimension_t allocate_dim;
                     allocate_dim.loc = loc;
-                    allocate_dim.m_start = int32_one;
+                    allocate_dim.m_start = index_one;
                     allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                         al, loc, expr_duplicator.duplicate_expr(
                             ASRUtils::get_past_array_physical_cast(value)),
-                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                        ASRUtils::expr_type(int32_one), nullptr));
+                            get_index_constant(loc, i + 1),
+                        index_type, nullptr));
                     allocate_dims.push_back(al, allocate_dim);
                 }
                 break;
@@ -709,8 +711,8 @@ public:
                 for( size_t i = 0; i < n_dims; i++ ) {
                     ASR::dimension_t allocate_dim;
                     allocate_dim.loc = loc;
-                    allocate_dim.m_start = int32_one;
-                    allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {b.i32(i + 1)});
+                    allocate_dim.m_start = index_one;
+                    allocate_dim.m_length = b.ArrayItem_01(array_reshape_t->m_shape, {get_index_constant(loc, i + 1)});
                     allocate_dims.push_back(al, allocate_dim);
                 }
                 break;
@@ -719,7 +721,7 @@ public:
                 allocate_dims.reserve(al, 1);
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
-                allocate_dim.m_start = int32_one;
+                allocate_dim.m_start = index_one;
                 allocate_dim.m_length = ASRUtils::get_ArrayConstructor_size(al,
                     ASR::down_cast<ASR::ArrayConstructor_t>(value));
                 allocate_dims.push_back(al, allocate_dim);
@@ -729,7 +731,7 @@ public:
                 allocate_dims.reserve(al, 1);
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
-                allocate_dim.m_start = int32_one;
+                allocate_dim.m_start = index_one;
                 allocate_dim.m_length = ASRUtils::get_ArrayConstant_size(al,
                     ASR::down_cast<ASR::ArrayConstant_t>(value));
                 allocate_dims.push_back(al, allocate_dim);
@@ -745,7 +747,7 @@ public:
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
-                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_start = index_one;
                         allocate_dim.m_length = b.ArrayUBound(value, i+1);
                         allocate_dims.push_back(al, allocate_dim);
                     }
@@ -763,7 +765,7 @@ public:
     }
 
 
-    ASR::stmt_t* create_do_loop(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* left_arr, ASR::expr_t* right_arr, int curr_idx) {
+    ASR::stmt_t* create_do_loop(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* left_arr, ASR::expr_t* right_arr, int curr_idx, int integer_kind) {
         ASRUtils::ASRBuilder b(al, loc);
 
         if (curr_idx == 1) {
@@ -771,12 +773,16 @@ public:
             for (size_t i = 0; i < do_loop_variables.size(); i++) {
                 vars.push_back(do_loop_variables[i]);
             }
-            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(left_arr, curr_idx), UBound(left_arr, curr_idx), {
+            return b.DoLoop(do_loop_variables[curr_idx - 1],
+                PassUtils::get_bound(left_arr, curr_idx, "lbound", al, integer_kind),
+                PassUtils::get_bound(left_arr, curr_idx, "ubound", al, integer_kind), {
                 b.Assignment(b.ArrayItem_01(left_arr, vars), b.ArrayItem_01(right_arr, vars))
             }, nullptr);
         }
-        return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(left_arr, curr_idx), UBound(left_arr, curr_idx), {
-            create_do_loop(al, loc, do_loop_variables, left_arr, right_arr, curr_idx - 1)
+        return b.DoLoop(do_loop_variables[curr_idx - 1],
+            PassUtils::get_bound(left_arr, curr_idx, "lbound", al, integer_kind),
+            PassUtils::get_bound(left_arr, curr_idx, "ubound", al, integer_kind), {
+            create_do_loop(al, loc, do_loop_variables, left_arr, right_arr, curr_idx - 1, integer_kind)
         }, nullptr);
     }
 
@@ -838,8 +844,12 @@ public:
                     b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
                     for (int i = 0; i < array_rank; i++) {
                         std::string var_name = current_scope->get_unique_name("__lcompilers_i_" + std::to_string(i));
-                        do_loop_variables.push_back(b.Variable(current_scope, var_name, ASRUtils::expr_type(b.i32(0)), ASR::intentType::Local));
+                        ASR::ttype_t* loop_var_type = pass_options.descriptor_index_64
+                            ? ASRUtils::expr_type(b.i64(0))
+                            : ASRUtils::expr_type(b.i32(0));
+                        do_loop_variables.push_back(b.Variable(current_scope, var_name, loop_var_type, ASR::intentType::Local));
                     }
+                    int integer_kind = pass_options.descriptor_index_64 ? 8 : 4;
                     current_body->push_back(al,
                         b.If(not_is_contiguous, {
                             ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
@@ -847,7 +857,7 @@ public:
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
                                 array_var_temporary->base.loc, alloc_args.p, alloc_args.size(),
                                 nullptr, nullptr, nullptr)),
-                                create_do_loop(al, loc, do_loop_variables, array_var_temporary, arg_expr_past_cast, array_rank)
+                                create_do_loop(al, loc, do_loop_variables, array_var_temporary, arg_expr_past_cast, array_rank, integer_kind)
                         }, {
                             ASRUtils::STMT(ASR::make_Associate_t(
                                 al, loc, array_var_temporary, arg_expr_past_cast))
@@ -855,7 +865,7 @@ public:
                     );
                     if ( is_arg_intent_out.size() > 0 && is_arg_intent_out[i] ) {
                         body_after_curr_stmt->push_back(al, b.If(not_is_contiguous, {
-                            create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank)
+                            create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank, integer_kind)
                         }, {}));
                     }
                     // Nullify the pointer after the call if it was associated (contiguous case).
@@ -930,8 +940,8 @@ public:
 };
 
 void pass_replace_array_passed_in_function_call(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
-    CallVisitor v(al);
+                        const LCompilers::PassOptions& pass_options) {
+    CallVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);

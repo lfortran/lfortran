@@ -70,6 +70,7 @@ struct PassOptions {
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
+    bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     std::vector<std::string> vector_of_time_report;
 };
 

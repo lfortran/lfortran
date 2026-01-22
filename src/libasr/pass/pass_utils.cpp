@@ -901,37 +901,48 @@ namespace LCompilers {
             }
         }
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al) {
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al, int integer_kind) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
             bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) && ASRUtils::get_asr_owner(arr_expr) &&
                                     ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(arr_expr));
-            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, integer_kind));
             if (is_data_only_array) {
                 const Location& loc = arr_expr->base.loc;
-                ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type));
-                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+                ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                // Cast dimension values to target integer type if needed
+                ASR::expr_t* dim_length = m_dims[dim - 1].m_length;
+                ASR::expr_t* dim_start = m_dims[dim - 1].m_start;
+                if (dim_length && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_length)) != integer_kind) {
+                    dim_length = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_length,
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                }
+                if (dim_start && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(dim_start)) != integer_kind) {
+                    dim_start = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, dim_start,
+                        ASR::cast_kindType::IntegerToInteger, int_type, nullptr));
+                }
                 if( bound == "ubound" ) {
                     return ASRUtils::EXPR(
                             ASR::make_IntegerBinOp_t(al, arr_expr->base.loc,
                                 ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_expr->base.loc,
-                                    m_dims[dim - 1].m_length, ASR::binopType::Sub, one, int32_type, nullptr)),
-                                ASR::binopType::Add, m_dims[dim - 1].m_start, int32_type, nullptr)
+                                    dim_length, ASR::binopType::Sub, one, int_type, nullptr)),
+                                ASR::binopType::Add, dim_start, int_type, nullptr)
                         );
                 }
-                if ( m_dims[dim - 1].m_start != nullptr ) {
-                    return m_dims[dim - 1].m_start;
+                if ( dim_start != nullptr ) {
+                    return dim_start;
                 }
                 return  zero;
             }
-            ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int32_type));
+            ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int_type));
             ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
             if( bound == "ubound" ) {
                 bound_type = ASR::arrayboundType::UBound;
             }
             return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
-                        int32_type, bound_type, nullptr));
+                        int_type, bound_type, nullptr));
         }
 
         bool skip_instantiation(PassOptions pass_options, int64_t id) {
