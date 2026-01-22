@@ -4663,6 +4663,13 @@ public:
                     // namelist /EXAMPLE/ foo, bar
                     AST::AttrNamelist_t* attr_namelist = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
                     Vec<ASR::symbol_t*> var_list; var_list.reserve(al, x.n_syms);
+                    if (current_scope->get_symbol(to_lower(attr_namelist->m_name)) != nullptr) {
+                        ASR::Namelist_t* existing_namelist = ASR::down_cast<ASR::Namelist_t>(
+                            current_scope->get_symbol(to_lower(attr_namelist->m_name)));
+                        for (size_t i = 0; i < existing_namelist->n_var_list; i++) {
+                            var_list.push_back(al, existing_namelist->m_var_list[i]);   
+                        }
+                    }
                     for (size_t i = 0; i < x.n_syms; i++) {
                         var_list.push_back(al,
                                            current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
@@ -4673,7 +4680,7 @@ public:
                                                s2c(al, to_lower(attr_namelist->m_name)),
                                                var_list.p,
                                                var_list.n);
-                    current_scope->add_symbol(s2c(al, to_lower(attr_namelist->m_name)),
+                    current_scope->add_or_overwrite_symbol(s2c(al, to_lower(attr_namelist->m_name)),
                                               ASR::down_cast<ASR::symbol_t>(namelist));
                 } else {
                     diag.add(Diagnostic(
@@ -8476,6 +8483,9 @@ public:
         }
     }
 
+    // Creates an ArrayItem or ArraySection ASR node from fnarg info
+    // Notice :: if no fnarg provided -- Creates nothing
+    // Notice return is stored in `tmp` variable
     void make_ArrayItem_from_struct_m_args(AST::fnarg_t* struct_m_args, size_t struct_n_args, ASR::expr_t* expr, ASR::asr_t* &array_item_node, const Location &loc) {
         if (struct_n_args == 0) {
             return;
@@ -11872,6 +11882,7 @@ public:
                 }
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(tmp));
             } else {
+                // To use the following function, Don't use last member and use it as id instead.
                 visit_NameUtil(x.m_member, x.n_member - 1,
                     x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             }
@@ -14044,6 +14055,11 @@ public:
             }
 
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
+            if(x_n_member != x_member_count){ // From `funCallOrArray` -- id is a member [x_n_member] --Last item could be an arrayItem
+                LCOMPILERS_ASSERT(x_member_count == x_n_member + 1)
+                make_ArrayItem_from_struct_m_args(
+                    x_m_member[x_n_member].m_args, x_m_member[x_n_member].n_args, ASRUtils::EXPR(tmp), tmp, loc);
+            }
         }
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;

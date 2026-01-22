@@ -253,7 +253,12 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *access, int64_t access_len,
                                     char *name, int64_t name_len,
                                     char *blank, int64_t blank_len,
-                                    int32_t *recl);
+                                    int32_t *recl, int32_t *number, bool *named,
+                                    char* sequential, int64_t sequential_len,
+                                    char* direct, int64_t direct_len,
+                                    char* form, int64_t form_len,
+                                    char* formatted, int64_t formatted_len,
+                                    char* unformatted, int64_t unformatted_len);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
@@ -352,6 +357,20 @@ LFORTRAN_API void _lfortran_namelist_read(
     int32_t *iostat,
     lfortran_nml_group_t *group
 );
+
+// IOSTAT error codes for namelist operations
+#define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
+#define LFORTRAN_IOSTAT_NML_READ_NOT_ALLOWED        5002  // Read access not allowed
+#define LFORTRAN_IOSTAT_NML_WRITE_NOT_ALLOWED       5003  // Write access not allowed
+#define LFORTRAN_IOSTAT_NML_GROUP_NOT_FOUND         5010  // Namelist group not found
+#define LFORTRAN_IOSTAT_NML_UNEXPECTED_END          5011  // Unexpected end of namelist
+#define LFORTRAN_IOSTAT_NML_UNKNOWN_VARIABLE        5012  // Unknown variable in namelist
+#define LFORTRAN_IOSTAT_NML_EXPECTED_EQUALS         5013  // Expected '=' after variable name
+#define LFORTRAN_IOSTAT_NML_INVALID_REPEAT          5014  // Invalid repeat count
+#define LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS     5015  // Array index out of bounds
+#define LFORTRAN_IOSTAT_NML_TYPE_MISMATCH           5016  // Type mismatch during read
+#define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
+#define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 void lfortran_error(const char *message);
