@@ -7030,7 +7030,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         if(iostat != NULL) *iostat = 0;
         va_end(args);
     }
-    (void)!ftruncate(fileno(filep), ftell(filep));
+    // Only truncate actual files, not stdout/stderr
+    // This removes stale data when overwriting a file with less content
+    if (filep != stdout && filep != stderr) {
+        (void)!ftruncate(fileno(filep), ftell(filep));
+    }
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,
