@@ -2,11 +2,11 @@
     "basename": "asr-nested_namelist_01-7fc4952",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/nested_namelist_01.f90",
-    "infile_hash": "b6530fbc699a283bc97fb2ef3dcbf9610bfcda5f5fd5d85196922035",
+    "infile_hash": "3ae593ad78ac4bbac6d58d1dd1f8ee532e6cf64aef681fa7f311c7e2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-nested_namelist_01-7fc4952.stdout",
-    "stdout_hash": "541f5baf80a3d486d18b805894e3b04a415cbff8e3dd07641a0509d8",
+    "stdout_hash": "4b4d837a505ee72f79b731102420f7de82536f719e23555e69df8cb8",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
