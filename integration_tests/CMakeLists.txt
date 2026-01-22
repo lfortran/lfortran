@@ -2052,8 +2052,8 @@ RUN(NAME nested_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME nested_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
-RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
+RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
