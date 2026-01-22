@@ -12,6 +12,65 @@ namespace LCompilers {
 
 using ASR::down_cast;
 
+static SymbolTable *get_host_scope(SymbolTable *scope) {
+    SymbolTable *start = scope;
+    while (scope) {
+        if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner_sym) || ASR::is_a<ASR::Program_t>(*owner_sym)) {
+                return scope;
+            }
+        }
+        scope = scope->parent;
+    }
+    return start;
+}
+
+static bool is_nested_call_symbol(SymbolTable *current_scope, ASR::symbol_t *sym) {
+    SymbolTable *host_scope = get_host_scope(current_scope);
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+    if (ASR::is_a<ASR::Function_t>(*s)) {
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        return fn->m_symtab->parent == host_scope;
+    }
+    if (ASR::is_a<ASR::Variable_t>(*s)) {
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        if (v->m_type_declaration &&
+            ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration))) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            return fn->m_symtab->parent == host_scope;
+        }
+    }
+    return false;
+}
+
+static bool is_sym_in_scope_chain(SymbolTable *current_scope, SymbolTable *sym_parent) {
+    for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
+        if (sym_parent == scope) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static ASR::symbol_t *make_external_symbol(Allocator &al, SymbolTable *scope,
+        ASR::symbol_t *target, const std::string &sym_name,
+        const std::string &owner_name, const std::string &original_name,
+        ASR::accessType access) {
+    ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+        al, target->base.loc,
+        /* a_symtab */ scope,
+        /* a_name */ s2c(al, sym_name),
+        target,
+        s2c(al, owner_name), nullptr, 0, s2c(al, original_name),
+        access
+    );
+    ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
+    scope->add_symbol(sym_name, ext_sym);
+    return ext_sym;
+}
+
 /*
 
 This pass captures the global variables that are used by the
@@ -278,22 +337,14 @@ public:
             }
             std::string m_name = nested_var_to_ext_var[x->m_v].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
-            char *fn_name = ASRUtils::symbol_name(t);
-            std::string sym_name = fn_name;
-            if (current_scope->get_symbol(sym_name) != nullptr) {
-                x->m_v = current_scope->get_symbol(sym_name);
+            std::string sym_name = ASRUtils::symbol_name(t);
+            ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
+            if (existing != nullptr) {
+                x->m_v = existing;
                 return;
             }
-            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, t->base.loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ fn_name,
-                t,
-                s2c(al, m_name), nullptr, 0, fn_name,
-                ASR::accessType::Public
-                );
-            ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
-            current_scope->add_symbol(sym_name, ext_sym);
+            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, sym_name,
+                m_name, sym_name, ASR::accessType::Public);
             x->m_v = ext_sym;
         }
     }
@@ -329,39 +380,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
         replacer(al_), nesting_map(n_map) {}
-
-    SymbolTable *get_host_scope() {
-        SymbolTable *scope = current_scope;
-        while (scope) {
-            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                if (ASR::is_a<ASR::Function_t>(*owner_sym) || ASR::is_a<ASR::Program_t>(*owner_sym)) {
-                    return scope;
-                }
-            }
-            scope = scope->parent;
-        }
-        return current_scope;
-    }
-
-    bool is_nested_call_symbol(ASR::symbol_t *sym) {
-        SymbolTable *host_scope = get_host_scope();
-        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
-        if (ASR::is_a<ASR::Function_t>(*s)) {
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-            return fn->m_symtab->parent == host_scope;
-        }
-        if (ASR::is_a<ASR::Variable_t>(*s)) {
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-            if (v->m_type_declaration &&
-                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration))) {
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                    ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                return fn->m_symtab->parent == host_scope;
-            }
-        }
-        return false;
-    }
 
     void call_replacer() {
         // Skip replacing original variables with context variables
@@ -675,6 +693,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         if (!nml_sym || func_stack.size() < 2) {
             return;
         }
+        (void)loc;
         ASR::symbol_t *parent_func_sym = func_stack[func_stack.size() - 2];
         ASR::symbol_t *nml_new_sym = get_nested_namelist_symbol(parent_func_sym, nml_sym);
         if (!nml_new_sym) {
@@ -684,13 +703,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym_name);
         if (!ext_sym || !ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym) ||
                 ASRUtils::symbol_get_past_external(ext_sym) != nml_new_sym) {
-            ASR::asr_t *ext_asr = ASR::make_ExternalSymbol_t(
-                al, loc, current_scope,
-                s2c(al, sym_name), nml_new_sym,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(nml_new_sym)),
-                nullptr, 0, s2c(al, sym_name), ASR::accessType::Public);
-            ext_sym = ASR::down_cast<ASR::symbol_t>(ext_asr);
-            current_scope->add_symbol(sym_name, ext_sym);
+            std::string owner_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(nml_new_sym));
+            ext_sym = make_external_symbol(al, current_scope, nml_new_sym, sym_name,
+                owner_name, sym_name, ASR::accessType::Public);
         }
         nml_sym = ext_sym;
     }
@@ -713,7 +728,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         bool is_in_call_copy = is_in_call;
-        is_in_call = is_nested_call_symbol(x.m_name);
+        is_in_call = is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
             visit_call_arg(x.m_args[i]);
         }
@@ -743,25 +758,16 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         bool is_in_call_copy = is_in_call;
-        is_in_call = is_nested_call_symbol(x.m_name);
+        is_in_call = is_nested_call_symbol(current_scope, x.m_name);
         if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
-            char *fn_name = ASRUtils::symbol_name(t);
-            std::string sym_name = fn_name;
+            std::string sym_name = ASRUtils::symbol_name(t);
             if (current_scope->get_symbol(sym_name) != nullptr) {
                 return;
             }
-            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                al, t->base.loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ fn_name,
-                t,
-                s2c(al, m_name), nullptr, 0, fn_name,
-                ASR::accessType::Public
-                );
-            ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
-            current_scope->add_symbol(sym_name, ext_sym);
+            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, sym_name,
+                m_name, sym_name, ASR::accessType::Public);
             xx.m_name = ext_sym;
         }
         for (size_t i=0; i<x.n_args; i++) {
@@ -865,39 +871,6 @@ public:
     bool calls_present = false;
     bool calls_in_loop_condition = false;
 
-    SymbolTable *get_host_scope() {
-        SymbolTable *scope = current_scope;
-        while (scope) {
-            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                if (ASR::is_a<ASR::Function_t>(*owner_sym) || ASR::is_a<ASR::Program_t>(*owner_sym)) {
-                    return scope;
-                }
-            }
-            scope = scope->parent;
-        }
-        return current_scope;
-    }
-
-    bool is_nested_call_symbol(ASR::symbol_t *sym) {
-        SymbolTable *host_scope = get_host_scope();
-        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
-        if (ASR::is_a<ASR::Function_t>(*s)) {
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-            return fn->m_symtab->parent == host_scope;
-        }
-        if (ASR::is_a<ASR::Variable_t>(*s)) {
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-            if (v->m_type_declaration &&
-                ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration))) {
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                    ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                return fn->m_symtab->parent == host_scope;
-            }
-        }
-        return false;
-    }
-
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
@@ -996,14 +969,7 @@ public:
                         }
                         ASR::symbol_t* sym_ = sym;
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
-                        bool sym_in_chain = false;
-                        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
-                            if (sym_parent == scope) {
-                                sym_in_chain = true;
-                                break;
-                            }
-                        }
-                        if (!sym_in_chain) {
+                        if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
                             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
                             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
@@ -1136,14 +1102,7 @@ public:
 
                         ASR::symbol_t* sym_ = sym;
                         SymbolTable *sym_parent = ASRUtils::symbol_parent_symtab(sym_);
-                        bool sym_in_chain = false;
-                        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
-                            if (sym_parent == scope) {
-                                sym_in_chain = true;
-                                break;
-                            }
-                        }
-                        if (!sym_in_chain) {
+                        if (!is_sym_in_scope_chain(current_scope, sym_parent)) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
                             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
                             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
@@ -1299,7 +1258,7 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(x.m_name);
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
             visit_call_arg(x.m_args[i]);
         }
@@ -1311,7 +1270,7 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        calls_present = calls_present || is_nested_call_symbol(x.m_name);
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
             visit_call_arg(x.m_args[i]);
         }
