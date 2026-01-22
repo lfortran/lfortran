@@ -5,11 +5,11 @@
             __lcompilers_created__nested_context__outer_:
                 (Module
                     (SymbolTable
-                        5
+                        6
                         {
                             i:
                                 (Variable
-                                    5
+                                    6
                                     i
                                     []
                                     Unspecified
@@ -30,14 +30,14 @@
                                 ),
                             nml:
                                 (Namelist
-                                    5
+                                    6
                                     nml
-                                    [5 i
-                                    5 x]
+                                    [6 i
+                                    6 x]
                                 ),
                             x:
                                 (Variable
-                                    5
+                                    6
                                     x
                                     []
                                     Unspecified
@@ -66,6 +66,32 @@
                 ),
             nested_namelist_01:
                 (Program
+                    (SymbolTable
+                        5
+                        {
+                            outer:
+                                (ExternalSymbol
+                                    5
+                                    outer
+                                    2 outer
+                                    nested_namelist_01_mod
+                                    []
+                                    outer
+                                    Public
+                                )
+                        })
+                    nested_namelist_01
+                    [nested_namelist_01_mod]
+                    [(SubroutineCall
+                        5 outer
+                        ()
+                        []
+                        ()
+                        .false.
+                    )]
+                ),
+            nested_namelist_01_mod:
+                (Module
                     (SymbolTable
                         2
                         {
@@ -99,7 +125,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     i1
-                                                    5 i
+                                                    6 i
                                                     __lcompilers_created__nested_context__outer_
                                                     []
                                                     i
@@ -114,7 +140,7 @@
                                                                 (ExternalSymbol
                                                                     4
                                                                     nml
-                                                                    5 nml
+                                                                    6 nml
                                                                     __lcompilers_created__nested_context__outer_
                                                                     []
                                                                     nml
@@ -189,7 +215,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     x1
-                                                    5 x
+                                                    6 x
                                                     __lcompilers_created__nested_context__outer_
                                                     []
                                                     x
@@ -272,15 +298,12 @@
                                     ()
                                 )
                         })
-                    nested_namelist_01
+                    nested_namelist_01_mod
+                    ()
                     []
-                    [(SubroutineCall
-                        2 outer
-                        ()
-                        []
-                        ()
-                        .false.
-                    )]
+                    .false.
+                    .false.
+                    .false.
                 )
         })
     []
