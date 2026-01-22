@@ -1459,6 +1459,14 @@ public:
                 }
             }
         }
+        if (a_rec && a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
+            diag.add(Diagnostic(
+                "`rec` specifier is not allowed for internal file I/O",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})
+                }));
+            throw SemanticAbort();
+        }
         if( a_fmt == nullptr && a_end != nullptr ) {
             diag.add(Diagnostic(
                 R"""(List directed format(*) is not allowed with a ADVANCE= specifier)""",
