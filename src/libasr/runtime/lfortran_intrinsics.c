@@ -4372,7 +4372,8 @@ _lfortran_open(int32_t unit_num,
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -4609,15 +4610,32 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *access, int64_t access_len,
                                     char *name, int64_t name_len,
                                     char *blank, int64_t blank_len,
-                                    int32_t *recl) {
+                                    int32_t *recl, int32_t *number, bool *named,
+                                    char* sequential, int64_t sequential_len,
+                                    char* direct, int64_t direct_len,
+                                    char* form, int64_t form_len,
+                                    char* formatted, int64_t formatted_len,
+                                    char* unformatted, int64_t unformatted_len) {
     if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
     if (f_name_data != NULL) {
+        bool unit_file_bin;
+        int access_id = -1;
+        bool read_access;
+        bool write_access;
+        int delim;
+        bool blank_zero;
+        int32_t unit_recl = 0;
         char *c_f_name_data = to_c_string(f_name_data, f_name_len);
+        if (named != NULL) {
+            *named = true;
+        }
+        if (name != NULL) {
+            _lfortran_copy_str_and_pad(name, name_len, c_f_name_data, strlen(c_f_name_data));
+        }
         FILE *fp = fopen(c_f_name_data, "r");
-        free(c_f_name_data);
 
         if (fp != NULL) {
             *exists = true;
@@ -4626,9 +4644,117 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 *size = ftell(fp);
             }
             fclose(fp); // close the file
-            return;
+        } else {
+            *exists = false;
         }
-        *exists = false;
+        int u_num = -1;
+        for(int i=0; i<1000; i++) {
+            char* unit_name = get_file_name_from_unit(i, &unit_file_bin);
+            if (unit_name != NULL && strcmp(unit_name, c_f_name_data) == 0) {
+                u_num = i;
+                break;
+            }
+        }
+        free(c_f_name_data);
+
+        if (number != NULL) {
+            *number = u_num;
+        }
+        
+        fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl);
+        if (write != NULL) {
+            if (write_access) {
+                _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(write, write_len, "NO", 2);
+            }
+        } if (read != NULL) {
+            if (read_access) {
+                _lfortran_copy_str_and_pad(read, read_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(read, read_len, "NO", 2);
+            }
+        } if (readwrite != NULL) {
+            if (read_access && write_access) {
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "NO", 2);
+            }
+        }
+        if (access != NULL) {
+            char *access_str = "";
+            if (access_id == 0) {
+                access_str = "SEQUENTIAL";
+            } else if (access_id == 1) {
+                access_str = "STREAM";
+            } else if (access_id == 2) {
+                access_str = "DIRECT";
+            }
+            _lfortran_copy_str_and_pad(access, access_len, access_str, strlen(access_str));
+        }
+        if (blank != NULL) {
+            // For formatted files only
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(blank, blank_len, "UNDEFINED", 9);
+            } else {
+                if (blank_zero) {
+                    _lfortran_copy_str_and_pad(blank, blank_len, "ZERO", 4);
+                } else {
+                    _lfortran_copy_str_and_pad(blank, blank_len, "NULL", 4);
+                }
+            }
+        }
+        if (opened != NULL) {
+            *opened = (fp != NULL);
+        }
+        if (pos != NULL && fp != NULL) {
+            long p = ftell(fp);
+            *pos = (int32_t)p + 1;
+        }
+        if (size != NULL && fp != NULL) {
+            long current_pos = ftell(fp);
+            fseek(fp, 0, SEEK_END);
+            *size = ftell(fp);
+            fseek(fp, current_pos, SEEK_SET);
+        }
+        if (recl != NULL && access_id == 2) {
+            *recl = unit_recl;
+        }
+        if (sequential != NULL) {
+            if (access_id == 0) {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "NO", 2);
+            }
+        }
+        if (direct != NULL) {
+            if (access_id == 2) {
+                _lfortran_copy_str_and_pad(direct, direct_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(direct, direct_len, "NO", 2);
+            }
+        }
+        if (form != NULL) {
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(form, form_len, "UNFORMATTED", 11);
+            } else {
+                _lfortran_copy_str_and_pad(form, form_len, "FORMATTED", 9);
+            }
+        }
+        if (formatted != NULL) {
+            if (!unit_file_bin) {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "NO", 2);
+            }
+        }
+        if (unformatted != NULL) {
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
+            }
+        }
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -4639,6 +4765,14 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         bool blank_zero;
         int32_t unit_recl = 0;
         FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, &blank_zero, &unit_recl);
+        if (get_file_name_from_unit(unit_num, &unit_file_bin) != NULL) {
+            *exists = true;
+        } else {
+            *exists = false;
+        }
+        if (number != NULL) {
+            *number = unit_num;
+        }
         if (write != NULL) {
             if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
@@ -4677,12 +4811,20 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             } else {
                 _lfortran_copy_str_and_pad(name, name_len, "", 0);
             }
+            if (named != NULL) {
+                *named = (unit_name != NULL);
+            }
         }
         if (blank != NULL) {
-            if (blank_zero) {
-                _lfortran_copy_str_and_pad(blank, blank_len, "ZERO", 4);
+            // For formatted files only
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(blank, blank_len, "UNDEFINED", 9);
             } else {
-                _lfortran_copy_str_and_pad(blank, blank_len, "NULL", 4);
+                if (blank_zero) {
+                    _lfortran_copy_str_and_pad(blank, blank_len, "ZERO", 4);
+                } else {
+                    _lfortran_copy_str_and_pad(blank, blank_len, "NULL", 4);
+                }
             }
         }
         if (opened != NULL) {
@@ -4700,6 +4842,41 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         if (recl != NULL && access_id == 2) {
             *recl = unit_recl;
+        }
+        if (sequential != NULL) {
+            if (access_id == 0) {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "NO", 2);
+            }
+        }
+        if (direct != NULL) {
+            if (access_id == 2) {
+                _lfortran_copy_str_and_pad(direct, direct_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(direct, direct_len, "NO", 2);
+            }
+        }
+        if (form != NULL) {
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(form, form_len, "UNFORMATTED", 11);
+            } else {
+                _lfortran_copy_str_and_pad(form, form_len, "FORMATTED", 9);
+            }
+        }
+        if (formatted != NULL) {
+            if (!unit_file_bin) {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "NO", 2);
+            }
+        }
+        if (unformatted != NULL) {
+            if (unit_file_bin) {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "YES", 3);
+            } else {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
+            }
         }
     }
 }
@@ -7834,7 +8011,6 @@ LFORTRAN_API void _lfortran_namelist_write(
     if (iostat) *iostat = 0;
 }
 
-// Helper to skip whitespace and comments
 typedef struct {
     FILE *fp;
     const char *data;
@@ -7874,17 +8050,22 @@ static int64_t nml_getline(nml_reader_t *reader, char **line_buf, size_t *line_l
                                    reader->data_len, &reader->offset);
 }
 
+// Helper to skip whitespace and comments
 static void skip_whitespace_nml(nml_reader_t *reader, char **line_buf, char **line_ptr,
                                 size_t *line_len, int64_t *read_len) {
     while (1) {
+        // Skip spaces in current line
         while (*line_ptr && **line_ptr && isspace(**line_ptr)) {
             (*line_ptr)++;
         }
 
+        // Check for comment
         if (*line_ptr && **line_ptr == '!') {
+            // Skip rest of line
             *line_ptr = NULL;
         }
 
+        // If we need a new line, read it
         if (!*line_ptr || !**line_ptr) {
             *read_len = nml_getline(reader, line_buf, line_len);
             if (*read_len == -1) {
@@ -7908,6 +8089,7 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
     char *token = (char*)malloc(256);
     int pos = 0;
 
+    // Check for special single-char tokens
     if (**line_ptr == '&' || **line_ptr == '$' || **line_ptr == '/' ||
         **line_ptr == '=' || **line_ptr == ',') {
         token[pos++] = **line_ptr;
@@ -7916,6 +8098,7 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
         return token;
     }
 
+    // Check for quoted string
     if (**line_ptr == '\'' || **line_ptr == '"') {
         char quote = **line_ptr;
         (*line_ptr)++;
@@ -7929,7 +8112,10 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
         return token;
     }
 
+    // Read alphanumeric token
+    // Special handling for parenthesized expressions (e.g., complex numbers)
     if (**line_ptr == '(') {
+        // Starts with '(' - read entire parenthesized expression like (1.5,-2.3)
         int paren_depth = 0;
         do {
             if (**line_ptr == '(') paren_depth++;
@@ -7940,6 +8126,7 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
         } while (**line_ptr && paren_depth > 0);
     }
 
+    // Regular token - read alphanumeric, underscore, dot, plus, minus, star
     while (**line_ptr && (isalnum(**line_ptr) || **line_ptr == '_' ||
            **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' ||
            **line_ptr == '*' || **line_ptr == '%')) {
@@ -7948,6 +8135,8 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
         if (pos >= 255) break;
     }
 
+    // If we hit '(' after reading alphanumeric, continue reading the parenthesized part
+    // This handles array subscripts like "arr(2,3)"
     if (**line_ptr == '(') {
         int paren_depth = 0;
         do {
@@ -8129,6 +8318,130 @@ static int collect_derived_items(const lfortran_nml_group_t *group, const char *
     return count;
 }
 
+typedef struct {
+    lfortran_nml_item_t **items;
+    int n_items;
+    int item_idx;
+    int64_t value_idx;
+    int64_t elem_size;
+    int64_t total_size;
+} nml_value_iter_t;
+
+static void nml_value_iter_init(nml_value_iter_t *it, lfortran_nml_item_t **items,
+                                int n_items, int64_t value_idx, int64_t total_size) {
+    it->items = items;
+    it->n_items = n_items;
+    it->item_idx = 0;
+    it->value_idx = value_idx;
+    it->elem_size = get_element_size(items[0]);
+    it->total_size = total_size;
+}
+
+static bool nml_value_iter_next_item(nml_value_iter_t *it) {
+    while (1) {
+        it->item_idx++;
+        if (it->item_idx >= it->n_items) {
+            return false;
+        }
+        it->elem_size = get_element_size(it->items[it->item_idx]);
+        it->total_size = compute_array_size(it->items[it->item_idx]);
+        it->value_idx = 0;
+        if (it->total_size > 0) {
+            return true;
+        }
+    }
+}
+
+static bool nml_value_iter_advance(nml_value_iter_t *it) {
+    it->value_idx++;
+    if (it->value_idx < it->total_size) {
+        return true;
+    }
+    return nml_value_iter_next_item(it);
+}
+
+static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_ptr,
+                           size_t *line_len, int64_t *read_len, nml_value_iter_t *it,
+                           bool enforce_bounds, int32_t *iostat) {
+    if (it->total_size == 0 && !nml_value_iter_next_item(it)) {
+        return 0;
+    }
+    while (it->item_idx < it->n_items) {
+        bool done = false;
+        char *token = read_token_nml(reader, line_buf, line_ptr, line_len, read_len);
+
+        // Check for terminator or comma
+        if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
+            if (token) free(token);
+            break;
+        }
+        if (strcmp(token, ",") == 0) {
+            free(token);
+            continue;
+        }
+
+        // Check for repeat count (e.g., "5*0.0")
+        char value_str[256];
+        int repeat_count = 1;
+        if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
+            // Validate repeat count
+            if (repeat_count <= 0) {
+                free(token);
+                free(*line_buf);
+                if (iostat) {
+                    *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
+                    return 1;
+                } else {
+                    fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
+                    exit(1);
+                }
+            }
+            // Check that repeat count doesn't overflow array bounds
+            if (enforce_bounds && it->value_idx + repeat_count > it->total_size) {
+                free(token);
+                free(*line_buf);
+                if (iostat) {
+                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                    return 1;
+                } else {
+                    fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n",
+                            repeat_count);
+                    exit(1);
+                }
+            }
+            // Repeat count found - assign same value multiple times
+            for (int r = 0; r < repeat_count && it->item_idx < it->n_items; r++) {
+                parse_nml_value(value_str, it->items[it->item_idx], it->value_idx * it->elem_size);
+                if (!nml_value_iter_advance(it)) {
+                    done = true;
+                    break;
+                }
+            }
+        } else {
+            // No repeat count - single value
+            parse_nml_value(token, it->items[it->item_idx], it->value_idx * it->elem_size);
+            if (!nml_value_iter_advance(it)) {
+                done = true;
+            }
+        }
+
+        free(token);
+
+        // Check for comma or end
+        skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
+        if (*line_ptr && **line_ptr == ',') {
+            (*line_ptr)++;
+        } else if (*line_ptr && (**line_ptr == '/' || **line_ptr == '&')) {
+            break;
+        }
+        if (done) {
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_nml_group_t *group) {
     char *line_buf = NULL;
     char *line_ptr = NULL;
@@ -8257,7 +8570,6 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
 
         if (item) {
             // Read value(s)
-            int64_t elem_size = get_element_size(item);
             int64_t total_size = compute_array_size(item);
 
             // If array subscript specified, use that offset; otherwise start at 0
@@ -8278,133 +8590,20 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
                 total_size = value_idx + 1;  // Only set one element
             }
 
-            while (value_idx < total_size) {
-                token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
-
-                // Check for terminator or comma
-                if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
-                    if (token) free(token);
-                    break;
-                }
-                if (strcmp(token, ",") == 0) {
-                    free(token);
-                    continue;
-                }
-
-                // Check for repeat count (e.g., "5*0.0")
-                char value_str[256];
-                int repeat_count = 1;
-                if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
-                    // Validate repeat count
-                    if (repeat_count <= 0) {
-                        free(token);
-                        free(line_buf);
-                        if (iostat) {
-                            *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
-                            return;
-                        } else {
-                            fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
-                            exit(1);
-                        }
-                    }
-                    // Check that repeat count doesn't overflow array bounds
-                    if (value_idx + repeat_count > total_size) {
-                        free(token);
-                        free(line_buf);
-                        if (iostat) {
-                            *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                            return;
-                        } else {
-                            fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n", repeat_count);
-                            exit(1);
-                        }
-                    }
-                    // Repeat count found - assign same value multiple times
-                    for (int r = 0; r < repeat_count && value_idx < total_size; r++) {
-                        parse_nml_value(value_str, item, value_idx * elem_size);
-                        value_idx++;
-                    }
-                } else {
-                    // No repeat count - single value
-                    parse_nml_value(token, item, value_idx * elem_size);
-                    value_idx++;
-                }
-
-                free(token);
-
-                // Check for comma or end
-                skip_whitespace_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
-                if (line_ptr && *line_ptr == ',') {
-                    line_ptr++;
-                } else if (line_ptr && (*line_ptr == '/' || *line_ptr == '&')) {
-                    break;
-                }
+            lfortran_nml_item_t *items[1] = {item};
+            nml_value_iter_t it;
+            nml_value_iter_init(&it, items, 1, value_idx, total_size);
+            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, true, iostat)) {
+                return;
             }
         } else if (derived_count > 0) {
-            int current_item = 0;
-            int64_t elem_size = get_element_size(derived_items[0]);
-            int64_t total_size = compute_array_size(derived_items[0]);
-            int64_t value_idx = 0;
-
-            while (current_item < derived_count) {
-                token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
-                if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
-                    if (token) free(token);
-                    break;
-                }
-                if (strcmp(token, ",") == 0) {
-                    free(token);
-                    continue;
-                }
-
-                char value_str[256];
-                int repeat_count = 1;
-                if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
-                    if (repeat_count <= 0) {
-                        free(token);
-                        free(line_buf);
-                        if (iostat) {
-                            *iostat = 5014;
-                            return;
-                        } else {
-                            fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
-                            exit(1);
-                        }
-                    }
-                    for (int r = 0; r < repeat_count; r++) {
-                        parse_nml_value(value_str, derived_items[current_item], value_idx * elem_size);
-                        value_idx++;
-                        if (value_idx >= total_size) {
-                            current_item++;
-                            if (current_item >= derived_count) break;
-                            elem_size = get_element_size(derived_items[current_item]);
-                            total_size = compute_array_size(derived_items[current_item]);
-                            value_idx = 0;
-                        }
-                    }
-                } else {
-                    parse_nml_value(token, derived_items[current_item], value_idx * elem_size);
-                    value_idx++;
-                    if (value_idx >= total_size) {
-                        current_item++;
-                        if (current_item >= derived_count) {
-                            free(token);
-                            break;
-                        }
-                        elem_size = get_element_size(derived_items[current_item]);
-                        total_size = compute_array_size(derived_items[current_item]);
-                        value_idx = 0;
-                    }
-                }
-
-                free(token);
-
-                skip_whitespace_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
-                if (line_ptr && *line_ptr == ',') {
-                    line_ptr++;
-                } else if (line_ptr && (*line_ptr == '/' || *line_ptr == '&')) {
-                    break;
-                }
+            nml_value_iter_t it;
+            nml_value_iter_init(&it, derived_items, derived_count, 0,
+                                compute_array_size(derived_items[0]));
+            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, false, iostat)) {
+                return;
             }
         }
     }
