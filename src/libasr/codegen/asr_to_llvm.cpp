@@ -626,12 +626,10 @@ public:
         ptr_loads = ptr_loads_copy;
         if( is_data_only ) {
             if( !ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
-                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value* prod = const_1;
                 for( int r = 0; r < n_dims; r++ ) {
                     llvm::Value* dim_size = llvm_dims[r].second;
-                    // Convert to i64 for consistent size calculation
-                    dim_size = builder->CreateSExtOrTrunc(dim_size, llvm::Type::getInt64Ty(context));
                     prod = builder->CreateMul(prod, dim_size);
                 }
                 llvm::Value* arr_first = nullptr;
@@ -639,13 +637,12 @@ public:
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                     prod = builder->CreateMul(prod,
-                        llvm::ConstantInt::get(context, llvm::APInt(64, size)));
+                        llvm::ConstantInt::get(context, llvm::APInt(32, size)));
                     llvm::Value* arr_first_i8 = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, prod);
                     arr_first = builder->CreateBitCast(
                         arr_first_i8, llvm_data_type->getPointerTo());
                 } else {
-                    // CreateAlloca takes i32 or i64 for count
                     arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, prod);
                     builder->CreateStore(arr_first, arr);
                 }
@@ -3720,10 +3717,7 @@ public:
                 llvm::Value* is_contiguous = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, m_dims);
-                // Use the descriptor's index type for stride calculations
-                llvm::Type* index_type = arr_descr->get_index_type();
-                unsigned index_bit_width = index_type->getIntegerBitWidth();
-                llvm::Value* expected_stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
+                llvm::Value* expected_stride = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 for (int i = 0; i < n_dims; i++) {
                     llvm::Value* dim_index = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                     llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_index);
@@ -3732,7 +3726,7 @@ public:
                     llvm::Value* is_dim_contiguous = builder->CreateICmpEQ(stride, expected_stride);
                     is_contiguous = builder->CreateAnd(is_contiguous, is_dim_contiguous);
                     llvm::Value* dim_size = arr_descr->get_upper_bound(dim_desc);
-                    expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))));
+                    expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(32, 1))));
                 }
                 // Unallocated array is contiguous
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, x.m_array);
@@ -6723,10 +6717,7 @@ public:
             }
             builder->CreateStore(llvm_cptr, fptr_data);
 
-            // Use the descriptor's index type for dimension operations
-            llvm::Type* index_type = arr_descr->get_index_type();
-            unsigned index_bit_width = index_type->getIntegerBitWidth();
-            llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
+            llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int i = 0; i < fptr_rank; i++ ) {
                 llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                 llvm::Value* desi = arr_descr->get_pointer_to_dimension_descriptor(fptr_des, curr_dim);
@@ -6734,26 +6725,25 @@ public:
                 llvm::Value* desi_lb = arr_descr->get_lower_bound(desi, false);
                 llvm::Value* desi_size = arr_descr->get_dimension_size(fptr_des, curr_dim, false);
                 builder->CreateStore(prod, desi_stride);
-                llvm::Value* idx_one = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
-                llvm::Value* new_lb = idx_one;
+                llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                llvm::Value* new_lb = i32_one;
                 if( x.m_lower_bounds ) {
                     int ptr_loads_copy = ptr_loads;
                     ptr_loads = 2;
                     this->visit_expr_wrapper(x.m_lower_bounds, true);
                     ptr_loads = ptr_loads_copy;
                     tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context), tmp,  i);
-                    new_lb = builder->CreateSExtOrTrunc(
-                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), tmp), index_type);
+                    new_lb = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), tmp);
                 }
                 llvm::Value* new_size = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerArray ) {
-                    new_size = shape_data ? builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context),shape_data, i)), index_type) : idx_one;
+                    new_size = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep2(llvm::Type::getInt32Ty(context),shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
                     llvm::Type* shape_llvm_type = llvm_utils->get_type_from_ttype_t_util(shape, asr_shape_type, module.get());
-                    new_size = shape_data ? builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_llvm_type, shape_data, i)), index_type) : idx_one;
+                    new_size = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_llvm_type, shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 builder->CreateStore(new_size, desi_size);
@@ -7388,7 +7378,7 @@ public:
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(llvm_target_type, llvm_target_, 1);
                                     builder->CreateStore(
-                                        llvm_utils->CreateLoad2(arr_descr->get_index_type(), src_offset),
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), src_offset),
                                         target_offset);
                                 }
 
@@ -7472,7 +7462,7 @@ public:
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 1);
                                     builder->CreateStore(
-                                        llvm_utils->CreateLoad2(arr_descr->get_index_type(), src_offset),
+                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), src_offset),
                                         target_offset);
 
                                     return;
@@ -7502,7 +7492,7 @@ public:
                                     // Copy offset
                                     llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
                                     llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
-                                    builder->CreateStore(builder->CreateLoad(arr_descr->get_index_type(), value_offset), target_offset);
+                                    builder->CreateStore(builder->CreateLoad(llvm::Type::getInt32Ty(context),value_offset), target_offset);
                                     // Other fields of the array descriptor should be already set.
                                     return;
                                 }
@@ -8580,22 +8570,8 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
-            // Ensure value type matches target's pointed-to type for integers
-            if (value->getType()->isIntegerTy() && target->getType()->isPointerTy()) {
-                llvm::Type* target_elem_type = target->getType()->getPointerElementType();
-                if (target_elem_type->isIntegerTy() && value->getType() != target_elem_type) {
-                    value = builder->CreateSExtOrTrunc(value, target_elem_type);
-                }
-            }
             builder->CreateStore(value, target);
         } else {
-            // Ensure value type matches target's pointed-to type for integers
-            if (value->getType()->isIntegerTy() && target->getType()->isPointerTy()) {
-                llvm::Type* target_elem_type = target->getType()->getPointerElementType();
-                if (target_elem_type->isIntegerTy() && value->getType() != target_elem_type) {
-                    value = builder->CreateSExtOrTrunc(value, target_elem_type);
-                }
-            }
             builder->CreateStore(value, target);
         }
     }
@@ -9640,16 +9616,6 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
-        // Ensure operands have matching types for LLVM comparison
-        unsigned left_bits = left->getType()->getIntegerBitWidth();
-        unsigned right_bits = right->getType()->getIntegerBitWidth();
-        if (left_bits != right_bits) {
-            if (left_bits < right_bits) {
-                left = builder->CreateSExt(left, right->getType());
-            } else {
-                right = builder->CreateSExt(right, left->getType());
-            }
-        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10476,24 +10442,6 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
-        // Ensure operands have matching types for LLVM operations
-        unsigned left_bits = left_val->getType()->getIntegerBitWidth();
-        unsigned right_bits = right_val->getType()->getIntegerBitWidth();
-        if (left_bits != right_bits) {
-            if (signed_int) {
-                if (left_bits < right_bits) {
-                    left_val = builder->CreateSExt(left_val, right_val->getType());
-                } else {
-                    right_val = builder->CreateSExt(right_val, left_val->getType());
-                }
-            } else {
-                if (left_bits < right_bits) {
-                    left_val = builder->CreateZExt(left_val, right_val->getType());
-                } else {
-                    right_val = builder->CreateZExt(right_val, left_val->getType());
-                }
-            }
-        }
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 tmp = builder->CreateAdd(left_val, right_val);
@@ -15264,7 +15212,7 @@ public:
                 
                 // Get offset from source - index into array based on offset
                 llvm::Value* src_offset_ptr = llvm_utils->create_gep2(src_arr_type, class_value, 1);
-                llvm::Value* src_offset = llvm_utils->CreateLoad2(arr_descr->get_index_type(), src_offset_ptr);
+                llvm::Value* src_offset = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), src_offset_ptr);
                                 
 	                // Extract data pointer from the polymorphic wrapper (field at index 1)
 	                if (is_unlimited_polymorphic) {
@@ -17381,8 +17329,6 @@ public:
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
-                // Ensure dim_val is i32 for array indexing
-                dim_val = builder->CreateSExtOrTrunc(dim_val, llvm::Type::getInt32Ty(context));
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
@@ -17392,9 +17338,7 @@ public:
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                     res = arr_descr->get_upper_bound(dim_struct);
                 }
-                // Convert to the expected result type (m_type)
-                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                tmp = builder->CreateSExtOrTrunc(res, llvm_utils->getIntType(kind));
+                tmp = res;
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:
@@ -17408,8 +17352,6 @@ public:
                 llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
-                // Ensure dim_val is i32 for dimension comparison
-                dim_val = builder->CreateSExtOrTrunc(dim_val, llvm::Type::getInt32Ty(context));
                 for( int i = 0; i < n_dims; i++ ) {
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -17441,10 +17383,9 @@ public:
                             if (m_dims[i].m_length) {
                                 load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
-                                unsigned target_bit_width = target_type->getIntegerBitWidth();
                                 builder->CreateStore(
                                     builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                          llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
+                                          llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                                     target);
                             } else {
                                 // Assumed-size array: last dimension has no length
@@ -17461,13 +17402,11 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::SIMDArray: {
-                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                unsigned bit_width = kind * 8;
                 if( x.m_bound == ASR::arrayboundType::LBound ) {
-                    tmp = llvm::ConstantInt::get(context, llvm::APInt(bit_width, 1));
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                     int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
-                    tmp = llvm::ConstantInt::get(context, llvm::APInt(bit_width, size));
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, size));
                 }
                 break;
             }
@@ -17477,8 +17416,6 @@ public:
                 if (ASRUtils::is_dimension_empty(m_dims, n_dims)) {
                     // treat it as DescriptorArray
                     llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
-                    // Ensure dim_val is i32 for array indexing
-                    dim_val = builder->CreateSExtOrTrunc(dim_val, llvm::Type::getInt32Ty(context));
                     llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                     dim_val = builder->CreateSub(dim_val, const_1);
                     llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
@@ -17488,9 +17425,7 @@ public:
                     } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                         res = arr_descr->get_upper_bound(dim_struct);
                     }
-                    // Convert to the expected result type (m_type)
-                    int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                    tmp = builder->CreateSExtOrTrunc(res, llvm_utils->getIntType(kind));
+                    tmp = res;
                     break;
                 } else if (ASRUtils::is_fixed_size_array(x_mv_type)) {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
@@ -17501,8 +17436,6 @@ public:
                     llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
-                    // Ensure dim_val is i32 for dimension comparison
-                    dim_val = builder->CreateSExtOrTrunc(dim_val, llvm::Type::getInt32Ty(context));
                     for( int i = 0; i < n_dims; i++ ) {
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -17523,14 +17456,9 @@ public:
                                 lbound = tmp;
                                 load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
-                                // Compute ubound = lbound + length - 1
-                                llvm::Value* sum = builder->CreateAdd(length, lbound);
-                                // Convert to target type and use matching constant
-                                sum = builder->CreateSExtOrTrunc(sum, target_type);
-                                unsigned target_bit_width = target_type->getIntegerBitWidth();
                                 builder->CreateStore(
-                                    builder->CreateSub(sum,
-                                        llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
+                                    builder->CreateSub(builder->CreateAdd(length, lbound),
+                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                                     target);
                             }
                         }
