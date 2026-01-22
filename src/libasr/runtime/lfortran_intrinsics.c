@@ -8091,7 +8091,8 @@ static char* read_token(FILE *fp, char **line_buf, char **line_ptr,
 
     // Regular token - read alphanumeric, underscore, dot, plus, minus, star
     while (**line_ptr && (isalnum(**line_ptr) || **line_ptr == '_' ||
-           **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' || **line_ptr == '*')) {
+           **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' ||
+           **line_ptr == '*' || **line_ptr == '%')) {
         token[pos++] = **line_ptr;
         (*line_ptr)++;
         if (pos >= 255) break;

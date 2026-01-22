@@ -863,8 +863,9 @@ RUN(NAME namelist_12 LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
 RUN(NAME namelist_13 LABELS gfortran llvm EXTRAFILES namelist_13_module.f90)
 RUN(NAME namelist_14 LABELS gfortran llvm)
 RUN(NAME namelist_15 LABELS gfortran llvm)
-
 RUN(NAME namelist_16 LABELS gfortran llvm)
+RUN(NAME namelist_17 LABELS gfortran llvm)
+RUN(NAME namelist_18 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
