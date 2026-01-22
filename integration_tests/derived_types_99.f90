@@ -1,4 +1,4 @@
-program p
+program derived_types_99
   implicit none
   type :: t
      integer :: x
@@ -11,4 +11,4 @@ program p
   associate(q => a%x)
      print *, q
   end associate
-end program
+end program derived_types_99
