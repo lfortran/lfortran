@@ -12152,52 +12152,56 @@ public:
                 rank = (int32_t)n_dims;
 
                 if (rank > 0) {
-                    // Build shape array
-                    std::vector<llvm::Constant*> shape_vals;
-                    for (size_t d = 0; d < n_dims; d++) {
-                        if (dims[d].m_length) {
-                            this->visit_expr(*dims[d].m_length);
-                            llvm::Value* dim_len = tmp;
-                            if (llvm::isa<llvm::Constant>(dim_len)) {
-                                llvm::Constant* dim_len_const = llvm::cast<llvm::Constant>(dim_len);
-                                // For integer constants, extract the value and create a new i64 constant
-                                // This avoids ConstantExpr issues in LLVM > 15
-                                if (llvm::isa<llvm::ConstantInt>(dim_len_const)) {
-                                    llvm::ConstantInt* ci = llvm::cast<llvm::ConstantInt>(dim_len_const);
-                                    int64_t val = ci->getSExtValue();
-                                    dim_len_const = llvm::ConstantInt::get(context, llvm::APInt(64, val, true));
-                                } else if (dim_len_const->getType() != llvm::Type::getInt64Ty(context)) {
-                                    if (!llvm::isa<llvm::IntegerType>(dim_len_const->getType())) {
-                                        throw CodeGenError("Namelist array dimension must be an integer constant");
+                    // Check if this is a descriptor array (allocatable/pointer)
+                    if (ASRUtils::extract_physical_type(var->m_type) != ASR::array_physical_typeType::DescriptorArray) {
+                        // Build compile-time constant shape array for fixed-size arrays
+                        std::vector<llvm::Constant*> shape_vals;
+                        for (size_t d = 0; d < n_dims; d++) {
+                            if (dims[d].m_length) {
+                                this->visit_expr(*dims[d].m_length);
+                                llvm::Value* dim_len = tmp;
+                                if (llvm::isa<llvm::Constant>(dim_len)) {
+                                    llvm::Constant* dim_len_const = llvm::cast<llvm::Constant>(dim_len);
+                                    // For integer constants, extract the value and create a new i64 constant
+                                    // This avoids ConstantExpr issues in LLVM > 15
+                                    if (llvm::isa<llvm::ConstantInt>(dim_len_const)) {
+                                        llvm::ConstantInt* ci = llvm::cast<llvm::ConstantInt>(dim_len_const);
+                                        int64_t val = ci->getSExtValue();
+                                        dim_len_const = llvm::ConstantInt::get(context, llvm::APInt(64, val, true));
+                                    } else if (dim_len_const->getType() != llvm::Type::getInt64Ty(context)) {
+                                        if (!llvm::isa<llvm::IntegerType>(dim_len_const->getType())) {
+                                            throw CodeGenError("Namelist array dimension must be an integer constant");
+                                        }
+                                        llvm::IntegerType* src_ty = llvm::cast<llvm::IntegerType>(dim_len_const->getType());
+                                        unsigned src_bits = src_ty->getBitWidth();
+                                        if (src_bits < 64) {
+                                            dim_len_const = llvm::ConstantExpr::getCast(
+                                                llvm::Instruction::SExt, dim_len_const,
+                                                llvm::Type::getInt64Ty(context));
+                                        } else if (src_bits > 64) {
+                                            dim_len_const = llvm::ConstantExpr::getCast(
+                                                llvm::Instruction::Trunc, dim_len_const,
+                                                llvm::Type::getInt64Ty(context));
+                                        }
                                     }
-                                    llvm::IntegerType* src_ty = llvm::cast<llvm::IntegerType>(dim_len_const->getType());
-                                    unsigned src_bits = src_ty->getBitWidth();
-                                    if (src_bits < 64) {
-                                        dim_len_const = llvm::ConstantExpr::getCast(
-                                            llvm::Instruction::SExt, dim_len_const,
-                                            llvm::Type::getInt64Ty(context));
-                                    } else if (src_bits > 64) {
-                                        dim_len_const = llvm::ConstantExpr::getCast(
-                                            llvm::Instruction::Trunc, dim_len_const,
-                                            llvm::Type::getInt64Ty(context));
-                                    }
+                                    shape_vals.push_back(dim_len_const);
+                                } else {
+                                    // Non-constant dimension - not supported in initial version
+                                    throw CodeGenError("Namelist with non-constant array dimensions not yet supported");
                                 }
-                                shape_vals.push_back(dim_len_const);
                             } else {
-                                // Non-constant dimension - not supported in initial version
-                                throw CodeGenError("Namelist with non-constant array dimensions not yet supported");
+                                throw CodeGenError("Namelist array must have explicit dimensions");
                             }
-                        } else {
-                            throw CodeGenError("Namelist array must have explicit dimensions");
                         }
-                    }
 
-                    llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
-                    llvm::Constant* shape_arr = llvm::ConstantArray::get(shape_arr_type, shape_vals);
-                    llvm::GlobalVariable* shape_global = new llvm::GlobalVariable(
-                        *module, shape_arr_type, true, llvm::GlobalValue::PrivateLinkage,
-                        shape_arr, "nml_shape_" + var_name);
-                    shape_ptr = builder->CreateBitCast(shape_global, llvm::Type::getInt64Ty(context)->getPointerTo());
+                        llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
+                        llvm::Constant* shape_arr = llvm::ConstantArray::get(shape_arr_type, shape_vals);
+                        llvm::GlobalVariable* shape_global = new llvm::GlobalVariable(
+                            *module, shape_arr_type, true, llvm::GlobalValue::PrivateLinkage,
+                            shape_arr, "nml_shape_" + var_name);
+                        shape_ptr = builder->CreateBitCast(shape_global, llvm::Type::getInt64Ty(context)->getPointerTo());
+                    }
+                    // For descriptor arrays, shape_ptr will be filled later after getting data_ptr
                 }
             }
 
@@ -12230,7 +12234,7 @@ public:
                 data_ptr = llvm_utils->CreateLoad2(character_type, str_data_ptr_ptr);
             }
 
-            // For arrays, get the data pointer
+            // For arrays, get the data pointer and extract dimensions for descriptor arrays
             if (ASRUtils::is_array(var->m_type)) {
                 ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
                 if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
@@ -12242,9 +12246,40 @@ public:
                         llvm::Value* str_data_ptr_ptr = llvm_utils->create_gep2(string_desc_type, data_ptr, 0);
                         data_ptr = llvm_utils->CreateLoad2(character_type, str_data_ptr_ptr);
                     } else if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                        // Get data pointer from array descriptor
+                        // Get array type for descriptor operations
                         llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
-                        data_ptr = arr_descr->get_pointer_to_data(arr_type, data_ptr);
+                        // Get element type for loading data pointer
+                        llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(nullptr, elem_type, module.get());
+
+                        // Load descriptor pointer once (data_ptr is Type**, load to get Type*)
+                        llvm::Value* arr_desc_loaded = llvm_utils->CreateLoad2(arr_type->getPointerTo(), data_ptr);
+
+                        // For descriptor arrays, extract dimensions at runtime if needed
+                        if (rank > 0) {
+                            ASR::dimension_t* dims = nullptr;
+                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(var->m_type, dims);
+
+                            // Allocate array to store runtime dimensions
+                            llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
+                            llvm::Value* shape_arr = llvm_utils->CreateAlloca(*builder, shape_arr_type);
+
+                            for (size_t d = 0; d < n_dims; d++) {
+                                llvm::Value* dim_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d + 1); // 1-based
+                                llvm::Value* dim_size = arr_descr->get_array_size(arr_type, arr_desc_loaded, dim_idx, 8, 4);
+
+                                // Store in shape array
+                                llvm::Value* shape_elem_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, d);
+                                builder->CreateStore(dim_size, shape_elem_ptr);
+                            }
+
+                            // Get pointer to first element
+                            shape_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, 0);
+                        }
+
+                        // Get data pointer from array descriptor
+                        // Get pointer to data field, then load the data pointer
+                        data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(),
+                                                           arr_descr->get_pointer_to_data(arr_type, arr_desc_loaded));
                     } else if (arr_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
                         // For FixedSizeArray, data_ptr points to [N x Type]*, we need Type*
                         // Use GEP with indices [0, 0] to get pointer to first element
