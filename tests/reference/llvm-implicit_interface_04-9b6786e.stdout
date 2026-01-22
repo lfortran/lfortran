@@ -3,6 +3,7 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 
+@main.b = internal global [3 x i32] zeroinitializer
 @main.n = internal global i32 3
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
@@ -26,7 +27,6 @@ source_filename = "LFortran"
 @17 = private unnamed_addr constant [189 x i8] c"At 22:5 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@main.b = internal global [3 x i32] zeroinitializer
 @20 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @21 = private unnamed_addr constant [189 x i8] c"At 3:12 of file tests/../integration_tests/implicit_interface_04.f90\0ARuntime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @22 = private unnamed_addr constant [2 x i8] c"b\00", align 1
@@ -40,9 +40,8 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %__1_k = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %__1_k1 = alloca i32, align 4
-  store i32 1, i32* %__1_k1, align 4
-  %2 = load i32, i32* %__1_k1, align 4
+  store i32 1, i32* %__1_k, align 4
+  %2 = load i32, i32* %__1_k, align 4
   %3 = sub i32 %2, 1
   %4 = mul i32 1, %3
   %5 = add i32 0, %4
@@ -59,57 +58,57 @@ then:                                             ; preds = %.entry
 ifcont:                                           ; preds = %.entry
   %9 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %5
   store i32 10, i32* %9, align 4
-  store i32 2, i32* %__1_k1, align 4
-  %10 = load i32, i32* %__1_k1, align 4
+  store i32 2, i32* %__1_k, align 4
+  %10 = load i32, i32* %__1_k, align 4
   %11 = sub i32 %10, 1
   %12 = mul i32 1, %11
   %13 = add i32 0, %12
   %14 = icmp slt i32 %10, 1
   %15 = icmp sgt i32 %10, 3
   %16 = or i1 %14, %15
-  br i1 %16, label %then2, label %ifcont3
+  br i1 %16, label %then1, label %ifcont2
 
-then2:                                            ; preds = %ifcont
+then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 %10, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont3:                                          ; preds = %ifcont
+ifcont2:                                          ; preds = %ifcont
   %17 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %13
   store i32 20, i32* %17, align 4
-  store i32 3, i32* %__1_k1, align 4
-  %18 = load i32, i32* %__1_k1, align 4
+  store i32 3, i32* %__1_k, align 4
+  %18 = load i32, i32* %__1_k, align 4
   %19 = sub i32 %18, 1
   %20 = mul i32 1, %19
   %21 = add i32 0, %20
   %22 = icmp slt i32 %18, 1
   %23 = icmp sgt i32 %18, 3
   %24 = or i1 %22, %23
-  br i1 %24, label %then4, label %ifcont5
+  br i1 %24, label %then3, label %ifcont4
 
-then4:                                            ; preds = %ifcont3
+then3:                                            ; preds = %ifcont2
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([189 x i8], [189 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 %18, i32 1, i32 1, i32 3)
   call void @exit(i32 1)
   unreachable
 
-ifcont5:                                          ; preds = %ifcont3
+ifcont4:                                          ; preds = %ifcont2
   %25 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %21
   store i32 30, i32* %25, align 4
   %26 = load i32, i32* @main.n, align 4
   %27 = icmp slt i32 3, %26
-  br i1 %27, label %then6, label %ifcont7
+  br i1 %27, label %then5, label %ifcont6
 
-then6:                                            ; preds = %ifcont5
+then5:                                            ; preds = %ifcont4
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([212 x i8], [212 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @26, i32 0, i32 0), i32 3, i32 1, i32 2, i32 %26)
   call void @exit(i32 1)
   unreachable
 
-ifcont7:                                          ; preds = %ifcont5
+ifcont6:                                          ; preds = %ifcont4
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont7
+return:                                           ; preds = %ifcont6
   br label %FINALIZE_SYMTABLE_main
 
 FINALIZE_SYMTABLE_main:                           ; preds = %return

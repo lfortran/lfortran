@@ -5,7 +5,7 @@ source_filename = "LFortran"
 %mytype = type { float }
 %string_descriptor = type <{ i8*, i64 }>
 
-@__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self = global %mytype_class* null
+@__module___lcompilers_created__nested_context__get_i__self = global %mytype_class* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1
 @string_const_data = private constant [4 x i8] c"r = "
@@ -22,7 +22,7 @@ source_filename = "LFortran"
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%mytype_class* %self) {
 .entry:
-  store %mytype_class* %self, %mytype_class** @__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self, align 8
+  store %mytype_class* %self, %mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
   call void @get_i.__module_module_call_subroutine_without_type_01_get_r()
   br label %return
 
@@ -36,7 +36,7 @@ FINALIZE_SYMTABLE_get_i:                          ; preds = %return
 define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
 .entry:
   %0 = alloca i64, align 8
-  %1 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self, align 8
+  %1 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
   %2 = getelementptr %mytype_class, %mytype_class* %1, i32 0, i32 1
   %3 = load %mytype*, %mytype** %2, align 8
   %4 = getelementptr %mytype, %mytype* %3, i32 0, i32 0
@@ -64,7 +64,7 @@ free_nonnull:                                     ; preds = %.entry
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
-  %17 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i____lcompilers_created__nested_context__get_i_self, align 8
+  %17 = load %mytype_class*, %mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
   %18 = getelementptr %mytype_class, %mytype_class* %17, i32 0, i32 1
   %19 = load %mytype*, %mytype** %18, align 8
   %20 = getelementptr %mytype, %mytype* %19, i32 0, i32 0
@@ -102,9 +102,9 @@ declare void @exit(i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %obj = alloca %mytype_class*, align 8
   store %mytype_class* null, %mytype_class** %obj, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %2 = call i8* @_lfortran_malloc(i64 4)
   call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 4, i1 false)
   %3 = call i8* @_lfortran_malloc(i64 16)

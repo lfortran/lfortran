@@ -117,7 +117,6 @@ declare void @_lfortran_free(i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %arr = alloca %array*, align 8
   store %array* null, %array** %arr, align 8
   %arr_desc = alloca %array, align 8
@@ -138,6 +137,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %array* %arr_desc, %array** %arr, align 8
   %str = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %str, align 1
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %10 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %11 = load i8*, i8** %10, align 8
   %12 = icmp ne i8* %11, null
