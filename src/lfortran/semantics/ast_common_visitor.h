@@ -4663,6 +4663,13 @@ public:
                     // namelist /EXAMPLE/ foo, bar
                     AST::AttrNamelist_t* attr_namelist = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
                     Vec<ASR::symbol_t*> var_list; var_list.reserve(al, x.n_syms);
+                    if (current_scope->get_symbol(to_lower(attr_namelist->m_name)) != nullptr) {
+                        ASR::Namelist_t* existing_namelist = ASR::down_cast<ASR::Namelist_t>(
+                            current_scope->get_symbol(to_lower(attr_namelist->m_name)));
+                        for (size_t i = 0; i < existing_namelist->n_var_list; i++) {
+                            var_list.push_back(al, existing_namelist->m_var_list[i]);   
+                        }
+                    }
                     for (size_t i = 0; i < x.n_syms; i++) {
                         var_list.push_back(al,
                                            current_scope->get_symbol(to_lower(x.m_syms[i].m_name)));
@@ -4673,7 +4680,7 @@ public:
                                                s2c(al, to_lower(attr_namelist->m_name)),
                                                var_list.p,
                                                var_list.n);
-                    current_scope->add_symbol(s2c(al, to_lower(attr_namelist->m_name)),
+                    current_scope->add_or_overwrite_symbol(s2c(al, to_lower(attr_namelist->m_name)),
                                               ASR::down_cast<ASR::symbol_t>(namelist));
                 } else {
                     diag.add(Diagnostic(
