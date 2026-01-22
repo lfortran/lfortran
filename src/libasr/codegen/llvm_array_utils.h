@@ -351,6 +351,7 @@ namespace LCompilers {
                 LLVMUtils* llvm_utils;
                 llvm::IRBuilder<>* builder;
 
+                llvm::Type* index_type;  // i32 or i64 for descriptor indices
                 llvm::StructType* dim_des;
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
@@ -369,7 +370,11 @@ namespace LCompilers {
 
                 SimpleCMODescriptor(llvm::LLVMContext& _context,
                     llvm::IRBuilder<>* _builder,
-                    LLVMUtils* _llvm_utils, CompilerOptions& co_);
+                    LLVMUtils* _llvm_utils, CompilerOptions& co_,
+                    llvm::Type* _index_type = nullptr);
+
+                // Get the index type used by this descriptor (i32 or i64)
+                llvm::Type* get_index_type() const { return index_type; }
 
                 virtual
                 bool is_array(ASR::ttype_t* asr_type);
