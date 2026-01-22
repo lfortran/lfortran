@@ -1,6 +1,5 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
-#include <functional>
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
