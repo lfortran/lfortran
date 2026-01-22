@@ -139,53 +139,57 @@ module lfortran_intrinsic_ieee_arithmetic
     end function
 
     elemental function spieee_value(x, cls) result(y)
-        use iso_fortran_env, only: real32
+        use iso_fortran_env, only: real32, int32
         real(real32), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real32) :: y
-        
-        if (cls%value == ieee_quiet_nan%value .or. cls%value == ieee_signaling_nan%value) then
-            y = 0.0_real32 / 0.0_real32  
-        else if (cls%value == ieee_positive_inf%value) then
-            y = 1.0_real32 / 0.0_real32
-        else if (cls%value == ieee_negative_inf%value) then
-            y = -1.0_real32 / 0.0_real32
-        else if (cls%value == ieee_positive_zero%value) then
-            y = 0.0_real32
-        else if (cls%value == ieee_negative_zero%value) then
-            y = -0.0_real32
-        else if (cls%value == ieee_positive_denormal%value) then
-            y = tiny(x) / 2.0_real32
-        else if (cls%value == ieee_negative_denormal%value) then
-            y = -tiny(x) / 2.0_real32
-        else
-            y = x  
-        end if
+        integer(int32) :: bits
+
+        y = x
+        select case(cls%value)
+        case (ieee_quiet_nan%value)
+            bits = int(z'7FC00000', int32)
+            y = transfer(bits, y)
+        case (ieee_positive_inf%value)
+            bits = int(z'7F800000', int32)
+            y = transfer(bits, y)
+        case (ieee_negative_inf%value)
+            bits = int(z'FF800000', int32)
+            y = transfer(bits, y)
+        case (ieee_negative_zero%value)
+            bits = int(z'80000000', int32)
+            y = transfer(bits, y)
+        case (ieee_positive_zero%value)
+            bits = int(z'00000000', int32)
+            y = transfer(bits, y)
+        end select
     end function
 
     elemental function dpieee_value(x, cls) result(y)
-        use iso_fortran_env, only: real64
+        use iso_fortran_env, only: real64, int64
         real(real64), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real64) :: y
+        integer(int64) :: bits
 
-        if (cls%value == ieee_quiet_nan%value .or. cls%value == ieee_signaling_nan%value) then
-            y = 0.0_real64 / 0.0_real64  ! Create NaN
-        else if (cls%value == ieee_positive_inf%value) then
-            y = 1.0_real64 / 0.0_real64
-        else if (cls%value == ieee_negative_inf%value) then
-            y = -1.0_real64 / 0.0_real64
-        else if (cls%value == ieee_positive_zero%value) then
-            y = 0.0_real64
-        else if (cls%value == ieee_negative_zero%value) then
-            y = -0.0_real64
-        else if (cls%value == ieee_positive_denormal%value) then
-            y = tiny(x) / 2.0_real64
-        else if (cls%value == ieee_negative_denormal%value) then
-            y = -tiny(x) / 2.0_real64
-        else
-            y = x  
-        end if
+        y = x
+        select case(cls%value)
+        case (ieee_quiet_nan%value)
+            bits = int(z'7FF8000000000000', int64)
+            y = transfer(bits, y)
+        case (ieee_positive_inf%value)
+            bits = int(z'7FF0000000000000', int64)
+            y = transfer(bits, y)
+        case (ieee_negative_inf%value)
+            bits = int(z'FFF0000000000000', int64)
+            y = transfer(bits, y)
+        case (ieee_negative_zero%value)
+            bits = int(z'8000000000000000', int64)
+            y = transfer(bits, y)
+        case (ieee_positive_zero%value)
+            bits = int(z'0000000000000000', int64)
+            y = transfer(bits, y)
+        end select
     end function
 
     elemental function spieee_is_nan(x) result(r)
