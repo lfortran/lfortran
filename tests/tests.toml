@@ -2668,6 +2668,16 @@ asr = true
 pass = "nested_vars"
 
 [[test]]
+filename = "../integration_tests/nested_external_dedup_01.f90"
+asr = true
+pass = "nested_vars"
+
+[[test]]
+filename = "../integration_tests/nested_call_filter_01.f90"
+asr = true
+pass = "nested_vars"
+
+[[test]]
 filename = "../integration_tests/callback_01.f90"
 asr = true
 llvm = true
