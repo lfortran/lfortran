@@ -13371,7 +13371,12 @@ public:
         llvm::Value *access_val{}, *access_len{};
         llvm::Value *name_val{}, *name_len{};
         llvm::Value *blank_val{}, *blank_len{};
-        llvm::Value *recl{};
+        llvm::Value *recl{}, *number{};
+        llvm::Value *named{}, *sequential{}, *sequential_len{};
+        llvm::Value *direct{}, *direct_len{};
+        llvm::Value *form{}, *form_len{};
+        llvm::Value *formatted{} , *formatted_len{};
+        llvm::Value *unformatted{}, *unformatted_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -13571,6 +13576,83 @@ public:
             return;
         }
 
+        if (x.m_number) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_number, true);
+            number = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            number = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+
+        if (x.m_named) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_named, true);
+            named = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            named = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt1Ty(context)->getPointerTo());
+        }
+
+        if (x.m_sequential) {
+            this->visit_expr_load_wrapper(x.m_sequential, 0);
+            std::tie(sequential, sequential_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_sequential),
+                    tmp);
+        } else {
+            sequential = llvm::Constant::getNullValue(character_type);
+            sequential_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_direct) {
+            this->visit_expr_load_wrapper(x.m_direct, 0);
+            std::tie(direct, direct_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_direct),
+                    tmp);
+        } else {
+            direct = llvm::Constant::getNullValue(character_type);
+            direct_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_form) {
+            this->visit_expr_load_wrapper(x.m_form, 0);
+            std::tie(form, form_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_form),
+                    tmp);
+        } else {
+            form = llvm::Constant::getNullValue(character_type);
+            form_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_formatted) {
+            this->visit_expr_load_wrapper(x.m_formatted, 0);
+            std::tie(formatted, formatted_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_formatted),
+                    tmp);
+        } else {
+            formatted = llvm::Constant::getNullValue(character_type);
+            formatted_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
+        if (x.m_unformatted) {
+            this->visit_expr_load_wrapper(x.m_unformatted, 0);
+            std::tie(unformatted, unformatted_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unformatted),
+                    tmp);
+        } else {
+            unformatted = llvm::Constant::getNullValue(character_type);
+            unformatted_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -13588,7 +13670,14 @@ public:
                         character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
                         character_type, llvm::Type::getInt64Ty(context),  // name_data, name_len
                         character_type, llvm::Type::getInt64Ty(context),  // blank_data, blank_len
-                        llvm::Type::getInt32Ty(context)->getPointerTo() // recl
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // number
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),  // named
+                        character_type, llvm::Type::getInt64Ty(context), // sequential, sequential_len
+                        character_type, llvm::Type::getInt64Ty(context), // direct, direct_len
+                        character_type, llvm::Type::getInt64Ty(context), // form, form_len
+                        character_type, llvm::Type::getInt64Ty(context), // formatted, formatted_len
+                        character_type, llvm::Type::getInt64Ty(context)  // unformatted, unformatted_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -13603,7 +13692,12 @@ public:
             access_val, access_len,
             name_val, name_len,
             blank_val, blank_len,
-            recl});
+            recl, number, named,
+            sequential, sequential_len,
+            direct, direct_len,
+            form, form_len,
+            formatted, formatted_len,
+            unformatted, unformatted_len});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
