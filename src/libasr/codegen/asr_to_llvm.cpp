@@ -4008,7 +4008,17 @@ public:
 
         xtype = name2dertype[current_der_type_name];
         if (tmp->getType()->isPointerTy()) {
-            tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+            llvm::Type *pointee = tmp->getType()->getPointerElementType();
+            if (pointee == xtype) {
+                tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+            } else if (llvm::ArrayType *arr = llvm::dyn_cast<llvm::ArrayType>(pointee)) {
+                llvm::Type *elem_ty = arr->getElementType();
+                LCOMPILERS_ASSERT(elem_ty == xtype);
+                tmp = builder->CreateGEP(arr, tmp, { builder->getInt32(0), builder->getInt32(0) });
+                tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+            } else {
+                LCOMPILERS_ASSERT(false && "Unexpected pointer type in StructInstanceMember");
+            }
         } else {
             if (llvm::isa<llvm::Constant>(tmp)) {
                 tmp = llvm::cast<llvm::Constant>(tmp)->getAggregateElement(member_idx);
