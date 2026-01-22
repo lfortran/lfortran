@@ -702,6 +702,40 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.replace_expr(*current_expr);
         }
 
+        // Helper to check if an expression contains StringTrim
+        bool contains_string_trim(ASR::expr_t* expr) {
+            if (!expr) return false;
+            if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
+                ASR::IntrinsicElementalFunction_t* f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                if (f->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim)) {
+                    return true;
+                }
+                // Check arguments recursively
+                for (size_t i = 0; i < f->n_args; i++) {
+                    if (contains_string_trim(f->m_args[i])) return true;
+                }
+            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                for (size_t i = 0; i < idl->n_values; i++) {
+                    if (contains_string_trim(idl->m_values[i])) return true;
+                }
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
+                ASR::ArrayConstructor_t* arr = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+                for (size_t i = 0; i < arr->n_args; i++) {
+                    if (contains_string_trim(arr->m_args[i])) return true;
+                }
+            }
+            return false;
+        }
+
+        // Check if an implied do loop contains StringTrim in any of its values
+        bool implied_do_loop_has_string_trim(ASR::ImpliedDoLoop_t* idl) {
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (contains_string_trim(idl->m_values[i])) return true;
+            }
+            return false;
+        }
+
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
@@ -875,7 +909,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
-                    if ( ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ) {
+                    // Use do-loop approach for Tuple types or when values contain StringTrim
+                    // (to preserve variable-length trimmed strings instead of storing in fixed-length array)
+                    if ( ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
+                         implied_do_loop_has_string_trim(implied_do_loop) ) {
                         remove_original_statement = true;
                         pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
                         continue;
