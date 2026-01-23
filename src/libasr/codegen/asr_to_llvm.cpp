@@ -8902,6 +8902,22 @@ public:
             []() {});
     }
 
+    // Extract data pointer for array type casts. When source is class(*), unwraps the boxed element.
+    llvm::Value* get_data_ptr_for_array_cast(
+            ASR::ttype_t* src_type, ASR::ttype_t* dst_type,
+            llvm::Type* src_el_type, llvm::Type* dst_el_type,
+            llvm::Value* src_first_el_ptr) {
+        bool src_is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(src_type);
+        bool dst_is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(dst_type);
+        if (src_is_polymorphic && !dst_is_polymorphic && llvm::isa<llvm::StructType>(src_el_type)) {
+            llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+            llvm::Value* box_data_field = llvm_utils->create_gep2(src_el_type, src_first_el_ptr, 1);
+            llvm::Value* box_data_ptr = llvm_utils->CreateLoad2(i8_ptr, box_data_field);
+            return builder->CreateBitCast(box_data_ptr, dst_el_type->getPointerTo());
+        }
+        return builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
+    }
+
     void PointerToData_to_Descriptor(ASR::expr_t* expr, ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions) {
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::type_get_past_allocatable(
@@ -8968,19 +8984,7 @@ public:
                 arr_descr->get_pointer_to_data(m_arg, src_asr_type, arg, module.get()));
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(data_type, src_data_ptr,
                 arr_descr->get_offset(arr_type, arg));
-            // When casting from `class(*)` arrays, the descriptor's data pointer points to an array
-            // of boxed values (`~unlimited_polymorphic_type`). For a typed view (e.g., `type is (character(*))`),
-            // we must use the boxed element's `.data` pointer as the base of the contiguous array view.
-            if (ASRUtils::is_unlimited_polymorphic_type(src_asr_type) &&
-                !ASRUtils::is_unlimited_polymorphic_type(dst_asr_type) &&
-                llvm::isa<llvm::StructType>(data_type)) {
-                llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-                llvm::Value* boxed_data_ptr_ptr = llvm_utils->create_gep2(data_type, src_first_el_ptr, 1);
-                llvm::Value* boxed_data_ptr = llvm_utils->CreateLoad2(i8_ptr, boxed_data_ptr_ptr);
-                tmp = builder->CreateBitCast(boxed_data_ptr, dst_el_type->getPointerTo());
-            } else {
-                tmp = builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
-            }
+            tmp = get_data_ptr_for_array_cast(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
         } else if( m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -8994,17 +8998,7 @@ public:
                 arr_descr->get_pointer_to_data(m_arg, src_asr_type, arg, module.get()));
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(data_type, src_data_ptr,
                 arr_descr->get_offset(arr_type, arg));
-            // When casting from `class(*)` arrays, extract boxed data pointer (same as PointerArray case).
-            if (ASRUtils::is_unlimited_polymorphic_type(src_asr_type) &&
-                !ASRUtils::is_unlimited_polymorphic_type(dst_asr_type) &&
-                llvm::isa<llvm::StructType>(data_type)) {
-                llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-                llvm::Value* boxed_data_ptr_ptr = llvm_utils->create_gep2(data_type, src_first_el_ptr, 1);
-                llvm::Value* boxed_data_ptr = llvm_utils->CreateLoad2(i8_ptr, boxed_data_ptr_ptr);
-                tmp = builder->CreateBitCast(boxed_data_ptr, dst_el_type->getPointerTo());
-            } else {
-                tmp = builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
-            }
+            tmp = get_data_ptr_for_array_cast(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
@@ -9098,20 +9092,8 @@ public:
             llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
 
-            llvm::Value* dst_first_el_ptr = nullptr;
-            // When casting from `class(*)` arrays, the descriptor's data pointer points to an array
-            // of boxed values (`~unlimited_polymorphic_type`). For a typed view (e.g., `type is (integer)`),
-            // we must use the boxed element's `.data` pointer as the base of the contiguous array view.
-            if (ASRUtils::is_unlimited_polymorphic_type(src_asr_type) &&
-                !ASRUtils::is_unlimited_polymorphic_type(dst_asr_type) &&
-                llvm::isa<llvm::StructType>(src_el_type)) {
-                llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-                llvm::Value* boxed_data_ptr_ptr = llvm_utils->create_gep2(src_el_type, src_first_el_ptr, 1);
-                llvm::Value* boxed_data_ptr = llvm_utils->CreateLoad2(i8_ptr, boxed_data_ptr_ptr);
-                dst_first_el_ptr = builder->CreateBitCast(boxed_data_ptr, dst_el_type->getPointerTo());
-            } else {
-                dst_first_el_ptr = builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
-            }
+            llvm::Value* dst_first_el_ptr = get_data_ptr_for_array_cast(
+                src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
             builder->CreateStore(dst_first_el_ptr,
                 arr_descr->get_pointer_to_data(target_desc_type, target_desc));
 
@@ -9186,20 +9168,8 @@ public:
             llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
 
-            llvm::Value* dst_first_el_ptr = nullptr;
-            // When casting from `class(*)` arrays, the descriptor's data pointer points to an array
-            // of boxed values (`~unlimited_polymorphic_type`). For a typed view (e.g., `type is (integer)`),
-            // we must use the boxed element's `.data` pointer as the base of the contiguous array view.
-            if (ASRUtils::is_unlimited_polymorphic_type(src_asr_type) &&
-                !ASRUtils::is_unlimited_polymorphic_type(dst_asr_type) &&
-                llvm::isa<llvm::StructType>(src_el_type)) {
-                llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-                llvm::Value* boxed_data_ptr_ptr = llvm_utils->create_gep2(src_el_type, src_first_el_ptr, 1);
-                llvm::Value* boxed_data_ptr = llvm_utils->CreateLoad2(i8_ptr, boxed_data_ptr_ptr);
-                dst_first_el_ptr = builder->CreateBitCast(boxed_data_ptr, dst_el_type->getPointerTo());
-            } else {
-                dst_first_el_ptr = builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
-            }
+            llvm::Value* dst_first_el_ptr = get_data_ptr_for_array_cast(
+                src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
 
             builder->CreateStore(dst_first_el_ptr,
                 arr_descr->get_pointer_to_data(target_desc_type, target_desc));

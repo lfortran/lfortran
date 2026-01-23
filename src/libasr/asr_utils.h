@@ -4107,8 +4107,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
             case (ASR::ttypeType::StructType) : {
-                // `types_equal()` is sometimes called without providing expressions. In that
-                // case, fall back to a structural comparison to avoid ICE/segfault.
+                // Structural comparison when expressions unavailable
                 if (a_expr == nullptr || b_expr == nullptr) {
                     ASR::StructType_t* a2 = ASR::down_cast<ASR::StructType_t>(a);
                     ASR::StructType_t* b2 = ASR::down_cast<ASR::StructType_t>(b);
@@ -6218,12 +6217,10 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
         if( (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(a_arg)) ||
              ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(a_arg))) &&
             ASRUtils::check_equal_type(ASRUtils::expr_type(a_arg), a_type, nullptr, nullptr) ) {
-            // `check_equal_type()` treats `class(*)` as compatible with any type. For view casts
-            // (e.g., `select type` on array selectors), we must not drop the cast when the target
-            // type is more specific than an unlimited polymorphic one.
-            bool arg_is_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(a_arg));
-            bool type_is_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(a_type);
-            if( arg_is_unlimited_poly == type_is_unlimited_poly ) {
+            // Keep cast when narrowing from class(*) to concrete type
+            bool arg_is_poly = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(a_arg));
+            bool type_is_poly = ASRUtils::is_unlimited_polymorphic_type(a_type);
+            if (arg_is_poly == type_is_poly) {
                 return (ASR::asr_t*) a_arg;
             }
         }

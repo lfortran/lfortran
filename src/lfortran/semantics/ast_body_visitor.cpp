@@ -2702,29 +2702,25 @@ public:
 
             ASR::ttype_t* result = guard_type;
             if (ASR::is_a<ASR::Array_t>(*base)) {
-                // The select-type associate entity is an alias/view. For array selectors
-                // this is best represented as a pointer-to-descriptor, even if the selector
-                // itself is not a pointer, to avoid eager descriptor initialization.
+                // Array views need pointer-to-descriptor representation
                 if (!is_alloc) is_ptr = true;
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
                 if (arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-                        // Assumed-rank arrays have `n_dims == 0`, so `make_Array_t_util()` would
-                        // drop the array wrapper. Inside `select rank`, the rank is known and
-                        // recorded in `assumed_rank_arrays`.
-                        int rank = -1;
-                        if (selector_variable) {
-                            auto it = assumed_rank_arrays.find(selector_variable->m_name);
-                            if (it != assumed_rank_arrays.end()) {
-                                rank = it->second;
-                            }
+                    // Assumed-rank: n_dims==0 but rank may be known from select rank
+                    int rank = -1;
+                    if (selector_variable) {
+                        auto it = assumed_rank_arrays.find(selector_variable->m_name);
+                        if (it != assumed_rank_arrays.end()) {
+                            rank = it->second;
                         }
-                        if (rank > 0) {
-                            result = ASRUtils::create_array_type_with_empty_dims(al, rank, guard_type);
-                        } else {
-                            result = ASRUtils::TYPE(ASR::make_Array_t(
-                                al, loc, guard_type, arr->m_dims, arr->n_dims,
-                                ASR::array_physical_typeType::AssumedRankArray));
-                        }
+                    }
+                    if (rank > 0) {
+                        result = ASRUtils::create_array_type_with_empty_dims(al, rank, guard_type);
+                    } else {
+                        result = ASRUtils::TYPE(ASR::make_Array_t(
+                            al, loc, guard_type, arr->m_dims, arr->n_dims,
+                            ASR::array_physical_typeType::AssumedRankArray));
+                    }
                 } else {
                     result = ASRUtils::make_Array_t_util(
                         al, loc, guard_type, arr->m_dims, arr->n_dims,
