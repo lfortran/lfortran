@@ -165,11 +165,38 @@ module lfortran_intrinsic_ieee_arithmetic
         type(ieee_class_type) :: y
     end function
 
-    elemental elemental function spieee_value(x, cls) result(y)
+    elemental function spieee_value(x, cls) result(y)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real32) :: y
+        ! Generate special IEEE values based on class type
+        select case (cls%value)
+        case (1)  ! ieee_signaling_nan
+            y = transfer(int(z'7F800001', kind=4), 1.0_real32)
+        case (2)  ! ieee_quiet_nan
+            y = transfer(int(z'7FC00000', kind=4), 1.0_real32)
+        case (3)  ! ieee_negative_inf
+            y = transfer(int(z'FF800000', kind=4), 1.0_real32)
+        case (4)  ! ieee_negative_normal
+            y = -1.0_real32
+        case (5)  ! ieee_negative_denormal
+            y = transfer(int(z'80000001', kind=4), 1.0_real32)
+        case (6)  ! ieee_negative_zero
+            y = transfer(int(z'80000000', kind=4), 1.0_real32)
+        case (7)  ! ieee_positive_zero
+            y = 0.0_real32
+        case (8)  ! ieee_positive_denormal
+            y = transfer(int(z'00000001', kind=4), 1.0_real32)
+        case (9)  ! ieee_positive_normal
+            y = 1.0_real32
+        case (10)  ! ieee_positive_inf
+            y = transfer(int(z'7F800000', kind=4), 1.0_real32)
+        case (11)  ! ieee_other_value
+            y = x
+        case default
+            y = x
+        end select
     end function
 
     elemental function dpieee_value(x, cls) result(y)
@@ -177,6 +204,33 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x
         type(ieee_class_type), intent(in) :: cls
         real(real64) :: y
+        ! Generate special IEEE values based on class type
+        select case (cls%value)
+        case (1)  ! ieee_signaling_nan
+            y = transfer(int(z'7FF0000000000001', kind=8), 1.0_real64)
+        case (2)  ! ieee_quiet_nan
+            y = transfer(int(z'7FF8000000000000', kind=8), 1.0_real64)
+        case (3)  ! ieee_negative_inf
+            y = transfer(int(z'FFF0000000000000', kind=8), 1.0_real64)
+        case (4)  ! ieee_negative_normal
+            y = -1.0_real64
+        case (5)  ! ieee_negative_denormal
+            y = transfer(int(z'8000000000000001', kind=8), 1.0_real64)
+        case (6)  ! ieee_negative_zero
+            y = transfer(int(z'8000000000000000', kind=8), 1.0_real64)
+        case (7)  ! ieee_positive_zero
+            y = 0.0_real64
+        case (8)  ! ieee_positive_denormal
+            y = transfer(int(z'0000000000000001', kind=8), 1.0_real64)
+        case (9)  ! ieee_positive_normal
+            y = 1.0_real64
+        case (10)  ! ieee_positive_inf
+            y = transfer(int(z'7FF0000000000000', kind=8), 1.0_real64)
+        case (11)  ! ieee_other_value
+            y = x
+        case default
+            y = x
+        end select
     end function
 
     elemental function spieee_is_nan(x) result(r)
@@ -209,14 +263,14 @@ module lfortran_intrinsic_ieee_arithmetic
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
-        r = x == x .and. abs(x) < huge(x)
+        r = x == x .and. .not. (x /= x .or. abs(x) > huge(x))
     end function
 
     elemental function dpieee_is_finite(x) result(r)
         use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
-        r = x == x .and. abs(x) < huge(x)
+        r = x == x .and. .not. (x /= x .or. abs(x) > huge(x))
     end function
 
     elemental function spieee_is_negative(x) result(r)
@@ -269,14 +323,14 @@ module lfortran_intrinsic_ieee_arithmetic
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
-        r = abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
+        r = x /= 0.0_real32 .and. abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
     end function
 
     elemental function dpieee_is_normal(x) result(r)
         use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
-        r = abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
+        r = x /= 0.0_real64 .and. abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
     end function
 
     elemental function spieee_unordered(x, y) result(r)
