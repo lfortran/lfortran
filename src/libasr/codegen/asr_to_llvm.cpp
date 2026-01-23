@@ -8983,13 +8983,34 @@ public:
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(m_type)), module.get());
+
+            llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(expr_type(m_arg))), module.get());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
-            builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
-                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
-                arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target_type, target));
+            llvm::Value* data_ptr {};
+            if(ASRUtils::is_unlimited_polymorphic_type(expr_type(m_arg)) && !ASRUtils::is_unlimited_polymorphic_type(m_type)){
+                // This is partially a workaround -- array physicalcasting should take and result in the same array type (underlying type)
+                llvm::Value* const unlimited_polymorphic_structure = llvm_utils->CreateLoad2(
+                    data_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(m_arg, expr_type(m_arg), tmp, module.get()));
+                llvm::Value* const data = llvm_utils->CreateLoad2(    
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm_utils->create_gep2(data_type, unlimited_polymorphic_structure, 1)); 
+                llvm::Type* target_type_past_array = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::extract_type(m_type))), module.get());
+                data_ptr = builder->CreateBitCast(data, target_type_past_array->getPointerTo());
+            } else {
+                data_ptr = llvm_utils->create_ptr_gep2(data_type,
+                        llvm_utils->CreateLoad2(data_type->getPointerTo(), 
+                            arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
+                        arr_descr->get_offset(arr_type, tmp));
+            }
+            builder->CreateStore(data_ptr, arr_descr->get_pointer_to_data(target_type, target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
+            arr_descr->reset_array_details(target_type, target, source_type, tmp, n_dims);
             tmp = target;
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
@@ -9030,13 +9051,16 @@ public:
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(m_type)), module.get());
+            llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(expr_type(m_arg))), module.get());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
             builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
                 llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(m_arg, m_type, tmp, module.get())),
                 arr_descr->get_offset(arr_type, tmp)), arr_descr->get_pointer_to_data(target_type, target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_type, target, tmp, n_dims);
+            arr_descr->reset_array_details(target_type, target, source_type, tmp, n_dims);
             tmp = target;
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&

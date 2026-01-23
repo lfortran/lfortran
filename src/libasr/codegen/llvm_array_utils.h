@@ -160,7 +160,7 @@ namespace LCompilers {
 
                 virtual
                 void reset_array_details(
-                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
+                    llvm::Type* type, llvm::Value* arr, llvm::Type* source_arr_type, llvm::Value* source_arr, int n_dims) = 0;
 
                 virtual
                 void reset_array_details(
@@ -419,7 +419,7 @@ namespace LCompilers {
 
                 virtual
                 void reset_array_details(
-                    llvm::Type* type, llvm::Value* arr, llvm::Value* source_arr, int n_dims);
+                    llvm::Type* type, llvm::Value* arr, llvm::Type* source_arr_type, llvm::Value* source_arr, int n_dims);
 
                 virtual
                 void reset_array_details(
