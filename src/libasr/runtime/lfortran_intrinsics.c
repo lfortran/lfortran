@@ -672,7 +672,15 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+        // Compute exponent based on decimal (stripped zeros) or integer_length
+        // This is more accurate than log10 for values near powers of 10
+        // For val >= 1: exponent = integer_length - scale
+        // For val < 1:  exponent = decimal - scale
+        if (fabs(val) >= 1.0) {
+            exponent_value = integer_length - scale;
+        } else {
+            exponent_value = decimal - scale;
+        }
     }
 
     // For ES format with 0 decimal places, we need to round properly
@@ -699,7 +707,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value >= 100)) {
+    } else if (abs(exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -721,8 +729,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // exponent = "+10"
     }
 
-    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
     int exp_length = strlen(exponent);
+    // For 3-digit exponents, 'E' is dropped to save space (Fortran standard)
+    bool drop_e = (abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
         // For ES0.0E0 or similar, keep digits = 0 to match gfortran behavior
@@ -805,8 +815,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    // Always add exponent for E/ES/D formats
-    if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+    // Add 'E' unless dropped for 3-digit exponents
+    if (!drop_e) {
         strcat(formatted_value, c);
     }
     // formatted_value = "  1.12E"
@@ -4281,10 +4291,30 @@ _lfortran_open(int32_t unit_num,
                int64_t position_len,
                char* blank,
                int64_t blank_len,
+               char* encoding,
+               int64_t encoding_len,
                int32_t* recl)
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    bool ini_encoding = true;
+    if (encoding == NULL) {
+        encoding = "default";
+        encoding_len = 7;
+        ini_encoding = false;
+    }
+
+    trim_trailing_spaces(&encoding, &encoding_len, ini_encoding);
+    char* encoding_c = to_c_string((const fchar*)encoding, encoding_len);
+
+    // DEFAULT and UTF-8 are currently treated the same
+    if (!streql(encoding_c, "default") && !streql(encoding_c, "utf-8")) {
+        // Unknown encoding → warning
+        fprintf(stderr,
+            "Warning: ENCODING='%s' is not recognized, treated as DEFAULT\n",
+            encoding_c
+        );
     }
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
@@ -4561,6 +4591,7 @@ _lfortran_open(int32_t unit_num,
     free(form_c);
     free(access_c);
     free(action_c);
+    free(encoding_c);
     return 0;
 }
 
@@ -7123,7 +7154,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         if(iostat != NULL) *iostat = 0;
         va_end(args);
     }
-    (void)!ftruncate(fileno(filep), ftell(filep));
+    // Only truncate actual files, not stdout/stderr
+    // This removes stale data when overwriting a file with less content
+    if (filep != stdout && filep != stderr) {
+        (void)!ftruncate(fileno(filep), ftell(filep));
+    }
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,
@@ -8104,9 +8139,48 @@ LFORTRAN_API void _lfortran_namelist_write(
     if (iostat) *iostat = 0;
 }
 
+typedef struct {
+    FILE *fp;
+    const char *data;
+    int64_t data_len;
+    int64_t offset;
+} nml_reader_t;
+
+// Helper to read a line from a buffer (internal file)
+static int64_t nml_getline_from_buffer(char **line_buf, size_t *line_len,
+                                       const char *src, int64_t src_len,
+                                       int64_t *offset) {
+    if (*offset >= src_len) return -1;
+
+    int64_t start = *offset;
+    int64_t end = start;
+    while (end < src_len && src[end] != '\n') end++;
+
+    int64_t len = end - start;
+    if ((size_t)(len + 2) > *line_len) {
+        *line_len = (size_t)(len + 2);
+        *line_buf = (char*)realloc(*line_buf, *line_len);
+    }
+
+    memcpy(*line_buf, src + start, (size_t)len);
+    (*line_buf)[len] = '\0';
+
+    if (end < src_len && src[end] == '\n') end++;
+    *offset = end;
+    return len;
+}
+
+static int64_t nml_getline(nml_reader_t *reader, char **line_buf, size_t *line_len) {
+    if (reader->fp) {
+        return lfortran_getline(line_buf, line_len, reader->fp);
+    }
+    return nml_getline_from_buffer(line_buf, line_len, reader->data,
+                                   reader->data_len, &reader->offset);
+}
+
 // Helper to skip whitespace and comments
-static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
-                            size_t *line_len, int64_t *read_len) {
+static void skip_whitespace_nml(nml_reader_t *reader, char **line_buf, char **line_ptr,
+                                size_t *line_len, int64_t *read_len) {
     while (1) {
         // Skip spaces in current line
         while (*line_ptr && **line_ptr && isspace(**line_ptr)) {
@@ -8121,7 +8195,7 @@ static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
 
         // If we need a new line, read it
         if (!*line_ptr || !**line_ptr) {
-            *read_len = lfortran_getline(line_buf, line_len, fp);
+            *read_len = nml_getline(reader, line_buf, line_len);
             if (*read_len == -1) {
                 *line_ptr = NULL;
                 return;
@@ -8135,9 +8209,9 @@ static void skip_whitespace(FILE *fp, char **line_buf, char **line_ptr,
 }
 
 // Helper to read a token (word or operator)
-static char* read_token(FILE *fp, char **line_buf, char **line_ptr,
-                        size_t *line_len, int64_t *read_len) {
-    skip_whitespace(fp, line_buf, line_ptr, line_len, read_len);
+static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_ptr,
+                            size_t *line_len, int64_t *read_len) {
+    skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
     if (!*line_ptr || !**line_ptr) return NULL;
 
     char *token = (char*)malloc(256);
@@ -8178,13 +8252,12 @@ static char* read_token(FILE *fp, char **line_buf, char **line_ptr,
             (*line_ptr)++;
             if (pos >= 255) break;
         } while (**line_ptr && paren_depth > 0);
-        token[pos] = '\0';
-        return token;
     }
 
     // Regular token - read alphanumeric, underscore, dot, plus, minus, star
     while (**line_ptr && (isalnum(**line_ptr) || **line_ptr == '_' ||
-           **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' || **line_ptr == '*')) {
+           **line_ptr == '.' || **line_ptr == '+' || **line_ptr == '-' ||
+           **line_ptr == '*' || **line_ptr == '%')) {
         token[pos++] = **line_ptr;
         (*line_ptr)++;
         if (pos >= 255) break;
@@ -8356,6 +8429,317 @@ static int64_t calculate_array_offset(const int *indices, int n_indices,
     return offset;
 }
 
+// Helper to collect derived type items (name starts with "base%")
+static int collect_derived_items(const lfortran_nml_group_t *group, const char *base_name,
+                                 lfortran_nml_item_t **items, int max_items) {
+    char prefix[256];
+    snprintf(prefix, sizeof(prefix), "%s%%", base_name);
+    size_t prefix_len = strlen(prefix);
+    int count = 0;
+    for (int32_t i = 0; i < group->n_items; i++) {
+        if (strncmp(group->items[i].name, prefix, prefix_len) == 0) {
+            if (count < max_items) {
+                items[count++] = &group->items[i];
+            }
+        }
+    }
+    return count;
+}
+
+typedef struct {
+    lfortran_nml_item_t **items;
+    int n_items;
+    int item_idx;
+    int64_t value_idx;
+    int64_t elem_size;
+    int64_t total_size;
+} nml_value_iter_t;
+
+static void nml_value_iter_init(nml_value_iter_t *it, lfortran_nml_item_t **items,
+                                int n_items, int64_t value_idx, int64_t total_size) {
+    it->items = items;
+    it->n_items = n_items;
+    it->item_idx = 0;
+    it->value_idx = value_idx;
+    it->elem_size = get_element_size(items[0]);
+    it->total_size = total_size;
+}
+
+static bool nml_value_iter_next_item(nml_value_iter_t *it) {
+    while (1) {
+        it->item_idx++;
+        if (it->item_idx >= it->n_items) {
+            return false;
+        }
+        it->elem_size = get_element_size(it->items[it->item_idx]);
+        it->total_size = compute_array_size(it->items[it->item_idx]);
+        it->value_idx = 0;
+        if (it->total_size > 0) {
+            return true;
+        }
+    }
+}
+
+static bool nml_value_iter_advance(nml_value_iter_t *it) {
+    it->value_idx++;
+    if (it->value_idx < it->total_size) {
+        return true;
+    }
+    return nml_value_iter_next_item(it);
+}
+
+static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_ptr,
+                           size_t *line_len, int64_t *read_len, nml_value_iter_t *it,
+                           bool enforce_bounds, int32_t *iostat) {
+    if (it->total_size == 0 && !nml_value_iter_next_item(it)) {
+        return 0;
+    }
+    while (it->item_idx < it->n_items) {
+        bool done = false;
+        char *token = read_token_nml(reader, line_buf, line_ptr, line_len, read_len);
+
+        // Check for terminator or comma
+        if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
+            if (token) free(token);
+            break;
+        }
+        if (strcmp(token, ",") == 0) {
+            free(token);
+            continue;
+        }
+
+        // Check for repeat count (e.g., "5*0.0")
+        char value_str[256];
+        int repeat_count = 1;
+        if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
+            // Validate repeat count
+            if (repeat_count <= 0) {
+                free(token);
+                free(*line_buf);
+                if (iostat) {
+                    *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
+                    return 1;
+                } else {
+                    fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
+                    exit(1);
+                }
+            }
+            // Check that repeat count doesn't overflow array bounds
+            if (enforce_bounds && it->value_idx + repeat_count > it->total_size) {
+                free(token);
+                free(*line_buf);
+                if (iostat) {
+                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                    return 1;
+                } else {
+                    fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n",
+                            repeat_count);
+                    exit(1);
+                }
+            }
+            // Repeat count found - assign same value multiple times
+            for (int r = 0; r < repeat_count && it->item_idx < it->n_items; r++) {
+                parse_nml_value(value_str, it->items[it->item_idx], it->value_idx * it->elem_size);
+                if (!nml_value_iter_advance(it)) {
+                    done = true;
+                    break;
+                }
+            }
+        } else {
+            // No repeat count - single value
+            parse_nml_value(token, it->items[it->item_idx], it->value_idx * it->elem_size);
+            if (!nml_value_iter_advance(it)) {
+                done = true;
+            }
+        }
+
+        free(token);
+
+        // Check for comma or end
+        skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
+        if (*line_ptr && **line_ptr == ',') {
+            (*line_ptr)++;
+        } else if (*line_ptr && (**line_ptr == '/' || **line_ptr == '&')) {
+            break;
+        }
+        if (done) {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_nml_group_t *group) {
+    char *line_buf = NULL;
+    char *line_ptr = NULL;
+    size_t line_len = 0;
+    int64_t read_len;
+
+    // Read and find group start
+    char *token;
+    bool found_group = false;
+    while ((read_len = nml_getline(reader, &line_buf, &line_len)) != -1) {
+        line_ptr = line_buf;
+        token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token) continue;
+
+        if (strcmp(token, "&") == 0 || strcmp(token, "$") == 0) {
+            free(token);
+            token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
+            if (token) {
+                to_lowercase(token);
+                if (strcmp(token, group->group_name) == 0) {
+                    found_group = true;
+                    free(token);
+                    break;
+                }
+                free(token);
+            }
+        } else {
+            free(token);
+        }
+    }
+
+    if (!found_group) {
+        free(line_buf);
+        if (iostat) {
+            *iostat = 5010;
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Namelist group '%s' not found\n", group->group_name);
+            exit(1);
+        }
+    }
+
+    // Parse name=value pairs
+    while (1) {
+        token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token) {
+            free(line_buf);
+            if (iostat) *iostat = 5011;
+            else {
+                fprintf(stderr, "Runtime Error: Unexpected end of namelist\n");
+                exit(1);
+            }
+            return;
+        }
+
+        // Check for terminator
+        if (strcmp(token, "/") == 0 ||
+            (strcmp(token, "&") == 0 && (token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len)) &&
+             strcmp(token, "end") == 0)) {
+            free(token);
+            break;
+        }
+
+        // Parse name=value (may include array subscript like "arr(2,3)")
+        to_lowercase(token);
+        char *name = token;
+
+        // Parse array subscript if present
+        char base_name[256];
+        int indices[16];  // Support up to 16 dimensions
+        int n_indices = parse_array_subscript(name, base_name, indices, 16);
+
+        // Find matching item using base name
+        lfortran_nml_item_t *item = NULL;
+        lfortran_nml_item_t *derived_items[256];
+        int derived_count = 0;
+        for (int32_t i = 0; i < group->n_items; i++) {
+            if (strcmp(base_name, group->items[i].name) == 0) {
+                item = &group->items[i];
+                break;
+            }
+        }
+
+        if (!item) {
+            derived_count = collect_derived_items(group, base_name, derived_items, 256);
+        }
+
+        if (!item && derived_count == 0) {
+            free(name);
+            free(line_buf);
+            if (iostat) {
+                *iostat = 5012;
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Unknown variable '%s' in namelist\n", base_name);
+                exit(1);
+            }
+        }
+        free(name);
+
+        // Expect '='
+        token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
+        if (!token || strcmp(token, "=") != 0) {
+            free(token);
+            free(line_buf);
+            if (iostat) *iostat = 5013;
+            else {
+                fprintf(stderr, "Runtime Error: Expected '=' in namelist\n");
+                exit(1);
+            }
+            return;
+        }
+        free(token);
+
+        // Check for null value immediately after '=' (before reading next token)
+        char *peek = line_ptr;
+        while (peek && *peek && (*peek == ' ' || *peek == '\t')) {
+            peek++;
+        }
+        bool is_null_value = (!peek || !*peek || *peek == '\n' || *peek == '\r' ||
+                              *peek == '\0' || *peek == '/' || *peek == '&' || *peek == ',');
+
+        if (is_null_value) {
+            continue;
+        }
+
+        if (item) {
+            // Read value(s)
+            int64_t total_size = compute_array_size(item);
+
+            // If array subscript specified, use that offset; otherwise start at 0
+            int64_t value_idx = 0;
+            if (n_indices > 0) {
+                value_idx = calculate_array_offset(indices, n_indices, item);
+                if (value_idx < 0) {
+                    // Array index out of bounds
+                    free(line_buf);
+                    if (iostat) {
+                        *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                        return;
+                    } else {
+                        fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
+                        exit(1);
+                    }
+                }
+                total_size = value_idx + 1;  // Only set one element
+            }
+
+            lfortran_nml_item_t *items[1] = {item};
+            nml_value_iter_t it;
+            nml_value_iter_init(&it, items, 1, value_idx, total_size);
+            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, true, iostat)) {
+                return;
+            }
+        } else if (derived_count > 0) {
+            nml_value_iter_t it;
+            nml_value_iter_init(&it, derived_items, derived_count, 0,
+                                compute_array_size(derived_items[0]));
+            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, false, iostat)) {
+                return;
+            }
+        }
+    }
+
+    free(line_buf);
+    if (iostat) *iostat = 0;
+}
+
 LFORTRAN_API void _lfortran_namelist_read(
     int32_t unit_num,
     int32_t *iostat,
@@ -8390,216 +8774,22 @@ LFORTRAN_API void _lfortran_namelist_read(
         }
     }
 
-    char *line_buf = NULL;
-    char *line_ptr = NULL;
-    size_t line_len = 0;
-    int64_t read_len;
+    nml_reader_t reader = {0};
+    reader.fp = filep;
+    namelist_read_impl(&reader, iostat, group);
+}
 
-    // Read and find group start
-    char *token;
-    bool found_group = false;
-    while ((read_len = lfortran_getline(&line_buf, &line_len, filep)) != -1) {
-        line_ptr = line_buf;
-        token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
-        if (!token) continue;
-
-        if (strcmp(token, "&") == 0 || strcmp(token, "$") == 0) {
-            free(token);
-            token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
-            if (token) {
-                to_lowercase(token);
-                if (strcmp(token, group->group_name) == 0) {
-                    found_group = true;
-                    free(token);
-                    break;
-                }
-                free(token);
-            }
-        } else {
-            free(token);
-        }
-    }
-
-    if (!found_group) {
-        free(line_buf);
-        if (iostat) {
-            *iostat = 5010;
-            return;
-        } else {
-            fprintf(stderr, "Runtime Error: Namelist group '%s' not found\n", group->group_name);
-            exit(1);
-        }
-    }
-
-    // Parse name=value pairs
-    while (1) {
-        token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
-        if (!token) {
-            free(line_buf);
-            if (iostat) *iostat = 5011;
-            else {
-                fprintf(stderr, "Runtime Error: Unexpected end of namelist\n");
-                exit(1);
-            }
-            return;
-        }
-
-        // Check for terminator
-        if (strcmp(token, "/") == 0 ||
-            (strcmp(token, "&") == 0 && (token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len)) &&
-             strcmp(token, "end") == 0)) {
-            free(token);
-            break;
-        }
-
-        // Parse name=value (may include array subscript like "arr(2,3)")
-        to_lowercase(token);
-        char *name = token;
-
-        // Parse array subscript if present
-        char base_name[256];
-        int indices[16];  // Support up to 16 dimensions
-        int n_indices = parse_array_subscript(name, base_name, indices, 16);
-
-        // Find matching item using base name
-        lfortran_nml_item_t *item = NULL;
-        for (int32_t i = 0; i < group->n_items; i++) {
-            if (strcmp(base_name, group->items[i].name) == 0) {
-                item = &group->items[i];
-                break;
-            }
-        }
-
-        if (!item) {
-            free(name);
-            free(line_buf);
-            if (iostat) {
-                *iostat = 5012;
-                return;
-            } else {
-                fprintf(stderr, "Runtime Error: Unknown variable '%s' in namelist\n", base_name);
-                exit(1);
-            }
-        }
-        free(name);
-
-        // Expect '='
-        token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
-        if (!token || strcmp(token, "=") != 0) {
-            free(token);
-            free(line_buf);
-            if (iostat) *iostat = 5013;
-            else {
-                fprintf(stderr, "Runtime Error: Expected '=' in namelist\n");
-                exit(1);
-            }
-            return;
-        }
-        free(token);
-
-        // Read value(s)
-        int64_t elem_size = get_element_size(item);
-        int64_t total_size = compute_array_size(item);
-
-        // If array subscript specified, use that offset; otherwise start at 0
-        int64_t value_idx = 0;
-        if (n_indices > 0) {
-            value_idx = calculate_array_offset(indices, n_indices, item);
-            if (value_idx < 0) {
-                // Array index out of bounds
-                free(line_buf);
-                if (iostat) {
-                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                    return;
-                } else {
-                    fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
-                    exit(1);
-                }
-            }
-            total_size = value_idx + 1;  // Only set one element
-        }
-
-        // Check for null value immediately after '=' (before reading next token)
-        // Peek at current position without modifying line_ptr
-        char *peek = line_ptr;
-        while (peek && *peek && (*peek == ' ' || *peek == '\t')) {
-            peek++;
-        }
-        // If we hit newline or end of line, this is a null value
-        bool is_null_value = (!peek || !*peek || *peek == '\n' || *peek == '\r' ||
-                              *peek == '\0' || *peek == '/' || *peek == '&' || *peek == ',');
-
-        if (is_null_value) {
-            // Null value - don't read any values, just continue to next variable
-            continue;
-        }
-
-        while (value_idx < total_size) {
-            token = read_token(filep, &line_buf, &line_ptr, &line_len, &read_len);
-
-            // Check for terminator or comma
-            if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
-                if (token) free(token);
-                break;
-            }
-            if (strcmp(token, ",") == 0) {
-                free(token);
-                continue;
-            }
-
-            // Check for repeat count (e.g., "5*0.0")
-            char value_str[256];
-            int repeat_count = 1;
-            if (parse_repeat_count(token, &repeat_count, value_str, sizeof(value_str))) {
-                // Validate repeat count
-                if (repeat_count <= 0) {
-                    free(token);
-                    free(line_buf);
-                    if (iostat) {
-                        *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
-                        return;
-                    } else {
-                        fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
-                        exit(1);
-                    }
-                }
-                // Check that repeat count doesn't overflow array bounds
-                if (value_idx + repeat_count > total_size) {
-                    free(token);
-                    free(line_buf);
-                    if (iostat) {
-                        *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                        return;
-                    } else {
-                        fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n", repeat_count);
-                        exit(1);
-                    }
-                }
-                // Repeat count found - assign same value multiple times
-                for (int r = 0; r < repeat_count && value_idx < total_size; r++) {
-                    parse_nml_value(value_str, item, value_idx * elem_size);
-                    value_idx++;
-                }
-            } else {
-                // No repeat count - single value
-                parse_nml_value(token, item, value_idx * elem_size);
-                value_idx++;
-            }
-
-            free(token);
-
-            // Check for comma or end
-            skip_whitespace(filep, &line_buf, &line_ptr, &line_len, &read_len);
-            if (line_ptr && *line_ptr == ',') {
-                line_ptr++;
-            } else if (line_ptr && (*line_ptr == '/' || *line_ptr == '&')) {
-                break;
-            }
-        }
-    }
-
-    free(line_buf);
-    if (iostat) *iostat = 0;
+LFORTRAN_API void _lfortran_namelist_read_str(
+    const char *data,
+    int64_t data_len,
+    int32_t *iostat,
+    lfortran_nml_group_t *group)
+{
+    nml_reader_t reader = {0};
+    reader.data = data;
+    reader.data_len = data_len;
+    reader.offset = 0;
+    namelist_read_impl(&reader, iostat, group);
 }
 
 
