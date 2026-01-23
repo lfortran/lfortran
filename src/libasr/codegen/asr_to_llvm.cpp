@@ -290,6 +290,17 @@ public:
     std::map<llvm::Type*, size_t> call_arg_alloca_idx;
     int convert_call_args_depth = 0;
 
+    // Logical array element copy-back mechanism for intent(out/inout) arguments.
+    //
+    // Problem: LOGICAL arrays are stored as i8 in memory, but scalar LOGICAL
+    // dummy arguments expect i1. When passing a(i) to a subroutine with
+    // intent(out) or intent(inout), we must:
+    //   1. Copy the i8 element to an i1 temporary (copy-in)
+    //   2. Pass the i1 temporary's address to the callee
+    //   3. After the call, copy the i1 value back to the i8 element (copy-out)
+    //
+    // The frame stack handles nested calls: each call pushes a new frame,
+    // records its copy-backs, applies them after the call, then pops the frame.
     struct LogicalArrayElemCopyback {
         llvm::Value* dst_i8_elem_ptr;
         llvm::AllocaInst* src_i1_tmp;
@@ -318,6 +329,7 @@ public:
         frame.clear();
     }
 
+    // RAII helper: push frame on construction, apply+pop on destruction.
     struct CallArgCopybackFrame {
         ASRToLLVMVisitor &v;
         explicit CallArgCopybackFrame(ASRToLLVMVisitor &v) : v(v) {
@@ -9707,30 +9719,29 @@ public:
         llvm::Value *right = tmp;
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                cmp_result = builder->CreateICmpEQ(left, right);
+                tmp = builder->CreateICmpEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                cmp_result = builder->CreateICmpUGT(left, right);
+                tmp = builder->CreateICmpUGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                cmp_result = builder->CreateICmpUGE(left, right);
+                tmp = builder->CreateICmpUGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                cmp_result = builder->CreateICmpULT(left, right);
+                tmp = builder->CreateICmpULT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                cmp_result = builder->CreateICmpULE(left, right);
+                tmp = builder->CreateICmpULE(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                cmp_result = builder->CreateICmpNE(left, right);
+                tmp = builder->CreateICmpNE(left, right);
                 break;
             }
             default : {
@@ -9738,7 +9749,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
@@ -9752,30 +9762,29 @@ public:
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
         right = builder->CreatePtrToInt(right, llvm_utils->getIntType(8, false));
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                cmp_result = builder->CreateICmpEQ(left, right);
+                tmp = builder->CreateICmpEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                cmp_result = builder->CreateICmpSGT(left, right);
+                tmp = builder->CreateICmpSGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                cmp_result = builder->CreateICmpSGE(left, right);
+                tmp = builder->CreateICmpSGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                cmp_result = builder->CreateICmpSLT(left, right);
+                tmp = builder->CreateICmpSLT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                cmp_result = builder->CreateICmpSLE(left, right);
+                tmp = builder->CreateICmpSLE(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                cmp_result = builder->CreateICmpNE(left, right);
+                tmp = builder->CreateICmpNE(left, right);
                 break;
             }
             default : {
@@ -9783,7 +9792,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_RealCompare(const ASR::RealCompare_t &x) {
@@ -9797,30 +9805,29 @@ public:
         llvm::Value *right = tmp;
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                cmp_result = builder->CreateFCmpOEQ(left, right);
+                tmp = builder->CreateFCmpOEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                cmp_result = builder->CreateFCmpOGT(left, right);
+                tmp = builder->CreateFCmpOGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                cmp_result = builder->CreateFCmpOGE(left, right);
+                tmp = builder->CreateFCmpOGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                cmp_result = builder->CreateFCmpOLT(left, right);
+                tmp = builder->CreateFCmpOLT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                cmp_result = builder->CreateFCmpOLE(left, right);
+                tmp = builder->CreateFCmpOLE(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                cmp_result = builder->CreateFCmpUNE(left, right);
+                tmp = builder->CreateFCmpUNE(left, right);
                 break;
             }
             default : {
@@ -9828,7 +9835,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
@@ -9845,18 +9851,17 @@ public:
         llvm::Value* img_left = complex_im(left, left->getType());
         llvm::Value* img_right = complex_im(right, right->getType());
         llvm::Value *real_res, *img_res;
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 real_res = builder->CreateFCmpOEQ(real_left, real_right);
                 img_res = builder->CreateFCmpOEQ(img_left, img_right);
-                cmp_result = builder->CreateAnd(real_res, img_res);
+                tmp = builder->CreateAnd(real_res, img_res);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
                 real_res = builder->CreateFCmpONE(real_left, real_right);
                 img_res = builder->CreateFCmpONE(img_left, img_right);
-                cmp_result = builder->CreateOr(real_res, img_res);
+                tmp = builder->CreateOr(real_res, img_res);
                 break;
             }
             default : {
@@ -9864,7 +9869,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
