@@ -500,6 +500,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
+        case ASR::symbolType::Namelist: return "Namelist";
         default: {
             LCOMPILERS_ASSERT(false);
         }
