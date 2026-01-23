@@ -8902,20 +8902,28 @@ public:
             []() {});
     }
 
-    // Extract data pointer for array type casts. When source is class(*), unwraps the boxed element.
-    llvm::Value* get_data_ptr_for_array_cast(
+    static constexpr int POLYMORPHIC_BOX_DATA_FIELD = 1;
+
+    bool is_polymorphic_to_concrete_cast(ASR::ttype_t* src, ASR::ttype_t* dst) {
+        return ASRUtils::is_unlimited_polymorphic_type(src) &&
+               !ASRUtils::is_unlimited_polymorphic_type(dst);
+    }
+
+    llvm::Value* unwrap_polymorphic_box_data(llvm::Type* box_type, llvm::Value* box_ptr) {
+        llvm::Value* data_field = llvm_utils->create_gep2(box_type, box_ptr, POLYMORPHIC_BOX_DATA_FIELD);
+        return llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field);
+    }
+
+    llvm::Value* get_typed_array_data_ptr(
             ASR::ttype_t* src_type, ASR::ttype_t* dst_type,
             llvm::Type* src_el_type, llvm::Type* dst_el_type,
-            llvm::Value* src_first_el_ptr) {
-        bool src_is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(src_type);
-        bool dst_is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(dst_type);
-        if (src_is_polymorphic && !dst_is_polymorphic && llvm::isa<llvm::StructType>(src_el_type)) {
-            llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-            llvm::Value* box_data_field = llvm_utils->create_gep2(src_el_type, src_first_el_ptr, 1);
-            llvm::Value* box_data_ptr = llvm_utils->CreateLoad2(i8_ptr, box_data_field);
-            return builder->CreateBitCast(box_data_ptr, dst_el_type->getPointerTo());
+            llvm::Value* first_el_ptr) {
+        if (is_polymorphic_to_concrete_cast(src_type, dst_type) &&
+            llvm::isa<llvm::StructType>(src_el_type)) {
+            llvm::Value* unwrapped = unwrap_polymorphic_box_data(src_el_type, first_el_ptr);
+            return builder->CreateBitCast(unwrapped, dst_el_type->getPointerTo());
         }
-        return builder->CreateBitCast(src_first_el_ptr, dst_el_type->getPointerTo());
+        return builder->CreateBitCast(first_el_ptr, dst_el_type->getPointerTo());
     }
 
     void PointerToData_to_Descriptor(ASR::expr_t* expr, ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions) {
@@ -8984,7 +8992,7 @@ public:
                 arr_descr->get_pointer_to_data(m_arg, src_asr_type, arg, module.get()));
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(data_type, src_data_ptr,
                 arr_descr->get_offset(arr_type, arg));
-            tmp = get_data_ptr_for_array_cast(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
+            tmp = get_typed_array_data_ptr(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
         } else if( m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -8998,7 +9006,7 @@ public:
                 arr_descr->get_pointer_to_data(m_arg, src_asr_type, arg, module.get()));
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(data_type, src_data_ptr,
                 arr_descr->get_offset(arr_type, arg));
-            tmp = get_data_ptr_for_array_cast(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
+            tmp = get_typed_array_data_ptr(src_asr_type, dst_asr_type, data_type, dst_el_type, src_first_el_ptr);
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
@@ -9092,7 +9100,7 @@ public:
             llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
 
-            llvm::Value* dst_first_el_ptr = get_data_ptr_for_array_cast(
+            llvm::Value* dst_first_el_ptr = get_typed_array_data_ptr(
                 src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
             builder->CreateStore(dst_first_el_ptr,
                 arr_descr->get_pointer_to_data(target_desc_type, target_desc));
@@ -9168,7 +9176,7 @@ public:
             llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
             llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(src_el_type, src_data_ptr, src_offset);
 
-            llvm::Value* dst_first_el_ptr = get_data_ptr_for_array_cast(
+            llvm::Value* dst_first_el_ptr = get_typed_array_data_ptr(
                 src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
 
             builder->CreateStore(dst_first_el_ptr,

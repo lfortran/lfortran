@@ -2670,7 +2670,7 @@ public:
         select_type_body.reserve(al, x.n_body);
         ASR::Variable_t* selector_variable = nullptr;
         ASR::ttype_t* selector_variable_type = nullptr;
-        ASR::symbol_t* selector_variable_type_declaration = nullptr;
+        ASR::symbol_t* select_variable_m_type_declaration = nullptr;
         char** selector_variable_dependencies = nullptr;
         size_t selector_variable_n_dependencies = 0;
         if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
@@ -2678,7 +2678,7 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
             selector_variable_type = selector_variable->m_type;
-            selector_variable_type_declaration = selector_variable->m_type_declaration;
+            select_variable_m_type_declaration = selector_variable->m_type_declaration;
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
         } else if( ASR::is_a<ASR::StructInstanceMember_t>(*m_selector) ) {
@@ -2688,34 +2688,32 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_ext));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_ext);
             selector_variable_type = selector_variable->m_type;
-            selector_variable_type_declaration = selector_variable->m_type_declaration;
+            select_variable_m_type_declaration = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
             selector_variable_dependencies = selector_variable->m_dependencies;
             selector_variable_n_dependencies = selector_variable->n_dependencies;
         }
 
         auto make_typed_selector_view_type = [&](const Location& loc,
-                ASR::ttype_t* selector_ttype, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
-            bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_ttype);
-            bool is_alloc = ASR::is_a<ASR::Allocatable_t>(*selector_ttype);
-            ASR::ttype_t* base = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(selector_ttype));
+                ASR::ttype_t* selector_type, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
+            bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_type);
+            bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*selector_type);
+            ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(selector_type));
 
             ASR::ttype_t* result = guard_type;
-            if (ASR::is_a<ASR::Array_t>(*base)) {
-                // Array views need pointer-to-descriptor representation
-                if (!is_alloc) is_ptr = true;
-                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
-                if (arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-                    // Assumed-rank: n_dims==0 but rank may be known from select rank
-                    int rank = -1;
-                    if (selector_variable) {
+            if (ASR::is_a<ASR::Array_t>(*base_type)) {
+                if (!is_allocatable) is_ptr = true;
+
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base_type);
+                bool is_assumed_rank = arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
+
+                if (is_assumed_rank) {
+                    int known_rank = selector_variable ? [&]() {
                         auto it = assumed_rank_arrays.find(selector_variable->m_name);
-                        if (it != assumed_rank_arrays.end()) {
-                            rank = it->second;
-                        }
-                    }
-                    if (rank > 0) {
-                        result = ASRUtils::create_array_type_with_empty_dims(al, rank, guard_type);
+                        return it != assumed_rank_arrays.end() ? it->second : 0;
+                    }() : 0;
+                    if (known_rank > 0) {
+                        result = ASRUtils::create_array_type_with_empty_dims(al, known_rank, guard_type);
                     } else {
                         result = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, guard_type, arr->m_dims, arr->n_dims,
@@ -2728,44 +2726,20 @@ public:
                 }
             }
             if (is_ptr) result = ASRUtils::make_Pointer_t_util(al, loc, result);
-            if (is_alloc) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
+            if (is_allocatable) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
             return result;
         };
 
-        auto array_view_needs_cast = [&](ASR::ttype_t* from_type, ASR::ttype_t* to_type) -> bool {
-            ASR::ttype_t* from_el = ASRUtils::extract_type(from_type);
-            ASR::ttype_t* to_el = ASRUtils::extract_type(to_type);
+        auto element_types_differ = [&](ASR::ttype_t* from, ASR::ttype_t* to) -> bool {
+            ASR::ttype_t* from_el = ASRUtils::extract_type(from);
+            ASR::ttype_t* to_el = ASRUtils::extract_type(to);
             if (from_el->type != to_el->type) return true;
-            switch (from_el->type) {
-                case ASR::ttypeType::Integer: {
-                    return ASR::down_cast<ASR::Integer_t>(from_el)->m_kind !=
-                           ASR::down_cast<ASR::Integer_t>(to_el)->m_kind;
-                }
-                case ASR::ttypeType::UnsignedInteger: {
-                    return ASR::down_cast<ASR::UnsignedInteger_t>(from_el)->m_kind !=
-                           ASR::down_cast<ASR::UnsignedInteger_t>(to_el)->m_kind;
-                }
-                case ASR::ttypeType::Real: {
-                    return ASR::down_cast<ASR::Real_t>(from_el)->m_kind !=
-                           ASR::down_cast<ASR::Real_t>(to_el)->m_kind;
-                }
-                case ASR::ttypeType::Complex: {
-                    return ASR::down_cast<ASR::Complex_t>(from_el)->m_kind !=
-                           ASR::down_cast<ASR::Complex_t>(to_el)->m_kind;
-                }
-                case ASR::ttypeType::Logical: {
-                    return ASR::down_cast<ASR::Logical_t>(from_el)->m_kind !=
-                           ASR::down_cast<ASR::Logical_t>(to_el)->m_kind;
-                }
-                case ASR::ttypeType::StructType: {
-                    ASR::StructType_t* from_st = ASR::down_cast<ASR::StructType_t>(from_el);
-                    ASR::StructType_t* to_st = ASR::down_cast<ASR::StructType_t>(to_el);
-                    return from_st->m_is_unlimited_polymorphic != to_st->m_is_unlimited_polymorphic;
-                }
-                default: {
-                    return false;
-                }
+            if (ASR::is_a<ASR::StructType_t>(*from_el)) {
+                return ASR::down_cast<ASR::StructType_t>(from_el)->m_is_unlimited_polymorphic !=
+                       ASR::down_cast<ASR::StructType_t>(to_el)->m_is_unlimited_polymorphic;
             }
+            return ASRUtils::extract_kind_from_ttype_t(from_el) !=
+                   ASRUtils::extract_kind_from_ttype_t(to_el);
         };
 
         for( size_t i = 0; i < x.n_body; i++ ) {
@@ -2931,13 +2905,12 @@ public:
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
                     if( assoc_sym ) {
                         ASR::expr_t* assoc_value = m_selector;
-                        if (selector_variable && selector_ttype &&
+                        bool is_array_selector = selector_variable && selector_ttype &&
                             ASRUtils::is_array(ASRUtils::type_get_past_allocatable(
-                                ASRUtils::type_get_past_pointer(selector_ttype))) &&
-                            array_view_needs_cast(ASRUtils::expr_type(m_selector), assoc_variable->m_type)) {
-                            // For view casts on assumed-shape arrays, ensure the cast result type
-                            // has explicit bounds (required by ASR verify when the cast is not
-                            // inside a call).
+                                ASRUtils::type_get_past_pointer(selector_ttype)));
+                        bool needs_cast = is_array_selector &&
+                            element_types_differ(ASRUtils::expr_type(m_selector), assoc_variable->m_type);
+                        if (needs_cast) {
                             ASR::ttype_t* assoc_base = ASRUtils::type_get_past_allocatable(
                                 ASRUtils::type_get_past_pointer(assoc_variable->m_type));
                             ASR::ttype_t* cast_type = assoc_variable->m_type;
@@ -3015,7 +2988,7 @@ public:
 
         if (selector_variable) {
             selector_variable->m_type = selector_variable_type;
-            selector_variable->m_type_declaration = selector_variable_type_declaration;
+            selector_variable->m_type_declaration = select_variable_m_type_declaration;
             selector_variable->m_dependencies = selector_variable_dependencies;
             selector_variable->n_dependencies = selector_variable_n_dependencies;
         }
