@@ -112,6 +112,7 @@ class ASRBuilder {
     #define int16        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 2))
     #define int32        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
     #define int64        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))
+    #define int_idx(k)   ASRUtils::TYPE(ASR::make_Integer_t(al, loc, k))
     #define real32       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))
     #define real64       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8))
     #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
@@ -197,7 +198,7 @@ class ASRBuilder {
             len_kind, physical_type));
     }
 
-    ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
+    ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim, int index_kind = 4) {
         ASR::expr_t* value = nullptr;
         ASR::ttype_t* type = ASRUtils::expr_type(x);
         if ( ASRUtils::is_array(type) ) {
@@ -218,14 +219,14 @@ class ASRBuilder {
                     if( !ASRUtils::extract_value(length, const_length) ) {
                         LCOMPILERS_ASSERT(false);
                     }
-                    value = i32(const_lbound + const_length - 1);
+                    value = i_idx(const_lbound + const_length - 1, index_kind);
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_idx(index_kind), ASR::arrayboundType::UBound, value));
     }
 
-    ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim) {
+    ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim, int index_kind = 4) {
         ASR::expr_t* value = nullptr;
         ASR::ttype_t* type = ASRUtils::expr_type(x);
         if ( ASRUtils::is_array(type) ) {
@@ -240,11 +241,11 @@ class ASRBuilder {
                     if( !ASRUtils::extract_value(start, const_lbound) ) {
                         LCOMPILERS_ASSERT(false);
                     }
-                    value = i32(const_lbound);
+                    value = i_idx(const_lbound, index_kind);
                 }
             }
         }
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, value));
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i_idx(dim, index_kind), int_idx(index_kind), ASR::arrayboundType::LBound, value));
     }
 
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
@@ -265,6 +266,11 @@ class ASRBuilder {
 
     inline ASR::expr_t* i64(int64_t x) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64));
+    }
+
+    // Integer constant with specified kind (4 or 8)
+    inline ASR::expr_t* i_idx(int64_t x, int index_kind) {
+        return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int_idx(index_kind)));
     }
 
     inline ASR::expr_t* i_neg(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -732,7 +738,8 @@ class ASRBuilder {
     ASR::expr_t* CallIntrinsic(SymbolTable* scope, std::vector<ASR::ttype_t*> types,
                                 std::vector<ASR::expr_t*> args,  ASR::ttype_t* return_type, int64_t overload_id,
                                 ASR::expr_t* (*intrinsic_func)(Allocator &, const Location &, SymbolTable *,
-                                Vec<ASR::ttype_t*>&, ASR::ttype_t *, Vec<ASR::call_arg_t>&, int64_t)) {
+                                Vec<ASR::ttype_t*>&, ASR::ttype_t *, Vec<ASR::call_arg_t>&, int64_t, int),
+                                int index_kind = 4) {
         Vec<ASR::ttype_t*> arg_types; arg_types.reserve(al, types.size());
         for (auto &x: types) arg_types.push_back(al, x);
 
@@ -742,7 +749,7 @@ class ASRBuilder {
             new_args.push_back(al, call_arg);
         }
 
-        return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
+        return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id, index_kind);
     }
 
     // Compare -----------------------------------------------------------------
@@ -1088,8 +1095,8 @@ class ASRBuilder {
         return ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, m_a.p, m_a.n));
     }
 
-    #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
-    #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
+    #define UBound(arr, dim, ...) PassUtils::get_bound(arr, dim, "ubound", al, ##__VA_ARGS__)
+    #define LBound(arr, dim, ...) PassUtils::get_bound(arr, dim, "lbound", al, ##__VA_ARGS__)
 
     ASR::stmt_t *DoLoop(ASR::expr_t *m_v, ASR::expr_t *start, ASR::expr_t *end,
             std::vector<ASR::stmt_t*> loop_body, ASR::expr_t *step=nullptr) {
@@ -1127,15 +1134,15 @@ class ASRBuilder {
     ASR::stmt_t* create_do_loop(
         const Location& loc, int rank, ASR::expr_t* array,
         SymbolTable* scope, Vec<ASR::expr_t*>& idx_vars,
-        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
-        PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i");
+        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, int index_kind = 4) {
+        PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i", index_kind);
 
         ASR::stmt_t* doloop = nullptr;
         for ( int i = 0; i < (int) idx_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
-            head.m_start = PassUtils::get_bound(array, i + 1, "lbound", al);
-            head.m_end = PassUtils::get_bound(array, i + 1, "ubound", al);
+            head.m_start = PassUtils::get_bound(array, i + 1, "lbound", al, index_kind);
+            head.m_end = PassUtils::get_bound(array, i + 1, "ubound", al, index_kind);
             head.m_increment = nullptr;
 
             head.loc = head.m_v->base.loc;
@@ -1155,14 +1162,14 @@ class ASRBuilder {
     ASR::stmt_t* create_do_loop(
         const Location& loc, ASR::expr_t* array,
         Vec<ASR::expr_t*>& loop_vars, std::vector<int>& loop_dims,
-        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
+        Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, int index_kind = 4) {
 
         ASR::stmt_t* doloop = nullptr;
         for ( int i = 0; i < (int) loop_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = loop_vars[i];
-            head.m_start = PassUtils::get_bound(array, loop_dims[i], "lbound", al);
-            head.m_end = PassUtils::get_bound(array, loop_dims[i], "ubound", al);
+            head.m_start = PassUtils::get_bound(array, loop_dims[i], "lbound", al, index_kind);
+            head.m_end = PassUtils::get_bound(array, loop_dims[i], "ubound", al, index_kind);
             head.m_increment = nullptr;
 
             head.loc = head.m_v->base.loc;
@@ -1182,12 +1189,13 @@ class ASRBuilder {
     void generate_reduction_intrinsic_stmts_for_scalar_output(const Location& loc,
     ASR::expr_t* array, SymbolTable* fn_scope,
     Vec<ASR::stmt_t*>& fn_body, Vec<ASR::expr_t*>& idx_vars,
-    Vec<ASR::stmt_t*>& doloop_body, INIT init_stmts, LOOP_BODY loop_body) {
+    Vec<ASR::stmt_t*>& doloop_body, INIT init_stmts, LOOP_BODY loop_body,
+    int index_kind = 4) {
         init_stmts();
         int rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
         ASR::stmt_t* doloop = create_do_loop(loc,
             rank, array, fn_scope, idx_vars, doloop_body,
-            loop_body);
+            loop_body, index_kind);
         fn_body.push_back(al, doloop);
     }
 
@@ -1196,15 +1204,15 @@ class ASRBuilder {
         ASR::expr_t* array, ASR::expr_t* dim, SymbolTable* fn_scope,
         Vec<ASR::stmt_t*>& fn_body, Vec<ASR::expr_t*>& idx_vars,
         Vec<ASR::expr_t*>& target_idx_vars, Vec<ASR::stmt_t*>& doloop_body,
-        INIT init_stmts, LOOP_BODY loop_body) {
+        INIT init_stmts, LOOP_BODY loop_body, int index_kind = 4) {
         init_stmts();
         int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
         ASR::stmt_t** else_ = nullptr;
         size_t else_n = 0;
         idx_vars.reserve(al, n_dims);
-        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, fn_scope, "_j");
+        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, fn_scope, "_j", index_kind);
         for( int i = 1; i <= n_dims; i++ ) {
-            ASR::expr_t* current_dim = i32(i);
+            ASR::expr_t* current_dim = (index_kind == 8) ? i64(i) : i32(i);
             ASR::expr_t* test_expr = Eq(dim, current_dim);
             Vec<ASR::expr_t*> loop_vars;
             std::vector<int> loop_dims;
@@ -1224,7 +1232,7 @@ class ASRBuilder {
 
             ASR::stmt_t* doloop = create_do_loop(loc,
             array, loop_vars, loop_dims, doloop_body,
-            loop_body);
+            loop_body, index_kind);
             Vec<ASR::stmt_t*> if_body;
             if_body.reserve(al, 1);
             if_body.push_back(al, doloop);

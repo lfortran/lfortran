@@ -54,20 +54,24 @@ namespace LCompilers {
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
                          Allocator& al, SymbolTable*& current_scope, std::string suffix="_k",
                          ASR::intentType intent=ASR::intentType::Local,
-                         ASR::presenceType presence=ASR::presenceType::Required);
+                         ASR::presenceType presence=ASR::presenceType::Required,
+                         int index_kind=4);
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc,
-                             Allocator& al, SymbolTable*& current_scope, std::string suffix="_k");
+                             Allocator& al, SymbolTable*& current_scope, std::string suffix="_k",
+                             int index_kind=4);
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, ASR::array_index_t* m_args, int n_dims,
                              std::vector<int>& value_indices, const Location& loc, Allocator& al,
-                             SymbolTable*& current_scope, std::string suffix="_k");
+                             SymbolTable*& current_scope, std::string suffix="_k",
+                             int index_kind=4);
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
                              std::vector<int>& loop_var_indices,
                              Vec<ASR::expr_t*>& vars, Vec<ASR::expr_t*>& incs,
                              const Location& loc, Allocator& al,
-                             SymbolTable*& current_scope, std::string suffix="_k");
+                             SymbolTable*& current_scope, std::string suffix="_k",
+                             int index_kind=4);
 
         ASR::expr_t* create_compare_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                             ASR::cmpopType op);

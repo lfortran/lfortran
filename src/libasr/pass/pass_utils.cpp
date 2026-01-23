@@ -383,12 +383,12 @@ namespace LCompilers {
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
                          Allocator& al, SymbolTable*& current_scope, std::string suffix,
-                         ASR::intentType intent, ASR::presenceType presence) {
+                         ASR::intentType intent, ASR::presenceType presence, int index_kind) {
             vars.reserve(al, n_vars);
             for (int i = 1; i <= n_vars; i++) {
                 std::string idx_var_name = "__" + std::to_string(i) + suffix;
                 idx_var_name = current_scope->get_unique_name(idx_var_name, false);
-                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind));
                 if( current_scope->get_symbol(idx_var_name) != nullptr ) {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
@@ -419,13 +419,15 @@ namespace LCompilers {
         }
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc,
-                             Allocator& al, SymbolTable*& current_scope, std::string suffix) {
-            create_vars(idx_vars, n_dims, loc, al, current_scope, suffix);
+                             Allocator& al, SymbolTable*& current_scope, std::string suffix,
+                             int index_kind) {
+            create_vars(idx_vars, n_dims, loc, al, current_scope, suffix,
+                        ASR::intentType::Local, ASR::presenceType::Required, index_kind);
         }
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, ASR::array_index_t* m_args, int n_dims,
                              std::vector<int>& value_indices, const Location& loc, Allocator& al,
-                             SymbolTable*& current_scope, std::string suffix) {
+                             SymbolTable*& current_scope, std::string suffix, int index_kind) {
             idx_vars.reserve(al, n_dims);
             for (int i = 1; i <= n_dims; i++) {
                 if( m_args[i - 1].m_step == nullptr ) {
@@ -433,7 +435,7 @@ namespace LCompilers {
                     continue;
                 }
                 std::string idx_var_name = "__" + std::to_string(i) + suffix;
-                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind));
                 if( current_scope->get_symbol(idx_var_name) != nullptr ) {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
@@ -468,7 +470,7 @@ namespace LCompilers {
                              std::vector<int>& loop_var_indices,
                              Vec<ASR::expr_t*>& vars, Vec<ASR::expr_t*>& incs,
                              const Location& loc, Allocator& al,
-                             SymbolTable*& current_scope, std::string suffix) {
+                             SymbolTable*& current_scope, std::string suffix, int index_kind) {
             idx_vars.reserve(al, incs.size());
             loop_vars.reserve(al, 1);
             for (size_t i = 0; i < incs.size(); i++) {
@@ -477,7 +479,7 @@ namespace LCompilers {
                     continue;
                 }
                 std::string idx_var_name = "__" + std::to_string(i + 1) + suffix;
-                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind));
                 if( current_scope->get_symbol(idx_var_name) != nullptr ) {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
@@ -983,8 +985,9 @@ namespace LCompilers {
             args.push_back(al, arg0_);
             arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
             args.push_back(al, arg1_);
+            int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
             return instantiate_function(al, loc,
-                unit.m_symtab, arg_types, type, args, 0);
+                unit.m_symtab, arg_types, type, args, 0, index_kind);
         }
 
         ASR::expr_t* to_int32(ASR::expr_t* x, ASR::ttype_t* int64type, Allocator& al) {
@@ -1080,8 +1083,9 @@ namespace LCompilers {
             args.push_back(al, arg1_);
             arg2_.loc = arg2->base.loc, arg2_.m_value = arg2;
             args.push_back(al, arg2_);
+            int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
             return instantiate_function(al, loc,
-                unit.m_symtab, arg_types, type, args, 0);
+                unit.m_symtab, arg_types, type, args, 0, index_kind);
         }
 
         ASR::symbol_t* insert_fallback_vector_copy(Allocator& al, ASR::TranslationUnit_t& unit,
@@ -1209,8 +1213,9 @@ namespace LCompilers {
             args.push_back(al, arg0_);
             arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
             args.push_back(al, arg1_);
+            int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
             return instantiate_function(al, loc,
-                unit.m_symtab, arg_types, type, args, 0);
+                unit.m_symtab, arg_types, type, args, 0, index_kind);
         }
 
         void cast_util(ASR::expr_t*& left, ASR::expr_t*& right, Allocator& al, bool is_assign=false) {

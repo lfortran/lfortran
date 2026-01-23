@@ -192,6 +192,12 @@ namespace LCompilers {
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false) = 0;
 
                 /*
+                * Returns the llvm::Type* used for array indices (i32 or i64).
+                */
+                virtual
+                llvm::Type* get_index_type() const = 0;
+
+                /*
                 * Returns pointer to data in the input
                 * array descriptor according to the rules
                 * implemented by current class.
