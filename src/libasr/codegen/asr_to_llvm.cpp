@@ -13357,6 +13357,7 @@ public:
         llvm::Value *position{}, *position_len{};
         llvm::Value *blank{}, *blank_len{};
         llvm::Value *recl{};
+        llvm::Value *encoding_data{}, *encoding_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -13435,6 +13436,13 @@ public:
             recl = llvm::ConstantPointerNull::get(
                 llvm::Type::getInt32Ty(context)->getPointerTo());
         }
+        if (x.m_encoding) {
+            std::tie(encoding_data, encoding_len) = get_string_data_and_length(x.m_encoding);
+        } else {
+            encoding_data = llvm::Constant::getNullValue(character_type);
+            encoding_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
+
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -13453,6 +13461,7 @@ public:
                         character_type, i64, // delim, delim_len
                         character_type, i64, // position, position_len
                         character_type, i64,  // blank, blank_len
+                        character_type, i64, //encoding_data, encoding_len
                         llvm::Type::getInt32Ty(context)->getPointerTo() // recl 
                     }, false);
             fn = llvm::Function::Create(function_type,
@@ -13469,6 +13478,7 @@ public:
             delim, delim_len,
             position, position_len,
             blank, blank_len,
+            encoding_data, encoding_len,
             recl
         });
     }

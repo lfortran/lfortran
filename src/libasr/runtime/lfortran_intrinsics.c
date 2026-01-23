@@ -4281,10 +4281,30 @@ _lfortran_open(int32_t unit_num,
                int64_t position_len,
                char* blank,
                int64_t blank_len,
+               char* encoding,
+               int64_t encoding_len,
                int32_t* recl)
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    bool ini_encoding = true;
+    if (encoding == NULL) {
+        encoding = "default";
+        encoding_len = 7;
+        ini_encoding = false;
+    }
+
+    trim_trailing_spaces(&encoding, &encoding_len, ini_encoding);
+    char* encoding_c = to_c_string((const fchar*)encoding, encoding_len);
+
+    // DEFAULT and UTF-8 are currently treated the same
+    if (!streql(encoding_c, "default") && !streql(encoding_c, "utf-8")) {
+        // Unknown encoding → warning
+        fprintf(stderr,
+            "Warning: ENCODING='%s' is not recognized, treated as DEFAULT\n",
+            encoding_c
+        );
     }
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
@@ -4561,6 +4581,7 @@ _lfortran_open(int32_t unit_num,
     free(form_c);
     free(access_c);
     free(action_c);
+    free(encoding_c);
     return 0;
 }
 
