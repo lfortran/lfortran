@@ -672,7 +672,15 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+        // Compute exponent based on decimal (stripped zeros) or integer_length
+        // This is more accurate than log10 for values near powers of 10
+        // For val >= 1: exponent = integer_length - scale
+        // For val < 1:  exponent = decimal - scale
+        if (fabs(val) >= 1.0) {
+            exponent_value = integer_length - scale;
+        } else {
+            exponent_value = decimal - scale;
+        }
     }
 
     // For ES format with 0 decimal places, we need to round properly
@@ -699,7 +707,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value >= 100)) {
+    } else if (abs(exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -721,8 +729,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // exponent = "+10"
     }
 
-    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
     int exp_length = strlen(exponent);
+    // For 3-digit exponents, 'E' is dropped to save space (Fortran standard)
+    bool drop_e = (abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
         // For ES0.0E0 or similar, keep digits = 0 to match gfortran behavior
@@ -805,8 +815,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    // Always add exponent for E/ES/D formats
-    if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+    // Add 'E' unless dropped for 3-digit exponents
+    if (!drop_e) {
         strcat(formatted_value, c);
     }
     // formatted_value = "  1.12E"

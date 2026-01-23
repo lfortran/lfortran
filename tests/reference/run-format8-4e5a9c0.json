@@ -1,0 +1,13 @@
+{
+    "basename": "run-format8-4e5a9c0",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/format8.f90",
+    "infile_hash": "30908958fbdff81f81f462b9361840b83c87df049d3b81311709b494",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-format8-4e5a9c0.stdout",
+    "stdout_hash": "fa723c58541506da3d4ef67cccca0883504118610c2a5a645389c13f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
