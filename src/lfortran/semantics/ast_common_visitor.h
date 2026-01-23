@@ -13164,11 +13164,15 @@ public:
                 if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter() == current_scope->get_counter())
                     call_sym = real_proc;
                 else {
-                    call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                    al, real_proc->base.loc, current_scope,
-                    s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                    nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
-                    current_scope->add_symbol(matched_func_name, call_sym);
+                    if (current_scope->resolve_symbol(matched_func_name))
+                        call_sym = current_scope->resolve_symbol(matched_func_name);
+                    else {
+                        call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                        al, real_proc->base.loc, current_scope,
+                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
+                        current_scope->add_symbol(matched_func_name, call_sym);
+                    }
                 }
             }
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
@@ -13228,14 +13232,18 @@ public:
                         == current_scope->get_counter())
                     a_name = real_proc;
                 else {
-                    a_name = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, real_proc->base.loc, current_scope,
-                            s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                            nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(matched_func_name, a_name);
+                    if (current_scope->resolve_symbol(matched_func_name))
+                        a_name = current_scope->resolve_symbol(matched_func_name);
+                    else {
+                        a_name = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, real_proc->base.loc, current_scope,
+                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(matched_func_name, a_name);
+                    }
                 }
             }
 
@@ -13330,14 +13338,18 @@ public:
                         == current_scope->get_counter())
                     call_sym = real_proc;
                 else {
-                    call_sym = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, real_proc->base.loc, current_scope,
-                            s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                            nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(matched_func_name, call_sym);
+                    if (current_scope->resolve_symbol(matched_func_name))
+                        call_sym = current_scope->resolve_symbol(matched_func_name);
+                    else {
+                        call_sym = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, real_proc->base.loc, current_scope,
+                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(matched_func_name, call_sym);
+                    }
                 }
             }
 
