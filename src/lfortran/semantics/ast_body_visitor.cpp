@@ -2693,21 +2693,21 @@ public:
             selector_variable_n_dependencies = selector_variable->n_dependencies;
         }
 
-	        auto make_typed_selector_view_type = [&](const Location& loc,
-	                ASR::ttype_t* selector_ttype, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
-	            bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_ttype);
-	            bool is_alloc = ASR::is_a<ASR::Allocatable_t>(*selector_ttype);
-	            ASR::ttype_t* base = ASRUtils::type_get_past_allocatable(
-	                ASRUtils::type_get_past_pointer(selector_ttype));
+        auto make_typed_selector_view_type = [&](const Location& loc,
+                ASR::ttype_t* selector_ttype, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
+            bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_ttype);
+            bool is_alloc = ASR::is_a<ASR::Allocatable_t>(*selector_ttype);
+            ASR::ttype_t* base = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(selector_ttype));
 
-	            ASR::ttype_t* result = guard_type;
-	            if (ASR::is_a<ASR::Array_t>(*base)) {
-	                // The select-type associate entity is an alias/view. For array selectors
-	                // this is best represented as a pointer-to-descriptor, even if the selector
-	                // itself is not a pointer, to avoid eager descriptor initialization.
-	                if (!is_alloc) is_ptr = true;
-	                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
-	                if (arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+            ASR::ttype_t* result = guard_type;
+            if (ASR::is_a<ASR::Array_t>(*base)) {
+                // The select-type associate entity is an alias/view. For array selectors
+                // this is best represented as a pointer-to-descriptor, even if the selector
+                // itself is not a pointer, to avoid eager descriptor initialization.
+                if (!is_alloc) is_ptr = true;
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base);
+                if (arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                         // Assumed-rank arrays have `n_dims == 0`, so `make_Array_t_util()` would
                         // drop the array wrapper. Inside `select rank`, the rank is known and
                         // recorded in `assumed_rank_arrays`.
@@ -2725,12 +2725,12 @@ public:
                                 al, loc, guard_type, arr->m_dims, arr->n_dims,
                                 ASR::array_physical_typeType::AssumedRankArray));
                         }
-	                } else {
-	                    result = ASRUtils::make_Array_t_util(
-	                        al, loc, guard_type, arr->m_dims, arr->n_dims,
-	                        ASR::abiType::Source, false, arr->m_physical_type, true);
-	                }
-	            }
+                } else {
+                    result = ASRUtils::make_Array_t_util(
+                        al, loc, guard_type, arr->m_dims, arr->n_dims,
+                        ASR::abiType::Source, false, arr->m_physical_type, true);
+                }
+            }
             if (is_ptr) result = ASRUtils::make_Pointer_t_util(al, loc, result);
             if (is_alloc) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
             return result;
@@ -2772,27 +2772,27 @@ public:
             }
         };
 
-	        for( size_t i = 0; i < x.n_body; i++ ) {
-	            SymbolTable* parent_scope = current_scope;
-	            current_scope = al.make_new<SymbolTable>(parent_scope);
-	            ASR::Variable_t* assoc_variable = nullptr;
-	            ASR::symbol_t* assoc_sym = nullptr;
-	            bool need_shadow_assoc = (x.m_assoc_name != nullptr);
-	            if (!need_shadow_assoc && selector_variable) {
-	                ASR::ttype_t* sel_base = ASRUtils::type_get_past_allocatable(
-	                    ASRUtils::type_get_past_pointer(selector_variable->m_type));
-	                need_shadow_assoc = ASR::is_a<ASR::Array_t>(*sel_base);
-	            }
-	            char* assoc_name = nullptr;
-	            if (need_shadow_assoc) {
-	                assoc_name = x.m_assoc_name ? x.m_assoc_name :
-	                    (selector_variable ? selector_variable->m_name : nullptr);
-	            }
-	            if (assoc_name) {
-	                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-	                    al, x.base.base.loc, current_scope, assoc_name,
-	                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
-	                    ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
+        for( size_t i = 0; i < x.n_body; i++ ) {
+            SymbolTable* parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            ASR::Variable_t* assoc_variable = nullptr;
+            ASR::symbol_t* assoc_sym = nullptr;
+            bool need_shadow_assoc = (x.m_assoc_name != nullptr);
+            if (!need_shadow_assoc && selector_variable) {
+                ASR::ttype_t* sel_base = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(selector_variable->m_type));
+                need_shadow_assoc = ASR::is_a<ASR::Array_t>(*sel_base);
+            }
+            char* assoc_name = nullptr;
+            if (need_shadow_assoc) {
+                assoc_name = x.m_assoc_name ? x.m_assoc_name :
+                    (selector_variable ? selector_variable->m_name : nullptr);
+            }
+            if (assoc_name) {
+                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                    al, x.base.base.loc, current_scope, assoc_name,
+                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(assoc_name), assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
