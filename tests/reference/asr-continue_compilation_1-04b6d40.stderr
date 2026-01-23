@@ -1092,3 +1092,15 @@ semantic error: Intrinsic `allocated` can be called only on allocatable argument
     |
 484 |     print *, allocated(strx)
     |              ^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:489:5
+    |
+489 |     read(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:490:5
+    |
+490 |     write(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^^ 

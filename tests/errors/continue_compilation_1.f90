@@ -485,6 +485,10 @@ program continue_compilation_1
 
     call intrinsic_polymorphic("  Hello World  ")
 
+    character(len=10) :: str_var
+    read(str_var, rec=1) x
+    write(str_var, rec=1) x
+        
     contains
     subroutine sub(f)
         interface
