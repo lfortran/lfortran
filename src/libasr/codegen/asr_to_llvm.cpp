@@ -6325,6 +6325,15 @@ public:
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
                 }
             }
+            if (ASRUtils::is_string_only(symbol_type) && ASRUtils::is_allocatable(symbol_type)) {                                                                  
+                ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);                                             
+                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len) {                                      
+                    uint32_t h = get_hash((ASR::asr_t*)sym.second);                                                   
+                    LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());                                           
+                    llvm::Value* str_desc = llvm_symtab[h];                                                         
+                    setup_string_length(str_desc, str_t, str_t->m_len);                                     
+                }                                                                                            
+            }                                                                                                              
             if( !(ASRUtils::is_pointer(symbol_type) || ASRUtils::is_allocatable(symbol_type)) &&
                 ASRUtils::is_array(symbol_type) &&
                 ASRUtils::extract_physical_type(symbol_type)
