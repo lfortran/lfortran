@@ -12693,11 +12693,8 @@ public:
             builder->CreateCall(fn, {unit_val, pos_val, iostat});
         }
 
-        if (x.m_rec) {
-            llvm::Value *rec_val = get_record_value(x.m_rec);
-            if (!is_string) {
-                emit_seek_record(unit_val, rec_val, iostat);
-            }
+        if (x.m_rec && !is_string) {
+            emit_seek_record_from_rec(x.m_rec, unit_val, iostat);
         }
 
         if (x.m_fmt) {
@@ -13125,18 +13122,6 @@ public:
         }
     }
 
-    llvm::Value* get_record_value(ASR::expr_t* rec_expr) {
-        int ptr_copy_rec = ptr_loads;
-        ptr_loads = 0;
-        this->visit_expr_wrapper(rec_expr, true);
-        ptr_loads = ptr_copy_rec;
-
-        llvm::Value *rec_val = tmp;
-        if (rec_val->getType()->isPointerTy()) {
-            rec_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), rec_val);
-        }
-        return llvm_utils->convert_kind(rec_val, llvm::Type::getInt32Ty(context));
-    }
 
     void emit_seek_record(llvm::Value* unit_val, llvm::Value* rec_val, llvm::Value* iostat) {
         llvm::Value *unit_i32 = unit_val;
@@ -13156,6 +13141,21 @@ public:
             seek_fn = llvm::Function::Create(seek_ft, llvm::Function::ExternalLinkage, seek_name, module.get());
         }
         builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
+    }
+
+    void emit_seek_record_from_rec(ASR::expr_t* rec_expr, llvm::Value* unit_val, llvm::Value* iostat) {
+        int ptr_copy_rec = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(rec_expr, true);
+        ptr_loads = ptr_copy_rec;
+
+        llvm::Value *rec_val = tmp;
+        if (rec_val->getType()->isPointerTy()) {
+            rec_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), rec_val);
+        }
+        rec_val = llvm_utils->convert_kind(rec_val, llvm::Type::getInt32Ty(context));
+
+        emit_seek_record(unit_val, rec_val, iostat);
     }
 
     void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
@@ -14017,10 +14017,7 @@ public:
         }
         
         if (x.m_rec) {
-            llvm::Value *rec_val = get_record_value(x.m_rec);
-            if (!is_string) {
-                emit_seek_record(unit, rec_val, iostat);
-            }
+            emit_seek_record_from_rec(x.m_rec, unit, iostat);
         }
 
         if (x.m_separator) {
