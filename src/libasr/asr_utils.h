@@ -4019,6 +4019,23 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
 
+// Compares two ASR types for structural equality.
+//
+// Parameters:
+//   a, b: The types to compare (required, but nullptr is allowed for both).
+//   a_expr, b_expr: Optional expressions providing context for resolving symbol
+//       references in complex types (StructType, UnionType, FunctionType).
+//       - Non-null: Uses the expression to look up actual struct/union/function
+//         symbols via get_struct_sym_from_struct_expr(), etc. Required when the
+//         type nodes alone do not uniquely identify the declaration (e.g., two
+//         StructType_t nodes referencing different struct declarations).
+//       - Null: Falls back to structural comparison of the types fields directly
+//         (compares m_is_unlimited_polymorphic, member types, etc.). Use null
+//         when expression context is unavailable, such as in utility functions
+//         like make_ArrayPhysicalCast_t_util() that operate on types alone.
+//   check_for_dimensions: If true, also compare array dimensions.
+//
+// Returns true if the types are structurally equal.
 inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions=false) {
     // TODO: If anyone of the input or argument is derived type then
