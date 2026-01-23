@@ -12695,7 +12695,9 @@ public:
 
         if (x.m_rec) {
             llvm::Value *rec_val = get_record_value(x.m_rec);
-            emit_seek_record(unit_val, rec_val, iostat);
+            if (!is_string) {
+                emit_seek_record(unit_val, rec_val, iostat);
+            }
         }
 
         if (x.m_fmt) {
