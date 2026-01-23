@@ -13151,15 +13151,25 @@ public:
             }
 
             std::string func_name = to_lower(single_func->m_name);
+            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
             ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
 
             if (call_sym == nullptr) {
-                ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(operator_sym);
-                std::string module_name = proc_owner ? ASRUtils::symbol_name(proc_owner) : "";
-                call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                    al, loc, current_scope, s2c(al, func_name), operator_sym, s2c(al, module_name),
-                    nullptr, 0, s2c(al, single_func->m_name), ASR::accessType::Public));
-                current_scope->add_symbol(func_name, call_sym);
+                call_sym = current_scope->resolve_symbol(matched_func_name);
+            }
+            if (call_sym == nullptr && first_struct != nullptr) {
+                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
+                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
+                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter() == current_scope->get_counter())
+                    call_sym = real_proc;
+                else {
+                    call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, real_proc->base.loc, current_scope,
+                    s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                    nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
+                    current_scope->add_symbol(matched_func_name, call_sym);
+                }
             }
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
                 != current_scope->get_counter()) {
@@ -13173,8 +13183,7 @@ public:
         }
 
         if (is_binary && ASR::is_a<ASR::Function_t>(*operator_sym)) {
-            ASR::Function_t* func =
-                ASR::down_cast<ASR::Function_t>(operator_sym);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(operator_sym);
 
             if (func->n_args != 2) {
                 diag.add(Diagnostic(
@@ -13189,9 +13198,7 @@ public:
             a_args.push_back(al, { first_operand->base.loc, first_operand });
             a_args.push_back(al, { second_operand->base.loc, second_operand });
 
-            ASR::expr_t* first_array_arg =
-                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
-
+            ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
             ASR::ttype_t* return_type = nullptr;
             if (first_array_arg) {
                 ASR::dimension_t* dims;
@@ -13208,20 +13215,28 @@ public:
             }
 
             std::string func_name = to_lower(func->m_name);
+            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
             ASR::symbol_t* a_name = current_scope->resolve_symbol(func_name);
-
-            if (!a_name) {
+            if(a_name == nullptr) {
+                a_name = current_scope->resolve_symbol(matched_func_name);
+            }
+            if (a_name == nullptr && first_struct != nullptr) {
                 ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
                 ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
                 std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-
-                a_name = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(
-                        al, real_proc->base.loc, current_scope,
-                        s2c(al, func_name), real_proc, s2c(al, module_name),
-                        nullptr, 0, s2c(al, func->m_name),
-                        ASR::accessType::Public));
-                current_scope->add_symbol(func_name, a_name);
+                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
+                        == current_scope->get_counter())
+                    a_name = real_proc;
+                else {
+                    a_name = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, real_proc->base.loc, current_scope,
+                            s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                            nullptr, 0, s2c(al, func_name), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(matched_func_name, a_name);
+                }
             }
 
             if (!a_name) {
@@ -13233,7 +13248,6 @@ public:
                     { Label("", { loc }) }));
                 throw SemanticAbort();
             }
-
 
             tmp = ASRUtils::make_FunctionCall_t_util(
                 al, loc, a_name, nullptr,
@@ -13306,20 +13320,33 @@ public:
                 return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
             }
             std::string func_name = to_lower(func->m_name);
+            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
             ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-
             if (call_sym == nullptr) {
-                ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(proc);
-                std::string module_name = proc_owner ? ASRUtils::symbol_name(proc_owner) : "";
                 ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
                 ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                call_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(
-                        al, proc->base.loc, current_scope, s2c(al, func_name), real_proc,
-                        s2c(al, module_name), nullptr, 0, s2c(al, func->m_name),
-                        ASR::accessType::Public));
-                current_scope->add_symbol(func_name, call_sym);
+                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
+                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
+                        == current_scope->get_counter())
+                    call_sym = real_proc;
+                else {
+                    call_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, real_proc->base.loc, current_scope,
+                            s2c(al, matched_func_name), real_proc, s2c(al, module_name),
+                            nullptr, 0, s2c(al, func_name), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(matched_func_name, call_sym);
+                }
+            }
+
+            if (call_sym == nullptr) {
+                diag.add(Diagnostic(
+                    "Unable to resolve matched function: " + func_name + " for defined operator",
+                    Level::Error, Stage::Semantic, { Label("", { loc }) }
+                ));
+                throw SemanticAbort();
             }
 
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
