@@ -14122,7 +14122,7 @@ public:
             iostat = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context)->getPointerTo(), iostat);
         }
         
-        if (x.m_rec) {
+        if (x.m_rec && !is_string) {
             emit_seek_record_from_rec(x.m_rec, unit, iostat);
         }
 
