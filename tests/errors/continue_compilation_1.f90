@@ -488,6 +488,10 @@ program continue_compilation_1
     character(len=10) :: str_var
     read(str_var, rec=1) x
     write(str_var, rec=1) x
+    read(unit=10, rec=1, rec=2) y
+    write(unit=10, rec=1, rec=2) y
+    read(10, rec=1.5) y
+    write(10, rec=2.5) y
         
     contains
     subroutine sub(f)
