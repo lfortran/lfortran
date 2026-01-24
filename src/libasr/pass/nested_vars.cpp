@@ -885,6 +885,21 @@ public:
     bool calls_present = false;
     bool calls_in_loop_condition = false;
 
+    void mark_nested_procedure_arg(ASR::expr_t *arg_expr) {
+        if (!arg_expr) {
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
+            arg_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
+            if (is_nested_call_symbol(current_scope, var->m_v)) {
+                calls_present = true;
+            }
+        }
+    }
+
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
@@ -1274,6 +1289,7 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
+            mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
         }
         visit_ttype(*x.m_type);
@@ -1286,6 +1302,7 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
+            mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
         }
         if (x.m_dt)
