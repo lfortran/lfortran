@@ -501,8 +501,11 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     // Default fallback if 0
     bool is_g0_like = (width == 0 && decimal_digits == 0 && exp_digits == 0);
     if (decimal_digits <= 0) decimal_digits = 9;
+    
+    // Store original exp_digits to know if Ee was explicitly specified
+    int original_exp_digits = exp_digits;
     if (exp_digits == 0) exp_digits = 2;
-    else if (exp_digits == -1) exp_digits = 3;
+    else if (exp_digits == -1) exp_digits = 2;
 
     bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
 
@@ -541,10 +544,25 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             exponent -= remainder;
             scaled_val = val / pow(10, exponent);
         }
+        
+        // Adjust exp_digits dynamically if no explicit Ee was given
+        if (original_exp_digits <= 0) {
+            int abs_exp = abs(exponent);
+            if (abs_exp >= 100) {
+                exp_digits = 3;
+            } else if (abs_exp >= 10) {
+                exp_digits = 2;
+            } else {
+                exp_digits = 2;
+            }
+        }
+        
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        // exp_digits is the number of exponent digits, but %+0*d width includes the sign
+        // So we need exp_digits + 1 for the total width
         snprintf(formatted_value, sizeof(formatted_value),
-                "%s%s%+0*d", val_str, c, exp_digits, exponent);
+                "%s%s%+0*d", val_str, c, exp_digits + 1, exponent);
     }
 
     // Width == 0, no padding
@@ -730,8 +748,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     int exp_length = strlen(exponent);
-    // For 3-digit exponents, 'E' is dropped to save space (Fortran standard)
-    bool drop_e = (abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
+    // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
+    bool drop_e = (exp_digits <= 0 && abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
     int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
@@ -815,13 +834,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    // Add 'E' unless dropped for 3-digit exponents
+    // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
     if (!drop_e) {
         strcat(formatted_value, c);
     }
-    // formatted_value = "  1.12E"
+    // formatted_value = "  1.12E" or "  1.12" (if E dropped)
     strcat(formatted_value, exponent);
-    // formatted_value = "  1.12E+10"
+    // formatted_value = "  1.12E+10" or "  1.12+100" (if E dropped)
 
     if (strlen(formatted_value) > width) {
         if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
