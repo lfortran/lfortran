@@ -485,6 +485,8 @@ program continue_compilation_1
 
     call intrinsic_polymorphic("  Hello World  ")
 
+    OPEN(unit=10, encoding="UTF-8", encoding="UTF-8")
+    OPEN(unit=10, encoding=10)
     contains
     subroutine sub(f)
         interface

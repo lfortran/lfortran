@@ -1092,3 +1092,15 @@ semantic error: Intrinsic `allocated` can be called only on allocatable argument
     |
 484 |     print *, allocated(strx)
     |              ^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `encoding` found
+   --> tests/errors/continue_compilation_1.f90:488:5
+    |
+488 |     OPEN(unit=10, encoding="UTF-8", encoding="UTF-8")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `encoding` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:489:5
+    |
+489 |     OPEN(unit=10, encoding=10)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 

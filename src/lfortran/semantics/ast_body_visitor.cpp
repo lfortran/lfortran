@@ -265,7 +265,7 @@ public:
     void visit_Open(const AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
-            *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr;
+            *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -598,6 +598,53 @@ public:
                     throw SemanticAbort();
                 }
             }
+            else if (m_arg_str == std::string("encoding")) {
+                if (a_encoding != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `encoding` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                this->visit_expr(*kwarg.m_value);
+                a_encoding = ASRUtils::EXPR(tmp);
+
+                ASR::ttype_t *a_encoding_type = ASRUtils::expr_type(a_encoding);
+                if (!ASRUtils::is_character(*a_encoding_type)) {
+                    diag.add(Diagnostic(
+                        "`encoding` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (ASR::is_a<ASR::StringConstant_t>(*a_encoding)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_encoding)->m_s);
+                    rtrim(str);
+                    a_encoding = ASRUtils::EXPR(
+                        ASR::make_StringConstant_t(
+                            al, x.base.base.loc, s2c(al, str),
+                            ASRUtils::TYPE(
+                                ASR::make_String_t(
+                                    al, a_encoding->base.loc, 1,
+                                    ASRUtils::EXPR(
+                                        ASR::make_IntegerConstant_t(
+                                            al, a_encoding->base.loc, str.length(),
+                                            ASRUtils::TYPE(
+                                                ASR::make_Integer_t(al, a_encoding->base.loc, 4)
+                                            )
+                                        )
+                                    ),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::DescriptorString
+                                )
+                            )
+                        )
+                    );
+                }
+            }
             else {
                 const std::unordered_set<std::string> unsupported_args {"err", "fileopt", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
@@ -639,7 +686,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
@@ -1105,8 +1152,34 @@ public:
                 }));
             throw SemanticAbort();
         }
+        bool nml_in_positional_args = false;
+        if (n_args == 2 && m_args[1].m_value &&
+                AST::is_a<AST::Name_t>(*m_args[1].m_value)) {
+            AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_args[1].m_value);
+            std::string nml_name = to_lower(std::string(name_expr->m_id));
+            ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
+            if (nml_sym) {
+                ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
+                if (ASR::is_a<ASR::Namelist_t>(*nml_sym_past)) {
+                    if (n_values != 0) {
+                        diag.add(Diagnostic(
+                            "Namelist group cannot be combined with an I/O list",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_args[1].m_value->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    a_nml = nml_sym;
+                    formatted = false;
+                    nml_in_positional_args = true;
+                }
+            }
+        }
         std::vector<ASR::expr_t**> args = {&a_unit, &a_fmt};
         for( std::uint32_t i = 0; i < n_args; i++ ) {
+            if (i == 1 && nml_in_positional_args) {
+                continue;
+            }
             if( m_args[i].m_value != nullptr ) {
                 this->visit_expr(*m_args[i].m_value);
                 *args[i] = ASRUtils::EXPR(tmp);
@@ -1461,6 +1534,34 @@ public:
             a_fmt_constant = a_fmt;
         }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
+            if (AST::is_a<AST::Name_t>(*m_values[i])) {
+                AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_values[i]);
+                std::string nml_name = to_lower(std::string(name_expr->m_id));
+                ASR::symbol_t* nml_sym = current_scope->resolve_symbol(nml_name);
+                if (nml_sym) {
+                    ASR::symbol_t* nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
+                    if (ASR::is_a<ASR::Namelist_t>(*nml_sym_past)) {
+                        if (a_nml != nullptr) {
+                            diag.add(Diagnostic(
+                                "Namelist group already specified",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {m_values[i]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        if (n_values != 1) {
+                            diag.add(Diagnostic(
+                                "Namelist group must be the only item in the I/O list",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {m_values[i]->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        a_nml = nml_sym;
+                        continue;
+                    }
+                }
+            }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             // For READ: expand implied-do loops to individual elements or array section
@@ -2596,7 +2697,7 @@ public:
         tmp = ASR::make_SelectRank_t(al, x.base.base.loc, m_selector, select_rank_body.p, 
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
-
+    
     void visit_SelectType(const AST::SelectType_t& x) {
         // TODO: We might need to re-order all ASR::TypeStmtName
         // before ASR::ClassStmt as per GFortran's semantics
@@ -2779,12 +2880,22 @@ public:
                                                        type_stmt_type->m_vartype, false, false, m_dims,
                                                        nullptr,
                                                        type_declaration, ASR::abiType::Source);
+                        ASR::ttype_t* assoc_variable_type_based_on_selector = nullptr;
+                        // We can't tell from TypeStmtType if we have an array or not (LFortran syntax), so let's check here
+                        if(assoc_variable->m_type && ASRUtils::is_array_t(assoc_variable->m_type)){
+                            ASR::ttype_t* const complete_arr_ty = ASRUtils::ExprStmtWithScopeDuplicator(al, current_scope).duplicate_ttype(assoc_variable->m_type); //maintain allocatable OR pointer 
+                            ASR::Array_t* const arr_ty = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(complete_arr_ty));
+                            arr_ty->m_type = selector_type;
+                            assoc_variable_type_based_on_selector = complete_arr_ty;
+                        } else {
+                            assoc_variable_type_based_on_selector = selector_type;
+                        }
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, assoc_variable_name);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
+                        assoc_variable->m_type = assoc_variable_type_based_on_selector;
                         assoc_variable->m_type_declaration = type_declaration;
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;

@@ -1,11 +1,11 @@
-! Test complex abs() with large values (near overflow)
+! Test complex abs() with extreme values (overflow and underflow protection)
 ! This tests the numerically stable algorithm for complex abs
 program intrinsics_407
     implicit none
-    complex :: c1, c2, c3, c4
-    complex(8) :: z1, z2
-    real :: r1, r2, r3, r4
-    real(8) :: d1, d2
+    complex :: c1, c2, c3, c4, c5, c6
+    complex(8) :: z1, z2, z3, z4
+    real :: r1, r2, r3, r4, r5, r6
+    real(8) :: d1, d2, d3, d4
 
     ! Normal case - basic sanity check
     c1 = (3.0, 4.0)
@@ -39,5 +39,35 @@ program intrinsics_407
     d2 = abs(z2)
     if (abs(d2 - d1) > 1d145) error stop "Test 6 failed"
 
-    print *, "All complex abs() overflow tests passed!"
+    ! ===== UNDERFLOW TESTS =====
+    ! Small values that would underflow naively: x^2 + y^2 -> 0
+    ! but the correct result is representable
+
+    ! Single precision underflow test
+    ! 1e-30^2 = 1e-60 underflows, but sqrt(2)*1e-30 ~ 1.41e-30 is representable
+    c5 = (1.0e-30, 1.0e-30)
+    r5 = abs(c5)
+    ! Expected: sqrt(2) * 1e-30 ~ 1.414e-30
+    if (r5 < 1.0e-30 .or. r5 > 2.0e-30) error stop "Test 7 failed: underflow in single complex abs()"
+
+    ! Single precision underflow with asymmetric values
+    c6 = (1.0e-30, 2.0e-30)
+    r6 = abs(c6)
+    ! Expected: sqrt(1 + 4) * 1e-30 ~ 2.236e-30
+    if (r6 < 2.0e-30 .or. r6 > 3.0e-30) error stop "Test 8 failed: underflow in single complex abs()"
+
+    ! Double precision underflow test
+    ! 1d-200^2 = 1d-400 underflows, but sqrt(2)*1d-200 ~ 1.414d-200 is representable
+    z3 = (1.0d-200, 1.0d-200)
+    d3 = abs(z3)
+    ! Expected: sqrt(2) * 1d-200 ~ 1.414d-200
+    if (d3 < 1.0d-200 .or. d3 > 2.0d-200) error stop "Test 9 failed: underflow in double complex abs()"
+
+    ! Double precision underflow with asymmetric values
+    z4 = (1.0d-200, 2.0d-200)
+    d4 = abs(z4)
+    ! Expected: sqrt(1 + 4) * 1d-200 ~ 2.236d-200
+    if (d4 < 2.0d-200 .or. d4 > 3.0d-200) error stop "Test 10 failed: underflow in double complex abs()"
+
+    print *, "All complex abs() overflow and underflow tests passed!"
 end program
