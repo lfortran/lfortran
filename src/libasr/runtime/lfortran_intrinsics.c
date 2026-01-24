@@ -5044,16 +5044,34 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 // --- 1. Define the descriptor structure (Add this outside or at the top of the function) ---
+// --- 1. DEFINE INTERNAL STRUCTURES ---
 typedef struct {
     char *data;
     int64_t len;
 } lfortran_dest_t;
 
+typedef struct {
+    char* str_data;
+    int64_t str_len;
+    void* dests;
+    int32_t no_of_args;
+} read_payload_t;
+
+// --- 2. IMPLEMENTATION ---
+// Use void* for the payload to match the header's declaration exactly
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, 
                                           char* advance, int64_t adv_len, char* fmt, 
-                                          int64_t fmt_len, char* str_data, int64_t str_len, 
-                                          lfortran_dest_t* dests, int32_t no_of_args)
+                                          int64_t fmt_len, void* payload_ptr) 
 {
+    // Cast the generic pointer to our internal structure
+    read_payload_t* payload = (read_payload_t*)payload_ptr;
+    
+    // Extract everything from the payload safely
+    char* str_data = payload->str_data;
+    int64_t str_len = payload->str_len;
+    lfortran_dest_t* dests = (lfortran_dest_t*)payload->dests;
+    int32_t no_of_args = payload->no_of_args;
+    
     int width = -1;
 
     // --- 1. PARSE FORMAT ---
@@ -5108,11 +5126,12 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             int64_t dest_len = dests[i].len;
 
             if (dest_ptr) {
+                // Initialize with spaces (Fortran style)
                 memset(dest_ptr, ' ', (size_t)dest_len);
                 size_t to_copy = (input_length < (size_t)dest_len) ? input_length : (size_t)dest_len;
                 memcpy(dest_ptr, buffer, to_copy);
                 
-                printf("RUNTIME: Copied '%.*s' to %p\n", (int)to_copy, dest_ptr, (void*)dest_ptr);
+                printf("RUNTIME: Copied '%.*s' to address %p\n", (int)to_copy, dest_ptr, (void*)dest_ptr);
                 fflush(stdout);
             }
         }
