@@ -6954,26 +6954,30 @@ public:
                     visit_expr_wrapper(m_dims[i].m_start, true);
                     lbs.p[i] = tmp;
                 } else {
-                    lbs.p[i] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    llvm::Type* idx_type = arr_descr->get_index_type();
+                    unsigned idx_bits = idx_type->getIntegerBitWidth();
+                    lbs.p[i] = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                 }
 
                 if (array_section->m_args[i].m_right) {
                     if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
                         ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right)) {
                         llvm::Value *lbound = builder->CreateSExtOrTrunc(
-                            lbs.p[i], llvm::Type::getInt32Ty(context));
+                            lbs.p[i], arr_descr->get_index_type());
                         ubs.p[i] = lbound;
                     } else {
                         visit_expr_wrapper(array_section->m_args[i].m_right, true);
                         ubs.p[i] = tmp;
                     }
                 } else {
-                    llvm::Value *lbound = builder->CreateSExtOrTrunc(lbs.p[i], llvm::Type::getInt32Ty(context));
+                    llvm::Type* idx_type = arr_descr->get_index_type();
+                    unsigned idx_bits = idx_type->getIntegerBitWidth();
+                    llvm::Value *lbound = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
                     if (m_dims[i].m_length) {
                         visit_expr_wrapper(m_dims[i].m_length, true);
-                        llvm::Value *length = builder->CreateSExtOrTrunc(tmp, llvm::Type::getInt32Ty(context));
+                        llvm::Value *length = builder->CreateSExtOrTrunc(tmp, idx_type);
                         ubs.p[i] = builder->CreateSub(builder->CreateAdd(lbound, length),
-                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                            llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)));
                     } else {
                         // Assumed-size array: last dimension has no length
                         ubs.p[i] = lbound;
@@ -6984,7 +6988,9 @@ public:
                     visit_expr_wrapper(array_section->m_args[i].m_step, true);
                     ds.p[i] = tmp;
                 } else {
-                    ds.p[i] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    llvm::Type* idx_type = arr_descr->get_index_type();
+                    unsigned idx_bits = idx_type->getIntegerBitWidth();
+                    ds.p[i] = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                 }
                 target_rank++;
             } else {
@@ -7013,12 +7019,14 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                unsigned idx_bits = idx_type->getIntegerBitWidth();
                 llvm::Value *dim_start = nullptr;
                 if (m_dims[i].m_start) {
                     visit_expr_wrapper(m_dims[i].m_start, true);
                     dim_start = tmp;
                 } else {
-                    dim_start = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                 }
                 llvm_diminfo.push_back(al, dim_start);
 
@@ -7027,7 +7035,7 @@ public:
                     visit_expr_wrapper(m_dims[i].m_length, true);
                     dim_length = tmp;
                 } else {
-                    dim_length = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                    dim_length = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
                 }
                 llvm_diminfo.push_back(al, dim_length);
             }
@@ -11516,10 +11524,12 @@ public:
             des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_type_, des_complex_arr));
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_type,  des_real_arr));
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        unsigned idx_bits = idx_type->getIntegerBitWidth();
         if (std::is_same<T, ASR::ComplexIm_t>::value) {
             llvm::Value* incremented_offset = builder->CreateAdd(
                 arr_descr->get_offset(des_real_type, des_real_arr, true),
-                llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)));
             builder->CreateStore(incremented_offset, arr_descr->get_offset(des_real_type, des_real_arr, false));
         }
         int n_dims = ASRUtils::extract_n_dims_from_ttype(t.m_type);
@@ -11529,7 +11539,7 @@ public:
             llvm::Value* dim_des_real_arr_idx = arr_descr->get_pointer_to_dimension_descriptor(dim_des_real_arr, dim_idx);
             llvm::Value* doubled_stride = builder->CreateMul(
                 arr_descr->get_stride(dim_des_real_arr_idx, true),
-                llvm::ConstantInt::get(context, llvm::APInt(32, 2)));
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 2)));
             builder->CreateStore(doubled_stride, arr_descr->get_stride(dim_des_real_arr_idx, false));
         }
         tmp = des_real_arr;
