@@ -12839,6 +12839,10 @@ public:
             builder->CreateCall(fn, {unit_val, pos_val, iostat});
         }
 
+        if (x.m_rec && !is_string) {
+            emit_seek_record_from_rec(x.m_rec, unit_val, iostat);
+        }
+
         if (x.m_fmt) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
@@ -13224,7 +13228,7 @@ public:
         }
     }
 
-    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type, 
+    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
             llvm::Value* elem_ptr) {
         constexpr int32_t kChar = 0;
         constexpr int32_t kLogical = 1;
@@ -13262,6 +13266,42 @@ public:
         } else {
             throw CodeGenError("Unsupported type in formatted read");
         }
+    }
+
+
+    void emit_seek_record(llvm::Value* unit_val, llvm::Value* rec_val, llvm::Value* iostat) {
+        llvm::Value *unit_i32 = unit_val;
+        if (unit_i32->getType()->isPointerTy()) {
+            unit_i32 = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit_i32);
+        }
+        unit_i32 = llvm_utils->convert_kind(unit_i32, llvm::Type::getInt32Ty(context));
+
+        std::string seek_name = "_lfortran_seek_record";
+        llvm::Function *seek_fn = module->getFunction(seek_name);
+        if (!seek_fn) {
+            llvm::FunctionType *seek_ft = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
+                  llvm::Type::getInt32Ty(context)->getPointerTo() },
+                false);
+            seek_fn = llvm::Function::Create(seek_ft, llvm::Function::ExternalLinkage, seek_name, module.get());
+        }
+        builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
+    }
+
+    void emit_seek_record_from_rec(ASR::expr_t* rec_expr, llvm::Value* unit_val, llvm::Value* iostat) {
+        int ptr_copy_rec = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(rec_expr, true);
+        ptr_loads = ptr_copy_rec;
+
+        llvm::Value *rec_val = tmp;
+        if (rec_val->getType()->isPointerTy()) {
+            rec_val = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), rec_val);
+        }
+        rec_val = llvm_utils->convert_kind(rec_val, llvm::Type::getInt32Ty(context));
+
+        emit_seek_record(unit_val, rec_val, iostat);
     }
 
     void emit_formatted_read(const ASR::FileRead_t &x, llvm::Value *unit_val,
@@ -14141,6 +14181,10 @@ public:
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
             iostat = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context)->getPointerTo(), iostat);
+        }
+        
+        if (x.m_rec && !is_string) {
+            emit_seek_record_from_rec(x.m_rec, unit, iostat);
         }
 
         if (x.m_separator) {
