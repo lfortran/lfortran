@@ -12355,6 +12355,8 @@ public:
                         llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(nullptr, elem_type, module.get());
                         // Load descriptor pointer until we get a pointer to the descriptor struct.
                         llvm::Value* arr_desc_loaded = data_ptr;
+#if LLVM_VERSION_MAJOR < 15
+                        // Typed-pointer LLVM (<15): dereference through pointer layers
                         while (arr_desc_loaded->getType()->isPointerTy() &&
                                arr_desc_loaded->getType()->getPointerElementType() != arr_type &&
                                arr_desc_loaded->getType()->getPointerElementType()->isPointerTy()) {
@@ -12364,6 +12366,30 @@ public:
                         if (arr_desc_loaded->getType() != arr_type->getPointerTo()) {
                             arr_desc_loaded = builder->CreateBitCast(arr_desc_loaded, arr_type->getPointerTo());
                         }
+#else
+                        // Opaque-pointer LLVM (15+): pointers are opaque, so we must infer loads from storage.
+                        if (auto *alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(arr_desc_loaded)) {
+                            llvm::Type* allocated_type = alloca_inst->getAllocatedType();
+                            if (allocated_type->isPointerTy()) {
+                                arr_desc_loaded = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr_desc_loaded);
+                            } else if (allocated_type == arr_type &&
+                                       ASRUtils::is_character(*item_type_asr)) {
+                                // Descriptor-string arrays store the descriptor pointer in a slot of type arr_type.
+                                arr_desc_loaded = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr_desc_loaded);
+                            }
+                        } else if (auto *global_var = llvm::dyn_cast<llvm::GlobalVariable>(arr_desc_loaded)) {
+                            llvm::Type* value_type = global_var->getValueType();
+                            if (value_type->isPointerTy()) {
+                                arr_desc_loaded = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr_desc_loaded);
+                            } else if (value_type == arr_type &&
+                                       ASRUtils::is_character(*item_type_asr)) {
+                                arr_desc_loaded = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr_desc_loaded);
+                            }
+                        }
+                        if (arr_desc_loaded->getType()->isPointerTy()) {
+                            arr_desc_loaded = builder->CreateBitCast(arr_desc_loaded, arr_type->getPointerTo());
+                        }
+#endif
 
                         // For descriptor arrays, extract dimensions at runtime if needed
                         if (rank > 0) {
