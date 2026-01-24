@@ -797,7 +797,11 @@ public:
                     al, arg_expr_past_cast, current_scope, name_hint, true);
                 ASR::call_arg_t array_var_temporary_arg;
                 array_var_temporary_arg.loc = loc;
-                if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
+                const bool unhandled_case = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(arg_expr)) || 
+                        (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr) 
+                        && ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(
+                            ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg))); // TODO : remove -- Look `class_95.f90`  
+                if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) && !unhandled_case ) {
                     ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
                         array_var_temporary, ASR::array_physical_typeType::DescriptorArray, ASR::array_physical_typeType::PointerArray,
                         array_physical_cast->m_type, nullptr));
