@@ -9106,7 +9106,7 @@ public:
                 arr_descr->get_pointer_to_data(target_desc_type, target_desc));
 
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_desc_type, target_desc, source_desc_as_target, n_dims);
+            arr_descr->reset_array_details(target_desc_type, target_desc, target_desc_type, source_desc_as_target, n_dims);
             tmp = target_desc;
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
@@ -9183,7 +9183,7 @@ public:
                 arr_descr->get_pointer_to_data(target_desc_type, target_desc));
 
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
-            arr_descr->reset_array_details(target_desc_type, target_desc, source_desc_as_target, n_dims);
+            arr_descr->reset_array_details(target_desc_type, target_desc, target_desc_type, source_desc_as_target, n_dims);
             if( LLVM::is_llvm_pointer(*m_type) ) {
                 llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                     target_desc_type->getPointerTo(), nullptr, "array_descriptor_ptr");
@@ -13513,6 +13513,7 @@ public:
         llvm::Value *position{}, *position_len{};
         llvm::Value *blank{}, *blank_len{};
         llvm::Value *recl{};
+        llvm::Value *encoding_data{}, *encoding_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -13591,6 +13592,13 @@ public:
             recl = llvm::ConstantPointerNull::get(
                 llvm::Type::getInt32Ty(context)->getPointerTo());
         }
+        if (x.m_encoding) {
+            std::tie(encoding_data, encoding_len) = get_string_data_and_length(x.m_encoding);
+        } else {
+            encoding_data = llvm::Constant::getNullValue(character_type);
+            encoding_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
+
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -13609,6 +13617,7 @@ public:
                         character_type, i64, // delim, delim_len
                         character_type, i64, // position, position_len
                         character_type, i64,  // blank, blank_len
+                        character_type, i64, //encoding_data, encoding_len
                         llvm::Type::getInt32Ty(context)->getPointerTo() // recl 
                     }, false);
             fn = llvm::Function::Create(function_type,
@@ -13625,6 +13634,7 @@ public:
             delim, delim_len,
             position, position_len,
             blank, blank_len,
+            encoding_data, encoding_len,
             recl
         });
     }

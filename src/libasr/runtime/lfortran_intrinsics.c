@@ -672,7 +672,15 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+        // Compute exponent based on decimal (stripped zeros) or integer_length
+        // This is more accurate than log10 for values near powers of 10
+        // For val >= 1: exponent = integer_length - scale
+        // For val < 1:  exponent = decimal - scale
+        if (fabs(val) >= 1.0) {
+            exponent_value = integer_length - scale;
+        } else {
+            exponent_value = decimal - scale;
+        }
     }
 
     // For ES format with 0 decimal places, we need to round properly
@@ -699,7 +707,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value >= 100)) {
+    } else if (abs(exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -721,8 +729,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // exponent = "+10"
     }
 
-    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
     int exp_length = strlen(exponent);
+    // For 3-digit exponents, 'E' is dropped to save space (Fortran standard)
+    bool drop_e = (abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
         // For ES0.0E0 or similar, keep digits = 0 to match gfortran behavior
@@ -805,8 +815,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    // Always add exponent for E/ES/D formats
-    if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+    // Add 'E' unless dropped for 3-digit exponents
+    if (!drop_e) {
         strcat(formatted_value, c);
     }
     // formatted_value = "  1.12E"
@@ -4281,10 +4291,30 @@ _lfortran_open(int32_t unit_num,
                int64_t position_len,
                char* blank,
                int64_t blank_len,
+               char* encoding,
+               int64_t encoding_len,
                int32_t* recl)
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    bool ini_encoding = true;
+    if (encoding == NULL) {
+        encoding = "default";
+        encoding_len = 7;
+        ini_encoding = false;
+    }
+
+    trim_trailing_spaces(&encoding, &encoding_len, ini_encoding);
+    char* encoding_c = to_c_string((const fchar*)encoding, encoding_len);
+
+    // DEFAULT and UTF-8 are currently treated the same
+    if (!streql(encoding_c, "default") && !streql(encoding_c, "utf-8")) {
+        // Unknown encoding → warning
+        fprintf(stderr,
+            "Warning: ENCODING='%s' is not recognized, treated as DEFAULT\n",
+            encoding_c
+        );
     }
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
@@ -4561,6 +4591,7 @@ _lfortran_open(int32_t unit_num,
     free(form_c);
     free(access_c);
     free(action_c);
+    free(encoding_c);
     return 0;
 }
 
