@@ -1999,6 +1999,11 @@ filename = "../integration_tests/format_40.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_50.f90"
+run = true
+
+
+[[test]]
 filename = "interop/mod1-14.mod"
 mod_to_asr = true
 
