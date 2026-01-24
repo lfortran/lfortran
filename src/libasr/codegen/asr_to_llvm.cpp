@@ -9964,30 +9964,29 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
-        llvm::Value* cmp_result = nullptr;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
-                cmp_result = builder->CreateICmpEQ(left, right);
+                tmp = builder->CreateICmpEQ(left, right);
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
-                cmp_result = builder->CreateICmpNE(left, right);
+                tmp = builder->CreateICmpNE(left, right);
                 break;
             }
             case (ASR::cmpopType::Gt) : {
-                cmp_result = builder->CreateICmpUGT(left, right);
+                tmp = builder->CreateICmpUGT(left, right);
                 break;
             }
             case (ASR::cmpopType::GtE) : {
-                cmp_result = builder->CreateICmpUGE(left, right);
+                tmp = builder->CreateICmpUGE(left, right);
                 break;
             }
             case (ASR::cmpopType::Lt) : {
-                cmp_result = builder->CreateICmpULT(left, right);
+                tmp = builder->CreateICmpULT(left, right);
                 break;
             }
             case (ASR::cmpopType::LtE) : {
-                cmp_result = builder->CreateICmpULE(left, right);
+                tmp = builder->CreateICmpULE(left, right);
                 break;
             }
             default : {
@@ -9995,7 +9994,6 @@ public:
                         x.base.base.loc);
             }
         }
-        tmp = cmp_result;
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {
