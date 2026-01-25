@@ -75,6 +75,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (FileRead
                         0
@@ -92,6 +93,7 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
                         ()
                     )
                     (FileWrite
@@ -117,6 +119,7 @@
                         ()
                         .true.
                         ()
+                        ()
                     )
                     (FileBackspace
                         0
@@ -140,6 +143,7 @@
                         [(Var 2 line)]
                         ()
                         .true.
+                        ()
                         ()
                     )
                     (FileWrite
@@ -168,6 +172,7 @@
                         ()
                         .true.
                         ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -191,6 +196,7 @@
                         ()
                         ()
                         .true.
+                        ()
                         ()
                     )
                     (If

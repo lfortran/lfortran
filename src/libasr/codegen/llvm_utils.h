@@ -259,6 +259,8 @@ class ASRToLLVMVisitor;
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
+            llvm::Value* get_array_descriptor_ptr(llvm::Value* value, llvm::Type* arr_type,
+                                                  bool is_character_array);
 
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
