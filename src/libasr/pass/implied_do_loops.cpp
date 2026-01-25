@@ -826,7 +826,77 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return array_constant;
         }
 
-        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x) {
+        class VarSubstituter : public ASR::BaseExprReplacer<VarSubstituter> {
+        public:
+            Allocator& al;
+            ASR::symbol_t* loop_var;
+            ASR::expr_t* replacement;
+            
+            VarSubstituter(Allocator& al_, ASR::symbol_t* var, ASR::expr_t* repl) 
+                : BaseExprReplacer(), al(al_), loop_var(var), replacement(repl) {}
+            
+            void replace_Var(ASR::Var_t* x) {
+                if (x->m_v == loop_var) {
+                    *current_expr = replacement;
+                }
+            }
+        };
+        
+        bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
+            ASR::expr_t* start = idl->m_start;
+            ASR::expr_t* end = idl->m_end;
+            ASR::expr_t* step = idl->m_increment;
+            
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*start) ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*end)) {
+                return false;
+            }
+            
+            int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
+            int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end)->m_n;
+            int64_t step_val = 1;
+            if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
+                step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+            }
+            
+            if (step_val == 0 || (step_val > 0 && start_val > end_val) || 
+                (step_val < 0 && start_val < end_val)) {
+                return true;
+            }
+            
+            ASR::symbol_t* loop_var_symbol = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+            
+            for (int64_t i = start_val; 
+                 (step_val > 0) ? (i <= end_val) : (i >= end_val); 
+                 i += step_val) {
+                ASR::expr_t* loop_var_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, idl->base.base.loc, i, 
+                    ASRUtils::expr_type(idl->m_var)));
+                
+                for (size_t j = 0; j < idl->n_values; j++) {
+                    ASR::expr_t* val = idl->m_values[j];
+                    
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
+                        ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(val);
+                        if (!expand_implied_do_loop_flat(nested_idl, result)) {
+                            return false;
+                        }
+                    } else {
+                        ASRUtils::ExprStmtDuplicator duplicator(al);
+                        ASR::expr_t* substituted = duplicator.duplicate_expr(val);
+                        
+                        VarSubstituter substituter(al, loop_var_symbol, loop_var_val);
+                        substituter.current_expr = &substituted;
+                        substituter.replace_expr(substituted);
+                        result.push_back(al, substituted);
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, ASR::expr_t* format_string) {
             ASR::stmt_t* do_loop = nullptr;
 
             ASR::do_loop_head_t do_loop_head;
@@ -834,36 +904,42 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             do_loop_head.m_start = x->m_start; do_loop_head.m_end = x->m_end;
             do_loop_head.m_increment = x->m_increment;
 
-            Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, x->n_values);
+            Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
+            
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, x->n_values);
             for (size_t i = 0; i < x->n_values; i++ ) {
                 if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
                     do_loop_body.push_back(al, create_do_loop_form_idl(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), format_string));
                 } else {
-                    Vec<ASR::expr_t*> print_values; print_values.reserve(al, 1);
-                    ASR::stmt_t* stmt = nullptr;
-                    Vec<ASR::expr_t*> args;
-                    args.reserve(al, 1);
                     args.push_back(al, x->m_values[i]);
-                    ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
-                        args.p, 1, ASR::string_format_kindType::FormatFortran,
-                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, 
-                            ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
-                                nullptr,
-                                ASR::string_length_kindType::DeferredLength,
-                                ASR::string_physical_typeType::DescriptorString)))),
-                        nullptr));
-                    print_values.push_back(al, fmt_val);
-                    if ( print ) {
-                        stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, x->m_values[i]->base.loc, print_values.p, print_values.size()));
-                    } else {
-                        // this will be file_write
-                        LCOMPILERS_ASSERT(file_write);
-                        stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->m_values[i]->base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr));
-                    }
-                    do_loop_body.push_back(al, stmt);
                 }
             }
+            
+            if (args.size() > 0) {
+                ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, format_string,
+                    args.p, args.size(), ASR::string_format_kindType::FormatFortran,
+                    ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, 
+                        ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
+                            nullptr,
+                            ASR::string_length_kindType::DeferredLength,
+                            ASR::string_physical_typeType::DescriptorString)))),
+                    nullptr));
+                Vec<ASR::expr_t*> print_values;
+                print_values.reserve(al, 1);
+                print_values.push_back(al, fmt_val);
+                ASR::stmt_t* stmt = nullptr;
+                if ( print ) {
+                    stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, x->base.base.loc, print_values.p, print_values.size()));
+                } else {
+                    // this will be file_write
+                    LCOMPILERS_ASSERT(file_write);
+                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr));
+                }
+                do_loop_body.push_back(al, stmt);
+            }
+            
             do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             return do_loop;
         }
@@ -909,13 +985,37 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
-                    // Use do-loop approach for Tuple types or when values contain StringTrim
+                    // Use do-loop approach ONLY for formatted I/O (not list-directed)
+                    // with Tuple types or when values contain StringTrim
                     // (to preserve variable-length trimmed strings instead of storing in fixed-length array)
-                    if ( ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
-                         implied_do_loop_has_string_trim(implied_do_loop) ) {
+                    if ( (x.m_fmt != nullptr) &&  // Only for formatted I/O, not list-directed (print *)
+                         (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
+                          implied_do_loop_has_string_trim(implied_do_loop)) ) {
                         remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
+                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
                         continue;
+                    }
+                    if ( (x.m_fmt == nullptr) &&
+                         (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
+                          implied_do_loop_has_string_trim(implied_do_loop)) ) {
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            break;
+                        }
                     }
                     ASR::asr_t* array_constant = create_array_constant(x, value);
                     string_format_stmt->m_args[i] = ASRUtils::EXPR(array_constant);
