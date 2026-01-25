@@ -2033,6 +2033,7 @@ RUN(NAME string_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_92 LABELS gfortran llvm)
 RUN(NAME string_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc  EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME string_95 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
