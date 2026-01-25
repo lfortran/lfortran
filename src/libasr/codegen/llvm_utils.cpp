@@ -1629,6 +1629,49 @@ namespace LCompilers {
 #endif
     }
 
+    /*
+    TODO: To avoid the dyn_cast checks here, the alternative is to standardize
+    llvm_symtab to always store the descriptor pointer value (not the slot) for
+    descriptor arrays. Then get_array_descriptor_ptr could become a no-op.
+    */
+    llvm::Value* LLVMUtils::get_array_descriptor_ptr(llvm::Value* value,
+            llvm::Type* arr_type,
+            [[maybe_unused]] bool is_character_array) {
+        llvm::Value* desc = value;
+#if LLVM_VERSION_MAJOR < 15
+        while (desc->getType()->isPointerTy() &&
+               desc->getType()->getPointerElementType() != arr_type &&
+               desc->getType()->getPointerElementType()->isPointerTy()) {
+            llvm::Type* load_type = desc->getType()->getPointerElementType();
+            if (load_type == desc->getType()) {
+                break;
+            }
+            desc = CreateLoad2(load_type, desc);
+        }
+        if (desc->getType() != arr_type->getPointerTo()) {
+            desc = builder->CreateBitCast(desc, arr_type->getPointerTo());
+        }
+#else
+        if (auto *alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(desc)) {
+            llvm::Type* allocated_type = alloca_inst->getAllocatedType();
+            if (allocated_type->isPointerTy() ||
+                (is_character_array && allocated_type == arr_type)) {
+                desc = CreateLoad2(arr_type->getPointerTo(), desc);
+            }
+        } else if (auto *global_var = llvm::dyn_cast<llvm::GlobalVariable>(desc)) {
+            llvm::Type* value_type = global_var->getValueType();
+            if (value_type->isPointerTy() ||
+                (is_character_array && value_type == arr_type)) {
+                desc = CreateLoad2(arr_type->getPointerTo(), desc);
+            }
+        }
+        if (desc->getType()->isPointerTy()) {
+            desc = builder->CreateBitCast(desc, arr_type->getPointerTo());
+        }
+#endif
+        return desc;
+    }
+
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
