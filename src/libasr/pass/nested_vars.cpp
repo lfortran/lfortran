@@ -339,11 +339,17 @@ public:
             ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
             std::string sym_name = ASRUtils::symbol_name(t);
             ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
-            if (existing != nullptr) {
+            if (existing != nullptr &&
+                    ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
+                    ASRUtils::symbol_get_past_external(existing) == t) {
                 x->m_v = existing;
                 return;
             }
-            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, sym_name,
+            std::string unique_name = sym_name;
+            if (existing != nullptr) {
+                unique_name = current_scope->get_unique_name(sym_name, false);
+            }
+            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, unique_name,
                 m_name, sym_name, ASR::accessType::Public);
             x->m_v = ext_sym;
         }
@@ -763,12 +769,20 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
             std::string sym_name = ASRUtils::symbol_name(t);
-            if (current_scope->get_symbol(sym_name) != nullptr) {
-                return;
+            ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
+            if (existing != nullptr &&
+                    ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
+                    ASRUtils::symbol_get_past_external(existing) == t) {
+                xx.m_name = existing;
+            } else {
+                std::string unique_name = sym_name;
+                if (existing != nullptr) {
+                    unique_name = current_scope->get_unique_name(sym_name, false);
+                }
+                ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, unique_name,
+                    m_name, sym_name, ASR::accessType::Public);
+                xx.m_name = ext_sym;
             }
-            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, sym_name,
-                m_name, sym_name, ASR::accessType::Public);
-            xx.m_name = ext_sym;
         }
         for (size_t i=0; i<x.n_args; i++) {
             visit_call_arg(x.m_args[i]);
@@ -870,6 +884,21 @@ public:
     ASR::symbol_t *cur_func_sym = nullptr;
     bool calls_present = false;
     bool calls_in_loop_condition = false;
+
+    void mark_nested_procedure_arg(ASR::expr_t *arg_expr) {
+        if (!arg_expr) {
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
+            arg_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
+            if (is_nested_call_symbol(current_scope, var->m_v)) {
+                calls_present = true;
+            }
+        }
+    }
 
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
@@ -1260,6 +1289,7 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
+            mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
         }
         visit_ttype(*x.m_type);
@@ -1272,6 +1302,7 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name);
         for (size_t i=0; i<x.n_args; i++) {
+            mark_nested_procedure_arg(x.m_args[i].m_value);
             visit_call_arg(x.m_args[i]);
         }
         if (x.m_dt)

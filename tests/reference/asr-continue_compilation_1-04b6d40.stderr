@@ -1092,3 +1092,51 @@ semantic error: Intrinsic `allocated` can be called only on allocatable argument
     |
 484 |     print *, allocated(strx)
     |              ^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `encoding` found
+   --> tests/errors/continue_compilation_1.f90:488:5
+    |
+488 |     OPEN(unit=10, encoding="UTF-8", encoding="UTF-8")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `encoding` must be of type, String or StringPointer
+   --> tests/errors/continue_compilation_1.f90:489:5
+    |
+489 |     OPEN(unit=10, encoding=10)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:492:5
+    |
+492 |     read(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` specifier is not allowed for internal file I/O
+   --> tests/errors/continue_compilation_1.f90:493:5
+    |
+493 |     write(str_var, rec=1) x
+    |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `rec` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:494:5
+    |
+494 |     read(unit=10, rec=1, rec=2) y
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `rec` found, it has already been specified via arguments or keyword arguments
+   --> tests/errors/continue_compilation_1.f90:495:5
+    |
+495 |     write(unit=10, rec=1, rec=2) y
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:496:5
+    |
+496 |     read(10, rec=1.5) y
+    |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `rec` must be of type, Integer
+   --> tests/errors/continue_compilation_1.f90:497:5
+    |
+497 |     write(10, rec=2.5) y
+    |     ^^^^^^^^^^^^^^^^^^^^ 

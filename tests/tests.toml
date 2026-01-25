@@ -1919,6 +1919,10 @@ filename = "format7.f90"
 run = true
 
 [[test]]
+filename = "format8.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/format_11.f90"
 run = true
 
@@ -1992,6 +1996,14 @@ run = true
 
 [[test]]
 filename = "../integration_tests/format_40.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_50.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_51.f90"
 run = true
 
 [[test]]
@@ -2661,6 +2673,21 @@ llvm = true
 filename = "../integration_tests/nested_06.f90"
 asr = true
 llvm = true
+
+[[test]]
+filename = "../integration_tests/nested_namelist_01.f90"
+asr = true
+pass = "nested_vars"
+
+[[test]]
+filename = "../integration_tests/nested_external_dedup_01.f90"
+asr = true
+pass = "nested_vars"
+
+[[test]]
+filename = "../integration_tests/nested_call_filter_01.f90"
+asr = true
+pass = "nested_vars"
 
 [[test]]
 filename = "../integration_tests/callback_01.f90"

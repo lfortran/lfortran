@@ -501,8 +501,11 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     // Default fallback if 0
     bool is_g0_like = (width == 0 && decimal_digits == 0 && exp_digits == 0);
     if (decimal_digits <= 0) decimal_digits = 9;
+    
+    // Store original exp_digits to know if Ee was explicitly specified
+    int original_exp_digits = exp_digits;
     if (exp_digits == 0) exp_digits = 2;
-    else if (exp_digits == -1) exp_digits = 3;
+    else if (exp_digits == -1) exp_digits = 2;
 
     bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
 
@@ -541,10 +544,25 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
             exponent -= remainder;
             scaled_val = val / pow(10, exponent);
         }
+        
+        // Adjust exp_digits dynamically if no explicit Ee was given
+        if (original_exp_digits <= 0) {
+            int abs_exp = abs(exponent);
+            if (abs_exp >= 100) {
+                exp_digits = 3;
+            } else if (abs_exp >= 10) {
+                exp_digits = 2;
+            } else {
+                exp_digits = 2;
+            }
+        }
+        
         char val_str[128];
         snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        // exp_digits is the number of exponent digits, but %+0*d width includes the sign
+        // So we need exp_digits + 1 for the total width
         snprintf(formatted_value, sizeof(formatted_value),
-                "%s%s%+0*d", val_str, c, exp_digits, exponent);
+                "%s%s%+0*d", val_str, c, exp_digits + 1, exponent);
     }
 
     // Width == 0, no padding
@@ -672,7 +690,15 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+        // Compute exponent based on decimal (stripped zeros) or integer_length
+        // This is more accurate than log10 for values near powers of 10
+        // For val >= 1: exponent = integer_length - scale
+        // For val < 1:  exponent = decimal - scale
+        if (fabs(val) >= 1.0) {
+            exponent_value = integer_length - scale;
+        } else {
+            exponent_value = decimal - scale;
+        }
     }
 
     // For ES format with 0 decimal places, we need to round properly
@@ -699,7 +725,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if (abs(exponent_value >= 100)) {
+    } else if (abs(exponent_value) >= 100) {
         exp = 3;
     }
     // exp = 2;
@@ -721,8 +747,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // exponent = "+10"
     }
 
-    int FIXED_CHARS_LENGTH = 1 + 1 + 1; // digit, ., E
     int exp_length = strlen(exponent);
+    // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
+    // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
+    bool drop_e = (exp_digits <= 0 && abs(exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
         // For ES0.0E0 or similar, keep digits = 0 to match gfortran behavior
@@ -805,13 +834,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         free(temp);
     }
 
-    // Always add exponent for E/ES/D formats
-    if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+    // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
+    if (!drop_e) {
         strcat(formatted_value, c);
     }
-    // formatted_value = "  1.12E"
+    // formatted_value = "  1.12E" or "  1.12" (if E dropped)
     strcat(formatted_value, exponent);
-    // formatted_value = "  1.12E+10"
+    // formatted_value = "  1.12E+10" or "  1.12+100" (if E dropped)
 
     if (strlen(formatted_value) > width) {
         if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
@@ -4281,10 +4310,30 @@ _lfortran_open(int32_t unit_num,
                int64_t position_len,
                char* blank,
                int64_t blank_len,
+               char* encoding,
+               int64_t encoding_len,
                int32_t* recl)
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    bool ini_encoding = true;
+    if (encoding == NULL) {
+        encoding = "default";
+        encoding_len = 7;
+        ini_encoding = false;
+    }
+
+    trim_trailing_spaces(&encoding, &encoding_len, ini_encoding);
+    char* encoding_c = to_c_string((const fchar*)encoding, encoding_len);
+
+    // DEFAULT and UTF-8 are currently treated the same
+    if (!streql(encoding_c, "default") && !streql(encoding_c, "utf-8")) {
+        // Unknown encoding → warning
+        fprintf(stderr,
+            "Warning: ENCODING='%s' is not recognized, treated as DEFAULT\n",
+            encoding_c
+        );
     }
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
@@ -4561,6 +4610,7 @@ _lfortran_open(int32_t unit_num,
     free(form_c);
     free(access_c);
     free(action_c);
+    free(encoding_c);
     return 0;
 }
 
@@ -4921,6 +4971,97 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 
     // If no newline found, rewind to beginning
     rewind(fd);
+}
+
+LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat)
+{
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+
+    bool unit_file_bin;
+    int access_id = -1;
+    bool read_access = false, write_access = false;
+    int delim = 0;
+    bool blank_zero = false;
+    int32_t unit_recl = 0;
+
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, 
+                                          &read_access, &write_access, &delim, 
+                                          &blank_zero, &unit_recl);
+    if (fp == NULL) {
+        if (iostat != NULL) {
+            *iostat = 5001; // unit not connected
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Specified UNIT %d is not created or connected.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (access_id != 2) {  // 2 = DIRECT access
+        if (iostat != NULL) {
+            *iostat = 5002; // not a direct access file
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: REC= specified for non-direct access UNIT %d.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (unit_recl <= 0) {
+        if (iostat != NULL) {
+            *iostat = 5003; // RECL not set or invalid
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: RECL not set or invalid for UNIT %d.\n", unit_num);
+            exit(1);
+        }
+    }
+
+    if (rec <= 0) {
+        if (iostat != NULL) {
+            *iostat = 5004; // invalid record number
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Invalid REC value %lld for UNIT %d (must be > 0).\n", 
+                    (long long)rec, unit_num);
+            exit(1);
+        }
+    }
+    long long offset_ll = (long long)(rec - 1) * (long long)unit_recl;
+
+
+    // Seek to the record position
+#if defined(_WIN32)
+    int seek_result = fseek(fp, (long)offset_ll, SEEK_SET);
+#else
+    int seek_result = fseeko(fp, (off_t)offset_ll, SEEK_SET);
+#endif
+
+    if (seek_result != 0) {
+        if (iostat != NULL) {
+            if (ferror(fp)) {
+                *iostat = 5005; // seek error
+            } else if (feof(fp)) {
+                *iostat = 0;
+                return;
+            } else {
+                *iostat = 5006; // unknown seek error
+            }
+            return;
+        } else {
+            int err = errno;
+            if (err != 0) {
+                fprintf(stderr, "Runtime Error: Cannot seek to record %lld on UNIT %d: %s\n",
+                        (long long)rec, unit_num, strerror(err));
+            } else {
+                fprintf(stderr, "Runtime Error: Cannot seek to record %lld on UNIT %d.\n",
+                        (long long)rec, unit_num);
+            }
+            exit(1);
+        }
+    }
 }
 
 static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t *iostat)
@@ -6919,7 +7060,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) { // Unformatted
-        fseek(filep, 0, SEEK_END);
+        if (access_id != 2) {  // 2 = DIRECT access
+            fseek(filep, 0, SEEK_END);
+        }
         va_list args;
         va_start(args, format_len);
         size_t total_size = 0;
@@ -7030,7 +7173,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         if(iostat != NULL) *iostat = 0;
         va_end(args);
     }
-    (void)!ftruncate(fileno(filep), ftell(filep));
+    // Only truncate actual files, not stdout/stderr
+    // This removes stale data when overwriting a file with less content
+    if (filep != stdout && filep != stderr) {
+        (void)!ftruncate(fileno(filep), ftell(filep));
+    }
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,

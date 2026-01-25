@@ -1,43 +1,21 @@
-program test_namelist_internal_proc
-    implicit none
+program namelist_22
+    character(len=1), allocatable :: a(:)
+    character(len=200) :: buf
+    integer :: u, ios
+    logical :: found
+    namelist /n/ a
 
-    integer           :: act_i
-    real              :: act_r
-    character(len=10) :: act_c
-    logical           :: act_l
-
-    integer :: lun
-
-    namelist /act_cli/ act_i
-    namelist /act_cli/ act_r, act_c
-    namelist /act_cli/ act_l
-
-    act_i = 42
-    act_r = 3.5
-    act_c = 'hello'
-    act_l = .true.
-
-    call write_namelist()
-
-    act_i = 0
-    act_r = 0.0
-    act_c = ''
-    act_l = .false.
-
-    open(unit=10, file='namelist_22.dat', status='old', form='formatted')
-    read(10, nml=act_cli)
-    close(10)
-
-    if (act_i /= 42) error stop
-    if (abs(act_r - 3.5) > 1.0e-5) error stop
-    if (act_c /= 'hello') error stop
-    if (.not. act_l) error stop
-
-contains
-
-    subroutine write_namelist()
-        open(file='namelist_22.dat', newunit=lun, status='replace', form='formatted')
-        write(lun, nml=act_cli)
-        close(unit=lun)
-    end subroutine write_namelist
-end program test_namelist_internal_proc
+    allocate(a(1))
+    a(1) = "x"
+    open(newunit=u, status="scratch", action="readwrite")
+    write(u, nml=n)
+    rewind(u)
+    found = .false.
+    do
+        read(u, "(A)", iostat=ios) buf
+        if (ios /= 0) exit
+        if (index(buf, "x") /= 0) found = .true.
+    end do
+    close(u)
+    if (.not. found) error stop
+end program namelist_22
