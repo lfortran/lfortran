@@ -175,6 +175,90 @@ public:
         return statement;
     }
 
+    void expand_implied_do_loop(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::expr_t*>& print_body, const Location& loc) {
+        class ReplaceLoopVar : public ASR::BaseExprReplacer<ReplaceLoopVar> {
+        public:
+            Allocator& al;
+            ASR::symbol_t* loop_var_sym;
+            ASR::expr_t* current_value;
+
+            ReplaceLoopVar(Allocator& al_, ASR::symbol_t* loop_var_sym_, ASR::expr_t* current_value_)
+                : al(al_), loop_var_sym(loop_var_sym_), current_value(current_value_) {}
+
+            void replace_Var(ASR::Var_t* x) {
+                if (x->m_v == loop_var_sym) {
+                    *current_expr = current_value;
+                }
+            }
+        };
+        ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
+        ASR::symbol_t* loop_var_sym = loop_var->m_v;
+        ASR::expr_t* start_value = ASRUtils::expr_value(idl->m_start);
+        if (start_value == nullptr) start_value = idl->m_start;
+        ASR::expr_t* end_value = ASRUtils::expr_value(idl->m_end);
+        if (end_value == nullptr) end_value = idl->m_end;
+        bool is_constant_loop = ASR::is_a<ASR::IntegerConstant_t>(*start_value) &&
+                                ASR::is_a<ASR::IntegerConstant_t>(*end_value);
+        
+        if (idl->m_increment != nullptr) {
+            ASR::expr_t* inc_value = ASRUtils::expr_value(idl->m_increment);
+            if (inc_value == nullptr) inc_value = idl->m_increment;
+            is_constant_loop = is_constant_loop && ASR::is_a<ASR::IntegerConstant_t>(*inc_value);
+        }
+        
+        if (!is_constant_loop) {
+            print_body.push_back((ASR::expr_t*)idl);
+            return;
+        }
+        
+        int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start_value)->m_n;
+        int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end_value)->m_n;
+        int64_t inc_val = 1;
+        
+        if (idl->m_increment != nullptr) {
+            ASR::expr_t* inc_value = ASRUtils::expr_value(idl->m_increment);
+            if (inc_value == nullptr) inc_value = idl->m_increment;
+            inc_val = ASR::down_cast<ASR::IntegerConstant_t>(inc_value)->m_n;
+        }
+
+        ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_start);
+        for (int64_t iter_val = start_val; iter_val <= end_val; iter_val += inc_val) {
+            ASR::expr_t* iter_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, iter_val, int_type));
+            
+            for (size_t j = 0; j < idl->n_values; j++) {
+                ASR::expr_t* value_expr = idl->m_values[j];
+                
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value_expr)) {
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(
+                        duplicator.duplicate_expr(value_expr));
+                    
+                    ReplaceLoopVar replacer(al, loop_var_sym, iter_const);
+                    replacer.current_expr = &nested_idl->m_start;
+                    replacer.replace_expr(nested_idl->m_start);
+                    replacer.current_expr = &nested_idl->m_end;
+                    replacer.replace_expr(nested_idl->m_end);
+                    if (nested_idl->m_increment) {
+                        replacer.current_expr = &nested_idl->m_increment;
+                        replacer.replace_expr(nested_idl->m_increment);
+                    }
+                    
+                    expand_implied_do_loop(nested_idl, print_body, loc);
+                } else {
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    ASR::expr_t* expanded_expr = duplicator.duplicate_expr(value_expr);
+                    
+                    ReplaceLoopVar replacer(al, loop_var_sym, iter_const);
+                    replacer.current_expr = &expanded_expr;
+                    replacer.replace_expr(expanded_expr);
+                    
+                    print_body.push_back(expanded_expr);
+                }
+            }
+        }
+    }
+
     void visit_Print(const ASR::Print_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_text))));
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
@@ -192,7 +276,10 @@ public:
             empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, empty_space));
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*format->m_args[i])) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(format->m_args[i]);
+                    expand_implied_do_loop(idl, print_body, x.base.base.loc);
+                } else if (PassUtils::is_array(format->m_args[i])) {
                     if (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
                         print_fixed_sized_array(format->m_args[i], print_body, x.base.base.loc);
                     } else {
@@ -212,6 +299,7 @@ public:
                 print_stmt = create_formatstmt(print_body, format, x.base.base.loc, ASR::stmtType::Print);
                 pass_result.push_back(al, print_stmt);
             }
+            remove_original_stmt = true;
             return;
         } else {
             remove_original_stmt = false;
