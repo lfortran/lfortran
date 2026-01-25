@@ -496,6 +496,9 @@ program continue_compilation_1
     read(10, rec=1.5) y
     write(10, rec=2.5) y
     
+    ieee_cls = ieee_class(0.0)
+    b = (ieee_cls == ieee_quiet_nan)
+    
     contains
     subroutine sub(f)
         interface
