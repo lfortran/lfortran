@@ -2554,6 +2554,128 @@ static void runtime_render_error(const char *formatted) {
     free(filename);
 }
 
+static void print_label_span(const Span *span, bool is_primary, 
+                              const char *label_msg, bool use_colors) {
+    const char *color_reset = use_colors ? "\033[0;0m" : "";
+    const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
+    const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
+
+    const char *underline_color = is_primary ? color_bold_red : color_bold_blue;
+    char underline_char = is_primary ? '^' : '~';
+
+    uint32_t line = span->start_l;
+    uint32_t start_col = span->start_c;
+    uint32_t end_col = (span->start_l == span->last_l) ? span->last_c : start_col;
+
+    const char *filename = span->filename ? span->filename : "unknown";
+    char *line_text = runtime_read_line(filename, line);
+    if (!line_text) {
+        return;
+    }
+ 
+    int width = runtime_line_num_width(line);
+
+    fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
+    fprintf(stderr, "%s%*u |%s %s\n",
+            color_bold_blue, width, line, color_reset, line_text);
+    fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
+
+    if (start_col > 1) {
+        fprintf(stderr, "%*s", (int)(start_col - 1), "");
+    }
+
+    fprintf(stderr, "%s", underline_color);
+    size_t underline_len = (end_col >= start_col) ? (end_col - start_col + 1) : 1;
+    for (size_t i = 0; i < underline_len; i++) {
+        fputc(underline_char, stderr);
+    }
+
+    if (label_msg && label_msg[0] != '\0') {
+        fprintf(stderr, " %s", label_msg);
+    }
+    fprintf(stderr, "%s\n", color_reset);
+
+    free(line_text);
+}
+
+LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    char *error_msg = (char*)malloc((size_t)needed + 1);
+    if (!error_msg) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    vsnprintf(error_msg, (size_t)needed + 1, format, args);
+    va_end(args);
+
+    bool use_colors = _lfortran_use_runtime_colors;
+    const char *color_reset = use_colors ? "\033[0;0m" : "";
+    const char *color_bold = use_colors ? "\033[0;1m" : "";
+    const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
+    const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
+
+    if (n_labels == 0) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fflush(stderr);
+        free(error_msg);
+        return;
+    }
+
+    Label *primary_label = NULL;
+    for (uint32_t i = 0; i < n_labels; i++) {
+        if (labels[i].primary) {
+            primary_label = &labels[i];
+            break;
+        }
+    }
+
+    if (!primary_label || primary_label->n_spans == 0) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fflush(stderr);
+        free(error_msg);
+        return;
+    }
+
+    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+            color_bold_red, color_reset, color_bold, error_msg, color_reset);
+
+    Span *first_span = &primary_label->spans[0];
+    const char *filename = first_span->filename ? first_span->filename : "unknown";
+
+    int width = runtime_line_num_width(first_span->start_l);
+    fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
+            width, "", color_bold_blue, color_reset, 
+            filename, first_span->start_l, first_span->start_c);
+
+    for (uint32_t i = 0; i < n_labels; i++) {
+        Label *label = &labels[i];
+        for (uint32_t j = 0; j < label->n_spans; j++) {
+            print_label_span(&label->spans[j], label->primary, 
+                           label->message, use_colors);
+        }
+    }
+
+    fflush(stderr);
+    free(error_msg);
+}
+
+// TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;

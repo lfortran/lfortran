@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in subroutine 'my'. Tried to match size 4 of
  --> tests/errors/array_bounds_check_04.f90:5:13
   |
 5 |     call my(x)
-  |             ^^ 
+  |             ^
+   |
+10 |             integer, intent(in) :: x(3, 1)
+   |                                         ~ Expected size

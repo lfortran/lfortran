@@ -370,6 +370,21 @@ LFORTRAN_API void _lfortran_namelist_read_str(
     lfortran_nml_group_t *group
 );
 
+typedef struct Span {
+    const char *filename;
+    uint32_t start_l, start_c;
+    uint32_t last_l, last_c;
+} Span;
+
+typedef struct Label {
+    bool primary;
+    const char *message;
+    Span *spans;
+    uint32_t n_spans;
+} Label;
+
+LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...);
+
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)
 #define LFORTRAN_IOSTAT_NML_READ_NOT_ALLOWED        5002  // Read access not allowed
