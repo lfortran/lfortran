@@ -760,18 +760,28 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         overloaded = ASRUtils::EXPR(asr);
     }
 
-    if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
-        // if overloaded is not found, then reject
-        if (overloaded == nullptr) {
-            std::string op_str = "==";
+    // Reject comparisons for unsupported types early
+    if (overloaded == nullptr) {
+        ASR::ttype_t *left_type2 = ASRUtils::type_get_past_array(left_type);
+        ASR::ttype_t *right_type2 = ASRUtils::type_get_past_array(right_type);
+        
+        auto is_cmp_sup = [](ASR::ttypeType t) -> bool {
+            return (t == ASR::ttypeType::Integer ||
+                    t == ASR::ttypeType::UnsignedInteger ||
+                    t == ASR::ttypeType::Real ||
+                    t == ASR::ttypeType::Complex ||
+                    t == ASR::ttypeType::Logical ||
+                    t == ASR::ttypeType::String);
+        };
+        
+        if (!is_cmp_sup(left_type2->type) || !is_cmp_sup(right_type2->type)) {
+            std::string op_str;
             switch (asr_op) {
                 case (ASR::cmpopType::Eq):
+                    op_str = "==";
                     break;
-                case (ASR::cmpopType::Gt):
-                    op_str = ">";
-                    break;
-                case (ASR::cmpopType::GtE):
-                    op_str = ">=";
+                case (ASR::cmpopType::NotEq):
+                    op_str = "/=";
                     break;
                 case (ASR::cmpopType::Lt):
                     op_str = "<";
@@ -779,14 +789,30 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                 case (ASR::cmpopType::LtE):
                     op_str = "<=";
                     break;
-                case (ASR::cmpopType::NotEq):
-                    op_str = "/=";
+                case (ASR::cmpopType::Gt):
+                    op_str = ">";
+                    break;
+                case (ASR::cmpopType::GtE):
+                    op_str = ">=";
                     break;
                 default:
                     LCOMPILERS_ASSERT(false);
             }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
-                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            
+            if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + 
+                    ASRUtils::type_to_str_fortran_expr(left_type, left) + " " + op_str + " " + 
+                    ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", 
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            } else {
+                std::string lhs = ASRUtils::type_to_str_fortran_expr(left_type, left);
+                std::string rhs = ASRUtils::type_to_str_fortran_expr(right_type, right);
+                diag.add(diag::Diagnostic(
+                    "Operands of comparison operator '" + op_str + "' are not comparable: " +
+                    lhs + " " + op_str + " " + rhs,
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            }
             throw SemanticAbort();
         }
     }
