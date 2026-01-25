@@ -193,7 +193,6 @@ program continue_compilation_1
     type(MyClass) :: err_obj3 = non_parameter_var
     type(MyClass) :: err_obj4 = myclass_array
     type(MyClass) :: err_obj5 = uninitialized_param_local
-<<<<<<< HEAD
 
     ! Unary defined operator with missing procedure
     interface operator(.bad.)
@@ -201,9 +200,7 @@ program continue_compilation_1
     end interface
 
     integer :: bad_x
-=======
     type(ieee_class_type) :: ieee_cls
->>>>>>> upstream/main
 
 
 
