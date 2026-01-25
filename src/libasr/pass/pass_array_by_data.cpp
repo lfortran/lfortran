@@ -68,15 +68,20 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
     private:
 
         ASRUtils::ExprStmtDuplicator node_duplicator;
+        const LCompilers::PassOptions& pass_options;
 
     public:
 
         std::map< ASR::symbol_t*, std::pair<ASR::symbol_t*, std::vector<size_t>> > proc2newproc;
         std::set<ASR::symbol_t*> newprocs;
 
-        PassArrayByDataProcedureVisitor(Allocator& al_) : PassVisitor(al_, nullptr),
-        node_duplicator(al_)
+        PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
+        PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
         {}
+
+        int get_index_kind() const {
+            return pass_options.descriptor_index_64 ? 8 : 4;
+        }
 
         ASR::symbol_t* insert_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
             Vec<ASR::stmt_t*> new_body;
@@ -206,8 +211,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
+                    int index_kind = get_index_kind();
                     PassUtils::create_vars(dim_variables, n_dims, arg->base.base.loc, al,
-                                            x->m_symtab, arg_name, ASR::intentType::In, arg->m_presence);
+                                            x->m_symtab, arg_name, ASR::intentType::In, arg->m_presence, index_kind);
                     Vec<ASR::dimension_t> new_dims;
                     new_dims.reserve(al, n_dims);
                     ASRUtils::ASRBuilder builder(al, arg->base.base.loc);
@@ -217,7 +223,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         if (dims[j].m_start) {
                             new_dim.m_start = dims[j].m_start;
                         } else {
-                            new_dim.m_start = builder.i32(1);
+                            new_dim.m_start = builder.i_idx(1, index_kind);
                         }
                         new_dim.m_length = dim_variables[k];
                         new_dims.push_back(al, new_dim);
@@ -526,13 +532,19 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         Allocator& al;
         PassArrayByDataProcedureVisitor& v;
         std::set<ASR::symbol_t*>& not_to_be_erased;
+        const LCompilers::PassOptions& pass_options;
 
     public:
 
+        int get_index_kind() const {
+            return pass_options.descriptor_index_64 ? 8 : 4;
+        }
+
         EditProcedureCallsVisitor(Allocator& al_,
             PassArrayByDataProcedureVisitor& v_,
-            std::set<ASR::symbol_t*>& not_to_be_erased_):
-        al(al_), v(v_), not_to_be_erased(not_to_be_erased_) {}
+            std::set<ASR::symbol_t*>& not_to_be_erased_,
+            const LCompilers::PassOptions& pass_options_):
+        al(al_), v(v_), not_to_be_erased(not_to_be_erased_), pass_options(pass_options_) {}
 
         // this is exactly the same as the one in EditProcedureReplacer
         ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
@@ -586,17 +598,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
         }
 
-        static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
-                                        Allocator& al) {
+        inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
+                                        Allocator& al_) {
+            int index_kind = get_index_kind();
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::dimension_t* compile_time_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
             if( n_dims == 0 ) {
                 ASR::ttype_t* scalar_type = ASRUtils::type_get_past_allocatable_pointer(array_type);
                 if( scalar_type && ASR::is_a<ASR::String_t>(*scalar_type) ) {
-                    ASRUtils::ASRBuilder builder(al, array->base.loc);
+                    ASRUtils::ASRBuilder builder(al_, array->base.loc);
                     ASR::expr_t* length = builder.StringLen(array);
-                    dims.push_back(al, length);
+                    dims.push_back(al_, length);
                     return;
                 }
             }
@@ -604,22 +617,22 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::expr_t* length = compile_time_dims[i].m_length;
                 if( length == nullptr ) {
                     if (ASRUtils::is_allocatable(array_type)) {
-                        length = ASRUtils::get_size(array, i + 1, al);
+                        length = ASRUtils::get_size(array, i + 1, al_);
                     } else {
-                        length = PassUtils::get_bound(array, i + 1, "ubound", al);
+                        length = PassUtils::get_bound(array, i + 1, "ubound", al_, index_kind);
                     }
                 }
                 if ( ASRUtils::is_integer(*ASRUtils::expr_type(length)) ) {
                     ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
                                                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(length))));
-                    if (int_type->m_kind != 4) {
-                        // we know by default dimensions are construced as `4`
-                        length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, length->base.loc, length, ASR::cast_kindType::IntegerToInteger,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, length->base.loc, 4))));
+                    if (int_type->m_kind != index_kind) {
+                        // Cast to target index kind
+                        length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al_, length->base.loc, length, ASR::cast_kindType::IntegerToInteger,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al_, length->base.loc, index_kind))));
                     }
 
                 }
-                dims.push_back(al, length);
+                dims.push_back(al_, length);
             }
         }
 
@@ -711,8 +724,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         for( size_t j = 0; j < actual_dim_vars.size(); j++ ) {
                             dim_vars.push_back(al, actual_dim_vars[j]);
                         }
+                        int index_kind = get_index_kind();
                         for( int64_t j = (int64_t) actual_dim_vars.size(); j < expected_n_dims; j++ ) {
-                            dim_vars.push_back(al, builder.i32(1));
+                            dim_vars.push_back(al, make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, index_kind, orig_arg_i->base.loc));
                         }
                     }
                 }
@@ -1163,12 +1177,12 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
-    PassArrayByDataProcedureVisitor v(al);
+    PassArrayByDataProcedureVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
     EditProcedureVisitor e(v);
     e.visit_TranslationUnit(unit);
     std::set<ASR::symbol_t*> not_to_be_erased;
-    EditProcedureCallsVisitor u(al, v, not_to_be_erased);
+    EditProcedureCallsVisitor u(al, v, not_to_be_erased, pass_options);
     u.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
     if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {

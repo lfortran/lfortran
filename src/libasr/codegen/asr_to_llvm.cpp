@@ -3718,7 +3718,8 @@ public:
                 llvm::Value* is_contiguous = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, m_dims);
-                llvm::Value* expected_stride = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                unsigned index_bit_width = arr_descr->get_index_type()->getIntegerBitWidth();
+                llvm::Value* expected_stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
                 for (int i = 0; i < n_dims; i++) {
                     llvm::Value* dim_index = llvm::ConstantInt::get(context, llvm::APInt(32, i));
                     llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_index);
@@ -3727,7 +3728,7 @@ public:
                     llvm::Value* is_dim_contiguous = builder->CreateICmpEQ(stride, expected_stride);
                     is_contiguous = builder->CreateAnd(is_contiguous, is_dim_contiguous);
                     llvm::Value* dim_size = arr_descr->get_upper_bound(dim_desc);
-                    expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(32, 1))));
+                    expected_stride = builder->CreateMul(expected_stride, builder->CreateAdd(builder->CreateSub(dim_size, dim_start), llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1))));
                 }
                 // Unallocated array is contiguous
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(llvm_arg1, x.m_array);
@@ -7388,7 +7389,7 @@ public:
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(llvm_target_type, llvm_target_, 1);
                                     builder->CreateStore(
-                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), src_offset),
+                                        llvm_utils->CreateLoad2(arr_descr->get_index_type(), src_offset),
                                         target_offset);
                                 }
 
@@ -7472,7 +7473,7 @@ public:
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(target_array_desc_type, llvm_target_, 1);
                                     builder->CreateStore(
-                                        llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), src_offset),
+                                        llvm_utils->CreateLoad2(arr_descr->get_index_type(), src_offset),
                                         target_offset);
 
                                     return;
@@ -7502,7 +7503,7 @@ public:
                                     // Copy offset
                                     llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
                                     llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
-                                    builder->CreateStore(builder->CreateLoad(llvm::Type::getInt32Ty(context),value_offset), target_offset);
+                                    builder->CreateStore(builder->CreateLoad(arr_descr->get_index_type(), value_offset), target_offset);
                                     // Other fields of the array descriptor should be already set.
                                     return;
                                 }

@@ -8957,6 +8957,14 @@ public:
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
     }
 
+    // For array intrinsics (lbound, ubound, size), use index_kind (8 when descriptor_index_64)
+    int64_t handle_index_kind(ASR::expr_t* kind) {
+        if( kind == nullptr ) {
+            return compiler_options.descriptor_index_64 ? 8 : compiler_options.po.default_integer_kind;
+        }
+        return handle_kind(kind);
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -8968,7 +8976,7 @@ public:
         } else if( bound_name == "ubound" ) {
             bound = ASR::arrayboundType::UBound;
         }
-        int64_t kind_const = handle_kind(kind);
+        int64_t kind_const = handle_index_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
@@ -9104,7 +9112,7 @@ public:
             throw SemanticAbort();
         }
 
-        int64_t kind_const = handle_kind(kind);
+        int64_t kind_const = handle_index_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), m_dims);
