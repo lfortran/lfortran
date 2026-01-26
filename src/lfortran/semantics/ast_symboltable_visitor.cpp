@@ -2558,8 +2558,69 @@ public:
         if( assgn_proc_names.empty() ) {
             return ;
         }
+        for (const std::string &name : assgn_proc_names) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+            if (!sym) {
+                diag.add(Diagnostic(
+                    "Assignment procedure `" + name + "` not found",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+            sym = ASRUtils::symbol_get_past_external(sym);
+            // Must be a subroutine
+            if (!ASR::is_a<ASR::Function_t>(*sym)) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must be a subroutine",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+
+            if (f->m_return_var != nullptr) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must not return a value",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+            if (f->n_args != 2) {
+                diag.add(Diagnostic(
+                    "Defined assignment procedure must have exactly two arguments",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+            ASR::Var_t *lhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[0]);
+            ASR::Var_t *rhs_var = ASR::down_cast<ASR::Var_t>(f->m_args[1]);
+
+            ASR::Variable_t *lhs =
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(lhs_var->m_v));
+            ASR::Variable_t *rhs =
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(rhs_var->m_v));
+            // Intent of LHS must be Out/InOut and RHS must be In
+            if (!(lhs->m_intent == ASR::intentType::Out ||
+                lhs->m_intent == ASR::intentType::InOut)) {
+                diag.add(Diagnostic(
+                    "First argument of defined assignment must have INTENT(OUT) or INTENT(INOUT)",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+            if (rhs->m_intent != ASR::intentType::In) {
+                diag.add(Diagnostic(
+                    "Second argument of defined assignment must have INTENT(IN)",
+                    Level::Error, Stage::Semantic, {}
+                ));
+                throw SemanticAbort();
+            }
+        }
         std::pair<const std::string, std::vector<std::string>>
             proc = {"~assign", assgn_proc_names};
+
         add_custom_operator(proc, assgn[current_scope]);
     }
 
