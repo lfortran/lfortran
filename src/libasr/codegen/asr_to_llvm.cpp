@@ -3989,6 +3989,7 @@ public:
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
+        ASR::expr_t* member_expr = const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x));
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
         if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
@@ -4016,16 +4017,27 @@ public:
         member_idx = name2memidx[current_der_type_name][member_name];
 
         xtype = name2dertype[current_der_type_name];
+        ASR::ttype_t* base_array_type = nullptr;
+        llvm::Value* base_array_desc = nullptr;
         if (tmp->getType()->isPointerTy()) {
             ASR::ttype_t* base_t = ASRUtils::expr_type(x.m_v);
             base_t = ASRUtils::type_get_past_allocatable(base_t);
             base_t = ASRUtils::type_get_past_pointer(base_t);
-            if (ASRUtils::is_array(base_t)) {// If nested derived type
+            if (ASRUtils::is_array(base_t)) {
+                base_array_type = base_t;
+                base_array_desc = tmp;
+                // If nested derived type
                 ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
+                    if (ASRUtils::extract_physical_type(base_t) ==
+                            ASR::array_physical_typeType::DescriptorArray) {
+                        tmp = llvm_utils->CreateLoad2(
+                            llvm_utils->get_type_from_ttype_t_util(x.m_v, elem_t, module.get())->getPointerTo(),
+                            tmp);
+                    }
                     base_t = elem_t;
                 }
             }
@@ -4057,12 +4069,43 @@ public:
         // association). When the local variable type (x.m_type) differs from
         // the struct member type (member->m_type), we must bitcast the pointer
         // to match the local view. Details handled by the helper function.
-        tmp = llvm_utils->apply_common_block_alias_cast(
-            tmp,
-            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            x.m_type,
-            member->m_type
-        );
+        bool is_component_array = base_array_type &&
+            ASRUtils::is_array(x.m_type) &&
+            !ASRUtils::is_array(member->m_type);
+        if (!is_component_array) {
+            tmp = llvm_utils->apply_common_block_alias_cast(
+                tmp,
+                member_expr,
+                x.m_type,
+                member->m_type
+            );
+        } else {
+            ASR::array_physical_typeType component_ptype = ASRUtils::extract_physical_type(x.m_type);
+            if (component_ptype == ASR::array_physical_typeType::FixedSizeArray) {
+                llvm::Type* component_array_type = llvm_utils->get_type_from_ttype_t_util(
+                    member_expr, x.m_type, module.get());
+                tmp = builder->CreateBitCast(tmp, component_array_type->getPointerTo());
+            } else {
+                llvm::Type* component_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    member_expr, x.m_type, module.get());
+                llvm::AllocaInst* component_desc = llvm_utils->CreateAlloca(
+                    *builder, component_desc_type, nullptr, "component_array_desc");
+                llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
+                    member_expr,
+                    x.m_type, component_desc, module.get());
+                builder->CreateStore(tmp, data_ptr_ptr);
+                arr_descr->fill_array_details(
+                    x.m_v,
+                    member_expr,
+                    base_array_desc,
+                    component_desc,
+                    base_array_type,
+                    x.m_type,
+                    module.get(),
+                    true);
+                tmp = component_desc;
+            }
+        }
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
