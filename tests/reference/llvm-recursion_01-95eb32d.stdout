@@ -3,7 +3,7 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 
-@__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x = global i32 0
+@__module___lcompilers_created__nested_context__sub1__x = global i32 0
 @__module_recursion_01_n = global i32 0
 @__module_recursion_01_x = global i32 0
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -49,15 +49,11 @@ free_nonnull:                                     ; preds = %then
 
 free_done:                                        ; preds = %free_nonnull, %then
   %16 = load i32, i32* %x, align 4
-  store i32 %16, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  store i32 %16, i32* @__module___lcompilers_created__nested_context__sub1__x, align 4
   call void @sub1.__module_recursion_01_sub2()
-  %17 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  %17 = load i32, i32* @__module___lcompilers_created__nested_context__sub1__x, align 4
   store i32 %17, i32* %x, align 4
-  %18 = load i32, i32* %x, align 4
-  store i32 %18, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
-  call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
-  %19 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
-  store i32 %19, i32* %x, align 4
+  call void @__module_recursion_01_sub1(i32* %x)
   br label %ifcont
 
 else:                                             ; preds = %.entry
@@ -75,11 +71,11 @@ FINALIZE_SYMTABLE_sub1:                           ; preds = %return
 
 define void @sub1.__module_recursion_01_sub2() {
 .entry:
-  %0 = load i32, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  %0 = load i32, i32* @__module___lcompilers_created__nested_context__sub1__x, align 4
   %1 = add i32 %0, 1
-  store i32 %1, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x, align 4
+  store i32 %1, i32* @__module___lcompilers_created__nested_context__sub1__x, align 4
   %2 = alloca i64, align 8
-  %3 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
+  %3 = call i8* (i8*, i64, i8*, i64*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, i32* @__module___lcompilers_created__nested_context__sub1__x)
   %4 = load i64, i64* %2, align 4
   %stringFormat_desc = alloca %string_descriptor, align 8
   %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -100,7 +96,7 @@ free_nonnull:                                     ; preds = %.entry
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
-  call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1____lcompilers_created__nested_context__sub1_x)
+  call void @__module_recursion_01_sub1(i32* @__module___lcompilers_created__nested_context__sub1__x)
   br label %return
 
 return:                                           ; preds = %free_done
