@@ -4017,6 +4017,18 @@ public:
 
         xtype = name2dertype[current_der_type_name];
         if (tmp->getType()->isPointerTy()) {
+            ASR::ttype_t* base_t = ASRUtils::expr_type(x.m_v);
+            base_t = ASRUtils::type_get_past_allocatable(base_t);
+            base_t = ASRUtils::type_get_past_pointer(base_t);
+            if (ASRUtils::is_array(base_t)) {// If nested derived type
+                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
+                if (ASRUtils::is_struct(*elem_t)){
+                    llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_v, base_t, module.get());
+                    tmp = llvm_utils->create_gep2(array_type, tmp, 0);
+                    base_t = elem_t;
+                }
+            }
             tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         } else {
             if (llvm::isa<llvm::Constant>(tmp)) {
