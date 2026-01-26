@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in subroutine 'f_integer____0'. Tried to mat
  --> tests/errors/array_bounds_check_12.f90:8:5
   |
 8 |     e = f(a)
-  |     ^ 
+  |     ^
+  |
+8 |     e = f(a)
+  |     ~ Expected size

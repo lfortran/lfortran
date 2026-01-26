@@ -26,6 +26,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     int result_counter;
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
     bool realloc_lhs, allocate_target;
+    const LCompilers::PassOptions& pass_options;
+
+    int get_index_kind() const {
+        return pass_options.descriptor_index_64 ? 8 : 4;
+    }
 
     ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
         // Visitor to replace loop variable with its starting value in an expression
@@ -142,13 +147,15 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
         std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
-        bool realloc_lhs_, bool allocate_target_) :
+        bool realloc_lhs_, bool allocate_target_,
+        const LCompilers::PassOptions& pass_options_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
     current_scope(nullptr),
     result_var(nullptr), result_counter(0),
     resultvar2value(resultvar2value_),
-    realloc_lhs(realloc_lhs_), allocate_target(allocate_target_) {}
+    realloc_lhs(realloc_lhs_), allocate_target(allocate_target_),
+    pass_options(pass_options_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
         const Location& loc = implied_doloop->base.base.loc;
@@ -205,7 +212,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
     ASR::expr_t* get_ArrayConstructor_size(ASR::ArrayConstructor_t* x, bool& is_allocatable) {
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, get_index_kind()));
         ASR::expr_t* array_size = nullptr;
         int64_t constant_size = 0;
         const Location& loc = x->base.base.loc;
@@ -293,7 +300,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     }
                     ASR::expr_t* dim_size = builder.Add(builder.Div(
                         builder.Sub(end, start), d),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc));
+                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc));
                     if( array_section_size == nullptr ) {
                         array_section_size = dim_size;
                     } else {
@@ -398,13 +405,13 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         is_allocatable = true;
         if( array_size == nullptr ) {
             array_size = make_ConstantWithKind(make_IntegerConstant_t,
-                make_Integer_t, 0, 4, x->base.base.loc);
+                make_Integer_t, 0, get_index_kind(), x->base.base.loc);
         }
         return array_size;
     }
 
     ASR::expr_t* get_ArrayConstant_size(ASR::ArrayConstant_t* x) {
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, get_index_kind()));
         return make_ConstantWithType(make_IntegerConstant_t,
                 ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
     }
@@ -676,14 +683,19 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
         std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
+        const LCompilers::PassOptions& pass_options;
 
     public:
 
-        ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_) :
+        int get_index_kind() const {
+            return pass_options.descriptor_index_64 ? 8 : 4;
+        }
+
+        ArrayConstantVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         al(al_), remove_original_statement(false),
         replacer(al_, pass_result, remove_original_statement,
-            resultvar2value, realloc_lhs_, allocate_target),
-        parent_body(nullptr) {
+            resultvar2value, pass_options_.realloc_lhs_arrays, allocate_target, pass_options_),
+        parent_body(nullptr), pass_options(pass_options_) {
             call_replacer_on_value = false;
             replacer.call_replacer_on_value = false;
             pass_result.n = 0;
@@ -812,8 +824,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             ASR::dimension_t d;
             d.loc = value->base.loc;
 
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, get_index_kind()));
+            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, index_type));
 
             d.m_start = one;
             d.m_length = one;
@@ -1124,7 +1136,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 void pass_replace_implied_do_loops(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
-    ArrayConstantVisitor v(al, pass_options.realloc_lhs_arrays);
+    ArrayConstantVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

@@ -46,9 +46,15 @@ class PrintArrVisitor : public PassUtils::PassVisitor<PrintArrVisitor>
 {
 private:
     std::string rl_path;
+    const LCompilers::PassOptions& pass_options;
 public:
-    PrintArrVisitor(Allocator &al, const std::string &rl_path_) : PassVisitor(al, nullptr),
-    rl_path(rl_path_) {
+    int get_index_kind() const {
+        return pass_options.descriptor_index_64 ? 8 : 4;
+    }
+
+    PrintArrVisitor(Allocator &al, const std::string &rl_path_,
+                    const LCompilers::PassOptions& pass_options_) : PassVisitor(al, nullptr),
+    rl_path(rl_path_), pass_options(pass_options_) {
         pass_result.reserve(al, 1);
 
     }
@@ -70,8 +76,8 @@ public:
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
-            head.m_start = PassUtils::get_bound(arr_expr, i + 1, "lbound", al);
-            head.m_end = PassUtils::get_bound(arr_expr, i + 1, "ubound", al);
+            head.m_start = PassUtils::get_bound(arr_expr, i + 1, "lbound", al, get_index_kind());
+            head.m_end = PassUtils::get_bound(arr_expr, i + 1, "ubound", al, get_index_kind());
             head.m_increment = nullptr;
             head.loc = head.m_v->base.loc;
             Vec<ASR::stmt_t*> doloop_body;
@@ -108,43 +114,45 @@ public:
         return doloop;
     }
 
-    void print_fixed_sized_array_helper(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body, 
-                                        const Location &loc, std::vector<ASR::expr_t*> &current_indices, 
-                                        int dim_index, int n_dims, ASR::dimension_t* m_dims, 
-                                        Allocator &al, SymbolTable *current_scope) {
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+    void print_fixed_sized_array_helper(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body,
+                                        const Location &loc, std::vector<ASR::expr_t*> &current_indices,
+                                        int dim_index, int n_dims, ASR::dimension_t* m_dims,
+                                        Allocator &al_, SymbolTable *current_scope_) {
+        int index_kind = get_index_kind();
+        ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al_, loc, index_kind));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al_, loc, 1, index_type));
 
         int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims[dim_index].m_length)->m_n;
 
         for (int i = 0; i < m_dim_length; i++) {
             if (dim_index == 0) {
                 Vec<ASR::expr_t*> indices;
-                indices.reserve(al, n_dims);
+                indices.reserve(al_, n_dims);
                 for (int j = 0; j < n_dims; j++) {
-                    indices.push_back(al, current_indices[j]);
+                    indices.push_back(al_, current_indices[j]);
                 }
 
-                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, indices, al, current_scope);
+                ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, indices, al_, current_scope_);
                 print_body.push_back(ref);
             } else {
-                print_fixed_sized_array_helper(arr_expr, print_body, loc, current_indices, 
-                                                dim_index - 1, n_dims, m_dims, al, current_scope);
+                print_fixed_sized_array_helper(arr_expr, print_body, loc, current_indices,
+                                                dim_index - 1, n_dims, m_dims, al_, current_scope_);
             }
 
             current_indices[dim_index] = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                al, loc, current_indices[dim_index], ASR::binopType::Add, one, int32_type, nullptr));
+                al_, loc, current_indices[dim_index], ASR::binopType::Add, one, index_type, nullptr));
         }
-        current_indices[dim_index] = PassUtils::get_bound(arr_expr, dim_index + 1, "lbound", al);
+        current_indices[dim_index] = PassUtils::get_bound(arr_expr, dim_index + 1, "lbound", al_, index_kind);
     }
 
     void print_fixed_sized_array(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body, const Location &loc) {
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims);
+        int index_kind = get_index_kind();
 
         std::vector<ASR::expr_t*> current_indices(n_dims);
         for (int i = 0; i < n_dims; i++) {
-            current_indices[i] = PassUtils::get_bound(arr_expr, i + 1, "lbound", al);
+            current_indices[i] = PassUtils::get_bound(arr_expr, i + 1, "lbound", al, index_kind);
         }
 
         print_fixed_sized_array_helper(arr_expr, print_body, loc, current_indices, n_dims - 1, n_dims, m_dims, al, current_scope);
@@ -324,8 +332,8 @@ public:
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
-            head.m_start = PassUtils::get_bound(arr_expr, i + 1, "lbound", al);
-            head.m_end = PassUtils::get_bound(arr_expr, i + 1, "ubound", al);
+            head.m_start = PassUtils::get_bound(arr_expr, i + 1, "lbound", al, get_index_kind());
+            head.m_end = PassUtils::get_bound(arr_expr, i + 1, "ubound", al, get_index_kind());
             head.m_increment = nullptr;
             head.loc = head.m_v->base.loc;
             Vec<ASR::stmt_t*> doloop_body;
@@ -438,7 +446,7 @@ public:
 void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LCompilers::PassOptions& pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
-    PrintArrVisitor v(al, rl_path);
+    PrintArrVisitor v(al, rl_path, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

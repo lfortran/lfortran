@@ -2554,6 +2554,128 @@ static void runtime_render_error(const char *formatted) {
     free(filename);
 }
 
+static void print_label_span(const Span *span, bool is_primary, 
+                              const char *label_msg, bool use_colors) {
+    const char *color_reset = use_colors ? "\033[0;0m" : "";
+    const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
+    const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
+
+    const char *underline_color = is_primary ? color_bold_red : color_bold_blue;
+    char underline_char = is_primary ? '^' : '~';
+
+    uint32_t line = span->start_l;
+    uint32_t start_col = span->start_c;
+    uint32_t end_col = (span->start_l == span->last_l) ? span->last_c : start_col;
+
+    const char *filename = span->filename ? span->filename : "unknown";
+    char *line_text = runtime_read_line(filename, line);
+    if (!line_text) {
+        return;
+    }
+ 
+    int width = runtime_line_num_width(line);
+
+    fprintf(stderr, "%*s%s|%s\n", width + 1, "", color_bold_blue, color_reset);
+    fprintf(stderr, "%s%*u |%s %s\n",
+            color_bold_blue, width, line, color_reset, line_text);
+    fprintf(stderr, "%*s%s|%s ", width + 1, "", color_bold_blue, color_reset);
+
+    if (start_col > 1) {
+        fprintf(stderr, "%*s", (int)(start_col - 1), "");
+    }
+
+    fprintf(stderr, "%s", underline_color);
+    size_t underline_len = (end_col >= start_col) ? (end_col - start_col + 1) : 1;
+    for (size_t i = 0; i < underline_len; i++) {
+        fputc(underline_char, stderr);
+    }
+
+    if (label_msg && label_msg[0] != '\0') {
+        fprintf(stderr, " %s", label_msg);
+    }
+    fprintf(stderr, "%s\n", color_reset);
+
+    free(line_text);
+}
+
+LFORTRAN_API void _lcompilers_runtime_error(Label *labels, uint32_t n_labels, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int needed = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+    if (needed < 0) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    char *error_msg = (char*)malloc((size_t)needed + 1);
+    if (!error_msg) {
+        vfprintf(stderr, format, args);
+        fflush(stderr);
+        va_end(args);
+        return;
+    }
+    vsnprintf(error_msg, (size_t)needed + 1, format, args);
+    va_end(args);
+
+    bool use_colors = _lfortran_use_runtime_colors;
+    const char *color_reset = use_colors ? "\033[0;0m" : "";
+    const char *color_bold = use_colors ? "\033[0;1m" : "";
+    const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
+    const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
+
+    if (n_labels == 0) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fflush(stderr);
+        free(error_msg);
+        return;
+    }
+
+    Label *primary_label = NULL;
+    for (uint32_t i = 0; i < n_labels; i++) {
+        if (labels[i].primary) {
+            primary_label = &labels[i];
+            break;
+        }
+    }
+
+    if (!primary_label || primary_label->n_spans == 0) {
+        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+                color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        fflush(stderr);
+        free(error_msg);
+        return;
+    }
+
+    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+            color_bold_red, color_reset, color_bold, error_msg, color_reset);
+
+    Span *first_span = &primary_label->spans[0];
+    const char *filename = first_span->filename ? first_span->filename : "unknown";
+
+    int width = runtime_line_num_width(first_span->start_l);
+    fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
+            width, "", color_bold_blue, color_reset, 
+            filename, first_span->start_l, first_span->start_c);
+
+    for (uint32_t i = 0; i < n_labels; i++) {
+        Label *label = &labels[i];
+        for (uint32_t j = 0; j < label->n_spans; j++) {
+            print_label_span(&label->spans[j], label->primary, 
+                           label->message, use_colors);
+        }
+    }
+
+    fflush(stderr);
+    free(error_msg);
+}
+
+// TODO: after migrating to llvm_utils->generate_runtime_error2(), remove runtime_render_error() and revert this function to how it was before
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;
@@ -6757,6 +6879,41 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
     }
 }
 
+static void handle_read_TL(InputSource *inputSource, int width)
+{
+    int move_left = (width > 0) ? width : 1;
+    
+    if (inputSource->inputMethod == INPUT_STRING) {
+        if (inputSource->str.pos >= move_left) {
+            inputSource->str.pos -= move_left;
+        } else {
+            inputSource->str.pos = 0;
+        }
+    } else if (inputSource->inputMethod == INPUT_FILE) {
+        if (inputSource->file) {
+            long current_pos = ftell(inputSource->file);
+            if (current_pos >= move_left) {
+                fseek(inputSource->file, -move_left, SEEK_CUR);
+            } else {
+                fseek(inputSource->file, 0, SEEK_SET);
+            }
+        }
+    }
+}
+
+static void handle_read_T(InputSource *inputSource, int position)
+{
+    if (position < 1) position = 1;
+    
+    if (inputSource->inputMethod == INPUT_STRING) {
+        int target_pos = position - 1;
+        if (target_pos > (int)inputSource->str.len) {
+            target_pos = (int)inputSource->str.len;
+        }
+        inputSource->str.pos = target_pos;
+    }
+}
+
 static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
     int c = 0;
@@ -6874,6 +7031,18 @@ static void common_formatted_read(InputSource *inputSource,
             scale_factor = repeat_count;
             repeat_count = 1;
         }
+        
+        bool is_tab_descriptor = false;
+        char tab_type = ' ';
+        if (spec == 'T' && fmt_pos < fmt_len) {
+            char next = toupper(fmt[fmt_pos]);
+            if (next == 'R' || next == 'L') {
+                tab_type = next;
+                fmt_pos++;
+                is_tab_descriptor = true;
+            }
+        }
+        
         int width = 0;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
             width = width * 10 + (fmt[fmt_pos] - '0');
@@ -6892,6 +7061,17 @@ static void common_formatted_read(InputSource *inputSource,
                         blank_mode = 1;  // BZ: blank zero
                         fmt_pos++;
                     }
+                }
+                break;
+            case 'T':
+                if (is_tab_descriptor) {
+                    if (tab_type == 'R') {
+                        handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                    } else if (tab_type == 'L') {
+                        handle_read_TL(inputSource, width);
+                    }
+                } else {
+                    handle_read_T(inputSource, width);
                 }
                 break;
             case 'A':
@@ -7985,6 +8165,7 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
+    _lfortran_flush(-1);
 
     int result = system(c_cmd);
     free(c_cmd);
