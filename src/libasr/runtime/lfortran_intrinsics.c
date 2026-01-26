@@ -6879,6 +6879,41 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
     }
 }
 
+static void handle_read_TL(InputSource *inputSource, int width)
+{
+    int move_left = (width > 0) ? width : 1;
+    
+    if (inputSource->inputMethod == INPUT_STRING) {
+        if (inputSource->str.pos >= move_left) {
+            inputSource->str.pos -= move_left;
+        } else {
+            inputSource->str.pos = 0;
+        }
+    } else if (inputSource->inputMethod == INPUT_FILE) {
+        if (inputSource->file) {
+            long current_pos = ftell(inputSource->file);
+            if (current_pos >= move_left) {
+                fseek(inputSource->file, -move_left, SEEK_CUR);
+            } else {
+                fseek(inputSource->file, 0, SEEK_SET);
+            }
+        }
+    }
+}
+
+static void handle_read_T(InputSource *inputSource, int position)
+{
+    if (position < 1) position = 1;
+    
+    if (inputSource->inputMethod == INPUT_STRING) {
+        int target_pos = position - 1;
+        if (target_pos > (int)inputSource->str.len) {
+            target_pos = (int)inputSource->str.len;
+        }
+        inputSource->str.pos = target_pos;
+    }
+}
+
 static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *consumed_newline)
 {
     int c = 0;
@@ -6996,6 +7031,18 @@ static void common_formatted_read(InputSource *inputSource,
             scale_factor = repeat_count;
             repeat_count = 1;
         }
+        
+        bool is_tab_descriptor = false;
+        char tab_type = ' ';
+        if (spec == 'T' && fmt_pos < fmt_len) {
+            char next = toupper(fmt[fmt_pos]);
+            if (next == 'R' || next == 'L') {
+                tab_type = next;
+                fmt_pos++;
+                is_tab_descriptor = true;
+            }
+        }
+        
         int width = 0;
         while (fmt_pos < fmt_len && isdigit((unsigned char)fmt[fmt_pos])) {
             width = width * 10 + (fmt[fmt_pos] - '0');
@@ -7014,6 +7061,17 @@ static void common_formatted_read(InputSource *inputSource,
                         blank_mode = 1;  // BZ: blank zero
                         fmt_pos++;
                     }
+                }
+                break;
+            case 'T':
+                if (is_tab_descriptor) {
+                    if (tab_type == 'R') {
+                        handle_read_X(inputSource, width, advance_no, iostat, &consumed_newline);
+                    } else if (tab_type == 'L') {
+                        handle_read_TL(inputSource, width);
+                    }
+                } else {
+                    handle_read_T(inputSource, width);
                 }
                 break;
             case 'A':
