@@ -13598,6 +13598,7 @@ public:
         llvm::Value *blank{}, *blank_len{};
         llvm::Value *recl{};
         llvm::Value *encoding_data{}, *encoding_len{};
+        llvm::Value *sign_data{}, *sign_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -13682,6 +13683,12 @@ public:
             encoding_data = llvm::Constant::getNullValue(character_type);
             encoding_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
+        if (x.m_sign) {
+            std::tie(sign_data, sign_len) = get_string_data_and_length(x.m_sign);
+        } else {
+            sign_data = llvm::Constant::getNullValue(character_type);
+            sign_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -13702,7 +13709,8 @@ public:
                         character_type, i64, // position, position_len
                         character_type, i64,  // blank, blank_len
                         character_type, i64, //encoding_data, encoding_len
-                        llvm::Type::getInt32Ty(context)->getPointerTo() // recl 
+                        llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
+                        character_type, i64  // sign_data, sign_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -13719,7 +13727,8 @@ public:
             position, position_len,
             blank, blank_len,
             encoding_data, encoding_len,
-            recl
+            recl,
+            sign_data, sign_len
         });
     }
 
