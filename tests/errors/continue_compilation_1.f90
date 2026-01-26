@@ -209,13 +209,6 @@ program continue_compilation_1
 
 
 
-
-
-
-
-
-
-
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -502,7 +495,7 @@ program continue_compilation_1
     write(unit=10, rec=1, rec=2) y
     read(10, rec=1.5) y
     write(10, rec=2.5) y
-    
+
     ! unary defined operator with no matching function
     bad_x = .bad. 10
 
