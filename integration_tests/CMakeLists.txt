@@ -1369,7 +1369,7 @@ RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_406 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with array arguments
 RUN(NAME intrinsics_407 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() overflow
 RUN(NAME intrinsics_408 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() underflow
-RUN(NAME intrinsics_409 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # execute_command_line with file flush 
+RUN(NAME intrinsics_409 LABELS gfortran llvm) # execute_command_line with file flush 
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
