@@ -3759,27 +3759,88 @@ namespace Maskr {
 
 namespace Merge {
 
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 3)  {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for Merge expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(x.m_args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(x.m_args[1]);
+            ASR::ttype_t *arg_type2 = ASRUtils::expr_type(x.m_args[2]);
+            ASRUtils::require_impl((!ASR::is_a<ASR::TypeParameter_t>(*arg_type0) && !ASR::is_a<ASR::TypeParameter_t>(*arg_type1) && is_logical(*arg_type2)), "Unexpected args, Merge expects (any, any, bool) as arguments", x.base.base.loc, diagnostics);
+        }
+        else {
+            ASRUtils::require_impl(false, "Unexpected number of args, Merge takes 3 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
     static inline ASR::expr_t* eval_Merge(Allocator &, const Location& loc,
             ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         bool mask = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
         ASR::expr_t *tsource = args[0], *fsource = args[1];
-        bool is_char1 = is_character(*ASRUtils::expr_type(args[0]));
-        bool is_char2 = is_character(*ASRUtils::expr_type(args[1]));
-        if (is_char1 && is_char2) {
-            char* str1 = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-            size_t len1 = std::strlen(str1);
-            char* str2 = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-            size_t len2 = std::strlen(str2);
-            if (len1 != len2) {
-                append_error(diag, "Unequal character lengths in MERGE intrinsic", loc);
-                return nullptr;
-            }
-        }
         if (mask) {
             return tsource;
         } else {
             return fsource;
         }
+    }
+
+    static inline ASR::asr_t* create_Merge(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() == 3)  {
+            ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+            ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
+            ASR::ttype_t *arg_type2 = ASRUtils::expr_type(args[2]);
+            if(!((!ASR::is_a<ASR::TypeParameter_t>(*arg_type0) && !ASR::is_a<ASR::TypeParameter_t>(*arg_type1) && is_logical(*arg_type2)))) {
+                append_error(diag, "Unexpected args, Merge expects (any, any, bool) as arguments", loc);
+                return nullptr;
+            }
+        }
+        else {
+            append_error(diag, "Unexpected number of args, Merge takes 3 arguments, found " + std::to_string(args.size()), loc);
+            return nullptr;
+        }
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        expr_duplicator.allow_procedure_calls = true;
+        ASR::ttype_t* type_ = nullptr;
+        type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(args[0])));
+        ASR::ttype_t *return_type = type_;
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        m_args.push_back(al, args[2]);
+        bool is_char1 = is_character(*ASRUtils::expr_type(args[0]));
+        bool is_char2 = is_character(*ASRUtils::expr_type(args[1]));
+        if (is_char1 && is_char2) {
+            ASR::String_t* str1_type = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(args[0]));
+            ASR::String_t* str2_type = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(args[1]));
+            if (ASR::is_a<ASR::IntegerConstant_t>(*str1_type->m_len) && ASR::is_a<ASR::IntegerConstant_t>(*str2_type->m_len)) {
+                int64_t len1 = ASR::down_cast<ASR::IntegerConstant_t>(str1_type->m_len)->m_n;
+                int64_t len2 = ASR::down_cast<ASR::IntegerConstant_t>(str2_type->m_len)->m_n;
+                if (len1 != len2) {
+                    append_error(diag, "Unequal character lengths (" + std::to_string(len1) + " / " + std::to_string(len2) + ") in MERGE intrinsic", loc);
+                    return nullptr;
+                }
+            }
+        } 
+        for( size_t i = 0; i < 3; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);
+                break;
+            }
+        }
+        if (all_args_evaluated(m_args)) {
+            Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
+            args_values.push_back(al, expr_value(m_args[0]));
+            args_values.push_back(al, expr_value(m_args[1]));
+            args_values.push_back(al, expr_value(m_args[2]));
+            m_value = eval_Merge(al, loc, return_type, args_values, diag);
+            if (diag.has_error()) {
+                return nullptr;
+            }
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Merge), m_args.p, m_args.n, 0, return_type, m_value);
     }
 
     static inline ASR::expr_t* instantiate_Merge(Allocator &al,
