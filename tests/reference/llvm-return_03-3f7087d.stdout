@@ -3,7 +3,6 @@ source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
 
-@main.main_out = internal global i32 999
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [12 x i8] c"early return"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
@@ -12,6 +11,7 @@ source_filename = "LFortran"
 @string_const_data.1 = private constant [13 x i8] c"normal return"
 @string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([13 x i8], [13 x i8]* @string_const_data.1, i32 0, i32 0), i64 13 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@main.main_out = internal global i32 999
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data.3 = private constant [12 x i8] c"main1 called"
 @string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data.3, i32 0, i32 0), i64 12 }>

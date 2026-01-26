@@ -4885,19 +4885,6 @@ public:
             builder->SetCurrentDebugLocation(nullptr);
             debug_emit_loc(x);
         }
-        // there maybe a possibility that nested function has an array variable
-        // whose dimension depends on variable present in this program / function
-        // thereby visit all integer variables and declare those:
-        for(auto &item: x.m_symtab->get_scope()) {
-            ASR::symbol_t* sym = item.second;
-            if ( is_a<ASR::Variable_t>(*sym) ) {
-                ASR::Variable_t* v = down_cast<ASR::Variable_t>(sym);
-                uint32_t debug_arg_count = 0;
-                if ( ASR::is_a<ASR::Integer_t>(*v->m_type) ) {
-                    process_Variable(sym, x, debug_arg_count);
-                }
-            }
-        }
 
         // Generate code for nested subroutines and functions first:
         for (auto &item : x.m_symtab->get_scope()) {

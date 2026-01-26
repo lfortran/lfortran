@@ -11,7 +11,6 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %i = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %arr = alloca %array*, align 8
   store %array* null, %array** %arr, align 8
@@ -31,7 +30,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = getelementptr %array, %array* %arr_desc, i32 0, i32 0
   store i32* null, i32** %9, align 8
   store %array* %arr_desc, %array** %arr, align 8
-  %i1 = alloca i32, align 4
+  %i = alloca i32, align 4
   %10 = load %array*, %array** %arr, align 8
   %11 = ptrtoint %array* %10 to i64
   %12 = icmp eq i64 %11, 0
@@ -70,70 +69,70 @@ ifcont:                                           ; preds = %merge_allocated
   %26 = call i8* @_lfortran_malloc(i64 4)
   %27 = bitcast i8* %26 to i32*
   store i32* %27, i32** %25, align 8
-  store i32 0, i32* %i1, align 4
+  store i32 0, i32* %i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont11, %ifcont
-  %28 = load i32, i32* %i1, align 4
+loop.head:                                        ; preds = %ifcont10, %ifcont
+  %28 = load i32, i32* %i, align 4
   %29 = add i32 %28, 1
   %30 = icmp sle i32 %29, 1000000
   br i1 %30, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %31 = load i32, i32* %i1, align 4
+  %31 = load i32, i32* %i, align 4
   %32 = add i32 %31, 1
-  store i32 %32, i32* %i1, align 4
+  store i32 %32, i32* %i, align 4
   %33 = load %array*, %array** %arr, align 8
   %34 = ptrtoint %array* %33 to i64
   %35 = icmp eq i64 %34, 0
-  br i1 %35, label %merge_allocated3, label %check_data2
+  br i1 %35, label %merge_allocated2, label %check_data1
 
-check_data2:                                      ; preds = %loop.body
+check_data1:                                      ; preds = %loop.body
   %36 = getelementptr %array, %array* %33, i32 0, i32 0
   %37 = load i32*, i32** %36, align 8
   %38 = ptrtoint i32* %37 to i64
   %39 = icmp ne i64 %38, 0
-  br label %merge_allocated3
+  br label %merge_allocated2
 
-merge_allocated3:                                 ; preds = %check_data2, %loop.body
-  %is_allocated4 = phi i1 [ false, %loop.body ], [ %39, %check_data2 ]
-  br i1 %is_allocated4, label %then5, label %else
+merge_allocated2:                                 ; preds = %check_data1, %loop.body
+  %is_allocated3 = phi i1 [ false, %loop.body ], [ %39, %check_data1 ]
+  br i1 %is_allocated3, label %then4, label %else
 
-then5:                                            ; preds = %merge_allocated3
+then4:                                            ; preds = %merge_allocated2
   %40 = getelementptr %array, %array* %33, i32 0, i32 0
   %41 = load i32*, i32** %40, align 8
   %42 = bitcast i32* %41 to i8*
   call void @_lfortran_free(i8* %42)
   %43 = getelementptr %array, %array* %33, i32 0, i32 0
   store i32* null, i32** %43, align 8
-  br label %ifcont6
+  br label %ifcont5
 
-else:                                             ; preds = %merge_allocated3
-  br label %ifcont6
+else:                                             ; preds = %merge_allocated2
+  br label %ifcont5
 
-ifcont6:                                          ; preds = %else, %then5
+ifcont5:                                          ; preds = %else, %then4
   %44 = load %array*, %array** %arr, align 8
   %45 = ptrtoint %array* %44 to i64
   %46 = icmp eq i64 %45, 0
-  br i1 %46, label %merge_allocated8, label %check_data7
+  br i1 %46, label %merge_allocated7, label %check_data6
 
-check_data7:                                      ; preds = %ifcont6
+check_data6:                                      ; preds = %ifcont5
   %47 = getelementptr %array, %array* %44, i32 0, i32 0
   %48 = load i32*, i32** %47, align 8
   %49 = ptrtoint i32* %48 to i64
   %50 = icmp ne i64 %49, 0
-  br label %merge_allocated8
+  br label %merge_allocated7
 
-merge_allocated8:                                 ; preds = %check_data7, %ifcont6
-  %is_allocated9 = phi i1 [ false, %ifcont6 ], [ %50, %check_data7 ]
-  br i1 %is_allocated9, label %then10, label %ifcont11
+merge_allocated7:                                 ; preds = %check_data6, %ifcont5
+  %is_allocated8 = phi i1 [ false, %ifcont5 ], [ %50, %check_data6 ]
+  br i1 %is_allocated8, label %then9, label %ifcont10
 
-then10:                                           ; preds = %merge_allocated8
+then9:                                            ; preds = %merge_allocated7
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([92 x i8], [92 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
-ifcont11:                                         ; preds = %merge_allocated8
+ifcont10:                                         ; preds = %merge_allocated7
   %51 = load %array*, %array** %arr, align 8
   %52 = getelementptr %array, %array* %51, i32 0, i32 1
   store i32 0, i32* %52, align 4
