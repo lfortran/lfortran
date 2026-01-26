@@ -193,14 +193,14 @@ program continue_compilation_1
     type(MyClass) :: err_obj3 = non_parameter_var
     type(MyClass) :: err_obj4 = myclass_array
     type(MyClass) :: err_obj5 = uninitialized_param_local
+
+    ! Unary defined operator with missing procedure
+    interface operator(.bad.)
+        module procedure bad_op
+    end interface
+
+    integer :: bad_x
     type(ieee_class_type) :: ieee_cls
-
-
-
-
-
-
-
 
 
 
@@ -495,7 +495,10 @@ program continue_compilation_1
     write(unit=10, rec=1, rec=2) y
     read(10, rec=1.5) y
     write(10, rec=2.5) y
-    
+
+    ! unary defined operator with no matching function
+    bad_x = .bad. 10
+
     ieee_cls = ieee_class(0.0)
     b = (ieee_cls == ieee_quiet_nan)
     

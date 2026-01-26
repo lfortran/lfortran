@@ -1141,14 +1141,20 @@ semantic error: `rec` must be of type, Integer
 497 |     write(10, rec=2.5) y
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Operands of comparison operator '==' are not comparable: ieee_class_type == ieee_class_type
-   --> tests/errors/continue_compilation_1.f90:500:10
+semantic error: `bad` is not defined or imported
+   --> tests/errors/continue_compilation_1.f90:500:13
     |
-500 |     b = (ieee_cls == ieee_quiet_nan)
+500 |     bad_x = .bad. 10
+    |             ^^^^^^^^ 
+
+semantic error: Operands of comparison operator '==' are not comparable: ieee_class_type == ieee_class_type
+   --> tests/errors/continue_compilation_1.f90:503:10
+    |
+503 |     b = (ieee_cls == ieee_quiet_nan)
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:500:5
+   --> tests/errors/continue_compilation_1.f90:503:5
     |
-500 |     b = (ieee_cls == ieee_quiet_nan)
+503 |     b = (ieee_cls == ieee_quiet_nan)
     |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
