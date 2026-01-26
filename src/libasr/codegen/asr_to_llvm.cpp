@@ -7218,11 +7218,25 @@ public:
                         llvm::Type* value_struct_type = llvm_utils->getStructType(value_struct_type_t, module.get(), true);
                         val_data_ptr = llvm_utils->CreateLoad2(value_struct_type, val_data_ptr);
                     }
-                    ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
-                    llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
-                    val_data_ptr = builder->CreateBitCast(val_data_ptr, struct_type);
-                    builder->CreateStore(val_data_ptr, llvm_target);
+
+                    // Handle target type: unlimited polymorphic or struct types
+                    ASR::ttype_t* target_base_type = ASRUtils::type_get_past_pointer(target_type);
+                    if (ASRUtils::is_unlimited_polymorphic_type(target_base_type) ||
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_base_type))) {
+                        // Target is unlimited polymorphic or a struct type 
+                        ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>( 
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
+                        llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                        val_data_ptr = builder->CreateBitCast(val_data_ptr, struct_type);
+                        builder->CreateStore(val_data_ptr, llvm_target);
+                    } else {
+                        // Handle cases where unlimited polymorphic pointers are associated to 
+                        // specific-typed pointers (Int, Real), used in select type blocks
+                        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_target, target_type, module.get());
+                        val_data_ptr = builder->CreateBitCast(val_data_ptr, target_llvm_type);
+                        builder->CreateStore(val_data_ptr, llvm_target);
+                    }
                 }
             } else if (is_target_class && !is_value_class) {
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
