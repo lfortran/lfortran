@@ -1160,7 +1160,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
 
 semantic error: Cannot assign to an intent(in) variable `lhs`
-   --> tests/errors/continue_compilation_1.f90:504:5
+   --> tests/errors/continue_compilation_1.f90:507:5
     |
-504 |     lhs = rhs
+507 |     lhs = rhs
     |     ^^^ 
