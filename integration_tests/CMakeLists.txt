@@ -871,6 +871,7 @@ RUN(NAME namelist_19 LABELS gfortran llvm)
 RUN(NAME namelist_20 LABELS gfortran llvm)
 RUN(NAME namelist_21 LABELS gfortran llvm)
 RUN(NAME namelist_22 LABELS gfortran llvm)
+RUN(NAME namelist_23 LABELS gfortran llvm)
 
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
@@ -926,6 +927,7 @@ RUN(NAME format_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
@@ -1356,7 +1358,7 @@ RUN(NAME intrinsics_394 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx kind cast regression
 RUN(NAME intrinsics_396 LABELS gfortran llvm)
 RUN(NAME intrinsics_397 LABELS llvm llvm_wasm llvm_wasm_emcc) # selected_logical_kind
-RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc 
+RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_399 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # intrinsic impure subroutine
 RUN(NAME intrinsics_400 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # compiler_options 
 RUN(NAME intrinsics_401 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
@@ -1364,9 +1366,10 @@ RUN(NAME intrinsics_402 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min1, max1
 RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_406 LABELS gfortran llvm) # iachar with array arguments
-RUN(NAME intrinsics_407 LABELS gfortran llvm) # complex abs() overflow
-RUN(NAME intrinsics_408 LABELS gfortran llvm) # complex abs() underflow
+RUN(NAME intrinsics_406 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with array arguments
+RUN(NAME intrinsics_407 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() overflow
+RUN(NAME intrinsics_408 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() underflow
+RUN(NAME intrinsics_409 LABELS gfortran llvm) # execute_command_line with file flush 
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
