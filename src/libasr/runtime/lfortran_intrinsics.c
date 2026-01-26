@@ -8107,6 +8107,7 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
+    _lfortran_flush(-1);
 
     int result = system(c_cmd);
     free(c_cmd);
