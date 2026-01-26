@@ -4019,20 +4019,24 @@ public:
         xtype = name2dertype[current_der_type_name];
         ASR::ttype_t* base_array_type = nullptr;
         llvm::Value* base_array_desc = nullptr;
+        ASR::array_physical_typeType base_array_ptype = ASR::array_physical_typeType::DescriptorArray;
         if (tmp->getType()->isPointerTy()) {
             ASR::ttype_t* base_t = ASRUtils::expr_type(x.m_v);
             base_t = ASRUtils::type_get_past_allocatable(base_t);
             base_t = ASRUtils::type_get_past_pointer(base_t);
             if (ASRUtils::is_array(base_t)) {
                 base_array_type = base_t;
-                base_array_desc = tmp;
+                base_array_ptype = ASRUtils::extract_physical_type(base_t);
+                if (base_array_ptype == ASR::array_physical_typeType::DescriptorArray) {
+                    base_array_desc = tmp;
+                }
                 // If nested derived type
-                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
+                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
-                    if (ASRUtils::extract_physical_type(base_t) ==
+                    if (base_array_ptype ==
                             ASR::array_physical_typeType::DescriptorArray) {
                         tmp = llvm_utils->CreateLoad2(
                             llvm_utils->get_type_from_ttype_t_util(x.m_v, elem_t, module.get())->getPointerTo(),
@@ -4094,15 +4098,25 @@ public:
                     member_expr,
                     x.m_type, component_desc, module.get());
                 builder->CreateStore(tmp, data_ptr_ptr);
-                arr_descr->fill_array_details(
-                    x.m_v,
-                    member_expr,
-                    base_array_desc,
-                    component_desc,
-                    base_array_type,
-                    x.m_type,
-                    module.get(),
-                    true);
+                if (base_array_desc) {
+                    arr_descr->fill_array_details(
+                        x.m_v,
+                        member_expr,
+                        base_array_desc,
+                        component_desc,
+                        base_array_type,
+                        x.m_type,
+                        module.get(),
+                        true);
+                } else {
+                    ASR::dimension_t* base_dims = nullptr;
+                    int base_rank = ASRUtils::extract_dimensions_from_ttype(base_array_type, base_dims);
+                    LCOMPILERS_ASSERT(base_rank > 0)
+                    llvm::Type* component_el_type = llvm_utils->get_el_type(
+                        member_expr, ASRUtils::extract_type(x.m_type), module.get());
+                    fill_array_details(component_desc_type, component_desc, component_el_type,
+                        base_dims, base_rank, false, false);
+                }
                 tmp = component_desc;
             }
         }
@@ -7438,7 +7452,8 @@ public:
                                         llvm_utils->create_gep2(llvm_target_type, llvm_target_, 2));
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), src_dim_ptr, llvm::MaybeAlign(8),
+                                    llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
                                         dim_desc_size*(int)n_dims);
 
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
@@ -7593,7 +7608,8 @@ public:
                                                                 llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
-                                    builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
+                                    llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
                                     // Copy offset
                                     llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
                                     llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
