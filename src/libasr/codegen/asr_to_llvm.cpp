@@ -3953,7 +3953,7 @@ public:
                     builder->CreatePtrToInt(llvm::ConstantPointerNull::get(x_mv_llvm_type->getPointerTo()),
                         llvm::Type::getInt64Ty(context)));
                 llvm_utils->generate_runtime_error(cond,
-                        "Runtime error: Tried to access member of unallocated variable '%s'\n",
+                        "Tried to access member of unallocated variable '%s'\n",
                         infile,
                         x.m_v->base.loc,
                         location_manager,
@@ -16158,10 +16158,12 @@ public:
                             } else {
                                 cond = builder->CreateICmpSLT(descriptor_length, pointer_length);
                             }
-                            llvm_utils->generate_runtime_error(cond,
+                            llvm_utils->generate_runtime_error2(cond,
                                     "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
+                                    {diag::Label("", {arg_expr->base.loc}),
+                                        function->m_start_name ? diag::Label("Here", {*function->m_start_name}, false): diag::Label("", {}),
+                                        diag::Label("Expected size", {m_dims[j].loc}, false)},
                                     infile,
-                                    arg_expr->base.loc,
                                     location_manager,
                                     LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(x.m_name)),
                                     descriptor_length,

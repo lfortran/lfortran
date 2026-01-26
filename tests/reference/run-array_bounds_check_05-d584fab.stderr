@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in subroutine 'my'. Tried to match size 3 of
  --> tests/errors/array_bounds_check_05.f90:7:13
   |
 7 |     call my(x, 5)
-  |             ^^ 
+  |             ^
+  |
+7 |     call my(x, 5)
+  |             ~ Expected size
