@@ -9782,6 +9782,16 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         load_unlimited_polymorpic_value(x.m_left, left);
         load_unlimited_polymorpic_value(x.m_right, right);
+        // Ensure operand types match for comparison (use the larger type)
+        if (left->getType() != right->getType()) {
+            unsigned left_bits = left->getType()->getIntegerBitWidth();
+            unsigned right_bits = right->getType()->getIntegerBitWidth();
+            if (left_bits > right_bits) {
+                right = builder->CreateSExt(right, left->getType());
+            } else {
+                left = builder->CreateSExt(left, right->getType());
+            }
+        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -10608,6 +10618,15 @@ public:
         load_unlimited_polymorpic_value(x.m_right, right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
+        // Ensure operand types match the result type to avoid LLVM verifier errors
+        llvm::Type* result_type = llvm_utils->getIntType(
+            ASRUtils::extract_kind_from_ttype_t(x.m_type));
+        if (left_val->getType() != result_type) {
+            left_val = builder->CreateSExtOrTrunc(left_val, result_type);
+        }
+        if (right_val->getType() != result_type) {
+            right_val = builder->CreateSExtOrTrunc(right_val, result_type);
+        }
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 tmp = builder->CreateAdd(left_val, right_val);
@@ -17676,7 +17695,11 @@ public:
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                     res = arr_descr->get_upper_bound(dim_struct);
                 }
-                tmp = res;
+                // Cast to match the declared return type of the ArrayBound node
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x.m_type)), module.get());
+                tmp = builder->CreateSExtOrTrunc(res, target_type);
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray:
@@ -17721,9 +17744,10 @@ public:
                             if (m_dims[i].m_length) {
                                 load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
+                                unsigned target_bit_width = target_type->getIntegerBitWidth();
                                 builder->CreateStore(
                                     builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                          llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
+                                          llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
                                     target);
                             } else {
                                 // Assumed-size array: last dimension has no length
@@ -17740,11 +17764,13 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::SIMDArray: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                unsigned bit_width = kind * 8;
                 if( x.m_bound == ASR::arrayboundType::LBound ) {
-                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(bit_width, 1));
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                     int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
-                    tmp = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(bit_width, size));
                 }
                 break;
             }
@@ -17763,7 +17789,11 @@ public:
                     } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                         res = arr_descr->get_upper_bound(dim_struct);
                     }
-                    tmp = res;
+                    // Cast to match the declared return type of the ArrayBound node
+                    llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(x.m_type)), module.get());
+                    tmp = builder->CreateSExtOrTrunc(res, target_type);
                     break;
                 } else if (ASRUtils::is_fixed_size_array(x_mv_type)) {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
@@ -17794,9 +17824,10 @@ public:
                                 lbound = tmp;
                                 load_array_size_deep_copy(m_dims[i].m_length);
                                 length = tmp;
+                                unsigned target_bit_width = target_type->getIntegerBitWidth();
                                 builder->CreateStore(
-                                    builder->CreateSub(builder->CreateAdd(length, lbound),
-                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
+                                    builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
+                                        llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
                                     target);
                             }
                         }
