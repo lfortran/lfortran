@@ -12356,7 +12356,8 @@ public:
             }
 
             int32_t type_code = -1;
-            int64_t elem_len = 0;
+            llvm::Value* elem_len_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+            llvm::Value* str_desc_ptr = nullptr;
 
             if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -12380,9 +12381,10 @@ public:
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
                 int len_val = 0;
                 if (ASRUtils::extract_value(str_type->m_len, len_val)) {
-                    elem_len = len_val;
+                    elem_len_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len_val);
                 } else {
-                    elem_len = 10; // Default length for deferred-length strings
+                    // Save the string descriptor pointer to extract length later
+                    str_desc_ptr = data_ptr;
                 }
             }
 
@@ -12467,7 +12469,12 @@ public:
 
             // For strings, we need to extract the data pointer from the descriptor
             if (ASR::is_a<ASR::String_t>(*var_type)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(var_type);
                 llvm::Type* string_desc_type = llvm_utils->get_type_from_ttype_t_util(nullptr, var_type, module.get());
+                // Extract the length from the string descriptor for deferred-length strings
+                if (str_desc_ptr != nullptr) {
+                    elem_len_val = llvm_utils->get_string_length(str_type, str_desc_ptr);
+                }
                 llvm::Value* str_data_ptr_ptr = llvm_utils->create_gep2(string_desc_type, data_ptr, 0);
                 data_ptr = llvm_utils->CreateLoad2(character_type, str_data_ptr_ptr);
             }
@@ -12539,7 +12546,7 @@ public:
                                  builder->CreateStructGEP(item_type, item, 1));
             builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), rank),
                                  builder->CreateStructGEP(item_type, item, 2));
-            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_len),
+            builder->CreateStore(elem_len_val,
                                  builder->CreateStructGEP(item_type, item, 3));
             builder->CreateStore(data_ptr, builder->CreateStructGEP(item_type, item, 4));
             builder->CreateStore(shape_ptr, builder->CreateStructGEP(item_type, item, 5));
