@@ -7452,9 +7452,15 @@ public:
                                         llvm_utils->create_gep2(llvm_target_type, llvm_target_, 2));
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
+#if LLVM_VERSION_MAJOR < 8
+                                    unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
+                                        dim_desc_size*(int)n_dims);
+#else
                                     llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, dim_align, src_dim_ptr, dim_align,
                                         dim_desc_size*(int)n_dims);
+#endif
 
                                     llvm::Value* src_offset = llvm_utils->create_gep2(src_array_desc_type, llvm_value, 1);
                                     llvm::Value* target_offset = llvm_utils->create_gep2(llvm_target_type, llvm_target_, 1);
@@ -7608,8 +7614,13 @@ public:
                                                                 llvm_utils->create_gep2(array_desc_type, llvm_target_, 2)); // Pointer to dimension descriptor of the LHS array.
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
+#if LLVM_VERSION_MAJOR < 8
+                                    unsigned dim_align = data_layout.getABITypeAlignment(dim_desc_type);
+                                    builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
+#else
                                     llvm::Align dim_align = data_layout.getABITypeAlign(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, dim_align, value_dim_ptr, dim_align, dim_desc_size*n_dims);
+#endif
                                     // Copy offset
                                     llvm::Value* value_offset = llvm_utils->create_gep2(array_desc_type, llvm_value, 1); // Pointer to offset of the RHS array.
                                     llvm::Value* target_offset = llvm_utils->create_gep2(array_desc_type, llvm_target_, 1); // Pointer to offset of the LHS array.
