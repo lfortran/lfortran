@@ -365,17 +365,20 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
+static void format_float_fortran(char* result, float val);
+static void format_double_fortran(char* result, double val);
+
 void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     val = val * pow(10, scale); // scale the value
     if (strcmp(format,"f-64") == 0) { //use c formatting.
-        char* float_str = (char*)malloc(50 * sizeof(char));
-        sprintf(float_str,"%23.17e",val);
+        char* float_str = (char*)malloc(64 * sizeof(char));
+        format_double_fortran(float_str, val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
     } else if(strcmp(format,"f-32") == 0){ //use c formatting.
-        char* float_str = (char*)malloc(40 * sizeof(char));
-        sprintf(float_str,"%13.8e",val);
+        char* float_str = (char*)malloc(64 * sizeof(char));
+        format_float_fortran(float_str, (float)val);
         *result = append_to_string(*result,float_str);
         free(float_str);
         return;
@@ -1667,6 +1670,25 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
     }
 }
 
+static void format_float_fortran(char* result, float val) {
+    float abs_val = fabsf(val);
+    // Use exponential notation for very small or very large values
+    if ((abs_val > 0.0f && abs_val < 0.1f) || abs_val >= 1.0e8f) {
+        sprintf(result, "%.8E", val);
+    } else {
+        sprintf(result, "%.8f", val);
+    }
+}
+
+static void format_double_fortran(char* result, double val) {
+    double abs_val = fabs(val);
+    if ((abs_val > 0.0 && abs_val < 0.1) || abs_val >= 1.0e15) {
+        sprintf(result, "%.16E", val);
+    } else {
+        sprintf(result, "%.16f", val);
+    }
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
@@ -1700,19 +1722,25 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 double real = *(double*)arg;
                 move_to_next_element(s_info, false);
                 double imag = *(double*)s_info->current_arg_info.current_arg;
-                sprintf(result, "(%23.17e, %23.17e)", real, imag);
+                char real_str[64], imag_str[64];
+                format_double_fortran(real_str, real);
+                format_double_fortran(imag_str, imag);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
-                sprintf(result, "%23.17e", *(double*)arg);
+                format_double_fortran(result, *(double*)arg);
             }
             break;
         case FLOAT_32_TYPE:
             if(s_info->current_arg_info.is_complex){
                 float real = *(float*)arg;
                 move_to_next_element(s_info, false);
-                double imag = *(float*)s_info->current_arg_info.current_arg;
-                sprintf(result, "(%13.8e, %13.8e)", real, imag);
+                float imag = *(float*)s_info->current_arg_info.current_arg;
+                char real_str[64], imag_str[64];
+                format_float_fortran(real_str, real);
+                format_float_fortran(imag_str, imag);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
-                sprintf(result, "%13.8e", *(float*)arg);
+                format_float_fortran(result, *(float*)arg);
             }
             break;
         case LOGICAL_TYPE:
