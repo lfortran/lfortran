@@ -8621,6 +8621,45 @@ static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_p
     return token;
 }
 
+// Helper to check if what follows in the buffer looks like a new variable assignment
+// (identifier followed by '='). Returns true if we should stop reading values.
+static bool peek_next_is_assignment(char *line_ptr) {
+    if (!line_ptr || !*line_ptr) return false;
+    
+    char *ptr = line_ptr;
+    
+    // Skip whitespace
+    while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++;
+    
+    if (!*ptr) return false;
+    
+    // Check for terminator - not an assignment
+    if (*ptr == '/' || *ptr == '&') return false;
+    
+    // Must start with alpha or underscore to be an identifier
+    if (!isalpha(*ptr) && *ptr != '_') return false;
+    
+    // Skip the identifier
+    while (*ptr && (isalnum(*ptr) || *ptr == '_' || *ptr == '%')) ptr++;
+    
+    // Skip optional array subscript
+    if (*ptr == '(') {
+        int depth = 1;
+        ptr++;
+        while (*ptr && depth > 0) {
+            if (*ptr == '(') depth++;
+            if (*ptr == ')') depth--;
+            ptr++;
+        }
+    }
+    
+    // Skip whitespace
+    while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++;
+    
+    // Check if followed by '='
+    return (*ptr == '=');
+}
+
 // Helper to convert string to lowercase
 static void to_lowercase(char *str) {
     for (int i = 0; str[i]; i++) {
@@ -8829,6 +8868,7 @@ static bool nml_value_iter_advance(nml_value_iter_t *it) {
     return nml_value_iter_next_item(it);
 }
 
+// Returns: 0 = success, 1 = error, 2 = terminator found (caller should stop)
 static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_ptr,
                            size_t *line_len, int64_t *read_len, nml_value_iter_t *it,
                            bool enforce_bounds, int32_t *iostat) {
@@ -8839,10 +8879,10 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
         bool done = false;
         char *token = read_token_nml(reader, line_buf, line_ptr, line_len, read_len);
 
-        // Check for terminator or comma
+        // Check for terminator or end of data
         if (!token || strcmp(token, "/") == 0 || strcmp(token, "&") == 0) {
             if (token) free(token);
-            break;
+            return 2;  // Signal that terminator was found (or end of data)
         }
         if (strcmp(token, ",") == 0) {
             free(token);
@@ -8900,8 +8940,13 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
         skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
         if (*line_ptr && **line_ptr == ',') {
             (*line_ptr)++;
+            // After consuming the comma, check if the next thing looks like a new variable assignment
+            // If so, stop reading values and let the main loop handle the new variable
+            if (peek_next_is_assignment(*line_ptr)) {
+                break;
+            }
         } else if (*line_ptr && (**line_ptr == '/' || **line_ptr == '&')) {
-            break;
+            return 2;  // Found terminator
         }
         if (done) {
             break;
@@ -9062,17 +9107,23 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             lfortran_nml_item_t *items[1] = {item};
             nml_value_iter_t it;
             nml_value_iter_init(&it, items, 1, value_idx, total_size);
-            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
-                                &it, true, iostat)) {
-                return;
+            int read_result = nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, true, iostat);
+            if (read_result == 1) {
+                return;  // Error occurred
+            } else if (read_result == 2) {
+                break;  // Terminator found, exit main loop
             }
         } else if (derived_count > 0) {
             nml_value_iter_t it;
             nml_value_iter_init(&it, derived_items, derived_count, 0,
                                 compute_array_size(derived_items[0]));
-            if (nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
-                                &it, false, iostat)) {
-                return;
+            int read_result = nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
+                                &it, false, iostat);
+            if (read_result == 1) {
+                return;  // Error occurred
+            } else if (read_result == 2) {
+                break;  // Terminator found, exit main loop
             }
         }
     }
